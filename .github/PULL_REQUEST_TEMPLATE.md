@@ -1,4 +1,4 @@
-Thank you for contributing to PROJECT_NAME. Before pressing the "Create Pull Request" button, please provide the following:
+Thank you for contributing to Purchases. Before pressing the "Create Pull Request" button, please provide the following:
 
   - [ ] A description about what and why you are contributing, even if it's trivial.
 
