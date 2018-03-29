@@ -1,2 +1,1 @@
-include ':sample-app'
-include ':sample-lib'
+include ':purchases'
