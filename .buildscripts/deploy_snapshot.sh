@@ -23,6 +23,6 @@ elif [ "$CIRCLE_BRANCH" != "$BRANCH" ]; then
 else
   echo "Deploying snapshot..."
   ./gradlew uploadArchives -P signing.keyId=$GPG_SIGNING_KEY_ID -Psigning.password=$GPG_SIGNING_KEY_PW -Psigning.secretKeyRingFile=./secring.gpg \
-                           -PSONATYPE_NEXUS_USERNAME=$SONATYPE_NEXUS_USERNAME SONATYPE_NEXUS_PASSWORD=$SONATYPE_NEXUS_PASSWORD
+                           -PSONATYPE_NEXUS_USERNAME=$SONATYPE_NEXUS_USERNAME -PSONATYPE_NEXUS_PASSWORD=$SONATYPE_NEXUS_PASSWORD
   echo "Snapshot deployed!"
 fi
