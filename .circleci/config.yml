@@ -25,7 +25,7 @@ jobs:
           name: Deployment
           command: |
             if [ "${CIRCLE_BRANCH}" == "feature/ci" ]; then
-              .buildscript/deploy_snapshot.sh
+              .buildscripts/deploy_snapshot.sh
             else
               echo "==> ignoring non-master branch"
             fi
