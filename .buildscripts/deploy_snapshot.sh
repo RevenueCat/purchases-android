@@ -7,7 +7,7 @@
 # and https://github.com/square/javawriter
 
 REPO="purchases-android"
-USERNAME="jeiting"
+USERNAME="RevenueCat"
 JDK="oraclejdk8"
 BRANCH="feature/ci"
 
