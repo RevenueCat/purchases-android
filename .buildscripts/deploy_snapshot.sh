@@ -9,7 +9,7 @@
 REPO="purchases-android"
 USERNAME="RevenueCat"
 JDK="oraclejdk8"
-BRANCH="feature/ci"
+BRANCH="master"
 
 if [ "$CIRCLE_PROJECT_REPONAME" != "$REPO" ]; then
   echo "Skipping snapshot deployment: wrong repository. Expected '$REPO' but was '$CIRCLE_PROJECT_REPONAME'."
