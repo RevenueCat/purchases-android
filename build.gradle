@@ -29,5 +29,3 @@ task wrapper(type: Wrapper) {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
-
-apply from: 'gradle/dependencies.gradle'
