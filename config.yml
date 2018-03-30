@@ -1,0 +1,31 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/purchases-android
+    docker:
+      - image: circleci/android:api-27-alpha
+    environment:
+      JVM_OPTS: -Xmx3200m
+      CIRCLE_JDK_VERSION: oraclejdk8
+    steps:
+      - checkout
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+      - run:
+          name: Accept licenses
+          command: yes | sdkmanager --licenses || true
+      - run:
+          name: Build
+          command: ./gradlew check build test
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "analytics/build.gradle" }}
+      - run:
+          name: Deployment
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              .buildscript/deploy_snapshot.sh
+            else
+              echo "==> ignoring non-master branch"
+            fi
