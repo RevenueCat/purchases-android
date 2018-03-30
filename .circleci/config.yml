@@ -20,12 +20,12 @@ jobs:
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "analytics/build.gradle" }}
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
       - run:
           name: Deployment
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              .buildscript/deploy_snapshot.sh
+              .buildscripts/deploy_snapshot.sh
             else
               echo "==> ignoring non-master branch"
             fi

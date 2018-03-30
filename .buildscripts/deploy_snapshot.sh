@@ -7,7 +7,7 @@
 # and https://github.com/square/javawriter
 
 REPO="purchases-android"
-USERNAME="jeiting"
+USERNAME="RevenueCat"
 JDK="oraclejdk8"
 BRANCH="master"
 
@@ -22,6 +22,7 @@ elif [ "$CIRCLE_BRANCH" != "$BRANCH" ]; then
   echo "Skipping snapshot deployment: wrong branch. Expected '$BRANCH' but was '$CIRCLE_BRANCH'."
 else
   echo "Deploying snapshot..."
-  ./gradlew uploadArchives
+  ./gradlew uploadArchives -P signing.keyId=$GPG_SIGNING_KEY_ID -Psigning.password=$GPG_SIGNING_KEY_PW -Psigning.secretKeyRingFile=./secring.gpg \
+                           -PSONATYPE_NEXUS_USERNAME=$SONATYPE_NEXUS_USERNAME -PSONATYPE_NEXUS_PASSWORD=$SONATYPE_NEXUS_PASSWORD
   echo "Snapshot deployed!"
 fi
