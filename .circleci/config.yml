@@ -20,7 +20,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "analytics/build.gradle" }}
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
       - run:
           name: Deployment
           command: |
