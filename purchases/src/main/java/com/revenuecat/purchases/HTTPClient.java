@@ -16,12 +16,12 @@ import java.net.URL;
 import java.util.Map;
 
 class HTTPClient {
-    class Result {
+    static class Result {
         int responseCode;
         JSONObject body;
     }
 
-    class HTTPErrorException extends Exception {}
+    static class HTTPErrorException extends Exception {}
 
     private final URL baseURL;
 
