@@ -1,17 +1,11 @@
 package com.revenuecat.purchases;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.ListenableFuture;
-
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertSame;
 import static junit.framework.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -43,16 +37,6 @@ public class DispatcherTest {
             @Override
             public HTTPClient.Result call() {
                 return result;
-            }
-
-            @Override
-            void onError(Exception exception) {
-
-            }
-
-            @Override
-            void onCompletion(HTTPClient.Result result) {
-
             }
         });
 
