@@ -37,22 +37,18 @@ class HTTPClient {
         this.baseURL = baseURL;
     }
 
-    /** Buffers the given {@code InputStream}. */
     private static BufferedReader buffer(InputStream is) {
         return new BufferedReader(new InputStreamReader(is));
     }
 
-    /** Buffers the given {@code OutputStream}. */
     private static BufferedWriter buffer(OutputStream os) {
         return new BufferedWriter(new OutputStreamWriter(os));
     }
 
-    /** Reads the given {@code InputStream} into a String. */
     private static String readFully(InputStream is) throws IOException {
         return readFully(buffer(is));
     }
 
-    /** Reads the given {@code BufferedReader} into a String. */
     private static String readFully(BufferedReader reader) throws IOException {
         StringBuilder sb = new StringBuilder();
         for (String line; (line = reader.readLine()) != null; ) {
@@ -73,6 +69,13 @@ class HTTPClient {
         writer.write(body);
     }
 
+    /** Performs a synchronous web request to the RevenueCat API
+     * @param path The resource being requested
+     * @param body The body of the request, for GET must be null
+     * @param headers Map of headers, basic headers are added automatically
+     * @return Result containing the HTTP response code and the parsed JSON body
+     * @throws HTTPErrorException Thrown for any unexpected errors, not thrown for returned HTTP error codes
+     */
     public Result performRequest(final String path,
                                  final Map body,
                                  final Map<String, String> headers)
