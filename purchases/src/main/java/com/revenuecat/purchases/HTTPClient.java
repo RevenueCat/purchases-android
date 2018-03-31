@@ -3,20 +3,21 @@ package com.revenuecat.purchases;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.Map;
 
 class HTTPClient {
     class Result {
-        Integer responseCode;
+        int responseCode;
         JSONObject body;
     }
 
@@ -41,6 +42,11 @@ class HTTPClient {
         return new BufferedReader(new InputStreamReader(is));
     }
 
+    /** Buffers the given {@code OutputStream}. */
+    private static BufferedWriter buffer(OutputStream os) {
+        return new BufferedWriter(new OutputStreamWriter(os));
+    }
+
     /** Reads the given {@code InputStream} into a String. */
     private static String readFully(InputStream is) throws IOException {
         return readFully(buffer(is));
@@ -61,6 +67,10 @@ class HTTPClient {
         } catch (IOException e) {
             return connection.getErrorStream();
         }
+    }
+
+    private static void writeFully(BufferedWriter writer, String body) throws IOException {
+        writer.write(body);
     }
 
     public Result performRequest(final String path,
@@ -88,6 +98,13 @@ class HTTPClient {
             connection.addRequestProperty("X-Platform", "android");
             connection.addRequestProperty("X-Platform-Version", Integer.toString(android.os.Build.VERSION.SDK_INT));
             connection.addRequestProperty("X-Version", "0.1.0-SNAPSHOT"); // FIXME
+
+            if (body != null) {
+                connection.setDoOutput(true);
+                connection.setRequestMethod("POST");
+                OutputStream os = connection.getOutputStream();
+                writeFully(buffer(os), new JSONObject(body).toString());
+            }
         } catch (IOException e) {
             throw new HTTPErrorException();
         }

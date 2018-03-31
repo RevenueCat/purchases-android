@@ -4,6 +4,8 @@ import android.util.Log;
 
 import junit.framework.TestCase;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -22,6 +24,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 
+import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertEquals;
 
 @RunWith(RobolectricTestRunner.class)
@@ -54,6 +57,32 @@ public class HTTPClientTest {
         assertEquals(request.getPath(), "/resource");
     }
 
+    @Test
+    public void forwardsTheResponseCode() throws HTTPClient.HTTPErrorException, InterruptedException {
+        MockResponse response = new MockResponse().setBody("{}").setResponseCode(223);
+        server.enqueue(response);
+
+        HTTPClient client = new HTTPClient(baseURL);
+        HTTPClient.Result result = client.performRequest("/resource", null, null);
+
+        server.takeRequest();
+
+        assertEquals(223, result.responseCode);
+    }
+
+    @Test
+    public void parsesTheBody() throws HTTPClient.HTTPErrorException, InterruptedException, JSONException {
+        MockResponse response = new MockResponse().setBody("{'response': 'OK'}").setResponseCode(223);
+        server.enqueue(response);
+
+        HTTPClient client = new HTTPClient(baseURL);
+        HTTPClient.Result result = client.performRequest("/resource", null, null);
+
+        server.takeRequest();
+
+        assertEquals("OK", result.body.getString("response"));
+    }
+
     // Errors
 
     @Test(expected = HTTPClient.HTTPErrorException.class)
@@ -62,7 +91,12 @@ public class HTTPClientTest {
         server.enqueue(response);
 
         HTTPClient client = new HTTPClient(baseURL);
-        client.performRequest("/resource", null, null);
+        try {
+            client.performRequest("/resource", null, null);
+        } finally {
+            server.takeRequest();
+        }
+
     }
 
     @Test(expected = RuntimeException.class)
@@ -101,6 +135,22 @@ public class HTTPClientTest {
         assertEquals(request.getHeader("X-Platform"), "android");
         assertEquals(request.getHeader("X-Platform-Version"), Integer.toString(android.os.Build.VERSION.SDK_INT));
         assertEquals(request.getHeader("X-Version"), "0.1.0-SNAPSHOT");
+    }
+
+    @Test
+    public void addsPostBody() throws HTTPClient.HTTPErrorException, InterruptedException, JSONException {
+        MockResponse response = new MockResponse().setBody("{}");
+        server.enqueue(response);
+
+        HashMap<String, String> body = new HashMap<>();
+        body.put("user_id", "jerry");
+
+        HTTPClient client = new HTTPClient(baseURL);
+        client.performRequest("/resource", body, null);
+
+        RecordedRequest request = server.takeRequest();
+        assertEquals("POST", request.getMethod());
+        assertNotNull(request.getBody());
     }
 
     @AfterClass
