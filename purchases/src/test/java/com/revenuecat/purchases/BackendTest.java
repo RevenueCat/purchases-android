@@ -12,6 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -48,8 +49,11 @@ public class BackendTest {
     private PurchaserInfo receivedPurchaserInfo = null;
     private Exception receivedException = null;
 
-    private PurchaserInfo getPurchaserInfo(int responseCode, HTTPClient.HTTPErrorException clientException) throws HTTPClient.HTTPErrorException, JSONException {
+    private PurchaserInfo getPurchaserInfo(int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws HTTPClient.HTTPErrorException, JSONException {
         String appUserID = "jerry";
+        if (resultBody == null) {
+            resultBody = "{}";
+        }
 
         PurchaserInfo info = new PurchaserInfo();
 
@@ -88,7 +92,7 @@ public class BackendTest {
     @Test
     public void getSubscriberInfoCallsProperURL() throws HTTPClient.HTTPErrorException, JSONException {
 
-        PurchaserInfo info = getPurchaserInfo(200, null);
+        PurchaserInfo info = getPurchaserInfo(200, null, null);
 
         assertNotNull(receivedPurchaserInfo);
         assertEquals(info, receivedPurchaserInfo);
@@ -98,7 +102,7 @@ public class BackendTest {
     public void getSubscriberInfoFailsIfNot20X() throws HTTPClient.HTTPErrorException, JSONException {
         int failureCode = ThreadLocalRandom.current().nextInt(300, 500 + 1);
 
-        getPurchaserInfo(failureCode, null);
+        getPurchaserInfo(failureCode, null, null);
 
         assertNull(receivedPurchaserInfo);
         assertNotNull(receivedException);
@@ -106,9 +110,17 @@ public class BackendTest {
 
     @Test
     public void clientErrorCallsErrorHandler() throws HTTPClient.HTTPErrorException, JSONException {
-        getPurchaserInfo(200, new HTTPClient.HTTPErrorException());
+        getPurchaserInfo(200, new HTTPClient.HTTPErrorException(), null);
 
         assertNull(receivedPurchaserInfo);
         assertNotNull(receivedException);
+    }
+
+    @Test
+    public void attemptsToParseErrorMessageFromServer() throws HTTPClient.HTTPErrorException, JSONException {
+        getPurchaserInfo(404, null, "{'message': 'Dude not found'}");
+
+        assertNotNull(receivedException);
+        assertTrue(receivedException.getMessage().contains("Dude not found"));
     }
 }
