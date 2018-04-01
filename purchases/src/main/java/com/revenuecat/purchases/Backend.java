@@ -29,8 +29,17 @@ class Backend {
 
             @Override
             public void onCompletion(HTTPClient.Result result) {
-                handler.onReceivePurchaserInfo(purchaserInfoFactory.build(result.body));
+                if (result.responseCode < 300) {
+                    handler.onReceivePurchaserInfo(purchaserInfoFactory.build(result.body));
+                } else {
+                    handler.onError(new Exception("Received status code " + result.responseCode + " from server."));
+                }
             }
+
+            @Override
+            void onError(Exception exception) {
+                handler.onError(exception);
+            };
         });
     }
 }
