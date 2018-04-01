@@ -1,5 +1,7 @@
 package com.revenuecat.purchases;
 
+import org.json.JSONException;
+
 import java.util.HashMap;
 
 class Backend {
@@ -32,7 +34,15 @@ class Backend {
                 if (result.responseCode < 300) {
                     handler.onReceivePurchaserInfo(purchaserInfoFactory.build(result.body));
                 } else {
-                    handler.onError(new Exception("Received status code " + result.responseCode + " from server."));
+                    Exception e = null;
+                    try {
+                        String message = result.body.getString("message");
+                        e = new Exception("Server error " + result.responseCode + ": " + message);
+                    } catch (JSONException jsonException) {
+                        e = new Exception("Unexpected server error " + result.responseCode);
+                    }
+
+                    handler.onError(e);
                 }
             }
 

@@ -4,7 +4,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.stubbing.OngoingStubbing;
+import org.robolectric.RobolectricTestRunner;
 
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -18,6 +20,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@RunWith(RobolectricTestRunner.class)
 public class BackendTest {
     private PurchaserInfo.Factory mockInfoFactory;
     private HTTPClient mockClient;
@@ -59,7 +62,7 @@ public class BackendTest {
 
         HTTPClient.Result result = new HTTPClient.Result();
         result.responseCode = responseCode;
-        result.body = new JSONObject("{}");
+        result.body = new JSONObject(resultBody);
 
         when(mockInfoFactory.build(result.body)).thenReturn(info);
 
@@ -122,5 +125,11 @@ public class BackendTest {
 
         assertNotNull(receivedException);
         assertTrue(receivedException.getMessage().contains("Dude not found"));
+    }
+
+    @Test
+    public void handlesMissingMessageInErrorBody() throws HTTPClient.HTTPErrorException, JSONException {
+        getPurchaserInfo(404, null, "{'no_message': 'Dude not found'}");
+        assertNotNull(receivedException);
     }
 }
