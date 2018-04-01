@@ -7,7 +7,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.stubbing.OngoingStubbing;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -21,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(RobolectricTestRunner.class)
+@Config(manifest= Config.NONE)
 public class BackendTest {
     private PurchaserInfo.Factory mockInfoFactory;
     private HTTPClient mockClient;
@@ -64,10 +67,13 @@ public class BackendTest {
         result.responseCode = responseCode;
         result.body = new JSONObject(resultBody);
 
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Authentication", "Bearer " + API_KEY);
+
         when(mockInfoFactory.build(result.body)).thenReturn(info);
 
         OngoingStubbing<HTTPClient.Result> whenStatement = when(mockClient.performRequest(eq("/subscribers/" + appUserID),
-                (Map) eq(null), any(Map.class)));
+                (Map) eq(null), eq(headers)));
 
         if (clientException == null) {
             whenStatement.thenReturn(result);

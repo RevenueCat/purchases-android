@@ -3,12 +3,14 @@ package com.revenuecat.purchases;
 import org.json.JSONException;
 
 import java.util.HashMap;
+import java.util.Map;
 
 class Backend {
     final private String apiKey;
     final private Dispatcher dispatcher;
     final private HTTPClient HTTPClient;
     final private PurchaserInfo.Factory purchaserInfoFactory;
+    final private Map<String, String> authenticationHeaders;
 
     public static abstract class BackendResponseHandler {
         abstract public void onReceivePurchaserInfo(PurchaserInfo info);
@@ -20,13 +22,16 @@ class Backend {
         this.dispatcher = dispatcher;
         this.HTTPClient = httpClient;
         this.purchaserInfoFactory = purchaserInfoFactory;
+
+        this.authenticationHeaders = new HashMap<>();
+        this.authenticationHeaders.put("Authentication", "Bearer " + this.apiKey);
     }
 
     public void getSubscriberInfo(final String appUserID, final BackendResponseHandler handler) {
         dispatcher.enqueue(new Dispatcher.AsyncCall() {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                return HTTPClient.performRequest("/subscribers/" + appUserID, null, new HashMap<String, String>());
+                return HTTPClient.performRequest("/subscribers/" + appUserID, null, authenticationHeaders);
             }
 
             @Override
