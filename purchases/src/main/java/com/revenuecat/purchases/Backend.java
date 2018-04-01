@@ -6,16 +6,18 @@ class Backend {
     final private String apiKey;
     final private Dispatcher dispatcher;
     final private HTTPClient HTTPClient;
+    final private PurchaserInfo.Factory purchaserInfoFactory;
 
     public static abstract class BackendResponseHandler {
         abstract public void onReceivePurchaserInfo(PurchaserInfo info);
         abstract public void onError(Exception e);
     }
 
-    Backend(String apiKey, Dispatcher dispatcher, com.revenuecat.purchases.HTTPClient httpClient) {
+    Backend(String apiKey, Dispatcher dispatcher, com.revenuecat.purchases.HTTPClient httpClient, PurchaserInfo.Factory purchaserInfoFactory) {
         this.apiKey = apiKey;
         this.dispatcher = dispatcher;
         this.HTTPClient = httpClient;
+        this.purchaserInfoFactory = purchaserInfoFactory;
     }
 
     public void getSubscriberInfo(final String appUserID, final BackendResponseHandler handler) {
@@ -27,8 +29,7 @@ class Backend {
 
             @Override
             public void onCompletion(HTTPClient.Result result) {
-                PurchaserInfo info = new PurchaserInfo();
-                handler.onReceivePurchaserInfo(info);
+                handler.onReceivePurchaserInfo(purchaserInfoFactory.build(result.body));
             }
         });
     }

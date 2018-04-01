@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.util.Map;
 
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,6 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class BackendTest {
+    private PurchaserInfo.Factory mockInfoFactory;
     private HTTPClient mockClient;
     private Dispatcher dispatcher;
     private Backend backend;
@@ -28,10 +30,11 @@ public class BackendTest {
 
     @Before
     public void setup() {
+        mockInfoFactory = mock(PurchaserInfo.Factory.class);
         mockClient = mock(HTTPClient.class);
         dispatcher = new SyncDispatcher();
 
-        backend = new Backend(API_KEY, dispatcher, mockClient);
+        backend = new Backend(API_KEY, dispatcher, mockClient, mockInfoFactory);
     }
 
     @Test
@@ -44,8 +47,12 @@ public class BackendTest {
     public void getSubscriberInfoCallsProperURL() throws HTTPClient.HTTPErrorException, JSONException {
         String appUserID = "jerry";
 
+        PurchaserInfo info = new PurchaserInfo();
+
         HTTPClient.Result result = new HTTPClient.Result();
         result.body = new JSONObject("{}");
+
+        when(mockInfoFactory.build(result.body)).thenReturn(info);
 
         when(mockClient.performRequest(eq("/subscribers/" + appUserID),
                                        (Map) eq(null), any(Map.class))).thenReturn(result);
@@ -64,5 +71,6 @@ public class BackendTest {
         });
 
         assertNotNull(receivedPurchaserInfo);
+        assertEquals(info, receivedPurchaserInfo);
     }
 }
