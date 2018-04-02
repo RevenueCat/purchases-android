@@ -31,6 +31,9 @@ public class BillingWrapperTest {
     private BillingClientStateListener billingClientStateListener;
     private BillingWrapper wrapper;
 
+    private List<SkuDetails> mockDetailsList = new ArrayList<>();
+
+
     @Before
     public void setup() {
         mockClientFactory = mock(BillingWrapper.ClientFactory.class);
@@ -52,6 +55,9 @@ public class BillingWrapperTest {
             }
         }).when(mockClient).startConnection(any(BillingClientStateListener.class));
 
+        SkuDetails mockDetails = mock(SkuDetails.class);
+        mockDetailsList.add(mockDetails);
+
         wrapper = new BillingWrapper(mockClientFactory);
     }
 
@@ -70,25 +76,26 @@ public class BillingWrapperTest {
         verify(mockClient).startConnection(billingClientStateListener);
     }
 
-    private List<SkuDetails> skuDetailsList;
-    @Test
-    public void defersCallingSkuQueryUntilConnected() {
-        List<String> productIDs = new ArrayList<String>();
-        productIDs.add("product_a");
-
+    private void mockStandardSkuDetailsResponse() {
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
                 SkuDetailsResponseListener listener = invocation.getArgument(1);
-                SkuDetails mockDetails = mock(SkuDetails.class);
 
-                List<SkuDetails> details = new ArrayList<>();
-                details.add(mockDetails);
-
-                listener.onSkuDetailsResponse(BillingClient.BillingResponse.OK, details);
+                listener.onSkuDetailsResponse(BillingClient.BillingResponse.OK, mockDetailsList);
                 return null;
             }
         }).when(mockClient).querySkuDetailsAsync(any(SkuDetailsParams.class), any(SkuDetailsResponseListener.class));
+    }
+
+    private List<SkuDetails> skuDetailsList;
+    @Test
+    public void defersCallingSkuQueryUntilConnected() {
+
+        mockStandardSkuDetailsResponse();
+
+        List<String> productIDs = new ArrayList<String>();
+        productIDs.add("product_a");
 
         wrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, productIDs, new BillingWrapper.SkuDetailsResponseListener() {
             @Override
@@ -102,5 +109,29 @@ public class BillingWrapperTest {
         billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
 
         assertNotNull(skuDetailsList);
+    }
+
+    private int skuDetailsResponseCalled = 0;
+    @Test
+    public void canDeferMultipleCalls() {
+        mockStandardSkuDetailsResponse();
+
+        List<String> productIDs = new ArrayList<String>();
+        productIDs.add("product_a");
+        BillingWrapper.SkuDetailsResponseListener listener = new BillingWrapper.SkuDetailsResponseListener() {
+            @Override
+            public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                BillingWrapperTest.this.skuDetailsResponseCalled+= 1;
+            }
+        };
+
+        wrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, productIDs, listener);
+        wrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, productIDs, listener);
+
+        assertEquals(0, skuDetailsResponseCalled);
+
+        billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
+
+        assertEquals(2, skuDetailsResponseCalled);
     }
 }
