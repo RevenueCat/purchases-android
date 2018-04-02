@@ -3,13 +3,21 @@ package com.revenuecat.purchases;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.PurchasesUpdatedListener;
+import com.android.billingclient.api.SkuDetails;
+import com.android.billingclient.api.SkuDetailsParams;
+import com.android.billingclient.api.SkuDetailsResponseListener;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -60,5 +68,39 @@ public class BillingWrapperTest {
     @Test
     public void connectsToPlayBilling() {
         verify(mockClient).startConnection(billingClientStateListener);
+    }
+
+    private List<SkuDetails> skuDetailsList;
+    @Test
+    public void defersCallingSkuQueryUntilConnected() {
+        List<String> productIDs = new ArrayList<String>();
+        productIDs.add("product_a");
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                SkuDetailsResponseListener listener = invocation.getArgument(1);
+                SkuDetails mockDetails = mock(SkuDetails.class);
+
+                List<SkuDetails> details = new ArrayList<>();
+                details.add(mockDetails);
+
+                listener.onSkuDetailsResponse(BillingClient.BillingResponse.OK, details);
+                return null;
+            }
+        }).when(mockClient).querySkuDetailsAsync(any(SkuDetailsParams.class), any(SkuDetailsResponseListener.class));
+
+        wrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, productIDs, new BillingWrapper.SkuDetailsResponseListener() {
+            @Override
+            public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                BillingWrapperTest.this.skuDetailsList = skuDetails;
+            }
+        });
+
+        assertNull(skuDetailsList);
+
+        billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
+
+        assertNotNull(skuDetailsList);
     }
 }
