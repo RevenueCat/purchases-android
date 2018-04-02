@@ -57,4 +57,8 @@ class Backend {
             };
         });
     }
+
+    public void postReceiptData(String purchaseToken, String appUserID, String productID, BackendResponseHandler handler) {
+
+    }
 }

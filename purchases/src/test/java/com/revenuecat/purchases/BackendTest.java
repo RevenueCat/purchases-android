@@ -30,6 +30,7 @@ public class BackendTest {
     private Dispatcher dispatcher;
     private Backend backend;
     private String API_KEY = "TEST_API_KEY";
+    private String appUserID = "jerry";
 
     private class SyncDispatcher extends Dispatcher {
         @Override
@@ -55,8 +56,20 @@ public class BackendTest {
     private PurchaserInfo receivedPurchaserInfo = null;
     private Exception receivedException = null;
 
-    private PurchaserInfo getPurchaserInfo(int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws HTTPClient.HTTPErrorException, JSONException {
-        String appUserID = "jerry";
+    final private Backend.BackendResponseHandler handler = new Backend.BackendResponseHandler() {
+
+        @Override
+        public void onReceivePurchaserInfo(PurchaserInfo info) {
+            BackendTest.this.receivedPurchaserInfo = info;
+        }
+
+        @Override
+        public void onError(Exception e) {
+            BackendTest.this.receivedException = e;
+        }
+    };
+
+    private PurchaserInfo mockResponse(int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws JSONException, HTTPClient.HTTPErrorException {
         if (resultBody == null) {
             resultBody = "{}";
         }
@@ -80,20 +93,22 @@ public class BackendTest {
         } else {
             whenStatement.thenThrow(clientException);
         }
+        return info;
+    }
 
+    private PurchaserInfo postReceipt(int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws HTTPClient.HTTPErrorException, JSONException {
+        PurchaserInfo info = mockResponse(responseCode, clientException, resultBody);
 
-        backend.getSubscriberInfo(appUserID, new Backend.BackendResponseHandler() {
+        backend.postReceiptData("purchase_token", appUserID, "product_id", handler);
 
-            @Override
-            public void onReceivePurchaserInfo(PurchaserInfo info) {
-                BackendTest.this.receivedPurchaserInfo = info;
-            }
+        return info;
+    }
 
-            @Override
-            public void onError(Exception e) {
-                BackendTest.this.receivedException = e;
-            }
-        });
+    private PurchaserInfo getPurchaserInfo(int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws HTTPClient.HTTPErrorException, JSONException {
+
+        PurchaserInfo info = mockResponse(responseCode, clientException, resultBody);
+
+        backend.getSubscriberInfo(appUserID, handler);
 
         return info;
     }
@@ -136,6 +151,21 @@ public class BackendTest {
     @Test
     public void handlesMissingMessageInErrorBody() throws HTTPClient.HTTPErrorException, JSONException {
         getPurchaserInfo(404, null, "{'no_message': 'Dude not found'}");
+        assertNotNull(receivedException);
+    }
+
+    @Test
+    public void postReceiptCallsProperURL() throws HTTPClient.HTTPErrorException, JSONException {
+        postReceipt(200, null, null);
+
+        assertNotNull(receivedPurchaserInfo);
+    }
+
+    @Test
+    public void postReceiptCallsFailsFor40X() throws HTTPClient.HTTPErrorException, JSONException {
+        postReceipt(401, null, null);
+
+        assertNull(receivedPurchaserInfo);
         assertNotNull(receivedException);
     }
 }
