@@ -80,11 +80,17 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         });
     }
 
-    public void makePurchaseAsync(final Activity activity, String appUserID, final String sku, ArrayList<String> oldSkus,
+    public void makePurchaseAsync(final Activity activity, final String appUserID, final String sku, final ArrayList<String> oldSkus,
                                   final @BillingClient.SkuType String skuType) {
-        BillingFlowParams params = BillingFlowParams.newBuilder()
-                .setSku(sku).setType(skuType).setOldSkus(oldSkus).setAccountId(appUserID).build();
-        billingClient.launchBillingFlow(activity, params);
+
+        executeRequest(new Runnable() {
+            @Override
+            public void run() {
+                BillingFlowParams params = BillingFlowParams.newBuilder()
+                        .setSku(sku).setType(skuType).setOldSkus(oldSkus).setAccountId(appUserID).build();
+                billingClient.launchBillingFlow(activity, params);
+            }
+        });
     }
 
     @Override

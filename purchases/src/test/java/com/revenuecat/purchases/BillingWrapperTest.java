@@ -159,6 +159,8 @@ public class BillingWrapperTest {
 
     @Test
     public void canMakeAPurchase() {
+
+
         String sku = "product_a";
 
         ArrayList<String> oldSkus = new ArrayList<String>();
@@ -166,6 +168,7 @@ public class BillingWrapperTest {
 
         Activity activity = mock(Activity.class);
 
+        billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
         wrapper.makePurchaseAsync(activity, "jerry", sku, oldSkus, BillingClient.SkuType.SUBS);
 
         verify(mockClient).launchBillingFlow(eq(activity), any(BillingFlowParams.class));
@@ -194,6 +197,23 @@ public class BillingWrapperTest {
         }
         }).when(mockClient).launchBillingFlow(eq(activity), any(BillingFlowParams.class));
 
-        wrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, BillingClient.SkuType.SUBS);
+        billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
+        wrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
+    }
+
+    @Test
+    public void defersBillingFlowIfNotConnected() {
+        final String appUserID = "jerry";
+        final String sku = "product_a";
+        final @BillingClient.SkuType String skuType = BillingClient.SkuType.SUBS;
+
+        final ArrayList<String> oldSkus = new ArrayList<String>();
+        oldSkus.add("product_b");
+
+        Activity activity = mock(Activity.class);
+
+        wrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
+
+        verify(mockClient, times(0)).launchBillingFlow(eq(activity), any(BillingFlowParams.class));
     }
 }
