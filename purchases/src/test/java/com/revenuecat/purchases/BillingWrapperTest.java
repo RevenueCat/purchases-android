@@ -21,6 +21,7 @@ import static junit.framework.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -133,5 +134,22 @@ public class BillingWrapperTest {
         billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
 
         assertEquals(2, skuDetailsResponseCalled);
+    }
+
+    @Test
+    public void makingARequestTriggersAConnectionAttempt() {
+        mockStandardSkuDetailsResponse();
+
+        List<String> productIDs = new ArrayList<String>();
+        productIDs.add("product_a");
+
+        wrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, productIDs, new BillingWrapper.SkuDetailsResponseListener() {
+            @Override
+            public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                // DO NOTHING
+            }
+        });
+
+        verify(mockClient, times(2)).startConnection(billingClientStateListener);
     }
 }

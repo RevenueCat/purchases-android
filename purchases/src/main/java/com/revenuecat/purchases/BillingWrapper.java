@@ -53,7 +53,11 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
 
     private void executeRequest(final Runnable request) {
         serviceRequests.add(request);
-        executePendingRequests();
+        if (!clientConnected) {
+            billingClient.startConnection(this);
+        } else {
+            executePendingRequests();
+        }
     }
 
     public void querySkuDetailsAsync(@BillingClient.SkuType final String itemType,
