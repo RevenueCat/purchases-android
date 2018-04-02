@@ -1,16 +1,18 @@
 package com.revenuecat.purchases;
 
+import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.Nullable;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
+import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
 import com.android.billingclient.api.SkuDetailsParams;
-import com.android.billingclient.api.SkuDetailsResponseListener;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -76,6 +78,13 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
                 });
             }
         });
+    }
+
+    public void makePurchaseAsync(final Activity activity, String appUserID, final String sku, ArrayList<String> oldSkus,
+                                  final @BillingClient.SkuType String skuType) {
+        BillingFlowParams params = BillingFlowParams.newBuilder()
+                .setSku(sku).setType(skuType).setOldSkus(oldSkus).setAccountId(appUserID).build();
+        billingClient.launchBillingFlow(activity, params);
     }
 
     @Override

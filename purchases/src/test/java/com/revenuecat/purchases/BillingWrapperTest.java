@@ -1,7 +1,10 @@
 package com.revenuecat.purchases;
 
+import android.app.Activity;
+
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
+import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
 import com.android.billingclient.api.SkuDetailsParams;
@@ -19,6 +22,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -151,5 +155,45 @@ public class BillingWrapperTest {
         });
 
         verify(mockClient, times(2)).startConnection(billingClientStateListener);
+    }
+
+    @Test
+    public void canMakeAPurchase() {
+        String sku = "product_a";
+
+        ArrayList<String> oldSkus = new ArrayList<String>();
+        oldSkus.add("product_b");
+
+        Activity activity = mock(Activity.class);
+
+        wrapper.makePurchaseAsync(activity, "jerry", sku, oldSkus, BillingClient.SkuType.SUBS);
+
+        verify(mockClient).launchBillingFlow(eq(activity), any(BillingFlowParams.class));
+    }
+
+    @Test
+    public void properlySetsBillingFlowParams() {
+        final String appUserID = "jerry";
+        final String sku = "product_a";
+        final @BillingClient.SkuType String skuType = BillingClient.SkuType.SUBS;
+
+        final ArrayList<String> oldSkus = new ArrayList<String>();
+        oldSkus.add("product_b");
+
+        Activity activity = mock(Activity.class);
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                BillingFlowParams params = invocation.getArgument(1);
+                assertEquals(sku, params.getSku());
+                assertEquals(skuType, params.getSkuType());
+                assertEquals(oldSkus, params.getOldSkus());
+                assertEquals(appUserID, params.getAccountId());
+                return null;
+        }
+        }).when(mockClient).launchBillingFlow(eq(activity), any(BillingFlowParams.class));
+
+        wrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, BillingClient.SkuType.SUBS);
     }
 }
