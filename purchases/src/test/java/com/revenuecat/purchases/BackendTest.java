@@ -16,6 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertSame;
 import static junit.framework.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -69,7 +70,7 @@ public class BackendTest {
         }
     };
 
-    private PurchaserInfo mockResponse(int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws JSONException, HTTPClient.HTTPErrorException {
+    private PurchaserInfo mockResponse(String path, Map<String, String> body, int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws JSONException, HTTPClient.HTTPErrorException {
         if (resultBody == null) {
             resultBody = "{}";
         }
@@ -85,8 +86,8 @@ public class BackendTest {
 
         when(mockInfoFactory.build(result.body)).thenReturn(info);
 
-        OngoingStubbing<HTTPClient.Result> whenStatement = when(mockClient.performRequest(eq("/subscribers/" + appUserID),
-                (Map) eq(null), eq(headers)));
+        OngoingStubbing<HTTPClient.Result> whenStatement = when(mockClient.performRequest(eq(path),
+                eq(body), eq(headers)));
 
         if (clientException == null) {
             whenStatement.thenReturn(result);
@@ -97,16 +98,25 @@ public class BackendTest {
     }
 
     private PurchaserInfo postReceipt(int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws HTTPClient.HTTPErrorException, JSONException {
-        PurchaserInfo info = mockResponse(responseCode, clientException, resultBody);
 
-        backend.postReceiptData("purchase_token", appUserID, "product_id", handler);
+        String fetchToken = "fetch_token";
+        String productID = "product_id";
+
+        Map<String, String> body = new HashMap<>();
+        body.put("fetch_token", fetchToken);
+        body.put("app_user_id", appUserID);
+        body.put("product_id", productID);
+
+        PurchaserInfo info = mockResponse("/receipts", body, responseCode, clientException, resultBody);
+
+
+        backend.postReceiptData(fetchToken, appUserID, productID, handler);
 
         return info;
     }
 
     private PurchaserInfo getPurchaserInfo(int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws HTTPClient.HTTPErrorException, JSONException {
-
-        PurchaserInfo info = mockResponse(responseCode, clientException, resultBody);
+        PurchaserInfo info = mockResponse("/subscribers/" + appUserID, null, responseCode, clientException, resultBody);
 
         backend.getSubscriberInfo(appUserID, handler);
 
@@ -156,9 +166,10 @@ public class BackendTest {
 
     @Test
     public void postReceiptCallsProperURL() throws HTTPClient.HTTPErrorException, JSONException {
-        postReceipt(200, null, null);
+        PurchaserInfo info = postReceipt(200, null, null);
 
         assertNotNull(receivedPurchaserInfo);
+        assertSame(info, receivedPurchaserInfo);
     }
 
     @Test
