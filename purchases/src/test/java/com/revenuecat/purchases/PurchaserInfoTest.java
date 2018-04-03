@@ -95,4 +95,14 @@ public class PurchaserInfoTest {
         assertEquals(formatter.format(new Date(200,7, 29, 19, 40, 36)), formatter.format(latest));
     }
 
+    @Test
+    public void getExpirationDateForSku() throws JSONException {
+        PurchaserInfo info = fullPurchaserInfo();
+
+        Date oneMonthDate = info.getExpirationDateForSku("onemonth_freetrial");
+        Date threeMonthDate = info.getExpirationDateForSku("threemonth_freetrial");
+
+        assertTrue(oneMonthDate.after(threeMonthDate));
+    }
+
 }

@@ -97,7 +97,7 @@ class PurchaserInfo {
         return latest;
     }
 
-    public Date getExpirationDateForSKU(final String sku) {
-        return null;
+    public Date getExpirationDateForSku(final String sku) {
+        return expirationDates.get(sku);
     }
 }
