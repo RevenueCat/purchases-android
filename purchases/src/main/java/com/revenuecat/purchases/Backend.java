@@ -69,7 +69,7 @@ class Backend {
         });
     }
 
-    public void postReceiptData(final String purchaseToken, final String appUserID, final String productID, BackendResponseHandler handler) {
+    public void postReceiptData(final String purchaseToken, final String appUserID, final String productID, final BackendResponseHandler handler) {
         final Map<String, String> body = new HashMap<>();
 
         body.put("fetch_token", purchaseToken);

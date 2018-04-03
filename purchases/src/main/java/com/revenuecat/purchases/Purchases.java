@@ -1,14 +1,17 @@
 package com.revenuecat.purchases;
 
 import android.app.Activity;
+import android.support.annotation.Nullable;
 
 import com.android.billingclient.api.BillingClient;
+import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public final class Purchases {
+public final class Purchases implements PurchasesUpdatedListener {
 
     private final String apiKey;
     private final String appUserID;
@@ -71,7 +74,24 @@ public final class Purchases {
         billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
     }
 
-    public void restorePurchasesForPlayAccount() {
+    @Override
+    public void onPurchasesUpdated(int responseCode, @Nullable List<Purchase> purchases) {
+        if (responseCode == BillingClient.BillingResponse.OK && purchases != null) {
+            for (Purchase p : purchases) {
+                backend.postReceiptData(p.getPurchaseToken(), appUserID, p.getSku(), new Backend.BackendResponseHandler() {
+                    @Override
+                    public void onReceivePurchaserInfo(PurchaserInfo info) {
+                        listener.onCompletedPurchase(info);
+                    }
 
+                    @Override
+                    public void onError(Exception e) {
+                        listener.onFailedPurchase(e);
+                    }
+                });
+            }
+        } else {
+            listener.onFailedPurchase(new Exception("Failed to update purchase with reason " + responseCode));
+        }
     }
 }

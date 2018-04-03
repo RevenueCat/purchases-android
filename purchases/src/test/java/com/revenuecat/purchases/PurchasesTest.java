@@ -3,6 +3,7 @@ package com.revenuecat.purchases;
 import android.app.Activity;
 
 import com.android.billingclient.api.BillingClient;
+import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.SkuDetails;
 
 import org.junit.Before;
@@ -20,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,22 +32,9 @@ public class PurchasesTest {
     private String apiKey = "fakeapikey";
     private String appUserId = "fakeUserID";
 
-    private Purchases.PurchasesListener listener = new Purchases.PurchasesListener() {
-        @Override
-        public void onCompletedPurchase(PurchaserInfo purchaserInfo) {
 
-        }
 
-        @Override
-        public void onFailedPurchase(Exception reason) {
-
-        }
-
-        @Override
-        public void onReceiveUpdatedPurchaserInfo(PurchaserInfo purchaserInfo) {
-
-        }
-    };
+    private Purchases.PurchasesListener listener = mock(Purchases.PurchasesListener.class);
 
     private Purchases purchases;
     @Before
@@ -118,5 +107,65 @@ public class PurchasesTest {
         purchases.makePurchase(activity, sku, BillingClient.SkuType.SUBS);
 
         verify(mockBillingWrapper).makePurchaseAsync(activity, appUserId, sku, oldSkus, BillingClient.SkuType.SUBS);
+    }
+
+    @Test
+    public void postsSuccessfulPurchasesToBackend() {
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        purchases.onPurchasesUpdated(BillingClient.BillingResponse.OK, purchasesList);
+
+        verify(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(appUserId),
+                eq(sku),
+                any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
+    public void callsPostForEachUpdatedPurchase() {
+        List<Purchase> purchasesList = new ArrayList<>();
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        for (int i = 0; i < 2; i++) {
+            Purchase p = mock(Purchase.class);
+            when(p.getSku()).thenReturn(sku);
+            when(p.getPurchaseToken()).thenReturn(purchaseToken);
+            purchasesList.add(p);
+        }
+
+
+        purchases.onPurchasesUpdated(BillingClient.BillingResponse.OK, purchasesList);
+
+        verify(mockBackend, times(2)).postReceiptData(eq(purchaseToken),
+                eq(appUserId),
+                eq(sku),
+                any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
+    public void doesntPostIfNotOK() {
+        purchases.onPurchasesUpdated(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED, null);
+
+        verify(mockBackend, times(0)).postReceiptData(any(String.class),
+                any(String.class),
+                any(String.class),
+                any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
+    public void passesUpErrors() {
+        purchases.onPurchasesUpdated(BillingClient.BillingResponse.ITEM_ALREADY_OWNED, null);
+
+        verify(listener).onFailedPurchase(any(Exception.class));
     }
 }
