@@ -1,6 +1,8 @@
 package com.revenuecat.purchases;
 
 import android.app.Activity;
+import android.content.Context;
+import android.os.Handler;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
@@ -34,15 +36,26 @@ public class BillingWrapperTest {
     private BillingClient mockClient;
     private PurchasesUpdatedListener purchasesUpdatedListener;
     private BillingClientStateListener billingClientStateListener;
+    private Handler handler;
+
     private BillingWrapper wrapper;
 
     private List<SkuDetails> mockDetailsList = new ArrayList<>();
-
 
     @Before
     public void setup() {
         mockClientFactory = mock(BillingWrapper.ClientFactory.class);
         mockClient = mock(BillingClient.class);
+        handler = mock(Handler.class);
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Runnable r = invocation.getArgument(0);
+                r.run();
+                return null;
+            }
+        }).when(handler).post(any(Runnable.class));
 
         when(mockClientFactory.buildClient(any(PurchasesUpdatedListener.class))).thenAnswer(new Answer<BillingClient>() {
             @Override
@@ -63,7 +76,7 @@ public class BillingWrapperTest {
         SkuDetails mockDetails = mock(SkuDetails.class);
         mockDetailsList.add(mockDetails);
 
-        wrapper = new BillingWrapper(mockClientFactory);
+        wrapper = new BillingWrapper(mockClientFactory, handler);
     }
 
     @Test
@@ -215,5 +228,25 @@ public class BillingWrapperTest {
         wrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
 
         verify(mockClient, times(0)).launchBillingFlow(eq(activity), any(BillingFlowParams.class));
+    }
+
+    @Test
+    public void callsLaunchFlowFromMainThread() {
+        final String appUserID = "jerry";
+        final String sku = "product_a";
+        final @BillingClient.SkuType String skuType = BillingClient.SkuType.SUBS;
+
+        final ArrayList<String> oldSkus = new ArrayList<String>();
+        oldSkus.add("product_b");
+
+        Activity activity = mock(Activity.class);
+
+        wrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
+
+        verify(handler, times(0)).post(any(Runnable.class));
+
+        billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
+
+        verify(handler).post(any(Runnable.class));
     }
 }

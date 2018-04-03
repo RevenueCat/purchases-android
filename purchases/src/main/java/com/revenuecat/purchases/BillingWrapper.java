@@ -2,6 +2,8 @@ package com.revenuecat.purchases;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.Nullable;
 
 import com.android.billingclient.api.BillingClient;
@@ -36,12 +38,14 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     }
 
     final private BillingClient billingClient;
+    private Handler mainHandler;
 
     private boolean clientConnected;
     private Queue<Runnable> serviceRequests = new ConcurrentLinkedQueue<>();
 
-    BillingWrapper(ClientFactory clientFactory) {
+    BillingWrapper(ClientFactory clientFactory, Handler mainHandler) {
         billingClient = clientFactory.buildClient(this);
+        this.mainHandler = mainHandler;
 
         billingClient.startConnection(this);
     }
@@ -86,9 +90,17 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         executeRequest(new Runnable() {
             @Override
             public void run() {
-                BillingFlowParams params = BillingFlowParams.newBuilder()
-                        .setSku(sku).setType(skuType).setOldSkus(oldSkus).setAccountId(appUserID).build();
-                billingClient.launchBillingFlow(activity, params);
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        BillingFlowParams params = BillingFlowParams.newBuilder()
+                                .setSku(sku)
+                                .setType(skuType)
+                                .setOldSkus(oldSkus)
+                                .setAccountId(appUserID).build();
+                        billingClient.launchBillingFlow(activity, params);
+                    }
+                });
             }
         });
     }
