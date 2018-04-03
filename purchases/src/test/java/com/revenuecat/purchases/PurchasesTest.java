@@ -1,5 +1,7 @@
 package com.revenuecat.purchases;
 
+import android.app.Activity;
+
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.SkuDetails;
 
@@ -18,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PurchasesTest {
@@ -104,5 +107,16 @@ public class PurchasesTest {
         });
 
         assertSame(receivedSkus, skuDetails);
+    }
+
+    @Test
+    public void canMakePurchase() {
+        Activity activity = mock(Activity.class);
+        String sku = "onemonth_freetrial";
+        ArrayList<String> oldSkus = new ArrayList<>();
+
+        purchases.makePurchase(activity, sku, BillingClient.SkuType.SUBS);
+
+        verify(mockBillingWrapper).makePurchaseAsync(activity, appUserId, sku, oldSkus, BillingClient.SkuType.SUBS);
     }
 }

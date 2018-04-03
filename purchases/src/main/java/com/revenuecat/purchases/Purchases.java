@@ -5,6 +5,7 @@ import android.app.Activity;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.SkuDetails;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class Purchases {
@@ -59,13 +60,18 @@ public final class Purchases {
         });
     }
 
-    public void makePurchase(final Activity activity, final String sku, @BillingClient.SkuType final String skuType) {
+    public void makePurchase(final Activity activity, final String sku,
+                             @BillingClient.SkuType final String skuType) {
         makePurchase(activity, sku, skuType, null);
     }
 
     public void makePurchase(final Activity activity, final String sku,
-                             @BillingClient.SkuType final String skuType, final List<String> oldSkus) {
-
+                             @BillingClient.SkuType final String skuType,
+                             ArrayList<String> oldSkus) {
+        if (oldSkus == null) {
+            oldSkus = new ArrayList<>();
+        }
+        billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
     }
 
     public void restorePurchasesForPlayAccount() {
