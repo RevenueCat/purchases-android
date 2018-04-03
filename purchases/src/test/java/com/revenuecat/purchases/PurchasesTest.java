@@ -55,6 +55,18 @@ public class PurchasesTest {
         assertNotNull(purchases);
     }
 
+    private void mockSkuDetailFetch(final List<SkuDetails> details, List<String> skus, String skuType) {
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                BillingWrapper.SkuDetailsResponseListener listener = invocation.getArgument(2);
+                listener.onReceiveSkuDetails(details);
+                return null;
+            }
+        }).when(mockBillingWrapper).querySkuDetailsAsync(eq(skuType),
+                eq(skus), any(BillingWrapper.SkuDetailsResponseListener.class));
+    }
+
     private List<SkuDetails> receivedSkus;
     @Test
     public void getsSubscriptionSkus() {
@@ -62,17 +74,29 @@ public class PurchasesTest {
         skus.add("onemonth_freetrial");
 
         final List<SkuDetails> skuDetails = new ArrayList<>();
-        doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                BillingWrapper.SkuDetailsResponseListener listener = invocation.getArgument(2);
-                listener.onReceiveSkuDetails(skuDetails);
-                return null;
-            }
-        }).when(mockBillingWrapper).querySkuDetailsAsync(eq(BillingClient.SkuType.SUBS), eq(skus),
-                any(BillingWrapper.SkuDetailsResponseListener.class));
+
+        mockSkuDetailFetch(skuDetails, skus, BillingClient.SkuType.SUBS);
 
         purchases.getSubscriptionSkus(skus, new Purchases.GetSkusResponseHandler() {
+            @Override
+            public void onReceiveSkus(List<SkuDetails> skus) {
+                PurchasesTest.this.receivedSkus = skus;
+            }
+        });
+
+        assertSame(receivedSkus, skuDetails);
+    }
+
+    @Test
+    public void getsNonSubscriptionSkus() {
+        List<String> skus = new ArrayList<>();
+        skus.add("normal_purchase");
+
+        final List<SkuDetails> skuDetails = new ArrayList<>();
+
+        mockSkuDetailFetch(skuDetails, skus, BillingClient.SkuType.INAPP);
+
+        purchases.getNonSubscriptionSkus(skus, new Purchases.GetSkusResponseHandler() {
             @Override
             public void onReceiveSkus(List<SkuDetails> skus) {
                 PurchasesTest.this.receivedSkus = skus;

@@ -43,16 +43,20 @@ public final class Purchases {
     }
 
     public void getSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
-        billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, skus, new BillingWrapper.SkuDetailsResponseListener() {
+        getSkus(skus, BillingClient.SkuType.SUBS, handler);
+    }
+
+    public void getNonSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
+        getSkus(skus, BillingClient.SkuType.INAPP, handler);
+    }
+
+    private void getSkus(List<String> skus, @BillingClient.SkuType String skuType, final GetSkusResponseHandler handler) {
+        billingWrapper.querySkuDetailsAsync(skuType, skus, new BillingWrapper.SkuDetailsResponseListener() {
             @Override
             public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
                 handler.onReceiveSkus(skuDetails);
             }
         });
-    }
-
-    public void getNonSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
-
     }
 
     public void makePurchase(final Activity activity, final String sku, @BillingClient.SkuType final String skuType) {
