@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(manifest= Config.NONE)
+@Config(manifest = Config.NONE)
 public class BackendTest {
     private PurchaserInfo.Factory mockInfoFactory;
     private HTTPClient mockClient;
@@ -75,7 +75,7 @@ public class BackendTest {
             resultBody = "{}";
         }
 
-        PurchaserInfo info = new PurchaserInfo();
+        PurchaserInfo info = mock(PurchaserInfo.class);
 
         HTTPClient.Result result = new HTTPClient.Result();
         result.responseCode = responseCode;
