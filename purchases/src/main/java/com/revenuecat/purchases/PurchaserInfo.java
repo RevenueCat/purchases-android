@@ -1,10 +1,8 @@
 package com.revenuecat.purchases;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.security.Key;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -77,16 +75,26 @@ class PurchaserInfo {
         return activeSkus;
     }
 
-    public Set<String> getAllPurchasedSKUs() {
-        return new HashSet<>();
+    public Set<String> getAllPurchasedSkus() {
+        Set<String> appSKUs = new HashSet<>(this.getPurchasedNonSubscriptionSkus());
+        appSKUs.addAll(expirationDates.keySet());
+        return appSKUs;
     }
 
-    public Set<String> getPurchasedNonSubscriptionSKUs() {
+    public Set<String> getPurchasedNonSubscriptionSkus() {
         return this.nonSubscriptionPurchases;
     }
 
     public Date getLatestExpirationDate() {
-        return null;
+        Date latest = null;
+
+        for (Date date : expirationDates.values()) {
+            if (latest == null || date.after(latest)) {
+                latest = date;
+            }
+        }
+
+        return latest;
     }
 
     public Date getExpirationDateForSKU(final String sku) {

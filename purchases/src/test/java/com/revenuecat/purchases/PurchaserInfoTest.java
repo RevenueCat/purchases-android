@@ -7,7 +7,11 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Set;
+import java.util.TimeZone;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
@@ -43,15 +47,15 @@ public class PurchaserInfoTest {
 
         assertNotNull(info);
         assertEquals(0, info.getActiveSubscriptions().size());
-        assertEquals(0, info.getAllPurchasedSKUs().size());
-        assertEquals(0, info.getPurchasedNonSubscriptionSKUs().size());
+        assertEquals(0, info.getAllPurchasedSkus().size());
+        assertEquals(0, info.getPurchasedNonSubscriptionSkus().size());
         assertNull(info.getLatestExpirationDate());
     }
 
     @Test
     public void parsesOtherPurchases() throws JSONException {
         PurchaserInfo info = fullPurchaserInfo();
-        Set<String> nonSubscriptionSKUs = info.getPurchasedNonSubscriptionSKUs();
+        Set<String> nonSubscriptionSKUs = info.getPurchasedNonSubscriptionSkus();
 
         assertEquals(1, nonSubscriptionSKUs.size());
         assertTrue(nonSubscriptionSKUs.contains("onetime_purchase"));
@@ -67,8 +71,28 @@ public class PurchaserInfoTest {
     }
 
     @Test
-    public void getPurchaserInfoTests() {
-        
+    public void getAllPurchasedSKUs() throws JSONException {
+        PurchaserInfo info = fullPurchaserInfo();
+        Set<String> actives = info.getAllPurchasedSkus();
+
+        assertEquals(3, actives.size());
+        assertTrue(actives.contains("onemonth_freetrial"));
+        assertTrue(actives.contains("onetime_purchase"));
+        assertTrue(actives.contains("threemonth_freetrial"));
+    }
+
+    @Test
+    public void getLatestExpirationDate() throws JSONException {
+        PurchaserInfo info = fullPurchaserInfo();
+
+        Date latest = info.getLatestExpirationDate();
+
+        assertNotNull(latest);
+
+        DateFormat formatter = new SimpleDateFormat("dd MMM yyyy HH:mm:ss z");
+        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        assertEquals(formatter.format(new Date(200,7, 29, 19, 40, 36)), formatter.format(latest));
     }
 
 }
