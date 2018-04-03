@@ -17,8 +17,8 @@ import java.util.TimeZone;
 class PurchaserInfo {
 
     public static class Factory {
-        private TimeZone tz = TimeZone.getTimeZone("UTC");
-        private DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX");
+        private static TimeZone tz = TimeZone.getTimeZone("UTC");
+        private static DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX");
 
         Factory() {
             dateFormatter.setTimeZone(tz);
