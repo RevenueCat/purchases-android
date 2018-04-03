@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
-class PurchaserInfo {
+public class PurchaserInfo {
 
     public static class Factory {
         private static TimeZone tz = TimeZone.getTimeZone("UTC");
