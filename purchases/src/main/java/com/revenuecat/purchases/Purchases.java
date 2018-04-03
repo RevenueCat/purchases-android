@@ -62,15 +62,12 @@ public final class Purchases {
 
     public void makePurchase(final Activity activity, final String sku,
                              @BillingClient.SkuType final String skuType) {
-        makePurchase(activity, sku, skuType, null);
+        makePurchase(activity, sku, skuType, new ArrayList<String>());
     }
 
     public void makePurchase(final Activity activity, final String sku,
                              @BillingClient.SkuType final String skuType,
-                             ArrayList<String> oldSkus) {
-        if (oldSkus == null) {
-            oldSkus = new ArrayList<>();
-        }
+                             final ArrayList<String> oldSkus) {
         billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
     }
 
