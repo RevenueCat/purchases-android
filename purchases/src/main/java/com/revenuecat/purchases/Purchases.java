@@ -3,12 +3,17 @@ package com.revenuecat.purchases;
 import android.app.Activity;
 
 import com.android.billingclient.api.BillingClient;
-import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.SkuDetails;
 
 import java.util.List;
 
 public final class Purchases {
+
+    private final String apiKey;
+    private final String appUserID;
+    private final PurchasesListener listener;
+    private final Backend backend;
+    private final BillingWrapper billingWrapper;
 
     public interface PurchasesListener {
         void onCompletedPurchase(PurchaserInfo purchaserInfo);
@@ -20,19 +25,33 @@ public final class Purchases {
         void onReceiveSkus(List<SkuDetails> skus);
     }
 
-    public Purchases(String appUserID) {
-
+    public Purchases(String apiKey, PurchasesListener listener) {
+        this(apiKey, "", listener);
     }
 
-    public Purchases(String APIKey, String appUserID) {
-
+    public Purchases(String apiKey, String appUserID, PurchasesListener listener) {
+        this(apiKey, appUserID, listener, null, null);
     }
 
-    public void getSubscriptionSkus(final GetSkusResponseHandler handler) {
-
+    Purchases(String apiKey, String appUserID, PurchasesListener listener,
+              Backend backend, BillingWrapper billingWrapper) {
+        this.apiKey = apiKey;
+        this.appUserID = appUserID;
+        this.listener = listener;
+        this.backend = backend;
+        this.billingWrapper = billingWrapper;
     }
 
-    public void getNonSubscriptionSkus(final GetSkusResponseHandler handler) {
+    public void getSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
+        billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, skus, new BillingWrapper.SkuDetailsResponseListener() {
+            @Override
+            public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                handler.onReceiveSkus(skuDetails);
+            }
+        });
+    }
+
+    public void getNonSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
 
     }
 
@@ -46,6 +65,6 @@ public final class Purchases {
     }
 
     public void restorePurchasesForPlayAccount() {
-        
+
     }
 }
