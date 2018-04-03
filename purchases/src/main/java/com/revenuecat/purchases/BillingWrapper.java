@@ -3,7 +3,6 @@ package com.revenuecat.purchases;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.Nullable;
 
 import com.android.billingclient.api.BillingClient;
@@ -28,7 +27,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
             this.context = context;
         }
 
-        public BillingClient buildClient(PurchasesUpdatedListener listener) {
+        public BillingClient buildClient(com.android.billingclient.api.PurchasesUpdatedListener listener) {
             return BillingClient.newBuilder(context).setListener(listener).build();
         }
     }
@@ -37,14 +36,21 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         void onReceiveSkuDetails(List<SkuDetails> skuDetails);
     }
 
+    public interface PurchasesUpdatedListener {
+        void onPurchasesUpdated(List<Purchase> purchases);
+        void onPurchasesFailedToUpdate(String message);
+    }
+
     final private BillingClient billingClient;
-    private Handler mainHandler;
+    final private PurchasesUpdatedListener purchasesUpdatedListener;
+    final private Handler mainHandler;
 
     private boolean clientConnected;
     private Queue<Runnable> serviceRequests = new ConcurrentLinkedQueue<>();
 
-    BillingWrapper(ClientFactory clientFactory, Handler mainHandler) {
+    BillingWrapper(ClientFactory clientFactory, PurchasesUpdatedListener purchasesUpdatedListener, Handler mainHandler) {
         billingClient = clientFactory.buildClient(this);
+        this.purchasesUpdatedListener = purchasesUpdatedListener;
         this.mainHandler = mainHandler;
 
         billingClient.startConnection(this);
@@ -64,6 +70,15 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         } else {
             executePendingRequests();
         }
+    }
+
+    private void executeRequestOnUIThread(final Runnable request) {
+        executeRequest(new Runnable() {
+            @Override
+            public void run() {
+                mainHandler.post(request);
+            }
+        });
     }
 
     public void querySkuDetailsAsync(@BillingClient.SkuType final String itemType,
@@ -87,27 +102,26 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     public void makePurchaseAsync(final Activity activity, final String appUserID, final String sku, final ArrayList<String> oldSkus,
                                   final @BillingClient.SkuType String skuType) {
 
-        executeRequest(new Runnable() {
+        executeRequestOnUIThread(new Runnable() {
             @Override
             public void run() {
-                mainHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        BillingFlowParams params = BillingFlowParams.newBuilder()
-                                .setSku(sku)
-                                .setType(skuType)
-                                .setOldSkus(oldSkus)
-                                .setAccountId(appUserID).build();
-                        billingClient.launchBillingFlow(activity, params);
-                    }
-                });
+                BillingFlowParams params = BillingFlowParams.newBuilder()
+                        .setSku(sku)
+                        .setType(skuType)
+                        .setOldSkus(oldSkus)
+                        .setAccountId(appUserID).build();
+                billingClient.launchBillingFlow(activity, params);
             }
         });
     }
 
     @Override
     public void onPurchasesUpdated(int responseCode, @Nullable List<Purchase> purchases) {
-
+        if (responseCode == BillingClient.BillingResponse.OK && purchases != null) {
+            purchasesUpdatedListener.onPurchasesUpdated(purchases);
+        } else {
+            purchasesUpdatedListener.onPurchasesFailedToUpdate("idk something failed");
+        }
     }
 
     @Override

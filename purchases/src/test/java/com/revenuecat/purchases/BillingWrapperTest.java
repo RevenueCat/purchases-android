@@ -7,6 +7,7 @@ import android.os.Handler;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
+import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
 import com.android.billingclient.api.SkuDetailsParams;
@@ -38,6 +39,8 @@ public class BillingWrapperTest {
     private BillingClientStateListener billingClientStateListener;
     private Handler handler;
 
+    private BillingWrapper.PurchasesUpdatedListener mockPurchasesListener;
+
     private BillingWrapper wrapper;
 
     private List<SkuDetails> mockDetailsList = new ArrayList<>();
@@ -46,6 +49,8 @@ public class BillingWrapperTest {
     public void setup() {
         mockClientFactory = mock(BillingWrapper.ClientFactory.class);
         mockClient = mock(BillingClient.class);
+        mockPurchasesListener = mock(BillingWrapper.PurchasesUpdatedListener.class);
+
         handler = mock(Handler.class);
 
         doAnswer(new Answer() {
@@ -76,7 +81,7 @@ public class BillingWrapperTest {
         SkuDetails mockDetails = mock(SkuDetails.class);
         mockDetailsList.add(mockDetails);
 
-        wrapper = new BillingWrapper(mockClientFactory, handler);
+        wrapper = new BillingWrapper(mockClientFactory, mockPurchasesListener, handler);
     }
 
     @Test
@@ -249,4 +254,22 @@ public class BillingWrapperTest {
 
         verify(handler).post(any(Runnable.class));
     }
+
+    @Test
+    public void purchasesUpdatedCallsAreForwarded() {
+        List<Purchase> purchases = new ArrayList<>();
+
+        purchasesUpdatedListener.onPurchasesUpdated(BillingClient.BillingResponse.OK, purchases);
+
+        verify(mockPurchasesListener).onPurchasesUpdated(purchases);
+    }
+
+    @Test
+    public void purchaseUpdateFailedCalledIfNotOK() {
+        purchasesUpdatedListener.onPurchasesUpdated(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED, null);
+
+        verify(mockPurchasesListener, times(0)).onPurchasesUpdated((List<Purchase>) any());
+        verify(mockPurchasesListener).onPurchasesFailedToUpdate(any(String.class));
+    }
+
 }
