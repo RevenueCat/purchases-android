@@ -1,6 +1,8 @@
 package com.revenuecat.purchases;
 
 import android.app.Activity;
+import android.app.Application;
+import android.os.Bundle;
 import android.support.annotation.Nullable;
 
 import com.android.billingclient.api.BillingClient;
@@ -11,8 +13,9 @@ import com.android.billingclient.api.SkuDetails;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class Purchases implements PurchasesUpdatedListener {
+public final class Purchases implements PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
+    private final Application application;
     private final String apiKey;
     private final String appUserID;
     private final PurchasesListener listener;
@@ -29,21 +32,17 @@ public final class Purchases implements PurchasesUpdatedListener {
         void onReceiveSkus(List<SkuDetails> skus);
     }
 
-    public Purchases(String apiKey, PurchasesListener listener) {
-        this(apiKey, "", listener);
-    }
-
-    public Purchases(String apiKey, String appUserID, PurchasesListener listener) {
-        this(apiKey, appUserID, listener, null, null);
-    }
-
-    Purchases(String apiKey, String appUserID, PurchasesListener listener,
+    Purchases(Application application,
+              String apiKey, String appUserID, PurchasesListener listener,
               Backend backend, BillingWrapper billingWrapper) {
+        this.application = application;
         this.apiKey = apiKey;
         this.appUserID = appUserID;
         this.listener = listener;
         this.backend = backend;
         this.billingWrapper = billingWrapper;
+
+        this.application.registerActivityLifecycleCallbacks(this);
     }
 
     public void getSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
@@ -93,5 +92,48 @@ public final class Purchases implements PurchasesUpdatedListener {
         } else {
             listener.onFailedPurchase(new Exception("Failed to update purchase with reason " + responseCode));
         }
+    }
+
+    @Override
+    public void onActivityCreated(Activity activity, Bundle bundle) {
+
+    }
+
+    @Override
+    public void onActivityStarted(Activity activity) {
+
+    }
+
+    @Override
+    public void onActivityResumed(Activity activity) {
+        backend.getSubscriberInfo(appUserID, new Backend.BackendResponseHandler() {
+            @Override
+            public void onReceivePurchaserInfo(PurchaserInfo info) {
+                listener.onReceiveUpdatedPurchaserInfo(info);
+            }
+
+            @Override
+            public void onError(Exception e) {}
+        });
+    }
+
+    @Override
+    public void onActivityPaused(Activity activity) {
+
+    }
+
+    @Override
+    public void onActivityStopped(Activity activity) {
+
+    }
+
+    @Override
+    public void onActivitySaveInstanceState(Activity activity, Bundle bundle) {
+
+    }
+
+    @Override
+    public void onActivityDestroyed(Activity activity) {
+
     }
 }

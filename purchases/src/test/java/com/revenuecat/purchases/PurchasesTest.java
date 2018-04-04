@@ -1,6 +1,8 @@
 package com.revenuecat.purchases;
 
 import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
@@ -26,20 +28,29 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PurchasesTest {
+    private Application mockApplication = mock(Application.class);
     private BillingWrapper mockBillingWrapper = mock(BillingWrapper.class);
     private Backend mockBackend = mock(Backend.class);
 
+    private Application.ActivityLifecycleCallbacks activityLifecycleCallbacks;
+
     private String apiKey = "fakeapikey";
     private String appUserId = "fakeUserID";
-
-
 
     private Purchases.PurchasesListener listener = mock(Purchases.PurchasesListener.class);
 
     private Purchases purchases;
     @Before
     public void setup() {
-        purchases = new Purchases(apiKey, appUserId, listener, mockBackend, mockBillingWrapper);
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                activityLifecycleCallbacks = invocation.getArgument(0);
+                return null;
+            }
+        }).when(mockApplication).registerActivityLifecycleCallbacks(any(Application.ActivityLifecycleCallbacks.class));
+
+        purchases = new Purchases(mockApplication, apiKey, appUserId, listener, mockBackend, mockBillingWrapper);
     }
 
     @Test
@@ -167,5 +178,27 @@ public class PurchasesTest {
         purchases.onPurchasesUpdated(BillingClient.BillingResponse.ITEM_ALREADY_OWNED, null);
 
         verify(listener).onFailedPurchase(any(Exception.class));
+    }
+
+    @Test
+    public void addsAnApplicationLifecycleListener() {
+        verify(mockApplication).registerActivityLifecycleCallbacks(any(Application.ActivityLifecycleCallbacks.class));
+    }
+
+    @Test
+    public void onResumeGetsSubscriberInfo() {
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.BackendResponseHandler handler = invocation.getArgument(1);
+                handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
+                return null;
+            }
+        }).when(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
+
+        activityLifecycleCallbacks.onActivityResumed(mock(Activity.class));
+
+        verify(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
+        verify(listener).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
     }
 }
