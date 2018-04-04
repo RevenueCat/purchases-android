@@ -11,6 +11,7 @@ import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public final class Purchases implements PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
@@ -21,6 +22,8 @@ public final class Purchases implements PurchasesUpdatedListener, Application.Ac
     private final PurchasesListener listener;
     private final Backend backend;
     private final BillingWrapper billingWrapper;
+
+    private Date subscriberInfoLastChecked;
 
     public interface PurchasesListener {
         void onCompletedPurchase(PurchaserInfo purchaserInfo);
@@ -43,6 +46,8 @@ public final class Purchases implements PurchasesUpdatedListener, Application.Ac
         this.billingWrapper = billingWrapper;
 
         this.application.registerActivityLifecycleCallbacks(this);
+
+        getSubscriberInfo();
     }
 
     public void getSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
@@ -71,6 +76,23 @@ public final class Purchases implements PurchasesUpdatedListener, Application.Ac
                              @BillingClient.SkuType final String skuType,
                              final ArrayList<String> oldSkus) {
         billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
+    }
+
+    private void getSubscriberInfo() {
+        if (subscriberInfoLastChecked != null && (new Date().getTime() - subscriberInfoLastChecked.getTime()) < 60000) {
+            return;
+        }
+
+        backend.getSubscriberInfo(appUserID, new Backend.BackendResponseHandler() {
+            @Override
+            public void onReceivePurchaserInfo(PurchaserInfo info) {
+                subscriberInfoLastChecked = new Date();
+                listener.onReceiveUpdatedPurchaserInfo(info);
+            }
+
+            @Override
+            public void onError(Exception e) {}
+        });
     }
 
     @Override
@@ -106,15 +128,7 @@ public final class Purchases implements PurchasesUpdatedListener, Application.Ac
 
     @Override
     public void onActivityResumed(Activity activity) {
-        backend.getSubscriberInfo(appUserID, new Backend.BackendResponseHandler() {
-            @Override
-            public void onReceivePurchaserInfo(PurchaserInfo info) {
-                listener.onReceiveUpdatedPurchaserInfo(info);
-            }
-
-            @Override
-            public void onError(Exception e) {}
-        });
+        getSubscriberInfo();
     }
 
     @Override

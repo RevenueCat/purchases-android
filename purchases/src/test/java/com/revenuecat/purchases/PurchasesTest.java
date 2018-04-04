@@ -50,6 +50,15 @@ public class PurchasesTest {
             }
         }).when(mockApplication).registerActivityLifecycleCallbacks(any(Application.ActivityLifecycleCallbacks.class));
 
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.BackendResponseHandler handler = invocation.getArgument(1);
+                handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
+                return null;
+            }
+        }).when(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
+
         purchases = new Purchases(mockApplication, apiKey, appUserId, listener, mockBackend, mockBillingWrapper);
     }
 
@@ -187,18 +196,15 @@ public class PurchasesTest {
 
     @Test
     public void onResumeGetsSubscriberInfo() {
-        doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                Backend.BackendResponseHandler handler = invocation.getArgument(1);
-                handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
-                return null;
-            }
-        }).when(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
 
         activityLifecycleCallbacks.onActivityResumed(mock(Activity.class));
 
         verify(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
         verify(listener).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+    }
+
+    @Test
+    public void getsSubscriberInfoOnCreated() {
+        verify(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
     }
 }
