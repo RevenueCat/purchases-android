@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 public class PurchasesTest {
     private Application mockApplication = mock(Application.class);
     private BillingWrapper mockBillingWrapper = mock(BillingWrapper.class);
+    private BillingWrapper.Factory mockBillingWrapperFactory = mock(BillingWrapper.Factory.class);
     private Backend mockBackend = mock(Backend.class);
 
     private Application.ActivityLifecycleCallbacks activityLifecycleCallbacks;
@@ -59,7 +60,10 @@ public class PurchasesTest {
             }
         }).when(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
 
-        purchases = new Purchases(mockApplication, apiKey, appUserId, listener, mockBackend, mockBillingWrapper);
+        when(mockBillingWrapperFactory.buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class)))
+                .thenReturn(mockBillingWrapper);
+
+        purchases = new Purchases(mockApplication, apiKey, appUserId, listener, mockBackend, mockBillingWrapperFactory);
     }
 
     @Test
@@ -142,7 +146,7 @@ public class PurchasesTest {
 
         purchasesList.add(p);
 
-        purchases.onPurchasesUpdated(BillingClient.BillingResponse.OK, purchasesList);
+        purchases.onPurchasesUpdated(purchasesList);
 
         verify(mockBackend).postReceiptData(eq(purchaseToken),
                 eq(appUserId),
@@ -164,7 +168,7 @@ public class PurchasesTest {
         }
 
 
-        purchases.onPurchasesUpdated(BillingClient.BillingResponse.OK, purchasesList);
+        purchases.onPurchasesUpdated(purchasesList);
 
         verify(mockBackend, times(2)).postReceiptData(eq(purchaseToken),
                 eq(appUserId),
@@ -174,7 +178,7 @@ public class PurchasesTest {
 
     @Test
     public void doesntPostIfNotOK() {
-        purchases.onPurchasesUpdated(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED, null);
+        purchases.onPurchasesFailedToUpdate("fail");
 
         verify(mockBackend, times(0)).postReceiptData(any(String.class),
                 any(String.class),
@@ -184,7 +188,7 @@ public class PurchasesTest {
 
     @Test
     public void passesUpErrors() {
-        purchases.onPurchasesUpdated(BillingClient.BillingResponse.ITEM_ALREADY_OWNED, null);
+        purchases.onPurchasesFailedToUpdate("");
 
         verify(listener).onFailedPurchase(any(Exception.class));
     }

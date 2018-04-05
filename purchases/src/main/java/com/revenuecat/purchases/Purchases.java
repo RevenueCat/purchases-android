@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public final class Purchases implements PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
+public final class Purchases implements BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
     private final Application application;
     private final String apiKey;
@@ -25,6 +25,10 @@ public final class Purchases implements PurchasesUpdatedListener, Application.Ac
     private final BillingWrapper billingWrapper;
 
     private Date subscriberInfoLastChecked;
+
+    public String getAppUserID() {
+        return appUserID;
+    }
 
     public interface PurchasesListener {
         void onCompletedPurchase(PurchaserInfo purchaserInfo);
@@ -38,13 +42,13 @@ public final class Purchases implements PurchasesUpdatedListener, Application.Ac
 
     Purchases(Application application,
               String apiKey, String appUserID, PurchasesListener listener,
-              Backend backend, BillingWrapper billingWrapper) {
+              Backend backend, BillingWrapper.Factory billingWrapperFactory) {
         this.application = application;
         this.apiKey = apiKey;
         this.appUserID = appUserID;
         this.listener = listener;
         this.backend = backend;
-        this.billingWrapper = billingWrapper;
+        this.billingWrapper = billingWrapperFactory.buildWrapper(this);
 
         this.application.registerActivityLifecycleCallbacks(this);
 
@@ -97,24 +101,25 @@ public final class Purchases implements PurchasesUpdatedListener, Application.Ac
     }
 
     @Override
-    public void onPurchasesUpdated(int responseCode, @Nullable List<Purchase> purchases) {
-        if (responseCode == BillingClient.BillingResponse.OK && purchases != null) {
-            for (Purchase p : purchases) {
-                backend.postReceiptData(p.getPurchaseToken(), appUserID, p.getSku(), new Backend.BackendResponseHandler() {
-                    @Override
-                    public void onReceivePurchaserInfo(PurchaserInfo info) {
-                        listener.onCompletedPurchase(info);
-                    }
+    public void onPurchasesUpdated(List<Purchase> purchases) {
+        for (Purchase p : purchases) {
+            backend.postReceiptData(p.getPurchaseToken(), appUserID, p.getSku(), new Backend.BackendResponseHandler() {
+                @Override
+                public void onReceivePurchaserInfo(PurchaserInfo info) {
+                    listener.onCompletedPurchase(info);
+                }
 
-                    @Override
-                    public void onError(Exception e) {
-                        listener.onFailedPurchase(e);
-                    }
-                });
-            }
-        } else {
-            listener.onFailedPurchase(new Exception("Failed to update purchase with reason " + responseCode));
+                @Override
+                public void onError(Exception e) {
+                    listener.onFailedPurchase(e);
+                }
+            });
         }
+    }
+
+    @Override
+    public void onPurchasesFailedToUpdate(String message) {
+        listener.onFailedPurchase(new Exception(message));
     }
 
     @Override
@@ -156,8 +161,11 @@ public final class Purchases implements PurchasesUpdatedListener, Application.Ac
         private final Context context;
         private final String apiKey;
         private final Application application;
+        private final PurchasesListener listener;
+        private String appUserID;
 
-        public Builder(Context context, String apiKey) {
+        public Builder(Context context, String apiKey, PurchasesListener listener) {
+
 
             if (context == null) {
                 throw new IllegalArgumentException("Context must be set.");
@@ -172,9 +180,26 @@ public final class Purchases implements PurchasesUpdatedListener, Application.Ac
                 throw new IllegalArgumentException("Needs an application context.");
             }
 
+            if (listener == null) {
+                throw new IllegalArgumentException("Purchases listener must be set");
+            }
+
             this.context = context;
             this.apiKey = apiKey;
             this.application = application;
+            this.listener = listener;
+        }
+
+        public Purchases build() {
+            Backend backend = new Backend(this.apiKey, new Dispatcher(), new HTTPClient(), new PurchaserInfo.Factory());
+//            BillingWrapper billingWrapper = new BillingWrapper(new BillingWrapper.ClientFactory(context), )
+//            new Purchases(this.application, this.apiKey, this.appUserID, this.listener)
+            return null;
+        }
+
+        public void appUserID(String appUserID) {
+
+            this.appUserID = appUserID;
         }
     }
 }

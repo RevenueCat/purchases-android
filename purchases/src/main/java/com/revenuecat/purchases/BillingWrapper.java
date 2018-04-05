@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class BillingWrapper implements PurchasesUpdatedListener, BillingClientStateListener {
 
-    public static class ClientFactory {
+    static class ClientFactory {
         final private Context context;
 
         public ClientFactory(Context context) {
@@ -29,6 +29,20 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
 
         public BillingClient buildClient(com.android.billingclient.api.PurchasesUpdatedListener listener) {
             return BillingClient.newBuilder(context).setListener(listener).build();
+        }
+    }
+
+    static class Factory {
+        private final ClientFactory clientFactory;
+        private final Handler mainHandler;
+
+        Factory(ClientFactory clientFactory, Handler mainHandler) {
+
+            this.clientFactory = clientFactory;
+            this.mainHandler = mainHandler;
+        }
+        public BillingWrapper buildWrapper(PurchasesUpdatedListener listener) {
+            return new BillingWrapper(clientFactory, listener, mainHandler);
         }
     }
 
