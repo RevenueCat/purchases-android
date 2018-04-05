@@ -82,8 +82,6 @@ public class PurchasesBuilderTest {
         runWithLooper(new Runnable() {
             @Override
             public void run() {
-                String apiKey = "api_key";
-
                 Purchases p = builder.build();
 
                 assertEquals(appUserID, p.getAppUserID());

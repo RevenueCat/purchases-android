@@ -168,6 +168,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         private final Application application;
         private final PurchasesListener listener;
         private String appUserID;
+        private ExecutorService service;
 
         public Builder(Context context, String apiKey, PurchasesListener listener) {
 
@@ -195,7 +196,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             this.listener = listener;
         }
 
-        public Purchases build() {
+        private ExecutorService createDefaultExecutor() {
             ExecutorService service = new ThreadPoolExecutor(
                     1,
                     2,
@@ -203,6 +204,15 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                     TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<Runnable>()
             );
+            return service;
+        }
+
+        public Purchases build() {
+
+            ExecutorService service = this.service;
+            if (service == null) {
+                service = createDefaultExecutor();
+            }
 
             Backend backend = new Backend(this.apiKey, new Dispatcher(service), new HTTPClient(), new PurchaserInfo.Factory());
 
@@ -213,6 +223,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
         public void appUserID(String appUserID) {
             this.appUserID = appUserID;
+        }
+
+        public void networkExecutorService(ExecutorService service) {
+            this.service = service;
         }
     }
 }

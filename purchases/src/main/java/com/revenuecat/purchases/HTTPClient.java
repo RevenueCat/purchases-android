@@ -27,7 +27,7 @@ class HTTPClient {
 
     HTTPClient() {
         try {
-            this.baseURL = new URL("https://api.revenuecat.com/v1");
+            this.baseURL = new URL("http://localhost:5000/v1");
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
