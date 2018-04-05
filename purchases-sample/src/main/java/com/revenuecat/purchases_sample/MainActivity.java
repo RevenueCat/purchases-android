@@ -4,10 +4,14 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity {
+import com.revenuecat.purchases.PurchaserInfo;
+import com.revenuecat.purchases.Purchases;
+
+public class MainActivity extends AppCompatActivity implements Purchases.PurchasesListener {
 
     private TextView mTextMessage;
 
@@ -31,14 +35,33 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private Purchases purchases;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        this.purchases = new Purchases.Builder(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN", this)
+                .appUserID("jerry").build();
 
         mTextMessage = (TextView) findViewById(R.id.message);
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
     }
 
+    @Override
+    public void onCompletedPurchase(PurchaserInfo purchaserInfo) {
+
+    }
+
+    @Override
+    public void onFailedPurchase(Exception reason) {
+
+    }
+
+    @Override
+    public void onReceiveUpdatedPurchaserInfo(PurchaserInfo purchaserInfo) {
+        Log.i("MainActivity", "Got new purchaser info: " + purchaserInfo.getActiveSubscriptions());
+    }
 }
