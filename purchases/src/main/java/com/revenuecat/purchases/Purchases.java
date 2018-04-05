@@ -31,10 +31,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     private Date subscriberInfoLastChecked;
 
-    public String getAppUserID() {
-        return appUserID;
-    }
-
     public interface PurchasesListener {
         void onCompletedPurchase(PurchaserInfo purchaserInfo);
         void onFailedPurchase(Exception reason);
@@ -43,6 +39,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     public interface GetSkusResponseHandler {
         void onReceiveSkus(List<SkuDetails> skus);
+    }
+
+    public static String getFrameworkVersion() {
+        return "0.1.0-SNAPSHOT";
     }
 
     Purchases(Application application,
@@ -58,6 +58,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         this.application.registerActivityLifecycleCallbacks(this);
 
         getSubscriberInfo();
+    }
+
+    public String getAppUserID() {
+        return appUserID;
     }
 
     public void getSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {

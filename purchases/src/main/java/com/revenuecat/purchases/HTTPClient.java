@@ -15,6 +15,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 
+import static com.revenuecat.purchases.Purchases.getFrameworkVersion;
+
 class HTTPClient {
     static class Result {
         int responseCode;
@@ -100,7 +102,7 @@ class HTTPClient {
             connection.addRequestProperty("Content-Type", "application/json");
             connection.addRequestProperty("X-Platform", "android");
             connection.addRequestProperty("X-Platform-Version", Integer.toString(android.os.Build.VERSION.SDK_INT));
-            connection.addRequestProperty("X-Version", "0.1.0-SNAPSHOT"); // FIXME
+            connection.addRequestProperty("X-Version", getFrameworkVersion()); // FIXME
 
             if (body != null) {
                 connection.setDoOutput(true);
