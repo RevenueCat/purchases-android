@@ -8,7 +8,7 @@ import java.util.Map;
 class Backend {
     final private String apiKey;
     final private Dispatcher dispatcher;
-    final private HTTPClient HTTPClient;
+    final private HTTPClient httpClient;
     final private PurchaserInfo.Factory purchaserInfoFactory;
     final private Map<String, String> authenticationHeaders;
 
@@ -53,7 +53,7 @@ class Backend {
     Backend(String apiKey, Dispatcher dispatcher, com.revenuecat.purchases.HTTPClient httpClient, PurchaserInfo.Factory purchaserInfoFactory) {
         this.apiKey = apiKey;
         this.dispatcher = dispatcher;
-        this.HTTPClient = httpClient;
+        this.httpClient = httpClient;
         this.purchaserInfoFactory = purchaserInfoFactory;
 
         this.authenticationHeaders = new HashMap<>();
@@ -64,7 +64,7 @@ class Backend {
         dispatcher.enqueue(new PurchaserInfoReceivingCall(handler) {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                return HTTPClient.performRequest("/subscribers/" + appUserID, null, authenticationHeaders);
+                return httpClient.performRequest("/subscribers/" + appUserID, null, authenticationHeaders);
             }
         });
     }
@@ -79,7 +79,7 @@ class Backend {
         dispatcher.enqueue(new PurchaserInfoReceivingCall(handler) {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                return HTTPClient.performRequest("/receipts", body, authenticationHeaders);
+                return httpClient.performRequest("/receipts", body, authenticationHeaders);
             }
         });
     }

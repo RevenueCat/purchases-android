@@ -29,8 +29,6 @@ class Dispatcher {
         this.executorService = executorService;
     }
 
-    public Dispatcher() {}
-
     public void enqueue(AsyncCall call) {
         this.executorService.submit(call);
     }

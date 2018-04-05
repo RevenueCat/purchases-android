@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 
 import com.android.billingclient.api.BillingClient;
@@ -14,6 +15,10 @@ import com.android.billingclient.api.SkuDetails;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public final class Purchases implements BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
@@ -191,14 +196,22 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         }
 
         public Purchases build() {
-            Backend backend = new Backend(this.apiKey, new Dispatcher(), new HTTPClient(), new PurchaserInfo.Factory());
-//            BillingWrapper billingWrapper = new BillingWrapper(new BillingWrapper.ClientFactory(context), )
-//            new Purchases(this.application, this.apiKey, this.appUserID, this.listener)
-            return null;
+            ExecutorService service = new ThreadPoolExecutor(
+                    1,
+                    2,
+                    0,
+                    TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<Runnable>()
+            );
+
+            Backend backend = new Backend(this.apiKey, new Dispatcher(service), new HTTPClient(), new PurchaserInfo.Factory());
+
+            BillingWrapper.Factory billingWrapperFactory = new BillingWrapper.Factory(new BillingWrapper.ClientFactory(context), new Handler(application.getMainLooper()));
+
+            return new Purchases(this.application, this.apiKey, this.appUserID, this.listener, backend, billingWrapperFactory);
         }
 
         public void appUserID(String appUserID) {
-
             this.appUserID = appUserID;
         }
     }
