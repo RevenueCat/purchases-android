@@ -2,6 +2,7 @@ package com.revenuecat.purchases;
 
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 
@@ -149,5 +150,31 @@ public final class Purchases implements PurchasesUpdatedListener, Application.Ac
     @Override
     public void onActivityDestroyed(Activity activity) {
 
+    }
+
+    public static class Builder {
+        private final Context context;
+        private final String apiKey;
+        private final Application application;
+
+        public Builder(Context context, String apiKey) {
+
+            if (context == null) {
+                throw new IllegalArgumentException("Context must be set.");
+            }
+
+            if (apiKey == null || apiKey.length() == 0) {
+                throw new IllegalArgumentException("API key must be set. Get this from the RevenueCat web app");
+            }
+
+            Application application = (Application) context.getApplicationContext();
+            if (application == null) {
+                throw new IllegalArgumentException("Needs an application context.");
+            }
+
+            this.context = context;
+            this.apiKey = apiKey;
+            this.application = application;
+        }
     }
 }
