@@ -54,7 +54,7 @@ public class HTTPClientTest {
 
         RecordedRequest request = server.takeRequest();
         assertEquals(request.getMethod(), "GET");
-        assertEquals(request.getPath(), "/resource");
+        assertEquals(request.getPath(), "/v1/resource");
     }
 
     @Test
@@ -97,12 +97,6 @@ public class HTTPClientTest {
             server.takeRequest();
         }
 
-    }
-
-    @Test(expected = RuntimeException.class)
-    public void badURLsThrowRuntimeException() throws HTTPClient.HTTPErrorException {
-        HTTPClient client = new HTTPClient(baseURL);
-        client.performRequest(" https://", null, null);
     }
 
     // Headers

@@ -11,6 +11,7 @@ import org.robolectric.annotation.Config;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static junit.framework.Assert.assertEquals;
@@ -34,6 +35,11 @@ public class BackendTest {
     private String appUserID = "jerry";
 
     private class SyncDispatcher extends Dispatcher {
+
+        SyncDispatcher() {
+            super(null);
+        }
+
         @Override
         public void enqueue(AsyncCall call) {
             call.run();
@@ -82,7 +88,7 @@ public class BackendTest {
         result.body = new JSONObject(resultBody);
 
         Map<String, String> headers = new HashMap<>();
-        headers.put("Authentication", "Bearer " + API_KEY);
+        headers.put("Authorization", "Bearer " + API_KEY);
 
         when(mockInfoFactory.build(result.body)).thenReturn(info);
 
@@ -94,6 +100,7 @@ public class BackendTest {
         } else {
             whenStatement.thenThrow(clientException);
         }
+
         return info;
     }
 
@@ -144,7 +151,7 @@ public class BackendTest {
 
     @Test
     public void clientErrorCallsErrorHandler() throws HTTPClient.HTTPErrorException, JSONException {
-        getPurchaserInfo(200, new HTTPClient.HTTPErrorException(), null);
+        getPurchaserInfo(200, new HTTPClient.HTTPErrorException(0, ""), null);
 
         assertNull(receivedPurchaserInfo);
         assertNotNull(receivedException);

@@ -25,6 +25,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -269,7 +270,7 @@ public class BillingWrapperTest {
         purchasesUpdatedListener.onPurchasesUpdated(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED, null);
 
         verify(mockPurchasesListener, times(0)).onPurchasesUpdated((List<Purchase>) any());
-        verify(mockPurchasesListener).onPurchasesFailedToUpdate(any(String.class));
+        verify(mockPurchasesListener).onPurchasesFailedToUpdate(anyInt(), any(String.class));
     }
 
 }
