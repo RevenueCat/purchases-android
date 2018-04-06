@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
@@ -71,13 +72,16 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     }
 
     private void executePendingRequests() {
+        Log.d("Purchases", "Executing pending requests");
         while (clientConnected && !serviceRequests.isEmpty()) {
             Runnable request = serviceRequests.remove();
+            Log.d("Purchases", "Executing request " + request);
             request.run();
         }
     }
 
     private void executeRequest(final Runnable request) {
+        Log.d("Purchases", "Add request " + request);
         serviceRequests.add(request);
         if (!clientConnected) {
             billingClient.startConnection(this);
@@ -119,12 +123,21 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         executeRequestOnUIThread(new Runnable() {
             @Override
             public void run() {
-                BillingFlowParams params = BillingFlowParams.newBuilder()
+                BillingFlowParams.Builder builder = BillingFlowParams.newBuilder()
                         .setSku(sku)
                         .setType(skuType)
-                        .setOldSkus(oldSkus)
-                        .setAccountId(appUserID).build();
-                billingClient.launchBillingFlow(activity, params);
+                        .setAccountId(appUserID);
+
+                if (oldSkus.size() > 0) {
+                    builder.setOldSkus(oldSkus);
+                }
+
+                BillingFlowParams params = builder.build();
+
+                @BillingClient.BillingResponse int response = billingClient.launchBillingFlow(activity, params);
+                if (response != BillingClient.BillingResponse.OK) {
+                    Log.e("Purchases", "Failed to launch billing intent " + response);
+                }
             }
         });
     }
@@ -134,7 +147,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         if (responseCode == BillingClient.BillingResponse.OK && purchases != null) {
             purchasesUpdatedListener.onPurchasesUpdated(purchases);
         } else {
-            purchasesUpdatedListener.onPurchasesFailedToUpdate("idk something failed");
+            purchasesUpdatedListener.onPurchasesFailedToUpdate("idk something failed " + responseCode);
         }
     }
 

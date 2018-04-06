@@ -33,7 +33,7 @@ class HTTPClient {
 
     HTTPClient() {
         try {
-            this.baseURL = new URL("http://10.0.2.2:5000/");
+            this.baseURL = new URL("https://staging.revenuecat.com/");
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
