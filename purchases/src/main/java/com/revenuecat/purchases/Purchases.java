@@ -131,7 +131,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     @Override
-    public void onPurchasesFailedToUpdate(String message) {
+    public void onPurchasesFailedToUpdate(int responseCode, String message) {
         listener.onFailedPurchase(new Exception(message));
     }
 

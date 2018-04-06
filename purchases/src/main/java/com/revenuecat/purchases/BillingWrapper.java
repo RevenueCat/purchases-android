@@ -53,7 +53,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
 
     public interface PurchasesUpdatedListener {
         void onPurchasesUpdated(List<Purchase> purchases);
-        void onPurchasesFailedToUpdate(String message);
+        void onPurchasesFailedToUpdate(@BillingClient.BillingResponse int responseCode, String message);
     }
 
     final private BillingClient billingClient;
@@ -72,16 +72,13 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     }
 
     private void executePendingRequests() {
-        Log.d("Purchases", "Executing pending requests");
         while (clientConnected && !serviceRequests.isEmpty()) {
             Runnable request = serviceRequests.remove();
-            Log.d("Purchases", "Executing request " + request);
             request.run();
         }
     }
 
     private void executeRequest(final Runnable request) {
-        Log.d("Purchases", "Add request " + request);
         serviceRequests.add(request);
         if (!clientConnected) {
             billingClient.startConnection(this);
@@ -147,7 +144,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         if (responseCode == BillingClient.BillingResponse.OK && purchases != null) {
             purchasesUpdatedListener.onPurchasesUpdated(purchases);
         } else {
-            purchasesUpdatedListener.onPurchasesFailedToUpdate("idk something failed " + responseCode);
+            purchasesUpdatedListener.onPurchasesFailedToUpdate(responseCode, "idk something failed " + responseCode);
         }
     }
 

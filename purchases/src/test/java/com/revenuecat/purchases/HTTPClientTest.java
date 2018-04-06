@@ -25,6 +25,7 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 
 @RunWith(RobolectricTestRunner.class)
@@ -145,6 +146,7 @@ public class HTTPClientTest {
         RecordedRequest request = server.takeRequest();
         assertEquals("POST", request.getMethod());
         assertNotNull(request.getBody());
+        assertTrue(request.getBody().size() > 0);
     }
 
     @AfterClass

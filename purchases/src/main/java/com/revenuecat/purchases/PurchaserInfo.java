@@ -33,7 +33,6 @@ public class PurchaserInfo {
             for (Iterator<String> it = subscriptions.keys(); it.hasNext();) {
                String key = it.next();
                String dateValue = subscriptions.getJSONObject(key).getString("expires_date");
-               System.out.println(dateValue);
 
                try {
                    Date date = Iso8601Utils.parse(dateValue);

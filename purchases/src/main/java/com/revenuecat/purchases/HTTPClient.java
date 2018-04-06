@@ -33,7 +33,7 @@ class HTTPClient {
 
     HTTPClient() {
         try {
-            this.baseURL = new URL("https://staging.revenuecat.com/");
+            this.baseURL = new URL("https://khepri-staging-pr-117.herokuapp.com/");
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -73,6 +73,7 @@ class HTTPClient {
 
     private static void writeFully(BufferedWriter writer, String body) throws IOException {
         writer.write(body);
+        writer.flush();
     }
 
     /** Performs a synchronous web request to the RevenueCat API
@@ -121,7 +122,7 @@ class HTTPClient {
         InputStream in = getInputStream(connection);
         HTTPClient.Result result = new HTTPClient.Result();
 
-        String payload = null;
+        String payload;
         try {
             result.responseCode = connection.getResponseCode();
             payload = readFully(in);

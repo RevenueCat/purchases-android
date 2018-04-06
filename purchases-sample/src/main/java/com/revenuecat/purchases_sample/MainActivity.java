@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     @Override
     public void onCompletedPurchase(PurchaserInfo purchaserInfo) {
         Log.i("Purchases", "Purchase completed: " + purchaserInfo);
+        mPurchaserInfo.setText(purchaserInfo.getActiveSubscriptions().toString());
     }
 
     @Override
