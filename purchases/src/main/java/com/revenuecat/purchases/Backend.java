@@ -70,11 +70,12 @@ class Backend {
     }
 
     public void postReceiptData(final String purchaseToken, final String appUserID, final String productID, final Boolean isRestore, final BackendResponseHandler handler) {
-        final Map<String, String> body = new HashMap<>();
+        final Map<String, Object> body = new HashMap<>();
 
         body.put("fetch_token", purchaseToken);
         body.put("product_id", productID);
         body.put("app_user_id", appUserID);
+        body.put("is_restore", isRestore);
 
         dispatcher.enqueue(new PurchaserInfoReceivingCall(handler) {
             @Override
