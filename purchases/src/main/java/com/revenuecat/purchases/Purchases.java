@@ -103,6 +103,15 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
     }
 
+    public void restorePurchasesForPlayStoreAccount() {
+        billingWrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, new BillingWrapper.PurchaseHistoryResponseListener() {
+            @Override
+            public void onReceivePurchaseHistory(List<Purchase> purchasesList) {
+                postPurchases(purchasesList, true);
+            }
+        });
+    }
+
     private void getSubscriberInfo() {
         if (subscriberInfoLastChecked != null && (new Date().getTime() - subscriberInfoLastChecked.getTime()) < 60000) {
             return;
@@ -122,10 +131,9 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         });
     }
 
-    @Override
-    public void onPurchasesUpdated(List<Purchase> purchases) {
+    private void postPurchases(List<Purchase> purchases, Boolean isRestore) {
         for (Purchase p : purchases) {
-            backend.postReceiptData(p.getPurchaseToken(), appUserID, p.getSku(), usingAnonymousID, new Backend.BackendResponseHandler() {
+            backend.postReceiptData(p.getPurchaseToken(), appUserID, p.getSku(), isRestore, new Backend.BackendResponseHandler() {
                 @Override
                 public void onReceivePurchaserInfo(PurchaserInfo info) {
                     listener.onCompletedPurchase(info);
@@ -137,6 +145,11 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                 }
             });
         }
+    }
+
+    @Override
+    public void onPurchasesUpdated(List<Purchase> purchases) {
+        postPurchases(purchases, usingAnonymousID);
     }
 
     @Override
