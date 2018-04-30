@@ -8,6 +8,7 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.PurchaseHistoryResponseListener;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
 import com.android.billingclient.api.SkuDetailsParams;
@@ -38,9 +39,11 @@ public class BillingWrapperTest {
     private BillingClient mockClient;
     private PurchasesUpdatedListener purchasesUpdatedListener;
     private BillingClientStateListener billingClientStateListener;
+    private PurchaseHistoryResponseListener billingClientPurchaseHistoryListener;
     private Handler handler;
 
     private BillingWrapper.PurchasesUpdatedListener mockPurchasesListener;
+    private BillingWrapper.PurchaseHistoryResponseListener mockPurchaseHistoryListener;
 
     private BillingWrapper wrapper;
 
@@ -51,6 +54,7 @@ public class BillingWrapperTest {
         mockClientFactory = mock(BillingWrapper.ClientFactory.class);
         mockClient = mock(BillingClient.class);
         mockPurchasesListener = mock(BillingWrapper.PurchasesUpdatedListener.class);
+        mockPurchaseHistoryListener = mock(BillingWrapper.PurchaseHistoryResponseListener.class);
 
         handler = mock(Handler.class);
 
@@ -78,6 +82,14 @@ public class BillingWrapperTest {
                 return null;
             }
         }).when(mockClient).startConnection(any(BillingClientStateListener.class));
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                billingClientPurchaseHistoryListener = invocation.getArgument(1);
+                return null;
+            }
+        }).when(mockClient).queryPurchaseHistoryAsync(any(String.class), any(PurchaseHistoryResponseListener.class));
 
         SkuDetails mockDetails = mock(SkuDetails.class);
         mockDetailsList.add(mockDetails);
@@ -271,6 +283,24 @@ public class BillingWrapperTest {
 
         verify(mockPurchasesListener, times(0)).onPurchasesUpdated((List<Purchase>) any());
         verify(mockPurchasesListener).onPurchasesFailedToUpdate(anyInt(), any(String.class));
+    }
+
+    @Test
+    public void queryHistoryCallsListenerIfOk() {
+        wrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, mockPurchaseHistoryListener);
+        billingClientPurchaseHistoryListener.onPurchaseHistoryResponse(BillingClient.BillingResponse.OK,
+                new ArrayList<Purchase>());
+
+        verify(mockPurchaseHistoryListener).onReceivePurchaseHistory((List<Purchase>) any());
+    }
+
+    @Test
+    public void queryHistoryNotCalledIfNotOK() {
+        wrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, mockPurchaseHistoryListener);
+        billingClientPurchaseHistoryListener.onPurchaseHistoryResponse(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED,
+                new ArrayList<Purchase>());
+
+        verify(mockPurchaseHistoryListener, times(0)).onReceivePurchaseHistory((List<Purchase>) any());
     }
 
 }

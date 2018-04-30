@@ -10,6 +10,7 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.PurchaseHistoryResponseListener;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
 import com.android.billingclient.api.SkuDetailsParams;
@@ -49,6 +50,10 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
 
     public interface SkuDetailsResponseListener {
         void onReceiveSkuDetails(List<SkuDetails> skuDetails);
+    }
+
+    public interface PurchaseHistoryResponseListener {
+        void onReceivePurchaseHistory(List<Purchase> purchasesList);
     }
 
     public interface PurchasesUpdatedListener {
@@ -134,6 +139,18 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
                 @BillingClient.BillingResponse int response = billingClient.launchBillingFlow(activity, params);
                 if (response != BillingClient.BillingResponse.OK) {
                     Log.e("Purchases", "Failed to launch billing intent " + response);
+                }
+            }
+        });
+    }
+
+    public void queryPurchaseHistoryAsync(final @BillingClient.SkuType String skuType,
+                                          final PurchaseHistoryResponseListener listener) {
+        billingClient.queryPurchaseHistoryAsync(skuType, new com.android.billingclient.api.PurchaseHistoryResponseListener() {
+            @Override
+            public void onPurchaseHistoryResponse(@BillingClient.BillingResponse int responseCode, List<Purchase> purchasesList) {
+                if (responseCode == BillingClient.BillingResponse.OK) {
+                    listener.onReceivePurchaseHistory(purchasesList);
                 }
             }
         });
