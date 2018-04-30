@@ -92,4 +92,6 @@ public class PurchaserInfo {
     public Date getExpirationDateForSku(final String sku) {
         return expirationDates.get(sku);
     }
+
+    public Map<String, Date> getAllExpirationDates() { return expirationDates; };
 }

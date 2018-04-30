@@ -33,7 +33,7 @@ class HTTPClient {
 
     HTTPClient() {
         try {
-            this.baseURL = new URL("https://khepri-staging-pr-117.herokuapp.com/");
+            this.baseURL = new URL("https://api.revenuecat.com/");
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
