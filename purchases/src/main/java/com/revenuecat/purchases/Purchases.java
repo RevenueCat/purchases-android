@@ -28,6 +28,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private final Application application;
     private final String apiKey;
     private final String appUserID;
+    private Boolean usingAnonymousID = false;
     private final PurchasesListener listener;
     private final Backend backend;
     private final BillingWrapper billingWrapper;
@@ -57,6 +58,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
         if (appUserID == null) {
             appUserID = UUID.randomUUID().toString();
+            usingAnonymousID = true;
         }
         this.appUserID = appUserID;
 
@@ -123,7 +125,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     @Override
     public void onPurchasesUpdated(List<Purchase> purchases) {
         for (Purchase p : purchases) {
-            backend.postReceiptData(p.getPurchaseToken(), appUserID, p.getSku(), false, new Backend.BackendResponseHandler() {
+            backend.postReceiptData(p.getPurchaseToken(), appUserID, p.getSku(), usingAnonymousID, new Backend.BackendResponseHandler() {
                 @Override
                 public void onReceivePurchaserInfo(PurchaserInfo info) {
                     listener.onCompletedPurchase(info);

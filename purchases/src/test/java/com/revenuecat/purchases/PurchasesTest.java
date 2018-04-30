@@ -243,7 +243,7 @@ public class PurchasesTest {
         purchases.onPurchasesUpdated(purchasesList);
 
         verify(mockBackend).postReceiptData(eq(purchaseToken),
-                eq(appUserId),
+                eq(purchases.getAppUserID()),
                 eq(sku),
                 eq(true),
                 any(Backend.BackendResponseHandler.class));
