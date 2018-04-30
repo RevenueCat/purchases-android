@@ -224,4 +224,28 @@ public class PurchasesTest {
         assertNotNull(appUserID);
         assertEquals(36, appUserID.length());
     }
+
+    @Test
+    public void isRestoreWhenUsingNullAppUserID() {
+        Purchases purchases = new Purchases(mockApplication, apiKey, null, listener, mockBackend, mockBillingWrapperFactory);
+
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        purchases.onPurchasesUpdated(purchasesList);
+
+        verify(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(appUserId),
+                eq(sku),
+                eq(true),
+                any(Backend.BackendResponseHandler.class));
+    }
 }
