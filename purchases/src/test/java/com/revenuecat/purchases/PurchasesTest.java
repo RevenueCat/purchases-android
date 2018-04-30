@@ -151,6 +151,7 @@ public class PurchasesTest {
         verify(mockBackend).postReceiptData(eq(purchaseToken),
                 eq(appUserId),
                 eq(sku),
+                eq(false),
                 any(Backend.BackendResponseHandler.class));
     }
 
@@ -173,6 +174,7 @@ public class PurchasesTest {
         verify(mockBackend, times(2)).postReceiptData(eq(purchaseToken),
                 eq(appUserId),
                 eq(sku),
+                eq(false),
                 any(Backend.BackendResponseHandler.class));
     }
 
@@ -183,6 +185,7 @@ public class PurchasesTest {
         verify(mockBackend, times(0)).postReceiptData(any(String.class),
                 any(String.class),
                 any(String.class),
+                eq(false),
                 any(Backend.BackendResponseHandler.class));
     }
 

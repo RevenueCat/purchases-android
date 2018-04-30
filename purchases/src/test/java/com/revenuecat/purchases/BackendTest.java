@@ -117,7 +117,7 @@ public class BackendTest {
         PurchaserInfo info = mockResponse("/receipts", body, responseCode, clientException, resultBody);
 
 
-        backend.postReceiptData(fetchToken, appUserID, productID, handler);
+        backend.postReceiptData(fetchToken, appUserID, productID, false, handler);
 
         return info;
     }
