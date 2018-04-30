@@ -1,29 +1,21 @@
 package com.revenuecat.purchases;
 
+import com.revenuecat.purchases.util.Iso8601Utils;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 
 public class PurchaserInfo {
 
     public static class Factory {
-        private static TimeZone tz = TimeZone.getTimeZone("UTC");
-        private static DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX");
-
-        Factory() {
-            dateFormatter.setTimeZone(tz);
-        }
-
         PurchaserInfo build(JSONObject object) throws JSONException {
             JSONObject subscriber = object.getJSONObject("subscriber");
 
@@ -42,12 +34,12 @@ public class PurchaserInfo {
                String key = it.next();
                String dateValue = subscriptions.getJSONObject(key).getString("expires_date");
 
-                try {
-                    Date date = dateFormatter.parse(dateValue);
-                    expirationDates.put(key, date);
-                } catch (ParseException e) {
-                    throw new JSONException(e.getMessage());
-                }
+               try {
+                   Date date = Iso8601Utils.parse(dateValue);
+                   expirationDates.put(key, date);
+               } catch (RuntimeException e) {
+                   throw new JSONException(e.getMessage());
+               }
             }
 
             return new PurchaserInfo(nonSubscriptionPurchases, expirationDates);
@@ -100,4 +92,6 @@ public class PurchaserInfo {
     public Date getExpirationDateForSku(final String sku) {
         return expirationDates.get(sku);
     }
+
+    public Map<String, Date> getAllExpirationDates() { return expirationDates; };
 }

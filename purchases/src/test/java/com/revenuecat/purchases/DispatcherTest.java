@@ -49,7 +49,7 @@ public class DispatcherTest {
         Dispatcher.AsyncCall call = new Dispatcher.AsyncCall() {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                throw new HTTPClient.HTTPErrorException();
+                throw new HTTPClient.HTTPErrorException(0, "");
             }
 
             @Override

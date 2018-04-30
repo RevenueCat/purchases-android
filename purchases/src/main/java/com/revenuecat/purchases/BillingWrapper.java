@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
@@ -52,7 +53,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
 
     public interface PurchasesUpdatedListener {
         void onPurchasesUpdated(List<Purchase> purchases);
-        void onPurchasesFailedToUpdate(String message);
+        void onPurchasesFailedToUpdate(@BillingClient.BillingResponse int responseCode, String message);
     }
 
     final private BillingClient billingClient;
@@ -119,12 +120,21 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         executeRequestOnUIThread(new Runnable() {
             @Override
             public void run() {
-                BillingFlowParams params = BillingFlowParams.newBuilder()
+                BillingFlowParams.Builder builder = BillingFlowParams.newBuilder()
                         .setSku(sku)
                         .setType(skuType)
-                        .setOldSkus(oldSkus)
-                        .setAccountId(appUserID).build();
-                billingClient.launchBillingFlow(activity, params);
+                        .setAccountId(appUserID);
+
+                if (oldSkus.size() > 0) {
+                    builder.setOldSkus(oldSkus);
+                }
+
+                BillingFlowParams params = builder.build();
+
+                @BillingClient.BillingResponse int response = billingClient.launchBillingFlow(activity, params);
+                if (response != BillingClient.BillingResponse.OK) {
+                    Log.e("Purchases", "Failed to launch billing intent " + response);
+                }
             }
         });
     }
@@ -134,7 +144,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         if (responseCode == BillingClient.BillingResponse.OK && purchases != null) {
             purchasesUpdatedListener.onPurchasesUpdated(purchases);
         } else {
-            purchasesUpdatedListener.onPurchasesFailedToUpdate("idk something failed");
+            purchasesUpdatedListener.onPurchasesFailedToUpdate(responseCode, "idk something failed " + responseCode);
         }
     }
 

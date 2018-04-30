@@ -23,13 +23,17 @@ class HTTPClient {
         JSONObject body;
     }
 
-    static class HTTPErrorException extends Exception {}
+    static class HTTPErrorException extends Exception {
+        HTTPErrorException(int httpCode, String message) {
+            super("[" + httpCode + "]: " + message);
+        }
+    }
 
     private final URL baseURL;
 
     HTTPClient() {
         try {
-            this.baseURL = new URL("http://localhost:5000/v1");
+            this.baseURL = new URL("https://api.revenuecat.com/");
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -69,6 +73,7 @@ class HTTPClient {
 
     private static void writeFully(BufferedWriter writer, String body) throws IOException {
         writer.write(body);
+        writer.flush();
     }
 
     /** Performs a synchronous web request to the RevenueCat API
@@ -84,7 +89,7 @@ class HTTPClient {
             throws HTTPErrorException {
         URL fullURL = null;
         try {
-            fullURL = new URL(baseURL, path);
+            fullURL = new URL(baseURL, "/v1" + path);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -102,7 +107,7 @@ class HTTPClient {
             connection.addRequestProperty("Content-Type", "application/json");
             connection.addRequestProperty("X-Platform", "android");
             connection.addRequestProperty("X-Platform-Version", Integer.toString(android.os.Build.VERSION.SDK_INT));
-            connection.addRequestProperty("X-Version", getFrameworkVersion()); // FIXME
+            connection.addRequestProperty("X-Version", getFrameworkVersion());
 
             if (body != null) {
                 connection.setDoOutput(true);
@@ -111,18 +116,18 @@ class HTTPClient {
                 writeFully(buffer(os), new JSONObject(body).toString());
             }
         } catch (IOException e) {
-            throw new HTTPErrorException();
+            throw new HTTPErrorException(-1, "Error establishing connection " + e.getMessage());
         }
 
         InputStream in = getInputStream(connection);
         HTTPClient.Result result = new HTTPClient.Result();
 
-        String payload = null;
+        String payload;
         try {
             result.responseCode = connection.getResponseCode();
             payload = readFully(in);
         } catch (IOException e) {
-            throw new HTTPErrorException();
+            throw new HTTPErrorException(result.responseCode, "Error reading response: " + e.getMessage());
         } finally {
             connection.disconnect();
         }
@@ -130,7 +135,7 @@ class HTTPClient {
         try {
             result.body = new JSONObject(payload);
         } catch (JSONException e) {
-            throw new HTTPErrorException();
+            throw new HTTPErrorException(result.responseCode, "Error parsing JSON body: " + payload);
         }
 
         return result;

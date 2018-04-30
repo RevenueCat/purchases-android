@@ -1,5 +1,7 @@
 package com.revenuecat.purchases;
 
+import com.revenuecat.purchases.util.Iso8601Utils;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -24,7 +26,7 @@ public class PurchaserInfoTest {
 
     private final String validEmptyPurchaserResponse = "{'subscriber': {'other_purchases': {}, 'subscriptions': {}}}";
 
-    private final String validFullPurchaserResponse = "{'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-08-30T02:40:36Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}}}";
+    private final String validFullPurchaserResponse = "{'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}}}";
 
     // FactoryTests
     private PurchaserInfo.Factory factory = new PurchaserInfo.Factory();
@@ -89,10 +91,8 @@ public class PurchaserInfoTest {
 
         assertNotNull(latest);
 
-        DateFormat formatter = new SimpleDateFormat("dd MMM yyyy HH:mm:ss z");
-        formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
+        assertEquals(4110728085975L, latest.getTime());
 
-        assertEquals(formatter.format(new Date(200,7, 29, 19, 40, 36)), formatter.format(latest));
     }
 
     @Test

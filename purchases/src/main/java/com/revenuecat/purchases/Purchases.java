@@ -1,15 +1,15 @@
 package com.revenuecat.purchases;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
-import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
 
 import java.util.ArrayList;
@@ -19,6 +19,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 public final class Purchases implements BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
@@ -105,7 +107,9 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             }
 
             @Override
-            public void onError(Exception e) {}
+            public void onError(Exception e) {
+                Log.e("Purchases", "Error fetching subscriber data: " + e.getMessage());
+            }
         });
     }
 
@@ -127,7 +131,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     @Override
-    public void onPurchasesFailedToUpdate(String message) {
+    public void onPurchasesFailedToUpdate(int responseCode, String message) {
         listener.onFailedPurchase(new Exception(message));
     }
 
@@ -174,8 +178,15 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         private String appUserID;
         private ExecutorService service;
 
+        private boolean hasPermission(Context context, String permission) {
+            return context.checkCallingOrSelfPermission(permission) == PERMISSION_GRANTED;
+        }
+
         public Builder(Context context, String apiKey, PurchasesListener listener) {
 
+            if (!hasPermission(context, Manifest.permission.INTERNET)) {
+                throw new IllegalArgumentException("Purchases requires INTERNET permission.");
+            }
 
             if (context == null) {
                 throw new IllegalArgumentException("Context must be set.");
@@ -225,12 +236,14 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             return new Purchases(this.application, this.apiKey, this.appUserID, this.listener, backend, billingWrapperFactory);
         }
 
-        public void appUserID(String appUserID) {
+        public Builder appUserID(String appUserID) {
             this.appUserID = appUserID;
+            return this;
         }
 
-        public void networkExecutorService(ExecutorService service) {
+        public Builder networkExecutorService(ExecutorService service) {
             this.service = service;
+            return this;
         }
     }
 }

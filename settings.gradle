@@ -1,1 +1,1 @@
-include ':purchases'
+include ':purchases', ':purchases-sample'

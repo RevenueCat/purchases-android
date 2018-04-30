@@ -25,6 +25,7 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 
 @RunWith(RobolectricTestRunner.class)
@@ -54,7 +55,7 @@ public class HTTPClientTest {
 
         RecordedRequest request = server.takeRequest();
         assertEquals(request.getMethod(), "GET");
-        assertEquals(request.getPath(), "/resource");
+        assertEquals(request.getPath(), "/v1/resource");
     }
 
     @Test
@@ -97,12 +98,6 @@ public class HTTPClientTest {
             server.takeRequest();
         }
 
-    }
-
-    @Test(expected = RuntimeException.class)
-    public void badURLsThrowRuntimeException() throws HTTPClient.HTTPErrorException {
-        HTTPClient client = new HTTPClient(baseURL);
-        client.performRequest(" https://", null, null);
     }
 
     // Headers
@@ -151,6 +146,7 @@ public class HTTPClientTest {
         RecordedRequest request = server.takeRequest();
         assertEquals("POST", request.getMethod());
         assertNotNull(request.getBody());
+        assertTrue(request.getBody().size() > 0);
     }
 
     @AfterClass

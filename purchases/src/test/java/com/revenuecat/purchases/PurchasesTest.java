@@ -178,7 +178,7 @@ public class PurchasesTest {
 
     @Test
     public void doesntPostIfNotOK() {
-        purchases.onPurchasesFailedToUpdate("fail");
+        purchases.onPurchasesFailedToUpdate(0, "fail");
 
         verify(mockBackend, times(0)).postReceiptData(any(String.class),
                 any(String.class),
@@ -188,7 +188,7 @@ public class PurchasesTest {
 
     @Test
     public void passesUpErrors() {
-        purchases.onPurchasesFailedToUpdate("");
+        purchases.onPurchasesFailedToUpdate(0, "");
 
         verify(listener).onFailedPurchase(any(Exception.class));
     }

@@ -57,7 +57,7 @@ class Backend {
         this.purchaserInfoFactory = purchaserInfoFactory;
 
         this.authenticationHeaders = new HashMap<>();
-        this.authenticationHeaders.put("Authentication", "Bearer " + this.apiKey);
+        this.authenticationHeaders.put("Authorization", "Bearer " + this.apiKey);
     }
 
     public void getSubscriberInfo(final String appUserID, final BackendResponseHandler handler) {
