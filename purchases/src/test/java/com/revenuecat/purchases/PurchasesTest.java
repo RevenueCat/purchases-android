@@ -211,4 +211,14 @@ public class PurchasesTest {
     public void getsSubscriberInfoOnCreated() {
         verify(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
     }
+
+    @Test
+    public void canBeSetupWithoutAppUserID() {
+        Purchases purchases = new Purchases(mockApplication, apiKey, null, listener, mockBackend, mockBillingWrapperFactory);
+        assertNotNull(purchases);
+
+        String appUserID = purchases.getAppUserID();
+        assertNotNull(appUserID);
+        assertEquals(36, appUserID.length());
+    }
 }

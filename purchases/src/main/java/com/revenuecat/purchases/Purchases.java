@@ -15,6 +15,7 @@ import com.android.billingclient.api.SkuDetails;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -51,8 +52,14 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
               String apiKey, String appUserID, PurchasesListener listener,
               Backend backend, BillingWrapper.Factory billingWrapperFactory) {
         this.application = application;
+
         this.apiKey = apiKey;
+
+        if (appUserID == null) {
+            appUserID = UUID.randomUUID().toString();
+        }
         this.appUserID = appUserID;
+        
         this.listener = listener;
         this.backend = backend;
         this.billingWrapper = billingWrapperFactory.buildWrapper(this);
