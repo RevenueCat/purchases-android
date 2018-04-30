@@ -107,7 +107,7 @@ class HTTPClient {
             connection.addRequestProperty("Content-Type", "application/json");
             connection.addRequestProperty("X-Platform", "android");
             connection.addRequestProperty("X-Platform-Version", Integer.toString(android.os.Build.VERSION.SDK_INT));
-            connection.addRequestProperty("X-Version", getFrameworkVersion()); // FIXME
+            connection.addRequestProperty("X-Version", getFrameworkVersion());
 
             if (body != null) {
                 connection.setDoOutput(true);
