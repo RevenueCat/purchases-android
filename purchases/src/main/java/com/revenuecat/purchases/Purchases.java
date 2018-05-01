@@ -25,7 +25,6 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 public final class Purchases implements BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
-    private final Application application;
     private final String appUserID;
     private Boolean usingAnonymousID = false;
     private final PurchasesListener listener;
@@ -34,6 +33,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     private Date subscriberInfoLastChecked;
 
+    
     public interface PurchasesListener {
         void onCompletedPurchase(PurchaserInfo purchaserInfo);
         void onFailedPurchase(Exception reason);
@@ -49,10 +49,8 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     Purchases(Application application,
-              String apiKey, String appUserID, PurchasesListener listener,
+              String appUserID, PurchasesListener listener,
               Backend backend, BillingWrapper.Factory billingWrapperFactory) {
-        this.application = application;
-
 
         if (appUserID == null) {
             appUserID = UUID.randomUUID().toString();
@@ -64,7 +62,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         this.backend = backend;
         this.billingWrapper = billingWrapperFactory.buildWrapper(this);
 
-        this.application.registerActivityLifecycleCallbacks(this);
+        application.registerActivityLifecycleCallbacks(this);
 
         getSubscriberInfo();
     }
@@ -244,14 +242,13 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         }
 
         private ExecutorService createDefaultExecutor() {
-            ExecutorService service = new ThreadPoolExecutor(
+            return new ThreadPoolExecutor(
                     1,
                     2,
                     0,
                     TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<Runnable>()
             );
-            return service;
         }
 
         public Purchases build() {
@@ -265,7 +262,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
             BillingWrapper.Factory billingWrapperFactory = new BillingWrapper.Factory(new BillingWrapper.ClientFactory(context), new Handler(application.getMainLooper()));
 
-            return new Purchases(this.application, this.apiKey, this.appUserID, this.listener, backend, billingWrapperFactory);
+            return new Purchases(this.application, this.appUserID, this.listener, backend, billingWrapperFactory);
         }
 
         public Builder appUserID(String appUserID) {

@@ -2,7 +2,6 @@ package com.revenuecat.purchases;
 
 import android.app.Activity;
 import android.app.Application;
-import android.content.Context;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
@@ -63,7 +62,7 @@ public class PurchasesTest {
         when(mockBillingWrapperFactory.buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class)))
                 .thenReturn(mockBillingWrapper);
 
-        purchases = new Purchases(mockApplication, apiKey, appUserId, listener, mockBackend, mockBillingWrapperFactory);
+        purchases = new Purchases(mockApplication, appUserId, listener, mockBackend, mockBillingWrapperFactory);
     }
 
     @Test
@@ -217,7 +216,7 @@ public class PurchasesTest {
 
     @Test
     public void canBeSetupWithoutAppUserID() {
-        Purchases purchases = new Purchases(mockApplication, apiKey, null, listener, mockBackend, mockBillingWrapperFactory);
+        Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory);
         assertNotNull(purchases);
 
         String appUserID = purchases.getAppUserID();
@@ -227,7 +226,7 @@ public class PurchasesTest {
 
     @Test
     public void isRestoreWhenUsingNullAppUserID() {
-        Purchases purchases = new Purchases(mockApplication, apiKey, null, listener, mockBackend, mockBillingWrapperFactory);
+        Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory);
 
         Purchase p = mock(Purchase.class);
         String sku = "onemonth_freetrial";
