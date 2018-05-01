@@ -33,7 +33,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     private Date subscriberInfoLastChecked;
 
-    
+
     public interface PurchasesListener {
         void onCompletedPurchase(PurchaserInfo purchaserInfo);
         void onFailedPurchase(Exception reason);
@@ -47,7 +47,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     public static String getFrameworkVersion() {
         return "0.1.0-SNAPSHOT";
     }
-
+    
     Purchases(Application application,
               String appUserID, PurchasesListener listener,
               Backend backend, BillingWrapper.Factory billingWrapperFactory) {
@@ -67,14 +67,28 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         getSubscriberInfo();
     }
 
+    /**
+     * returns the passed in or generated app user ID
+     * @return appUserID
+     */
     public String getAppUserID() {
         return appUserID;
     }
 
+    /**
+     * Gets the SKUDetails for the given list of subscription skus.
+     * @param skus List of skus
+     * @param handler Response handler
+     */
     public void getSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
         getSkus(skus, BillingClient.SkuType.SUBS, handler);
     }
 
+    /**
+     * Gets the SKUDetails for the given list of non-subscription skus.
+     * @param skus
+     * @param handler
+     */
     public void getNonSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
         getSkus(skus, BillingClient.SkuType.INAPP, handler);
     }
@@ -88,17 +102,37 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         });
     }
 
+    /**
+     * Make a purchase.
+     * @param activity Current activity
+     * @param sku The sku you wish to purchase
+     * @param skuType The type of sku, INAPP or SUBS
+     */
     public void makePurchase(final Activity activity, final String sku,
                              @BillingClient.SkuType final String skuType) {
         makePurchase(activity, sku, skuType, new ArrayList<String>());
     }
 
+    /**
+     * Make a purchase passing in the skus you wish to upgrade from.
+     * @param activity Current activity
+     * @param sku The sku you wish to purchase
+     * @param skuType The type of sku, INAPP or SUBS
+     * @param oldSkus List of old skus to upgrade from
+     */
     public void makePurchase(final Activity activity, final String sku,
                              @BillingClient.SkuType final String skuType,
                              final ArrayList<String> oldSkus) {
         billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
     }
 
+    /**
+     * Restores purchases made with the current Play Store account for the current user.
+     * If you initialized Purchases with an `appUserID` any receipt tokens currently being used by
+     * other users of your app will not be restored. If you used an anonymous id, i.e. you
+     * initialized Purchases without an appUserID, any other anonymous users using the same
+     * purchases will be merged.
+     */
     public void restorePurchasesForPlayStoreAccount() {
         billingWrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, new BillingWrapper.PurchaseHistoryResponseListener() {
             @Override
@@ -200,6 +234,9 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     }
 
+    /**
+     * Used to construct a Purchases object
+     */
     public static class Builder {
         private final Context context;
         private final String apiKey;
