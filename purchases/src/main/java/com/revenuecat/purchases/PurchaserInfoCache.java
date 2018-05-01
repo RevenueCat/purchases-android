@@ -30,6 +30,8 @@ class PurchaserInfoCache {
     }
 
     public void cachePurchaserInfo(PurchaserInfo info) {
-
+        JSONObject jsonObject = info.getJSONObject();
+        String jsonString = jsonObject.toString();
+        preferences.edit().putString(cacheKey, jsonString).apply();
     }
 }
