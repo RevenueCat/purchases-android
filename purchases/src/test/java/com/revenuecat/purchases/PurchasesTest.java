@@ -169,14 +169,14 @@ public class PurchasesTest {
         for (int i = 0; i < 2; i++) {
             Purchase p = mock(Purchase.class);
             when(p.getSku()).thenReturn(sku);
-            when(p.getPurchaseToken()).thenReturn(purchaseToken);
+            when(p.getPurchaseToken()).thenReturn(purchaseToken + Integer.toString(i));
             purchasesList.add(p);
         }
 
 
         purchases.onPurchasesUpdated(purchasesList);
 
-        verify(mockBackend, times(2)).postReceiptData(eq(purchaseToken),
+        verify(mockBackend, times(2)).postReceiptData(any(String.class),
                 eq(appUserId),
                 eq(sku),
                 eq(false),
@@ -304,13 +304,13 @@ public class PurchasesTest {
 
         purchases.restorePurchasesForPlayStoreAccount();
 
-        verify(mockBackend, times(2)).postReceiptData(eq(purchaseToken),
+        verify(mockBackend, times(1)).postReceiptData(eq(purchaseToken),
                 eq(purchases.getAppUserID()),
                 eq(sku),
                 eq(true),
                 any(Backend.BackendResponseHandler.class));
 
-        verify(listener, times(3)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
         verify(listener, times(0)).onCompletedPurchase(any(PurchaserInfo.class));
     }
 

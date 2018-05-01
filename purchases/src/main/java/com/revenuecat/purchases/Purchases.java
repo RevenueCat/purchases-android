@@ -14,6 +14,8 @@ import com.android.billingclient.api.SkuDetails;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +32,8 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private final PurchasesListener listener;
     private final Backend backend;
     private final BillingWrapper billingWrapper;
+
+    private final HashSet<String> postedTokens = new HashSet<>();
 
     private Date subscriberInfoLastChecked;
 
@@ -171,7 +175,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     private void postPurchases(List<Purchase> purchases, Boolean isRestore, final Boolean isPurchase) {
         for (Purchase p : purchases) {
-            backend.postReceiptData(p.getPurchaseToken(), appUserID, p.getSku(), isRestore, new Backend.BackendResponseHandler() {
+            final String token = p.getPurchaseToken();
+            if (postedTokens.contains(token)) continue;
+            postedTokens.add(token);
+            backend.postReceiptData(token, appUserID, p.getSku(), isRestore, new Backend.BackendResponseHandler() {
                 @Override
                 public void onReceivePurchaserInfo(PurchaserInfo info) {
                     if (isPurchase) {
@@ -183,6 +190,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
                 @Override
                 public void onError(Exception e) {
+                    postedTokens.remove(token);
                     listener.onFailedPurchase(e);
                 }
             });
