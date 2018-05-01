@@ -8,6 +8,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import static com.revenuecat.purchases.PurchaserInfoTest.validEmptyPurchaserResponse;
+import static com.revenuecat.purchases.PurchaserInfoTest.validFullPurchaserResponse;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,7 +49,15 @@ public class PurchaserInfoCacheTest {
 
     @Test
     public void checksCorrectCacheKey() {
-        PurchaserInfo info = cache.getCachedPurchaserInfo();
+        cache.getCachedPurchaserInfo();
         verify(mockPrefs).getString(eq(cacheKey), (String) eq(null));
+    }
+
+    @Test
+    public void parsesJSONObject() {
+        when(mockPrefs.getString(any(String.class), (String) eq(null)))
+                .thenReturn(validFullPurchaserResponse);
+        PurchaserInfo info = cache.getCachedPurchaserInfo();
+        assertNotNull(info);
     }
 }

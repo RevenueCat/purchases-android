@@ -2,13 +2,18 @@ package com.revenuecat.purchases;
 
 import android.content.SharedPreferences;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 class PurchaserInfoCache {
     private final SharedPreferences preferences;
     private final String cacheKey;
+    private final PurchaserInfo.Factory infoFactory;
 
     PurchaserInfoCache(SharedPreferences preferences, String appUserID, String apiKey) {
         this.preferences = preferences;
         this.cacheKey = apiKey + "_" + appUserID;
+        this.infoFactory = new PurchaserInfo.Factory();
     }
 
     public PurchaserInfo getCachedPurchaserInfo() {
@@ -17,7 +22,12 @@ class PurchaserInfoCache {
         if (json == null) {
             return null;
         }
-        throw new RuntimeException("");
+
+        try {
+            return this.infoFactory.build(new JSONObject(json));
+        } catch (JSONException e) {
+            return null;
+        }
     }
 
     public void cachePurchaserInfo(PurchaserInfo info) {
