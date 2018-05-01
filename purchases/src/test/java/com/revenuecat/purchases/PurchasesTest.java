@@ -280,6 +280,19 @@ public class PurchasesTest {
         }).when(mockBillingWrapper).queryPurchaseHistoryAsync(any(String.class),
                 any(BillingWrapper.PurchaseHistoryResponseListener.class));
 
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.BackendResponseHandler handler = invocation.getArgument(4);
+                handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
+                return null;
+            }
+        }).when(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(purchases.getAppUserID()),
+                eq(sku),
+                eq(true),
+                any(Backend.BackendResponseHandler.class));
+
         purchases.restorePurchasesForPlayStoreAccount();
 
         verify(mockBackend).postReceiptData(eq(purchaseToken),
@@ -287,5 +300,8 @@ public class PurchasesTest {
                 eq(sku),
                 eq(true),
                 any(Backend.BackendResponseHandler.class));
+
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(0)).onCompletedPurchase(any(PurchaserInfo.class));
     }
 }

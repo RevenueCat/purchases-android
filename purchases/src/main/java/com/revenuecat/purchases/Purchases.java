@@ -107,7 +107,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         billingWrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, new BillingWrapper.PurchaseHistoryResponseListener() {
             @Override
             public void onReceivePurchaseHistory(List<Purchase> purchasesList) {
-                postPurchases(purchasesList, true);
+                postPurchases(purchasesList, true, false);
             }
         });
     }
@@ -131,12 +131,16 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         });
     }
 
-    private void postPurchases(List<Purchase> purchases, Boolean isRestore) {
+    private void postPurchases(List<Purchase> purchases, Boolean isRestore, final Boolean isPurchase) {
         for (Purchase p : purchases) {
             backend.postReceiptData(p.getPurchaseToken(), appUserID, p.getSku(), isRestore, new Backend.BackendResponseHandler() {
                 @Override
                 public void onReceivePurchaserInfo(PurchaserInfo info) {
-                    listener.onCompletedPurchase(info);
+                    if (isPurchase) {
+                        listener.onCompletedPurchase(info);
+                    } else {
+                        listener.onReceiveUpdatedPurchaserInfo(info);
+                    }
                 }
 
                 @Override
@@ -149,7 +153,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     @Override
     public void onPurchasesUpdated(List<Purchase> purchases) {
-        postPurchases(purchases, usingAnonymousID);
+        postPurchases(purchases, usingAnonymousID, true);
     }
 
     @Override
