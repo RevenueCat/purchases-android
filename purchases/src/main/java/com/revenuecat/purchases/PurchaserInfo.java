@@ -42,16 +42,22 @@ public class PurchaserInfo {
                }
             }
 
-            return new PurchaserInfo(nonSubscriptionPurchases, expirationDates);
+            return new PurchaserInfo(nonSubscriptionPurchases, expirationDates, object);
         }
     }
 
     private final Set<String> nonSubscriptionPurchases;
     private final Map<String, Date> expirationDates;
+    private final JSONObject originalJSON;
 
-    private PurchaserInfo(Set<String> nonSubscriptionPurchases, Map<String, Date> expirationDates) {
+    private PurchaserInfo(Set<String> nonSubscriptionPurchases, Map<String, Date> expirationDates, JSONObject originalJSON) {
         this.nonSubscriptionPurchases = nonSubscriptionPurchases;
         this.expirationDates = expirationDates;
+        this.originalJSON = originalJSON;
+    }
+
+    JSONObject getJSONObject() {
+        return originalJSON;
     }
 
     /**
