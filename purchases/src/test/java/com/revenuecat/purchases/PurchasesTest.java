@@ -31,6 +31,7 @@ public class PurchasesTest {
     private BillingWrapper mockBillingWrapper = mock(BillingWrapper.class);
     private BillingWrapper.Factory mockBillingWrapperFactory = mock(BillingWrapper.Factory.class);
     private Backend mockBackend = mock(Backend.class);
+    private PurchaserInfoCache mockCache = mock(PurchaserInfoCache.class);
 
     private Application.ActivityLifecycleCallbacks activityLifecycleCallbacks;
     private BillingWrapper.PurchasesUpdatedListener purchasesUpdatedListener;
@@ -68,7 +69,8 @@ public class PurchasesTest {
             }
         }).when(mockBillingWrapperFactory).buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class));
 
-        purchases = new Purchases(mockApplication, appUserId, listener, mockBackend, mockBillingWrapperFactory);
+
+        purchases = new Purchases(mockApplication, appUserId, listener, mockBackend, mockBillingWrapperFactory, mockCache);
     }
 
     @Test
@@ -222,7 +224,7 @@ public class PurchasesTest {
 
     @Test
     public void canBeSetupWithoutAppUserID() {
-        Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory);
+        Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
         assertNotNull(purchases);
 
         String appUserID = purchases.getAppUserID();
@@ -232,7 +234,7 @@ public class PurchasesTest {
 
     @Test
     public void isRestoreWhenUsingNullAppUserID() {
-        Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory);
+        Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
 
         Purchase p = mock(Purchase.class);
         String sku = "onemonth_freetrial";

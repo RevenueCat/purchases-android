@@ -4,8 +4,10 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.android.billingclient.api.BillingClient;
@@ -14,7 +16,6 @@ import com.android.billingclient.api.SkuDetails;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,7 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 public final class Purchases implements BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
     private final String appUserID;
+    private final PurchaserInfoCache purchaserInfoCache;
     private Boolean usingAnonymousID = false;
     private final PurchasesListener listener;
     private final Backend backend;
@@ -54,7 +56,9 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     Purchases(Application application,
               String appUserID, PurchasesListener listener,
-              Backend backend, BillingWrapper.Factory billingWrapperFactory) {
+              Backend backend,
+              BillingWrapper.Factory billingWrapperFactory,
+              PurchaserInfoCache purchaserInfoCache) {
 
         if (appUserID == null) {
             appUserID = UUID.randomUUID().toString();
@@ -65,6 +69,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         this.listener = listener;
         this.backend = backend;
         this.billingWrapper = billingWrapperFactory.buildWrapper(this);
+        this.purchaserInfoCache = purchaserInfoCache;
 
         application.registerActivityLifecycleCallbacks(this);
 
@@ -308,7 +313,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
             BillingWrapper.Factory billingWrapperFactory = new BillingWrapper.Factory(new BillingWrapper.ClientFactory(context), new Handler(application.getMainLooper()));
 
-            return new Purchases(this.application, this.appUserID, this.listener, backend, billingWrapperFactory);
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.application);
+            PurchaserInfoCache cache = new PurchaserInfoCache(prefs, appUserID, apiKey);
+
+            return new Purchases(this.application, this.appUserID, this.listener, backend, billingWrapperFactory, cache);
         }
 
         public Builder appUserID(String appUserID) {
