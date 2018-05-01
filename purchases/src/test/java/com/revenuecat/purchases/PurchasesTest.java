@@ -252,7 +252,11 @@ public class PurchasesTest {
     @Test
     public void restoringPurchasesGetsHistory() {
         purchases.restorePurchasesForPlayStoreAccount();
-        verify(mockBillingWrapper).queryPurchaseHistoryAsync(any(String.class),
+
+        verify(mockBillingWrapper).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.SUBS),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
+
+        verify(mockBillingWrapper).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.INAPP),
                 any(BillingWrapper.PurchaseHistoryResponseListener.class));
     }
 
@@ -295,13 +299,13 @@ public class PurchasesTest {
 
         purchases.restorePurchasesForPlayStoreAccount();
 
-        verify(mockBackend).postReceiptData(eq(purchaseToken),
+        verify(mockBackend, times(2)).postReceiptData(eq(purchaseToken),
                 eq(purchases.getAppUserID()),
                 eq(sku),
                 eq(true),
                 any(Backend.BackendResponseHandler.class));
 
-        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(3)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
         verify(listener, times(0)).onCompletedPurchase(any(PurchaserInfo.class));
     }
 }

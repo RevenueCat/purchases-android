@@ -26,7 +26,6 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 public final class Purchases implements BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
     private final Application application;
-    private final String apiKey;
     private final String appUserID;
     private Boolean usingAnonymousID = false;
     private final PurchasesListener listener;
@@ -54,7 +53,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
               Backend backend, BillingWrapper.Factory billingWrapperFactory) {
         this.application = application;
 
-        this.apiKey = apiKey;
 
         if (appUserID == null) {
             appUserID = UUID.randomUUID().toString();
@@ -110,7 +108,15 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                 postPurchases(purchasesList, true, false);
             }
         });
+
+        billingWrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.INAPP, new BillingWrapper.PurchaseHistoryResponseListener() {
+            @Override
+            public void onReceivePurchaseHistory(List<Purchase> purchasesList) {
+                postPurchases(purchasesList, true, false);
+            }
+        });
     }
+
 
     private void getSubscriberInfo() {
         if (subscriberInfoLastChecked != null && (new Date().getTime() - subscriberInfoLastChecked.getTime()) < 60000) {
