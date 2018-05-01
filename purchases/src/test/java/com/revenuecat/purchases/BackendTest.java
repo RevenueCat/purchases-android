@@ -76,7 +76,7 @@ public class BackendTest {
         }
     };
 
-    private PurchaserInfo mockResponse(String path, Map<String, String> body, int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws JSONException, HTTPClient.HTTPErrorException {
+    private PurchaserInfo mockResponse(String path, Map<String, Object> body, int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws JSONException, HTTPClient.HTTPErrorException {
         if (resultBody == null) {
             resultBody = "{}";
         }
@@ -104,20 +104,21 @@ public class BackendTest {
         return info;
     }
 
-    private PurchaserInfo postReceipt(int responseCode, HTTPClient.HTTPErrorException clientException, String resultBody) throws HTTPClient.HTTPErrorException, JSONException {
+    private PurchaserInfo postReceipt(int responseCode, Boolean isRestore, HTTPClient.HTTPErrorException clientException, String resultBody) throws HTTPClient.HTTPErrorException, JSONException {
 
         String fetchToken = "fetch_token";
         String productID = "product_id";
 
-        Map<String, String> body = new HashMap<>();
+        Map<String, Object> body = new HashMap<>();
         body.put("fetch_token", fetchToken);
         body.put("app_user_id", appUserID);
         body.put("product_id", productID);
+        body.put("is_restore", isRestore);
 
         PurchaserInfo info = mockResponse("/receipts", body, responseCode, clientException, resultBody);
 
 
-        backend.postReceiptData(fetchToken, appUserID, productID, handler);
+        backend.postReceiptData(fetchToken, appUserID, productID, isRestore, handler);
 
         return info;
     }
@@ -173,7 +174,7 @@ public class BackendTest {
 
     @Test
     public void postReceiptCallsProperURL() throws HTTPClient.HTTPErrorException, JSONException {
-        PurchaserInfo info = postReceipt(200, null, null);
+        PurchaserInfo info = postReceipt(200, false, null, null);
 
         assertNotNull(receivedPurchaserInfo);
         assertSame(info, receivedPurchaserInfo);
@@ -181,7 +182,7 @@ public class BackendTest {
 
     @Test
     public void postReceiptCallsFailsFor40X() throws HTTPClient.HTTPErrorException, JSONException {
-        postReceipt(401, null, null);
+        postReceipt(401, false, null, null);
 
         assertNull(receivedPurchaserInfo);
         assertNotNull(receivedException);

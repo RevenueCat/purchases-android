@@ -4,8 +4,10 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.android.billingclient.api.BillingClient;
@@ -14,7 +16,9 @@ import com.android.billingclient.api.SkuDetails;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -24,14 +28,17 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 public final class Purchases implements BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
-    private final Application application;
-    private final String apiKey;
     private final String appUserID;
+    private final PurchaserInfoCache purchaserInfoCache;
+    private Boolean usingAnonymousID = false;
     private final PurchasesListener listener;
     private final Backend backend;
     private final BillingWrapper billingWrapper;
 
+    private final HashSet<String> postedTokens = new HashSet<>();
+
     private Date subscriberInfoLastChecked;
+
 
     public interface PurchasesListener {
         void onCompletedPurchase(PurchaserInfo purchaserInfo);
@@ -48,28 +55,54 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     Purchases(Application application,
-              String apiKey, String appUserID, PurchasesListener listener,
-              Backend backend, BillingWrapper.Factory billingWrapperFactory) {
-        this.application = application;
-        this.apiKey = apiKey;
+              String appUserID, PurchasesListener listener,
+              Backend backend,
+              BillingWrapper.Factory billingWrapperFactory,
+              PurchaserInfoCache purchaserInfoCache) {
+
+        if (appUserID == null) {
+            appUserID = UUID.randomUUID().toString();
+            usingAnonymousID = true;
+        }
         this.appUserID = appUserID;
+
         this.listener = listener;
         this.backend = backend;
         this.billingWrapper = billingWrapperFactory.buildWrapper(this);
+        this.purchaserInfoCache = purchaserInfoCache;
 
-        this.application.registerActivityLifecycleCallbacks(this);
+        application.registerActivityLifecycleCallbacks(this);
+
+        PurchaserInfo info = purchaserInfoCache.getCachedPurchaserInfo();
+        if (info != null) {
+            listener.onReceiveUpdatedPurchaserInfo(info);
+        }
 
         getSubscriberInfo();
     }
 
+    /**
+     * returns the passed in or generated app user ID
+     * @return appUserID
+     */
     public String getAppUserID() {
         return appUserID;
     }
 
+    /**
+     * Gets the SKUDetails for the given list of subscription skus.
+     * @param skus List of skus
+     * @param handler Response handler
+     */
     public void getSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
         getSkus(skus, BillingClient.SkuType.SUBS, handler);
     }
 
+    /**
+     * Gets the SKUDetails for the given list of non-subscription skus.
+     * @param skus
+     * @param handler
+     */
     public void getNonSubscriptionSkus(List<String> skus, final GetSkusResponseHandler handler) {
         getSkus(skus, BillingClient.SkuType.INAPP, handler);
     }
@@ -83,16 +116,53 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         });
     }
 
+    /**
+     * Make a purchase.
+     * @param activity Current activity
+     * @param sku The sku you wish to purchase
+     * @param skuType The type of sku, INAPP or SUBS
+     */
     public void makePurchase(final Activity activity, final String sku,
                              @BillingClient.SkuType final String skuType) {
         makePurchase(activity, sku, skuType, new ArrayList<String>());
     }
 
+    /**
+     * Make a purchase passing in the skus you wish to upgrade from.
+     * @param activity Current activity
+     * @param sku The sku you wish to purchase
+     * @param skuType The type of sku, INAPP or SUBS
+     * @param oldSkus List of old skus to upgrade from
+     */
     public void makePurchase(final Activity activity, final String sku,
                              @BillingClient.SkuType final String skuType,
                              final ArrayList<String> oldSkus) {
         billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType);
     }
+
+    /**
+     * Restores purchases made with the current Play Store account for the current user.
+     * If you initialized Purchases with an `appUserID` any receipt tokens currently being used by
+     * other users of your app will not be restored. If you used an anonymous id, i.e. you
+     * initialized Purchases without an appUserID, any other anonymous users using the same
+     * purchases will be merged.
+     */
+    public void restorePurchasesForPlayStoreAccount() {
+        billingWrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, new BillingWrapper.PurchaseHistoryResponseListener() {
+            @Override
+            public void onReceivePurchaseHistory(List<Purchase> purchasesList) {
+                postPurchases(purchasesList, true, false);
+            }
+        });
+
+        billingWrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.INAPP, new BillingWrapper.PurchaseHistoryResponseListener() {
+            @Override
+            public void onReceivePurchaseHistory(List<Purchase> purchasesList) {
+                postPurchases(purchasesList, true, false);
+            }
+        });
+    }
+
 
     private void getSubscriberInfo() {
         if (subscriberInfoLastChecked != null && (new Date().getTime() - subscriberInfoLastChecked.getTime()) < 60000) {
@@ -103,6 +173,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             @Override
             public void onReceivePurchaserInfo(PurchaserInfo info) {
                 subscriberInfoLastChecked = new Date();
+                purchaserInfoCache.cachePurchaserInfo(info);
                 listener.onReceiveUpdatedPurchaserInfo(info);
             }
 
@@ -113,21 +184,33 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         });
     }
 
-    @Override
-    public void onPurchasesUpdated(List<Purchase> purchases) {
+    private void postPurchases(List<Purchase> purchases, Boolean isRestore, final Boolean isPurchase) {
         for (Purchase p : purchases) {
-            backend.postReceiptData(p.getPurchaseToken(), appUserID, p.getSku(), new Backend.BackendResponseHandler() {
+            final String token = p.getPurchaseToken();
+            if (postedTokens.contains(token)) continue;
+            postedTokens.add(token);
+            backend.postReceiptData(token, appUserID, p.getSku(), isRestore, new Backend.BackendResponseHandler() {
                 @Override
                 public void onReceivePurchaserInfo(PurchaserInfo info) {
-                    listener.onCompletedPurchase(info);
+                    if (isPurchase) {
+                        listener.onCompletedPurchase(info);
+                    } else {
+                        listener.onReceiveUpdatedPurchaserInfo(info);
+                    }
                 }
 
                 @Override
                 public void onError(Exception e) {
+                    postedTokens.remove(token);
                     listener.onFailedPurchase(e);
                 }
             });
         }
+    }
+
+    @Override
+    public void onPurchasesUpdated(List<Purchase> purchases) {
+        postPurchases(purchases, usingAnonymousID, true);
     }
 
     @Override
@@ -148,6 +231,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     @Override
     public void onActivityResumed(Activity activity) {
         getSubscriberInfo();
+        restorePurchasesForPlayStoreAccount();
     }
 
     @Override
@@ -170,6 +254,9 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     }
 
+    /**
+     * Used to construct a Purchases object
+     */
     public static class Builder {
         private final Context context;
         private final String apiKey;
@@ -212,14 +299,13 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         }
 
         private ExecutorService createDefaultExecutor() {
-            ExecutorService service = new ThreadPoolExecutor(
+            return new ThreadPoolExecutor(
                     1,
                     2,
                     0,
                     TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<Runnable>()
             );
-            return service;
         }
 
         public Purchases build() {
@@ -233,7 +319,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
             BillingWrapper.Factory billingWrapperFactory = new BillingWrapper.Factory(new BillingWrapper.ClientFactory(context), new Handler(application.getMainLooper()));
 
-            return new Purchases(this.application, this.apiKey, this.appUserID, this.listener, backend, billingWrapperFactory);
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.application);
+            PurchaserInfoCache cache = new PurchaserInfoCache(prefs, appUserID, apiKey);
+
+            return new Purchases(this.application, this.appUserID, this.listener, backend, billingWrapperFactory, cache);
         }
 
         public Builder appUserID(String appUserID) {

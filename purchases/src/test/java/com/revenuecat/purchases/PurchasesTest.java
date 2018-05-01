@@ -2,7 +2,6 @@ package com.revenuecat.purchases;
 
 import android.app.Activity;
 import android.app.Application;
-import android.content.Context;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
@@ -32,8 +31,10 @@ public class PurchasesTest {
     private BillingWrapper mockBillingWrapper = mock(BillingWrapper.class);
     private BillingWrapper.Factory mockBillingWrapperFactory = mock(BillingWrapper.Factory.class);
     private Backend mockBackend = mock(Backend.class);
+    private PurchaserInfoCache mockCache = mock(PurchaserInfoCache.class);
 
     private Application.ActivityLifecycleCallbacks activityLifecycleCallbacks;
+    private BillingWrapper.PurchasesUpdatedListener purchasesUpdatedListener;
 
     private String apiKey = "fakeapikey";
     private String appUserId = "fakeUserID";
@@ -60,10 +61,18 @@ public class PurchasesTest {
             }
         }).when(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
 
-        when(mockBillingWrapperFactory.buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class)))
-                .thenReturn(mockBillingWrapper);
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                purchasesUpdatedListener = invocation.getArgument(0);
+                return mockBillingWrapper;
+            }
+        }).when(mockBillingWrapperFactory).buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class));
 
-        purchases = new Purchases(mockApplication, apiKey, appUserId, listener, mockBackend, mockBillingWrapperFactory);
+        PurchaserInfo mockInfo = mock(PurchaserInfo.class);
+        when(mockCache.getCachedPurchaserInfo()).thenReturn(mockInfo);
+
+        purchases = new Purchases(mockApplication, appUserId, listener, mockBackend, mockBillingWrapperFactory, mockCache);
     }
 
     @Test
@@ -151,6 +160,7 @@ public class PurchasesTest {
         verify(mockBackend).postReceiptData(eq(purchaseToken),
                 eq(appUserId),
                 eq(sku),
+                eq(false),
                 any(Backend.BackendResponseHandler.class));
     }
 
@@ -163,16 +173,17 @@ public class PurchasesTest {
         for (int i = 0; i < 2; i++) {
             Purchase p = mock(Purchase.class);
             when(p.getSku()).thenReturn(sku);
-            when(p.getPurchaseToken()).thenReturn(purchaseToken);
+            when(p.getPurchaseToken()).thenReturn(purchaseToken + Integer.toString(i));
             purchasesList.add(p);
         }
 
 
         purchases.onPurchasesUpdated(purchasesList);
 
-        verify(mockBackend, times(2)).postReceiptData(eq(purchaseToken),
+        verify(mockBackend, times(2)).postReceiptData(any(String.class),
                 eq(appUserId),
                 eq(sku),
+                eq(false),
                 any(Backend.BackendResponseHandler.class));
     }
 
@@ -183,6 +194,7 @@ public class PurchasesTest {
         verify(mockBackend, times(0)).postReceiptData(any(String.class),
                 any(String.class),
                 any(String.class),
+                eq(false),
                 any(Backend.BackendResponseHandler.class));
     }
 
@@ -204,11 +216,166 @@ public class PurchasesTest {
         activityLifecycleCallbacks.onActivityResumed(mock(Activity.class));
 
         verify(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
-        verify(listener).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
     }
 
     @Test
     public void getsSubscriberInfoOnCreated() {
         verify(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
+    public void canBeSetupWithoutAppUserID() {
+        Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
+        assertNotNull(purchases);
+
+        String appUserID = purchases.getAppUserID();
+        assertNotNull(appUserID);
+        assertEquals(36, appUserID.length());
+    }
+
+    @Test
+    public void isRestoreWhenUsingNullAppUserID() {
+        Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
+
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        purchases.onPurchasesUpdated(purchasesList);
+
+        verify(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(purchases.getAppUserID()),
+                eq(sku),
+                eq(true),
+                any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
+    public void restoringPurchasesGetsHistory() {
+        purchases.restorePurchasesForPlayStoreAccount();
+
+        verify(mockBillingWrapper).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.SUBS),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
+
+        verify(mockBillingWrapper).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.INAPP),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
+    }
+
+    private BillingWrapper.PurchaseHistoryResponseListener historyListener;
+    @Test
+    public void historicalPurchasesPassedToBackend() {
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        final List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                historyListener = invocation.getArgument(1);
+                historyListener.onReceivePurchaseHistory(purchasesList);
+                return null;
+            }
+        }).when(mockBillingWrapper).queryPurchaseHistoryAsync(any(String.class),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.BackendResponseHandler handler = invocation.getArgument(4);
+                handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
+                return null;
+            }
+        }).when(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(purchases.getAppUserID()),
+                eq(sku),
+                eq(true),
+                any(Backend.BackendResponseHandler.class));
+
+        purchases.restorePurchasesForPlayStoreAccount();
+
+        verify(mockBackend, times(1)).postReceiptData(eq(purchaseToken),
+                eq(purchases.getAppUserID()),
+                eq(sku),
+                eq(true),
+                any(Backend.BackendResponseHandler.class));
+
+        verify(listener, times(3)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(0)).onCompletedPurchase(any(PurchaserInfo.class));
+    }
+
+    @Test
+    public void doesntDoublePostReceipts() {
+        Purchase p1 = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p1.getSku()).thenReturn(sku);
+        when(p1.getPurchaseToken()).thenReturn(purchaseToken);
+
+        Purchase p2 = mock(Purchase.class);
+
+        when(p2.getSku()).thenReturn(sku);
+        when(p2.getPurchaseToken()).thenReturn(purchaseToken);
+
+        Purchase p3 = mock(Purchase.class);
+        when(p3.getSku()).thenReturn(sku);
+        when(p3.getPurchaseToken()).thenReturn(purchaseToken + "diff");
+
+        final List<Purchase> purchasesList = new ArrayList<>();
+        purchasesList.add(p1);
+        purchasesList.add(p2);
+        purchasesList.add(p3);
+
+        purchasesUpdatedListener.onPurchasesUpdated(purchasesList);
+
+        verify(mockBackend, times(2)).postReceiptData(any(String.class),
+                eq(purchases.getAppUserID()),
+                eq(sku),
+                eq(false),
+                any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
+    public void cachedUserInfoShouldGoToListener() {
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+    }
+
+    @Test
+    public void receivedPurchaserInfoShouldBeCached() {
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        purchases.onPurchasesUpdated(purchasesList);
+
+        verify(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(appUserId),
+                eq(sku),
+                eq(false),
+                any(Backend.BackendResponseHandler.class));
+
+        verify(mockCache).cachePurchaserInfo(any(PurchaserInfo.class));
     }
 }

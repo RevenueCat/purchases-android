@@ -22,8 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.revenuecat.purchases_sample.R.layout.text_view;
-
 public class MainActivity extends AppCompatActivity implements Purchases.PurchasesListener {
 
     private Purchases purchases;
@@ -85,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         setContentView(R.layout.activity_main);
 
         this.purchases = new Purchases.Builder(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN", this)
-                .appUserID("jerry").build();
+                .appUserID("jerry1001").build();
 
         List<String> skus = new ArrayList<>();
         skus.add(ONEMONTH_TRIAL_SKU);
@@ -121,6 +119,14 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         });
         mButton.setEnabled(false);
 
+        Button restoreButton = (Button)findViewById(R.id.restoreButton);
+        restoreButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                purchases.restorePurchasesForPlayStoreAccount();
+            }
+        });
+
         mRecyclerView = (RecyclerView) findViewById(R.id.expirationDates);
 
         mLayoutManager = new LinearLayoutManager(this);
@@ -130,6 +136,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     @Override
     public void onCompletedPurchase(PurchaserInfo purchaserInfo) {
         Log.i("Purchases", "Purchase completed: " + purchaserInfo);
+        onReceiveUpdatedPurchaserInfo(purchaserInfo);
     }
 
     @Override
