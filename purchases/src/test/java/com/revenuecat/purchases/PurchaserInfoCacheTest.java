@@ -60,4 +60,12 @@ public class PurchaserInfoCacheTest {
         PurchaserInfo info = cache.getCachedPurchaserInfo();
         assertNotNull(info);
     }
+
+    @Test
+    public void returnsNullForInvalidJSON() {
+        when(mockPrefs.getString(any(String.class), (String) eq(null)))
+                .thenReturn("not json");
+        PurchaserInfo info = cache.getCachedPurchaserInfo();
+        assertNull(info);
+    }
 }

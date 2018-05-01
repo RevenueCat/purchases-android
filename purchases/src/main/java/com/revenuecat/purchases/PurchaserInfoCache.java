@@ -17,7 +17,6 @@ class PurchaserInfoCache {
     }
 
     public PurchaserInfo getCachedPurchaserInfo() {
-
         String json = preferences.getString(cacheKey, null);
         if (json == null) {
             return null;
