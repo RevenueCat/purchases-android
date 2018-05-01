@@ -33,6 +33,7 @@ public class PurchasesTest {
     private Backend mockBackend = mock(Backend.class);
 
     private Application.ActivityLifecycleCallbacks activityLifecycleCallbacks;
+    private BillingWrapper.PurchasesUpdatedListener purchasesUpdatedListener;
 
     private String apiKey = "fakeapikey";
     private String appUserId = "fakeUserID";
@@ -59,8 +60,13 @@ public class PurchasesTest {
             }
         }).when(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
 
-        when(mockBillingWrapperFactory.buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class)))
-                .thenReturn(mockBillingWrapper);
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                purchasesUpdatedListener = invocation.getArgument(0);
+                return mockBillingWrapper;
+            }
+        }).when(mockBillingWrapperFactory).buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class));
 
         purchases = new Purchases(mockApplication, appUserId, listener, mockBackend, mockBillingWrapperFactory);
     }
@@ -306,5 +312,37 @@ public class PurchasesTest {
 
         verify(listener, times(3)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
         verify(listener, times(0)).onCompletedPurchase(any(PurchaserInfo.class));
+    }
+
+    @Test
+    public void doesntDoublePostReceipts() {
+        Purchase p1 = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p1.getSku()).thenReturn(sku);
+        when(p1.getPurchaseToken()).thenReturn(purchaseToken);
+
+        Purchase p2 = mock(Purchase.class);
+
+        when(p2.getSku()).thenReturn(sku);
+        when(p2.getPurchaseToken()).thenReturn(purchaseToken);
+
+        Purchase p3 = mock(Purchase.class);
+        when(p3.getSku()).thenReturn(sku);
+        when(p3.getPurchaseToken()).thenReturn(purchaseToken + "diff");
+
+        final List<Purchase> purchasesList = new ArrayList<>();
+        purchasesList.add(p1);
+        purchasesList.add(p2);
+        purchasesList.add(p3);
+
+        purchasesUpdatedListener.onPurchasesUpdated(purchasesList);
+
+        verify(mockBackend, times(2)).postReceiptData(any(String.class),
+                eq(purchases.getAppUserID()),
+                eq(sku),
+                eq(false),
+                any(Backend.BackendResponseHandler.class));
     }
 }

@@ -212,6 +212,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     @Override
     public void onActivityResumed(Activity activity) {
         getSubscriberInfo();
+        restorePurchasesForPlayStoreAccount();
     }
 
     @Override
