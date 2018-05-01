@@ -69,6 +69,8 @@ public class PurchasesTest {
             }
         }).when(mockBillingWrapperFactory).buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class));
 
+        PurchaserInfo mockInfo = mock(PurchaserInfo.class);
+        when(mockCache.getCachedPurchaserInfo()).thenReturn(mockInfo);
 
         purchases = new Purchases(mockApplication, appUserId, listener, mockBackend, mockBillingWrapperFactory, mockCache);
     }
@@ -214,7 +216,7 @@ public class PurchasesTest {
         activityLifecycleCallbacks.onActivityResumed(mock(Activity.class));
 
         verify(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
-        verify(listener).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
     }
 
     @Test
@@ -312,7 +314,7 @@ public class PurchasesTest {
                 eq(true),
                 any(Backend.BackendResponseHandler.class));
 
-        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(3)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
         verify(listener, times(0)).onCompletedPurchase(any(PurchaserInfo.class));
     }
 
@@ -346,5 +348,34 @@ public class PurchasesTest {
                 eq(sku),
                 eq(false),
                 any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
+    public void cachedUserInfoShouldGoToListener() {
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+    }
+
+    @Test
+    public void receivedPurchaserInfoShouldBeCached() {
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        purchases.onPurchasesUpdated(purchasesList);
+
+        verify(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(appUserId),
+                eq(sku),
+                eq(false),
+                any(Backend.BackendResponseHandler.class));
+
+        verify(mockCache).cachePurchaserInfo(any(PurchaserInfo.class));
     }
 }
