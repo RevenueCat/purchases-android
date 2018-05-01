@@ -47,7 +47,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     public static String getFrameworkVersion() {
         return "0.1.0-SNAPSHOT";
     }
-    
+
     Purchases(Application application,
               String appUserID, PurchasesListener listener,
               Backend backend, BillingWrapper.Factory billingWrapperFactory) {
