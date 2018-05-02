@@ -39,7 +39,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     private Date subscriberInfoLastChecked;
 
-
     public interface PurchasesListener {
         void onCompletedPurchase(PurchaserInfo purchaserInfo);
         void onFailedPurchase(Exception reason);
