@@ -72,7 +72,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
         application.registerActivityLifecycleCallbacks(this);
 
-        PurchaserInfo info = purchaserInfoCache.getCachedPurchaserInfo();
+        PurchaserInfo info = purchaserInfoCache.getCachedPurchaserInfo(appUserID);
         if (info != null) {
             listener.onReceiveUpdatedPurchaserInfo(info);
         }
@@ -172,7 +172,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             @Override
             public void onReceivePurchaserInfo(PurchaserInfo info) {
                 subscriberInfoLastChecked = new Date();
-                purchaserInfoCache.cachePurchaserInfo(info);
+                purchaserInfoCache.cachePurchaserInfo(appUserID, info);
                 listener.onReceiveUpdatedPurchaserInfo(info);
             }
 
@@ -319,7 +319,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             BillingWrapper.Factory billingWrapperFactory = new BillingWrapper.Factory(new BillingWrapper.ClientFactory(context), new Handler(application.getMainLooper()));
 
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.application);
-            PurchaserInfoCache cache = new PurchaserInfoCache(prefs, appUserID, apiKey);
+            PurchaserInfoCache cache = new PurchaserInfoCache(prefs, apiKey);
 
             return new Purchases(this.application, this.appUserID, this.listener, backend, billingWrapperFactory, cache);
         }

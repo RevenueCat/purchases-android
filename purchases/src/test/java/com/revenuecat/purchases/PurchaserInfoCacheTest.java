@@ -2,8 +2,6 @@ package com.revenuecat.purchases;
 
 import android.content.SharedPreferences;
 
-import com.android.billingclient.api.Purchase;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -12,7 +10,6 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
-import static com.revenuecat.purchases.PurchaserInfoTest.validEmptyPurchaserResponse;
 import static com.revenuecat.purchases.PurchaserInfoTest.validFullPurchaserResponse;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.TestCase.assertNotNull;
@@ -40,7 +37,7 @@ public class PurchaserInfoCacheTest {
         when(mockEditor.putString(any(String.class), any(String.class))).thenReturn(mockEditor);
         when(mockPrefs.edit()).thenReturn(mockEditor);
 
-        cache = new PurchaserInfoCache(mockPrefs, appUserID, apiKey);
+        cache = new PurchaserInfoCache(mockPrefs, apiKey);
     }
 
     @Test
@@ -51,13 +48,13 @@ public class PurchaserInfoCacheTest {
     @Test
     public void returnsNullIfNoCachedInfo() {
         when(mockPrefs.getString(any(String.class), (String) eq(null))).thenReturn(null);
-        PurchaserInfo info = cache.getCachedPurchaserInfo();
+        PurchaserInfo info = cache.getCachedPurchaserInfo(appUserID);
         assertNull(info);
     }
 
     @Test
     public void checksCorrectCacheKey() {
-        cache.getCachedPurchaserInfo();
+        cache.getCachedPurchaserInfo(appUserID);
         verify(mockPrefs).getString(eq(cacheKey), (String) eq(null));
     }
 
@@ -65,7 +62,7 @@ public class PurchaserInfoCacheTest {
     public void parsesJSONObject() {
         when(mockPrefs.getString(eq(cacheKey), (String) eq(null)))
                 .thenReturn(validFullPurchaserResponse);
-        PurchaserInfo info = cache.getCachedPurchaserInfo();
+        PurchaserInfo info = cache.getCachedPurchaserInfo(appUserID);
         assertNotNull(info);
     }
 
@@ -73,7 +70,7 @@ public class PurchaserInfoCacheTest {
     public void returnsNullForInvalidJSON() {
         when(mockPrefs.getString(eq(cacheKey), (String) eq(null)))
                 .thenReturn("not json");
-        PurchaserInfo info = cache.getCachedPurchaserInfo();
+        PurchaserInfo info = cache.getCachedPurchaserInfo(appUserID);
         assertNull(info);
     }
 
@@ -82,7 +79,7 @@ public class PurchaserInfoCacheTest {
         JSONObject jsonObject = new JSONObject(validFullPurchaserResponse);
         PurchaserInfo info = new PurchaserInfo.Factory().build(jsonObject);
 
-        cache.cachePurchaserInfo(info);
+        cache.cachePurchaserInfo(appUserID, info);
 
         verify(mockEditor).putString(eq(cacheKey), any(String.class));
         verify(mockEditor).apply();

@@ -7,17 +7,21 @@ import org.json.JSONObject;
 
 class PurchaserInfoCache {
     private final SharedPreferences preferences;
-    private final String cacheKey;
+    private final String apiKey;
     private final PurchaserInfo.Factory infoFactory;
 
-    PurchaserInfoCache(SharedPreferences preferences, String appUserID, String apiKey) {
+    PurchaserInfoCache(SharedPreferences preferences, String apiKey) {
         this.preferences = preferences;
-        this.cacheKey = apiKey + "_" + appUserID;
+        this.apiKey = apiKey;
         this.infoFactory = new PurchaserInfo.Factory();
     }
 
-    public PurchaserInfo getCachedPurchaserInfo() {
-        String json = preferences.getString(cacheKey, null);
+    private String cacheKey(String appUserID) {
+        return this.apiKey + "_" + appUserID;
+    }
+
+    public PurchaserInfo getCachedPurchaserInfo(String appUserID) {
+        String json = preferences.getString(cacheKey(appUserID), null);
         if (json == null) {
             return null;
         }
@@ -29,9 +33,9 @@ class PurchaserInfoCache {
         }
     }
 
-    public void cachePurchaserInfo(PurchaserInfo info) {
+    public void cachePurchaserInfo(String appUserID, PurchaserInfo info) {
         JSONObject jsonObject = info.getJSONObject();
         String jsonString = jsonObject.toString();
-        preferences.edit().putString(cacheKey, jsonString).apply();
+        preferences.edit().putString(cacheKey(appUserID), jsonString).apply();
     }
 }

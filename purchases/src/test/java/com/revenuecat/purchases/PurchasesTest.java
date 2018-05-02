@@ -70,7 +70,7 @@ public class PurchasesTest {
         }).when(mockBillingWrapperFactory).buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class));
 
         PurchaserInfo mockInfo = mock(PurchaserInfo.class);
-        when(mockCache.getCachedPurchaserInfo()).thenReturn(mockInfo);
+        when(mockCache.getCachedPurchaserInfo(any(String.class))).thenReturn(mockInfo);
 
         purchases = new Purchases(mockApplication, appUserId, listener, mockBackend, mockBillingWrapperFactory, mockCache);
     }
@@ -376,6 +376,6 @@ public class PurchasesTest {
                 eq(false),
                 any(Backend.BackendResponseHandler.class));
 
-        verify(mockCache).cachePurchaserInfo(any(PurchaserInfo.class));
+        verify(mockCache).cachePurchaserInfo(any(String.class), any(PurchaserInfo.class));
     }
 }
