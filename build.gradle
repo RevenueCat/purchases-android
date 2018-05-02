@@ -4,7 +4,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.0'
+        classpath 'com.android.tools.build:gradle:3.1.2'
     }
 }
 
@@ -29,5 +29,3 @@ task wrapper(type: Wrapper) {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
-
-apply from: 'gradle/dependencies.gradle'
