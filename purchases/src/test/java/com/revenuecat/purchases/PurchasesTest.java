@@ -31,7 +31,7 @@ public class PurchasesTest {
     private BillingWrapper mockBillingWrapper = mock(BillingWrapper.class);
     private BillingWrapper.Factory mockBillingWrapperFactory = mock(BillingWrapper.Factory.class);
     private Backend mockBackend = mock(Backend.class);
-    private PurchaserInfoCache mockCache = mock(PurchaserInfoCache.class);
+    private DeviceCache mockCache = mock(DeviceCache.class);
 
     private Application.ActivityLifecycleCallbacks activityLifecycleCallbacks;
     private BillingWrapper.PurchasesUpdatedListener purchasesUpdatedListener;
