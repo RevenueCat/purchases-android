@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     }
 
     @Override
-    public void onCompletedPurchase(PurchaserInfo purchaserInfo) {
+    public void onCompletedPurchase(String sku, PurchaserInfo purchaserInfo) {
         Log.i("Purchases", "Purchase completed: " + purchaserInfo);
         onReceiveUpdatedPurchaserInfo(purchaserInfo);
     }

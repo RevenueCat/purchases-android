@@ -29,7 +29,7 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 public final class Purchases implements BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
     private final String appUserID;
-    private final PurchaserInfoCache purchaserInfoCache;
+    private final DeviceCache deviceCache;
     private Boolean usingAnonymousID = false;
     private final PurchasesListener listener;
     private final Backend backend;
@@ -40,7 +40,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private Date subscriberInfoLastChecked;
 
     public interface PurchasesListener {
-        void onCompletedPurchase(PurchaserInfo purchaserInfo);
+        void onCompletedPurchase(String sku, PurchaserInfo purchaserInfo);
         void onFailedPurchase(Exception reason);
         void onReceiveUpdatedPurchaserInfo(PurchaserInfo purchaserInfo);
     }
@@ -57,22 +57,28 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
               String appUserID, PurchasesListener listener,
               Backend backend,
               BillingWrapper.Factory billingWrapperFactory,
-              PurchaserInfoCache purchaserInfoCache) {
+              DeviceCache deviceCache) {
 
         if (appUserID == null) {
-            appUserID = UUID.randomUUID().toString();
             usingAnonymousID = true;
+
+            appUserID = deviceCache.getCachedAppUserID();
+
+            if (appUserID == null) {
+                appUserID = UUID.randomUUID().toString();
+                deviceCache.cacheAppUserID(appUserID);
+            }
         }
         this.appUserID = appUserID;
 
         this.listener = listener;
         this.backend = backend;
         this.billingWrapper = billingWrapperFactory.buildWrapper(this);
-        this.purchaserInfoCache = purchaserInfoCache;
+        this.deviceCache = deviceCache;
 
         application.registerActivityLifecycleCallbacks(this);
 
-        PurchaserInfo info = purchaserInfoCache.getCachedPurchaserInfo();
+        PurchaserInfo info = deviceCache.getCachedPurchaserInfo(appUserID);
         if (info != null) {
             listener.onReceiveUpdatedPurchaserInfo(info);
         }
@@ -172,7 +178,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             @Override
             public void onReceivePurchaserInfo(PurchaserInfo info) {
                 subscriberInfoLastChecked = new Date();
-                purchaserInfoCache.cachePurchaserInfo(info);
+                deviceCache.cachePurchaserInfo(appUserID, info);
                 listener.onReceiveUpdatedPurchaserInfo(info);
             }
 
@@ -186,13 +192,14 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private void postPurchases(List<Purchase> purchases, Boolean isRestore, final Boolean isPurchase) {
         for (Purchase p : purchases) {
             final String token = p.getPurchaseToken();
+            final String sku = p.getSku();
             if (postedTokens.contains(token)) continue;
             postedTokens.add(token);
-            backend.postReceiptData(token, appUserID, p.getSku(), isRestore, new Backend.BackendResponseHandler() {
+            backend.postReceiptData(token, appUserID, sku, isRestore, new Backend.BackendResponseHandler() {
                 @Override
                 public void onReceivePurchaserInfo(PurchaserInfo info) {
                     if (isPurchase) {
-                        listener.onCompletedPurchase(info);
+                        listener.onCompletedPurchase(sku, info);
                     } else {
                         listener.onReceiveUpdatedPurchaserInfo(info);
                     }
@@ -319,7 +326,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             BillingWrapper.Factory billingWrapperFactory = new BillingWrapper.Factory(new BillingWrapper.ClientFactory(context), new Handler(application.getMainLooper()));
 
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.application);
-            PurchaserInfoCache cache = new PurchaserInfoCache(prefs, appUserID, apiKey);
+            DeviceCache cache = new DeviceCache(prefs, apiKey);
 
             return new Purchases(this.application, this.appUserID, this.listener, backend, billingWrapperFactory, cache);
         }

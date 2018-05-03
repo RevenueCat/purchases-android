@@ -31,7 +31,7 @@ public class PurchasesTest {
     private BillingWrapper mockBillingWrapper = mock(BillingWrapper.class);
     private BillingWrapper.Factory mockBillingWrapperFactory = mock(BillingWrapper.Factory.class);
     private Backend mockBackend = mock(Backend.class);
-    private PurchaserInfoCache mockCache = mock(PurchaserInfoCache.class);
+    private DeviceCache mockCache = mock(DeviceCache.class);
 
     private Application.ActivityLifecycleCallbacks activityLifecycleCallbacks;
     private BillingWrapper.PurchasesUpdatedListener purchasesUpdatedListener;
@@ -70,7 +70,7 @@ public class PurchasesTest {
         }).when(mockBillingWrapperFactory).buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class));
 
         PurchaserInfo mockInfo = mock(PurchaserInfo.class);
-        when(mockCache.getCachedPurchaserInfo()).thenReturn(mockInfo);
+        when(mockCache.getCachedPurchaserInfo(any(String.class))).thenReturn(mockInfo);
 
         purchases = new Purchases(mockApplication, appUserId, listener, mockBackend, mockBillingWrapperFactory, mockCache);
     }
@@ -235,6 +235,20 @@ public class PurchasesTest {
     }
 
     @Test
+    public void storesGeneratedAppUserID() {
+        new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
+        verify(mockCache).cacheAppUserID(any(String.class));
+    }
+
+    @Test
+    public void pullsUserIDFromCache() {
+        String appUserID = "random_id";
+        when(mockCache.getCachedAppUserID()).thenReturn(appUserID);
+        Purchases p = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
+        assertEquals(appUserID, p.getAppUserID());
+    }
+
+    @Test
     public void isRestoreWhenUsingNullAppUserID() {
         Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
 
@@ -315,7 +329,7 @@ public class PurchasesTest {
                 any(Backend.BackendResponseHandler.class));
 
         verify(listener, times(3)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
-        verify(listener, times(0)).onCompletedPurchase(any(PurchaserInfo.class));
+        verify(listener, times(0)).onCompletedPurchase(any(String.class), any(PurchaserInfo.class));
     }
 
     @Test
@@ -376,6 +390,6 @@ public class PurchasesTest {
                 eq(false),
                 any(Backend.BackendResponseHandler.class));
 
-        verify(mockCache).cachePurchaserInfo(any(PurchaserInfo.class));
+        verify(mockCache).cachePurchaserInfo(any(String.class), any(PurchaserInfo.class));
     }
 }

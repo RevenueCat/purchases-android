@@ -161,7 +161,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         if (responseCode == BillingClient.BillingResponse.OK && purchases != null) {
             purchasesUpdatedListener.onPurchasesUpdated(purchases);
         } else {
-            purchasesUpdatedListener.onPurchasesFailedToUpdate(responseCode, "idk something failed " + responseCode);
+            purchasesUpdatedListener.onPurchasesFailedToUpdate(responseCode, "Error updating purchases " + responseCode);
         }
     }
 
