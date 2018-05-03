@@ -329,7 +329,7 @@ public class PurchasesTest {
                 any(Backend.BackendResponseHandler.class));
 
         verify(listener, times(3)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
-        verify(listener, times(0)).onCompletedPurchase(any(PurchaserInfo.class));
+        verify(listener, times(0)).onCompletedPurchase(any(String.class), any(PurchaserInfo.class));
     }
 
     @Test

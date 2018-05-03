@@ -40,7 +40,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private Date subscriberInfoLastChecked;
 
     public interface PurchasesListener {
-        void onCompletedPurchase(PurchaserInfo purchaserInfo);
+        void onCompletedPurchase(String sku, PurchaserInfo purchaserInfo);
         void onFailedPurchase(Exception reason);
         void onReceiveUpdatedPurchaserInfo(PurchaserInfo purchaserInfo);
     }
@@ -192,13 +192,14 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private void postPurchases(List<Purchase> purchases, Boolean isRestore, final Boolean isPurchase) {
         for (Purchase p : purchases) {
             final String token = p.getPurchaseToken();
+            final String sku = p.getSku();
             if (postedTokens.contains(token)) continue;
             postedTokens.add(token);
-            backend.postReceiptData(token, appUserID, p.getSku(), isRestore, new Backend.BackendResponseHandler() {
+            backend.postReceiptData(token, appUserID, sku, isRestore, new Backend.BackendResponseHandler() {
                 @Override
                 public void onReceivePurchaserInfo(PurchaserInfo info) {
                     if (isPurchase) {
-                        listener.onCompletedPurchase(info);
+                        listener.onCompletedPurchase(sku, info);
                     } else {
                         listener.onReceiveUpdatedPurchaserInfo(info);
                     }
