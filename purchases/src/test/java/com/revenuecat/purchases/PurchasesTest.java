@@ -235,6 +235,20 @@ public class PurchasesTest {
     }
 
     @Test
+    public void storesGeneratedAppUserID() {
+        new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
+        verify(mockCache).cacheAppUserID(any(String.class));
+    }
+
+    @Test
+    public void pullsUserIDFromCache() {
+        String appUserID = "random_id";
+        when(mockCache.getCachedAppUserID()).thenReturn(appUserID);
+        Purchases p = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
+        assertEquals(appUserID, p.getAppUserID());
+    }
+
+    @Test
     public void isRestoreWhenUsingNullAppUserID() {
         Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
 

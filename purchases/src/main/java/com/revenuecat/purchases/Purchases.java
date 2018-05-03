@@ -60,8 +60,14 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
               DeviceCache deviceCache) {
 
         if (appUserID == null) {
-            appUserID = UUID.randomUUID().toString();
             usingAnonymousID = true;
+
+            appUserID = deviceCache.getCachedAppUserID();
+
+            if (appUserID == null) {
+                appUserID = UUID.randomUUID().toString();
+                deviceCache.cacheAppUserID(appUserID);
+            }
         }
         this.appUserID = appUserID;
 
