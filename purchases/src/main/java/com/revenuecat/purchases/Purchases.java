@@ -193,8 +193,8 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             }
 
             @Override
-            public void onError(Exception e) {
-                Log.e("Purchases", "Error fetching subscriber data: " + e.getMessage());
+            public void onError(int code, String message) {
+                Log.e("Purchases", "Error fetching subscriber data: " + message);
             }
         });
     }
@@ -216,9 +216,9 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                 }
 
                 @Override
-                public void onError(Exception e) {
+                public void onError(int code, String message) {
                     postedTokens.remove(token);
-                    listener.onFailedPurchase(ErrorDomains.REVENUECAT_BACKEND, 0, e.getMessage());
+                    listener.onFailedPurchase(ErrorDomains.REVENUECAT_BACKEND, code, message);
                 }
             });
         }
