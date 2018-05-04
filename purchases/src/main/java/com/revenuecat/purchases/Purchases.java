@@ -276,13 +276,12 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         }
 
         public Builder(Context context, String apiKey, PurchasesListener listener) {
+            if (context == null) {
+                throw new IllegalArgumentException("Context must be set.");
+            }
 
             if (!hasPermission(context, Manifest.permission.INTERNET)) {
                 throw new IllegalArgumentException("Purchases requires INTERNET permission.");
-            }
-
-            if (context == null) {
-                throw new IllegalArgumentException("Context must be set.");
             }
 
             if (apiKey == null || apiKey.length() == 0) {
