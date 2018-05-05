@@ -2,6 +2,8 @@ Releasing
 =========
 
  1. Change the version in `gradle.properties` to a non-SNAPSHOT version.
+ 2. Change the version number in Purchases.java
+ 2. Change the versionName in purchases/build.gradles
  2. Update the `CHANGELOG.md` for the impending release.
  3. Update the `README.md` with the new version.
  4. `git commit -am "Prepare for release X.Y.Z."` (where X.Y.Z is the new version)
