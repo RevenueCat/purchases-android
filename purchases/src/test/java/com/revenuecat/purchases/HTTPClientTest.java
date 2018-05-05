@@ -1,13 +1,7 @@
 package com.revenuecat.purchases;
 
-import android.util.Log;
-
-import junit.framework.TestCase;
-
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,9 +11,7 @@ import org.robolectric.annotation.Config;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.logging.Logger;
 
-import okhttp3.HttpUrl;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -129,7 +121,7 @@ public class HTTPClientTest {
         assertEquals(request.getHeader("Content-Type"), "application/json");
         assertEquals(request.getHeader("X-Platform"), "android");
         assertEquals(request.getHeader("X-Platform-Version"), Integer.toString(android.os.Build.VERSION.SDK_INT));
-        assertEquals(request.getHeader("X-Version"), "0.1.0-SNAPSHOT");
+        assertEquals(request.getHeader("X-Version"), Purchases.getFrameworkVersion());
     }
 
     @Test
