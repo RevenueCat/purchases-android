@@ -53,7 +53,7 @@ public class DispatcherTest {
             }
 
             @Override
-            void onError(Exception exception) {
+            void onError(int code, String message) {
                 DispatcherTest.this.errorCalled = true;
             }
         };

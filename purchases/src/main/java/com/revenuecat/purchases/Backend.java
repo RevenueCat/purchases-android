@@ -14,7 +14,7 @@ class Backend {
 
     public static abstract class BackendResponseHandler {
         abstract public void onReceivePurchaserInfo(PurchaserInfo info);
-        abstract public void onError(Exception e);
+        abstract public void onError(int code, String message);
     }
 
     private abstract class PurchaserInfoReceivingCall extends Dispatcher.AsyncCall {
@@ -29,24 +29,24 @@ class Backend {
                 try {
                     handler.onReceivePurchaserInfo(purchaserInfoFactory.build(result.body));
                 } catch (JSONException e) {
-                    handler.onError(e);
+                    handler.onError(result.responseCode, e.getMessage());
                 }
             } else {
-                Exception e = null;
+                String errorMessage = null;
                 try {
                     String message = result.body.getString("message");
-                    e = new Exception("Server error " + result.responseCode + ": " + message);
+                    errorMessage = "Server error: " + message;
                 } catch (JSONException jsonException) {
-                    e = new Exception("Unexpected server error " + result.responseCode);
+                    errorMessage = "Unexpected server error " + result.responseCode;
                 }
 
-                handler.onError(e);
+                handler.onError(result.responseCode, errorMessage);
             }
         }
 
         @Override
-        void onError(Exception exception) {
-            handler.onError(exception);
+        void onError(int code, String message) {
+            handler.onError(code, message);
         };
     }
 

@@ -11,7 +11,6 @@ import org.robolectric.annotation.Config;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static junit.framework.Assert.assertEquals;
@@ -19,7 +18,6 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertSame;
 import static junit.framework.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -61,7 +59,8 @@ public class BackendTest {
     }
 
     private PurchaserInfo receivedPurchaserInfo = null;
-    private Exception receivedException = null;
+    private int receivedCode = -1;
+    private String receivedMessage = null;
 
     final private Backend.BackendResponseHandler handler = new Backend.BackendResponseHandler() {
 
@@ -71,8 +70,9 @@ public class BackendTest {
         }
 
         @Override
-        public void onError(Exception e) {
-            BackendTest.this.receivedException = e;
+        public void onError(int code, String message) {
+            BackendTest.this.receivedCode = -1;
+            BackendTest.this.receivedMessage = message;
         }
     };
 
@@ -147,7 +147,7 @@ public class BackendTest {
         getPurchaserInfo(failureCode, null, null);
 
         assertNull(receivedPurchaserInfo);
-        assertNotNull(receivedException);
+        assertNotNull(receivedMessage);
     }
 
     @Test
@@ -155,21 +155,21 @@ public class BackendTest {
         getPurchaserInfo(200, new HTTPClient.HTTPErrorException(0, ""), null);
 
         assertNull(receivedPurchaserInfo);
-        assertNotNull(receivedException);
+        assertNotNull(receivedMessage);
     }
 
     @Test
     public void attemptsToParseErrorMessageFromServer() throws HTTPClient.HTTPErrorException, JSONException {
         getPurchaserInfo(404, null, "{'message': 'Dude not found'}");
 
-        assertNotNull(receivedException);
-        assertTrue(receivedException.getMessage().contains("Dude not found"));
+        assertNotNull(receivedMessage);
+        assertTrue(receivedMessage.contains("Dude not found"));
     }
 
     @Test
     public void handlesMissingMessageInErrorBody() throws HTTPClient.HTTPErrorException, JSONException {
         getPurchaserInfo(404, null, "{'no_message': 'Dude not found'}");
-        assertNotNull(receivedException);
+        assertNotNull(receivedMessage);
     }
 
     @Test
@@ -185,6 +185,6 @@ public class BackendTest {
         postReceipt(401, false, null, null);
 
         assertNull(receivedPurchaserInfo);
-        assertNotNull(receivedException);
+        assertNotNull(receivedMessage);
     }
 }

@@ -1,15 +1,12 @@
 package com.revenuecat.purchases;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 
 class Dispatcher {
     abstract static class AsyncCall implements Runnable {
         abstract public HTTPClient.Result call() throws HTTPClient.HTTPErrorException;
-        void onError(Exception exception) {};
+        void onError(int code, String message) {};
         void onCompletion(HTTPClient.Result result) {};
 
         @Override
@@ -18,7 +15,7 @@ class Dispatcher {
                 HTTPClient.Result result = call();
                 onCompletion(result);
             } catch (HTTPClient.HTTPErrorException e) {
-                onError(e);
+                onError(0, e.getMessage());
             }
         }
     }

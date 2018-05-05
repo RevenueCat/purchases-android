@@ -140,8 +140,8 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     }
 
     @Override
-    public void onFailedPurchase(Exception reason) {
-        Log.i("Purchases", "" + reason);
+    public void onFailedPurchase(int domain, int code, String reason) {
+        Log.i("Purchases", reason);
     }
 
     @Override

@@ -18,7 +18,7 @@ public class PurchasesBuilderTest {
 
     private Purchases.PurchasesListener listener = new Purchases.PurchasesListener() {
         @Override
-        public void onCompletedPurchase(PurchaserInfo purchaserInfo) {
+        public void onCompletedPurchase(String sku, PurchaserInfo purchaserInfo) {
 
         }
 

@@ -8,12 +8,14 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.support.annotation.IntDef;
 import android.util.Log;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.SkuDetails;
 
+import java.lang.annotation.Retention;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -25,6 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 public final class Purchases implements BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
@@ -39,9 +42,16 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     private Date subscriberInfoLastChecked;
 
+    @IntDef({ErrorDomains.REVENUECAT_BACKEND, ErrorDomains.PLAY_BILLING})
+    @Retention(SOURCE)
+    public @interface ErrorDomains {
+        int REVENUECAT_BACKEND = 0;
+        int PLAY_BILLING = 1;
+    }
+
     public interface PurchasesListener {
         void onCompletedPurchase(String sku, PurchaserInfo purchaserInfo);
-        void onFailedPurchase(Exception reason);
+        void onFailedPurchase(@ErrorDomains int domain, int code, String reason);
         void onReceiveUpdatedPurchaserInfo(PurchaserInfo purchaserInfo);
     }
 
@@ -183,8 +193,8 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             }
 
             @Override
-            public void onError(Exception e) {
-                Log.e("Purchases", "Error fetching subscriber data: " + e.getMessage());
+            public void onError(int code, String message) {
+                Log.e("Purchases", "Error fetching subscriber data: " + message);
             }
         });
     }
@@ -206,9 +216,9 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                 }
 
                 @Override
-                public void onError(Exception e) {
+                public void onError(int code, String message) {
                     postedTokens.remove(token);
-                    listener.onFailedPurchase(e);
+                    listener.onFailedPurchase(ErrorDomains.REVENUECAT_BACKEND, code, message);
                 }
             });
         }
@@ -221,7 +231,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     @Override
     public void onPurchasesFailedToUpdate(int responseCode, String message) {
-        listener.onFailedPurchase(new Exception(message));
+        listener.onFailedPurchase(ErrorDomains.PLAY_BILLING, responseCode, message);
     }
 
     @Override
@@ -276,13 +286,12 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         }
 
         public Builder(Context context, String apiKey, PurchasesListener listener) {
+            if (context == null) {
+                throw new IllegalArgumentException("Context must be set.");
+            }
 
             if (!hasPermission(context, Manifest.permission.INTERNET)) {
                 throw new IllegalArgumentException("Purchases requires INTERNET permission.");
-            }
-
-            if (context == null) {
-                throw new IllegalArgumentException("Context must be set.");
             }
 
             if (apiKey == null || apiKey.length() == 0) {

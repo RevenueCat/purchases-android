@@ -202,7 +202,7 @@ public class PurchasesTest {
     public void passesUpErrors() {
         purchases.onPurchasesFailedToUpdate(0, "");
 
-        verify(listener).onFailedPurchase(any(Exception.class));
+        verify(listener).onFailedPurchase(eq(Purchases.ErrorDomains.PLAY_BILLING), eq(0), any(String.class));
     }
 
     @Test
