@@ -10,10 +10,16 @@ class Backend {
     final private Dispatcher dispatcher;
     final private HTTPClient httpClient;
     final private PurchaserInfo.Factory purchaserInfoFactory;
+    final private Entitlement.Factory entitlementFactory;
     final private Map<String, String> authenticationHeaders;
 
     public static abstract class BackendResponseHandler {
         abstract public void onReceivePurchaserInfo(PurchaserInfo info);
+        abstract public void onError(int code, String message);
+    }
+
+    public static abstract class EntitlementsResponseHandler {
+        abstract public void onReceiveEntitlements(Map<String, Entitlement> entitlements);
         abstract public void onError(int code, String message);
     }
 
@@ -50,11 +56,12 @@ class Backend {
         };
     }
 
-    Backend(String apiKey, Dispatcher dispatcher, com.revenuecat.purchases.HTTPClient httpClient, PurchaserInfo.Factory purchaserInfoFactory) {
+    Backend(String apiKey, Dispatcher dispatcher, HTTPClient httpClient, PurchaserInfo.Factory purchaserInfoFactory, Entitlement.Factory entitlementFactory) {
         this.apiKey = apiKey;
         this.dispatcher = dispatcher;
         this.httpClient = httpClient;
         this.purchaserInfoFactory = purchaserInfoFactory;
+        this.entitlementFactory = entitlementFactory;
 
         this.authenticationHeaders = new HashMap<>();
         this.authenticationHeaders.put("Authorization", "Bearer " + this.apiKey);
@@ -83,5 +90,9 @@ class Backend {
                 return httpClient.performRequest("/receipts", body, authenticationHeaders);
             }
         });
+    }
+
+    void getEntitlements(final String appUserID, EntitlementsResponseHandler handler) {
+
     }
 }
