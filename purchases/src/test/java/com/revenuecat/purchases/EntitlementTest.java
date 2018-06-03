@@ -30,7 +30,7 @@ public class EntitlementTest {
 
     @Test
     public void factoryHandlesEntitlementNoOfferings() throws JSONException {
-        Map<String, Entitlement> entitlementMap = buildEntitlementMap("{'pro': {}}");
+        Map<String, Entitlement> entitlementMap = buildEntitlementMap("{'pro': {'offerings': {}}}");
         assertEquals(1, entitlementMap.size());
         Entitlement e = entitlementMap.get("pro");
         Map<String, Offering> offerings = e.getOfferings();
@@ -39,17 +39,17 @@ public class EntitlementTest {
 
     @Test
     public void factoryHandlesOneOffering() throws JSONException {
-        Map<String, Entitlement> entitlementMap = buildEntitlementMap("{'pro': {'monthly': {'active_product_identifier': 'onemonth_freetrial'}}}");
+        Map<String, Entitlement> entitlementMap = buildEntitlementMap("{'pro': {'offerings': {'monthly': {'active_product_identifier': 'onemonth_freetrial'}}}}");
         Entitlement e = entitlementMap.get("pro");
         Map<String, Offering> offerings = e.getOfferings();
-        assertEquals(0, offerings.size());
+        assertEquals(1, offerings.size());
         Offering o = offerings.get("monthly");
         assertEquals("onemonth_freetrial", o.getActiveProductIdentifier());
     }
 
     @Test
     public void factoryHandlesMultipleOfferings() throws JSONException {
-        Map<String, Entitlement> entitlementMap = buildEntitlementMap("{'pro': {'monthly': {'active_product_identifier': 'onemonth_freetrial'},'annual': {'active_product_identifier': 'oneyear_freetrial'}}}");
+        Map<String, Entitlement> entitlementMap = buildEntitlementMap("{'pro': {'offerings': {'monthly': {'active_product_identifier': 'onemonth_freetrial'},'annual': {'active_product_identifier': 'oneyear_freetrial'}}}}");
         Entitlement e = entitlementMap.get("pro");
         Map<String, Offering> offerings = e.getOfferings();
 
@@ -62,7 +62,7 @@ public class EntitlementTest {
 
     @Test
     public void factoryHandlesMultipleEntitlments() throws JSONException {
-        Map<String, Entitlement> entitlementMap = buildEntitlementMap("{'pro': {'monthly': {'active_product_identifier': 'onemonth_freetrial'},'annual': {'active_product_identifier': 'oneyear_freetrial'}}, 'pro2': {'monthly': {'active_product_identifier': 'onemonth_freetrial2'},'annual': {'active_product_identifier': 'oneyear_freetrial2'}}}");
+        Map<String, Entitlement> entitlementMap = buildEntitlementMap("{'pro': {'offerings': {'monthly': {'active_product_identifier': 'onemonth_freetrial'},'annual': {'active_product_identifier': 'oneyear_freetrial'}}}, 'pro2': {'offerings': {'monthly': {'active_product_identifier': 'onemonth_freetrial2'},'annual': {'active_product_identifier': 'oneyear_freetrial2'}}}}");
         assertEquals(2, entitlementMap.size());
     }
 }
