@@ -10,6 +10,10 @@ public class Offering {
         this.activeProductIdentifier = activeProductIdentifier;
     }
 
+    String getActiveProductIdentifier() {
+        return activeProductIdentifier;
+    }
+
     void setSkuDetails(SkuDetails details) {
         this.skuDetails = details;
     }
