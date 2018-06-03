@@ -1,6 +1,7 @@
 package com.revenuecat.purchases;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -92,7 +93,30 @@ class Backend {
         });
     }
 
-    void getEntitlements(final String appUserID, EntitlementsResponseHandler handler) {
+    void getEntitlements(final String appUserID, final EntitlementsResponseHandler handler) {
+        dispatcher.enqueue(new Dispatcher.AsyncCall() {
+            @Override
+            public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
+                return httpClient.performRequest("/subscribers/" + appUserID + "/products",null, authenticationHeaders);
+            }
 
+            void onError(int code, String message) {
+                handler.onError(code, message);
+            }
+
+            void onCompletion(HTTPClient.Result result) {
+                if (result.responseCode < 300) {
+                    try {
+                        JSONObject entitlementsResponse = result.body.getJSONObject("entitlements");
+                        Map<String, Entitlement> entitlementMap = entitlementFactory.build(entitlementsResponse);
+                        handler.onReceiveEntitlements(entitlementMap);
+                    } catch (JSONException e) {
+                        handler.onError(result.responseCode, "Error parsing products JSON " + e.getLocalizedMessage());
+                    }
+                } else {
+                    handler.onError(result.responseCode, "Backend error");
+                }
+            }
+        });
     }
 }

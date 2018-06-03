@@ -210,7 +210,7 @@ public class BackendTest {
     public void canGetEntitlementsWhenEmpty() throws HTTPClient.HTTPErrorException, JSONException {
 
         mockResponse("/subscribers/" + appUserID + "/products",
-                null, 200, null, "{}");
+                null, 200, null, "{'entitlements': {}}");
 
         backend.getEntitlements(appUserID, entitlementsHandler);
 
@@ -219,9 +219,21 @@ public class BackendTest {
     }
 
     @Test
+    public void canHandleBadEntitlementsResponse() throws HTTPClient.HTTPErrorException, JSONException {
+
+        mockResponse("/subscribers/" + appUserID + "/products",
+                null, 200, null, "{}");
+
+        backend.getEntitlements(appUserID, entitlementsHandler);
+
+        assertNull(receivedEntitlements);
+        assertNotNull(receivedMessage);
+    }
+
+    @Test
     public void passesEntitlementsFieldToFactory() throws HTTPClient.HTTPErrorException, JSONException {
         mockResponse("/subscribers/" + appUserID + "/products",
-                null, 200, null, "{'entitlements': {}}");
+                null, 200, null, "{'entitlements': {'pro': {}}}");
         when(mockEntitlementFactory.build((JSONObject) ArgumentMatchers.any())).thenReturn(new HashMap<String, Entitlement>());
 
         backend.getEntitlements(appUserID, entitlementsHandler);
