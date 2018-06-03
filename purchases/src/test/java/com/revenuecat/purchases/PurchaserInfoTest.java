@@ -1,7 +1,5 @@
 package com.revenuecat.purchases;
 
-import com.revenuecat.purchases.util.Iso8601Utils;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -9,11 +7,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Set;
-import java.util.TimeZone;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
@@ -27,6 +22,7 @@ public class PurchaserInfoTest {
     static final String validEmptyPurchaserResponse = "{'subscriber': {'other_purchases': {}, 'subscriptions': {}}}";
 
     static final String validFullPurchaserResponse = "{'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}}}";
+    static final String validTwoProducts = "{'subscriber': {'original_application_version': '1.0','other_purchases': {},'subscriptions':{'product_a': {'expires_date': '2018-05-27T06:24:50Z','period_type': 'normal'},'product_b': {'expires_date': '2018-05-27T05:24:50Z','period_type': 'normal'}}}}";
 
     // FactoryTests
     private PurchaserInfo.Factory factory = new PurchaserInfo.Factory();
@@ -103,6 +99,12 @@ public class PurchaserInfoTest {
         Date threeMonthDate = info.getExpirationDateForSku("threemonth_freetrial");
 
         assertTrue(oneMonthDate.after(threeMonthDate));
+    }
+
+    @Test
+    public void getExpirationDateTwoProducts() throws JSONException {
+        PurchaserInfo info = factory.build(new JSONObject(validTwoProducts));
+        assertNotNull(info);
     }
 
 }
