@@ -13,7 +13,9 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
@@ -391,5 +393,102 @@ public class PurchasesTest {
                 any(Backend.BackendResponseHandler.class));
 
         verify(mockCache).cachePurchaserInfo(any(String.class), any(PurchaserInfo.class));
+    }
+
+    @Test
+    public void getEntitlementsHitsBackend() {
+        purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+
+            }
+        });
+
+        verify(mockBackend).getEntitlements(any(String.class), any(Backend.EntitlementsResponseHandler.class));
+    }
+
+    private Map<String, Entitlement> receivedEntitlementMap = null;
+
+    private void mockProducts(final List<String> skus) {
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.EntitlementsResponseHandler handler = invocation.getArgument(1);
+                Map<String, Offering> offeringMap = new HashMap<>();
+
+                for (String sku : skus) {
+                    Offering o = new Offering(sku);
+                    offeringMap.put(sku + "_offering", o);
+                }
+
+                Map<String, Entitlement> entitlementMap = new HashMap<>();
+                Entitlement e = new Entitlement(offeringMap);
+                entitlementMap.put("pro", e);
+
+                handler.onReceiveEntitlements(entitlementMap);
+                return null;
+            };
+        }).when(mockBackend).getEntitlements(any(String.class), any(Backend.EntitlementsResponseHandler.class));
+    }
+
+    private List<SkuDetails> mockSkuDetails(List<String> skus, String type) {
+        List<SkuDetails> skuDetails = new ArrayList<>();
+
+        for (String sku : skus) {
+            SkuDetails details = mock(SkuDetails.class);
+            when(details.getSku()).thenReturn(sku);
+            skuDetails.add(details);
+        }
+
+        mockSkuDetailFetch(skuDetails, skus, type);
+        return skuDetails;
+    }
+
+    private Purchases.GetEntitlementsHandler entitlementsHandler = new Purchases.GetEntitlementsHandler() {
+        @Override
+        public void onReceiveEntitlements(Map<String, Entitlement> newEntitlementMap) {
+            PurchasesTest.this.receivedEntitlementMap = newEntitlementMap;
+        }
+    };
+
+    @Test
+    public void getEntitlementsPopulatesMissingSkuDetails() {
+
+        List<String> skus = new ArrayList<>();
+        skus.add("monthly");
+
+        mockProducts(skus);
+        List<SkuDetails> details = mockSkuDetails(skus, BillingClient.SkuType.SUBS);
+
+        purchases.getEntitlements(entitlementsHandler);
+
+        assertNotNull(receivedEntitlementMap);
+
+        verify(mockBillingWrapper, times(1)).querySkuDetailsAsync(eq(BillingClient.SkuType.SUBS), eq(skus), any(BillingWrapper.SkuDetailsResponseListener.class));
+
+        Entitlement e = receivedEntitlementMap.get("pro");
+        assertEquals(1, e.getOfferings().size());
+        Offering o = e.getOfferings().get("monthly_offering");
+        assertSame(details, o.getSkuDetails());
+    }
+
+    @Test
+    public void getEntitlementsDoesntCheckInappsUnlessThereAreMissingSubs() {
+        List<String> skus = new ArrayList<>();
+        List<String> subsSkus = new ArrayList<>();
+        skus.add("monthly");
+        subsSkus.add("monthly");
+
+        List<String> inappSkus = new ArrayList<>();
+        skus.add("monthly_inapp");
+        inappSkus.add("monthly_inapp");
+
+        mockProducts(skus);
+
+        mockSkuDetails(subsSkus, BillingClient.SkuType.SUBS);
+        mockSkuDetails(inappSkus, BillingClient.SkuType.INAPP);
+
+        verify(mockBillingWrapper).querySkuDetailsAsync(eq(BillingClient.SkuType.SUBS), eq(skus), any(BillingWrapper.SkuDetailsResponseListener.class));
+        verify(mockBillingWrapper).querySkuDetailsAsync(eq(BillingClient.SkuType.INAPP), eq(subsSkus), any(BillingWrapper.SkuDetailsResponseListener.class));
     }
 }

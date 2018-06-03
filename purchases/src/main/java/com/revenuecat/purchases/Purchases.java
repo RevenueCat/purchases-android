@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -57,6 +58,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     public interface GetSkusResponseHandler {
         void onReceiveSkus(List<SkuDetails> skus);
+    }
+
+    public interface GetEntitlementsHandler {
+        void onReceiveEntitlements(Map<String, Entitlement> entitlementMap);
     }
 
     public static String getFrameworkVersion() {
@@ -102,6 +107,15 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
      */
     public String getAppUserID() {
         return appUserID;
+    }
+
+    /**
+     * Fetches the correct offered entitlements from the server for this user. Use this method to
+     * avoid hard coding Skus in your app.
+     * @param handler Response handler
+     */
+    public void getEntitlements(GetEntitlementsHandler handler) {
+
     }
 
     /**
