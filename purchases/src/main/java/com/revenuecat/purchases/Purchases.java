@@ -18,6 +18,7 @@ import com.android.billingclient.api.SkuDetails;
 import java.lang.annotation.Retention;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -114,9 +115,63 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
      * avoid hard coding Skus in your app.
      * @param handler Response handler
      */
-    public void getEntitlements(GetEntitlementsHandler handler) {
+    public void getEntitlements(final GetEntitlementsHandler handler) {
+        backend.getEntitlements(getAppUserID(), new Backend.EntitlementsResponseHandler() {
+            @Override
+            public void onReceiveEntitlements(final Map<String, Entitlement> entitlements) {
+                final List<String> skus = new ArrayList<>();
+                final Map<String, SkuDetails> detailsByID = new HashMap<>();
+                for (Entitlement e : entitlements.values()) {
+                    for (Offering o : e.getOfferings().values()) {
+                        skus.add(o.getActiveProductIdentifier());
+                    }
+                }
 
+                billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, skus, new BillingWrapper.SkuDetailsResponseListener() {
+                    @Override
+                    public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                        List<String> skusCopy = new ArrayList<>(skus);
+                        for (SkuDetails d : skuDetails) {
+                            skusCopy.remove(d.getSku());
+                            detailsByID.put(d.getSku(), d);
+                        }
+
+                        if (skusCopy.size() > 0) {
+                            billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.INAPP, skusCopy, new BillingWrapper.SkuDetailsResponseListener() {
+                                @Override
+                                public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                                    for (SkuDetails d : skuDetails) {
+                                        detailsByID.put(d.getSku(), d);
+                                    }
+                                    populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler);
+                                }
+                            });
+                        } else {
+                            populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler);
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                Log.e("Purchases", "Error fetching entitlements: " + message);
+            }
+        });
     }
+
+    private void populateSkuDetailsAndCallHandler(Map<String, SkuDetails> details, Map<String, Entitlement> entitlements, GetEntitlementsHandler handler)
+    {
+        for (Entitlement e : entitlements.values()) {
+            for (Offering o : e.getOfferings().values()) {
+                if (details.containsKey(o.getActiveProductIdentifier())) {
+                    o.setSkuDetails(details.get(o.getActiveProductIdentifier()));
+                }
+            }
+        }
+        handler.onReceiveEntitlements(entitlements);
+    }
+
 
     /**
      * Gets the SKUDetails for the given list of subscription skus.
