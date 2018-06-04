@@ -5,7 +5,6 @@ import com.revenuecat.purchases.util.Iso8601Utils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,6 +13,14 @@ import java.util.Map;
 import java.util.Set;
 
 public class PurchaserInfo {
+
+    public Date getExpirationDateForEntitlement(String entitlement) {
+        return null;
+    }
+
+    public Set<String> getActiveEntitlements() {
+        return null;
+    }
 
     static class Factory {
         PurchaserInfo build(JSONObject object) throws JSONException {

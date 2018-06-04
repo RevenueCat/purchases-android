@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.Set;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
@@ -19,9 +20,8 @@ import static junit.framework.Assert.assertTrue;
 @Config(manifest = Config.NONE)
 public class PurchaserInfoTest {
 
-    static final String validEmptyPurchaserResponse = "{'subscriber': {'other_purchases': {}, 'subscriptions': {}}}";
-
-    static final String validFullPurchaserResponse = "{'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}}}";
+    static final String validEmptyPurchaserResponse = "{'subscriber': {'other_purchases': {}, 'subscriptions': {}, 'entitlements': {}}}";
+    static final String validFullPurchaserResponse = "{'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}}}}";
     static final String validTwoProducts = "{'subscriber': {'original_application_version': '1.0','other_purchases': {},'subscriptions':{'product_a': {'expires_date': '2018-05-27T06:24:50Z','period_type': 'normal'},'product_b': {'expires_date': '2018-05-27T05:24:50Z','period_type': 'normal'}}}}";
 
     // FactoryTests
@@ -105,6 +105,26 @@ public class PurchaserInfoTest {
     public void getExpirationDateTwoProducts() throws JSONException {
         PurchaserInfo info = factory.build(new JSONObject(validTwoProducts));
         assertNotNull(info);
+    }
+
+    @Test
+    public void getExpirationDateForEntitlement() throws JSONException {
+        PurchaserInfo info = fullPurchaserInfo();
+
+        Date pro = info.getExpirationDateForEntitlement("pro");
+        Date oldPro = info.getExpirationDateForEntitlement("old_pro");
+
+        assertTrue(pro.after(oldPro));
+    }
+
+    @Test
+    public void getsActiveEntitlements() throws JSONException {
+        PurchaserInfo info = fullPurchaserInfo();
+        Set<String> actives = info.getActiveEntitlements();
+
+        assertEquals(1, actives.size());
+        assertTrue(actives.contains("pro"));
+        assertFalse(actives.contains("old_pro"));
     }
 
 }
