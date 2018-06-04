@@ -1,5 +1,6 @@
 package com.revenuecat.purchases_sample;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -13,23 +14,22 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.android.billingclient.api.SkuDetails;
+import com.revenuecat.purchases.Entitlement;
+import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.PurchaserInfo;
 import com.revenuecat.purchases.Purchases;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements Purchases.PurchasesListener {
 
     private Purchases purchases;
-    private final Map<String, SkuDetails> skuDetailsByIdentifier = new HashMap<>();
+    private SkuDetails monthlySkuDetails;
     private Button mButton;
     private RecyclerView mRecyclerView;
 
-    private static final String ONEMONTH_TRIAL_SKU = "onemonth_freetrial";
     private LinearLayoutManager mLayoutManager;
 
     public class ExpirationsAdapter extends RecyclerView.Adapter<ExpirationsAdapter.ViewHolder> {
@@ -82,28 +82,25 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mRecyclerView = (RecyclerView) findViewById(R.id.expirationDates);
+
+        mLayoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+
         this.purchases = new Purchases.Builder(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN", this)
                 .appUserID("jerry1001").build();
 
-        List<String> skus = new ArrayList<>();
-        skus.add(ONEMONTH_TRIAL_SKU);
-
-        this.purchases.getSubscriptionSkus(skus, new Purchases.GetSkusResponseHandler() {
+        this.purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
+            @SuppressLint("SetTextI18n")
             @Override
-            public void onReceiveSkus(List<SkuDetails> skus) {
-                Log.d("Purchases", "Got skus " + skus.get(0));
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+                Entitlement pro = entitlementMap.get("pro");
+                Offering monthly = pro.getOfferings().get("monthly");
 
+                monthlySkuDetails = monthly.getSkuDetails();
 
-                for (SkuDetails details : skus) {
-                    skuDetailsByIdentifier.put(details.getSku(), details);
-                }
-
-
-                if (skuDetailsByIdentifier.containsKey(ONEMONTH_TRIAL_SKU)) {
-                    SkuDetails details = skuDetailsByIdentifier.get(ONEMONTH_TRIAL_SKU);
-                    mButton.setText("Buy One Month w/ Trial - " + details.getPrice());
-                    mButton.setEnabled(true);
-                }
+                mButton.setText("Buy One Month w/ Trial - " + monthlySkuDetails.getPrice());
+                mButton.setEnabled(true);
             }
         });
 
@@ -111,10 +108,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (skuDetailsByIdentifier.containsKey(ONEMONTH_TRIAL_SKU)) {
-                    SkuDetails details = skuDetailsByIdentifier.get(ONEMONTH_TRIAL_SKU);
-                    purchases.makePurchase(MainActivity.this, details.getSku(), details.getType());
-                }
+                purchases.makePurchase(MainActivity.this, monthlySkuDetails.getSku(), monthlySkuDetails.getType());
             }
         });
         mButton.setEnabled(false);
@@ -127,10 +121,6 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
             }
         });
 
-        mRecyclerView = (RecyclerView) findViewById(R.id.expirationDates);
-
-        mLayoutManager = new LinearLayoutManager(this);
-        mRecyclerView.setLayoutManager(mLayoutManager);
     }
 
     @Override
