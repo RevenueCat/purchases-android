@@ -43,7 +43,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private final HashSet<String> postedTokens = new HashSet<>();
 
     private Date cachesLastChecked;
-    private Map<String, Entitlement> cachedEntitlements;
 
     @IntDef({ErrorDomains.REVENUECAT_BACKEND, ErrorDomains.PLAY_BILLING})
     @Retention(SOURCE)
@@ -53,6 +52,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     public interface PurchasesListener {
+        void onReceiveEntitlements(Map<String, Entitlement> entitlements);
         void onCompletedPurchase(String sku, PurchaserInfo purchaserInfo);
         void onFailedPurchase(@ErrorDomains int domain, int code, String reason);
         void onReceiveUpdatedPurchaserInfo(PurchaserInfo purchaserInfo);
@@ -116,12 +116,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
      * avoid hard coding Skus in your app.
      * @param handler Response handler
      */
-    public void getEntitlements(final GetEntitlementsHandler handler) {
-        if (cachedEntitlements != null) {
-            handler.onReceiveEntitlements(cachedEntitlements);
-            return;
-        }
-
+    private void getEntitlements(final GetEntitlementsHandler handler) {
         backend.getEntitlements(getAppUserID(), new Backend.EntitlementsResponseHandler() {
             @Override
             public void onReceiveEntitlements(final Map<String, Entitlement> entitlements) {
@@ -278,7 +273,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         getEntitlements(new GetEntitlementsHandler() {
             @Override
             public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
-                cachedEntitlements = entitlementMap;
+                listener.onReceiveEntitlements(entitlementMap);
             }
         });
     }

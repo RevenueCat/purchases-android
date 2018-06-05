@@ -72,6 +72,15 @@ public class PurchasesTest {
             }
         }).when(mockBillingWrapperFactory).buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class));
 
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Map<String, Entitlement> entitlementMap = invocation.getArgument(0);
+                receivedEntitlementMap = entitlementMap;
+                return null;
+            }
+        }).when(listener).onReceiveEntitlements((Map<String, Entitlement>) any());
+
         PurchaserInfo mockInfo = mock(PurchaserInfo.class);
         when(mockCache.getCachedPurchaserInfo(any(String.class))).thenReturn(mockInfo);
 
@@ -438,15 +447,8 @@ public class PurchasesTest {
     public void getEntitlementsHitsBackend() {
         mockProducts(new ArrayList<String>());
         mockSkuDetails(new ArrayList<String>(), new ArrayList<String>(), "subs");
-        
+
         setup();
-
-        purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
-            @Override
-            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
-
-            }
-        });
 
         verify(mockBackend).getEntitlements(any(String.class), any(Backend.EntitlementsResponseHandler.class));
     }
@@ -488,24 +490,15 @@ public class PurchasesTest {
         return skuDetails;
     }
 
-    private Purchases.GetEntitlementsHandler entitlementsHandler = new Purchases.GetEntitlementsHandler() {
-        @Override
-        public void onReceiveEntitlements(Map<String, Entitlement> newEntitlementMap) {
-            PurchasesTest.this.receivedEntitlementMap = newEntitlementMap;
-        }
-    };
-
     @Test
     public void getEntitlementsPopulatesMissingSkuDetails() {
-        setup();
-
         List<String> skus = new ArrayList<>();
         skus.add("monthly");
 
         mockProducts(skus);
         List<SkuDetails> details = mockSkuDetails(skus, skus, BillingClient.SkuType.SUBS);
 
-        purchases.getEntitlements(entitlementsHandler);
+        setup();
 
         assertNotNull(receivedEntitlementMap);
 
@@ -535,8 +528,6 @@ public class PurchasesTest {
 
         setup();
 
-        purchases.getEntitlements(entitlementsHandler);
-
         verify(mockBillingWrapper).querySkuDetailsAsync(eq(BillingClient.SkuType.SUBS), eq(skus), any(BillingWrapper.SkuDetailsResponseListener.class));
         verify(mockBillingWrapper).querySkuDetailsAsync(eq(BillingClient.SkuType.INAPP), eq(inappSkus), any(BillingWrapper.SkuDetailsResponseListener.class));
     }
@@ -551,9 +542,6 @@ public class PurchasesTest {
         mockSkuDetails(skus, skus, BillingClient.SkuType.SUBS);
 
         setup();
-
-        purchases.getEntitlements(entitlementsHandler);
-        purchases.getEntitlements(entitlementsHandler);
 
         verify(mockBackend, times(1)).getEntitlements(eq(appUserId), any(Backend.EntitlementsResponseHandler.class));
     }

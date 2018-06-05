@@ -1,6 +1,5 @@
 package com.revenuecat.purchases_sample;
 
-import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -31,6 +30,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     private RecyclerView mRecyclerView;
 
     private LinearLayoutManager mLayoutManager;
+    private Map<String, Entitlement> entitlementMap;
 
     public class ExpirationsAdapter extends RecyclerView.Adapter<ExpirationsAdapter.ViewHolder> {
         private final Map<String, Date> mExpirationDates;
@@ -90,20 +90,6 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         this.purchases = new Purchases.Builder(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN", this)
                 .appUserID("jerry1001").build();
 
-        this.purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
-            @SuppressLint("SetTextI18n")
-            @Override
-            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
-                Entitlement pro = entitlementMap.get("pro");
-                Offering monthly = pro.getOfferings().get("monthly");
-
-                monthlySkuDetails = monthly.getSkuDetails();
-
-                mButton.setText("Buy One Month w/ Trial - " + monthlySkuDetails.getPrice());
-                mButton.setEnabled(true);
-            }
-        });
-
         mButton = (Button)findViewById(R.id.button);
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -140,9 +126,22 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mRecyclerView.setAdapter(new ExpirationsAdapter(purchaserInfo.getAllExpirationDates()));
+                mRecyclerView.setAdapter(new ExpirationsAdapter(purchaserInfo.getAllExpirationDatesByEntitlement()));
                 mRecyclerView.invalidate();
             }
         });
+    }
+
+    @Override
+    public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+        Entitlement pro = entitlementMap.get("pro");
+        Offering monthly = pro.getOfferings().get("monthly");
+
+        MainActivity.this.entitlementMap = entitlementMap;
+
+        monthlySkuDetails = monthly.getSkuDetails();
+
+        mButton.setText("Buy One Month w/ Trial - " + monthlySkuDetails.getPrice());
+        mButton.setEnabled(true);
     }
 }

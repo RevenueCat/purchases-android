@@ -74,7 +74,7 @@ public class PurchaserInfo {
         return originalJSON;
     }
 
-    Set<String> activeIdentifiers(Map<String, Date> expirations) {
+    private Set<String> activeIdentifiers(Map<String, Date> expirations) {
         Set<String> activeSkus = new HashSet<>();
 
         for (String key : expirations.keySet()) {
@@ -144,5 +144,6 @@ public class PurchaserInfo {
     /**
      * @return Map of skus to dates
      */
-    public Map<String, Date> getAllExpirationDates() { return expirationDatesByProduct; };
+    public Map<String, Date> getAllExpirationDatesByProduct() { return expirationDatesByProduct; };
+    public Map<String, Date> getAllExpirationDatesByEntitlement() { return expirationDatesByEntitlement; };
 }
