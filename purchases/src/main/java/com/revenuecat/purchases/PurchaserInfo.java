@@ -14,15 +14,26 @@ import java.util.Set;
 
 public class PurchaserInfo {
 
-    public Date getExpirationDateForEntitlement(String entitlement) {
-        return null;
-    }
-
-    public Set<String> getActiveEntitlements() {
-        return null;
-    }
-
     static class Factory {
+        private Map<String, Date> parseExpirations(JSONObject expirations) throws JSONException {
+
+            Map<String, Date> expirationDates = new HashMap<>();
+
+            for (Iterator<String> it = expirations.keys(); it.hasNext();) {
+                String key = it.next();
+                String dateValue = expirations.getJSONObject(key).getString("expires_date");
+
+                try {
+                    Date date = Iso8601Utils.parse(dateValue);
+                    expirationDates.put(key, date);
+                } catch (RuntimeException e) {
+                    throw new JSONException(e.getMessage());
+                }
+            }
+
+            return expirationDates;
+        }
+
         PurchaserInfo build(JSONObject object) throws JSONException {
             JSONObject subscriber = object.getJSONObject("subscriber");
 
@@ -35,31 +46,27 @@ public class PurchaserInfo {
             }
 
             JSONObject subscriptions = subscriber.getJSONObject("subscriptions");
-            Map<String, Date> expirationDates = new HashMap<>();
+            Map<String, Date> expirationDatesByProduct = parseExpirations(subscriptions);
 
-            for (Iterator<String> it = subscriptions.keys(); it.hasNext();) {
-               String key = it.next();
-               String dateValue = subscriptions.getJSONObject(key).getString("expires_date");
+            JSONObject entitlements = subscriber.getJSONObject("entitlements");
+            Map<String, Date> expirationDatesByEntitlement = parseExpirations(entitlements);
 
-               try {
-                   Date date = Iso8601Utils.parse(dateValue);
-                   expirationDates.put(key, date);
-               } catch (RuntimeException e) {
-                   throw new JSONException(e.getMessage());
-               }
-            }
-
-            return new PurchaserInfo(nonSubscriptionPurchases, expirationDates, object);
+            return new PurchaserInfo(nonSubscriptionPurchases, expirationDatesByProduct, expirationDatesByEntitlement, object);
         }
     }
 
     private final Set<String> nonSubscriptionPurchases;
-    private final Map<String, Date> expirationDates;
+    private final Map<String, Date> expirationDatesByProduct;
+    private final Map<String, Date> expirationDatesByEntitlement;
     private final JSONObject originalJSON;
 
-    private PurchaserInfo(Set<String> nonSubscriptionPurchases, Map<String, Date> expirationDates, JSONObject originalJSON) {
+    private PurchaserInfo(Set<String> nonSubscriptionPurchases,
+                          Map<String, Date> expirationDatesByProduct,
+                          Map<String, Date> expirationDatesByEntitlement,
+                          JSONObject originalJSON) {
         this.nonSubscriptionPurchases = nonSubscriptionPurchases;
-        this.expirationDates = expirationDates;
+        this.expirationDatesByProduct = expirationDatesByProduct;
+        this.expirationDatesByEntitlement = expirationDatesByEntitlement;
         this.originalJSON = originalJSON;
     }
 
@@ -67,14 +74,11 @@ public class PurchaserInfo {
         return originalJSON;
     }
 
-    /**
-     * @return Set of active subscription skus
-     */
-    public Set<String> getActiveSubscriptions() {
+    Set<String> activeIdentifiers(Map<String, Date> expirations) {
         Set<String> activeSkus = new HashSet<>();
 
-        for (String key : expirationDates.keySet()) {
-            Date date = expirationDates.get(key);
+        for (String key : expirations.keySet()) {
+            Date date = expirations.get(key);
             if (date.after(new Date())) {
                 activeSkus.add(key);
             }
@@ -84,11 +88,18 @@ public class PurchaserInfo {
     }
 
     /**
+     * @return Set of active subscription skus
+     */
+    public Set<String> getActiveSubscriptions() {
+        return activeIdentifiers(expirationDatesByProduct);
+    }
+
+    /**
      * @return Set of purchased skus, active and inactive
      */
     public Set<String> getAllPurchasedSkus() {
         Set<String> appSKUs = new HashSet<>(this.getPurchasedNonSubscriptionSkus());
-        appSKUs.addAll(expirationDates.keySet());
+        appSKUs.addAll(expirationDatesByProduct.keySet());
         return appSKUs;
     }
 
@@ -105,7 +116,7 @@ public class PurchaserInfo {
     public Date getLatestExpirationDate() {
         Date latest = null;
 
-        for (Date date : expirationDates.values()) {
+        for (Date date : expirationDatesByProduct.values()) {
             if (latest == null || date.after(latest)) {
                 latest = date;
             }
@@ -119,11 +130,19 @@ public class PurchaserInfo {
      * @return Expiration date for given sku
      */
     public Date getExpirationDateForSku(final String sku) {
-        return expirationDates.get(sku);
+        return expirationDatesByProduct.get(sku);
+    }
+
+    public Date getExpirationDateForEntitlement(String entitlement) {
+        return expirationDatesByEntitlement.get(entitlement);
+    }
+
+    public Set<String> getActiveEntitlements() {
+        return activeIdentifiers(expirationDatesByEntitlement);
     }
 
     /**
      * @return Map of skus to dates
      */
-    public Map<String, Date> getAllExpirationDates() { return expirationDates; };
+    public Map<String, Date> getAllExpirationDates() { return expirationDatesByProduct; };
 }
