@@ -42,7 +42,8 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     private final HashSet<String> postedTokens = new HashSet<>();
 
-    private Date subscriberInfoLastChecked;
+    private Date cachesLastChecked;
+    private Map<String, Entitlement> cachedEntitlements;
 
     @IntDef({ErrorDomains.REVENUECAT_BACKEND, ErrorDomains.PLAY_BILLING})
     @Retention(SOURCE)
@@ -99,7 +100,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             listener.onReceiveUpdatedPurchaserInfo(info);
         }
 
-        getSubscriberInfo();
+        getCaches();
     }
 
     /**
@@ -116,6 +117,11 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
      * @param handler Response handler
      */
     public void getEntitlements(final GetEntitlementsHandler handler) {
+        if (cachedEntitlements != null) {
+            handler.onReceiveEntitlements(cachedEntitlements);
+            return;
+        }
+
         backend.getEntitlements(getAppUserID(), new Backend.EntitlementsResponseHandler() {
             @Override
             public void onReceiveEntitlements(final Map<String, Entitlement> entitlements) {
@@ -248,15 +254,16 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
 
-    private void getSubscriberInfo() {
-        if (subscriberInfoLastChecked != null && (new Date().getTime() - subscriberInfoLastChecked.getTime()) < 60000) {
+    private void getCaches() {
+        if (cachesLastChecked != null && (new Date().getTime() - cachesLastChecked.getTime()) < 60000) {
             return;
         }
+
+        cachesLastChecked = new Date();
 
         backend.getSubscriberInfo(appUserID, new Backend.BackendResponseHandler() {
             @Override
             public void onReceivePurchaserInfo(PurchaserInfo info) {
-                subscriberInfoLastChecked = new Date();
                 deviceCache.cachePurchaserInfo(appUserID, info);
                 listener.onReceiveUpdatedPurchaserInfo(info);
             }
@@ -264,6 +271,14 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             @Override
             public void onError(int code, String message) {
                 Log.e("Purchases", "Error fetching subscriber data: " + message);
+                cachesLastChecked = null;
+            }
+        });
+
+        getEntitlements(new GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+                cachedEntitlements = entitlementMap;
             }
         });
     }
@@ -315,7 +330,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     @Override
     public void onActivityResumed(Activity activity) {
-        getSubscriberInfo();
+        getCaches();
         restorePurchasesForPlayStoreAccount();
     }
 

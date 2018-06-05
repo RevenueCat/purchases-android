@@ -7,7 +7,6 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.SkuDetails;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -29,23 +28,25 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PurchasesTest {
+
     private Application mockApplication = mock(Application.class);
     private BillingWrapper mockBillingWrapper = mock(BillingWrapper.class);
     private BillingWrapper.Factory mockBillingWrapperFactory = mock(BillingWrapper.Factory.class);
-    private Backend mockBackend = mock(Backend.class);
-    private DeviceCache mockCache = mock(DeviceCache.class);
+    private Backend  mockBackend = mock(Backend.class);
+    private DeviceCache  mockCache = mock(DeviceCache.class);
+
 
     private Application.ActivityLifecycleCallbacks activityLifecycleCallbacks;
     private BillingWrapper.PurchasesUpdatedListener purchasesUpdatedListener;
 
-    private String apiKey = "fakeapikey";
     private String appUserId = "fakeUserID";
 
     private Purchases.PurchasesListener listener = mock(Purchases.PurchasesListener.class);
 
     private Purchases purchases;
-    @Before
+
     public void setup() {
+
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
@@ -79,6 +80,7 @@ public class PurchasesTest {
 
     @Test
     public void canBeCreated() {
+        setup();
         assertNotNull(purchases);
     }
 
@@ -97,6 +99,8 @@ public class PurchasesTest {
     private List<SkuDetails> receivedSkus;
     @Test
     public void getsSubscriptionSkus() {
+        setup();
+
         List<String> skus = new ArrayList<>();
         skus.add("onemonth_freetrial");
 
@@ -116,6 +120,8 @@ public class PurchasesTest {
 
     @Test
     public void getsNonSubscriptionSkus() {
+        setup();
+
         List<String> skus = new ArrayList<>();
         skus.add("normal_purchase");
 
@@ -135,6 +141,8 @@ public class PurchasesTest {
 
     @Test
     public void canMakePurchase() {
+        setup();
+
         Activity activity = mock(Activity.class);
         String sku = "onemonth_freetrial";
         ArrayList<String> oldSkus = new ArrayList<>();
@@ -146,6 +154,8 @@ public class PurchasesTest {
 
     @Test
     public void postsSuccessfulPurchasesToBackend() {
+        setup();
+
         Purchase p = mock(Purchase.class);
         String sku = "onemonth_freetrial";
         String purchaseToken = "crazy_purchase_token";
@@ -168,6 +178,8 @@ public class PurchasesTest {
 
     @Test
     public void callsPostForEachUpdatedPurchase() {
+        setup();
+
         List<Purchase> purchasesList = new ArrayList<>();
         String sku = "onemonth_freetrial";
         String purchaseToken = "crazy_purchase_token";
@@ -191,6 +203,8 @@ public class PurchasesTest {
 
     @Test
     public void doesntPostIfNotOK() {
+        setup();
+
         purchases.onPurchasesFailedToUpdate(0, "fail");
 
         verify(mockBackend, times(0)).postReceiptData(any(String.class),
@@ -202,6 +216,8 @@ public class PurchasesTest {
 
     @Test
     public void passesUpErrors() {
+        setup();
+
         purchases.onPurchasesFailedToUpdate(0, "");
 
         verify(listener).onFailedPurchase(eq(Purchases.ErrorDomains.PLAY_BILLING), eq(0), any(String.class));
@@ -209,11 +225,14 @@ public class PurchasesTest {
 
     @Test
     public void addsAnApplicationLifecycleListener() {
+        setup();
+
         verify(mockApplication).registerActivityLifecycleCallbacks(any(Application.ActivityLifecycleCallbacks.class));
     }
 
     @Test
     public void onResumeGetsSubscriberInfo() {
+        setup();
 
         activityLifecycleCallbacks.onActivityResumed(mock(Activity.class));
 
@@ -223,11 +242,15 @@ public class PurchasesTest {
 
     @Test
     public void getsSubscriberInfoOnCreated() {
+        setup();
+
         verify(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
     }
 
     @Test
     public void canBeSetupWithoutAppUserID() {
+        setup();
+
         Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
         assertNotNull(purchases);
 
@@ -238,12 +261,16 @@ public class PurchasesTest {
 
     @Test
     public void storesGeneratedAppUserID() {
+        setup();
+
         new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
         verify(mockCache).cacheAppUserID(any(String.class));
     }
 
     @Test
     public void pullsUserIDFromCache() {
+        setup();
+
         String appUserID = "random_id";
         when(mockCache.getCachedAppUserID()).thenReturn(appUserID);
         Purchases p = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
@@ -252,6 +279,8 @@ public class PurchasesTest {
 
     @Test
     public void isRestoreWhenUsingNullAppUserID() {
+        setup();
+
         Purchases purchases = new Purchases(mockApplication, null, listener, mockBackend, mockBillingWrapperFactory, mockCache);
 
         Purchase p = mock(Purchase.class);
@@ -276,6 +305,8 @@ public class PurchasesTest {
 
     @Test
     public void restoringPurchasesGetsHistory() {
+        setup();
+
         purchases.restorePurchasesForPlayStoreAccount();
 
         verify(mockBillingWrapper).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.SUBS),
@@ -288,6 +319,8 @@ public class PurchasesTest {
     private BillingWrapper.PurchaseHistoryResponseListener historyListener;
     @Test
     public void historicalPurchasesPassedToBackend() {
+        setup();
+
         Purchase p = mock(Purchase.class);
         String sku = "onemonth_freetrial";
         String purchaseToken = "crazy_purchase_token";
@@ -336,6 +369,8 @@ public class PurchasesTest {
 
     @Test
     public void doesntDoublePostReceipts() {
+        setup();
+
         Purchase p1 = mock(Purchase.class);
         String sku = "onemonth_freetrial";
         String purchaseToken = "crazy_purchase_token";
@@ -368,11 +403,15 @@ public class PurchasesTest {
 
     @Test
     public void cachedUserInfoShouldGoToListener() {
+        setup();
+
         verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
     }
 
     @Test
     public void receivedPurchaserInfoShouldBeCached() {
+        setup();
+
         Purchase p = mock(Purchase.class);
         String sku = "onemonth_freetrial";
         String purchaseToken = "crazy_purchase_token";
@@ -397,6 +436,11 @@ public class PurchasesTest {
 
     @Test
     public void getEntitlementsHitsBackend() {
+        mockProducts(new ArrayList<String>());
+        mockSkuDetails(new ArrayList<String>(), new ArrayList<String>(), "subs");
+        
+        setup();
+
         purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
             @Override
             public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
@@ -453,6 +497,8 @@ public class PurchasesTest {
 
     @Test
     public void getEntitlementsPopulatesMissingSkuDetails() {
+        setup();
+
         List<String> skus = new ArrayList<>();
         skus.add("monthly");
 
@@ -473,6 +519,7 @@ public class PurchasesTest {
 
     @Test
     public void getEntitlementsDoesntCheckInappsUnlessThereAreMissingSubs() {
+
         List<String> skus = new ArrayList<>();
         List<String> subsSkus = new ArrayList<>();
         skus.add("monthly");
@@ -483,9 +530,10 @@ public class PurchasesTest {
         inappSkus.add("monthly_inapp");
 
         mockProducts(skus);
-
         mockSkuDetails(skus, subsSkus, BillingClient.SkuType.SUBS);
         mockSkuDetails(inappSkus, inappSkus, BillingClient.SkuType.INAPP);
+
+        setup();
 
         purchases.getEntitlements(entitlementsHandler);
 
@@ -495,12 +543,14 @@ public class PurchasesTest {
 
     @Test
     public void getEntitlementsIsCached() {
+
         List<String> skus = new ArrayList<>();
         skus.add("monthly");
-
         mockProducts(skus);
 
         mockSkuDetails(skus, skus, BillingClient.SkuType.SUBS);
+
+        setup();
 
         purchases.getEntitlements(entitlementsHandler);
         purchases.getEntitlements(entitlementsHandler);
