@@ -43,6 +43,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private final HashSet<String> postedTokens = new HashSet<>();
 
     private Date cachesLastChecked;
+    private Map<String, Entitlement> cachedEntitlements;
 
     @IntDef({ErrorDomains.REVENUECAT_BACKEND, ErrorDomains.PLAY_BILLING})
     @Retention(SOURCE)
@@ -112,10 +113,15 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     /**
-     * Fetches the correct offered entitlements from the server for this user. Use this method to
-     * avoid hard coding Skus in your app.
-     * @param handler Response handler
+     * Get the cached, fetch entitlements. May be null! You should implement the listener method
+     * to get the latest entitlements.
+     *
+     * @return Map of entitlement id to Entitlement
      */
+    Map<String, Entitlement> getEntitlements() {
+        return cachedEntitlements;
+    }
+
     private void getEntitlements(final GetEntitlementsHandler handler) {
         backend.getEntitlements(getAppUserID(), new Backend.EntitlementsResponseHandler() {
             @Override
@@ -273,6 +279,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         getEntitlements(new GetEntitlementsHandler() {
             @Override
             public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+                Purchases.this.cachedEntitlements = entitlementMap;
                 listener.onReceiveEntitlements(entitlementMap);
             }
         });

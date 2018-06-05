@@ -544,5 +544,7 @@ public class PurchasesTest {
         setup();
 
         verify(mockBackend, times(1)).getEntitlements(eq(appUserId), any(Backend.EntitlementsResponseHandler.class));
+
+        assertSame(receivedEntitlementMap, purchases.getEntitlements());
     }
 }
