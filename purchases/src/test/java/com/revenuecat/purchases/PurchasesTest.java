@@ -492,4 +492,19 @@ public class PurchasesTest {
         verify(mockBillingWrapper).querySkuDetailsAsync(eq(BillingClient.SkuType.SUBS), eq(skus), any(BillingWrapper.SkuDetailsResponseListener.class));
         verify(mockBillingWrapper).querySkuDetailsAsync(eq(BillingClient.SkuType.INAPP), eq(inappSkus), any(BillingWrapper.SkuDetailsResponseListener.class));
     }
+
+    @Test
+    public void getEntitlementsIsCached() {
+        List<String> skus = new ArrayList<>();
+        skus.add("monthly");
+
+        mockProducts(skus);
+
+        mockSkuDetails(skus, skus, BillingClient.SkuType.SUBS);
+
+        purchases.getEntitlements(entitlementsHandler);
+        purchases.getEntitlements(entitlementsHandler);
+
+        verify(mockBackend, times(1)).getEntitlements(eq(appUserId), any(Backend.EntitlementsResponseHandler.class));
+    }
 }
