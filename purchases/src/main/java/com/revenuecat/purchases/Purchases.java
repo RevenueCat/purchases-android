@@ -53,7 +53,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     public interface PurchasesListener {
-        void onReceiveEntitlements(Map<String, Entitlement> entitlements);
         void onCompletedPurchase(String sku, PurchaserInfo purchaserInfo);
         void onFailedPurchase(@ErrorDomains int domain, int code, String reason);
         void onReceiveUpdatedPurchaserInfo(PurchaserInfo purchaserInfo);
@@ -112,59 +111,53 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         return appUserID;
     }
 
-    /**
-     * Get the cached, fetch entitlements. May be null! You should implement the listener method
-     * to get the latest entitlements.
-     *
-     * @return Map of entitlement id to Entitlement
-     */
-    Map<String, Entitlement> getEntitlements() {
-        return cachedEntitlements;
-    }
-
-    private void getEntitlements(final GetEntitlementsHandler handler) {
-        backend.getEntitlements(getAppUserID(), new Backend.EntitlementsResponseHandler() {
-            @Override
-            public void onReceiveEntitlements(final Map<String, Entitlement> entitlements) {
-                final List<String> skus = new ArrayList<>();
-                final Map<String, SkuDetails> detailsByID = new HashMap<>();
-                for (Entitlement e : entitlements.values()) {
-                    for (Offering o : e.getOfferings().values()) {
-                        skus.add(o.getActiveProductIdentifier());
+    public void getEntitlements(final GetEntitlementsHandler handler) {
+        if (this.cachedEntitlements != null) {
+            handler.onReceiveEntitlements(this.cachedEntitlements);
+        } else {
+            backend.getEntitlements(getAppUserID(), new Backend.EntitlementsResponseHandler() {
+                @Override
+                public void onReceiveEntitlements(final Map<String, Entitlement> entitlements) {
+                    final List<String> skus = new ArrayList<>();
+                    final Map<String, SkuDetails> detailsByID = new HashMap<>();
+                    for (Entitlement e : entitlements.values()) {
+                        for (Offering o : e.getOfferings().values()) {
+                            skus.add(o.getActiveProductIdentifier());
+                        }
                     }
+
+                    billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, skus, new BillingWrapper.SkuDetailsResponseListener() {
+                        @Override
+                        public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                            List<String> skusCopy = new ArrayList<>(skus);
+                            for (SkuDetails d : skuDetails) {
+                                skusCopy.remove(d.getSku());
+                                detailsByID.put(d.getSku(), d);
+                            }
+
+                            if (skusCopy.size() > 0) {
+                                billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.INAPP, skusCopy, new BillingWrapper.SkuDetailsResponseListener() {
+                                    @Override
+                                    public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                                        for (SkuDetails d : skuDetails) {
+                                            detailsByID.put(d.getSku(), d);
+                                        }
+                                        populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler);
+                                    }
+                                });
+                            } else {
+                                populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler);
+                            }
+                        }
+                    });
                 }
 
-                billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, skus, new BillingWrapper.SkuDetailsResponseListener() {
-                    @Override
-                    public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
-                        List<String> skusCopy = new ArrayList<>(skus);
-                        for (SkuDetails d : skuDetails) {
-                            skusCopy.remove(d.getSku());
-                            detailsByID.put(d.getSku(), d);
-                        }
-
-                        if (skusCopy.size() > 0) {
-                            billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.INAPP, skusCopy, new BillingWrapper.SkuDetailsResponseListener() {
-                                @Override
-                                public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
-                                    for (SkuDetails d : skuDetails) {
-                                        detailsByID.put(d.getSku(), d);
-                                    }
-                                    populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler);
-                                }
-                            });
-                        } else {
-                            populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler);
-                        }
-                    }
-                });
-            }
-
-            @Override
-            public void onError(int code, String message) {
-                Log.e("Purchases", "Error fetching entitlements: " + message);
-            }
-        });
+                @Override
+                public void onError(int code, String message) {
+                    Log.e("Purchases", "Error fetching entitlements: " + message);
+                }
+            });
+        }
     }
 
     private void populateSkuDetailsAndCallHandler(Map<String, SkuDetails> details, Map<String, Entitlement> entitlements, GetEntitlementsHandler handler)
@@ -176,6 +169,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                 }
             }
         }
+        cachedEntitlements = entitlements;
         handler.onReceiveEntitlements(entitlements);
     }
 
@@ -279,8 +273,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         getEntitlements(new GetEntitlementsHandler() {
             @Override
             public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
-                Purchases.this.cachedEntitlements = entitlementMap;
-                listener.onReceiveEntitlements(entitlementMap);
             }
         });
     }

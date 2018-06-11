@@ -72,15 +72,6 @@ public class PurchasesTest {
             }
         }).when(mockBillingWrapperFactory).buildWrapper(any(BillingWrapper.PurchasesUpdatedListener.class));
 
-        doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                Map<String, Entitlement> entitlementMap = invocation.getArgument(0);
-                receivedEntitlementMap = entitlementMap;
-                return null;
-            }
-        }).when(listener).onReceiveEntitlements((Map<String, Entitlement>) any());
-
         PurchaserInfo mockInfo = mock(PurchaserInfo.class);
         when(mockCache.getCachedPurchaserInfo(any(String.class))).thenReturn(mockInfo);
 
@@ -500,6 +491,13 @@ public class PurchasesTest {
 
         setup();
 
+        purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+                PurchasesTest.this.receivedEntitlementMap = entitlementMap;
+            }
+        });
+
         assertNotNull(receivedEntitlementMap);
 
         verify(mockBillingWrapper, times(1)).querySkuDetailsAsync(eq(BillingClient.SkuType.SUBS), eq(skus), any(BillingWrapper.SkuDetailsResponseListener.class));
@@ -545,6 +543,13 @@ public class PurchasesTest {
 
         verify(mockBackend, times(1)).getEntitlements(eq(appUserId), any(Backend.EntitlementsResponseHandler.class));
 
-        assertSame(receivedEntitlementMap, purchases.getEntitlements());
+        purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+                PurchasesTest.this.receivedEntitlementMap = entitlementMap;
+            }
+        });
+
+        assertNotNull(receivedEntitlementMap);
     }
 }
