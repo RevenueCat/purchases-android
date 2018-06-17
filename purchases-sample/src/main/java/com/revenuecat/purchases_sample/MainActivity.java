@@ -53,13 +53,12 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             String key = mSortedKeys.get(position);
             Date expiration = mExpirationDates.get(key);
-            String dateString = expiration.toString();
 
-            Boolean expired = expiration.before(new Date());
+            Boolean active = expiration == null || expiration.after(new Date());
 
-            String expiredIcon = expired ? "❌" : "✅";
+            String expiredIcon = active ? "✅" : "❌";
 
-            String message = key + " " + expiredIcon + " " + dateString;
+            String message = key + " " + expiredIcon + " " + expiration;
             holder.mTextView.setText(message);
         }
 
@@ -88,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         mRecyclerView.setLayoutManager(mLayoutManager);
 
         this.purchases = new Purchases.Builder(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN", this)
-                .appUserID("jerry1001").build();
+                .appUserID("jerry").build();
 
         mButton = (Button)findViewById(R.id.button);
         mButton.setOnClickListener(new View.OnClickListener() {
