@@ -237,7 +237,7 @@ public class PurchasesTest {
         activityLifecycleCallbacks.onActivityResumed(mock(Activity.class));
 
         verify(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
-        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(3)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
     }
 
     @Test
@@ -406,6 +406,15 @@ public class PurchasesTest {
         setup();
 
         verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+    }
+
+    @Test
+    public void cachedUserInfoEmitOnResumeActive() {
+        setup();
+
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        purchases.onActivityResumed(mock(Activity.class));
+        verify(listener, times(3)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
     }
 
     @Test
