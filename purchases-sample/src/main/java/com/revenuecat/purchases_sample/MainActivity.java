@@ -107,6 +107,21 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
             }
         });
 
+        this.purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+                Entitlement pro = entitlementMap.get("pro");
+                Offering monthly = pro.getOfferings().get("monthly");
+
+                MainActivity.this.entitlementMap = entitlementMap;
+
+                monthlySkuDetails = monthly.getSkuDetails();
+
+                mButton.setText("Buy One Month w/ Trial - " + monthlySkuDetails.getPrice());
+                mButton.setEnabled(true);
+            }
+        });
+
     }
 
     @Override
@@ -130,18 +145,5 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
                 mRecyclerView.invalidate();
             }
         });
-    }
-
-    @Override
-    public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
-        Entitlement pro = entitlementMap.get("pro");
-        Offering monthly = pro.getOfferings().get("monthly");
-
-        MainActivity.this.entitlementMap = entitlementMap;
-
-        monthlySkuDetails = monthly.getSkuDetails();
-
-        mButton.setText("Buy One Month w/ Trial - " + monthlySkuDetails.getPrice());
-        mButton.setEnabled(true);
     }
 }
