@@ -95,11 +95,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
         application.registerActivityLifecycleCallbacks(this);
 
-        PurchaserInfo info = deviceCache.getCachedPurchaserInfo(appUserID);
-        if (info != null) {
-            listener.onReceiveUpdatedPurchaserInfo(info);
-        }
-
+        emitCachedPurchaserInfo();
         getCaches();
     }
 
@@ -109,6 +105,13 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
      */
     public String getAppUserID() {
         return appUserID;
+    }
+
+    private void emitCachedPurchaserInfo() {
+        PurchaserInfo info = deviceCache.getCachedPurchaserInfo(appUserID);
+        if (info != null) {
+            listener.onReceiveUpdatedPurchaserInfo(info);
+        }
     }
 
     public void getEntitlements(final GetEntitlementsHandler handler) {
@@ -251,6 +254,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     private void getCaches() {
         if (cachesLastChecked != null && (new Date().getTime() - cachesLastChecked.getTime()) < 60000) {
+            emitCachedPurchaserInfo();
             return;
         }
 
@@ -286,6 +290,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             backend.postReceiptData(token, appUserID, sku, isRestore, new Backend.BackendResponseHandler() {
                 @Override
                 public void onReceivePurchaserInfo(PurchaserInfo info) {
+                    deviceCache.cachePurchaserInfo(appUserID, info);
                     if (isPurchase) {
                         listener.onCompletedPurchase(sku, info);
                     } else {
