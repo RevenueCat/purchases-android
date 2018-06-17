@@ -1,6 +1,7 @@
 package com.revenuecat.purchases;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,10 +11,16 @@ class Backend {
     final private Dispatcher dispatcher;
     final private HTTPClient httpClient;
     final private PurchaserInfo.Factory purchaserInfoFactory;
+    final private Entitlement.Factory entitlementFactory;
     final private Map<String, String> authenticationHeaders;
 
     public static abstract class BackendResponseHandler {
         abstract public void onReceivePurchaserInfo(PurchaserInfo info);
+        abstract public void onError(int code, String message);
+    }
+
+    public static abstract class EntitlementsResponseHandler {
+        abstract public void onReceiveEntitlements(Map<String, Entitlement> entitlements);
         abstract public void onError(int code, String message);
     }
 
@@ -50,11 +57,12 @@ class Backend {
         };
     }
 
-    Backend(String apiKey, Dispatcher dispatcher, com.revenuecat.purchases.HTTPClient httpClient, PurchaserInfo.Factory purchaserInfoFactory) {
+    Backend(String apiKey, Dispatcher dispatcher, HTTPClient httpClient, PurchaserInfo.Factory purchaserInfoFactory, Entitlement.Factory entitlementFactory) {
         this.apiKey = apiKey;
         this.dispatcher = dispatcher;
         this.httpClient = httpClient;
         this.purchaserInfoFactory = purchaserInfoFactory;
+        this.entitlementFactory = entitlementFactory;
 
         this.authenticationHeaders = new HashMap<>();
         this.authenticationHeaders.put("Authorization", "Bearer " + this.apiKey);
@@ -81,6 +89,33 @@ class Backend {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
                 return httpClient.performRequest("/receipts", body, authenticationHeaders);
+            }
+        });
+    }
+
+    void getEntitlements(final String appUserID, final EntitlementsResponseHandler handler) {
+        dispatcher.enqueue(new Dispatcher.AsyncCall() {
+            @Override
+            public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
+                return httpClient.performRequest("/subscribers/" + appUserID + "/products",null, authenticationHeaders);
+            }
+
+            void onError(int code, String message) {
+                handler.onError(code, message);
+            }
+
+            void onCompletion(HTTPClient.Result result) {
+                if (result.responseCode < 300) {
+                    try {
+                        JSONObject entitlementsResponse = result.body.getJSONObject("entitlements");
+                        Map<String, Entitlement> entitlementMap = entitlementFactory.build(entitlementsResponse);
+                        handler.onReceiveEntitlements(entitlementMap);
+                    } catch (JSONException e) {
+                        handler.onError(result.responseCode, "Error parsing products JSON " + e.getLocalizedMessage());
+                    }
+                } else {
+                    handler.onError(result.responseCode, "Backend error");
+                }
             }
         });
     }

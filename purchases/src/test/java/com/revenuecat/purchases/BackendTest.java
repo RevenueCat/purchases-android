@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.OngoingStubbing;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
@@ -20,12 +21,14 @@ import static junit.framework.Assert.assertSame;
 import static junit.framework.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(manifest = Config.NONE)
 public class BackendTest {
     private PurchaserInfo.Factory mockInfoFactory;
+    private Entitlement.Factory mockEntitlementFactory;
     private HTTPClient mockClient;
     private Dispatcher dispatcher;
     private Backend backend;
@@ -47,10 +50,11 @@ public class BackendTest {
     @Before
     public void setup() {
         mockInfoFactory = mock(PurchaserInfo.Factory.class);
+        mockEntitlementFactory = mock(Entitlement.Factory.class);
         mockClient = mock(HTTPClient.class);
         dispatcher = new SyncDispatcher();
 
-        backend = new Backend(API_KEY, dispatcher, mockClient, mockInfoFactory);
+        backend = new Backend(API_KEY, dispatcher, mockClient, mockInfoFactory, mockEntitlementFactory);
     }
 
     @Test
@@ -61,6 +65,7 @@ public class BackendTest {
     private PurchaserInfo receivedPurchaserInfo = null;
     private int receivedCode = -1;
     private String receivedMessage = null;
+    private Map<String, Entitlement> receivedEntitlements = null;
 
     final private Backend.BackendResponseHandler handler = new Backend.BackendResponseHandler() {
 
@@ -72,6 +77,19 @@ public class BackendTest {
         @Override
         public void onError(int code, String message) {
             BackendTest.this.receivedCode = -1;
+            BackendTest.this.receivedMessage = message;
+        }
+    };
+
+    final private Backend.EntitlementsResponseHandler entitlementsHandler = new Backend.EntitlementsResponseHandler() {
+        @Override
+        public void onReceiveEntitlements(Map<String, Entitlement> entitlements) {
+            BackendTest.this.receivedEntitlements = entitlements;
+        }
+
+        @Override
+        public void onError(int code, String message) {
+            BackendTest.this.receivedCode = code;
             BackendTest.this.receivedMessage = message;
         }
     };
@@ -186,5 +204,40 @@ public class BackendTest {
 
         assertNull(receivedPurchaserInfo);
         assertNotNull(receivedMessage);
+    }
+
+    @Test
+    public void canGetEntitlementsWhenEmpty() throws HTTPClient.HTTPErrorException, JSONException {
+
+        mockResponse("/subscribers/" + appUserID + "/products",
+                null, 200, null, "{'entitlements': {}}");
+
+        backend.getEntitlements(appUserID, entitlementsHandler);
+
+        assertNotNull(receivedEntitlements);
+        assertEquals(0, receivedEntitlements.size());
+    }
+
+    @Test
+    public void canHandleBadEntitlementsResponse() throws HTTPClient.HTTPErrorException, JSONException {
+
+        mockResponse("/subscribers/" + appUserID + "/products",
+                null, 200, null, "{}");
+
+        backend.getEntitlements(appUserID, entitlementsHandler);
+
+        assertNull(receivedEntitlements);
+        assertNotNull(receivedMessage);
+    }
+
+    @Test
+    public void passesEntitlementsFieldToFactory() throws HTTPClient.HTTPErrorException, JSONException {
+        mockResponse("/subscribers/" + appUserID + "/products",
+                null, 200, null, "{'entitlements': {'pro': {}}}");
+        when(mockEntitlementFactory.build((JSONObject) ArgumentMatchers.any())).thenReturn(new HashMap<String, Entitlement>());
+
+        backend.getEntitlements(appUserID, entitlementsHandler);
+
+        verify(mockEntitlementFactory).build((JSONObject) ArgumentMatchers.any());
     }
 }

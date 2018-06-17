@@ -18,8 +18,10 @@ import com.android.billingclient.api.SkuDetails;
 import java.lang.annotation.Retention;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -40,7 +42,8 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     private final HashSet<String> postedTokens = new HashSet<>();
 
-    private Date subscriberInfoLastChecked;
+    private Date cachesLastChecked;
+    private Map<String, Entitlement> cachedEntitlements;
 
     @IntDef({ErrorDomains.REVENUECAT_BACKEND, ErrorDomains.PLAY_BILLING})
     @Retention(SOURCE)
@@ -57,6 +60,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     public interface GetSkusResponseHandler {
         void onReceiveSkus(List<SkuDetails> skus);
+    }
+
+    public interface GetEntitlementsHandler {
+        void onReceiveEntitlements(Map<String, Entitlement> entitlementMap);
     }
 
     public static String getFrameworkVersion() {
@@ -93,7 +100,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             listener.onReceiveUpdatedPurchaserInfo(info);
         }
 
-        getSubscriberInfo();
+        getCaches();
     }
 
     /**
@@ -103,6 +110,69 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     public String getAppUserID() {
         return appUserID;
     }
+
+    public void getEntitlements(final GetEntitlementsHandler handler) {
+        if (this.cachedEntitlements != null) {
+            handler.onReceiveEntitlements(this.cachedEntitlements);
+        } else {
+            backend.getEntitlements(getAppUserID(), new Backend.EntitlementsResponseHandler() {
+                @Override
+                public void onReceiveEntitlements(final Map<String, Entitlement> entitlements) {
+                    final List<String> skus = new ArrayList<>();
+                    final Map<String, SkuDetails> detailsByID = new HashMap<>();
+                    for (Entitlement e : entitlements.values()) {
+                        for (Offering o : e.getOfferings().values()) {
+                            skus.add(o.getActiveProductIdentifier());
+                        }
+                    }
+
+                    billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, skus, new BillingWrapper.SkuDetailsResponseListener() {
+                        @Override
+                        public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                            List<String> skusCopy = new ArrayList<>(skus);
+                            for (SkuDetails d : skuDetails) {
+                                skusCopy.remove(d.getSku());
+                                detailsByID.put(d.getSku(), d);
+                            }
+
+                            if (skusCopy.size() > 0) {
+                                billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.INAPP, skusCopy, new BillingWrapper.SkuDetailsResponseListener() {
+                                    @Override
+                                    public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                                        for (SkuDetails d : skuDetails) {
+                                            detailsByID.put(d.getSku(), d);
+                                        }
+                                        populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler);
+                                    }
+                                });
+                            } else {
+                                populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler);
+                            }
+                        }
+                    });
+                }
+
+                @Override
+                public void onError(int code, String message) {
+                    Log.e("Purchases", "Error fetching entitlements: " + message);
+                }
+            });
+        }
+    }
+
+    private void populateSkuDetailsAndCallHandler(Map<String, SkuDetails> details, Map<String, Entitlement> entitlements, GetEntitlementsHandler handler)
+    {
+        for (Entitlement e : entitlements.values()) {
+            for (Offering o : e.getOfferings().values()) {
+                if (details.containsKey(o.getActiveProductIdentifier())) {
+                    o.setSkuDetails(details.get(o.getActiveProductIdentifier()));
+                }
+            }
+        }
+        cachedEntitlements = entitlements;
+        handler.onReceiveEntitlements(entitlements);
+    }
+
 
     /**
      * Gets the SKUDetails for the given list of subscription skus.
@@ -179,15 +249,16 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
 
-    private void getSubscriberInfo() {
-        if (subscriberInfoLastChecked != null && (new Date().getTime() - subscriberInfoLastChecked.getTime()) < 60000) {
+    private void getCaches() {
+        if (cachesLastChecked != null && (new Date().getTime() - cachesLastChecked.getTime()) < 60000) {
             return;
         }
+
+        cachesLastChecked = new Date();
 
         backend.getSubscriberInfo(appUserID, new Backend.BackendResponseHandler() {
             @Override
             public void onReceivePurchaserInfo(PurchaserInfo info) {
-                subscriberInfoLastChecked = new Date();
                 deviceCache.cachePurchaserInfo(appUserID, info);
                 listener.onReceiveUpdatedPurchaserInfo(info);
             }
@@ -195,6 +266,13 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             @Override
             public void onError(int code, String message) {
                 Log.e("Purchases", "Error fetching subscriber data: " + message);
+                cachesLastChecked = null;
+            }
+        });
+
+        getEntitlements(new GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
             }
         });
     }
@@ -246,7 +324,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     @Override
     public void onActivityResumed(Activity activity) {
-        getSubscriberInfo();
+        getCaches();
         restorePurchasesForPlayStoreAccount();
     }
 
@@ -330,7 +408,8 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                 service = createDefaultExecutor();
             }
 
-            Backend backend = new Backend(this.apiKey, new Dispatcher(service), new HTTPClient(), new PurchaserInfo.Factory());
+            Backend backend = new Backend(this.apiKey, new Dispatcher(service), new HTTPClient(),
+                                          new PurchaserInfo.Factory(), new Entitlement.Factory());
 
             BillingWrapper.Factory billingWrapperFactory = new BillingWrapper.Factory(new BillingWrapper.ClientFactory(context), new Handler(application.getMainLooper()));
 

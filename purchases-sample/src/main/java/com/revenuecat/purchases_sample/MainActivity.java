@@ -13,24 +13,24 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.android.billingclient.api.SkuDetails;
+import com.revenuecat.purchases.Entitlement;
+import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.PurchaserInfo;
 import com.revenuecat.purchases.Purchases;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements Purchases.PurchasesListener {
 
     private Purchases purchases;
-    private final Map<String, SkuDetails> skuDetailsByIdentifier = new HashMap<>();
+    private SkuDetails monthlySkuDetails;
     private Button mButton;
     private RecyclerView mRecyclerView;
 
-    private static final String ONEMONTH_TRIAL_SKU = "onemonth_freetrial";
     private LinearLayoutManager mLayoutManager;
+    private Map<String, Entitlement> entitlementMap;
 
     public class ExpirationsAdapter extends RecyclerView.Adapter<ExpirationsAdapter.ViewHolder> {
         private final Map<String, Date> mExpirationDates;
@@ -53,13 +53,12 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             String key = mSortedKeys.get(position);
             Date expiration = mExpirationDates.get(key);
-            String dateString = expiration.toString();
 
-            Boolean expired = expiration.before(new Date());
+            Boolean active = expiration == null || expiration.after(new Date());
 
-            String expiredIcon = expired ? "❌" : "✅";
+            String expiredIcon = active ? "✅" : "❌";
 
-            String message = key + " " + expiredIcon + " " + dateString;
+            String message = key + " " + expiredIcon + " " + expiration;
             holder.mTextView.setText(message);
         }
 
@@ -82,39 +81,19 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mRecyclerView = (RecyclerView) findViewById(R.id.expirationDates);
+
+        mLayoutManager = new LinearLayoutManager(this);
+        mRecyclerView.setLayoutManager(mLayoutManager);
+
         this.purchases = new Purchases.Builder(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN", this)
-                .appUserID("jerry1001").build();
-
-        List<String> skus = new ArrayList<>();
-        skus.add(ONEMONTH_TRIAL_SKU);
-
-        this.purchases.getSubscriptionSkus(skus, new Purchases.GetSkusResponseHandler() {
-            @Override
-            public void onReceiveSkus(List<SkuDetails> skus) {
-                Log.d("Purchases", "Got skus " + skus.get(0));
-
-
-                for (SkuDetails details : skus) {
-                    skuDetailsByIdentifier.put(details.getSku(), details);
-                }
-
-
-                if (skuDetailsByIdentifier.containsKey(ONEMONTH_TRIAL_SKU)) {
-                    SkuDetails details = skuDetailsByIdentifier.get(ONEMONTH_TRIAL_SKU);
-                    mButton.setText("Buy One Month w/ Trial - " + details.getPrice());
-                    mButton.setEnabled(true);
-                }
-            }
-        });
+                .appUserID("jerry").build();
 
         mButton = (Button)findViewById(R.id.button);
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (skuDetailsByIdentifier.containsKey(ONEMONTH_TRIAL_SKU)) {
-                    SkuDetails details = skuDetailsByIdentifier.get(ONEMONTH_TRIAL_SKU);
-                    purchases.makePurchase(MainActivity.this, details.getSku(), details.getType());
-                }
+                purchases.makePurchase(MainActivity.this, monthlySkuDetails.getSku(), monthlySkuDetails.getType());
             }
         });
         mButton.setEnabled(false);
@@ -127,10 +106,21 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
             }
         });
 
-        mRecyclerView = (RecyclerView) findViewById(R.id.expirationDates);
+        this.purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+                Entitlement pro = entitlementMap.get("pro");
+                Offering monthly = pro.getOfferings().get("monthly");
 
-        mLayoutManager = new LinearLayoutManager(this);
-        mRecyclerView.setLayoutManager(mLayoutManager);
+                MainActivity.this.entitlementMap = entitlementMap;
+
+                monthlySkuDetails = monthly.getSkuDetails();
+
+                mButton.setText("Buy One Month w/ Trial - " + monthlySkuDetails.getPrice());
+                mButton.setEnabled(true);
+            }
+        });
+
     }
 
     @Override
@@ -150,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mRecyclerView.setAdapter(new ExpirationsAdapter(purchaserInfo.getAllExpirationDates()));
+                mRecyclerView.setAdapter(new ExpirationsAdapter(purchaserInfo.getAllExpirationDatesByEntitlement()));
                 mRecyclerView.invalidate();
             }
         });
