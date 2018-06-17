@@ -21,13 +21,20 @@ public class PurchaserInfo {
 
             for (Iterator<String> it = expirations.keys(); it.hasNext();) {
                 String key = it.next();
-                String dateValue = expirations.getJSONObject(key).getString("expires_date");
 
-                try {
-                    Date date = Iso8601Utils.parse(dateValue);
-                    expirationDates.put(key, date);
-                } catch (RuntimeException e) {
-                    throw new JSONException(e.getMessage());
+                JSONObject object = expirations.getJSONObject(key);
+
+
+                if (object.isNull("expires_date")) {
+                    expirationDates.put(key, null);
+                } else {
+                    String dateValue = object.getString("expires_date");
+                    try {
+                        Date date = Iso8601Utils.parse(dateValue);
+                        expirationDates.put(key, date);
+                    } catch (RuntimeException e) {
+                        throw new JSONException(e.getMessage());
+                    }
                 }
             }
 
@@ -48,7 +55,11 @@ public class PurchaserInfo {
             JSONObject subscriptions = subscriber.getJSONObject("subscriptions");
             Map<String, Date> expirationDatesByProduct = parseExpirations(subscriptions);
 
-            JSONObject entitlements = subscriber.getJSONObject("entitlements");
+            JSONObject entitlements = new JSONObject();
+            if (subscriber.has("entitlements")) {
+                entitlements = subscriber.getJSONObject("entitlements");
+            }
+
             Map<String, Date> expirationDatesByEntitlement = parseExpirations(entitlements);
 
             return new PurchaserInfo(nonSubscriptionPurchases, expirationDatesByProduct, expirationDatesByEntitlement, object);
@@ -79,7 +90,7 @@ public class PurchaserInfo {
 
         for (String key : expirations.keySet()) {
             Date date = expirations.get(key);
-            if (date.after(new Date())) {
+            if (date == null || date.after(new Date())) {
                 activeSkus.add(key);
             }
         }

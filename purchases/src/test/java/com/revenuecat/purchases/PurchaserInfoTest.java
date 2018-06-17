@@ -123,10 +123,11 @@ public class PurchaserInfoTest {
         PurchaserInfo info = fullPurchaserInfo();
         Set<String> actives = info.getActiveEntitlements();
 
-        assertEquals(1, actives.size());
+        assertEquals(2, actives.size());
         assertTrue(actives.contains("pro"));
         assertFalse(actives.contains("old_pro"));
         assertTrue(actives.contains("forever_pro"));
+        assertFalse(actives.contains("random"));
     }
 
     @Test
