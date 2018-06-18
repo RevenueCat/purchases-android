@@ -13,3 +13,8 @@ Releasing
  8. `git commit -am "Prepare next development version."`
  9. `git push && git push --tags`
  10. Visit [Sonatype Nexus](https://oss.sonatype.org/) and promote the artifact.
+ 11. Click on Staging Repositories on the left side
+ 12. Scroll down to find the purchase respostiry
+ 13. Select and click "Close" from the top menu. Why is it called close?
+ 14. Once close is complete, repeat but this time selecting "Release"
+
