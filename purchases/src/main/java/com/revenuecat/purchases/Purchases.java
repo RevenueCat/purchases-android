@@ -52,6 +52,9 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         int PLAY_BILLING = 1;
     }
 
+    /**
+     * Used to handle async updates from Purchases
+     */
     public interface PurchasesListener {
         void onCompletedPurchase(String sku, PurchaserInfo purchaserInfo);
         void onFailedPurchase(@ErrorDomains int domain, int code, String reason);
@@ -114,6 +117,15 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         }
     }
 
+    /**
+     * Fetch the configured entitlements for this user. Entitlements allows you to configure your in-app products via RevenueCat
+     * and greatly simplifies management. See the guide (https://docs.revenuecat.com/v1.0/docs/entitlements) for more info.
+     *
+     * Entitlements will be fetched and cached on instantiation so that, by the time they are needed, your prices are
+     * loaded for your purchase flow. Time is money.
+     *
+     * @param handler Called when entitlements are available. Called immediately if entitlements are cached.
+     */
     public void getEntitlements(final GetEntitlementsHandler handler) {
         if (this.cachedEntitlements != null) {
             handler.onReceiveEntitlements(this.cachedEntitlements);
