@@ -321,7 +321,11 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                 @Override
                 public void onError(int code, String message) {
                     postedTokens.remove(token);
-                    listener.onFailedPurchase(ErrorDomains.REVENUECAT_BACKEND, code, message);
+                    if (isPurchase) {
+                        listener.onFailedPurchase(ErrorDomains.REVENUECAT_BACKEND, code, message);
+                    } else if (isRestore) {
+                        listener.onRestoreTransactionsFailed(ErrorDomains.REVENUECAT_BACKEND, code, message);
+                    }
                 }
             });
         }
