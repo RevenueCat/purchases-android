@@ -1,3 +1,6 @@
+## 1.1.0
+- Add restore transactions listener methods
+
 ## 1.0.0
 - Entitlements support
 - Caching of purchaser info
