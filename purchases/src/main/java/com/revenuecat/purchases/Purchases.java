@@ -58,7 +58,11 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     public interface PurchasesListener {
         void onCompletedPurchase(String sku, PurchaserInfo purchaserInfo);
         void onFailedPurchase(@ErrorDomains int domain, int code, String reason);
+
         void onReceiveUpdatedPurchaserInfo(PurchaserInfo purchaserInfo);
+
+        void onRestoreTransactions(PurchaserInfo purchaserInfo);
+        void onRestoreTransactionsFailed(@ErrorDomains int domain, int code, String reason);
     }
 
     public interface GetSkusResponseHandler {

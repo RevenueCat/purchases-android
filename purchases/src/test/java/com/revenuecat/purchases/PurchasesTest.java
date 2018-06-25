@@ -368,6 +368,15 @@ public class PurchasesTest {
     }
 
     @Test
+    public void restoringCallsRestoreCallback() {
+        setup();
+
+        purchases.restorePurchasesForPlayStoreAccount();
+        verify(listener, times(1)).onRestoreTransactions(any(PurchaserInfo.class));
+        verify(listener, times(1)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+    }
+
+    @Test
     public void doesntDoublePostReceipts() {
         setup();
 
