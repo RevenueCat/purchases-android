@@ -145,4 +145,21 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
             }
         });
     }
+
+    @Override
+    public void onRestoreTransactions(final PurchaserInfo purchaserInfo) {
+        Log.i("Purchases", "Got new purchaser info: " + purchaserInfo.getActiveSubscriptions());
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mRecyclerView.setAdapter(new ExpirationsAdapter(purchaserInfo.getAllExpirationDatesByEntitlement()));
+                mRecyclerView.invalidate();
+            }
+        });
+    }
+
+    @Override
+    public void onRestoreTransactionsFailed(int domain, int code, String reason) {
+        Log.i("Purchases", reason);
+    }
 }
