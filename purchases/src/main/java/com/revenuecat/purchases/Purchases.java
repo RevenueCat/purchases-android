@@ -254,17 +254,19 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     public void restorePurchasesForPlayStoreAccount() {
         billingWrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, new BillingWrapper.PurchaseHistoryResponseListener() {
             @Override
-            public void onReceivePurchaseHistory(List<Purchase> purchasesList) {
-                postPurchases(purchasesList, true, false);
+            public void onReceivePurchaseHistory(final List<Purchase> subsPurchasesList) {
+                billingWrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.INAPP, new BillingWrapper.PurchaseHistoryResponseListener() {
+                    @Override
+                    public void onReceivePurchaseHistory(List<Purchase> inAppPurchasesList) {
+                        List<Purchase> allPurchases = new ArrayList<>(subsPurchasesList);
+                        allPurchases.addAll(inAppPurchasesList);
+                        postPurchases(allPurchases, true, false);
+                    }
+                });
             }
         });
 
-        billingWrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.INAPP, new BillingWrapper.PurchaseHistoryResponseListener() {
-            @Override
-            public void onReceivePurchaseHistory(List<Purchase> purchasesList) {
-                postPurchases(purchasesList, true, false);
-            }
-        });
+
     }
 
 
@@ -297,7 +299,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         });
     }
 
-    private void postPurchases(List<Purchase> purchases, Boolean isRestore, final Boolean isPurchase) {
+    private void postPurchases(List<Purchase> purchases, final Boolean isRestore, final Boolean isPurchase) {
         for (Purchase p : purchases) {
             final String token = p.getPurchaseToken();
             final String sku = p.getSku();
@@ -309,6 +311,8 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                     deviceCache.cachePurchaserInfo(appUserID, info);
                     if (isPurchase) {
                         listener.onCompletedPurchase(sku, info);
+                    } else if (isRestore) {
+                        listener.onRestoreTransactions(info);
                     } else {
                         listener.onReceiveUpdatedPurchaserInfo(info);
                     }

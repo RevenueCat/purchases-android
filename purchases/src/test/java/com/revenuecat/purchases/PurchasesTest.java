@@ -307,6 +307,16 @@ public class PurchasesTest {
     public void restoringPurchasesGetsHistory() {
         setup();
 
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                historyListener = invocation.getArgument(1);
+                historyListener.onReceivePurchaseHistory(new ArrayList<Purchase>());
+                return null;
+            }
+        }).when(mockBillingWrapper).queryPurchaseHistoryAsync(any(String.class),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
+
         purchases.restorePurchasesForPlayStoreAccount();
 
         verify(mockBillingWrapper).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.SUBS),
@@ -363,7 +373,8 @@ public class PurchasesTest {
                 eq(true),
                 any(Backend.BackendResponseHandler.class));
 
-        verify(listener, times(3)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(1)).onRestoreTransactions(any(PurchaserInfo.class));
         verify(listener, times(0)).onCompletedPurchase(any(String.class), any(PurchaserInfo.class));
     }
 
@@ -371,9 +382,56 @@ public class PurchasesTest {
     public void restoringCallsRestoreCallback() {
         setup();
 
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        final List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                BillingWrapper.PurchaseHistoryResponseListener listener = invocation.getArgument(1);
+                listener.onReceivePurchaseHistory(purchasesList);
+                return null;
+            }
+        }).when(mockBillingWrapper).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.SUBS),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                BillingWrapper.PurchaseHistoryResponseListener listener = invocation.getArgument(1);
+                listener.onReceivePurchaseHistory(new ArrayList<Purchase>());
+                return null;
+            }
+        }).when(mockBillingWrapper).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.INAPP),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.BackendResponseHandler handler = invocation.getArgument(4);
+                handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
+                return null;
+            }
+        }).when(mockBackend).postReceiptData(any(String.class),
+                any(String.class),
+                any(String.class),
+                eq(true),
+                any(Backend.BackendResponseHandler.class));
+
         purchases.restorePurchasesForPlayStoreAccount();
+
+        verify(mockBillingWrapper, times(2)).queryPurchaseHistoryAsync(
+                any(String.class),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
         verify(listener, times(1)).onRestoreTransactions(any(PurchaserInfo.class));
-        verify(listener, times(1)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
     }
 
     @Test
