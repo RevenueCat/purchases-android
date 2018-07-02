@@ -262,11 +262,18 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                         allPurchases.addAll(inAppPurchasesList);
                         postPurchases(allPurchases, true, false);
                     }
+
+                    @Override
+                    public void onReceivePurchaseHistoryError(int responseCode, String message) {
+                        listener.onRestoreTransactionsFailed(ErrorDomains.PLAY_BILLING, responseCode, message);
+                    }
                 });
             }
+            @Override
+            public void onReceivePurchaseHistoryError(int responseCode, String message) {
+                listener.onRestoreTransactionsFailed(ErrorDomains.PLAY_BILLING, responseCode, message);
+            }
         });
-
-
     }
 
 

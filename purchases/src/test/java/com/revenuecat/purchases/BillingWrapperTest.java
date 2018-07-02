@@ -305,6 +305,7 @@ public class BillingWrapperTest {
                 new ArrayList<Purchase>());
 
         verify(mockPurchaseHistoryListener, times(0)).onReceivePurchaseHistory((List<Purchase>) any());
+        verify(mockPurchaseHistoryListener, times(1)).onReceivePurchaseHistoryError(eq(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED), any(String.class));
     }
 
 }
