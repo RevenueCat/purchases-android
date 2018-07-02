@@ -593,6 +593,11 @@ public class PurchasesTest {
             public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
                 PurchasesTest.this.receivedEntitlementMap = entitlementMap;
             }
+
+            @Override
+            public void onReceiveEntitlementsError(int domain, int code, String message) {
+
+            }
         });
 
         assertNotNull(receivedEntitlementMap);
@@ -645,8 +650,69 @@ public class PurchasesTest {
             public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
                 PurchasesTest.this.receivedEntitlementMap = entitlementMap;
             }
+
+            @Override
+            public void onReceiveEntitlementsError(int domain, int code, String message) {
+
+            }
         });
 
         assertNotNull(receivedEntitlementMap);
+    }
+
+    @Test
+    public void getEntitlementsErrorIsCalledIfSkuDetailsMissing() {
+
+        setup();
+
+        List<String> skus = new ArrayList<>();
+        skus.add("monthly");
+        mockProducts(skus);
+        mockSkuDetails(skus, new ArrayList<String>(), BillingClient.SkuType.SUBS);
+        mockSkuDetails(skus, new ArrayList<String>(), BillingClient.SkuType.INAPP);
+
+        final String[] errorMessage = {null};
+
+        purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+            }
+
+            @Override
+            public void onReceiveEntitlementsError(int domain, int code, String message) {
+                errorMessage[0] = message;
+            }
+        });
+
+        assertNotNull(errorMessage[0]);
+    }
+
+    @Test
+    public void getEntitlementsErrorIsCalledIfNoBackendResponse() {
+
+        setup();
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.EntitlementsResponseHandler handler = invocation.getArgument(1);
+                handler.onError(0, "nope");
+                return null;
+            }
+        }).when(mockBackend).getEntitlements(any(String.class), any(Backend.EntitlementsResponseHandler.class));
+
+        final String[] errorMessage = {null};
+
+        purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+            }
+
+            @Override
+            public void onReceiveEntitlementsError(int domain, int code, String message) {
+                errorMessage[0] = message;
+            }
+        });
+
+        assertNotNull(errorMessage[0]);
     }
 }
