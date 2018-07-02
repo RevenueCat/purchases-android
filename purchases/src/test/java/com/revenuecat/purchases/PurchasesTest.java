@@ -379,6 +379,27 @@ public class PurchasesTest {
     }
 
     @Test
+    public void failedToRestorePurchases() {
+        setup();
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                historyListener = invocation.getArgument(1);
+                historyListener.onReceivePurchaseHistoryError(0, "Broken");
+                return null;
+            }
+        }).when(mockBillingWrapper).queryPurchaseHistoryAsync(any(String.class),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
+
+        purchases.restorePurchasesForPlayStoreAccount();
+
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(1)).onRestoreTransactionsFailed(Purchases.ErrorDomains.PLAY_BILLING, 0, "Broken");
+        verify(listener, times(0)).onCompletedPurchase(any(String.class), any(PurchaserInfo.class));
+    }
+
+    @Test
     public void restoringCallsRestoreCallback() {
         setup();
 
