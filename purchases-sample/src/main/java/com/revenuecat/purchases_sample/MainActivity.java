@@ -119,6 +119,11 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
                 mButton.setText("Buy One Month w/ Trial - " + monthlySkuDetails.getPrice());
                 mButton.setEnabled(true);
             }
+
+            @Override
+            public void onReceiveEntitlementsError(int domain, int code, String message) {
+
+            }
         });
 
     }

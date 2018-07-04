@@ -71,6 +71,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     public interface GetEntitlementsHandler {
         void onReceiveEntitlements(Map<String, Entitlement> entitlementMap);
+        void onReceiveEntitlementsError(@ErrorDomains int domain, int code, String message);
     }
 
     public static String getFrameworkVersion() {
@@ -153,7 +154,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                                 skusCopy.remove(d.getSku());
                                 detailsByID.put(d.getSku(), d);
                             }
-
                             if (skusCopy.size() > 0) {
                                 billingWrapper.querySkuDetailsAsync(BillingClient.SkuType.INAPP, skusCopy, new BillingWrapper.SkuDetailsResponseListener() {
                                     @Override
@@ -173,7 +173,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
                 @Override
                 public void onError(int code, String message) {
-                    Log.e("Purchases", "Error fetching entitlements: " + message);
+                    handler.onReceiveEntitlementsError(ErrorDomains.REVENUECAT_BACKEND, code,"Error fetching entitlements: " + message);
                 }
             });
         }
@@ -185,6 +185,9 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             for (Offering o : e.getOfferings().values()) {
                 if (details.containsKey(o.getActiveProductIdentifier())) {
                     o.setSkuDetails(details.get(o.getActiveProductIdentifier()));
+                } else {
+                    handler.onReceiveEntitlementsError(ErrorDomains.PLAY_BILLING, 0, "Failed to find SKU for " + o.getActiveProductIdentifier());
+                    return;
                 }
             }
         }
@@ -262,11 +265,18 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                         allPurchases.addAll(inAppPurchasesList);
                         postPurchases(allPurchases, true, false);
                     }
+
+                    @Override
+                    public void onReceivePurchaseHistoryError(int responseCode, String message) {
+                        listener.onRestoreTransactionsFailed(ErrorDomains.PLAY_BILLING, responseCode, message);
+                    }
                 });
             }
+            @Override
+            public void onReceivePurchaseHistoryError(int responseCode, String message) {
+                listener.onRestoreTransactionsFailed(ErrorDomains.PLAY_BILLING, responseCode, message);
+            }
         });
-
-
     }
 
 
@@ -294,8 +304,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
         getEntitlements(new GetEntitlementsHandler() {
             @Override
-            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
-            }
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {}
+
+            @Override
+            public void onReceiveEntitlementsError(int domain, int code, String message) {}
         });
     }
 

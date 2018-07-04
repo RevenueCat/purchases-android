@@ -379,6 +379,27 @@ public class PurchasesTest {
     }
 
     @Test
+    public void failedToRestorePurchases() {
+        setup();
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                historyListener = invocation.getArgument(1);
+                historyListener.onReceivePurchaseHistoryError(0, "Broken");
+                return null;
+            }
+        }).when(mockBillingWrapper).queryPurchaseHistoryAsync(any(String.class),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
+
+        purchases.restorePurchasesForPlayStoreAccount();
+
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
+        verify(listener, times(1)).onRestoreTransactionsFailed(Purchases.ErrorDomains.PLAY_BILLING, 0, "Broken");
+        verify(listener, times(0)).onCompletedPurchase(any(String.class), any(PurchaserInfo.class));
+    }
+
+    @Test
     public void restoringCallsRestoreCallback() {
         setup();
 
@@ -572,6 +593,11 @@ public class PurchasesTest {
             public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
                 PurchasesTest.this.receivedEntitlementMap = entitlementMap;
             }
+
+            @Override
+            public void onReceiveEntitlementsError(int domain, int code, String message) {
+
+            }
         });
 
         assertNotNull(receivedEntitlementMap);
@@ -624,8 +650,69 @@ public class PurchasesTest {
             public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
                 PurchasesTest.this.receivedEntitlementMap = entitlementMap;
             }
+
+            @Override
+            public void onReceiveEntitlementsError(int domain, int code, String message) {
+
+            }
         });
 
         assertNotNull(receivedEntitlementMap);
+    }
+
+    @Test
+    public void getEntitlementsErrorIsCalledIfSkuDetailsMissing() {
+
+        setup();
+
+        List<String> skus = new ArrayList<>();
+        skus.add("monthly");
+        mockProducts(skus);
+        mockSkuDetails(skus, new ArrayList<String>(), BillingClient.SkuType.SUBS);
+        mockSkuDetails(skus, new ArrayList<String>(), BillingClient.SkuType.INAPP);
+
+        final String[] errorMessage = {null};
+
+        purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+            }
+
+            @Override
+            public void onReceiveEntitlementsError(int domain, int code, String message) {
+                errorMessage[0] = message;
+            }
+        });
+
+        assertNotNull(errorMessage[0]);
+    }
+
+    @Test
+    public void getEntitlementsErrorIsCalledIfNoBackendResponse() {
+
+        setup();
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.EntitlementsResponseHandler handler = invocation.getArgument(1);
+                handler.onError(0, "nope");
+                return null;
+            }
+        }).when(mockBackend).getEntitlements(any(String.class), any(Backend.EntitlementsResponseHandler.class));
+
+        final String[] errorMessage = {null};
+
+        purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
+            @Override
+            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+            }
+
+            @Override
+            public void onReceiveEntitlementsError(int domain, int code, String message) {
+                errorMessage[0] = message;
+            }
+        });
+
+        assertNotNull(errorMessage[0]);
     }
 }
