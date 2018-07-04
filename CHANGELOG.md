@@ -1,3 +1,6 @@
+## 1.2.0
+- Add error handler for entitlements fetch
+
 ## 1.1.0
 - Add restore transactions listener methods
 
