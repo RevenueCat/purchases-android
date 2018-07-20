@@ -186,8 +186,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                 if (details.containsKey(o.getActiveProductIdentifier())) {
                     o.setSkuDetails(details.get(o.getActiveProductIdentifier()));
                 } else {
-                    handler.onReceiveEntitlementsError(ErrorDomains.PLAY_BILLING, 0, "Failed to find SKU for " + o.getActiveProductIdentifier());
-                    return;
+                    Log.e("Purchases", "Failed to find SKU for " + o.getActiveProductIdentifier());
                 }
             }
         }
