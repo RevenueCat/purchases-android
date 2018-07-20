@@ -8,8 +8,11 @@ import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.SkuDetails;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,6 +22,7 @@ import java.util.Map;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertSame;
+import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -27,6 +31,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@RunWith(RobolectricTestRunner.class)
+@Config(manifest = Config.NONE)
 public class PurchasesTest {
 
     private Application mockApplication = mock(Application.class);
@@ -673,9 +679,11 @@ public class PurchasesTest {
 
         final String[] errorMessage = {null};
 
+
         purchases.getEntitlements(new Purchases.GetEntitlementsHandler() {
             @Override
             public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {
+                PurchasesTest.this.receivedEntitlementMap = entitlementMap;
             }
 
             @Override
@@ -684,7 +692,8 @@ public class PurchasesTest {
             }
         });
 
-        assertNotNull(errorMessage[0]);
+        assertNull(errorMessage[0]);
+        assertNotNull(this.receivedEntitlementMap);
     }
 
     @Test
