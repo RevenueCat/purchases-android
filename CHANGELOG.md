@@ -1,3 +1,6 @@
+## 1.2.1
+- Fix for entitlements, missing products now return as null, not blocking the whole entitlement
+
 ## 1.2.0
 - Add error handler for entitlements fetch
 
