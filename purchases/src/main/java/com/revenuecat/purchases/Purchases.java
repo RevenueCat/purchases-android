@@ -15,6 +15,8 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.SkuDetails;
 
+import org.json.JSONObject;
+
 import java.lang.annotation.Retention;
 import java.util.ArrayList;
 import java.util.Date;
@@ -50,6 +52,14 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     public @interface ErrorDomains {
         int REVENUECAT_BACKEND = 0;
         int PLAY_BILLING = 1;
+    }
+
+    @IntDef({AttributionSource.ADJUST, AttributionSource.APPSFLYER, AttributionSource.BRANCH})
+    @Retention(SOURCE)
+    public @interface AttributionSource {
+        int ADJUST = 1;
+        int APPSFLYER = 2;
+        int BRANCH = 3;
     }
 
     /**
@@ -113,6 +123,17 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
      */
     public String getAppUserID() {
         return appUserID;
+    }
+
+    /**
+     * Add attribution data from a supported network
+     */
+    void addAttributionData(JSONObject data, @Purchases.AttributionSource int network) {
+
+    }
+
+    void addAttributionData(Map<String, String> data, @Purchases.AttributionSource int network) {
+        
     }
 
     private void emitCachedPurchaserInfo() {
