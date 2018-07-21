@@ -120,7 +120,22 @@ class Backend {
         });
     }
 
-    void postAttributionData(@Purchases.AttributionSource int source, JSONObject data) {
+    void postAttributionData(final String appUserID, @Purchases.AttributionSource int source, JSONObject data) {
+        if (data.length() == 0) return;
 
+        final JSONObject body = new JSONObject();
+        try {
+            body.put("network", source);
+            body.put("data", data);
+        } catch (JSONException e) {
+            return;
+        }
+
+        dispatcher.enqueue(new Dispatcher.AsyncCall() {
+            @Override
+            public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
+                return httpClient.performRequest("/subscribers/" + appUserID + "/attribution", body, authenticationHeaders);
+            }
+        });
     }
 }

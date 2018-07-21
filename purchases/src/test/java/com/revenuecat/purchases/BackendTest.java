@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.OngoingStubbing;
 import org.robolectric.RobolectricTestRunner;
@@ -19,9 +20,12 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertSame;
 import static junit.framework.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 @RunWith(RobolectricTestRunner.class)
@@ -241,6 +245,12 @@ public class BackendTest {
         verify(mockEntitlementFactory).build((JSONObject) ArgumentMatchers.any());
     }
 
+    class CorrectAttributionBody implements ArgumentMatcher<JSONObject> {
+        public boolean matches(JSONObject object) {
+            return object.has("network") && object.has("data");
+        }
+    }
+
     @Test
     public void canPostBasicAttributionData() throws HTTPClient.HTTPErrorException, JSONException {
         String path = "/subscribers/" + appUserID + "/attribution";
@@ -252,11 +262,20 @@ public class BackendTest {
         expectedBody.put("network", Purchases.AttributionSource.APPSFLYER);
         expectedBody.put("data", object);
 
-        backend.postAttributionData(Purchases.AttributionSource.APPSFLYER, object);
+        backend.postAttributionData(appUserID, Purchases.AttributionSource.APPSFLYER, object);
 
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", "Bearer " + API_KEY);
 
-        verify(mockClient).performRequest(path, expectedBody, headers);
+        verify(mockClient, times(1)).performRequest(eq(path), argThat(new CorrectAttributionBody()), eq(headers));
+    }
+
+    @Test
+    public void doesntPostEmptyAttributionData() throws HTTPClient.HTTPErrorException, JSONException {
+        String path = "/subscribers/" + appUserID + "/attribution";
+
+        backend.postAttributionData(appUserID, Purchases.AttributionSource.APPSFLYER, new JSONObject());
+
+        verifyZeroInteractions(mockClient);
     }
 }
