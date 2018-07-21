@@ -133,7 +133,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     void addAttributionData(Map<String, String> data, @Purchases.AttributionSource int network) {
-        
+
     }
 
     private void emitCachedPurchaserInfo() {
