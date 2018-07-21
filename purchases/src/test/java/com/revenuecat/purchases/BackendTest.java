@@ -240,4 +240,23 @@ public class BackendTest {
 
         verify(mockEntitlementFactory).build((JSONObject) ArgumentMatchers.any());
     }
+
+    @Test
+    public void canPostBasicAttributionData() throws HTTPClient.HTTPErrorException, JSONException {
+        String path = "/subscribers/" + appUserID + "/attribution";
+
+        JSONObject object = new JSONObject();
+        object.put("string", "value");
+
+        JSONObject expectedBody = new JSONObject();
+        expectedBody.put("network", Purchases.AttributionSource.APPSFLYER);
+        expectedBody.put("data", object);
+
+        backend.postAttributionData(Purchases.AttributionSource.APPSFLYER, object);
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Authorization", "Bearer " + API_KEY);
+
+        verify(mockClient).performRequest(path, expectedBody, headers);
+    }
 }

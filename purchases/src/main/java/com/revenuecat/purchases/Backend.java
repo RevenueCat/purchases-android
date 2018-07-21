@@ -72,7 +72,7 @@ class Backend {
         dispatcher.enqueue(new PurchaserInfoReceivingCall(handler) {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                return httpClient.performRequest("/subscribers/" + appUserID, null, authenticationHeaders);
+                return httpClient.performRequest("/subscribers/" + appUserID, (Map)null, authenticationHeaders);
             }
         });
     }
@@ -97,7 +97,7 @@ class Backend {
         dispatcher.enqueue(new Dispatcher.AsyncCall() {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                return httpClient.performRequest("/subscribers/" + appUserID + "/products",null, authenticationHeaders);
+                return httpClient.performRequest("/subscribers/" + appUserID + "/products",(Map)null, authenticationHeaders);
             }
 
             void onError(int code, String message) {
@@ -121,6 +121,6 @@ class Backend {
     }
 
     void postAttributionData(@Purchases.AttributionSource int source, JSONObject data) {
-        
+
     }
 }

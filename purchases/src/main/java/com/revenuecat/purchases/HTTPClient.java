@@ -75,7 +75,6 @@ class HTTPClient {
         writer.write(body);
         writer.flush();
     }
-
     /** Performs a synchronous web request to the RevenueCat API
      * @param path The resource being requested
      * @param body The body of the request, for GET must be null
@@ -85,6 +84,18 @@ class HTTPClient {
      */
     public Result performRequest(final String path,
                                  final Map body,
+                                 final Map<String, String> headers) throws HTTPErrorException {
+        JSONObject jsonBody = null;
+        
+        if (body != null) {
+            jsonBody = new JSONObject(body);
+        }
+
+        return performRequest(path, jsonBody, headers);
+    }
+
+    public Result performRequest(final String path,
+                                 final JSONObject body,
                                  final Map<String, String> headers)
             throws HTTPErrorException {
         URL fullURL = null;
@@ -113,7 +124,7 @@ class HTTPClient {
                 connection.setDoOutput(true);
                 connection.setRequestMethod("POST");
                 OutputStream os = connection.getOutputStream();
-                writeFully(buffer(os), new JSONObject(body).toString());
+                writeFully(buffer(os), body.toString());
             }
         } catch (IOException e) {
             throw new HTTPErrorException(-1, "Error establishing connection " + e.getMessage());
