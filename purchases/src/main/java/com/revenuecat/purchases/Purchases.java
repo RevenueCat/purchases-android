@@ -54,9 +54,9 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         int PLAY_BILLING = 1;
     }
 
-    @IntDef({AttributionSource.ADJUST, AttributionSource.APPSFLYER, AttributionSource.BRANCH})
+    @IntDef({AttributionNetwork.ADJUST, AttributionNetwork.APPSFLYER, AttributionNetwork.BRANCH})
     @Retention(SOURCE)
-    public @interface AttributionSource {
+    public @interface AttributionNetwork {
         int ADJUST = 1;
         int APPSFLYER = 2;
         int BRANCH = 3;
@@ -128,11 +128,11 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     /**
      * Add attribution data from a supported network
      */
-    void addAttributionData(JSONObject data, @Purchases.AttributionSource int network) {
+    void addAttributionData(JSONObject data, @AttributionNetwork int network) {
 
     }
 
-    void addAttributionData(Map<String, String> data, @Purchases.AttributionSource int network) {
+    void addAttributionData(Map<String, String> data, @AttributionNetwork int network) {
 
     }
 

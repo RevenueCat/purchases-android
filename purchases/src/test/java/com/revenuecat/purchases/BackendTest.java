@@ -259,10 +259,10 @@ public class BackendTest {
         object.put("string", "value");
 
         JSONObject expectedBody = new JSONObject();
-        expectedBody.put("network", Purchases.AttributionSource.APPSFLYER);
+        expectedBody.put("network", Purchases.AttributionNetwork.APPSFLYER);
         expectedBody.put("data", object);
 
-        backend.postAttributionData(appUserID, Purchases.AttributionSource.APPSFLYER, object);
+        backend.postAttributionData(appUserID, Purchases.AttributionNetwork.APPSFLYER, object);
 
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", "Bearer " + API_KEY);
@@ -274,7 +274,7 @@ public class BackendTest {
     public void doesntPostEmptyAttributionData() throws HTTPClient.HTTPErrorException, JSONException {
         String path = "/subscribers/" + appUserID + "/attribution";
 
-        backend.postAttributionData(appUserID, Purchases.AttributionSource.APPSFLYER, new JSONObject());
+        backend.postAttributionData(appUserID, Purchases.AttributionNetwork.APPSFLYER, new JSONObject());
 
         verifyZeroInteractions(mockClient);
     }
