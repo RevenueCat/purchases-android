@@ -72,7 +72,7 @@ class Backend {
         dispatcher.enqueue(new PurchaserInfoReceivingCall(handler) {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                return httpClient.performRequest("/subscribers/" + appUserID, null, authenticationHeaders);
+                return httpClient.performRequest("/subscribers/" + appUserID, (Map)null, authenticationHeaders);
             }
         });
     }
@@ -97,7 +97,7 @@ class Backend {
         dispatcher.enqueue(new Dispatcher.AsyncCall() {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                return httpClient.performRequest("/subscribers/" + appUserID + "/products",null, authenticationHeaders);
+                return httpClient.performRequest("/subscribers/" + appUserID + "/products",(Map)null, authenticationHeaders);
             }
 
             void onError(int code, String message) {
@@ -116,6 +116,25 @@ class Backend {
                 } else {
                     handler.onError(result.responseCode, "Backend error");
                 }
+            }
+        });
+    }
+
+    void postAttributionData(final String appUserID, @Purchases.AttributionNetwork int network, JSONObject data) {
+        if (data.length() == 0) return;
+
+        final JSONObject body = new JSONObject();
+        try {
+            body.put("network", network);
+            body.put("data", data);
+        } catch (JSONException e) {
+            return;
+        }
+
+        dispatcher.enqueue(new Dispatcher.AsyncCall() {
+            @Override
+            public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
+                return httpClient.performRequest("/subscribers/" + appUserID + "/attribution", body, authenticationHeaders);
             }
         });
     }

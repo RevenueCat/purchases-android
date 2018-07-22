@@ -11,6 +11,7 @@ import org.robolectric.annotation.Config;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -43,7 +44,7 @@ public class HTTPClientTest {
         server.enqueue(response);
 
         HTTPClient client = new HTTPClient(baseURL);
-        client.performRequest("/resource", null, null);
+        client.performRequest("/resource", (Map)null, null);
 
         RecordedRequest request = server.takeRequest();
         assertEquals(request.getMethod(), "GET");
@@ -56,7 +57,7 @@ public class HTTPClientTest {
         server.enqueue(response);
 
         HTTPClient client = new HTTPClient(baseURL);
-        HTTPClient.Result result = client.performRequest("/resource", null, null);
+        HTTPClient.Result result = client.performRequest("/resource", (Map)null, null);
 
         server.takeRequest();
 
@@ -69,7 +70,7 @@ public class HTTPClientTest {
         server.enqueue(response);
 
         HTTPClient client = new HTTPClient(baseURL);
-        HTTPClient.Result result = client.performRequest("/resource", null, null);
+        HTTPClient.Result result = client.performRequest("/resource", (Map)null, null);
 
         server.takeRequest();
 
@@ -85,7 +86,7 @@ public class HTTPClientTest {
 
         HTTPClient client = new HTTPClient(baseURL);
         try {
-            client.performRequest("/resource", null, null);
+            client.performRequest("/resource", (Map)null, null);
         } finally {
             server.takeRequest();
         }
@@ -102,7 +103,7 @@ public class HTTPClientTest {
         headers.put("Authentication", "Bearer todd");
 
         HTTPClient client = new HTTPClient(baseURL);
-        client.performRequest("/resource", null, headers);
+        client.performRequest("/resource", (Map)null, headers);
 
         RecordedRequest request = server.takeRequest();
         assertEquals(request.getHeader("Authentication"), "Bearer todd");
@@ -114,7 +115,7 @@ public class HTTPClientTest {
         server.enqueue(response);
 
         HTTPClient client = new HTTPClient(baseURL);
-        client.performRequest("/resource", null, null);
+        client.performRequest("/resource", (Map)null, null);
 
         RecordedRequest request = server.takeRequest();
 

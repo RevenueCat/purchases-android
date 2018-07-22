@@ -15,6 +15,9 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.SkuDetails;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.lang.annotation.Retention;
 import java.util.ArrayList;
 import java.util.Date;
@@ -50,6 +53,14 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     public @interface ErrorDomains {
         int REVENUECAT_BACKEND = 0;
         int PLAY_BILLING = 1;
+    }
+
+    @IntDef({AttributionNetwork.ADJUST, AttributionNetwork.APPSFLYER, AttributionNetwork.BRANCH})
+    @Retention(SOURCE)
+    public @interface AttributionNetwork {
+        int ADJUST = 1;
+        int APPSFLYER = 2;
+        int BRANCH = 3;
     }
 
     /**
@@ -113,6 +124,25 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
      */
     public String getAppUserID() {
         return appUserID;
+    }
+
+    /**
+     * Add attribution data from a supported network
+     */
+    void addAttributionData(JSONObject data, @AttributionNetwork int network) {
+        backend.postAttributionData(appUserID, network, data);
+    }
+
+    void addAttributionData(Map<String, String> data, @AttributionNetwork int network) {
+        JSONObject jsonObject = new JSONObject();
+        for (String key: data.keySet()) {
+            try {
+                jsonObject.put(key, data.get(key));
+            } catch (JSONException e) {
+                Log.e("Purchases", "Failed to add key " + key + " to attribution map");
+            }
+        }
+        backend.postAttributionData(appUserID, network, jsonObject);
     }
 
     private void emitCachedPurchaserInfo() {
