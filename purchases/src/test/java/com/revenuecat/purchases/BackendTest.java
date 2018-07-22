@@ -11,6 +11,7 @@ import org.mockito.stubbing.OngoingStubbing;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
+import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -20,6 +21,7 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertSame;
 import static junit.framework.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -277,5 +279,25 @@ public class BackendTest {
         backend.postAttributionData(appUserID, Purchases.AttributionNetwork.APPSFLYER, new JSONObject());
 
         verifyZeroInteractions(mockClient);
+    }
+
+    @Test
+    public void encodesAppUserId() throws JSONException, MalformedURLException, HTTPClient.HTTPErrorException {
+        String encodeableUserID = "userid with spaces";
+
+        String encodedUserID = "userid%20with%20spaces";
+        String path = "/subscribers/" + encodedUserID + "/attribution";
+
+        JSONObject object = new JSONObject();
+        object.put("string", "value");
+
+        backend.postAttributionData(encodeableUserID, Purchases.AttributionNetwork.APPSFLYER, object);
+
+        verify(mockClient, times(1)).performRequest(
+                eq(path),
+                any(JSONObject.class),
+                (Map<String, String>)any()
+        );
+
     }
 }
