@@ -1,5 +1,7 @@
 package com.revenuecat.purchases;
 
+import android.net.Uri;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -72,7 +74,7 @@ class Backend {
         dispatcher.enqueue(new PurchaserInfoReceivingCall(handler) {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                return httpClient.performRequest("/subscribers/" + appUserID, (Map)null, authenticationHeaders);
+                return httpClient.performRequest("/subscribers/" + encode(appUserID), (Map)null, authenticationHeaders);
             }
         });
     }
@@ -97,7 +99,7 @@ class Backend {
         dispatcher.enqueue(new Dispatcher.AsyncCall() {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                return httpClient.performRequest("/subscribers/" + appUserID + "/products",(Map)null, authenticationHeaders);
+                return httpClient.performRequest("/subscribers/" + encode(appUserID) + "/products",(Map)null, authenticationHeaders);
             }
 
             void onError(int code, String message) {
@@ -120,6 +122,10 @@ class Backend {
         });
     }
 
+    private String encode(String string) {
+        return Uri.encode(string);
+    }
+
     void postAttributionData(final String appUserID, @Purchases.AttributionNetwork int network, JSONObject data) {
         if (data.length() == 0) return;
 
@@ -134,7 +140,7 @@ class Backend {
         dispatcher.enqueue(new Dispatcher.AsyncCall() {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
-                return httpClient.performRequest("/subscribers/" + appUserID + "/attribution", body, authenticationHeaders);
+                return httpClient.performRequest("/subscribers/" + encode(appUserID) + "/attribution", body, authenticationHeaders);
             }
         });
     }
