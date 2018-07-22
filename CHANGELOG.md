@@ -1,3 +1,6 @@
+## 1.3.0
+- Attribution! You can now pass attribution data from AppsFlyer, Adjust and Branch. You can then view the ROI of your campaigns, including revenue coming from referrals. 
+
 ## 1.2.1
 - Fix for entitlements, missing products now return as null, not blocking the whole entitlement
 
