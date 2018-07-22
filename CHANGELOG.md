@@ -1,3 +1,6 @@
+## 1.3.1
+- Fix visibility for addAttribution methods
+
 ## 1.3.0
 - Attribution! You can now pass attribution data from AppsFlyer, Adjust and Branch. You can then view the ROI of your campaigns, including revenue coming from referrals. 
 

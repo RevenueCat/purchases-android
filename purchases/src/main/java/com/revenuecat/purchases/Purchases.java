@@ -86,7 +86,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     public static String getFrameworkVersion() {
-        return "1.4.0-SNAPSHOT";
+        return "1.3.1";
     }
 
     Purchases(Application application,
@@ -129,11 +129,11 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     /**
      * Add attribution data from a supported network
      */
-    void addAttributionData(JSONObject data, @AttributionNetwork int network) {
+    public void addAttributionData(JSONObject data, @AttributionNetwork int network) {
         backend.postAttributionData(appUserID, network, data);
     }
 
-    void addAttributionData(Map<String, String> data, @AttributionNetwork int network) {
+    public void addAttributionData(Map<String, String> data, @AttributionNetwork int network) {
         JSONObject jsonObject = new JSONObject();
         for (String key: data.keySet()) {
             try {
