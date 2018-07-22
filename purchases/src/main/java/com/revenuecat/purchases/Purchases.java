@@ -15,6 +15,7 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.SkuDetails;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.lang.annotation.Retention;
@@ -129,11 +130,19 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
      * Add attribution data from a supported network
      */
     void addAttributionData(JSONObject data, @AttributionNetwork int network) {
-
+        backend.postAttributionData(appUserID, network, data);
     }
 
     void addAttributionData(Map<String, String> data, @AttributionNetwork int network) {
-
+        JSONObject jsonObject = new JSONObject();
+        for (String key: data.keySet()) {
+            try {
+                jsonObject.put(key, data.get(key));
+            } catch (JSONException e) {
+                Log.e("Purchases", "Failed to add key " + key + " to attribution map");
+            }
+        }
+        backend.postAttributionData(appUserID, network, jsonObject);
     }
 
     private void emitCachedPurchaserInfo() {

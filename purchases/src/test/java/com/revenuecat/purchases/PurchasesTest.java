@@ -7,6 +7,7 @@ import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.SkuDetails;
 
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.revenuecat.purchases.Purchases.AttributionNetwork.APPSFLYER;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertSame;
@@ -723,5 +725,29 @@ public class PurchasesTest {
         });
 
         assertNotNull(errorMessage[0]);
+    }
+
+    @Test
+    public void addAttributionPassesDataToBackend() {
+        setup();
+
+        JSONObject object = mock(JSONObject.class);
+        @Purchases.AttributionNetwork int network = APPSFLYER;
+        purchases.addAttributionData(object, network);
+
+        verify(mockBackend).postAttributionData(appUserId, network, object);
+    }
+
+    @Test
+    public void addAttributionConvertsStringStringMapToJsonObject() {
+        setup();
+
+        Map<String, String> map = new HashMap<>();
+        map.put("key", "value");
+
+        @Purchases.AttributionNetwork int network = APPSFLYER;
+        purchases.addAttributionData(map, network);
+
+        verify(mockBackend).postAttributionData(eq(appUserId), eq(network), any(JSONObject.class));
     }
 }
