@@ -9,6 +9,7 @@ import android.util.Log;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
+import com.android.billingclient.api.ConsumeResponseListener;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
@@ -59,6 +60,10 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     public interface PurchasesUpdatedListener {
         void onPurchasesUpdated(List<Purchase> purchases);
         void onPurchasesFailedToUpdate(@BillingClient.BillingResponse int responseCode, String message);
+    }
+
+    public interface TokenConsumedListener {
+        void onTokenConsumedAsync(@BillingClient.BillingResponse int responseCode, String token);
     }
 
     final private BillingClient billingClient;
@@ -154,6 +159,15 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
                 } else {
                     listener.onReceivePurchaseHistoryError(responseCode, "Error receiving purchase history");
                 }
+            }
+        });
+    }
+
+    public void consumePurchase(String token, final ConsumeResponseListener consumeResponseListener) {
+        billingClient.consumeAsync(token, new ConsumeResponseListener() {
+            @Override
+            public void onConsumeResponse(int responseCode, String purchaseToken) {
+                consumeResponseListener.onConsumeResponse(responseCode, purchaseToken);
             }
         });
     }
