@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.Application;
 
 import com.android.billingclient.api.BillingClient;
-import com.android.billingclient.api.ConsumeResponseListener;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.SkuDetails;
 
@@ -72,6 +71,19 @@ public class PurchasesTest {
                 return null;
             }
         }).when(mockBackend).getSubscriberInfo(eq(appUserId), any(Backend.BackendResponseHandler.class));
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.BackendResponseHandler handler = invocation.getArgument(4);
+                handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
+                return null;
+            }
+        }).when(mockBackend).postReceiptData(any(String.class),
+                any(String.class),
+                any(String.class),
+                any(Boolean.class),
+                any(Backend.BackendResponseHandler.class));
 
         doAnswer(new Answer() {
             @Override
@@ -184,7 +196,7 @@ public class PurchasesTest {
                 eq(false),
                 any(Backend.BackendResponseHandler.class));
 
-        verify(mockBillingWrapper, times(1)).consumePurchase(eq(purchaseToken), any(ConsumeResponseListener.class));
+        verify(mockBillingWrapper, times(1)).consumePurchase(eq(purchaseToken));
     }
 
     @Test
@@ -363,19 +375,6 @@ public class PurchasesTest {
         }).when(mockBillingWrapper).queryPurchaseHistoryAsync(any(String.class),
                 any(BillingWrapper.PurchaseHistoryResponseListener.class));
 
-        doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                Backend.BackendResponseHandler handler = invocation.getArgument(4);
-                handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
-                return null;
-            }
-        }).when(mockBackend).postReceiptData(eq(purchaseToken),
-                eq(purchases.getAppUserID()),
-                eq(sku),
-                eq(true),
-                any(Backend.BackendResponseHandler.class));
-
         purchases.restorePurchasesForPlayStoreAccount();
 
         verify(mockBackend, times(1)).postReceiptData(eq(purchaseToken),
@@ -539,7 +538,7 @@ public class PurchasesTest {
                 eq(false),
                 any(Backend.BackendResponseHandler.class));
 
-        verify(mockCache).cachePurchaserInfo(any(String.class), any(PurchaserInfo.class));
+        verify(mockCache, times(2)).cachePurchaserInfo(any(String.class), any(PurchaserInfo.class));
     }
 
     @Test
@@ -786,7 +785,7 @@ public class PurchasesTest {
         purchasesList.add(p);
         purchases.onPurchasesUpdated(purchasesList);
 
-        verify(mockBillingWrapper).consumePurchase(eq(purchaseToken), any(ConsumeResponseListener.class));
+        verify(mockBillingWrapper).consumePurchase(eq(purchaseToken));
     }
 
     @Test
@@ -821,6 +820,6 @@ public class PurchasesTest {
         purchasesList.add(p);
         purchases.onPurchasesUpdated(purchasesList);
 
-        verify(mockBillingWrapper, times(0)).consumePurchase(eq(purchaseToken), any(ConsumeResponseListener.class));
+        verify(mockBillingWrapper, times(0)).consumePurchase(eq(purchaseToken));
     }
 }

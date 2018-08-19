@@ -62,10 +62,6 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         void onPurchasesFailedToUpdate(@BillingClient.BillingResponse int responseCode, String message);
     }
 
-    public interface TokenConsumedListener {
-        void onTokenConsumedAsync(@BillingClient.BillingResponse int responseCode, String token);
-    }
-
     final private BillingClient billingClient;
     final private PurchasesUpdatedListener purchasesUpdatedListener;
     final private Handler mainHandler;
@@ -163,12 +159,10 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         });
     }
 
-    public void consumePurchase(String token, final ConsumeResponseListener consumeResponseListener) {
+    public void consumePurchase(String token) {
         billingClient.consumeAsync(token, new ConsumeResponseListener() {
             @Override
-            public void onConsumeResponse(int responseCode, String purchaseToken) {
-                consumeResponseListener.onConsumeResponse(responseCode, purchaseToken);
-            }
+            public void onConsumeResponse(int responseCode, String purchaseToken) {}
         });
     }
 

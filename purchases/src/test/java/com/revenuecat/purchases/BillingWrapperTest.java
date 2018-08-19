@@ -319,7 +319,7 @@ public class BillingWrapperTest {
         };
 
         billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
-        wrapper.consumePurchase(token, listener);
+        wrapper.consumePurchase(token);
 
         verify(mockClient).consumeAsync(eq(token), any(ConsumeResponseListener.class));
     }

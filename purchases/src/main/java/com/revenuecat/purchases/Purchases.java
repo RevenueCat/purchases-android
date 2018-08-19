@@ -349,6 +349,8 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             backend.postReceiptData(token, appUserID, sku, isRestore, new Backend.BackendResponseHandler() {
                 @Override
                 public void onReceivePurchaserInfo(PurchaserInfo info) {
+                    billingWrapper.consumePurchase(token);
+
                     deviceCache.cachePurchaserInfo(appUserID, info);
                     if (isPurchase) {
                         listener.onCompletedPurchase(sku, info);
@@ -361,7 +363,11 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
                 @Override
                 public void onError(int code, String message) {
-                    postedTokens.remove(token);
+                    if (code < 500) {
+                        billingWrapper.consumePurchase(token);
+                        postedTokens.remove(token);
+                    }
+
                     if (isPurchase) {
                         listener.onFailedPurchase(ErrorDomains.REVENUECAT_BACKEND, code, message);
                     } else if (isRestore) {
