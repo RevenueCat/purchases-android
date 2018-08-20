@@ -20,13 +20,16 @@ import com.revenuecat.purchases.Purchases;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements Purchases.PurchasesListener {
 
     private Purchases purchases;
     private SkuDetails monthlySkuDetails;
+    private SkuDetails consumableSkuDetails;
     private Button mButton;
+    private Button mConsumableButton;
     private RecyclerView mRecyclerView;
 
     private LinearLayoutManager mLayoutManager;
@@ -98,6 +101,15 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         });
         mButton.setEnabled(false);
 
+        mConsumableButton = (Button)findViewById(R.id.button_consumable);
+        mConsumableButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                purchases.makePurchase(MainActivity.this, consumableSkuDetails.getSku(), consumableSkuDetails.getType());
+            }
+        });
+        mConsumableButton.setEnabled(false);
+
         Button restoreButton = (Button)findViewById(R.id.restoreButton);
         restoreButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -123,6 +135,17 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
             @Override
             public void onReceiveEntitlementsError(int domain, int code, String message) {
 
+            }
+        });
+
+        List<String> list = new ArrayList<>();
+        list.add("consumable");
+        this.purchases.getNonSubscriptionSkus(list, new Purchases.GetSkusResponseHandler() {
+            @Override
+            public void onReceiveSkus(List<SkuDetails> skus) {
+                SkuDetails consumable = skus.get(0);
+                MainActivity.this.consumableSkuDetails = consumable;
+                mConsumableButton.setEnabled(true);
             }
         });
 
