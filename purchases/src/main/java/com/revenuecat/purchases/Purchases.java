@@ -48,6 +48,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private Date cachesLastChecked;
     private Map<String, Entitlement> cachedEntitlements;
 
+    public void setIsUsingAnonymousID(boolean isUsingAnonymousID) {
+        this.usingAnonymousID = isUsingAnonymousID;
+    }
+
     @IntDef({ErrorDomains.REVENUECAT_BACKEND, ErrorDomains.PLAY_BILLING})
     @Retention(SOURCE)
     public @interface ErrorDomains {

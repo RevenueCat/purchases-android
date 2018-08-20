@@ -327,6 +327,59 @@ public class PurchasesTest {
     }
 
     @Test
+    public void doesntRestoreNormally() {
+        setup();
+
+        Purchases purchases = new Purchases(mockApplication, "a_fixed_id", listener, mockBackend, mockBillingWrapperFactory, mockCache);
+
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        purchases.onPurchasesUpdated(purchasesList);
+
+        verify(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(purchases.getAppUserID()),
+                eq(sku),
+                eq(false),
+                any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
+    public void canOverideAnonMode() {
+        setup();
+
+        Purchases purchases = new Purchases(mockApplication, "a_fixed_id", listener, mockBackend, mockBillingWrapperFactory, mockCache);
+        purchases.setIsUsingAnonymousID(true);
+
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        purchases.onPurchasesUpdated(purchasesList);
+
+        verify(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(purchases.getAppUserID()),
+                eq(sku),
+                eq(true),
+                any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
     public void restoringPurchasesGetsHistory() {
         setup();
 
@@ -789,7 +842,7 @@ public class PurchasesTest {
     }
 
     @Test
-    public void doesntConsumeNonSubscriptionPurchasesOn50x() {
+    public void triesToConsumeNonSubscriptionPurchasesOn50x() {
         String sku = "onemonth_freetrial";
         String purchaseToken = "crazy_purchase_token";
 
@@ -820,6 +873,6 @@ public class PurchasesTest {
         purchasesList.add(p);
         purchases.onPurchasesUpdated(purchasesList);
 
-        verify(mockBillingWrapper, times(0)).consumePurchase(eq(purchaseToken));
+        verify(mockBillingWrapper).consumePurchase(eq(purchaseToken));
     }
 }
