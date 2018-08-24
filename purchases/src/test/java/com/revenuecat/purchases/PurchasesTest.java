@@ -75,6 +75,19 @@ public class PurchasesTest {
         doAnswer(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.BackendResponseHandler handler = invocation.getArgument(4);
+                handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
+                return null;
+            }
+        }).when(mockBackend).postReceiptData(any(String.class),
+                any(String.class),
+                any(String.class),
+                any(Boolean.class),
+                any(Backend.BackendResponseHandler.class));
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
                 purchasesUpdatedListener = invocation.getArgument(0);
                 return mockBillingWrapper;
             }
@@ -182,6 +195,8 @@ public class PurchasesTest {
                 eq(sku),
                 eq(false),
                 any(Backend.BackendResponseHandler.class));
+
+        verify(mockBillingWrapper, times(1)).consumePurchase(eq(purchaseToken));
     }
 
     @Test
@@ -312,6 +327,59 @@ public class PurchasesTest {
     }
 
     @Test
+    public void doesntRestoreNormally() {
+        setup();
+
+        Purchases purchases = new Purchases(mockApplication, "a_fixed_id", listener, mockBackend, mockBillingWrapperFactory, mockCache);
+
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        purchases.onPurchasesUpdated(purchasesList);
+
+        verify(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(purchases.getAppUserID()),
+                eq(sku),
+                eq(false),
+                any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
+    public void canOverideAnonMode() {
+        setup();
+
+        Purchases purchases = new Purchases(mockApplication, "a_fixed_id", listener, mockBackend, mockBillingWrapperFactory, mockCache);
+        purchases.setIsUsingAnonymousID(true);
+
+        Purchase p = mock(Purchase.class);
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+
+        purchases.onPurchasesUpdated(purchasesList);
+
+        verify(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(purchases.getAppUserID()),
+                eq(sku),
+                eq(true),
+                any(Backend.BackendResponseHandler.class));
+    }
+
+    @Test
     public void restoringPurchasesGetsHistory() {
         setup();
 
@@ -359,19 +427,6 @@ public class PurchasesTest {
             }
         }).when(mockBillingWrapper).queryPurchaseHistoryAsync(any(String.class),
                 any(BillingWrapper.PurchaseHistoryResponseListener.class));
-
-        doAnswer(new Answer() {
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                Backend.BackendResponseHandler handler = invocation.getArgument(4);
-                handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
-                return null;
-            }
-        }).when(mockBackend).postReceiptData(eq(purchaseToken),
-                eq(purchases.getAppUserID()),
-                eq(sku),
-                eq(true),
-                any(Backend.BackendResponseHandler.class));
 
         purchases.restorePurchasesForPlayStoreAccount();
 
@@ -536,7 +591,7 @@ public class PurchasesTest {
                 eq(false),
                 any(Backend.BackendResponseHandler.class));
 
-        verify(mockCache).cachePurchaserInfo(any(String.class), any(PurchaserInfo.class));
+        verify(mockCache, times(2)).cachePurchaserInfo(any(String.class), any(PurchaserInfo.class));
     }
 
     @Test
@@ -749,5 +804,75 @@ public class PurchasesTest {
         purchases.addAttributionData(map, network);
 
         verify(mockBackend).postAttributionData(eq(appUserId), eq(network), any(JSONObject.class));
+    }
+
+    @Test
+    public void consumesNonSubscriptionPurchasesOn40x() {
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        final int code = 402;
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.BackendResponseHandler handler = invocation.getArgument(4);
+                handler.onError(code, "This is fake");
+                return null;
+            }
+        }).when(mockBackend).postReceiptData(eq(purchaseToken),
+                                             eq(appUserId),
+                                             eq(sku),
+                                             eq(false),
+                                             any(Backend.BackendResponseHandler.class));
+
+        setup();
+
+        Purchase p = mock(Purchase.class);
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+        purchases.onPurchasesUpdated(purchasesList);
+
+        verify(mockBillingWrapper).consumePurchase(eq(purchaseToken));
+    }
+
+    @Test
+    public void triesToConsumeNonSubscriptionPurchasesOn50x() {
+        String sku = "onemonth_freetrial";
+        String purchaseToken = "crazy_purchase_token";
+
+        final int code = 502;
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Backend.BackendResponseHandler handler = invocation.getArgument(4);
+                handler.onError(code, "This is fake");
+                return null;
+            }
+        }).when(mockBackend).postReceiptData(eq(purchaseToken),
+                eq(appUserId),
+                eq(sku),
+                eq(false),
+                any(Backend.BackendResponseHandler.class));
+
+        setup();
+
+        Purchase p = mock(Purchase.class);
+
+        when(p.getSku()).thenReturn(sku);
+        when(p.getPurchaseToken()).thenReturn(purchaseToken);
+
+        List<Purchase> purchasesList = new ArrayList<>();
+
+        purchasesList.add(p);
+        purchases.onPurchasesUpdated(purchasesList);
+
+        verify(mockBillingWrapper).consumePurchase(eq(purchaseToken));
     }
 }

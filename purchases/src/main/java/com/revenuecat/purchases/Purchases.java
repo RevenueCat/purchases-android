@@ -48,6 +48,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private Date cachesLastChecked;
     private Map<String, Entitlement> cachedEntitlements;
 
+    public void setIsUsingAnonymousID(boolean isUsingAnonymousID) {
+        this.usingAnonymousID = isUsingAnonymousID;
+    }
+
     @IntDef({ErrorDomains.REVENUECAT_BACKEND, ErrorDomains.PLAY_BILLING})
     @Retention(SOURCE)
     public @interface ErrorDomains {
@@ -344,11 +348,14 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         for (Purchase p : purchases) {
             final String token = p.getPurchaseToken();
             final String sku = p.getSku();
+
             if (postedTokens.contains(token)) continue;
             postedTokens.add(token);
             backend.postReceiptData(token, appUserID, sku, isRestore, new Backend.BackendResponseHandler() {
                 @Override
                 public void onReceivePurchaserInfo(PurchaserInfo info) {
+                    billingWrapper.consumePurchase(token);
+
                     deviceCache.cachePurchaserInfo(appUserID, info);
                     if (isPurchase) {
                         listener.onCompletedPurchase(sku, info);
@@ -361,7 +368,11 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
                 @Override
                 public void onError(int code, String message) {
-                    postedTokens.remove(token);
+                    if (code < 500) {
+                        billingWrapper.consumePurchase(token);
+                        postedTokens.remove(token);
+                    }
+
                     if (isPurchase) {
                         listener.onFailedPurchase(ErrorDomains.REVENUECAT_BACKEND, code, message);
                     } else if (isRestore) {

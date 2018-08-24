@@ -6,6 +6,7 @@ import android.os.Handler;
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
+import com.android.billingclient.api.ConsumeResponseListener;
 import com.android.billingclient.api.Purchase;
 import com.android.billingclient.api.PurchaseHistoryResponseListener;
 import com.android.billingclient.api.PurchasesUpdatedListener;
@@ -291,6 +292,7 @@ public class BillingWrapperTest {
 
     @Test
     public void queryHistoryCallsListenerIfOk() {
+        billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
         wrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, mockPurchaseHistoryListener);
         billingClientPurchaseHistoryListener.onPurchaseHistoryResponse(BillingClient.BillingResponse.OK,
                 new ArrayList<Purchase>());
@@ -300,6 +302,7 @@ public class BillingWrapperTest {
 
     @Test
     public void queryHistoryNotCalledIfNotOK() {
+        billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
         wrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, mockPurchaseHistoryListener);
         billingClientPurchaseHistoryListener.onPurchaseHistoryResponse(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED,
                 new ArrayList<Purchase>());
@@ -307,5 +310,21 @@ public class BillingWrapperTest {
         verify(mockPurchaseHistoryListener, times(0)).onReceivePurchaseHistory((List<Purchase>) any());
         verify(mockPurchaseHistoryListener, times(1)).onReceivePurchaseHistoryError(eq(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED), any(String.class));
     }
+
+    @Test
+    public void canConsumeAToken() {
+        String token = "mockToken";
+
+        ConsumeResponseListener listener = new ConsumeResponseListener() {
+            @Override
+            public void onConsumeResponse(int responseCode, String purchaseToken) {}
+        };
+
+        billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
+        wrapper.consumePurchase(token);
+
+        verify(mockClient).consumeAsync(eq(token), any(ConsumeResponseListener.class));
+    }
+
 
 }
