@@ -147,22 +147,32 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
 
     public void queryPurchaseHistoryAsync(final @BillingClient.SkuType String skuType,
                                           final PurchaseHistoryResponseListener listener) {
-        billingClient.queryPurchaseHistoryAsync(skuType, new com.android.billingclient.api.PurchaseHistoryResponseListener() {
+        executeRequest(new Runnable() {
             @Override
-            public void onPurchaseHistoryResponse(@BillingClient.BillingResponse int responseCode, List<Purchase> purchasesList) {
-                if (responseCode == BillingClient.BillingResponse.OK) {
-                    listener.onReceivePurchaseHistory(purchasesList);
-                } else {
-                    listener.onReceivePurchaseHistoryError(responseCode, "Error receiving purchase history");
-                }
+            public void run() {
+                billingClient.queryPurchaseHistoryAsync(skuType, new com.android.billingclient.api.PurchaseHistoryResponseListener() {
+                    @Override
+                    public void onPurchaseHistoryResponse(@BillingClient.BillingResponse int responseCode, List<Purchase> purchasesList) {
+                        if (responseCode == BillingClient.BillingResponse.OK) {
+                            listener.onReceivePurchaseHistory(purchasesList);
+                        } else {
+                            listener.onReceivePurchaseHistoryError(responseCode, "Error receiving purchase history");
+                        }
+                    }
+                });
             }
         });
     }
 
-    public void consumePurchase(String token) {
-        billingClient.consumeAsync(token, new ConsumeResponseListener() {
+    public void consumePurchase(final String token) {
+        executeRequest(new Runnable() {
             @Override
-            public void onConsumeResponse(int responseCode, String purchaseToken) {}
+            public void run() {
+                billingClient.consumeAsync(token, new ConsumeResponseListener() {
+                    @Override
+                    public void onConsumeResponse(int responseCode, String purchaseToken) {}
+                });
+            }
         });
     }
 

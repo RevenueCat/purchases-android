@@ -292,6 +292,7 @@ public class BillingWrapperTest {
 
     @Test
     public void queryHistoryCallsListenerIfOk() {
+        billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
         wrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, mockPurchaseHistoryListener);
         billingClientPurchaseHistoryListener.onPurchaseHistoryResponse(BillingClient.BillingResponse.OK,
                 new ArrayList<Purchase>());
@@ -301,6 +302,7 @@ public class BillingWrapperTest {
 
     @Test
     public void queryHistoryNotCalledIfNotOK() {
+        billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
         wrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, mockPurchaseHistoryListener);
         billingClientPurchaseHistoryListener.onPurchaseHistoryResponse(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED,
                 new ArrayList<Purchase>());

@@ -348,6 +348,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         for (Purchase p : purchases) {
             final String token = p.getPurchaseToken();
             final String sku = p.getSku();
+
             if (postedTokens.contains(token)) continue;
             postedTokens.add(token);
             backend.postReceiptData(token, appUserID, sku, isRestore, new Backend.BackendResponseHandler() {

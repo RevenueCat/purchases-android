@@ -165,6 +165,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     @Override
     public void onReceiveUpdatedPurchaserInfo(final PurchaserInfo purchaserInfo) {
         Log.i("Purchases", "Got new purchaser info: " + purchaserInfo.getActiveSubscriptions());
+        Log.i("Purchases", "Consumable: " + purchaserInfo.getAllPurchasedSkus());
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
