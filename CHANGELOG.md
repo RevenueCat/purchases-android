@@ -1,3 +1,7 @@
+## 1.3.2
+- Ensure consumables are consumed
+- Add ability to override
+
 ## 1.3.1
 - Fix visibility for addAttribution methods
 

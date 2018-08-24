@@ -48,10 +48,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     private Date cachesLastChecked;
     private Map<String, Entitlement> cachedEntitlements;
 
-    public void setIsUsingAnonymousID(boolean isUsingAnonymousID) {
-        this.usingAnonymousID = isUsingAnonymousID;
-    }
-
     @IntDef({ErrorDomains.REVENUECAT_BACKEND, ErrorDomains.PLAY_BILLING})
     @Retention(SOURCE)
     public @interface ErrorDomains {
@@ -90,7 +86,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     public static String getFrameworkVersion() {
-        return "1.4.0-SNAPSHOT";
+        return "1.3.2";
     }
 
     Purchases(Application application,
@@ -128,6 +124,15 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
      */
     public String getAppUserID() {
         return appUserID;
+    }
+
+    /**
+     * If true, treats all purchases as restores, aliasing together appUserIDs that share a Play acccount.
+     * @param isUsingAnonymousID
+     */
+
+    public void setIsUsingAnonymousID(boolean isUsingAnonymousID) {
+        this.usingAnonymousID = isUsingAnonymousID;
     }
 
     /**
