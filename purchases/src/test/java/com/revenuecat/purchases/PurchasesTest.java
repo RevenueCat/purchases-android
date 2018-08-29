@@ -875,4 +875,13 @@ public class PurchasesTest {
 
         verify(mockBillingWrapper).consumePurchase(eq(purchaseToken));
     }
+
+    @Test
+    public void closeCloses() {
+        setup();
+        purchases.close();
+
+        verify(mockBackend).close();
+        verify(mockBillingWrapper).close();
+    }
 }

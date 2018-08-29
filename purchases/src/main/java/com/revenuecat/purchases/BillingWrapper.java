@@ -77,6 +77,10 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         billingClient.startConnection(this);
     }
 
+    void close() {
+        billingClient.endConnection();
+    }
+
     private void executePendingRequests() {
         while (clientConnected && !serviceRequests.isEmpty()) {
             Runnable request = serviceRequests.remove();

@@ -317,7 +317,15 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         });
     }
 
+    /**
+     * Call close when you are done with this instance of Purchases
+     */
+    public void close() {
+        this.billingWrapper.close();
+        this.backend.close();
+    }
 
+    /// Private Methods
     private void getCaches() {
         if (cachesLastChecked != null && (new Date().getTime() - cachesLastChecked.getTime()) < 60000) {
             emitCachedPurchaserInfo();

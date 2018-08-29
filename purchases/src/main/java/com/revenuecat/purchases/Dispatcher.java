@@ -29,4 +29,7 @@ class Dispatcher {
     public void enqueue(AsyncCall call) {
         this.executorService.submit(call);
     }
+    public void close() {
+        this.executorService.shutdownNow();
+    }
 }

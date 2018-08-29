@@ -84,4 +84,10 @@ public class DispatcherTest {
         assertNotNull(this.result);
     }
 
+
+    @Test
+    public void closeStopsThreads() {
+        dispatcher.close();
+        verify(executorService).shutdownNow();
+    }
 }
