@@ -398,7 +398,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     @Override
     public void onPurchasesUpdated(List<Purchase> purchases) {
-        Log.i("PURCHASES", "Purchases updated " + this.toString());
         postPurchases(purchases, usingAnonymousID, true);
     }
 
