@@ -1,3 +1,6 @@
+## 1.3.3
+- Add close method to Purchases, this should be called before creating a new purchases object
+
 ## 1.3.2
 - Ensure consumables are consumed
 - Add ability to override
