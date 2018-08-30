@@ -79,6 +79,16 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         }
     }
 
+    private boolean useAlternateID = false;
+    private String currentAppUserID() {
+        return useAlternateID ? "jerry8" : "jerry7";
+    }
+
+    private void buildPurchases(String appUserID) {
+        this.purchases = new Purchases.Builder(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN", this)
+                .appUserID(appUserID).build();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,8 +99,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        this.purchases = new Purchases.Builder(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN", this)
-                .appUserID("jerry").build();
+        buildPurchases(currentAppUserID());
 
         mButton = (Button)findViewById(R.id.button);
         mButton.setOnClickListener(new View.OnClickListener() {
@@ -115,6 +124,16 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
             @Override
             public void onClick(View view) {
                 purchases.restorePurchasesForPlayStoreAccount();
+            }
+        });
+
+        Button swapButton = (Button)findViewById(R.id.swapUserButton);
+        swapButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                purchases.close();
+                useAlternateID = !useAlternateID;
+                buildPurchases(currentAppUserID());
             }
         });
 

@@ -70,6 +70,10 @@ class Backend {
         this.authenticationHeaders.put("Authorization", "Bearer " + this.apiKey);
     }
 
+    void close() {
+        this.dispatcher.close();
+    }
+
     public void getSubscriberInfo(final String appUserID, final BackendResponseHandler handler) {
         dispatcher.enqueue(new PurchaserInfoReceivingCall(handler) {
             @Override

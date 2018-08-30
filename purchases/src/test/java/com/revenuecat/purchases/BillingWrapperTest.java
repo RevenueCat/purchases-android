@@ -326,5 +326,9 @@ public class BillingWrapperTest {
         verify(mockClient).consumeAsync(eq(token), any(ConsumeResponseListener.class));
     }
 
-
+    @Test
+    public void closingDisconnects() {
+        wrapper.close();
+        verify(mockClient).endConnection();
+    }
 }
