@@ -86,7 +86,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     }
 
     public static String getFrameworkVersion() {
-        return "1.3.4";
+        return "1.4.0-SNAPSHOT";
     }
 
     Purchases(Application application,
