@@ -14,6 +14,7 @@ import org.robolectric.annotation.Config;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static junit.framework.Assert.assertEquals;
@@ -43,13 +44,28 @@ public class BackendTest {
 
     private class SyncDispatcher extends Dispatcher {
 
+        private boolean closed = false;
+
         SyncDispatcher() {
             super(null);
         }
 
         @Override
         public void enqueue(AsyncCall call) {
+            if (closed) {
+                throw new RejectedExecutionException();
+            }
             call.run();
+        }
+
+        @Override
+        public void close() {
+            closed = true;
+        }
+
+        @Override
+        public boolean isClosed() {
+            return closed;
         }
     }
 
@@ -299,5 +315,14 @@ public class BackendTest {
                 (Map<String, String>)any()
         );
 
+    }
+
+    @Test
+    public void doesntDispatchIfClosed() {
+        backend.postAttributionData("id", Purchases.AttributionNetwork.APPSFLYER, new JSONObject());
+
+        backend.close();
+
+        backend.postAttributionData("id", Purchases.AttributionNetwork.APPSFLYER, new JSONObject());
     }
 }

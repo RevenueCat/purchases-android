@@ -32,4 +32,7 @@ class Dispatcher {
     public void close() {
         this.executorService.shutdownNow();
     }
+    public boolean isClosed() {
+        return this.executorService.isShutdown();
+    }
 }
