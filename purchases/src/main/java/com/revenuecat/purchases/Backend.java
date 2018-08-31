@@ -74,8 +74,14 @@ class Backend {
         this.dispatcher.close();
     }
 
+    private void enqueue(Dispatcher.AsyncCall call) {
+        if (!dispatcher.isClosed()) {
+            dispatcher.enqueue(call);
+        }
+    }
+
     public void getSubscriberInfo(final String appUserID, final BackendResponseHandler handler) {
-        dispatcher.enqueue(new PurchaserInfoReceivingCall(handler) {
+        enqueue(new PurchaserInfoReceivingCall(handler) {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
                 return httpClient.performRequest("/subscribers/" + encode(appUserID), (Map)null, authenticationHeaders);
@@ -91,7 +97,7 @@ class Backend {
         body.put("app_user_id", appUserID);
         body.put("is_restore", isRestore);
 
-        dispatcher.enqueue(new PurchaserInfoReceivingCall(handler) {
+        enqueue(new PurchaserInfoReceivingCall(handler) {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
                 return httpClient.performRequest("/receipts", body, authenticationHeaders);
@@ -100,7 +106,7 @@ class Backend {
     }
 
     void getEntitlements(final String appUserID, final EntitlementsResponseHandler handler) {
-        dispatcher.enqueue(new Dispatcher.AsyncCall() {
+        enqueue(new Dispatcher.AsyncCall() {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
                 return httpClient.performRequest("/subscribers/" + encode(appUserID) + "/products",(Map)null, authenticationHeaders);
@@ -141,7 +147,7 @@ class Backend {
             return;
         }
 
-        dispatcher.enqueue(new Dispatcher.AsyncCall() {
+        enqueue(new Dispatcher.AsyncCall() {
             @Override
             public HTTPClient.Result call() throws HTTPClient.HTTPErrorException {
                 return httpClient.performRequest("/subscribers/" + encode(appUserID) + "/attribution", body, authenticationHeaders);
