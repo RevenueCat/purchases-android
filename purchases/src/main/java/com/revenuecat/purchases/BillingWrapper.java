@@ -182,12 +182,12 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
 
     @Override
     public void onPurchasesUpdated(int responseCode, @Nullable List<Purchase> purchases) {
-        if (responseCode == BillingClient.BillingResponse.OK) {
-            if (purchases == null) {
-                purchases = new ArrayList<>();
-            }
+        if (responseCode == BillingClient.BillingResponse.OK && purchases != null) {
             purchasesUpdatedListener.onPurchasesUpdated(purchases);
         } else {
+            if (purchases == null && responseCode == BillingClient.BillingResponse.OK) {
+                responseCode = BillingClient.BillingResponse.ERROR;
+            }
             purchasesUpdatedListener.onPurchasesFailedToUpdate(responseCode, "Error updating purchases " + responseCode);
         }
     }
