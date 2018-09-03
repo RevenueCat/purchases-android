@@ -1,3 +1,6 @@
+## 1.3.5
+- Fix for error edgecase
+
 ## 1.3.4
 - Add close method to Purchases, this should be called before creating a new purchases object
 
