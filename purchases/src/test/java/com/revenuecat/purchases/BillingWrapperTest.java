@@ -283,6 +283,16 @@ public class BillingWrapperTest {
     }
 
     @Test
+    public void purchasesUpdatedCallsAreForwardedWithEmptyIfOkNull() {
+        List<Purchase> purchases = null;
+        List<Purchase> emptyList = new ArrayList<>();
+
+        purchasesUpdatedListener.onPurchasesUpdated(BillingClient.BillingResponse.OK, purchases);
+
+        verify(mockPurchasesListener).onPurchasesUpdated(emptyList);
+    }
+
+    @Test
     public void purchaseUpdateFailedCalledIfNotOK() {
         purchasesUpdatedListener.onPurchasesUpdated(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED, null);
 
