@@ -118,6 +118,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
         emitCachedPurchaserInfo();
         getCaches();
+        restorePurchasesForPlayStoreAccount();
     }
 
     /**
@@ -336,10 +337,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         }
 
         cachesLastChecked = new Date();
-
-        // We do this here to ensure we've always sent all tokens since there is no finish concept
-        // on Android.
-        restorePurchasesForPlayStoreAccount();
 
         backend.getSubscriberInfo(appUserID, new Backend.BackendResponseHandler() {
             @Override
