@@ -1,5 +1,8 @@
+## 1.3.6
+- Fix bug where closed RCPurchases were still listening for application lifecyle methods
+
 ## 1.3.5
-- Fix for error edgecase
+- Fix for error edge case
 
 ## 1.3.4
 - Add close method to Purchases, this should be called before creating a new purchases object
