@@ -38,6 +38,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     private final String appUserID;
     private final DeviceCache deviceCache;
+    private final Application application;
     private Boolean usingAnonymousID = false;
     private final PurchasesListener listener;
     private final Backend backend;
@@ -112,7 +113,8 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         this.billingWrapper = billingWrapperFactory.buildWrapper(this);
         this.deviceCache = deviceCache;
 
-        application.registerActivityLifecycleCallbacks(this);
+        this.application = application;
+        this.application.registerActivityLifecycleCallbacks(this);
 
         emitCachedPurchaserInfo();
         getCaches();
@@ -323,6 +325,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     public void close() {
         this.billingWrapper.close();
         this.backend.close();
+        this.application.unregisterActivityLifecycleCallbacks(this);
     }
 
     /// Private Methods

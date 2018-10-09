@@ -257,6 +257,8 @@ public class PurchasesTest {
     public void closingUnregistersLifecycleListener() {
         setup();
 
+        purchases.close();
+
         verify(mockApplication).unregisterActivityLifecycleCallbacks(any(Application.ActivityLifecycleCallbacks.class));
     }
 
