@@ -254,6 +254,15 @@ public class PurchasesTest {
     }
 
     @Test
+    public void closingUnregistersLifecycleListener() {
+        setup();
+
+        purchases.close();
+
+        verify(mockApplication).unregisterActivityLifecycleCallbacks(any(Application.ActivityLifecycleCallbacks.class));
+    }
+
+    @Test
     public void onResumeGetsSubscriberInfo() {
         setup();
 
@@ -395,7 +404,7 @@ public class PurchasesTest {
 
         purchases.restorePurchasesForPlayStoreAccount();
 
-        verify(mockBillingWrapper).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.SUBS),
+        verify(mockBillingWrapper, times(2)).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.SUBS),
                 any(BillingWrapper.PurchaseHistoryResponseListener.class));
 
         verify(mockBillingWrapper).queryPurchaseHistoryAsync(eq(BillingClient.SkuType.INAPP),
@@ -512,7 +521,7 @@ public class PurchasesTest {
 
         purchases.restorePurchasesForPlayStoreAccount();
 
-        verify(mockBillingWrapper, times(2)).queryPurchaseHistoryAsync(
+        verify(mockBillingWrapper, times(3)).queryPurchaseHistoryAsync(
                 any(String.class),
                 any(BillingWrapper.PurchaseHistoryResponseListener.class));
         verify(listener, times(1)).onRestoreTransactions(any(PurchaserInfo.class));
