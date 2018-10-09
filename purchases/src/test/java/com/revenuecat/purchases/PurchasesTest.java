@@ -254,6 +254,13 @@ public class PurchasesTest {
     }
 
     @Test
+    public void closingUnregistersLifecycleListener() {
+        setup();
+
+        verify(mockApplication).unregisterActivityLifecycleCallbacks(any(Application.ActivityLifecycleCallbacks.class));
+    }
+
+    @Test
     public void onResumeGetsSubscriberInfo() {
         setup();
 

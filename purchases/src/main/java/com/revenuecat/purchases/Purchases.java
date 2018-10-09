@@ -113,7 +113,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         this.deviceCache = deviceCache;
 
         application.registerActivityLifecycleCallbacks(this);
-        
+
         emitCachedPurchaserInfo();
         getCaches();
     }
