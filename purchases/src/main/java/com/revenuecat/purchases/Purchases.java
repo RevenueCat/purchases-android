@@ -504,7 +504,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             }
 
             Backend backend = new Backend(this.apiKey, new Dispatcher(service), new HTTPClient(),
-                                          new PurchaserInfo.Factory(), new Entitlement.Factory());
+                                          new PurchaserInfo.Factory(), Entitlement.Factory);
 
             BillingWrapper.Factory billingWrapperFactory =
                     new BillingWrapper.Factory(
