@@ -1,21 +1,27 @@
 package com.revenuecat.purchases;
 
-import android.content.Context;
-import android.os.Looper;
-import android.support.test.InstrumentationRegistry;
+import android.app.Application;
 import android.support.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import static android.support.test.InstrumentationRegistry.getInstrumentation;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.when;
 
 @RunWith(AndroidJUnit4.class)
+@Config(manifest=Config.NONE)
 public class PurchasesBuilderTest {
 
+    @Mock(answer = RETURNS_DEEP_STUBS) private Application application;
     private Purchases.PurchasesListener listener = new Purchases.PurchasesListener() {
         @Override
         public void onCompletedPurchase(String sku, PurchaserInfo purchaserInfo) {
@@ -23,7 +29,7 @@ public class PurchasesBuilderTest {
         }
 
         @Override
-        public void onFailedPurchase(Exception reason) {
+        public void onFailedPurchase(int domain, int code, String reason) {
 
         }
 
@@ -31,11 +37,22 @@ public class PurchasesBuilderTest {
         public void onReceiveUpdatedPurchaserInfo(PurchaserInfo purchaserInfo) {
 
         }
+
+        @Override
+        public void onRestoreTransactions(PurchaserInfo purchaserInfo) {
+
+        }
+
+        @Override
+        public void onRestoreTransactionsFailed(int domain, int code, String reason) {
+
+        }
     };
 
     @Before
     public void setup() {
-        Looper.myLooper();
+        MockitoAnnotations.initMocks(this);
+        when(application.getApplicationContext()).thenReturn(application);
     }
 
 
@@ -52,20 +69,17 @@ public class PurchasesBuilderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void mustHaveAPIKey() {
-        Context appContext = InstrumentationRegistry.getTargetContext();
-        new Purchases.Builder(appContext, null, listener);
+        new Purchases.Builder(application, null, listener);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void apiKeyMustBeNonEmpty() {
-        Context appContext = InstrumentationRegistry.getTargetContext();
-        new Purchases.Builder(appContext, "", listener);
+        new Purchases.Builder(application, "", listener);
     }
 
     private Purchases.Builder createBuilder() {
-        Context appContext = InstrumentationRegistry.getTargetContext();
         String apiKey = "api_key";
-        return new Purchases.Builder(appContext, apiKey, listener);
+        return new Purchases.Builder(application, apiKey, listener);
     }
 
     private void runWithLooper(Runnable runnable) {
@@ -96,7 +110,7 @@ public class PurchasesBuilderTest {
             public void run() {
                 String apiKey = "api_key";
 
-                Purchases.Builder builder = new Purchases.Builder(InstrumentationRegistry.getTargetContext(), apiKey, listener);
+                Purchases.Builder builder = new Purchases.Builder(application, apiKey, listener);
 
                 Purchases purchases = builder.build();
 
