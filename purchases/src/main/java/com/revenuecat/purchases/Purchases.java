@@ -449,7 +449,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
      * Used to construct a Purchases object
      */
     public static class Builder {
-        private final Context context;
         private final String apiKey;
         private final Application application;
         private final PurchasesListener listener;
@@ -482,7 +481,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                 throw new IllegalArgumentException("Purchases listener must be set");
             }
 
-            this.context = context;
             this.apiKey = apiKey;
             this.application = application;
             this.listener = listener;
@@ -508,7 +506,10 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             Backend backend = new Backend(this.apiKey, new Dispatcher(service), new HTTPClient(),
                                           new PurchaserInfo.Factory(), new Entitlement.Factory());
 
-            BillingWrapper.Factory billingWrapperFactory = new BillingWrapper.Factory(new BillingWrapper.ClientFactory(context), new Handler(application.getMainLooper()));
+            BillingWrapper.Factory billingWrapperFactory =
+                    new BillingWrapper.Factory(
+                            new BillingWrapper.ClientFactory(application.getApplicationContext()),
+                            new Handler(application.getMainLooper()));
 
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this.application);
             DeviceCache cache = new DeviceCache(prefs, apiKey);
