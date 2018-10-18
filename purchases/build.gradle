@@ -30,6 +30,8 @@ dependencies {
     androidTestImplementation 'com.android.support.test:rules:1.0.2'
     androidTestImplementation 'com.android.billingclient:billing:1.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    testImplementation "io.mockk:mockk:1.8.9"
+    testImplementation "org.assertj:assertj-core:3.11.1"
 }
 
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
