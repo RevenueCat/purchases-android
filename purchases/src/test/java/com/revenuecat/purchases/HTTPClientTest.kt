@@ -1,11 +1,8 @@
 package com.revenuecat.purchases
 
-import junit.framework.Assert
-import junit.framework.Assert.assertNotNull
-import junit.framework.Assert.assertTrue
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import org.json.JSONException
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
@@ -55,12 +52,11 @@ class HTTPClientTest {
             }
 
         val request = server.takeRequest()
-        Assert.assertEquals(request.method, "GET")
-        Assert.assertEquals(request.path, "/v1/resource")
+        assertThat(request.method).`as`("method request is GET").isEqualTo("GET")
+        assertThat(request.path).`as`("method path is /v1/resource").isEqualTo("/v1/resource")
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, InterruptedException::class)
     fun forwardsTheResponseCode() {
         val response = MockResponse().setBody("{}").setResponseCode(223)
         server.enqueue(response)
@@ -70,11 +66,10 @@ class HTTPClientTest {
 
         server.takeRequest()
 
-        Assert.assertEquals(223, result.responseCode)
+        assertThat(result.responseCode).`as`("responsecode is 223").isEqualTo(223)
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, InterruptedException::class, JSONException::class)
     fun parsesTheBody() {
         val response = MockResponse().setBody("{'response': 'OK'}").setResponseCode(223)
         server.enqueue(response)
@@ -84,13 +79,12 @@ class HTTPClientTest {
 
         server.takeRequest()
 
-        Assert.assertEquals("OK", result.body!!.getString("response"))
+        assertThat(result.body!!.getString("response")).`as`("response is OK").isEqualTo("OK")
     }
 
     // Errors
 
     @Test(expected = HTTPClient.HTTPErrorException::class)
-    @Throws(HTTPClient.HTTPErrorException::class, InterruptedException::class)
     fun reWrapsBadJSONError() {
         val response = MockResponse().setBody("not uh jason")
         server.enqueue(response)
@@ -106,7 +100,6 @@ class HTTPClientTest {
 
     // Headers
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, InterruptedException::class)
     fun addsHeadersToRequest() {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
@@ -118,11 +111,11 @@ class HTTPClientTest {
         client.performRequest("/resource", null as Map<*, *>?, headers)
 
         val request = server.takeRequest()
-        Assert.assertEquals(request.getHeader("Authentication"), "Bearer todd")
+
+        assertThat(request.getHeader("Authentication")).`as`("header is Bearer todd").isEqualTo("Bearer todd")
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, InterruptedException::class)
     fun addsDefaultHeadersToRequest() {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
@@ -132,17 +125,13 @@ class HTTPClientTest {
 
         val request = server.takeRequest()
 
-        Assert.assertEquals(request.getHeader("Content-Type"), "application/json")
-        Assert.assertEquals(request.getHeader("X-Platform"), "android")
-        Assert.assertEquals(
-            request.getHeader("X-Platform-Version"),
-            Integer.toString(android.os.Build.VERSION.SDK_INT)
-        )
-        Assert.assertEquals(request.getHeader("X-Version"), Purchases.getFrameworkVersion())
+        assertThat(request.getHeader("Content-Type")).isEqualTo("application/json")
+        assertThat(request.getHeader("X-Platform")).isEqualTo("android")
+        assertThat(request.getHeader("X-Platform-Version")).isEqualTo(Integer.toString(android.os.Build.VERSION.SDK_INT))
+        assertThat(request.getHeader("X-Version")).isEqualTo(Purchases.getFrameworkVersion())
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, InterruptedException::class, JSONException::class)
     fun addsPostBody() {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
@@ -154,9 +143,9 @@ class HTTPClientTest {
         client.performRequest("/resource", body, mapOf("" to ""))
 
         val request = server.takeRequest()
-        Assert.assertEquals("POST", request.method)
-        assertNotNull(request.body)
-        assertTrue(request.body.size() > 0)
+        assertThat(request.method).`as`("method is POST").isEqualTo("POST")
+        assertThat(request.body).`as`("body is not null").isNotNull
+        assertThat(request.body.size()).isGreaterThan(0)
     }
 
 }
