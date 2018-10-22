@@ -12,7 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 @Config(manifest = Config.NONE)
 class EntitlementTest {
 
-    private val factory = Entitlement
+    private val factory = Entitlement.Factory
 
     @Test
     fun `given an empty case, factory can handle it`() {

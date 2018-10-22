@@ -7,7 +7,7 @@ data class Entitlement(
     val offerings: Map<String, Offering>
 ) {
 
-    internal companion object Factory {
+    internal object Factory {
 
         private const val ACTIVE_PRODUCT_IDENTIFIER_KEY = "active_product_identifier"
         private const val OFFERINGS_KEY = "offerings"
