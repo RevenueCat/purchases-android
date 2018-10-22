@@ -136,14 +136,34 @@ class PurchaserInfoTest {
         assertThat(foreverPro).isNull()
     }
 
+    @Test
+    fun `Given a request date, it is de-serialized properly`() {
+        val info = fullPurchaserInfo()
+        assertThat(info.requestDate).isNotNull()
+    }
+
+    @Test
+    fun `Given a null request date, current date is used`() {
+        val validNoRequestDate =
+            "{'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
+        val info = factory.build(JSONObject(validNoRequestDate))
+
+        val actives = info.getAllPurchasedSkus()
+
+        assertThat(actives.size).isEqualTo(3)
+        assertThat(actives).contains("onemonth_freetrial")
+        assertThat(actives).contains("onetime_purchase")
+        assertThat(actives).contains("threemonth_freetrial")
+    }
+
     companion object {
 
         internal const val validEmptyPurchaserResponse =
-            "{'subscriber': {'other_purchases': {}, 'subscriptions': {}, 'entitlements': {}}}"
+            "{'request_date': '', 'subscriber': {'other_purchases': {}, 'subscriptions': {}, 'entitlements': {}}}"
         internal const val validFullPurchaserResponse =
-            "{'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
+            "{'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
         internal const val validTwoProducts =
-            "{'subscriber': {'original_application_version': '1.0','other_purchases': {},'subscriptions':{'product_a': {'expires_date': '2018-05-27T06:24:50Z','period_type': 'normal'},'product_b': {'expires_date': '2018-05-27T05:24:50Z','period_type': 'normal'}}}}"
+            "{'request_date': '2018-05-20T06:24:50Z', 'subscriber': {'original_application_version': '1.0','other_purchases': {},'subscriptions':{'product_a': {'expires_date': '2018-05-27T06:24:50Z','period_type': 'normal'},'product_b': {'expires_date': '2018-05-27T05:24:50Z','period_type': 'normal'}}}}"
     }
 
 }

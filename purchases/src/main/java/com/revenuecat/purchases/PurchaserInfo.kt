@@ -128,7 +128,10 @@ class PurchaserInfo private constructor(
             val requestDate =
                 if (jsonObject.has("request_date")) {
                     try {
-                        Iso8601Utils.parse(jsonObject.getString("request_date"))
+                        jsonObject.getString("request_date").takeUnless { it.isNullOrBlank() }
+                            ?.let {
+                                Iso8601Utils.parse(it)
+                            }
                     } catch (e: RuntimeException) {
                         throw JSONException(e.message)
                     }
