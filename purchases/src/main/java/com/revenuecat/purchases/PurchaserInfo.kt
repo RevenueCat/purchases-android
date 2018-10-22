@@ -16,8 +16,10 @@ class PurchaserInfo private constructor(
     val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allExpirationDatesByEntitlement: Map<String, Date?>,
+    var requestDate: Date?,
     internal val jsonObject: JSONObject
 ) {
+
 
     /**
      * @return Set of active subscription skus
@@ -63,7 +65,11 @@ class PurchaserInfo private constructor(
     }
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
-        return expirations.filterValues { date -> date == null || date.after(Date()) }.keys
+        return expirations.filterValues { date -> date == null || isAfterReferenceDate(date) }.keys
+    }
+
+    private fun isAfterReferenceDate(date: Date): Boolean {
+        return date.after(requestDate?: Date())
     }
 
     object Factory {
@@ -108,14 +114,7 @@ class PurchaserInfo private constructor(
             val subscriber = jsonObject.getJSONObject("subscriber")
 
             val otherPurchases = subscriber.getJSONObject("other_purchases")
-            val nonSubscriptionPurchases = HashSet<String>()
-
-            val it = otherPurchases.keys()
-            while (it.hasNext()) {
-                val key = it.next()
-                nonSubscriptionPurchases.add(key)
-            }
-
+            val nonSubscriptionPurchases = otherPurchases.keys().asSequence().toSet()
             val subscriptions = subscriber.getJSONObject("subscriptions")
             val expirationDatesByProduct = parseExpirations(subscriptions)
 
@@ -126,10 +125,20 @@ class PurchaserInfo private constructor(
 
             val expirationDatesByEntitlement = parseExpirations(entitlements)
 
+            val requestDate =
+                if (jsonObject.has("request_date")) {
+                    try {
+                        Iso8601Utils.parse(jsonObject.getString("request_date"))
+                    } catch (e: RuntimeException) {
+                        throw JSONException(e.message)
+                    }
+                } else null
+
             return PurchaserInfo(
                 nonSubscriptionPurchases,
                 expirationDatesByProduct,
                 expirationDatesByEntitlement,
+                requestDate,
                 jsonObject
             )
         }
