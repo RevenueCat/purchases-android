@@ -28,7 +28,7 @@ class PurchaserInfoTest {
 
     @Test
     @Throws(JSONException::class)
-    fun canCreateEmptyPurchaserInfo() {
+    fun `Given an empty response, empty object is created`() {
         val jsonObject = JSONObject(validEmptyPurchaserResponse)
 
         val info = factory.build(jsonObject)
@@ -42,7 +42,7 @@ class PurchaserInfoTest {
 
     @Test
     @Throws(JSONException::class)
-    fun parsesOtherPurchases() {
+    fun `Given a full response with non subscription SKUs, all SKUs are parsed properly`() {
         val info = fullPurchaserInfo()
         val nonSubscriptionSKUs = info.purchasedNonSubscriptionSkus
 
@@ -52,7 +52,7 @@ class PurchaserInfoTest {
 
     @Test
     @Throws(JSONException::class)
-    fun getsActiveSubscriptions() {
+    fun `Given a full response, active subscription is calculated properly`() {
         val info = fullPurchaserInfo()
         val actives = info.getActiveSubscriptions()
 
@@ -62,7 +62,7 @@ class PurchaserInfoTest {
 
     @Test
     @Throws(JSONException::class)
-    fun getAllPurchasedSKUs() {
+    fun `Given a full response, all purchased SKUs are retrieved properly`() {
         val info = fullPurchaserInfo()
         val actives = info.getAllPurchasedSkus()
 
@@ -74,7 +74,7 @@ class PurchaserInfoTest {
 
     @Test
     @Throws(JSONException::class)
-    fun getLatestExpirationDate() {
+    fun `Given a full purchase info, latest expiration date is calculated properly`() {
         val info = fullPurchaserInfo()
 
         val latest = info.getLatestExpirationDate()
@@ -85,7 +85,7 @@ class PurchaserInfoTest {
 
     @Test
     @Throws(JSONException::class)
-    fun getExpirationDateForSku() {
+    fun `Given a full purchase info, expiration date is de-serialized properly`() {
         val info = fullPurchaserInfo()
 
         val oneMonthDate = info.getExpirationDateForSku("onemonth_freetrial")
@@ -96,14 +96,14 @@ class PurchaserInfoTest {
 
     @Test
     @Throws(JSONException::class)
-    fun getExpirationDateTwoProducts() {
+    fun `Given two valid products, json is deserialized properly`() {
         val info = factory.build(JSONObject(validTwoProducts))
         assertThat(info).isNotNull
     }
 
     @Test
     @Throws(JSONException::class)
-    fun getExpirationDateForEntitlement() {
+    fun `Given a full purchase info, expiration dates are retrieved properly`() {
         val info = fullPurchaserInfo()
 
         val pro = info.getExpirationDateForEntitlement("pro")
@@ -114,7 +114,7 @@ class PurchaserInfoTest {
 
     @Test
     @Throws(JSONException::class)
-    fun getsActiveEntitlements() {
+    fun `Given a full purchase info, active entitlements are retrieved properly`() {
         val info = fullPurchaserInfo()
         val actives = info.getActiveEntitlements()
 
@@ -128,7 +128,7 @@ class PurchaserInfoTest {
 
     @Test
     @Throws(JSONException::class)
-    fun getExpirationDateForForeverIsNull() {
+    fun `Given a null expiration date, expiration date is null`() {
         val info = fullPurchaserInfo()
 
         val foreverPro = info.getExpirationDateForEntitlement("forever_pro")
