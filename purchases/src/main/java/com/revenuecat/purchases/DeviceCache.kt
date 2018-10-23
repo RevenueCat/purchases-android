@@ -9,7 +9,7 @@ internal class DeviceCache(
     private val preferences: SharedPreferences,
     apiKey: String
 ) {
-    private val infoFactory: PurchaserInfo.Factory = PurchaserInfo.Factory()
+    private val infoFactory: PurchaserInfo.Factory = PurchaserInfo.Factory
     private val appUserIDCacheKey = "com.revenuecat.purchases.$apiKey"
 
     private fun purchaserInfoCacheKey(appUserID: String) = "$appUserIDCacheKey.$appUserID"

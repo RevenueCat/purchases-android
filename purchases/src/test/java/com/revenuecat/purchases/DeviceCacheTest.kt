@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.content.SharedPreferences
 import android.support.test.runner.AndroidJUnit4
+import com.revenuecat.purchases.PurchaserInfoTest.Companion.validFullPurchaserResponse
 
 import org.json.JSONException
 import org.json.JSONObject
@@ -10,7 +11,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-import com.revenuecat.purchases.PurchaserInfoTest.validFullPurchaserResponse
 import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 
@@ -88,7 +88,7 @@ class DeviceCacheTest {
         } just runs
 
         val jsonObject = JSONObject(validFullPurchaserResponse)
-        val info = PurchaserInfo.Factory().build(jsonObject)
+        val info = PurchaserInfo.Factory.build(jsonObject)
 
         cache.cachePurchaserInfo(appUserID, info)
         verifyAll {
