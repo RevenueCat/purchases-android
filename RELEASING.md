@@ -16,4 +16,5 @@ Releasing
  12. Scroll down to find the purchase respostiry
  13. Select and click "Close" from the top menu. Why is it called close?
  14. Once close is complete, repeat but this time selecting "Release"
+ 15. Update the version in the Quickstart guide https://docs.revenuecat.com/v1.0/docs/android
 
