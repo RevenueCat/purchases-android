@@ -34,10 +34,10 @@ class PurchaserInfoTest {
         val info = factory.build(jsonObject)
 
         assertThat(info).isNotNull
-        assertThat(info.getActiveSubscriptions()).isEmpty()
-        assertThat(info.getAllPurchasedSkus()).isEmpty()
+        assertThat(info.activeSubscriptions).isEmpty()
+        assertThat(info.allPurchasedSkus).isEmpty()
         assertThat(info.purchasedNonSubscriptionSkus).isEmpty()
-        assertThat(info.getLatestExpirationDate()).isNull()
+        assertThat(info.latestExpirationDate).isNull()
     }
 
     @Test
@@ -54,7 +54,7 @@ class PurchaserInfoTest {
     @Throws(JSONException::class)
     fun `Given a full response, active subscription is calculated properly`() {
         val info = fullPurchaserInfo()
-        val actives = info.getActiveSubscriptions()
+        val actives = info.activeSubscriptions
 
         assertThat(actives.size).isEqualTo(1)
         assertThat(actives).contains("onemonth_freetrial")
@@ -64,7 +64,7 @@ class PurchaserInfoTest {
     @Throws(JSONException::class)
     fun `Given a full response, all purchased SKUs are retrieved properly`() {
         val info = fullPurchaserInfo()
-        val actives = info.getAllPurchasedSkus()
+        val actives = info.allPurchasedSkus
 
         assertThat(actives.size).isEqualTo(3)
         assertThat(actives).contains("onemonth_freetrial")
@@ -77,7 +77,7 @@ class PurchaserInfoTest {
     fun `Given a full purchase info, latest expiration date is calculated properly`() {
         val info = fullPurchaserInfo()
 
-        val latest = info.getLatestExpirationDate()
+        val latest = info.latestExpirationDate
 
         assertThat(latest).isNotNull()
         assertThat(latest!!.time).isEqualTo(4110728085975L)
@@ -116,7 +116,7 @@ class PurchaserInfoTest {
     @Throws(JSONException::class)
     fun `Given a full purchase info, active entitlements are retrieved properly`() {
         val info = fullPurchaserInfo()
-        val actives = info.getActiveEntitlements()
+        val actives = info.activeEntitlements
 
         assertThat(actives.size).isEqualTo(2)
 
@@ -148,7 +148,7 @@ class PurchaserInfoTest {
             "{'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
         val info = factory.build(JSONObject(validNoRequestDate))
 
-        val actives = info.getAllPurchasedSkus()
+        val actives = info.allPurchasedSkus
 
         assertThat(actives.size).isEqualTo(3)
         assertThat(actives).contains("onemonth_freetrial")
