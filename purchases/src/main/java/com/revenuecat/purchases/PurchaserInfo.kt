@@ -11,42 +11,40 @@ import java.util.HashSet
 /**
  * @property purchasedNonSubscriptionSkus Set of non-subscription, non-consumed skus
  * @property allExpirationDatesByProduct Map of skus to dates
+ * @property allExpirationDatesByEntitlement Map of entitlement ids to dates
+ * @property requestDate Date when this info was requested
  */
 class PurchaserInfo private constructor(
     val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allExpirationDatesByEntitlement: Map<String, Date?>,
-    var requestDate: Date?,
+    val requestDate: Date?,
     internal val jsonObject: JSONObject
 ) {
-
 
     /**
      * @return Set of active subscription skus
      */
-    fun getActiveSubscriptions(): Set<String> {
-        return activeIdentifiers(allExpirationDatesByProduct)
-    }
+    val activeSubscriptions: Set<String>
+        get() = activeIdentifiers(allExpirationDatesByProduct)
 
     /**
      * @return Set of purchased skus, active and inactive
      */
-    fun getAllPurchasedSkus(): Set<String> {
-        val appSKUs = HashSet(this.purchasedNonSubscriptionSkus)
-        appSKUs.addAll(allExpirationDatesByProduct.keys)
-        return appSKUs
-    }
+    val allPurchasedSkus: Set<String>
+        get() = this.purchasedNonSubscriptionSkus + allExpirationDatesByProduct.keys
 
     /**
      * @return The latest expiration date of all purchased skus
      */
-    fun getLatestExpirationDate(): Date? {
-        return allExpirationDatesByProduct.values.sortedBy { it }.takeUnless { it.isEmpty() }?.last()
-    }
+    val latestExpirationDate: Date?
+        get() = allExpirationDatesByProduct.values.sortedBy { it }.takeUnless { it.isEmpty() }?.last()
 
-    fun getActiveEntitlements(): Set<String> {
-        return activeIdentifiers(allExpirationDatesByEntitlement)
-    }
+    /**
+     * @return The identifiers of all the active entitlements
+     */
+    val activeEntitlements: Set<String>
+        get() = activeIdentifiers(allExpirationDatesByEntitlement)
 
     /**
      * @param sku
