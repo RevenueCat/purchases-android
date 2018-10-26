@@ -124,13 +124,13 @@ public class BackendTest {
         PurchaserInfo info = mock(PurchaserInfo.class);
 
         HTTPClient.Result result = new HTTPClient.Result();
-        result.responseCode = responseCode;
-        result.body = new JSONObject(resultBody);
+        result.setResponseCode(responseCode);
+        result.setBody(new JSONObject(resultBody));
 
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", "Bearer " + API_KEY);
 
-        when(mockInfoFactory.build(result.body)).thenReturn(info);
+        when(mockInfoFactory.build(result.getBody())).thenReturn(info);
 
         OngoingStubbing<HTTPClient.Result> whenStatement = when(mockClient.performRequest(eq(path),
                 eq(body), eq(headers)));
