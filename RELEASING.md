@@ -5,7 +5,6 @@ Releasing
  2. Change the version number in Purchases.java
  2. Change the versionName in purchases/build.gradles
  2. Update the `CHANGELOG.md` for the impending release.
- 3. Update the `README.md` with the new version.
  4. `git commit -am "Prepare for release X.Y.Z."` (where X.Y.Z is the new version)
  5. `git tag -a X.Y.Z -m "Version X.Y.Z"` (where X.Y.Z is the new version)
  6. `./gradlew clean uploadArchives`
@@ -17,4 +16,5 @@ Releasing
  12. Scroll down to find the purchase respostiry
  13. Select and click "Close" from the top menu. Why is it called close?
  14. Once close is complete, repeat but this time selecting "Release"
+ 15. Update the version in the Quickstart guide https://docs.revenuecat.com/v1.0/docs/android
 

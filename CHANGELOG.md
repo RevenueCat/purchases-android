@@ -1,3 +1,6 @@
+## 1.3.7
+- Adds requestDate to the purchaser info to avoid edge cases
+
 ## 1.3.6
 - Fix bug where closed RCPurchases were still listening for application lifecyle methods
 
