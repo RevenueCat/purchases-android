@@ -34,22 +34,22 @@ class Backend {
 
         @Override
         public void onCompletion(HTTPClient.Result result) {
-            if (result.responseCode < 300) {
+            if (result.getResponseCode() < 300) {
                 try {
-                    handler.onReceivePurchaserInfo(purchaserInfoFactory.build(result.body));
+                    handler.onReceivePurchaserInfo(purchaserInfoFactory.build(result.getBody()));
                 } catch (JSONException e) {
-                    handler.onError(result.responseCode, e.getMessage());
+                    handler.onError(result.getResponseCode(), e.getMessage());
                 }
             } else {
                 String errorMessage = null;
                 try {
-                    String message = result.body.getString("message");
+                    String message = result.getBody().getString("message");
                     errorMessage = "Server error: " + message;
                 } catch (JSONException jsonException) {
-                    errorMessage = "Unexpected server error " + result.responseCode;
+                    errorMessage = "Unexpected server error " + result.getResponseCode();
                 }
 
-                handler.onError(result.responseCode, errorMessage);
+                handler.onError(result.getResponseCode(), errorMessage);
             }
         }
 
@@ -117,16 +117,16 @@ class Backend {
             }
 
             void onCompletion(HTTPClient.Result result) {
-                if (result.responseCode < 300) {
+                if (result.getResponseCode() < 300) {
                     try {
-                        JSONObject entitlementsResponse = result.body.getJSONObject("entitlements");
+                        JSONObject entitlementsResponse = result.getBody().getJSONObject("entitlements");
                         Map<String, Entitlement> entitlementMap = entitlementFactory.build(entitlementsResponse);
                         handler.onReceiveEntitlements(entitlementMap);
                     } catch (JSONException e) {
-                        handler.onError(result.responseCode, "Error parsing products JSON " + e.getLocalizedMessage());
+                        handler.onError(result.getResponseCode(), "Error parsing products JSON " + e.getLocalizedMessage());
                     }
                 } else {
-                    handler.onError(result.responseCode, "Backend error");
+                    handler.onError(result.getResponseCode(), "Backend error");
                 }
             }
         });
