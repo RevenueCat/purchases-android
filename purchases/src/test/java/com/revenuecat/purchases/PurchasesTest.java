@@ -910,6 +910,7 @@ public class PurchasesTest {
 
         purchases.restorePurchasesForPlayStoreAccount();
 
+        verify(listener, times(2)).onReceiveUpdatedPurchaserInfo(any(PurchaserInfo.class));
         verify(listener).onRestoreTransactions(any(PurchaserInfo.class));
     }
 }
