@@ -312,12 +312,14 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                         List<Purchase> allPurchases = new ArrayList<>(subsPurchasesList);
                         allPurchases.addAll(inAppPurchasesList);
                         if (allPurchases.isEmpty()) {
-                            if (cachesAreValid()) {
+                            if (cachesLastChecked != null && (new Date().getTime() - cachesLastChecked.getTime()) < 60000) {
                                 emitCachedAsRestoredTransactionsPurchaserInfo();
-                                return;
+                            } else {
+                                cachesLastChecked = new Date();
+
+                                // TODO: change this with a Lambda when we migrate this class to Kotlin
+                                getSubscriberInfoAndPostToRestoreTransactionListener();
                             }
-                            // TODO: change this with a Lambda when we migrate this class to Kotlin
-                            getSubscriberInfoAndPostToRestoreTransactionListener();
                         } else {
                             postPurchases(allPurchases, true, false);
                         }
@@ -352,12 +354,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         });
     }
 
-    private boolean cachesAreValid() {
-        boolean valid = cachesLastChecked != null && (new Date().getTime() - cachesLastChecked.getTime()) < 60000;
-        cachesLastChecked = new Date();
-        return valid;
-    }
-
     /**
      * Call close when you are done with this instance of Purchases
      */
@@ -369,21 +365,22 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
 
     /// Private Methods
     private void getCaches() {
-        if (cachesAreValid()) {
+        if (cachesLastChecked != null && (new Date().getTime() - cachesLastChecked.getTime()) < 60000) {
             emitCachedAsUpdatedPurchaserInfo();
-            return;
+        } else {
+            cachesLastChecked = new Date();
+
+            // TODO: change this with a Lambda when we migrate this class to Kotlin
+            getSubscriberInfoAndPostUpdatedPurchaserInfo();
+
+            getEntitlements(new GetEntitlementsHandler() {
+                @Override
+                public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {}
+
+                @Override
+                public void onReceiveEntitlementsError(int domain, int code, String message) {}
+            });
         }
-
-        // TODO: change this with a Lambda when we migrate this class to Kotlin
-        getSubscriberInfoAndPostUpdatedPurchaserInfo();
-
-        getEntitlements(new GetEntitlementsHandler() {
-            @Override
-            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {}
-
-            @Override
-            public void onReceiveEntitlementsError(int domain, int code, String message) {}
-        });
     }
 
     private void getSubscriberInfoAndPostUpdatedPurchaserInfo() {

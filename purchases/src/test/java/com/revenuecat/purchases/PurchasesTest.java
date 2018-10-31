@@ -895,7 +895,7 @@ public class PurchasesTest {
     }
 
     @Test
-    public void whenNoTokesRestoringPurchasesStillCallListener() {
+    public void whenNoTokensRestoringPurchasesStillCallListener() {
         setup();
 
         doAnswer(new Answer() {
