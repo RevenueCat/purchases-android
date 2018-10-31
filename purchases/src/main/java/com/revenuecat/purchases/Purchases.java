@@ -116,7 +116,7 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         this.application = application;
         this.application.registerActivityLifecycleCallbacks(this);
 
-        emitCachedPurchaserInfo();
+        emitCachedAsUpdatedPurchaserInfo();
         getCaches();
         restorePurchasesForPlayStoreAccount();
     }
@@ -157,10 +157,17 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
         backend.postAttributionData(appUserID, network, jsonObject);
     }
 
-    private void emitCachedPurchaserInfo() {
+    private void emitCachedAsUpdatedPurchaserInfo() {
         PurchaserInfo info = deviceCache.getCachedPurchaserInfo(appUserID);
         if (info != null) {
             listener.onReceiveUpdatedPurchaserInfo(info);
+        }
+    }
+
+    private void emitCachedAsRestoredTransactionsPurchaserInfo() {
+        PurchaserInfo info = deviceCache.getCachedPurchaserInfo(appUserID);
+        if (info != null) {
+            listener.onRestoreTransactions(info);
         }
     }
 
@@ -304,7 +311,18 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                     public void onReceivePurchaseHistory(List<Purchase> inAppPurchasesList) {
                         List<Purchase> allPurchases = new ArrayList<>(subsPurchasesList);
                         allPurchases.addAll(inAppPurchasesList);
-                        postPurchases(allPurchases, true, false);
+                        if (allPurchases.isEmpty()) {
+                            if (cachesLastChecked != null && (new Date().getTime() - cachesLastChecked.getTime()) < 60000) {
+                                emitCachedAsRestoredTransactionsPurchaserInfo();
+                            } else {
+                                cachesLastChecked = new Date();
+
+                                // TODO: change this with a Lambda when we migrate this class to Kotlin
+                                getSubscriberInfoAndPostToRestoreTransactionListener();
+                            }
+                        } else {
+                            postPurchases(allPurchases, true, false);
+                        }
                     }
 
                     @Override
@@ -316,6 +334,22 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
             @Override
             public void onReceivePurchaseHistoryError(int responseCode, String message) {
                 listener.onRestoreTransactionsFailed(ErrorDomains.PLAY_BILLING, responseCode, message);
+            }
+        });
+    }
+
+    private void getSubscriberInfoAndPostToRestoreTransactionListener() {
+        backend.getSubscriberInfo(appUserID, new Backend.BackendResponseHandler() {
+            @Override
+            public void onReceivePurchaserInfo(PurchaserInfo info) {
+                deviceCache.cachePurchaserInfo(appUserID, info);
+                listener.onRestoreTransactions(info);
+            }
+
+            @Override
+            public void onError(int code, String message) {
+                Log.e("Purchases", "Error fetching subscriber data: " + message);
+                cachesLastChecked = null;
             }
         });
     }
@@ -332,12 +366,24 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
     /// Private Methods
     private void getCaches() {
         if (cachesLastChecked != null && (new Date().getTime() - cachesLastChecked.getTime()) < 60000) {
-            emitCachedPurchaserInfo();
-            return;
+            emitCachedAsUpdatedPurchaserInfo();
+        } else {
+            cachesLastChecked = new Date();
+
+            // TODO: change this with a Lambda when we migrate this class to Kotlin
+            getSubscriberInfoAndPostUpdatedPurchaserInfo();
+
+            getEntitlements(new GetEntitlementsHandler() {
+                @Override
+                public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {}
+
+                @Override
+                public void onReceiveEntitlementsError(int domain, int code, String message) {}
+            });
         }
+    }
 
-        cachesLastChecked = new Date();
-
+    private void getSubscriberInfoAndPostUpdatedPurchaserInfo() {
         backend.getSubscriberInfo(appUserID, new Backend.BackendResponseHandler() {
             @Override
             public void onReceivePurchaserInfo(PurchaserInfo info) {
@@ -350,14 +396,6 @@ public final class Purchases implements BillingWrapper.PurchasesUpdatedListener,
                 Log.e("Purchases", "Error fetching subscriber data: " + message);
                 cachesLastChecked = null;
             }
-        });
-
-        getEntitlements(new GetEntitlementsHandler() {
-            @Override
-            public void onReceiveEntitlements(Map<String, Entitlement> entitlementMap) {}
-
-            @Override
-            public void onReceiveEntitlementsError(int domain, int code, String message) {}
         });
     }
 
