@@ -1,3 +1,6 @@
+## 1.3.8
+- Fixes onRestoreTransactions not being called if there are no tokens.
+
 ## 1.3.7
 - Adds requestDate to the purchaser info to avoid edge cases
 
