@@ -53,7 +53,7 @@ public class PurchasesTest {
 
     private Purchases purchases;
 
-    public void setup() {
+    private void setup() {
 
         doAnswer(new Answer() {
             @Override
@@ -65,7 +65,7 @@ public class PurchasesTest {
 
         doAnswer(new Answer() {
             @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
+            public Object answer(InvocationOnMock invocation) {
                 Backend.BackendResponseHandler handler = invocation.getArgument(1);
                 handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
                 return null;
@@ -74,7 +74,7 @@ public class PurchasesTest {
 
         doAnswer(new Answer() {
             @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
+            public Object answer(InvocationOnMock invocation) {
                 Backend.BackendResponseHandler handler = invocation.getArgument(4);
                 handler.onReceivePurchaserInfo(mock(PurchaserInfo.class));
                 return null;
@@ -87,7 +87,7 @@ public class PurchasesTest {
 
         doAnswer(new Answer() {
             @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
+            public Object answer(InvocationOnMock invocation) {
                 purchasesUpdatedListener = invocation.getArgument(0);
                 return mockBillingWrapper;
             }
@@ -108,7 +108,7 @@ public class PurchasesTest {
     private void mockSkuDetailFetch(final List<SkuDetails> details, List<String> skus, String skuType) {
         doAnswer(new Answer() {
             @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
+            public Object answer(InvocationOnMock invocation) {
                 BillingWrapper.SkuDetailsResponseListener listener = invocation.getArgument(2);
                 listener.onReceiveSkuDetails(details);
                 return null;
@@ -892,5 +892,24 @@ public class PurchasesTest {
 
         verify(mockBackend).close();
         verify(mockBillingWrapper).close();
+    }
+
+    @Test
+    public void whenNoTokesRestoringPurchasesStillCallListener() {
+        setup();
+
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) {
+                historyListener = invocation.getArgument(1);
+                historyListener.onReceivePurchaseHistory(new ArrayList<Purchase>());
+                return null;
+            }
+        }).when(mockBillingWrapper).queryPurchaseHistoryAsync(any(String.class),
+                any(BillingWrapper.PurchaseHistoryResponseListener.class));
+
+        purchases.restorePurchasesForPlayStoreAccount();
+
+        verify(listener).onRestoreTransactions(any(PurchaserInfo.class));
     }
 }
