@@ -487,60 +487,41 @@ class Purchases internal constructor(
      * Used to construct a Purchases object
      */
     class Builder(
-        context: Context?,
-        private val apiKey: String?,
-        private val listener: PurchasesListener?
+        private val context: Context,
+        private val apiKey: String,
+        private val listener: PurchasesListener
     ) {
         private val application: Application
+            get() = context.applicationContext as Application
+
         private var appUserID: String? = null
         private var service: ExecutorService? = null
 
-        private fun hasPermission(context: Context, permission: String): Boolean {
-            return context.checkCallingOrSelfPermission(permission) == PERMISSION_GRANTED
-        }
-
         init {
-            if (context == null) {
-                throw IllegalArgumentException("Context must be set.")
-            }
-
-            if (!hasPermission(context, Manifest.permission.INTERNET)) {
+            if (!hasPermission(context, Manifest.permission.INTERNET))
                 throw IllegalArgumentException("Purchases requires INTERNET permission.")
-            }
 
-            if (apiKey == null || apiKey.length == 0) {
+            if (apiKey.isBlank())
                 throw IllegalArgumentException("API key must be set. Get this from the RevenueCat web app")
-            }
 
-            val application = context.applicationContext as Application
-                ?: throw IllegalArgumentException("Needs an application context.")
-
-            if (listener == null) {
-                throw IllegalArgumentException("Purchases listener must be set")
-            }
-            this.application = application
+            if (context.applicationContext !is Application)
+                throw IllegalArgumentException("Needs an application context.")
         }
 
-        private fun createDefaultExecutor(): ExecutorService {
-            return ThreadPoolExecutor(
-                1,
-                2,
-                0,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingQueue()
-            )
-        }
+        fun appUserID(appUserID: String) = apply { this.appUserID = appUserID }
+
+        fun networkExecutorService(service: ExecutorService) = apply { this.service = service }
 
         fun build(): Purchases {
 
-            var service = this.service
-            if (service == null) {
-                service = createDefaultExecutor()
-            }
+            val service = this.service ?: createDefaultExecutor()
 
             val backend = Backend(
-                this.apiKey, Dispatcher(service), HTTPClient(),
-                PurchaserInfo.Factory, Entitlement.Factory
+                this.apiKey,
+                Dispatcher(service),
+                HTTPClient(),
+                PurchaserInfo.Factory,
+                Entitlement.Factory
             )
 
             val billingWrapperFactory = BillingWrapper.Factory(
@@ -561,15 +542,20 @@ class Purchases internal constructor(
             )
         }
 
-        fun appUserID(appUserID: String): Builder {
-            this.appUserID = appUserID
-            return this
+        private fun hasPermission(context: Context, permission: String): Boolean {
+            return context.checkCallingOrSelfPermission(permission) == PERMISSION_GRANTED
         }
 
-        fun networkExecutorService(service: ExecutorService): Builder {
-            this.service = service
-            return this
+        private fun createDefaultExecutor(): ExecutorService {
+            return ThreadPoolExecutor(
+                1,
+                2,
+                0,
+                TimeUnit.MILLISECONDS,
+                LinkedBlockingQueue()
+            )
         }
+
     }
 
     companion object {
