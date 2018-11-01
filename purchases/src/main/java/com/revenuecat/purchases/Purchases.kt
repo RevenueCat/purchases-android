@@ -50,51 +50,6 @@ class Purchases internal constructor(
     private var cachesLastChecked: Date? = null
     private var cachedEntitlements: Map<String, Entitlement>? = null
 
-    @IntDef(ErrorDomains.REVENUECAT_BACKEND.toLong(), ErrorDomains.PLAY_BILLING.toLong())
-    @Retention(AnnotationRetention.SOURCE)
-    annotation class ErrorDomains {
-        companion object {
-            const val REVENUECAT_BACKEND = 0
-            const val PLAY_BILLING = 1
-        }
-    }
-
-    @IntDef(
-        AttributionNetwork.ADJUST.toLong(),
-        AttributionNetwork.APPSFLYER.toLong(),
-        AttributionNetwork.BRANCH.toLong()
-    )
-    @Retention(AnnotationRetention.SOURCE)
-    annotation class AttributionNetwork {
-        companion object {
-            const val ADJUST = 1
-            const val APPSFLYER = 2
-            const val BRANCH = 3
-        }
-    }
-
-    /**
-     * Used to handle async updates from Purchases
-     */
-    interface PurchasesListener {
-        fun onCompletedPurchase(sku: String, purchaserInfo: PurchaserInfo)
-        fun onFailedPurchase(@ErrorDomains domain: Int, code: Int, reason: String)
-
-        fun onReceiveUpdatedPurchaserInfo(purchaserInfo: PurchaserInfo)
-
-        fun onRestoreTransactions(purchaserInfo: PurchaserInfo)
-        fun onRestoreTransactionsFailed(@ErrorDomains domain: Int, code: Int, reason: String)
-    }
-
-    interface GetSkusResponseHandler {
-        fun onReceiveSkus(skus: List<SkuDetails>)
-    }
-
-    interface GetEntitlementsHandler {
-        fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>)
-        fun onReceiveEntitlementsError(@ErrorDomains domain: Int, code: Int, message: String)
-    }
-
     init {
         var appUserID = appUserID
 
@@ -564,6 +519,51 @@ class Purchases internal constructor(
          */
         @JvmStatic
         val frameworkVersion = "1.4.0-SNAPSHOT"
+    }
+
+    @IntDef(ErrorDomains.REVENUECAT_BACKEND.toLong(), ErrorDomains.PLAY_BILLING.toLong())
+    @Retention(AnnotationRetention.SOURCE)
+    annotation class ErrorDomains {
+        companion object {
+            const val REVENUECAT_BACKEND = 0
+            const val PLAY_BILLING = 1
+        }
+    }
+
+    @IntDef(
+        AttributionNetwork.ADJUST.toLong(),
+        AttributionNetwork.APPSFLYER.toLong(),
+        AttributionNetwork.BRANCH.toLong()
+    )
+    @Retention(AnnotationRetention.SOURCE)
+    annotation class AttributionNetwork {
+        companion object {
+            const val ADJUST = 1
+            const val APPSFLYER = 2
+            const val BRANCH = 3
+        }
+    }
+
+    /**
+     * Used to handle async updates from Purchases
+     */
+    interface PurchasesListener {
+        fun onCompletedPurchase(sku: String, purchaserInfo: PurchaserInfo)
+        fun onFailedPurchase(@ErrorDomains domain: Int, code: Int, reason: String)
+
+        fun onReceiveUpdatedPurchaserInfo(purchaserInfo: PurchaserInfo)
+
+        fun onRestoreTransactions(purchaserInfo: PurchaserInfo)
+        fun onRestoreTransactionsFailed(@ErrorDomains domain: Int, code: Int, reason: String)
+    }
+
+    interface GetSkusResponseHandler {
+        fun onReceiveSkus(skus: List<SkuDetails>)
+    }
+
+    interface GetEntitlementsHandler {
+        fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>)
+        fun onReceiveEntitlementsError(@ErrorDomains domain: Int, code: Int, message: String)
     }
 }
 /**
