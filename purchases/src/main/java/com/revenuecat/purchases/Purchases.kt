@@ -73,21 +73,27 @@ class Purchases internal constructor(
     }
 
     /**
-     * If true, treats all purchases as restores, aliasing together appUserIDs that share a Play acccount.
-     * @param isUsingAnonymousID
+     * If true treats all purchases as restores, aliasing together appUserIDs that share a Play acccount.
+     * @param [isUsingAnonymousID] If it is using anonymous ID.
      */
-
     fun setIsUsingAnonymousID(isUsingAnonymousID: Boolean) {
         this.usingAnonymousID = isUsingAnonymousID
     }
 
     /**
      * Add attribution data from a supported network
+     * @param [data] JSONObject containing the data to post to the attribution network
+     * @param [network] [AttributionNetwork] to post the data to
      */
     fun addAttributionData(data: JSONObject, @AttributionNetwork network: Int) {
         backend.postAttributionData(appUserID, network, data)
     }
 
+    /**
+     * Add attribution data from a supported network
+     * @param [data] Map containing the data to post to the attribution network
+     * @param [network] [AttributionNetwork] to post the data to
+     */
     fun addAttributionData(data: Map<String, String>, @AttributionNetwork network: Int) {
         val jsonObject = JSONObject()
         for (key in data.keys) {
@@ -102,13 +108,14 @@ class Purchases internal constructor(
     }
 
     /**
-     * Fetch the configured entitlements for this user. Entitlements allows you to configure your in-app products via RevenueCat
-     * and greatly simplifies management. See the guide (https://docs.revenuecat.com/v1.0/docs/entitlements) for more info.
+     * Fetch the configured entitlements for this user. Entitlements allows you to configure your
+     * in-app products via RevenueCat and greatly simplifies management.
+     * See [the guide](https://docs.revenuecat.com/v1.0/docs/entitlements) for more info.
      *
-     * Entitlements will be fetched and cached on instantiation so that, by the time they are needed, your prices are
-     * loaded for your purchase flow. Time is money.
+     * Entitlements will be fetched and cached on instantiation so that, by the time they are needed,
+     * your prices are loaded for your purchase flow. Time is money.
      *
-     * @param handler Called when entitlements are available. Called immediately if entitlements are cached.
+     * @param [handler] Called when entitlements are available. Called immediately if entitlements are cached.
      */
     fun getEntitlements(handler: GetEntitlementsHandler) {
         if (this.cachedEntitlements != null) {
@@ -162,8 +169,8 @@ class Purchases internal constructor(
 
     /**
      * Gets the SKUDetails for the given list of subscription skus.
-     * @param skus List of skus
-     * @param handler Response handler
+     * @param [skus] List of skus
+     * @param [handler] Response handler
      */
     fun getSubscriptionSkus(skus: List<String>, handler: GetSkusResponseHandler) {
         getSkus(skus, BillingClient.SkuType.SUBS, handler)
@@ -171,19 +178,19 @@ class Purchases internal constructor(
 
     /**
      * Gets the SKUDetails for the given list of non-subscription skus.
-     * @param skus
-     * @param handler
+     * @param [skus] List of skus
+     * @param [handler] Response handler
      */
     fun getNonSubscriptionSkus(skus: List<String>, handler: GetSkusResponseHandler) {
         getSkus(skus, BillingClient.SkuType.INAPP, handler)
     }
 
     /**
-     * Make a purchase passing in the skus you wish to upgrade from.
-     * @param activity Current activity
-     * @param sku The sku you wish to purchase
-     * @param skuType The type of sku, INAPP or SUBS
-     * @param oldSkus List of old skus to upgrade from
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [sku] The sku you wish to purchase
+     * @param [skuType] The type of sku, INAPP or SUBS
+     * @param [oldSkus] The skus you wish to upgrade from.
      */
     @JvmOverloads
     fun makePurchase(
