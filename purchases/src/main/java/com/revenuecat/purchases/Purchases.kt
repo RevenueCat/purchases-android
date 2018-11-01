@@ -101,20 +101,6 @@ class Purchases internal constructor(
         backend.postAttributionData(appUserID, network, jsonObject)
     }
 
-    private fun emitCachedAsUpdatedPurchaserInfo() {
-        val info = deviceCache.getCachedPurchaserInfo(appUserID)
-        if (info != null) {
-            listener.onReceiveUpdatedPurchaserInfo(info)
-        }
-    }
-
-    private fun emitCachedAsRestoredTransactionsPurchaserInfo() {
-        val info = deviceCache.getCachedPurchaserInfo(appUserID)
-        if (info != null) {
-            listener.onRestoreTransactions(info)
-        }
-    }
-
     /**
      * Fetch the configured entitlements for this user. Entitlements allows you to configure your in-app products via RevenueCat
      * and greatly simplifies management. See the guide (https://docs.revenuecat.com/v1.0/docs/entitlements) for more info.
@@ -174,25 +160,6 @@ class Purchases internal constructor(
         }
     }
 
-    private fun populateSkuDetailsAndCallHandler(
-        details: Map<String, SkuDetails>,
-        entitlements: Map<String, Entitlement>,
-        handler: GetEntitlementsHandler
-    ) {
-        for (e in entitlements.values) {
-            for (o in e.offerings.values) {
-                if (details.containsKey(o.activeProductIdentifier)) {
-                    o.skuDetails = details[o.activeProductIdentifier]
-                } else {
-                    Log.e("Purchases", "Failed to find SKU for " + o.activeProductIdentifier)
-                }
-            }
-        }
-        cachedEntitlements = entitlements
-        handler.onReceiveEntitlements(entitlements)
-    }
-
-
     /**
      * Gets the SKUDetails for the given list of subscription skus.
      * @param skus List of skus
@@ -211,17 +178,6 @@ class Purchases internal constructor(
         getSkus(skus, BillingClient.SkuType.INAPP, handler)
     }
 
-    private fun getSkus(
-        skus: List<String>, @BillingClient.SkuType skuType: String,
-        handler: GetSkusResponseHandler
-    ) {
-        billingWrapper.querySkuDetailsAsync(skuType, skus) { skuDetails ->
-            handler.onReceiveSkus(
-                skuDetails
-            )
-        }
-    }
-
     /**
      * Make a purchase passing in the skus you wish to upgrade from.
      * @param activity Current activity
@@ -231,7 +187,8 @@ class Purchases internal constructor(
      */
     @JvmOverloads
     fun makePurchase(
-        activity: Activity, sku: String,
+        activity: Activity,
+        sku: String,
         @BillingClient.SkuType skuType: String,
         oldSkus: ArrayList<String> = ArrayList()
     ) {
@@ -293,6 +250,15 @@ class Purchases internal constructor(
             })
     }
 
+    /**
+     * Call close when you are done with this instance of Purchases
+     */
+    fun close() {
+        this.billingWrapper.close()
+        this.backend.close()
+        this.application.unregisterActivityLifecycleCallbacks(this)
+    }
+
     private fun getSubscriberInfoAndPostToRestoreTransactionListener() {
         backend.getSubscriberInfo(appUserID, object : Backend.BackendResponseHandler() {
             override fun onReceivePurchaserInfo(info: PurchaserInfo) {
@@ -307,13 +273,47 @@ class Purchases internal constructor(
         })
     }
 
-    /**
-     * Call close when you are done with this instance of Purchases
-     */
-    fun close() {
-        this.billingWrapper.close()
-        this.backend.close()
-        this.application.unregisterActivityLifecycleCallbacks(this)
+    private fun emitCachedAsUpdatedPurchaserInfo() {
+        val info = deviceCache.getCachedPurchaserInfo(appUserID)
+        if (info != null) {
+            listener.onReceiveUpdatedPurchaserInfo(info)
+        }
+    }
+
+    private fun emitCachedAsRestoredTransactionsPurchaserInfo() {
+        val info = deviceCache.getCachedPurchaserInfo(appUserID)
+        if (info != null) {
+            listener.onRestoreTransactions(info)
+        }
+    }
+
+    private fun populateSkuDetailsAndCallHandler(
+        details: Map<String, SkuDetails>,
+        entitlements: Map<String, Entitlement>,
+        handler: GetEntitlementsHandler
+    ) {
+        for (e in entitlements.values) {
+            for (o in e.offerings.values) {
+                if (details.containsKey(o.activeProductIdentifier)) {
+                    o.skuDetails = details[o.activeProductIdentifier]
+                } else {
+                    Log.e("Purchases", "Failed to find SKU for " + o.activeProductIdentifier)
+                }
+            }
+        }
+        cachedEntitlements = entitlements
+        handler.onReceiveEntitlements(entitlements)
+    }
+
+    private fun getSkus(
+        skus: List<String>, @BillingClient.SkuType skuType: String,
+        handler: GetSkusResponseHandler
+    ) {
+        billingWrapper.querySkuDetailsAsync(skuType, skus) { skuDetails ->
+            handler.onReceiveSkus(
+                skuDetails
+            )
+        }
     }
 
     /// Private Methods
@@ -566,9 +566,3 @@ class Purchases internal constructor(
         fun onReceiveEntitlementsError(@ErrorDomains domain: Int, code: Int, message: String)
     }
 }
-/**
- * Make a purchase.
- * @param activity Current activity
- * @param sku The sku you wish to purchase
- * @param skuType The type of sku, INAPP or SUBS
- */
