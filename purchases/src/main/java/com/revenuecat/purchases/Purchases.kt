@@ -573,9 +573,11 @@ class Purchases internal constructor(
     }
 
     companion object {
-
-        val frameworkVersion: String
-            get() = "1.4.0-SNAPSHOT"
+        /**
+         * Current version of the Purchases SDK
+         */
+        @JvmStatic
+        val frameworkVersion = "1.4.0-SNAPSHOT"
     }
 }
 /**
