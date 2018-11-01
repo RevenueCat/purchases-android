@@ -31,7 +31,8 @@ import android.content.pm.PackageManager.PERMISSION_GRANTED
 
 class Purchases internal constructor(
     private val application: Application,
-    appUserID: String?, private val listener: PurchasesListener,
+    _appUserID: String?,
+    private val listener: PurchasesListener,
     private val backend: Backend,
     billingWrapperFactory: BillingWrapper.Factory,
     private val deviceCache: DeviceCache,
@@ -49,19 +50,7 @@ class Purchases internal constructor(
     private val billingWrapper: BillingWrapper
 
     init {
-        var appUserID = appUserID
-
-        if (appUserID == null) {
-            usingAnonymousID = true
-
-            appUserID = deviceCache.getCachedAppUserID()
-
-            if (appUserID == null) {
-                appUserID = UUID.randomUUID().toString()
-                deviceCache.cacheAppUserID(appUserID)
-            }
-        }
-        this.appUserID = appUserID
+        this.appUserID = _appUserID ?: getAnonymousID().also { setIsUsingAnonymousID(true) }
         this.billingWrapper = billingWrapperFactory.buildWrapper(this)
         this.application.registerActivityLifecycleCallbacks(this)
 
@@ -404,6 +393,16 @@ class Purchases internal constructor(
                         }
                     }
                 })
+        }
+    }
+
+    private fun getAnonymousID(): String {
+        return deviceCache.getCachedAppUserID()?: createRandomIDAndCacheIt()
+    }
+
+    private fun createRandomIDAndCacheIt(): String {
+        return UUID.randomUUID().toString().also {
+            deviceCache.cacheAppUserID(it)
         }
     }
 
