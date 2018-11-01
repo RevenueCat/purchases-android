@@ -34,7 +34,11 @@ class Purchases internal constructor(
     appUserID: String?, private val listener: PurchasesListener,
     private val backend: Backend,
     billingWrapperFactory: BillingWrapper.Factory,
-    private val deviceCache: DeviceCache
+    private val deviceCache: DeviceCache,
+    private var usingAnonymousID: Boolean? = false,
+    private val postedTokens: HashSet<String> = HashSet(),
+    private var cachesLastChecked: Date? = null,
+    private var cachedEntitlements: Map<String, Entitlement>? = null
 ) : BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
     /**
@@ -42,13 +46,7 @@ class Purchases internal constructor(
      * @return appUserID
      */
     val appUserID: String
-    private var usingAnonymousID: Boolean? = false
     private val billingWrapper: BillingWrapper
-
-    private val postedTokens = HashSet<String>()
-
-    private var cachesLastChecked: Date? = null
-    private var cachedEntitlements: Map<String, Entitlement>? = null
 
     init {
         var appUserID = appUserID
