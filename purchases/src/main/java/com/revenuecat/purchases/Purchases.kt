@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.Activity
 import android.app.Application
 import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
 import android.preference.PreferenceManager
@@ -18,7 +17,6 @@ import com.android.billingclient.api.SkuDetails
 import org.json.JSONException
 import org.json.JSONObject
 
-import java.lang.annotation.Retention
 import java.util.ArrayList
 import java.util.Date
 import java.util.HashMap
@@ -30,7 +28,6 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 import android.content.pm.PackageManager.PERMISSION_GRANTED
-import java.lang.annotation.RetentionPolicy.SOURCE
 
 class Purchases internal constructor(
     private val application: Application,
@@ -54,11 +51,11 @@ class Purchases internal constructor(
     private var cachedEntitlements: Map<String, Entitlement>? = null
 
     @IntDef(ErrorDomains.REVENUECAT_BACKEND.toLong(), ErrorDomains.PLAY_BILLING.toLong())
-    @Retention(SOURCE)
+    @Retention(AnnotationRetention.SOURCE)
     annotation class ErrorDomains {
         companion object {
-            val REVENUECAT_BACKEND = 0
-            val PLAY_BILLING = 1
+            const val REVENUECAT_BACKEND = 0
+            const val PLAY_BILLING = 1
         }
     }
 
@@ -67,12 +64,12 @@ class Purchases internal constructor(
         AttributionNetwork.APPSFLYER.toLong(),
         AttributionNetwork.BRANCH.toLong()
     )
-    @Retention(SOURCE)
+    @Retention(AnnotationRetention.SOURCE)
     annotation class AttributionNetwork {
         companion object {
-            val ADJUST = 1
-            val APPSFLYER = 2
-            val BRANCH = 3
+            const val ADJUST = 1
+            const val APPSFLYER = 2
+            const val BRANCH = 3
         }
     }
 
