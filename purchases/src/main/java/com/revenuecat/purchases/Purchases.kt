@@ -185,7 +185,7 @@ class Purchases @JvmOverloads internal constructor(
                                         cachesLastChecked = Date()
 
                                         // TODO: change this with a Lambda when we migrate this class to Kotlin
-                                        getSubscriberInfoAndPostToRestoreTransactionListener()
+                                        getSubscriberInfo { listener.onRestoreTransactions(it) }
                                     }
                                 } else {
                                     postPurchases(allPurchases, true, false)
@@ -222,20 +222,6 @@ class Purchases @JvmOverloads internal constructor(
         this.billingWrapper.close()
         this.backend.close()
         this.application.unregisterActivityLifecycleCallbacks(this)
-    }
-
-    private fun getSubscriberInfoAndPostToRestoreTransactionListener() {
-        backend.getSubscriberInfo(appUserID, object : Backend.BackendResponseHandler() {
-            override fun onReceivePurchaserInfo(info: PurchaserInfo) {
-                deviceCache.cachePurchaserInfo(appUserID, info)
-                listener.onRestoreTransactions(info)
-            }
-
-            override fun onError(code: Int, message: String) {
-                Log.e("Purchases", "Error fetching subscriber data: $message")
-                cachesLastChecked = null
-            }
-        })
     }
 
     private fun emitCachedAsUpdatedPurchaserInfo() {
@@ -288,8 +274,7 @@ class Purchases @JvmOverloads internal constructor(
         } else {
             cachesLastChecked = Date()
 
-            // TODO: change this with a Lambda when we migrate this class to Kotlin
-            getSubscriberInfoAndPostUpdatedPurchaserInfo()
+            getSubscriberInfo { listener.onReceiveUpdatedPurchaserInfo(it) }
 
             getEntitlements(object : GetEntitlementsHandler {
                 override fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>) {}
@@ -299,11 +284,11 @@ class Purchases @JvmOverloads internal constructor(
         }
     }
 
-    private fun getSubscriberInfoAndPostUpdatedPurchaserInfo() {
+    private fun getSubscriberInfo(onReceived: (PurchaserInfo) -> Unit) {
         backend.getSubscriberInfo(appUserID, object : Backend.BackendResponseHandler() {
             override fun onReceivePurchaserInfo(info: PurchaserInfo) {
                 deviceCache.cachePurchaserInfo(appUserID, info)
-                listener.onReceiveUpdatedPurchaserInfo(info)
+                onReceived(info)
             }
 
             override fun onError(code: Int, message: String) {
