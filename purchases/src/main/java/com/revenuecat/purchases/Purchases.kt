@@ -72,7 +72,7 @@ class Purchases @JvmOverloads internal constructor(
      * @param [data] JSONObject containing the data to post to the attribution network
      * @param [network] [AttributionNetwork] to post the data to
      */
-    fun addAttributionData(data: JSONObject, @AttributionNetwork network: Int) {
+    fun addAttributionData(data: JSONObject, network: AttributionNetwork) {
         backend.postAttributionData(appUserID, network, data)
     }
 
@@ -81,7 +81,7 @@ class Purchases @JvmOverloads internal constructor(
      * @param [data] Map containing the data to post to the attribution network
      * @param [network] [AttributionNetwork] to post the data to
      */
-    fun addAttributionData(data: Map<String, String>, @AttributionNetwork network: Int) {
+    fun addAttributionData(data: Map<String, String>, network: AttributionNetwork) {
         val jsonObject = JSONObject()
         for (key in data.keys) {
             try {
@@ -277,7 +277,7 @@ class Purchases @JvmOverloads internal constructor(
             getEntitlements(object : GetEntitlementsHandler {
                 override fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>) {}
 
-                override fun onReceiveEntitlementsError(domain: Int, code: Int, message: String) {}
+                override fun onReceiveEntitlementsError(domain: ErrorDomains, code: Int, message: String) {}
             })
         }
     }
@@ -509,27 +509,12 @@ class Purchases @JvmOverloads internal constructor(
         val frameworkVersion = "1.4.0-SNAPSHOT"
     }
 
-    @IntDef(ErrorDomains.REVENUECAT_BACKEND.toLong(), ErrorDomains.PLAY_BILLING.toLong())
-    @Retention(AnnotationRetention.SOURCE)
-    annotation class ErrorDomains {
-        companion object {
-            const val REVENUECAT_BACKEND = 0
-            const val PLAY_BILLING = 1
-        }
+    enum class ErrorDomains {
+        REVENUECAT_BACKEND, PLAY_BILLING
     }
 
-    @IntDef(
-        AttributionNetwork.ADJUST.toLong(),
-        AttributionNetwork.APPSFLYER.toLong(),
-        AttributionNetwork.BRANCH.toLong()
-    )
-    @Retention(AnnotationRetention.SOURCE)
-    annotation class AttributionNetwork {
-        companion object {
-            const val ADJUST = 1
-            const val APPSFLYER = 2
-            const val BRANCH = 3
-        }
+    enum class AttributionNetwork(val serverValue: Int)  {
+        ADJUST(1), APPSFLYER(2), BRANCH(3)
     }
 
     /**
@@ -537,12 +522,12 @@ class Purchases @JvmOverloads internal constructor(
      */
     interface PurchasesListener {
         fun onCompletedPurchase(sku: String, purchaserInfo: PurchaserInfo)
-        fun onFailedPurchase(@ErrorDomains domain: Int, code: Int, reason: String)
+        fun onFailedPurchase(domain: ErrorDomains, code: Int, reason: String)
 
         fun onReceiveUpdatedPurchaserInfo(purchaserInfo: PurchaserInfo)
 
         fun onRestoreTransactions(purchaserInfo: PurchaserInfo)
-        fun onRestoreTransactionsFailed(@ErrorDomains domain: Int, code: Int, reason: String)
+        fun onRestoreTransactionsFailed(domain: ErrorDomains, code: Int, reason: String)
     }
 
     interface GetSkusResponseHandler {
@@ -551,6 +536,6 @@ class Purchases @JvmOverloads internal constructor(
 
     interface GetEntitlementsHandler {
         fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>)
-        fun onReceiveEntitlementsError(@ErrorDomains domain: Int, code: Int, message: String)
+        fun onReceiveEntitlementsError(domain: ErrorDomains, code: Int, message: String)
     }
 }

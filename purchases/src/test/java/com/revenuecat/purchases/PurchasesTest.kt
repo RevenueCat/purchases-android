@@ -7,7 +7,6 @@ import android.support.test.runner.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.Purchases.AttributionNetwork.Companion.APPSFLYER
 
 import org.json.JSONObject
 import org.junit.Test
@@ -848,7 +847,7 @@ class PurchasesTest {
                 this@PurchasesTest.receivedEntitlementMap = entitlementMap
             }
 
-            override fun onReceiveEntitlementsError(domain: Int, code: Int, message: String) {
+            override fun onReceiveEntitlementsError(domain: Purchases.ErrorDomains, code: Int, message: String) {
 
             }
         })
@@ -926,7 +925,7 @@ class PurchasesTest {
                 this@PurchasesTest.receivedEntitlementMap = entitlementMap
             }
 
-            override fun onReceiveEntitlementsError(domain: Int, code: Int, message: String) {
+            override fun onReceiveEntitlementsError(domain: Purchases.ErrorDomains, code: Int, message: String) {
 
             }
         })
@@ -952,7 +951,7 @@ class PurchasesTest {
                 this@PurchasesTest.receivedEntitlementMap = entitlementMap
             }
 
-            override fun onReceiveEntitlementsError(domain: Int, code: Int, message: String) {
+            override fun onReceiveEntitlementsError(domain: Purchases.ErrorDomains, code: Int, message: String) {
                 errorMessage[0] = message
             }
         })
@@ -979,7 +978,7 @@ class PurchasesTest {
         purchases!!.getEntitlements(object : Purchases.GetEntitlementsHandler {
             override fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>) {}
 
-            override fun onReceiveEntitlementsError(domain: Int, code: Int, message: String) {
+            override fun onReceiveEntitlementsError(domain: Purchases.ErrorDomains, code: Int, message: String) {
                 errorMessage[0] = message
             }
         })
@@ -992,7 +991,7 @@ class PurchasesTest {
         setup()
 
         val `object` = mockk<JSONObject>()
-        @Purchases.AttributionNetwork val network = APPSFLYER
+        val network = Purchases.AttributionNetwork.APPSFLYER
         purchases!!.addAttributionData(`object`, network)
 
         verify { mockBackend.postAttributionData(eq(appUserId), eq(network), eq(`object`)) }
@@ -1005,7 +1004,7 @@ class PurchasesTest {
         val map = HashMap<String, String>()
         map["key"] = "value"
 
-        @Purchases.AttributionNetwork val network = APPSFLYER
+        val network = Purchases.AttributionNetwork.APPSFLYER
         purchases!!.addAttributionData(map, network)
 
         verify {
