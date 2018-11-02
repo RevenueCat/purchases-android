@@ -243,13 +243,11 @@ class Purchases @JvmOverloads internal constructor(
         entitlements: Map<String, Entitlement>,
         handler: GetEntitlementsHandler
     ) {
-        for (e in entitlements.values) {
-            for (o in e.offerings.values) {
-                if (details.containsKey(o.activeProductIdentifier)) {
-                    o.skuDetails = details[o.activeProductIdentifier]
-                } else {
-                    Log.e("Purchases", "Failed to find SKU for " + o.activeProductIdentifier)
-                }
+        entitlements.values.flatMap { it.offerings.values }.forEach { o ->
+            if (details.containsKey(o.activeProductIdentifier)) {
+                o.skuDetails = details[o.activeProductIdentifier]
+            } else {
+                Log.e("Purchases", "Failed to find SKU for " + o.activeProductIdentifier)
             }
         }
         cachedEntitlements = entitlements
