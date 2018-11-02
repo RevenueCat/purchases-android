@@ -105,53 +105,24 @@ class Purchases internal constructor(
      * @param [handler] Called when entitlements are available. Called immediately if entitlements are cached.
      */
     fun getEntitlements(handler: GetEntitlementsHandler) {
-        if (this.cachedEntitlements != null) {
-            handler.onReceiveEntitlements(this.cachedEntitlements)
-        } else {
-            backend.getEntitlements(appUserID, object : Backend.EntitlementsResponseHandler() {
-                override fun onReceiveEntitlements(entitlements: Map<String, Entitlement>) {
-                    val skus = ArrayList<String>()
-                    val detailsByID = HashMap<String, SkuDetails>()
-                    for ((offerings) in entitlements.values) {
-                        for ((activeProductIdentifier) in offerings.values) {
-                            skus.add(activeProductIdentifier)
-                        }
-                    }
+        this.cachedEntitlements?.let {
+            handler.onReceiveEntitlements(it)
+        } ?: backend.getEntitlements(appUserID, object : Backend.EntitlementsResponseHandler() {
 
-                    billingWrapper.querySkuDetailsAsync(
-                        BillingClient.SkuType.SUBS,
-                        skus
-                    ) { skuDetails ->
-                        val skusCopy = ArrayList(skus)
-                        for (d in skuDetails) {
-                            skusCopy.remove(d.sku)
-                            detailsByID[d.sku] = d
-                        }
-                        if (skusCopy.size > 0) {
-                            billingWrapper.querySkuDetailsAsync(
-                                BillingClient.SkuType.INAPP,
-                                skusCopy
-                            ) { skuDetails ->
-                                for (d in skuDetails) {
-                                    detailsByID[d.sku] = d
-                                }
-                                populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler)
-                            }
-                        } else {
-                            populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler)
-                        }
-                    }
+            override fun onReceiveEntitlements(entitlements: Map<String, Entitlement>) {
+                getSkuDetails(entitlements) { detailsByID ->
+                    populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler)
                 }
+            }
 
-                override fun onError(code: Int, message: String) {
-                    handler.onReceiveEntitlementsError(
-                        ErrorDomains.REVENUECAT_BACKEND,
-                        code,
-                        "Error fetching entitlements: $message"
-                    )
-                }
-            })
-        }
+            override fun onError(code: Int, message: String) {
+                handler.onReceiveEntitlementsError(
+                    ErrorDomains.REVENUECAT_BACKEND,
+                    code,
+                    "Error fetching entitlements: $message"
+                )
+            }
+        })
     }
 
     /**
@@ -397,12 +368,42 @@ class Purchases internal constructor(
     }
 
     private fun getAnonymousID(): String {
-        return deviceCache.getCachedAppUserID()?: createRandomIDAndCacheIt()
+        return deviceCache.getCachedAppUserID() ?: createRandomIDAndCacheIt()
     }
 
     private fun createRandomIDAndCacheIt(): String {
         return UUID.randomUUID().toString().also {
             deviceCache.cacheAppUserID(it)
+        }
+    }
+
+    private fun getSkuDetails(entitlements: Map<String, Entitlement>, onCompleted: (HashMap<String, SkuDetails>) -> Unit) {
+        val skus =
+            entitlements.values.flatMap { it.offerings.values }.map { it.activeProductIdentifier }
+
+        billingWrapper.querySkuDetailsAsync(
+            BillingClient.SkuType.SUBS,
+            skus
+        ) { subscriptionsSKUDetails ->
+            val detailsByID = HashMap<String, SkuDetails>()
+
+            val inAPPSkus = skus -
+                    subscriptionsSKUDetails
+                        .map { details -> details.sku to details }
+                        .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
+                        .map { skuToDetails -> skuToDetails.first }
+
+            if (inAPPSkus.isNotEmpty()) {
+                billingWrapper.querySkuDetailsAsync(
+                    BillingClient.SkuType.INAPP,
+                    inAPPSkus
+                ) { skuDetails ->
+                    detailsByID.putAll(skuDetails.map { it.sku to it })
+                    onCompleted(detailsByID)
+                }
+            } else {
+                onCompleted(detailsByID)
+            }
         }
     }
 
