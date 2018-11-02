@@ -14,7 +14,6 @@ import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
 
-import com.revenuecat.purchases.Purchases.getFrameworkVersion
 
 internal class HTTPClient(
     var baseURL: URL = URL("https://api.revenuecat.com/")
@@ -104,7 +103,7 @@ internal class HTTPClient(
                     "X-Platform-Version",
                     Integer.toString(android.os.Build.VERSION.SDK_INT)
                 )
-                addRequestProperty("X-Version", getFrameworkVersion())
+                addRequestProperty("X-Version", Purchases.frameworkVersion)
 
                 if (body != null) {
                     doOutput = true

@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
 
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 
-class Purchases internal constructor(
+class Purchases @JvmOverloads internal constructor(
     private val application: Application,
     _appUserID: String?,
     private val listener: PurchasesListener,
@@ -563,7 +563,7 @@ class Purchases internal constructor(
     }
 
     interface GetSkusResponseHandler {
-        fun onReceiveSkus(skus: List<SkuDetails>)
+        fun onReceiveSkus(skus: @JvmSuppressWildcards List<SkuDetails>)
     }
 
     interface GetEntitlementsHandler {
