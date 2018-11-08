@@ -19,6 +19,7 @@ class PurchaserInfo private constructor(
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allExpirationDatesByEntitlement: Map<String, Date?>,
     val requestDate: Date?,
+    val aliasToken: String?,
     internal val jsonObject: JSONObject
 ) {
 
@@ -135,11 +136,21 @@ class PurchaserInfo private constructor(
                     }
                 } else null
 
+            val aliasToken =
+                if (subscriber.has("alias_token")) {
+                    try {
+                        subscriber.getString("alias_token")
+                    } catch (e: java.lang.RuntimeException) {
+                        throw JSONException(e.message)
+                    }
+                } else null
+
             return PurchaserInfo(
                 nonSubscriptionPurchases,
                 expirationDatesByProduct,
                 expirationDatesByEntitlement,
                 requestDate,
+                aliasToken,
                 jsonObject
             )
         }

@@ -7,7 +7,6 @@ import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.preference.PreferenceManager
-import android.support.annotation.IntDef
 import android.util.Log
 
 import com.android.billingclient.api.BillingClient
@@ -216,6 +215,23 @@ class Purchases @JvmOverloads internal constructor(
     }
 
     /**
+     * This function will alias two appUserIDs together.
+     */
+    fun alias(newAppUserID: String, handler: AliasHandler?) {
+        backend.alias(
+            appUserID,
+            newAppUserID,
+            {
+                deviceCache.cacheAppUserID(newAppUserID)
+                handler?.onSuccess()
+            },
+            { code, message ->
+                handler?.onError(ErrorDomains.REVENUECAT_BACKEND, code, message)
+            }
+        )
+    }
+
+    /**
      * Call close when you are done with this instance of Purchases
      */
     fun close() {
@@ -224,6 +240,7 @@ class Purchases @JvmOverloads internal constructor(
         this.application.unregisterActivityLifecycleCallbacks(this)
     }
 
+    /// Private Methods
     private fun emitCachedAsUpdatedPurchaserInfo() {
         val info = deviceCache.getCachedPurchaserInfo(appUserID)
         if (info != null) {
@@ -265,7 +282,6 @@ class Purchases @JvmOverloads internal constructor(
         }
     }
 
-    /// Private Methods
     private fun getCaches() {
         if (cachesLastChecked != null && Date().time - cachesLastChecked!!.time < 60000) {
             emitCachedAsUpdatedPurchaserInfo()
@@ -289,7 +305,7 @@ class Purchases @JvmOverloads internal constructor(
                 onReceived(info)
             }
 
-            override fun onError(code: Int, message: String) {
+            override fun onError(code: Int, message: String?) {
                 Log.e("Purchases", "Error fetching subscriber data: $message")
                 cachesLastChecked = null
             }
@@ -326,7 +342,7 @@ class Purchases @JvmOverloads internal constructor(
                         }
                     }
 
-                    override fun onError(code: Int, message: String) {
+                    override fun onError(code: Int, message: String?) {
                         if (code < 500) {
                             billingWrapper.consumePurchase(token)
                             postedTokens.remove(token)
@@ -398,7 +414,7 @@ class Purchases @JvmOverloads internal constructor(
         listener.onFailedPurchase(ErrorDomains.PLAY_BILLING, responseCode, message)
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle) {
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
 
     }
 
@@ -418,7 +434,7 @@ class Purchases @JvmOverloads internal constructor(
 
     }
 
-    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {
+    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle?) {
 
     }
 
@@ -522,12 +538,12 @@ class Purchases @JvmOverloads internal constructor(
      */
     interface PurchasesListener {
         fun onCompletedPurchase(sku: String, purchaserInfo: PurchaserInfo)
-        fun onFailedPurchase(domain: ErrorDomains, code: Int, reason: String)
+        fun onFailedPurchase(domain: ErrorDomains, code: Int, reason: String?)
 
         fun onReceiveUpdatedPurchaserInfo(purchaserInfo: PurchaserInfo)
 
         fun onRestoreTransactions(purchaserInfo: PurchaserInfo)
-        fun onRestoreTransactionsFailed(domain: ErrorDomains, code: Int, reason: String)
+        fun onRestoreTransactionsFailed(domain: ErrorDomains, code: Int, reason: String?)
     }
 
     interface GetSkusResponseHandler {
@@ -538,4 +554,10 @@ class Purchases @JvmOverloads internal constructor(
         fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>)
         fun onReceiveEntitlementsError(domain: ErrorDomains, code: Int, message: String)
     }
+
+    interface AliasHandler {
+        fun onSuccess()
+        fun onError(domain: ErrorDomains, code: Int, message: String)
+    }
+
 }

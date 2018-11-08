@@ -1125,4 +1125,91 @@ class PurchasesTest {
         }
         verify { listener.onRestoreTransactions(any()) }
     }
+
+    @Test
+    fun `given a successful aliasing, new app user id is cached`() {
+        setup()
+        val onSuccessSlot = slot<() -> Unit>()
+        val onErrorSlot = slot<(Int, String) -> Unit>()
+
+        every {
+            mockBackend.alias(
+                eq(appUserId),
+                eq("new_id"),
+                capture(onSuccessSlot),
+                capture(onErrorSlot)
+            )
+        } answers {
+            onSuccessSlot.captured()
+        }
+
+        purchases!!.alias(
+            "new_id",
+            null
+        )
+
+        verify {
+            mockCache.cacheAppUserID(eq("new_id"))
+        }
+    }
+
+    @Test
+    fun `given a successful aliasing, success handler is called`() {
+        setup()
+        val onSuccessSlot = slot<() -> Unit>()
+        val onErrorSlot = slot<(Int, String) -> Unit>()
+
+        every {
+            mockBackend.alias(
+                eq(appUserId),
+                eq("new_id"),
+                capture(onSuccessSlot),
+                capture(onErrorSlot)
+            )
+        } answers {
+            onSuccessSlot.captured()
+        }
+
+        val mockAliasHandler = mockk<Purchases.AliasHandler>(relaxed = true)
+        purchases!!.alias(
+            "new_id",
+            mockAliasHandler
+        )
+
+        verify {
+            mockAliasHandler.onSuccess()
+        }
+    }
+
+    @Test
+    fun `given an unsuccessful aliasing, onError handler is called`() {
+        setup()
+        val onSuccessSlot = slot<() -> Unit>()
+        val onErrorSlot = slot<(Int, String) -> Unit>()
+
+        every {
+            mockBackend.alias(
+                eq(appUserId),
+                eq("new_id"),
+                capture(onSuccessSlot),
+                capture(onErrorSlot)
+            )
+        } answers {
+            onErrorSlot.captured.invoke(0, "error")
+        }
+
+        val mockAliasHandler = mockk<Purchases.AliasHandler>(relaxed = true)
+        purchases!!.alias(
+            "new_id",
+            mockAliasHandler
+        )
+
+        verify {
+            mockAliasHandler.onError(
+                eq(Purchases.ErrorDomains.REVENUECAT_BACKEND),
+                eq(0),
+                eq("error")
+            )
+        }
+    }
 }
