@@ -156,12 +156,19 @@ class PurchaserInfoTest {
         assertThat(actives).contains("threemonth_freetrial")
     }
 
+    @Test
+    fun `Given a valid purchaser info, purchase date is parsed`() {
+        val info = fullPurchaserInfo()
+        assertThat(info.allPurchaseDatesByEntitlement).isNotEmpty
+        assertThat(info.getPurchaseDateForEntitlement("pro")).isNotNull()
+    }
+
     companion object {
 
         internal const val validEmptyPurchaserResponse =
             "{'request_date': '', 'subscriber': {'other_purchases': {}, 'subscriptions': {}, 'entitlements': {}}}"
         internal const val validFullPurchaserResponse =
-            "{'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
+            "{'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
         internal const val validTwoProducts =
             "{'request_date': '2018-05-20T06:24:50Z', 'subscriber': {'original_application_version': '1.0','other_purchases': {},'subscriptions':{'product_a': {'expires_date': '2018-05-27T06:24:50Z','period_type': 'normal'},'product_b': {'expires_date': '2018-05-27T05:24:50Z','period_type': 'normal'}}}}"
     }
