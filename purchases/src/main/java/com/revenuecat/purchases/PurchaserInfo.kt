@@ -7,7 +7,7 @@ import org.json.JSONObject
 
 import java.util.Date
 import java.util.HashMap
-import java.util.HashSet
+
 /**
  * @property purchasedNonSubscriptionSkus Set of non-subscription, non-consumed skus
  * @property allExpirationDatesByProduct Map of skus to dates
@@ -17,7 +17,9 @@ import java.util.HashSet
 class PurchaserInfo private constructor(
     val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
+    val allPurchaseDatesByProduct: Map<String, Date?>,
     val allExpirationDatesByEntitlement: Map<String, Date?>,
+    val allPurchaseDatesByEntitlement: Map<String, Date?>,
     val requestDate: Date?,
     val aliasToken: String?,
     internal val jsonObject: JSONObject
@@ -56,11 +58,27 @@ class PurchaserInfo private constructor(
     }
 
     /**
+     * @param sku
+     * @return Purchase date for given sku
+     */
+    fun getPurchaseDateForSku(sku: String): Date? {
+        return allPurchaseDatesByProduct[sku]
+    }
+
+    /**
      * @param entitlement
      * @return Expiration date for given entitlement
      */
     fun getExpirationDateForEntitlement(entitlement: String): Date? {
         return allExpirationDatesByEntitlement[entitlement]
+    }
+
+    /**
+     * @param entitlement
+     * @return Purchase date for given entitlement
+     */
+    fun getPurchaseDateForEntitlement(entitlement: String): Date? {
+        return allPurchaseDatesByEntitlement[entitlement]
     }
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
@@ -79,18 +97,37 @@ class PurchaserInfo private constructor(
          * @throws [JSONException] If the json is invalid.
          */
         private fun parseExpirations(expirations: JSONObject): Map<String, Date?> {
+            return parseDates(expirations, "expires_date")
+        }
+
+        /**
+         * Parses purchase dates in a JSONObject
+         * @param jsonObject JSONObject to deserialize
+         * @throws [JSONException] If the json is invalid.
+         */
+        private fun parsePurchaseDates(expirations: JSONObject): Map<String, Date?> {
+            return parseDates(expirations, "purchase_date")
+        }
+
+        /**
+         * Parses dates that match a JSON key in a JSONObject
+         * @param jsonObject JSONObject to deserialize
+         * @param jsonKey Key of the dates to deserialize from the JSONObject
+         * @throws [JSONException] If the json is invalid.
+         */
+        private fun parseDates(dates: JSONObject, jsonKey: String): HashMap<String, Date?> {
             val expirationDates = HashMap<String, Date?>()
 
-            val it = expirations.keys()
+            val it = dates.keys()
             while (it.hasNext()) {
                 val key = it.next()
 
-                val expirationObject = expirations.getJSONObject(key)
+                val expirationObject = dates.getJSONObject(key)
 
-                if (expirationObject.isNull("expires_date")) {
+                if (expirationObject.isNull(jsonKey)) {
                     expirationDates[key] = null
                 } else {
-                    val dateValue = expirationObject.getString("expires_date")
+                    val dateValue = expirationObject.getString(jsonKey)
                     try {
                         val date = Iso8601Utils.parse(dateValue)
                         expirationDates[key] = date
@@ -116,6 +153,7 @@ class PurchaserInfo private constructor(
             val nonSubscriptionPurchases = otherPurchases.keys().asSequence().toSet()
             val subscriptions = subscriber.getJSONObject("subscriptions")
             val expirationDatesByProduct = parseExpirations(subscriptions)
+            val purchaseDatesByProduct = parsePurchaseDates(subscriptions)
 
             var entitlements = JSONObject()
             if (subscriber.has("entitlements")) {
@@ -123,6 +161,7 @@ class PurchaserInfo private constructor(
             }
 
             val expirationDatesByEntitlement = parseExpirations(entitlements)
+            val purchaseDatesByEntitlement = parsePurchaseDates(entitlements)
 
             val requestDate =
                 if (jsonObject.has("request_date")) {
@@ -148,7 +187,9 @@ class PurchaserInfo private constructor(
             return PurchaserInfo(
                 nonSubscriptionPurchases,
                 expirationDatesByProduct,
+                purchaseDatesByProduct,
                 expirationDatesByEntitlement,
+                purchaseDatesByEntitlement,
                 requestDate,
                 aliasToken,
                 jsonObject
