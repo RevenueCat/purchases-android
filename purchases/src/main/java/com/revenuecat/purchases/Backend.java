@@ -136,12 +136,12 @@ class Backend {
         return Uri.encode(string);
     }
 
-    void postAttributionData(final String appUserID, @Purchases.AttributionNetwork int network, JSONObject data) {
+    void postAttributionData(final String appUserID, Purchases.AttributionNetwork network, JSONObject data) {
         if (data.length() == 0) return;
 
         final JSONObject body = new JSONObject();
         try {
-            body.put("network", network);
+            body.put("network", network.getServerValue());
             body.put("data", data);
         } catch (JSONException e) {
             return;

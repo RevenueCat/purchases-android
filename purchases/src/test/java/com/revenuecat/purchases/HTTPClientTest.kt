@@ -128,7 +128,7 @@ class HTTPClientTest {
         assertThat(request.getHeader("Content-Type")).isEqualTo("application/json")
         assertThat(request.getHeader("X-Platform")).isEqualTo("android")
         assertThat(request.getHeader("X-Platform-Version")).isEqualTo(Integer.toString(android.os.Build.VERSION.SDK_INT))
-        assertThat(request.getHeader("X-Version")).isEqualTo(Purchases.getFrameworkVersion())
+        assertThat(request.getHeader("X-Version")).isEqualTo(Purchases.frameworkVersion)
     }
 
     @Test

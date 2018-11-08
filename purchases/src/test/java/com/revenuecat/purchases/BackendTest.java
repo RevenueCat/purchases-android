@@ -264,8 +264,20 @@ public class BackendTest {
     }
 
     class CorrectAttributionBody implements ArgumentMatcher<JSONObject> {
+        private final Purchases.AttributionNetwork network;
+
+        public CorrectAttributionBody(Purchases.AttributionNetwork appsflyer) {
+            this.network = appsflyer;
+        }
+
         public boolean matches(JSONObject object) {
-            return object.has("network") && object.has("data");
+            try {
+                return object.has("network") && object.has("data")
+                        && object.getInt("network") == network.getServerValue();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return false;
         }
     }
 
@@ -285,7 +297,8 @@ public class BackendTest {
         Map<String, String> headers = new HashMap<>();
         headers.put("Authorization", "Bearer " + API_KEY);
 
-        verify(mockClient, times(1)).performRequest(eq(path), argThat(new CorrectAttributionBody()), eq(headers));
+        verify(mockClient, times(1))
+                .performRequest(eq(path), argThat(new CorrectAttributionBody(Purchases.AttributionNetwork.APPSFLYER)), eq(headers));
     }
 
     @Test

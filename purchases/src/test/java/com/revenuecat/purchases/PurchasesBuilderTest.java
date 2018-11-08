@@ -29,7 +29,7 @@ public class PurchasesBuilderTest {
         }
 
         @Override
-        public void onFailedPurchase(int domain, int code, String reason) {
+        public void onFailedPurchase(Purchases.ErrorDomains domain, int code, String reason) {
 
         }
 
@@ -44,7 +44,7 @@ public class PurchasesBuilderTest {
         }
 
         @Override
-        public void onRestoreTransactionsFailed(int domain, int code, String reason) {
+        public void onRestoreTransactionsFailed(Purchases.ErrorDomains domain, int code, String reason) {
 
         }
     };
