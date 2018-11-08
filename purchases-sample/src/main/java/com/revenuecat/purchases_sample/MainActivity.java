@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
             }
 
             @Override
-            public void onReceiveEntitlementsError(int domain, int code, String message) {
+            public void onReceiveEntitlementsError(Purchases.ErrorDomains domain, int code, String message) {
 
             }
         });
@@ -137,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     }
 
     @Override
-    public void onFailedPurchase(int domain, int code, String reason) {
+    public void onFailedPurchase(Purchases.ErrorDomains domain, int code, String reason) {
         Log.i("Purchases", reason);
     }
 
@@ -167,7 +167,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     }
 
     @Override
-    public void onRestoreTransactionsFailed(int domain, int code, String reason) {
+    public void onRestoreTransactionsFailed(Purchases.ErrorDomains domain, int code, String reason) {
         Log.i("Purchases", reason);
     }
 
