@@ -216,6 +216,8 @@ class Purchases @JvmOverloads internal constructor(
 
     /**
      * This function will alias two appUserIDs together.
+     * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
+     * @param [handler] An optional handler to listen for successes or errors.
      */
     fun alias(newAppUserID: String, handler: AliasHandler?) {
         backend.alias(
