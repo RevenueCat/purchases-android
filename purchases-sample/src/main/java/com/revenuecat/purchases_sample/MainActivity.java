@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
             @Override
             public void onClick(View view) {
                 useAlternateID = !useAlternateID;
-                purchases.alias(currentAppUserID(), new Purchases.AliasHandler() {
+                purchases.createAlias(currentAppUserID(), new Purchases.AliasHandler() {
                     @Override
                     public void onSuccess() {
                         Toast.makeText(MainActivity.this, "Alias succeeded", Toast.LENGTH_SHORT).show();

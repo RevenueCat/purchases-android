@@ -18,8 +18,6 @@ import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Fail
 import org.assertj.core.api.Fail.fail
 
 @RunWith(AndroidJUnit4::class)
@@ -376,7 +374,7 @@ class BackendTest {
         )
 
         val onSuccessHandler = mockk<() -> Unit>(relaxed = true)
-        backend.alias(
+        backend.createAlias(
             appUserID,
             "newId",
             onSuccessHandler,

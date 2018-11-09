@@ -1133,7 +1133,7 @@ class PurchasesTest {
         val onErrorSlot = slot<(Int, String) -> Unit>()
 
         every {
-            mockBackend.alias(
+            mockBackend.createAlias(
                 eq(appUserId),
                 eq("new_id"),
                 capture(onSuccessSlot),
@@ -1143,7 +1143,7 @@ class PurchasesTest {
             onSuccessSlot.captured()
         }
 
-        purchases!!.alias(
+        purchases!!.createAlias(
             "new_id",
             null
         )
@@ -1160,7 +1160,7 @@ class PurchasesTest {
         val onErrorSlot = slot<(Int, String) -> Unit>()
 
         every {
-            mockBackend.alias(
+            mockBackend.createAlias(
                 eq(appUserId),
                 eq("new_id"),
                 capture(onSuccessSlot),
@@ -1171,7 +1171,7 @@ class PurchasesTest {
         }
 
         val mockAliasHandler = mockk<Purchases.AliasHandler>(relaxed = true)
-        purchases!!.alias(
+        purchases!!.createAlias(
             "new_id",
             mockAliasHandler
         )
@@ -1188,7 +1188,7 @@ class PurchasesTest {
         val onErrorSlot = slot<(Int, String) -> Unit>()
 
         every {
-            mockBackend.alias(
+            mockBackend.createAlias(
                 eq(appUserId),
                 eq("new_id"),
                 capture(onSuccessSlot),
@@ -1199,7 +1199,7 @@ class PurchasesTest {
         }
 
         val mockAliasHandler = mockk<Purchases.AliasHandler>(relaxed = true)
-        purchases!!.alias(
+        purchases!!.createAlias(
             "new_id",
             mockAliasHandler
         )

@@ -178,7 +178,7 @@ internal class Backend(
         })
     }
 
-    fun alias(
+    fun createAlias(
         appUserID: String,
         newAppUserID: String,
         onSuccessHandler: () -> Unit,
