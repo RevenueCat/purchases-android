@@ -32,7 +32,7 @@ class Purchases @JvmOverloads internal constructor(
     private val application: Application,
     _appUserID: String?,
     private val backend: Backend,
-    billingWrapperFactory: BillingWrapper.Factory,
+    private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
     private var usingAnonymousID: Boolean = false,
     private val postedTokens: HashSet<String> = HashSet(),
@@ -45,7 +45,6 @@ class Purchases @JvmOverloads internal constructor(
      * @return appUserID
      */
     val appUserID: String
-    private val billingWrapper: BillingWrapper
     private var shouldRefreshCaches = false
 
     /**
@@ -61,7 +60,6 @@ class Purchases @JvmOverloads internal constructor(
 
     init {
         this.appUserID = _appUserID ?: getAnonymousID().also { setIsUsingAnonymousID(true) }
-        this.billingWrapper = billingWrapperFactory.buildWrapper()
     }
 
     /**
@@ -502,7 +500,7 @@ class Purchases @JvmOverloads internal constructor(
                 Entitlement.Factory
             )
 
-            val billingWrapperFactory = BillingWrapper.Factory(
+            val billingWrapper = BillingWrapper(
                 BillingWrapper.ClientFactory(application.applicationContext),
                 Handler(application.mainLooper)
             )
@@ -514,7 +512,7 @@ class Purchases @JvmOverloads internal constructor(
                 application,
                 appUserID,
                 backend,
-                billingWrapperFactory,
+                billingWrapper,
                 cache
             )
         }

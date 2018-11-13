@@ -28,7 +28,6 @@ class PurchasesTest {
 
     private val mockApplication: Application = mockk(relaxed = true)
     private val mockBillingWrapper: BillingWrapper = mockk(relaxed = true)
-    private val mockBillingWrapperFactory: BillingWrapper.Factory = mockk(relaxed = true)
     private val mockBackend: Backend = mockk(relaxed = true)
     private val mockCache: DeviceCache = mockk(relaxed = true)
     private val listener: Purchases.PurchasesListener = mockk(relaxed = true)
@@ -81,10 +80,6 @@ class PurchasesTest {
         }
 
         every {
-            mockBillingWrapperFactory.buildWrapper()
-        } returns mockBillingWrapper
-
-        every {
             mockBillingWrapper.setListener(capture(purchasesUpdatedListener))
         } just Runs
 
@@ -97,7 +92,7 @@ class PurchasesTest {
             mockApplication,
             appUserId,
             mockBackend,
-            mockBillingWrapperFactory,
+            mockBillingWrapper,
             mockCache
         ).also {
             it.listener = listener
@@ -335,7 +330,7 @@ class PurchasesTest {
             mockApplication,
             null,
             mockBackend,
-            mockBillingWrapperFactory,
+            mockBillingWrapper,
             mockCache
         ).also {
             it.listener = listener
@@ -355,7 +350,7 @@ class PurchasesTest {
             mockApplication,
             null,
             mockBackend,
-            mockBillingWrapperFactory,
+            mockBillingWrapper,
             mockCache
         ).also {
             it.listener = listener
@@ -377,7 +372,7 @@ class PurchasesTest {
             mockApplication,
             null,
             mockBackend,
-            mockBillingWrapperFactory,
+            mockBillingWrapper,
             mockCache
         ).also {
             it.listener = listener
@@ -393,7 +388,7 @@ class PurchasesTest {
             mockApplication,
             null,
             mockBackend,
-            mockBillingWrapperFactory,
+            mockBillingWrapper,
             mockCache
         ).also {
             it.listener = listener
@@ -435,7 +430,7 @@ class PurchasesTest {
             mockApplication,
             "a_fixed_id",
             mockBackend,
-            mockBillingWrapperFactory,
+            mockBillingWrapper,
             mockCache
         ).also {
             it.listener = listener
@@ -477,7 +472,7 @@ class PurchasesTest {
             mockApplication,
             "a_fixed_id",
             mockBackend,
-            mockBillingWrapperFactory,
+            mockBillingWrapper,
             mockCache
         ).also {
             it.listener = listener

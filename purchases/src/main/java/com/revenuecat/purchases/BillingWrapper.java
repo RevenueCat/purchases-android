@@ -35,19 +35,6 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         }
     }
 
-    static class Factory {
-        private final ClientFactory clientFactory;
-        private final Handler mainHandler;
-
-        Factory(ClientFactory clientFactory, Handler mainHandler) {
-            this.clientFactory = clientFactory;
-            this.mainHandler = mainHandler;
-        }
-        public BillingWrapper buildWrapper() {
-            return new BillingWrapper(clientFactory, mainHandler);
-        }
-    }
-
     public interface SkuDetailsResponseListener {
         void onReceiveSkuDetails(List<SkuDetails> skuDetails);
     }
