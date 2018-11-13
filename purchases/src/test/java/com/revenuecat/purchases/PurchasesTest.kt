@@ -20,6 +20,7 @@ import io.mockk.*
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertSame
+import org.assertj.core.api.Assertions.assertThat
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -80,8 +81,12 @@ class PurchasesTest {
         }
 
         every {
-            mockBillingWrapperFactory.buildWrapper(capture(purchasesUpdatedListener))
+            mockBillingWrapperFactory.buildWrapper()
         } returns mockBillingWrapper
+
+        every {
+            mockBillingWrapper.setListener(capture(purchasesUpdatedListener))
+        } just Runs
 
         val mockInfo = mockk<PurchaserInfo>()
         every {
@@ -91,11 +96,12 @@ class PurchasesTest {
         purchases = Purchases(
             mockApplication,
             appUserId,
-            listener,
             mockBackend,
             mockBillingWrapperFactory,
             mockCache
-        )
+        ).also {
+            it.listener = listener
+        }
     }
 
     @Test
@@ -301,13 +307,13 @@ class PurchasesTest {
     @Test
     fun onResumeGetsSubscriberInfo() {
         setup()
-
+        capturedActivityLifecycleCallbacks.captured.onActivityPaused(mockk())
         capturedActivityLifecycleCallbacks.captured.onActivityResumed(mockk())
 
         verify {
             mockBackend.getSubscriberInfo(eq(appUserId), any())
         }
-        verify(exactly = 3) {
+        verify(exactly = 2) {
             listener.onReceiveUpdatedPurchaserInfo(any())
         }
     }
@@ -328,11 +334,12 @@ class PurchasesTest {
         val purchases = Purchases(
             mockApplication,
             null,
-            listener,
             mockBackend,
             mockBillingWrapperFactory,
             mockCache
-        )
+        ).also {
+            it.listener = listener
+        }
         assertNotNull(purchases)
 
         val appUserID = purchases.appUserID
@@ -347,11 +354,12 @@ class PurchasesTest {
         Purchases(
             mockApplication,
             null,
-            listener,
             mockBackend,
             mockBillingWrapperFactory,
             mockCache
-        )
+        ).also {
+            it.listener = listener
+        }
         verify {
             mockCache.cacheAppUserID(any())
         }
@@ -368,11 +376,12 @@ class PurchasesTest {
         val p = Purchases(
             mockApplication,
             null,
-            listener,
             mockBackend,
             mockBillingWrapperFactory,
             mockCache
-        )
+        ).also {
+            it.listener = listener
+        }
         assertEquals(appUserID, p.appUserID)
     }
 
@@ -383,11 +392,12 @@ class PurchasesTest {
         val purchases = Purchases(
             mockApplication,
             null,
-            listener,
             mockBackend,
             mockBillingWrapperFactory,
             mockCache
-        )
+        ).also {
+            it.listener = listener
+        }
 
         val p: Purchase = mockk()
         val sku = "onemonth_freetrial"
@@ -424,11 +434,12 @@ class PurchasesTest {
         val purchases = Purchases(
             mockApplication,
             "a_fixed_id",
-            listener,
             mockBackend,
             mockBillingWrapperFactory,
             mockCache
-        )
+        ).also {
+            it.listener = listener
+        }
 
         val p: Purchase = mockk()
         val sku = "onemonth_freetrial"
@@ -465,11 +476,12 @@ class PurchasesTest {
         val purchases = Purchases(
             mockApplication,
             "a_fixed_id",
-            listener,
             mockBackend,
             mockBillingWrapperFactory,
             mockCache
-        )
+        ).also {
+            it.listener = listener
+        }
         purchases.setIsUsingAnonymousID(true)
 
         val p: Purchase = mockk()
@@ -569,7 +581,7 @@ class PurchasesTest {
                 any()
             )
         }
-        verify(exactly = 2) {
+        verify {
             listener.onReceiveUpdatedPurchaserInfo(any())
         }
         verify {
@@ -596,7 +608,7 @@ class PurchasesTest {
 
         purchases!!.restorePurchasesForPlayStoreAccount()
 
-        verify(exactly = 2) {
+        verify {
             listener.onReceiveUpdatedPurchaserInfo(any())
         }
         verify {
@@ -736,11 +748,9 @@ class PurchasesTest {
     @Test
     fun cachedUserInfoEmitOnResumeActive() {
         setup()
-        verify(exactly = 2) {
-            listener.onReceiveUpdatedPurchaserInfo(any())
-        }
+        purchases!!.onActivityPaused(mockk())
         purchases!!.onActivityResumed(mockk())
-        verify(exactly = 3) {
+        verify(exactly = 2) {
             listener.onReceiveUpdatedPurchaserInfo(any())
         }
     }
@@ -1102,7 +1112,12 @@ class PurchasesTest {
         purchases!!.close()
 
         verify { mockBackend.close() }
-        verify { mockBillingWrapper.close() }
+        verifyOrder {
+            mockBillingWrapper.setListener(purchases)
+            mockBillingWrapper.setListener(null)
+        }
+        verify { mockApplication.unregisterActivityLifecycleCallbacks(eq(capturedActivityLifecycleCallbacks.captured)) }
+        assertThat(purchases!!.listener).isNull()
     }
 
     @Test
@@ -1120,9 +1135,54 @@ class PurchasesTest {
 
         purchases!!.restorePurchasesForPlayStoreAccount()
 
-        verify(exactly = 2) {
+        verify {
             listener.onReceiveUpdatedPurchaserInfo(any())
         }
         verify { listener.onRestoreTransactions(any()) }
+    }
+
+    @Test
+    fun `when the activity has not been paused, getcaches is not triggered onResume`() {
+        setup()
+        purchases!!.onActivityResumed(mockk())
+        verify {
+            listener.onReceiveUpdatedPurchaserInfo(any())
+        }
+    }
+
+    @Test
+    fun `when setting listener, activity callbacks are set`() {
+        setup()
+        verify {
+            mockApplication.registerActivityLifecycleCallbacks(purchases)
+        }
+    }
+
+    @Test
+    fun `when setting listener, caches are retrieved`() {
+        setup()
+        verify {
+            listener.onReceiveUpdatedPurchaserInfo(any())
+        }
+    }
+
+    @Test
+    fun `when setting listener, purchases are restores`() {
+        setup()
+        verify {
+            mockBillingWrapper.queryPurchaseHistoryAsync(any(), any())
+        }
+    }
+
+    @Test
+    fun `when removing listener, activity callbacks`() {
+        setup()
+        purchases!!.removeListener()
+        verify {
+            mockBillingWrapper.setListener(null)
+        }
+        verify {
+            mockApplication.unregisterActivityLifecycleCallbacks(purchases)
+        }
     }
 }

@@ -64,22 +64,22 @@ public class PurchasesBuilderTest {
     @Test(expected = IllegalArgumentException.class)
     public void mustHaveContext() {
         String apiKey = "api_key";
-        new Purchases.Builder(null, apiKey, listener);
+        new Purchases.Builder(null, apiKey);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void mustHaveAPIKey() {
-        new Purchases.Builder(application, null, listener);
+        new Purchases.Builder(application, null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void apiKeyMustBeNonEmpty() {
-        new Purchases.Builder(application, "", listener);
+        new Purchases.Builder(application, "");
     }
 
     private Purchases.Builder createBuilder() {
         String apiKey = "api_key";
-        return new Purchases.Builder(application, apiKey, listener);
+        return new Purchases.Builder(application, apiKey);
     }
 
     private void runWithLooper(Runnable runnable) {
@@ -110,7 +110,7 @@ public class PurchasesBuilderTest {
             public void run() {
                 String apiKey = "api_key";
 
-                Purchases.Builder builder = new Purchases.Builder(application, apiKey, listener);
+                Purchases.Builder builder = new Purchases.Builder(application, apiKey);
 
                 Purchases purchases = builder.build();
 
