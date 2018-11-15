@@ -456,6 +456,9 @@ class Purchases @JvmOverloads internal constructor(
         listener?.onFailedPurchase(ErrorDomains.PLAY_BILLING, responseCode, message)
     }
 
+    /**
+     * @suppress
+     */
     override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
 
     }
