@@ -123,6 +123,8 @@ class DeviceCacheTest {
         }
     }
 
+
+
     private fun mockString(key: String, value: String?) {
         every {
             mockPrefs.getString(eq(key), isNull())

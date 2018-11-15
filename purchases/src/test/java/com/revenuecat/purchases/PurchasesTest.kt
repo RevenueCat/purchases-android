@@ -20,6 +20,7 @@ import io.mockk.*
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertSame
+import org.assertj.core.api.Assertions.assertThat
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -1124,5 +1125,123 @@ class PurchasesTest {
             listener.onReceiveUpdatedPurchaserInfo(any())
         }
         verify { listener.onRestoreTransactions(any()) }
+    }
+
+    @Test
+    fun `given a successful aliasing, success handler is called`() {
+        setup()
+        val onSuccessSlot = slot<() -> Unit>()
+        val onErrorSlot = slot<(Int, String) -> Unit>()
+
+        every {
+            mockBackend.createAlias(
+                eq(appUserId),
+                eq("new_id"),
+                capture(onSuccessSlot),
+                capture(onErrorSlot)
+            )
+        } answers {
+            onSuccessSlot.captured()
+        }
+
+        val mockAliasHandler = mockk<Purchases.AliasHandler>(relaxed = true)
+        purchases!!.createAlias(
+            "new_id",
+            mockAliasHandler
+        )
+
+        verify {
+            mockAliasHandler.onSuccess()
+        }
+    }
+
+    @Test
+    fun `given an unsuccessful aliasing, onError handler is called`() {
+        setup()
+        val onSuccessSlot = slot<() -> Unit>()
+        val onErrorSlot = slot<(Int, String) -> Unit>()
+
+        every {
+            mockBackend.createAlias(
+                eq(appUserId),
+                eq("new_id"),
+                capture(onSuccessSlot),
+                capture(onErrorSlot)
+            )
+        } answers {
+            onErrorSlot.captured.invoke(0, "error")
+        }
+
+        val mockAliasHandler = mockk<Purchases.AliasHandler>(relaxed = true)
+        purchases!!.createAlias(
+            "new_id",
+            mockAliasHandler
+        )
+
+        verify {
+            mockAliasHandler.onError(
+                eq(Purchases.ErrorDomains.REVENUECAT_BACKEND),
+                eq(0),
+                eq("error")
+            )
+        }
+    }
+
+    @Test
+    fun `given a successful aliasing, appUserID is identified`() {
+        setup()
+        val onSuccessSlot = slot<() -> Unit>()
+        val onErrorSlot = slot<(Int, String) -> Unit>()
+
+        every {
+            mockBackend.createAlias(
+                eq(appUserId),
+                eq("new_id"),
+                capture(onSuccessSlot),
+                capture(onErrorSlot)
+            )
+        } answers {
+            onSuccessSlot.captured()
+        }
+
+        purchases!!.createAlias(
+            "new_id",
+            null
+        )
+        verifyIdentifyIsSuccessful("new_id")
+    }
+
+    @Test
+    fun `when identifying, appUserID is identified`() {
+        setup()
+        purchases!!.identify("new_id")
+        verifyIdentifyIsSuccessful("new_id")
+    }
+
+    @Test
+    fun `when resetting, random app user id is generated and saved`() {
+        setup()
+        purchases!!.reset()
+        val randomID = slot<String>()
+        verify {
+            mockCache.cacheAppUserID(capture(randomID))
+        }
+        assertThat(purchases!!.usingAnonymousID).isEqualTo(true)
+        assertThat(purchases!!.appUserID).isEqualTo(randomID.captured)
+        assertThat(randomID.captured).isNotNull()
+    }
+
+    @Test
+    fun `when setting up, and passing a appUserID, user is identified`() {
+        setup()
+        verifyIdentifyIsSuccessful(appUserId)
+    }
+
+    private fun verifyIdentifyIsSuccessful(appUserID: String) {
+        verify {
+            mockCache.cacheAppUserID(null)
+        }
+        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
+        assertThat(purchases!!.appUserID).isEqualTo(appUserID)
     }
 }

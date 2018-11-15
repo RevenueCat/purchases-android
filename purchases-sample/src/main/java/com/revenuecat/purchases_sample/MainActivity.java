@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.billingclient.api.SkuDetails;
 import com.revenuecat.purchases.Entitlement;
@@ -88,9 +89,18 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         swapButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                purchases.close();
                 useAlternateID = !useAlternateID;
-                buildPurchases(currentAppUserID());
+                purchases.createAlias(currentAppUserID(), new Purchases.AliasHandler() {
+                    @Override
+                    public void onSuccess() {
+                        Toast.makeText(MainActivity.this, "Alias succeeded", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onError(Purchases.ErrorDomains domain, int code, String message) {
+                        Toast.makeText(MainActivity.this, "Alias error", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
 

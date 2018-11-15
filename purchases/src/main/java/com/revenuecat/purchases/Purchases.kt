@@ -7,7 +7,6 @@ import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.preference.PreferenceManager
-import android.support.annotation.IntDef
 import android.util.Log
 
 import com.android.billingclient.api.BillingClient
@@ -36,7 +35,7 @@ class Purchases @JvmOverloads internal constructor(
     private val backend: Backend,
     billingWrapperFactory: BillingWrapper.Factory,
     private val deviceCache: DeviceCache,
-    private var usingAnonymousID: Boolean? = false,
+    internal var usingAnonymousID: Boolean? = false,
     private val postedTokens: HashSet<String> = HashSet(),
     private var cachesLastChecked: Date? = null,
     private var cachedEntitlements: Map<String, Entitlement>? = null
@@ -46,11 +45,12 @@ class Purchases @JvmOverloads internal constructor(
      * returns the passed in or generated app user ID
      * @return appUserID
      */
-    val appUserID: String
+    var appUserID: String
     private val billingWrapper: BillingWrapper
 
     init {
-        this.appUserID = _appUserID ?: getAnonymousID().also { setIsUsingAnonymousID(true) }
+        this.appUserID = _appUserID?.also { identify(it) } ?:
+                getAnonymousID().also { setIsUsingAnonymousID(true) }
         this.billingWrapper = billingWrapperFactory.buildWrapper(this)
         this.application.registerActivityLifecycleCallbacks(this)
 
@@ -89,7 +89,6 @@ class Purchases @JvmOverloads internal constructor(
             } catch (e: JSONException) {
                 Log.e("Purchases", "Failed to add key $key to attribution map")
             }
-
         }
         backend.postAttributionData(appUserID, network, jsonObject)
     }
@@ -216,6 +215,43 @@ class Purchases @JvmOverloads internal constructor(
     }
 
     /**
+     * This function will alias two appUserIDs together.
+     * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
+     * @param [handler] An optional handler to listen for successes or errors.
+     */
+    fun createAlias(newAppUserID: String, handler: AliasHandler?) {
+        backend.createAlias(
+            appUserID,
+            newAppUserID,
+            {
+                identify(newAppUserID)
+                handler?.onSuccess()
+            },
+            { code, message ->
+                handler?.onError(ErrorDomains.REVENUECAT_BACKEND, code, message)
+            }
+        )
+    }
+
+    /**
+     * This function will change the current appUserID.
+     * Typically this would be used after a log out to identify a new user without calling configure
+     * @param appUserID The new appUserID that should be linked to the currently user
+     */
+    fun identify(appUserID: String) {
+        clearCachedRandomId()
+        this.appUserID = appUserID
+    }
+
+    /**
+     * Resets the Purchases client clearing the save appUserID. This will generate a random user id and save it in the cache.
+     */
+    fun reset() {
+        this.appUserID = createRandomIDAndCacheIt()
+        setIsUsingAnonymousID(true)
+    }
+
+    /**
      * Call close when you are done with this instance of Purchases
      */
     fun close() {
@@ -224,6 +260,7 @@ class Purchases @JvmOverloads internal constructor(
         this.application.unregisterActivityLifecycleCallbacks(this)
     }
 
+    // region Private Methods
     private fun emitCachedAsUpdatedPurchaserInfo() {
         val info = deviceCache.getCachedPurchaserInfo(appUserID)
         if (info != null) {
@@ -265,7 +302,6 @@ class Purchases @JvmOverloads internal constructor(
         }
     }
 
-    /// Private Methods
     private fun getCaches() {
         if (cachesLastChecked != null && Date().time - cachesLastChecked!!.time < 60000) {
             emitCachedAsUpdatedPurchaserInfo()
@@ -289,7 +325,7 @@ class Purchases @JvmOverloads internal constructor(
                 onReceived(info)
             }
 
-            override fun onError(code: Int, message: String) {
+            override fun onError(code: Int, message: String?) {
                 Log.e("Purchases", "Error fetching subscriber data: $message")
                 cachesLastChecked = null
             }
@@ -326,7 +362,7 @@ class Purchases @JvmOverloads internal constructor(
                         }
                     }
 
-                    override fun onError(code: Int, message: String) {
+                    override fun onError(code: Int, message: String?) {
                         if (code < 500) {
                             billingWrapper.consumePurchase(token)
                             postedTokens.remove(token)
@@ -360,6 +396,10 @@ class Purchases @JvmOverloads internal constructor(
         }
     }
 
+    private fun clearCachedRandomId() {
+        deviceCache.cacheAppUserID(null)
+    }
+
     private fun getSkuDetails(entitlements: Map<String, Entitlement>, onCompleted: (HashMap<String, SkuDetails>) -> Unit) {
         val skus =
             entitlements.values.flatMap { it.offerings.values }.map { it.activeProductIdentifier }
@@ -389,7 +429,8 @@ class Purchases @JvmOverloads internal constructor(
             }
         }
     }
-
+    // endregion
+    // region Overriden methods
     override fun onPurchasesUpdated(purchases: List<Purchase>) {
         postPurchases(purchases, usingAnonymousID, true)
     }
@@ -398,7 +439,7 @@ class Purchases @JvmOverloads internal constructor(
         listener.onFailedPurchase(ErrorDomains.PLAY_BILLING, responseCode, message)
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle) {
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
 
     }
 
@@ -418,14 +459,15 @@ class Purchases @JvmOverloads internal constructor(
 
     }
 
-    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {
+    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle?) {
 
     }
 
     override fun onActivityDestroyed(activity: Activity) {
 
     }
-
+    // endregion
+    // region Builder
     /**
      * Used to construct a Purchases object
      */
@@ -500,7 +542,8 @@ class Purchases @JvmOverloads internal constructor(
         }
 
     }
-
+    // endregion
+    // region Static
     companion object {
         /**
          * Current version of the Purchases SDK
@@ -516,18 +559,19 @@ class Purchases @JvmOverloads internal constructor(
     enum class AttributionNetwork(val serverValue: Int)  {
         ADJUST(1), APPSFLYER(2), BRANCH(3)
     }
-
+    // endregion
+    // region Interfaces
     /**
      * Used to handle async updates from Purchases
      */
     interface PurchasesListener {
         fun onCompletedPurchase(sku: String, purchaserInfo: PurchaserInfo)
-        fun onFailedPurchase(domain: ErrorDomains, code: Int, reason: String)
+        fun onFailedPurchase(domain: ErrorDomains, code: Int, reason: String?)
 
         fun onReceiveUpdatedPurchaserInfo(purchaserInfo: PurchaserInfo)
 
         fun onRestoreTransactions(purchaserInfo: PurchaserInfo)
-        fun onRestoreTransactionsFailed(domain: ErrorDomains, code: Int, reason: String)
+        fun onRestoreTransactionsFailed(domain: ErrorDomains, code: Int, reason: String?)
     }
 
     interface GetSkusResponseHandler {
@@ -538,4 +582,10 @@ class Purchases @JvmOverloads internal constructor(
         fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>)
         fun onReceiveEntitlementsError(domain: ErrorDomains, code: Int, message: String)
     }
+
+    interface AliasHandler {
+        fun onSuccess()
+        fun onError(domain: ErrorDomains, code: Int, message: String)
+    }
+
 }
