@@ -35,11 +35,17 @@ internal class DeviceCache(
 
     fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
 
-    fun cacheAppUserID(appUserID: String) {
-        preferences.edit()
-            .putString(
-                appUserIDCacheKey,
-                appUserID
-            ).apply()
+    fun cacheAppUserID(appUserID: String?) {
+        if (appUserID == null) {
+            preferences.edit()
+                .remove(appUserIDCacheKey)
+                .apply()
+        } else {
+            preferences.edit()
+                .putString(
+                    appUserIDCacheKey,
+                    appUserID
+                ).apply()
+        }
     }
 }

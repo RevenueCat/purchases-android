@@ -3,6 +3,8 @@ package com.revenuecat.purchases;
 import android.app.Application;
 import android.support.test.runner.AndroidJUnit4;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +31,7 @@ public class PurchasesBuilderTest {
         }
 
         @Override
-        public void onFailedPurchase(Purchases.ErrorDomains domain, int code, String reason) {
+        public void onFailedPurchase(@NotNull Purchases.ErrorDomains domain, int code, @Nullable String reason) {
 
         }
 
@@ -44,7 +46,7 @@ public class PurchasesBuilderTest {
         }
 
         @Override
-        public void onRestoreTransactionsFailed(Purchases.ErrorDomains domain, int code, String reason) {
+        public void onRestoreTransactionsFailed(@NotNull Purchases.ErrorDomains domain, int code, @Nullable String reason) {
 
         }
     };
