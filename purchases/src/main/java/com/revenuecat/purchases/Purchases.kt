@@ -234,14 +234,13 @@ class Purchases @JvmOverloads internal constructor(
     }
 
     /**
-     * This function will identify the current user with an appUserID.
+     * This function will change the current appUserID.
      * Typically this would be used after a log out to identify a new user without calling configure
-     * @param appUserID The appUserID that should be linked to the currently user
+     * @param appUserID The new appUserID that should be linked to the currently user
      */
     fun identify(appUserID: String) {
         clearCachedRandomId()
         this.appUserID = appUserID
-        setIsUsingAnonymousID(false)
     }
 
     /**
