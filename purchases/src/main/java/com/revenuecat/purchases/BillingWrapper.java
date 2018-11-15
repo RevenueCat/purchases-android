@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.annotation.VisibleForTesting;
 import android.util.Log;
 
 import com.android.billingclient.api.BillingClient;
@@ -34,20 +35,6 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         }
     }
 
-    static class Factory {
-        private final ClientFactory clientFactory;
-        private final Handler mainHandler;
-
-        Factory(ClientFactory clientFactory, Handler mainHandler) {
-
-            this.clientFactory = clientFactory;
-            this.mainHandler = mainHandler;
-        }
-        public BillingWrapper buildWrapper(PurchasesUpdatedListener listener) {
-            return new BillingWrapper(clientFactory, listener, mainHandler);
-        }
-    }
-
     public interface SkuDetailsResponseListener {
         void onReceiveSkuDetails(List<SkuDetails> skuDetails);
     }
@@ -63,22 +50,24 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     }
 
     final private BillingClient billingClient;
-    final private PurchasesUpdatedListener purchasesUpdatedListener;
+    @VisibleForTesting PurchasesUpdatedListener purchasesUpdatedListener;
     final private Handler mainHandler;
 
     private boolean clientConnected;
     private Queue<Runnable> serviceRequests = new ConcurrentLinkedQueue<>();
 
-    BillingWrapper(ClientFactory clientFactory, PurchasesUpdatedListener purchasesUpdatedListener, Handler mainHandler) {
+    BillingWrapper(ClientFactory clientFactory, Handler mainHandler) {
         billingClient = clientFactory.buildClient(this);
-        this.purchasesUpdatedListener = purchasesUpdatedListener;
         this.mainHandler = mainHandler;
-
-        billingClient.startConnection(this);
     }
 
-    void close() {
-        billingClient.endConnection();
+    void setListener(@Nullable PurchasesUpdatedListener purchasesUpdatedListener) {
+        this.purchasesUpdatedListener = purchasesUpdatedListener;
+        if (purchasesUpdatedListener != null) {
+            billingClient.startConnection(this);
+        } else {
+            billingClient.endConnection();
+        }
     }
 
     private void executePendingRequests() {
@@ -89,11 +78,16 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     }
 
     private void executeRequest(final Runnable request) {
-        serviceRequests.add(request);
-        if (!clientConnected) {
-            billingClient.startConnection(this);
+        if (purchasesUpdatedListener != null) {
+            serviceRequests.add(request);
+            if (!clientConnected) {
+                billingClient.startConnection(this);
+            } else {
+                executePendingRequests();
+            }
         } else {
-            executePendingRequests();
+            Log.e("Purchases", "There is no listener set. Skipping. " +
+                    "Make sure you set a listener before calling anything else.");
         }
     }
 

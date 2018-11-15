@@ -2,6 +2,7 @@ package com.revenuecat.purchases;
 
 import android.app.Activity;
 import android.os.Handler;
+import android.util.Log;
 
 import com.android.billingclient.api.BillingClient;
 import com.android.billingclient.api.BillingClientStateListener;
@@ -28,13 +29,16 @@ import java.util.List;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @RunWith(RobolectricTestRunner.class)
@@ -54,8 +58,7 @@ public class BillingWrapperTest {
 
     private List<SkuDetails> mockDetailsList = new ArrayList<>();
 
-    @Before
-    public void setup() {
+    private void setup() {
         mockClientFactory = mock(BillingWrapper.ClientFactory.class);
         mockClient = mock(BillingClient.class);
         mockPurchasesListener = mock(BillingWrapper.PurchasesUpdatedListener.class);
@@ -65,7 +68,7 @@ public class BillingWrapperTest {
 
         doAnswer(new Answer() {
             @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
+            public Object answer(InvocationOnMock invocation) {
                 Runnable r = invocation.getArgument(0);
                 r.run();
                 return null;
@@ -74,7 +77,7 @@ public class BillingWrapperTest {
 
         when(mockClientFactory.buildClient(any(PurchasesUpdatedListener.class))).thenAnswer(new Answer<BillingClient>() {
             @Override
-            public BillingClient answer(InvocationOnMock invocation) throws Throwable {
+            public BillingClient answer(InvocationOnMock invocation) {
                 purchasesUpdatedListener = invocation.getArgument(0);
                 return mockClient;
             }
@@ -82,7 +85,7 @@ public class BillingWrapperTest {
 
         doAnswer(new Answer<Object>() {
             @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
+            public Object answer(InvocationOnMock invocation) {
                 billingClientStateListener = invocation.getArgument(0);
                 return null;
             }
@@ -90,7 +93,7 @@ public class BillingWrapperTest {
 
         doAnswer(new Answer() {
             @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
+            public Object answer(InvocationOnMock invocation) {
                 billingClientPurchaseHistoryListener = invocation.getArgument(1);
                 return null;
             }
@@ -99,28 +102,32 @@ public class BillingWrapperTest {
         SkuDetails mockDetails = mock(SkuDetails.class);
         mockDetailsList.add(mockDetails);
 
-        wrapper = new BillingWrapper(mockClientFactory, mockPurchasesListener, handler);
+        wrapper = new BillingWrapper(mockClientFactory, handler);
+        wrapper.setListener(mockPurchasesListener);
     }
 
     @Test
     public void canBeCreated() {
+        setup();
         assertNotNull(wrapper);
     }
 
     @Test
     public void callsBuildOnTheFactory() {
+        setup();
         verify(mockClientFactory).buildClient(purchasesUpdatedListener);
     }
 
     @Test
     public void connectsToPlayBilling() {
+        setup();
         verify(mockClient).startConnection(billingClientStateListener);
     }
 
     private void mockStandardSkuDetailsResponse() {
         doAnswer(new Answer() {
             @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
+            public Object answer(InvocationOnMock invocation) {
                 SkuDetailsResponseListener listener = invocation.getArgument(1);
 
                 listener.onSkuDetailsResponse(BillingClient.BillingResponse.OK, mockDetailsList);
@@ -130,12 +137,14 @@ public class BillingWrapperTest {
     }
 
     private List<SkuDetails> skuDetailsList;
+
     @Test
     public void defersCallingSkuQueryUntilConnected() {
+        setup();
 
         mockStandardSkuDetailsResponse();
 
-        List<String> productIDs = new ArrayList<String>();
+        List<String> productIDs = new ArrayList<>();
         productIDs.add("product_a");
 
         wrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, productIDs, new BillingWrapper.SkuDetailsResponseListener() {
@@ -155,9 +164,10 @@ public class BillingWrapperTest {
     private int skuDetailsResponseCalled = 0;
     @Test
     public void canDeferMultipleCalls() {
+        setup();
         mockStandardSkuDetailsResponse();
 
-        List<String> productIDs = new ArrayList<String>();
+        List<String> productIDs = new ArrayList<>();
         productIDs.add("product_a");
         BillingWrapper.SkuDetailsResponseListener listener = new BillingWrapper.SkuDetailsResponseListener() {
             @Override
@@ -178,9 +188,10 @@ public class BillingWrapperTest {
 
     @Test
     public void makingARequestTriggersAConnectionAttempt() {
+        setup();
         mockStandardSkuDetailsResponse();
 
-        List<String> productIDs = new ArrayList<String>();
+        List<String> productIDs = new ArrayList<>();
         productIDs.add("product_a");
 
         wrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, productIDs, new BillingWrapper.SkuDetailsResponseListener() {
@@ -195,11 +206,11 @@ public class BillingWrapperTest {
 
     @Test
     public void canMakeAPurchase() {
-
+        setup();
 
         String sku = "product_a";
 
-        ArrayList<String> oldSkus = new ArrayList<String>();
+        ArrayList<String> oldSkus = new ArrayList<>();
         oldSkus.add("product_b");
 
         Activity activity = mock(Activity.class);
@@ -212,18 +223,19 @@ public class BillingWrapperTest {
 
     @Test
     public void properlySetsBillingFlowParams() {
+        setup();
         final String appUserID = "jerry";
         final String sku = "product_a";
         final @BillingClient.SkuType String skuType = BillingClient.SkuType.SUBS;
 
-        final ArrayList<String> oldSkus = new ArrayList<String>();
+        final ArrayList<String> oldSkus = new ArrayList<>();
         oldSkus.add("product_b");
 
         Activity activity = mock(Activity.class);
 
         doAnswer(new Answer() {
             @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
+            public Object answer(InvocationOnMock invocation) {
                 BillingFlowParams params = invocation.getArgument(1);
                 assertEquals(sku, params.getSku());
                 assertEquals(skuType, params.getSkuType());
@@ -239,11 +251,12 @@ public class BillingWrapperTest {
 
     @Test
     public void defersBillingFlowIfNotConnected() {
+        setup();
         final String appUserID = "jerry";
         final String sku = "product_a";
         final @BillingClient.SkuType String skuType = BillingClient.SkuType.SUBS;
 
-        final ArrayList<String> oldSkus = new ArrayList<String>();
+        final ArrayList<String> oldSkus = new ArrayList<>();
         oldSkus.add("product_b");
 
         Activity activity = mock(Activity.class);
@@ -255,11 +268,12 @@ public class BillingWrapperTest {
 
     @Test
     public void callsLaunchFlowFromMainThread() {
+        setup();
         final String appUserID = "jerry";
         final String sku = "product_a";
         final @BillingClient.SkuType String skuType = BillingClient.SkuType.SUBS;
 
-        final ArrayList<String> oldSkus = new ArrayList<String>();
+        final ArrayList<String> oldSkus = new ArrayList<>();
         oldSkus.add("product_b");
 
         Activity activity = mock(Activity.class);
@@ -275,6 +289,7 @@ public class BillingWrapperTest {
 
     @Test
     public void purchasesUpdatedCallsAreForwarded() {
+        setup();
         List<Purchase> purchases = new ArrayList<>();
 
         purchasesUpdatedListener.onPurchasesUpdated(BillingClient.BillingResponse.OK, purchases);
@@ -284,6 +299,7 @@ public class BillingWrapperTest {
 
     @Test
     public void purchasesUpdatedCallsAreForwardedWithEmptyIfOkNull() {
+        setup();
 
         purchasesUpdatedListener.onPurchasesUpdated(BillingClient.BillingResponse.OK, null);
 
@@ -292,6 +308,7 @@ public class BillingWrapperTest {
 
     @Test
     public void purchaseUpdateFailedCalledIfNotOK() {
+        setup();
         purchasesUpdatedListener.onPurchasesUpdated(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED, null);
 
         verify(mockPurchasesListener, times(0)).onPurchasesUpdated((List<Purchase>) any());
@@ -300,6 +317,7 @@ public class BillingWrapperTest {
 
     @Test
     public void queryHistoryCallsListenerIfOk() {
+        setup();
         billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
         wrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, mockPurchaseHistoryListener);
         billingClientPurchaseHistoryListener.onPurchaseHistoryResponse(BillingClient.BillingResponse.OK,
@@ -310,6 +328,7 @@ public class BillingWrapperTest {
 
     @Test
     public void queryHistoryNotCalledIfNotOK() {
+        setup();
         billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
         wrapper.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, mockPurchaseHistoryListener);
         billingClientPurchaseHistoryListener.onPurchaseHistoryResponse(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED,
@@ -321,12 +340,8 @@ public class BillingWrapperTest {
 
     @Test
     public void canConsumeAToken() {
+        setup();
         String token = "mockToken";
-
-        ConsumeResponseListener listener = new ConsumeResponseListener() {
-            @Override
-            public void onConsumeResponse(int responseCode, String purchaseToken) {}
-        };
 
         billingClientStateListener.onBillingSetupFinished(BillingClient.BillingResponse.OK);
         wrapper.consumePurchase(token);
@@ -335,8 +350,36 @@ public class BillingWrapperTest {
     }
 
     @Test
-    public void closingDisconnects() {
-        wrapper.close();
+    public void removingListenerDisconnects() {
+        setup();
+        wrapper.setListener(null);
         verify(mockClient).endConnection();
+        assertThat(wrapper.purchasesUpdatedListener).isNull();
+    }
+
+    @Test
+    public void whenSettingListenerStartConnection() {
+        setup();
+        verify(mockClient).startConnection(eq(wrapper));
+        assertThat(wrapper.purchasesUpdatedListener).isNotNull();
+    }
+
+    @Test
+    public void whenExecutingRequestAndThereIsNoListenerDoNotTryToStartConnection() {
+        BillingWrapper.ClientFactory clientFactory = mock(BillingWrapper.ClientFactory.class);
+        BillingClient billingClient = mock(BillingClient.class);
+
+        when(clientFactory.buildClient(any(PurchasesUpdatedListener.class)))
+                .thenReturn(billingClient);
+
+        BillingWrapper billingWrapper = new BillingWrapper(
+                clientFactory,
+                mock(Handler.class)
+        );
+
+        billingWrapper.setListener(null);
+        billingWrapper.consumePurchase("token");
+
+        verify(billingClient, never()).startConnection(eq(billingWrapper));
     }
 }

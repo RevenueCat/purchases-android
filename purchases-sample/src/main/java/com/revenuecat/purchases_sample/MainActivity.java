@@ -42,9 +42,10 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         return useAlternateID ? "cesar5" : "random1";
     }
 
-    private void buildPurchases(String appUserID) {
-        this.purchases = new Purchases.Builder(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN", this)
-                .appUserID(appUserID).build();
+    private void buildPurchases() {
+        purchases = Purchases.defaultInstance;
+        purchases.setListener(this);
+        Purchases.getFrameworkVersion();
     }
 
     @Override
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        buildPurchases(currentAppUserID());
+        buildPurchases();
 
         mButton = findViewById(R.id.button);
         mButton.setOnClickListener(new View.OnClickListener() {
@@ -90,17 +91,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
             @Override
             public void onClick(View view) {
                 useAlternateID = !useAlternateID;
-                purchases.createAlias(currentAppUserID(), new Purchases.AliasHandler() {
-                    @Override
-                    public void onSuccess() {
-                        Toast.makeText(MainActivity.this, "Alias succeeded", Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onError(Purchases.ErrorDomains domain, int code, String message) {
-                        Toast.makeText(MainActivity.this, "Alias error", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                buildPurchases();
             }
         });
 
@@ -128,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
         list.add("consumable");
         this.purchases.getNonSubscriptionSkus(list, new Purchases.GetSkusResponseHandler() {
             @Override
-            public void onReceiveSkus(List<SkuDetails> skus) {
+            public void onReceiveSkus(@NonNull List<SkuDetails> skus) {
                 SkuDetails consumable = null;
                 if (!skus.isEmpty()) {
                     consumable = skus.get(0);
@@ -149,6 +140,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     @Override
     public void onFailedPurchase(Purchases.ErrorDomains domain, int code, String reason) {
         Log.i("Purchases", reason);
+        purchases.setIsUsingAnonymousID(true);
     }
 
     @Override
@@ -179,6 +171,12 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     @Override
     public void onRestoreTransactionsFailed(Purchases.ErrorDomains domain, int code, String reason) {
         Log.i("Purchases", reason);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        purchases.removeListener();
     }
 
     public static class ExpirationsAdapter extends RecyclerView.Adapter<ExpirationsAdapter.ViewHolder> {
