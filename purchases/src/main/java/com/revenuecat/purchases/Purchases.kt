@@ -274,12 +274,6 @@ class Purchases @JvmOverloads internal constructor(
     }
 
     // region Private Methods
-    private fun emitCachedAsUpdatedPurchaserInfo() {
-        val info = deviceCache.getCachedPurchaserInfo(appUserID)
-        if (info != null) {
-            listener?.onReceiveUpdatedPurchaserInfo(info)
-        }
-    }
 
     private fun emitCachePurchaserInfo(f: (PurchaserInfo) -> Unit) {
         deviceCache.getCachedPurchaserInfo(appUserID)?.let { f(it) }
