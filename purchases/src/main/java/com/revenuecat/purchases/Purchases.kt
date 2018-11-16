@@ -439,7 +439,6 @@ class Purchases @JvmOverloads internal constructor(
             billingWrapper.setListener(this)
             application.registerActivityLifecycleCallbacks(this)
             getCaches()
-            restorePurchasesForPlayStoreAccount()
         } else {
             billingWrapper.setListener(null)
             application.unregisterActivityLifecycleCallbacks(this)
