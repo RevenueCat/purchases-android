@@ -246,6 +246,7 @@ class Purchases @JvmOverloads internal constructor(
      */
     fun identify(appUserID: String) {
         clearCachedRandomId()
+        postedTokens.clear()
         this.appUserID = appUserID
     }
 
@@ -255,6 +256,7 @@ class Purchases @JvmOverloads internal constructor(
     fun reset() {
         this.appUserID = createRandomIDAndCacheIt()
         setIsUsingAnonymousID(true)
+        postedTokens.clear()
     }
 
     /**
