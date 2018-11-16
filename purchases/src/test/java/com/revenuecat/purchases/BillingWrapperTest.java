@@ -400,6 +400,22 @@ public class BillingWrapperTest {
         });
     }
 
+    @Test
+    public void nullifyBillingClientAfterEndingConnection() {
+        setup();
+        wrapper.setListener(null);
+
+        assertThat(wrapper.billingClient).isNull();
+    }
+
+    @Test
+    public void newBillingClientIsCreatedWhenSettingListener() {
+        setup();
+        wrapper.setListener(mockPurchasesListener);
+
+        assertThat(wrapper.billingClient).isNotNull();
+    }
+
     private void mockNullSkuDetailsResponse() {
         doAnswer(new Answer() {
             @Override

@@ -50,7 +50,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         void onPurchasesFailedToUpdate(@BillingClient.BillingResponse int responseCode, String message);
     }
 
-    @Nullable private BillingClient billingClient = null;
+    @Nullable @VisibleForTesting BillingClient billingClient = null;
     final private ClientFactory clientFactory;
     @VisibleForTesting PurchasesUpdatedListener purchasesUpdatedListener;
     final private Handler mainHandler;
@@ -72,8 +72,10 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
             Log.d("Purchases", "startConnection");
             billingClient.startConnection(this);
         } else {
-            Log.d("Purchases", "endConnection");
-            billingClient.endConnection();
+            if (billingClient != null) {
+                Log.d("Purchases", "endConnection");
+                billingClient.endConnection();
+            }
             billingClient = null;
             clientConnected = false;
         }
@@ -90,6 +92,10 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request);
             if (!clientConnected) {
+                if (billingClient == null) {
+                    billingClient = clientFactory.buildClient(this);
+                }
+                Log.d("Purchases", "startConnection");
                 billingClient.startConnection(this);
             } else {
                 executePendingRequests();
