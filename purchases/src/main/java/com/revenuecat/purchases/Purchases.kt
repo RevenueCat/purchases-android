@@ -28,13 +28,17 @@ import java.util.concurrent.TimeUnit
 
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 
+/**
+ * If true treats all purchases as restores, aliasing together appUserIDs that share a Play Store account.
+ * @property [allowSharingPlayStoreAccount] If it should allow sharing Play Store accounts. False by default
+ */
 class Purchases @JvmOverloads internal constructor(
     private val application: Application,
     _appUserID: String?,
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
-    internal var usingAnonymousID: Boolean = false,
+    var allowSharingPlayStoreAccount: Boolean = false,
     private val postedTokens: HashSet<String> = HashSet(),
     private var cachesLastChecked: Date? = null,
     private var cachedEntitlements: Map<String, Entitlement>? = null
@@ -61,15 +65,7 @@ class Purchases @JvmOverloads internal constructor(
 
     init {
         this.appUserID = _appUserID?.also { identify(it) } ?:
-                getAnonymousID().also { setIsUsingAnonymousID(true) }
-    }
-
-    /**
-     * If true treats all purchases as restores, aliasing together appUserIDs that share a Play account.
-     * @param [isUsingAnonymousID] If it is using anonymous ID.
-     */
-    fun setIsUsingAnonymousID(isUsingAnonymousID: Boolean) {
-        this.usingAnonymousID = isUsingAnonymousID
+                getAnonymousID().also { allowSharingPlayStoreAccount = true }
     }
 
     /**
@@ -254,7 +250,7 @@ class Purchases @JvmOverloads internal constructor(
      */
     fun reset() {
         this.appUserID = createRandomIDAndCacheIt()
-        setIsUsingAnonymousID(true)
+        allowSharingPlayStoreAccount = true
     }
 
     /**
@@ -446,7 +442,7 @@ class Purchases @JvmOverloads internal constructor(
     // endregion
     // region Overriden methods
     override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards Purchase>) {
-        postPurchases(purchases, usingAnonymousID, true)
+        postPurchases(purchases, allowSharingPlayStoreAccount, true)
     }
 
     /**
