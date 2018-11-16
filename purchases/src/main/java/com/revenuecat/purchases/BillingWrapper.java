@@ -69,11 +69,11 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
             if (billingClient == null) {
                 billingClient = clientFactory.buildClient(this);
             }
-            Log.d("Purchases", "startConnection");
+            Log.d("Purchases", "starting connection for " + billingClient.toString());
             billingClient.startConnection(this);
         } else {
             if (billingClient != null) {
-                Log.d("Purchases", "endConnection");
+                Log.d("Purchases", "ending connection for " + billingClient.toString());
                 billingClient.endConnection();
             }
             billingClient = null;
@@ -95,7 +95,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
                 if (billingClient == null) {
                     billingClient = clientFactory.buildClient(this);
                 }
-                Log.d("Purchases", "startConnection");
+                Log.d("Purchases", "starting connection for " + billingClient.toString());
                 billingClient.startConnection(this);
             } else {
                 executePendingRequests();
@@ -207,17 +207,17 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     @Override
     public void onBillingSetupFinished(int responseCode) {
         if (responseCode == BillingClient.BillingResponse.OK) {
-            Log.d("Purchases", "onBillingServiceConnected");
+            Log.d("Purchases", "Billing Service Setup finished for " + billingClient.toString());
             clientConnected = true;
             executePendingRequests();
         } else {
-            Log.w("Purchases", "onBillingSetupFinished() error code: " + responseCode);
+            Log.w("Purchases", "Billing Service Setup finished with error code: " + responseCode);
         }
     }
 
     @Override
     public void onBillingServiceDisconnected() {
         clientConnected = false;
-        Log.w("Purchases", "onBillingServiceDisconnected");
+        Log.w("Purchases", "Billing Service disconnected for " + billingClient.toString());
     }
 }
