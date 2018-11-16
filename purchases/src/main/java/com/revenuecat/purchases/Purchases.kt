@@ -246,8 +246,9 @@ class Purchases @JvmOverloads internal constructor(
      */
     fun identify(appUserID: String) {
         clearCachedRandomId()
-        postedTokens.clear()
         this.appUserID = appUserID
+        postedTokens.clear()
+        forceGetCaches()
     }
 
     /**
@@ -257,6 +258,7 @@ class Purchases @JvmOverloads internal constructor(
         this.appUserID = createRandomIDAndCacheIt()
         setIsUsingAnonymousID(true)
         postedTokens.clear()
+        forceGetCaches()
     }
 
     /**
@@ -444,6 +446,12 @@ class Purchases @JvmOverloads internal constructor(
             application.unregisterActivityLifecycleCallbacks(this)
         }
     }
+
+    private fun forceGetCaches() {
+        cachesLastChecked = null
+        getCaches()
+    }
+
     // endregion
     // region Overriden methods
     override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards Purchase>) {
