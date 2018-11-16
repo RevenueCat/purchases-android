@@ -382,4 +382,33 @@ public class BillingWrapperTest {
 
         verify(billingClient, never()).startConnection(eq(billingWrapper));
     }
+
+    @Test
+    public void whenSkuDetailsIsNullPassAnEmptyListToTheListener() {
+        setup();
+        mockNullSkuDetailsResponse();
+
+        List<String> productIDs = new ArrayList<>();
+        productIDs.add("product_a");
+
+        wrapper.querySkuDetailsAsync(BillingClient.SkuType.SUBS, productIDs, new BillingWrapper.SkuDetailsResponseListener() {
+            @Override
+            public void onReceiveSkuDetails(List<SkuDetails> skuDetails) {
+                assertThat(skuDetails).isNotNull();
+                assertThat(skuDetails.size()).isEqualTo(0);
+            }
+        });
+    }
+
+    private void mockNullSkuDetailsResponse() {
+        doAnswer(new Answer() {
+            @Override
+            public Object answer(InvocationOnMock invocation) {
+                SkuDetailsResponseListener listener = invocation.getArgument(1);
+
+                listener.onSkuDetailsResponse(BillingClient.BillingResponse.OK, null);
+                return null;
+            }
+        }).when(mockClient).querySkuDetailsAsync(any(SkuDetailsParams.class), any(SkuDetailsResponseListener.class));
+    }
 }

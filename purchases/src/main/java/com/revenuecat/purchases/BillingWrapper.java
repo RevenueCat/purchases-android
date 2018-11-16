@@ -3,6 +3,7 @@ package com.revenuecat.purchases;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
 import android.util.Log;
@@ -36,7 +37,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     }
 
     public interface SkuDetailsResponseListener {
-        void onReceiveSkuDetails(List<SkuDetails> skuDetails);
+        void onReceiveSkuDetails(@NonNull List<SkuDetails> skuDetails);
     }
 
     public interface PurchaseHistoryResponseListener {
@@ -110,7 +111,10 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
                         .setType(itemType).setSkusList(skuList).build();
                 billingClient.querySkuDetailsAsync(params, new com.android.billingclient.api.SkuDetailsResponseListener() {
                     @Override
-                    public void onSkuDetailsResponse(int responseCode, List<SkuDetails> skuDetailsList) {
+                    public void onSkuDetailsResponse(int responseCode, @Nullable List<SkuDetails> skuDetailsList) {
+                        if (skuDetailsList == null) {
+                            skuDetailsList = new ArrayList<>();
+                        }
                         listener.onReceiveSkuDetails(skuDetailsList);
                     }
                 });
