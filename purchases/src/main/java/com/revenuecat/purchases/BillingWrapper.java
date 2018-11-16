@@ -50,7 +50,8 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         void onPurchasesFailedToUpdate(@BillingClient.BillingResponse int responseCode, String message);
     }
 
-    final private BillingClient billingClient;
+    @Nullable private BillingClient billingClient = null;
+    final private ClientFactory clientFactory;
     @VisibleForTesting PurchasesUpdatedListener purchasesUpdatedListener;
     final private Handler mainHandler;
 
@@ -58,16 +59,23 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     private Queue<Runnable> serviceRequests = new ConcurrentLinkedQueue<>();
 
     BillingWrapper(ClientFactory clientFactory, Handler mainHandler) {
-        billingClient = clientFactory.buildClient(this);
+        this.clientFactory = clientFactory;
         this.mainHandler = mainHandler;
     }
 
     void setListener(@Nullable PurchasesUpdatedListener purchasesUpdatedListener) {
         this.purchasesUpdatedListener = purchasesUpdatedListener;
         if (purchasesUpdatedListener != null) {
+            if (billingClient == null) {
+                billingClient = clientFactory.buildClient(this);
+            }
+            Log.d("Purchases", "startConnection");
             billingClient.startConnection(this);
         } else {
+            Log.d("Purchases", "endConnection");
             billingClient.endConnection();
+            billingClient = null;
+            clientConnected = false;
         }
     }
 
@@ -193,13 +201,17 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     @Override
     public void onBillingSetupFinished(int responseCode) {
         if (responseCode == BillingClient.BillingResponse.OK) {
+            Log.d("Purchases", "onBillingServiceConnected");
             clientConnected = true;
             executePendingRequests();
+        } else {
+            Log.w("Purchases", "onBillingSetupFinished() error code: " + responseCode);
         }
     }
 
     @Override
     public void onBillingServiceDisconnected() {
         clientConnected = false;
+        Log.w("Purchases", "onBillingServiceDisconnected");
     }
 }
