@@ -35,7 +35,7 @@ class Purchases @JvmOverloads internal constructor(
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
     internal var usingAnonymousID: Boolean = false,
-    private val postedTokens: HashSet<String> = HashSet(),
+    internal val postedTokens: HashSet<String> = HashSet(),
     private var cachesLastChecked: Date? = null,
     private var cachedEntitlements: Map<String, Entitlement>? = null
 ) : BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {

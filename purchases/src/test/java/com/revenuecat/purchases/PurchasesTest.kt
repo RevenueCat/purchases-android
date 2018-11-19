@@ -1292,6 +1292,21 @@ class PurchasesTest {
         }
     }
 
+    @Test
+    fun `when reset, posted tokens are cleared`() {
+        setup()
+        purchases!!.reset()
+        assertThat(purchases!!.postedTokens.size).isEqualTo(0)
+    }
+
+
+    @Test
+    fun `when identify, posted tokens are cleared`() {
+        setup()
+        purchases!!.identify("new")
+        assertThat(purchases!!.postedTokens.size).isEqualTo(0)
+    }
+
     private fun verifyIdentifyIsSuccessful(appUserID: String) {
         verify {
             mockCache.cacheAppUserID(null)
