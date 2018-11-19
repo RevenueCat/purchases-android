@@ -1217,14 +1217,14 @@ class PurchasesTest {
             "new_id",
             null
         )
-        verifyIdentifyIsSuccessful("new_id")
+        verifyIdentifyIsSuccessful("new_id", 2)
     }
 
     @Test
     fun `when identifying, appUserID is identified`() {
         setup()
         purchases!!.identify("new_id")
-        verifyIdentifyIsSuccessful("new_id")
+        verifyIdentifyIsSuccessful("new_id", 2)
     }
 
     @Test
@@ -1243,7 +1243,7 @@ class PurchasesTest {
     @Test
     fun `when setting up, and passing a appUserID, user is identified`() {
         setup()
-        verifyIdentifyIsSuccessful(appUserId)
+        verifyIdentifyIsSuccessful(appUserId, 1)
     }
 
 
@@ -1307,8 +1307,8 @@ class PurchasesTest {
         assertThat(purchases!!.postedTokens.size).isEqualTo(0)
     }
 
-    private fun verifyIdentifyIsSuccessful(appUserID: String) {
-        verify {
+    private fun verifyIdentifyIsSuccessful(appUserID: String, timesCached: Int) {
+        verify (exactly = timesCached) {
             mockCache.cacheAppUserID(null)
         }
         assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
