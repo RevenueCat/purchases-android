@@ -522,7 +522,7 @@ class PurchasesTest {
 
         purchases!!.restorePurchasesForPlayStoreAccount()
 
-        verify(exactly = 2) {
+        verify {
             mockBillingWrapper.queryPurchaseHistoryAsync(
                 eq(BillingClient.SkuType.SUBS),
                 any()
@@ -672,7 +672,7 @@ class PurchasesTest {
 
         purchases!!.restorePurchasesForPlayStoreAccount()
 
-        verify(exactly = 3) {
+        verify(exactly = 2) {
             mockBillingWrapper.queryPurchaseHistoryAsync(any(), any())
         }
 
@@ -1273,9 +1273,9 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when setting listener, purchases are restores`() {
+    fun `when setting listener, purchases are restored`() {
         setup()
-        verify {
+        verify (exactly = 0) {
             mockBillingWrapper.queryPurchaseHistoryAsync(any(), any())
         }
     }
