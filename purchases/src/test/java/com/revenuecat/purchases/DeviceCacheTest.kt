@@ -37,10 +37,17 @@ class DeviceCacheTest {
         every {
             mockEditor.putString(any(), any())
         } returns mockEditor
+        every {
+            mockEditor.remove(any())
+        } returns mockEditor
 
         every {
             mockPrefs.edit()
         } returns mockEditor
+
+        every {
+            mockEditor.apply()
+        } just runs
 
         cache = DeviceCache(mockPrefs, apiKey)
     }
@@ -83,10 +90,6 @@ class DeviceCacheTest {
     @Test
     @Throws(JSONException::class)
     fun `given a purchaser info, the information is cached`() {
-        every {
-            mockEditor.apply()
-        } just runs
-
         val jsonObject = JSONObject(validFullPurchaserResponse)
         val info = PurchaserInfo.Factory.build(jsonObject)
 
@@ -123,7 +126,14 @@ class DeviceCacheTest {
         }
     }
 
-
+    @Test
+    fun `clear cache removes cached app user id`() {
+        cache.clearCachedAppUserID()
+        verify {
+            mockEditor.remove(eq(userIDCacheKey))
+            mockEditor.apply()
+        }
+    }
 
     private fun mockString(key: String, value: String?) {
         every {

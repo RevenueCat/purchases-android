@@ -1213,18 +1213,47 @@ class PurchasesTest {
             onSuccessSlot.captured()
         }
 
+        every {
+            mockBackend.getSubscriberInfo(eq("new_id"), capture(capturedSubscriberInfoHandler))
+        } answers {
+            capturedSubscriberInfoHandler.captured.onReceivePurchaserInfo(mockk())
+        }
+
         purchases!!.createAlias(
             "new_id",
             null
         )
-        verifyIdentifyIsSuccessful("new_id", 2)
+
+        verify (exactly = 2) {
+            mockCache.clearCachedAppUserID()
+        }
+        verify (exactly = 2) {
+            mockCache.cachePurchaserInfo(any(), any())
+        }
+        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
+        assertThat(purchases!!.appUserID).isEqualTo("new_id")
     }
 
     @Test
     fun `when identifying, appUserID is identified`() {
         setup()
+
+        every {
+            mockBackend.getSubscriberInfo(eq("new_id"), capture(capturedSubscriberInfoHandler))
+        } answers {
+            capturedSubscriberInfoHandler.captured.onReceivePurchaserInfo(mockk())
+        }
+
         purchases!!.identify("new_id")
-        verifyIdentifyIsSuccessful("new_id", 2)
+
+        verify (exactly = 2) {
+            mockCache.clearCachedAppUserID()
+        }
+        verify (exactly = 2) {
+            mockCache.cachePurchaserInfo(any(), any())
+        }
+        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
+        assertThat(purchases!!.appUserID).isEqualTo("new_id")
     }
 
     @Test
@@ -1243,7 +1272,14 @@ class PurchasesTest {
     @Test
     fun `when setting up, and passing a appUserID, user is identified`() {
         setup()
-        verifyIdentifyIsSuccessful(appUserId, 1)
+        verify (exactly = 1) {
+            mockCache.clearCachedAppUserID()
+        }
+        verify (exactly = 1) {
+            mockCache.cachePurchaserInfo(any(), any())
+        }
+        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
+        assertThat(purchases!!.appUserID).isEqualTo(appUserId)
     }
 
 
@@ -1307,11 +1343,4 @@ class PurchasesTest {
         assertThat(purchases!!.postedTokens.size).isEqualTo(0)
     }
 
-    private fun verifyIdentifyIsSuccessful(appUserID: String, timesCached: Int) {
-        verify (exactly = timesCached) {
-            mockCache.cacheAppUserID(null)
-        }
-        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
-        assertThat(purchases!!.appUserID).isEqualTo(appUserID)
-    }
 }

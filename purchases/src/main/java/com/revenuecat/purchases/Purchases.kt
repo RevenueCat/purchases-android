@@ -248,7 +248,7 @@ class Purchases @JvmOverloads internal constructor(
         clearCachedRandomId()
         this.appUserID = appUserID
         postedTokens.clear()
-        forceGetCaches()
+        makeCachesOutdatedAndNotifyIfNeeded()
     }
 
     /**
@@ -258,7 +258,7 @@ class Purchases @JvmOverloads internal constructor(
         this.appUserID = createRandomIDAndCacheIt()
         setIsUsingAnonymousID(true)
         postedTokens.clear()
-        forceGetCaches()
+        makeCachesOutdatedAndNotifyIfNeeded()
     }
 
     /**
@@ -403,7 +403,7 @@ class Purchases @JvmOverloads internal constructor(
     }
 
     private fun clearCachedRandomId() {
-        deviceCache.cacheAppUserID(null)
+        deviceCache.clearCachedAppUserID()
     }
 
     private fun getSkuDetails(entitlements: Map<String, Entitlement>, onCompleted: (HashMap<String, SkuDetails>) -> Unit) {
@@ -447,9 +447,11 @@ class Purchases @JvmOverloads internal constructor(
         }
     }
 
-    private fun forceGetCaches() {
+    private fun makeCachesOutdatedAndNotifyIfNeeded() {
         cachesLastChecked = null
-        getCaches()
+        if (listener != null) {
+            getCaches()
+        }
     }
 
     // endregion
