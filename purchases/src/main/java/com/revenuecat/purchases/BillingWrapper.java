@@ -3,6 +3,7 @@ package com.revenuecat.purchases;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
 import android.util.Log;
@@ -36,7 +37,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     }
 
     public interface SkuDetailsResponseListener {
-        void onReceiveSkuDetails(List<SkuDetails> skuDetails);
+        void onReceiveSkuDetails(@NonNull List<SkuDetails> skuDetails);
     }
 
     public interface PurchaseHistoryResponseListener {
@@ -49,7 +50,8 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         void onPurchasesFailedToUpdate(@BillingClient.BillingResponse int responseCode, String message);
     }
 
-    final private BillingClient billingClient;
+    @Nullable @VisibleForTesting BillingClient billingClient = null;
+    final private ClientFactory clientFactory;
     @VisibleForTesting PurchasesUpdatedListener purchasesUpdatedListener;
     final private Handler mainHandler;
 
@@ -57,16 +59,25 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     private Queue<Runnable> serviceRequests = new ConcurrentLinkedQueue<>();
 
     BillingWrapper(ClientFactory clientFactory, Handler mainHandler) {
-        billingClient = clientFactory.buildClient(this);
+        this.clientFactory = clientFactory;
         this.mainHandler = mainHandler;
     }
 
     void setListener(@Nullable PurchasesUpdatedListener purchasesUpdatedListener) {
         this.purchasesUpdatedListener = purchasesUpdatedListener;
         if (purchasesUpdatedListener != null) {
+            if (billingClient == null) {
+                billingClient = clientFactory.buildClient(this);
+            }
+            Log.d("Purchases", "starting connection for " + billingClient.toString());
             billingClient.startConnection(this);
         } else {
-            billingClient.endConnection();
+            if (billingClient != null) {
+                Log.d("Purchases", "ending connection for " + billingClient.toString());
+                billingClient.endConnection();
+            }
+            billingClient = null;
+            clientConnected = false;
         }
     }
 
@@ -81,6 +92,10 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request);
             if (!clientConnected) {
+                if (billingClient == null) {
+                    billingClient = clientFactory.buildClient(this);
+                }
+                Log.d("Purchases", "starting connection for " + billingClient.toString());
                 billingClient.startConnection(this);
             } else {
                 executePendingRequests();
@@ -110,7 +125,10 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
                         .setType(itemType).setSkusList(skuList).build();
                 billingClient.querySkuDetailsAsync(params, new com.android.billingclient.api.SkuDetailsResponseListener() {
                     @Override
-                    public void onSkuDetailsResponse(int responseCode, List<SkuDetails> skuDetailsList) {
+                    public void onSkuDetailsResponse(int responseCode, @Nullable List<SkuDetails> skuDetailsList) {
+                        if (skuDetailsList == null) {
+                            skuDetailsList = new ArrayList<>();
+                        }
                         listener.onReceiveSkuDetails(skuDetailsList);
                     }
                 });
@@ -189,13 +207,17 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
     @Override
     public void onBillingSetupFinished(int responseCode) {
         if (responseCode == BillingClient.BillingResponse.OK) {
+            Log.d("Purchases", "Billing Service Setup finished for " + billingClient.toString());
             clientConnected = true;
             executePendingRequests();
+        } else {
+            Log.w("Purchases", "Billing Service Setup finished with error code: " + responseCode);
         }
     }
 
     @Override
     public void onBillingServiceDisconnected() {
         clientConnected = false;
+        Log.w("Purchases", "Billing Service disconnected for " + billingClient.toString());
     }
 }
