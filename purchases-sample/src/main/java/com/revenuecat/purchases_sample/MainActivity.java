@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.billingclient.api.SkuDetails;
 import com.revenuecat.purchases.Entitlement;
@@ -43,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     }
 
     private void buildPurchases() {
-        purchases = Purchases.defaultInstance;
+        purchases = Purchases.getSharedInstance();
         purchases.setListener(this);
         Purchases.getFrameworkVersion();
     }
