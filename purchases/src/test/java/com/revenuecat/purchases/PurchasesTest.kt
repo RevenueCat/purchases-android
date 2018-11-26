@@ -465,7 +465,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun canOverideAnonMode() {
+    fun canOverrideAnonMode() {
         setup()
 
         val purchases = Purchases(
@@ -477,7 +477,7 @@ class PurchasesTest {
         ).also {
             it.listener = listener
         }
-        purchases.setIsUsingAnonymousID(true)
+        purchases.allowSharingPlayStoreAccount = true
 
         val p: Purchase = mockk()
         val sku = "onemonth_freetrial"
@@ -1230,7 +1230,7 @@ class PurchasesTest {
         verify (exactly = 2) {
             mockCache.cachePurchaserInfo(any(), any())
         }
-        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases!!.appUserID).isEqualTo("new_id")
     }
 
@@ -1252,7 +1252,7 @@ class PurchasesTest {
         verify (exactly = 2) {
             mockCache.cachePurchaserInfo(any(), any())
         }
-        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases!!.appUserID).isEqualTo("new_id")
     }
 
@@ -1264,7 +1264,7 @@ class PurchasesTest {
         verify {
             mockCache.cacheAppUserID(capture(randomID))
         }
-        assertThat(purchases!!.usingAnonymousID).isEqualTo(true)
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(true)
         assertThat(purchases!!.appUserID).isEqualTo(randomID.captured)
         assertThat(randomID.captured).isNotNull()
     }
@@ -1278,7 +1278,7 @@ class PurchasesTest {
         verify (exactly = 1) {
             mockCache.cachePurchaserInfo(any(), any())
         }
-        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases!!.appUserID).isEqualTo(appUserId)
     }
 

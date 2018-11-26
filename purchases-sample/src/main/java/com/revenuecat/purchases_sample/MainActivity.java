@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.billingclient.api.SkuDetails;
 import com.revenuecat.purchases.Entitlement;
@@ -140,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     @Override
     public void onFailedPurchase(Purchases.ErrorDomains domain, int code, String reason) {
         Log.i("Purchases", reason);
-        purchases.setIsUsingAnonymousID(true);
+        purchases.setAllowSharingPlayStoreAccount(true);
     }
 
     @Override
