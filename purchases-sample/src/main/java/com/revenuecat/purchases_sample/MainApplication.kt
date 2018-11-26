@@ -9,8 +9,8 @@ class MainApplication: Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Purchases.defaultInstance = Purchases.Builder(this, PURCHASES_KEY).build()
-        val instance = Purchases.defaultInstance
+        Purchases.sharedInstance = Purchases.Builder(this, PURCHASES_KEY).build()
+        val instance = Purchases.sharedInstance
     }
 
 }

@@ -589,7 +589,7 @@ class Purchases @JvmOverloads internal constructor(
          * Singleton instance of Purchases
          */
         @JvmStatic
-        lateinit var defaultInstance: Purchases
+        var sharedInstance: Purchases? = null
         /**
          * Current version of the Purchases SDK
          */

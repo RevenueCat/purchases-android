@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     }
 
     private void buildPurchases() {
-        purchases = Purchases.defaultInstance;
+        purchases = Purchases.getSharedInstance();
         purchases.setListener(this);
         Purchases.getFrameworkVersion();
     }
