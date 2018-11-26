@@ -304,11 +304,7 @@ class Purchases @JvmOverloads internal constructor(
         @BillingClient.SkuType skuType: String,
         handler: GetSkusResponseHandler
     ) {
-        billingWrapper.querySkuDetailsAsync(skuType, skus) { skuDetails ->
-            handler.onReceiveSkus(
-                skuDetails
-            )
-        }
+        billingWrapper.querySkuDetailsAsync(skuType, skus, handler::onReceiveSkus)
     }
 
     private fun getCaches() {
