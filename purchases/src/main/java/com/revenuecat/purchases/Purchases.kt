@@ -35,7 +35,7 @@ class Purchases @JvmOverloads internal constructor(
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
     internal var usingAnonymousID: Boolean = false,
-    private val postedTokens: HashSet<String> = HashSet(),
+    internal val postedTokens: HashSet<String> = HashSet(),
     private var cachesLastChecked: Date? = null,
     private var cachedEntitlements: Map<String, Entitlement>? = null
 ) : BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
@@ -247,6 +247,8 @@ class Purchases @JvmOverloads internal constructor(
     fun identify(appUserID: String) {
         clearCachedRandomId()
         this.appUserID = appUserID
+        postedTokens.clear()
+        makeCachesOutdatedAndNotifyIfNeeded()
     }
 
     /**
@@ -255,6 +257,8 @@ class Purchases @JvmOverloads internal constructor(
     fun reset() {
         this.appUserID = createRandomIDAndCacheIt()
         setIsUsingAnonymousID(true)
+        postedTokens.clear()
+        makeCachesOutdatedAndNotifyIfNeeded()
     }
 
     /**
@@ -395,7 +399,7 @@ class Purchases @JvmOverloads internal constructor(
     }
 
     private fun clearCachedRandomId() {
-        deviceCache.cacheAppUserID(null)
+        deviceCache.clearCachedAppUserID()
     }
 
     private fun getSkuDetails(entitlements: Map<String, Entitlement>, onCompleted: (HashMap<String, SkuDetails>) -> Unit) {
@@ -433,12 +437,19 @@ class Purchases @JvmOverloads internal constructor(
             billingWrapper.setListener(this)
             application.registerActivityLifecycleCallbacks(this)
             getCaches()
-            restorePurchasesForPlayStoreAccount()
         } else {
             billingWrapper.setListener(null)
             application.unregisterActivityLifecycleCallbacks(this)
         }
     }
+
+    private fun makeCachesOutdatedAndNotifyIfNeeded() {
+        cachesLastChecked = null
+        if (listener != null) {
+            getCaches()
+        }
+    }
+
     // endregion
     // region Overriden methods
     override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards Purchase>) {
