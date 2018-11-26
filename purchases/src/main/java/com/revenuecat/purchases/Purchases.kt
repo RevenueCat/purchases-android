@@ -28,14 +28,18 @@ import java.util.concurrent.TimeUnit
 
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 
+/**
+ * If true treats all purchases as restores, aliasing together appUserIDs that share a Play Store account.
+ * @property [allowSharingPlayStoreAccount] If it should allow sharing Play Store accounts. False by default
+ */
 class Purchases @JvmOverloads internal constructor(
     private val application: Application,
     _appUserID: String?,
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
-    internal var usingAnonymousID: Boolean = false,
-    private val postedTokens: HashSet<String> = HashSet(),
+    var allowSharingPlayStoreAccount: Boolean = false,
+    internal val postedTokens: HashSet<String> = HashSet(),
     private var cachesLastChecked: Date? = null,
     private var cachedEntitlements: Map<String, Entitlement>? = null
 ) : BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
@@ -61,15 +65,7 @@ class Purchases @JvmOverloads internal constructor(
 
     init {
         this.appUserID = _appUserID?.also { identify(it) } ?:
-                getAnonymousID().also { setIsUsingAnonymousID(true) }
-    }
-
-    /**
-     * If true treats all purchases as restores, aliasing together appUserIDs that share a Play account.
-     * @param [isUsingAnonymousID] If it is using anonymous ID.
-     */
-    fun setIsUsingAnonymousID(isUsingAnonymousID: Boolean) {
-        this.usingAnonymousID = isUsingAnonymousID
+                getAnonymousID().also { allowSharingPlayStoreAccount = true }
     }
 
     /**
@@ -247,6 +243,8 @@ class Purchases @JvmOverloads internal constructor(
     fun identify(appUserID: String) {
         clearCachedRandomId()
         this.appUserID = appUserID
+        postedTokens.clear()
+        makeCachesOutdatedAndNotifyIfNeeded()
     }
 
     /**
@@ -254,7 +252,9 @@ class Purchases @JvmOverloads internal constructor(
      */
     fun reset() {
         this.appUserID = createRandomIDAndCacheIt()
-        setIsUsingAnonymousID(true)
+        allowSharingPlayStoreAccount = true
+        postedTokens.clear()
+        makeCachesOutdatedAndNotifyIfNeeded()
     }
 
     /**
@@ -300,11 +300,7 @@ class Purchases @JvmOverloads internal constructor(
         @BillingClient.SkuType skuType: String,
         handler: GetSkusResponseHandler
     ) {
-        billingWrapper.querySkuDetailsAsync(skuType, skus) { skuDetails ->
-            handler.onReceiveSkus(
-                skuDetails
-            )
-        }
+        billingWrapper.querySkuDetailsAsync(skuType, skus, handler::onReceiveSkus)
     }
 
     private fun getCaches() {
@@ -399,7 +395,7 @@ class Purchases @JvmOverloads internal constructor(
     }
 
     private fun clearCachedRandomId() {
-        deviceCache.cacheAppUserID(null)
+        deviceCache.clearCachedAppUserID()
     }
 
     private fun getSkuDetails(entitlements: Map<String, Entitlement>, onCompleted: (HashMap<String, SkuDetails>) -> Unit) {
@@ -437,16 +433,23 @@ class Purchases @JvmOverloads internal constructor(
             billingWrapper.setListener(this)
             application.registerActivityLifecycleCallbacks(this)
             getCaches()
-            restorePurchasesForPlayStoreAccount()
         } else {
             billingWrapper.setListener(null)
             application.unregisterActivityLifecycleCallbacks(this)
         }
     }
+
+    private fun makeCachesOutdatedAndNotifyIfNeeded() {
+        cachesLastChecked = null
+        if (listener != null) {
+            getCaches()
+        }
+    }
+
     // endregion
     // region Overriden methods
     override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards Purchase>) {
-        postPurchases(purchases, usingAnonymousID, true)
+        postPurchases(purchases, allowSharingPlayStoreAccount, true)
     }
 
     /**

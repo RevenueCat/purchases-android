@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements Purchases.Purchas
     @Override
     public void onFailedPurchase(Purchases.ErrorDomains domain, int code, String reason) {
         Log.i("Purchases", reason);
-        purchases.setIsUsingAnonymousID(true);
+        purchases.setAllowSharingPlayStoreAccount(true);
     }
 
     @Override

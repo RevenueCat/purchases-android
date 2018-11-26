@@ -465,7 +465,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun canOverideAnonMode() {
+    fun canOverrideAnonMode() {
         setup()
 
         val purchases = Purchases(
@@ -477,7 +477,7 @@ class PurchasesTest {
         ).also {
             it.listener = listener
         }
-        purchases.setIsUsingAnonymousID(true)
+        purchases.allowSharingPlayStoreAccount = true
 
         val p: Purchase = mockk()
         val sku = "onemonth_freetrial"
@@ -522,7 +522,7 @@ class PurchasesTest {
 
         purchases!!.restorePurchasesForPlayStoreAccount()
 
-        verify(exactly = 2) {
+        verify {
             mockBillingWrapper.queryPurchaseHistoryAsync(
                 eq(BillingClient.SkuType.SUBS),
                 any()
@@ -672,7 +672,7 @@ class PurchasesTest {
 
         purchases!!.restorePurchasesForPlayStoreAccount()
 
-        verify(exactly = 3) {
+        verify(exactly = 2) {
             mockBillingWrapper.queryPurchaseHistoryAsync(any(), any())
         }
 
@@ -1213,18 +1213,47 @@ class PurchasesTest {
             onSuccessSlot.captured()
         }
 
+        every {
+            mockBackend.getSubscriberInfo(eq("new_id"), capture(capturedSubscriberInfoHandler))
+        } answers {
+            capturedSubscriberInfoHandler.captured.onReceivePurchaserInfo(mockk())
+        }
+
         purchases!!.createAlias(
             "new_id",
             null
         )
-        verifyIdentifyIsSuccessful("new_id")
+
+        verify (exactly = 2) {
+            mockCache.clearCachedAppUserID()
+        }
+        verify (exactly = 2) {
+            mockCache.cachePurchaserInfo(any(), any())
+        }
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(false)
+        assertThat(purchases!!.appUserID).isEqualTo("new_id")
     }
 
     @Test
     fun `when identifying, appUserID is identified`() {
         setup()
+
+        every {
+            mockBackend.getSubscriberInfo(eq("new_id"), capture(capturedSubscriberInfoHandler))
+        } answers {
+            capturedSubscriberInfoHandler.captured.onReceivePurchaserInfo(mockk())
+        }
+
         purchases!!.identify("new_id")
-        verifyIdentifyIsSuccessful("new_id")
+
+        verify (exactly = 2) {
+            mockCache.clearCachedAppUserID()
+        }
+        verify (exactly = 2) {
+            mockCache.cachePurchaserInfo(any(), any())
+        }
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(false)
+        assertThat(purchases!!.appUserID).isEqualTo("new_id")
     }
 
     @Test
@@ -1235,7 +1264,7 @@ class PurchasesTest {
         verify {
             mockCache.cacheAppUserID(capture(randomID))
         }
-        assertThat(purchases!!.usingAnonymousID).isEqualTo(true)
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(true)
         assertThat(purchases!!.appUserID).isEqualTo(randomID.captured)
         assertThat(randomID.captured).isNotNull()
     }
@@ -1243,7 +1272,14 @@ class PurchasesTest {
     @Test
     fun `when setting up, and passing a appUserID, user is identified`() {
         setup()
-        verifyIdentifyIsSuccessful(appUserId)
+        verify (exactly = 1) {
+            mockCache.clearCachedAppUserID()
+        }
+        verify (exactly = 1) {
+            mockCache.cachePurchaserInfo(any(), any())
+        }
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(false)
+        assertThat(purchases!!.appUserID).isEqualTo(appUserId)
     }
 
 
@@ -1273,9 +1309,9 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when setting listener, purchases are restores`() {
+    fun `when setting listener, purchases are restored`() {
         setup()
-        verify {
+        verify (exactly = 0) {
             mockBillingWrapper.queryPurchaseHistoryAsync(any(), any())
         }
     }
@@ -1292,11 +1328,19 @@ class PurchasesTest {
         }
     }
 
-    private fun verifyIdentifyIsSuccessful(appUserID: String) {
-        verify {
-            mockCache.cacheAppUserID(null)
-        }
-        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
-        assertThat(purchases!!.appUserID).isEqualTo(appUserID)
+    @Test
+    fun `when reset, posted tokens are cleared`() {
+        setup()
+        purchases!!.reset()
+        assertThat(purchases!!.postedTokens.size).isEqualTo(0)
     }
+
+
+    @Test
+    fun `when identify, posted tokens are cleared`() {
+        setup()
+        purchases!!.identify("new")
+        assertThat(purchases!!.postedTokens.size).isEqualTo(0)
+    }
+
 }
