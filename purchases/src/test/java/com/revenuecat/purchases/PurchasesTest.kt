@@ -1230,7 +1230,7 @@ class PurchasesTest {
         verify (exactly = 2) {
             mockCache.cachePurchaserInfo(any(), any())
         }
-        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases!!.appUserID).isEqualTo("new_id")
     }
 
@@ -1252,7 +1252,7 @@ class PurchasesTest {
         verify (exactly = 2) {
             mockCache.cachePurchaserInfo(any(), any())
         }
-        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases!!.appUserID).isEqualTo("new_id")
     }
 
@@ -1278,7 +1278,7 @@ class PurchasesTest {
         verify (exactly = 1) {
             mockCache.cachePurchaserInfo(any(), any())
         }
-        assertThat(purchases!!.usingAnonymousID).isEqualTo(false)
+        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases!!.appUserID).isEqualTo(appUserId)
     }
 
@@ -1341,14 +1341,6 @@ class PurchasesTest {
         setup()
         purchases!!.identify("new")
         assertThat(purchases!!.postedTokens.size).isEqualTo(0)
-    }
-
-    private fun verifyIdentifyIsSuccessful(appUserID: String) {
-        verify {
-            mockCache.cacheAppUserID(null)
-        }
-        assertThat(purchases!!.allowSharingPlayStoreAccount).isEqualTo(false)
-        assertThat(purchases!!.appUserID).isEqualTo(appUserID)
     }
 
 }
