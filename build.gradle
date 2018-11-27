@@ -9,6 +9,7 @@ buildscript {
         classpath 'com.android.tools.build:gradle:3.2.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.jetbrains.dokka:dokka-android-gradle-plugin:${dokka_version}"
+        classpath 'com.vanniktech:gradle-maven-publish-plugin:0.6.0'
     }
 }
 
@@ -28,8 +29,4 @@ subprojects {
 task wrapper(type: Wrapper) {
     gradleVersion = '4.10'
     distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
-}
-
-task clean(type: Delete) {
-    delete rootProject.buildDir
 }
