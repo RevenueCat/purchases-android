@@ -39,6 +39,9 @@ dependencies {
     testImplementation "org.assertj:assertj-core:3.11.1"
 }
 
+apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
+
+
 apply plugin: 'org.jetbrains.dokka-android'
 
 dokka {
@@ -46,5 +49,3 @@ dokka {
     outputDirectory = "$buildDir/javadoc"
     includeNonPublic = false
 }
-
-apply plugin: "com.vanniktech.maven.publish"
