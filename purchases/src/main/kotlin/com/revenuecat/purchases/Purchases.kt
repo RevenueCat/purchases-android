@@ -590,6 +590,10 @@ class Purchases @JvmOverloads internal constructor(
          */
         @JvmStatic
         var sharedInstance: Purchases? = null
+            set(value) {
+                field?.close()
+                field = value
+            }
         /**
          * Current version of the Purchases SDK
          */
