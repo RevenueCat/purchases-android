@@ -1,3 +1,10 @@
+## 1.4.0
+- Adds singleton management inside the SDK
+- Adds reset, create alias and identify calls
+- Fixes callbacks being called in a background thread
+- Renames allowUsingAnonymousId to allowsSharingPlayStoreAccount
+- Other bugfixes
+
 ## 1.3.8
 - Fixes onRestoreTransactions not being called if there are no tokens.
 
