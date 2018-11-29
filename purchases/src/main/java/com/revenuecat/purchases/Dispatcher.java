@@ -1,21 +1,35 @@
 package com.revenuecat.purchases;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import java.util.concurrent.ExecutorService;
 
 
 class Dispatcher {
     abstract static class AsyncCall implements Runnable {
         abstract public HTTPClient.Result call() throws HTTPClient.HTTPErrorException;
-        void onError(int code, String message) {};
-        void onCompletion(HTTPClient.Result result) {};
+        void onError(int code, String message) {}
+        void onCompletion(HTTPClient.Result result) {}
 
         @Override
         public void run() {
+            Handler mainHandler = new Handler(Looper.getMainLooper());
             try {
-                HTTPClient.Result result = call();
-                onCompletion(result);
-            } catch (HTTPClient.HTTPErrorException e) {
-                onError(0, e.getMessage());
+                final HTTPClient.Result result = call();
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        onCompletion(result);
+                    }
+                });
+            } catch (final HTTPClient.HTTPErrorException e) {
+                mainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        onError(0, e.getMessage());
+                    }
+                });
             }
         }
     }
