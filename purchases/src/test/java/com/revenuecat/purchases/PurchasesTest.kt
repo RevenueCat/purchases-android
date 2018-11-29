@@ -1343,4 +1343,14 @@ class PurchasesTest {
         assertThat(purchases!!.postedTokens.size).isEqualTo(0)
     }
 
+    @Test
+    fun `when setting shared instance and there's already an instance, instance is closed`() {
+        setup()
+        Purchases.sharedInstance = purchases
+        Purchases.sharedInstance = purchases
+        verify {
+            purchases!!.close()
+        }
+    }
+
 }
