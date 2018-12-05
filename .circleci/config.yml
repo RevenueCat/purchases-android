@@ -1,5 +1,4 @@
 version: 3
-
 executors:
   android-executor:
     docker:
@@ -8,7 +7,6 @@ executors:
     environment:
       JVM_OPTS: -Xmx3200m
       CIRCLE_JDK_VERSION: oraclejdk8
-
 jobs:
   build:
     executor: android-executor
@@ -30,7 +28,6 @@ jobs:
           root: purchases
           paths:
             - *
-
   docs:
     build:
       executor: android-executor
@@ -41,7 +38,6 @@ jobs:
       - run:
           name: Deploy to S3
           command: aws s3 sync ~/purchases-android/purchases/build/javadoc s3://purchases-docs/ --delete
-
   deploy:
     build:
       executor: android-executor
@@ -50,7 +46,6 @@ jobs:
           name: Deployment
           command: |
             .buildscripts/deploy_snapshot.sh
-
 workflows:
   version: 2
   build-deploy-docs:
