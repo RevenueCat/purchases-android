@@ -20,8 +20,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
-      
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}     
   docs:
     working_directory: ~/purchases-android
     docker:
@@ -33,7 +32,6 @@ jobs:
       - run:
           name: Deploy to S3
           command: aws s3 sync purchases/build/javadoc s3://purchases-docs/ --delete
-
   deploy:
     working_directory: ~/purchases-android
     docker:
@@ -47,7 +45,6 @@ jobs:
             else
               echo "==> ignoring non-master branch"
             fi
-
 workflows:
   version: 1
   build-docs:
@@ -56,12 +53,12 @@ workflows:
       - docs:
           requires:
             - build
-  build-deploy:
-    jobs:
-      - build
-      - deploy:
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
+  # build-deploy:
+  #   jobs:
+  #     - build
+  #     - deploy:
+  #         requires:
+  #           - build
+  #         filters:
+  #           branches:
+  #             only: master
