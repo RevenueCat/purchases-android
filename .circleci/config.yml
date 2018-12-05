@@ -31,7 +31,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync purchases/build/javadoc s3://purchases-docs/ --delete
+          command: aws s3 sync ~/purchases-android/purchases/build/javadoc s3://purchases-docs/ --delete
   deploy:
     working_directory: ~/purchases-android
     docker:
@@ -40,11 +40,7 @@ jobs:
       - run:
           name: Deployment
           command: |
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              .buildscripts/deploy_snapshot.sh
-            else
-              echo "==> ignoring non-master branch"
-            fi
+            .buildscripts/deploy_snapshot.sh
 workflows:
   version: 2
   build-docs:
