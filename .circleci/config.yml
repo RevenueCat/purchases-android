@@ -45,7 +45,10 @@ workflows:
   version: 2
   build-deploy-docs:
     jobs:
-      - build:
+      - build
+      - hold:
+          requires:
+            - build
           type: approval
       - deploy:
           requires:
