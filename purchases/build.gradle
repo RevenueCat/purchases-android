@@ -48,4 +48,6 @@ dokka {
     outputFormat = 'html'
     outputDirectory = "$buildDir/javadoc"
     includeNonPublic = false
+    skipDeprecated = true
+    reportUndocumented = true
 }
