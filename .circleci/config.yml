@@ -29,6 +29,12 @@ jobs:
   docs:
     executor: android-executor
     steps:
+      - checkout
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+      - run:
+          name: Accept licenses
+          command: yes | sdkmanager --licenses || true
       - run:
           name: Install awscli
           command: sudo pip install awscli
@@ -42,6 +48,12 @@ jobs:
   deploy:
     executor: android-executor
     steps:
+      - checkout
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+      - run:
+          name: Accept licenses
+          command: yes | sdkmanager --licenses || true
       - run:
           name: Deployment
           command: |
