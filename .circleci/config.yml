@@ -49,7 +49,7 @@ jobs:
             fi
 
 workflows:
-  version: 3
+  version: 1
   build-docs:
     jobs:
       - build
