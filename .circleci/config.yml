@@ -1,4 +1,4 @@
-version: 3
+version: 2.1
 executors:
   android-executor:
     docker:
@@ -47,7 +47,7 @@ jobs:
           command: |
             .buildscripts/deploy_snapshot.sh
 workflows:
-  version: 2
+  version: 2.1
   build-deploy-docs:
     jobs:
       - build
