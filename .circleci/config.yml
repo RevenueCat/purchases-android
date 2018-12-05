@@ -45,7 +45,7 @@ workflows:
   version: 2
   build-deploy-docs:
     jobs:
-      - build
+      - build:
           type: approval
       - deploy:
           requires:
