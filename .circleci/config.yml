@@ -46,7 +46,7 @@ jobs:
               echo "==> ignoring non-master branch"
             fi
 workflows:
-  version: 1
+  version: 2
   build-docs:
     jobs:
       - build
@@ -61,5 +61,4 @@ workflows:
             - build
           filters:
             branches:
-              only: 
-                - master
+              only: master
