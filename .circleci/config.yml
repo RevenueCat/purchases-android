@@ -43,13 +43,7 @@ jobs:
             .buildscripts/deploy_snapshot.sh
 workflows:
   version: 2
-  build-docs:
-    jobs:
-      - build
-      - docs:
-          requires:
-            - build
-  build-deploy:
+  build-deploy-docs:
     jobs:
       - build
       - deploy:
@@ -58,3 +52,7 @@ workflows:
           filters:
             branches:
               only: master
+      - docs:
+          type: approval
+          requires:
+            - build
