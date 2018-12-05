@@ -46,6 +46,7 @@ workflows:
   build-deploy-docs:
     jobs:
       - build
+          type: approval
       - deploy:
           requires:
             - build
@@ -53,6 +54,5 @@ workflows:
             branches:
               only: master
       - docs:
-          type: approval
           requires:
             - build
