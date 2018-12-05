@@ -448,6 +448,9 @@ class Purchases @JvmOverloads internal constructor(
 
     // endregion
     // region Overriden methods
+    /**
+     * @suppress
+     */
     override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards Purchase>) {
         postPurchases(purchases, allowSharingPlayStoreAccount, true)
     }

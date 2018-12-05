@@ -44,9 +44,27 @@ apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
 apply plugin: 'org.jetbrains.dokka-android'
 
 dokka {
-    outputFormat = 'html'
-    outputDirectory = "$buildDir/javadoc"
+    reportUndocumented = true
     includeNonPublic = false
     skipDeprecated = true
-    reportUndocumented = true
+    outputFormat = 'html'
+    outputDirectory = "$buildDir/docs"
+    // Specifies the location of the project source code on the Web.
+    // If provided, Dokka generates "source" links for each declaration.
+    // Repeat for multiple mappings
+    linkMapping {
+        // Source directory
+        dir = "src/main/kotlin"
+
+        // URL showing where the source code can be accessed through the web browser
+        url = "https://github.com/revenuecat/purchases-android/blob/master/src/main/kotlin"
+
+        // Suffix which is used to append the line number to the URL. Use #L for GitHub
+        suffix = "#L"
+    }
+    // Suppress a package
+    packageOptions {
+        prefix = "com.revenuecat.purchases.util" // will match kotlin.internal and all sub-packages of it
+        suppress = true
+    }
 }

@@ -33,3 +33,7 @@ task wrapper(type: Wrapper) {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+task javadoc(type: Javadoc) {
+    excludes = ['**/*.kt'] // < ---- Exclude all kotlin files from javadoc file.
+}
