@@ -20,13 +20,12 @@ jobs:
           command: yes | sdkmanager --licenses || true
       - run:
           name: Build
-          command: ./gradlew check build test
+          command: ./gradlew build
       - save_cache:
           paths:
             - ~/.gradle
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}     
-      - persist_to_workspace:
-          root: purchases
+
   docs:
     executor: android-executor
     steps:
@@ -34,8 +33,12 @@ jobs:
           name: Install awscli
           command: sudo pip install awscli
       - run:
+          name: Dokka
+          command: ./gradlew dokka    
+      - run:
           name: Deploy to S3
           command: aws s3 sync ~/purchases-android/purchases/build/javadoc s3://purchases-docs/ --delete
+  
   deploy:
     executor: android-executor
     steps:
