@@ -59,7 +59,7 @@ workflows:
   build-deploy:
     jobs:
       - build
-      - docs:
+      - deploy:
           requires:
             - build
           filters:
