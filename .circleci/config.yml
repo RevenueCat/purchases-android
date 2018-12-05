@@ -1,12 +1,17 @@
 version: 3
-jobs:
-  build:
-    working_directory: ~/purchases-android
+
+executors:
+  android-executor:
     docker:
       - image: circleci/android:api-27-alpha
+    working_directory: ~/purchases-android
     environment:
       JVM_OPTS: -Xmx3200m
       CIRCLE_JDK_VERSION: oraclejdk8
+
+jobs:
+  build:
+    executor: android-executor
     steps:
       - checkout
       - restore_cache:
@@ -21,10 +26,14 @@ jobs:
           paths:
             - ~/.gradle
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}     
+      - persist_to_workspace:
+          root: purchases
+          paths:
+            - *
+
   docs:
-    working_directory: ~/purchases-android
-    docker:
-      - image: circleci/android:api-27-alpha
+    build:
+      executor: android-executor
     steps:
       - run:
           name: Install awscli
@@ -32,15 +41,16 @@ jobs:
       - run:
           name: Deploy to S3
           command: aws s3 sync ~/purchases-android/purchases/build/javadoc s3://purchases-docs/ --delete
+
   deploy:
-    working_directory: ~/purchases-android
-    docker:
-      - image: circleci/android:api-27-alpha
+    build:
+      executor: android-executor
     steps:
       - run:
           name: Deployment
           command: |
             .buildscripts/deploy_snapshot.sh
+
 workflows:
   version: 2
   build-deploy-docs:
