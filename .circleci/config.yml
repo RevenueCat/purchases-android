@@ -58,4 +58,4 @@ workflows:
               only: master
       - docs:
           requires:
-            - build
+            - hold
