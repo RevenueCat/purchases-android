@@ -1,4 +1,4 @@
-version: 2
+version: 3
 jobs:
   build:
     working_directory: ~/purchases-android
@@ -21,6 +21,24 @@ jobs:
           paths:
             - ~/.gradle
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+      
+  docs:
+    working_directory: ~/purchases-android
+    docker:
+      - image: circleci/android:api-27-alpha
+    steps:
+      - run:
+          name: Install awscli
+          command: sudo pip install awscli
+      - run:
+          name: Deploy to S3
+          command: aws s3 sync purchases/build/javadoc s3://purchases-docs/ --delete
+
+  deploy:
+    working_directory: ~/purchases-android
+    docker:
+      - image: circleci/android:api-27-alpha
+    steps:
       - run:
           name: Deployment
           command: |
@@ -29,3 +47,21 @@ jobs:
             else
               echo "==> ignoring non-master branch"
             fi
+
+workflows:
+  version: 3
+  build-docs:
+    jobs:
+      - build
+      - docs:
+          requires:
+            - build
+  build-deploy:
+    jobs:
+      - build
+      - docs:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
