@@ -7,15 +7,13 @@ import java.util.concurrent.ExecutorService
 
 
 internal open class Dispatcher(private val executorService: ExecutorService) {
-    open val isClosed: Boolean
-        get() = this.executorService.isShutdown
 
     internal abstract class AsyncCall : Runnable {
         @Throws(HTTPClient.HTTPErrorException::class)
         abstract fun call(): HTTPClient.Result
 
-        internal open fun onError(code: Int, message: String) {}
-        internal open fun onCompletion(result: HTTPClient.Result) {}
+        open fun onError(code: Int, message: String) {}
+        open fun onCompletion(result: HTTPClient.Result) {}
 
         override fun run() {
             val mainHandler = Handler(Looper.getMainLooper())
@@ -36,4 +34,7 @@ internal open class Dispatcher(private val executorService: ExecutorService) {
     open fun close() {
         this.executorService.shutdownNow()
     }
+
+    open fun isClosed() = this.executorService.isShutdown
+
 }

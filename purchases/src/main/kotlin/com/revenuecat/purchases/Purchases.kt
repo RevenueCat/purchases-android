@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 import android.content.pm.PackageManager.PERMISSION_GRANTED
+import com.android.billingclient.api.SkuDetailsResponseListener
 
 /**
  * If true treats all purchases as restores, aliasing together appUserIDs that share a Play Store account.
@@ -300,7 +301,11 @@ class Purchases @JvmOverloads internal constructor(
         @BillingClient.SkuType skuType: String,
         handler: GetSkusResponseHandler
     ) {
-        billingWrapper.querySkuDetailsAsync(skuType, skus, handler::onReceiveSkus)
+        billingWrapper.querySkuDetailsAsync(skuType, skus, object : BillingWrapper.SkuDetailsResponseListener {
+            override fun onReceiveSkuDetails(skuDetails: List<SkuDetails>) {
+                handler.onReceiveSkus(skuDetails)
+            }
+        })
     }
 
     private fun getCaches() {
@@ -404,28 +409,34 @@ class Purchases @JvmOverloads internal constructor(
 
         billingWrapper.querySkuDetailsAsync(
             BillingClient.SkuType.SUBS,
-            skus
-        ) { subscriptionsSKUDetails ->
-            val detailsByID = HashMap<String, SkuDetails>()
+            skus,
+            object : BillingWrapper.SkuDetailsResponseListener {
+                override fun onReceiveSkuDetails(subscriptionsSKUDetails: List<SkuDetails>) {
+                    val detailsByID = HashMap<String, SkuDetails>()
 
-            val inAPPSkus = skus -
-                    subscriptionsSKUDetails
-                        .map { details -> details.sku to details }
-                        .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
-                        .map { skuToDetails -> skuToDetails.first }
+                    val inAPPSkus = skus -
+                            subscriptionsSKUDetails
+                                .map { details -> details.sku to details }
+                                .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
+                                .map { skuToDetails -> skuToDetails.first }
 
-            if (inAPPSkus.isNotEmpty()) {
-                billingWrapper.querySkuDetailsAsync(
-                    BillingClient.SkuType.INAPP,
-                    inAPPSkus
-                ) { skuDetails ->
-                    detailsByID.putAll(skuDetails.map { it.sku to it })
-                    onCompleted(detailsByID)
+                    if (inAPPSkus.isNotEmpty()) {
+                        billingWrapper.querySkuDetailsAsync(
+                            BillingClient.SkuType.INAPP,
+                            inAPPSkus,
+                            object : BillingWrapper.SkuDetailsResponseListener {
+                                override fun onReceiveSkuDetails(skuDetails: List<SkuDetails>) {
+                                    detailsByID.putAll(skuDetails.map { it.sku to it })
+                                    onCompleted(detailsByID)
+                                }
+                            }
+                        )
+                    } else {
+                        onCompleted(detailsByID)
+                    }
                 }
-            } else {
-                onCompleted(detailsByID)
             }
-        }
+        )
     }
 
     private fun afterSetListener(value: PurchasesListener?) {

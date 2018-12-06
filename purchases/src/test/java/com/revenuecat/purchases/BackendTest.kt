@@ -66,7 +66,7 @@ class BackendTest {
         }
     }
 
-    private inner class SyncDispatcher internal constructor() : Dispatcher(null) {
+    private inner class SyncDispatcher: Dispatcher(mockk()) {
 
         private var closed = false
 

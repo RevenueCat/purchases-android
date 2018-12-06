@@ -19,7 +19,7 @@ import java.util.ArrayList
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 
-class BillingWrapper internal constructor(
+internal class BillingWrapper internal constructor(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler
 ) : PurchasesUpdatedListener, BillingClientStateListener {
