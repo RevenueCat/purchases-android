@@ -68,6 +68,9 @@ workflows:
           requires:
             - build
           type: approval
+          filters:
+            branches:
+              only: master
       - deploy:
           requires:
             - build
@@ -77,3 +80,6 @@ workflows:
       - docs:
           requires:
             - hold
+          filters:
+            branches:
+              only: master
