@@ -29,8 +29,13 @@ import java.util.concurrent.TimeUnit
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 
 /**
- * Main class of the Purchases SDK. Make sure you follow the [quickstart](https://docs.revenuecat.com/docs/getting-started-1)
+ * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
+ * for your user. This can be when a user logs in if you have accounts or on launch if you can
+ * generate a random user identifier.
+ * Make sure you follow the [quickstart](https://docs.revenuecat.com/docs/getting-started-1)
  * guide to setup your RevenueCat account.
+ * @warning Only one instance of Purchases should be instantiated at a time!
+ * Set the [Purchases.sharedInstance] to let the SDK handle the singleton management for you.
  * @property [allowSharingPlayStoreAccount] If it should allow sharing Play Store accounts. False by
  * default. If true treats all purchases as restores, aliasing together appUserIDs that share a
  * Play Store account.
