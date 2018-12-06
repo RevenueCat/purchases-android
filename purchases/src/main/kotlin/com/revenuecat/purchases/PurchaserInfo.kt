@@ -9,9 +9,12 @@ import java.util.Date
 import java.util.HashMap
 
 /**
+ * Class containing all information regarding the purchaser
  * @property purchasedNonSubscriptionSkus Set of non-subscription, non-consumed skus
- * @property allExpirationDatesByProduct Map of skus to dates
- * @property allExpirationDatesByEntitlement Map of entitlement ids to dates
+ * @property allExpirationDatesByProduct Map of skus to expiration dates
+ * @property allPurchaseDatesByProduct Map of skus to purchase dates
+ * @property allExpirationDatesByEntitlement Map of entitlement ids to expiration dates
+ * @property allPurchaseDatesByEntitlement Map of entitlement ids to purchase dates
  * @property requestDate Date when this info was requested
  */
 class PurchaserInfo private constructor(
@@ -43,13 +46,14 @@ class PurchaserInfo private constructor(
         get() = allExpirationDatesByProduct.values.sortedBy { it }.takeUnless { it.isEmpty() }?.last()
 
     /**
-     * @return The identifiers of all the active entitlements
+     * The identifiers of all the active entitlements
      */
     val activeEntitlements: Set<String>
         get() = activeIdentifiers(allExpirationDatesByEntitlement)
 
     /**
-     * @param sku
+     * Get the expiration date for a given sku
+     * @param sku Sku for which to retrieve expiration date
      * @return Expiration date for given sku
      */
     fun getExpirationDateForSku(sku: String): Date? {
@@ -57,7 +61,8 @@ class PurchaserInfo private constructor(
     }
 
     /**
-     * @param sku
+     * Get the purchase date for given sku
+     * @param sku Sku for which to retrieve expiration date
      * @return Purchase date for given sku
      */
     fun getPurchaseDateForSku(sku: String): Date? {
@@ -65,15 +70,17 @@ class PurchaserInfo private constructor(
     }
 
     /**
-     * @param entitlement
-     * @return Expiration date for given entitlement
+     * Get the expiration date for a given entitlement
+     * @param entitlement Entitlement for which to return expiration date
+     * @return Expiration date for a given entitlement
      */
     fun getExpirationDateForEntitlement(entitlement: String): Date? {
         return allExpirationDatesByEntitlement[entitlement]
     }
 
     /**
-     * @param entitlement
+     * Get the purchase date for a given entitlement
+     * @param entitlement Entitlement for which to return purchase date
      * @return Purchase date for given entitlement
      */
     fun getPurchaseDateForEntitlement(entitlement: String): Date? {
@@ -88,7 +95,7 @@ class PurchaserInfo private constructor(
         return date.after(requestDate?: Date())
     }
 
-    object Factory {
+    internal object Factory {
 
         /**
          * Parses expiration dates in a JSONObject
