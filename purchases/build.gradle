@@ -44,11 +44,15 @@ apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
 apply plugin: 'org.jetbrains.dokka-android'
 
 dokka {
+    moduleName = 'purchases'
+    includes = ['README.md']
     reportUndocumented = true
     includeNonPublic = false
     skipDeprecated = true
     outputFormat = 'html'
-    outputDirectory = "$buildDir/docs"
+    outputDirectory = "$rootDir/docs"
+    sourceDirs = files('src/main/kotlin')
+
     // Specifies the location of the project source code on the Web.
     // If provided, Dokka generates "source" links for each declaration.
     // Repeat for multiple mappings
@@ -66,5 +70,9 @@ dokka {
     packageOptions {
         prefix = "com.revenuecat.purchases.util" // will match kotlin.internal and all sub-packages of it
         suppress = true
+    }
+    packageOptions {
+        prefix = "com.revenuecat.purchases" // will match kotlin.internal and all sub-packages of it
+        suppress = false
     }
 }
