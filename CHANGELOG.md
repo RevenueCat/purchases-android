@@ -1,3 +1,6 @@
+## 1.4.1
+- Prevents calling endConnection if the service is not ready
+
 ## 1.4.0
 - Adds singleton management inside the SDK
 - Adds reset, create alias and identify calls
