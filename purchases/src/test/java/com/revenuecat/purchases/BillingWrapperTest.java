@@ -352,6 +352,7 @@ public class BillingWrapperTest {
     @Test
     public void removingListenerDisconnects() {
         setup();
+        when(mockClient.isReady()).thenReturn(true);
         wrapper.setListener(null);
         verify(mockClient).endConnection();
         assertThat(wrapper.purchasesUpdatedListener).isNull();
@@ -414,14 +415,6 @@ public class BillingWrapperTest {
         wrapper.setListener(mockPurchasesListener);
 
         assertThat(wrapper.billingClient).isNotNull();
-    }
-
-    @Test
-    public void endConnectionIfConnectedAndRemovingListener() {
-        setup();
-        when(mockClient.isReady()).thenReturn(true);
-        wrapper.setListener(null);
-        verify(mockClient, times(1)).endConnection();
     }
 
     @Test
