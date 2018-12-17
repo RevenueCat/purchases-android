@@ -352,6 +352,7 @@ public class BillingWrapperTest {
     @Test
     public void removingListenerDisconnects() {
         setup();
+        when(mockClient.isReady()).thenReturn(true);
         wrapper.setListener(null);
         verify(mockClient).endConnection();
         assertThat(wrapper.purchasesUpdatedListener).isNull();
@@ -414,6 +415,14 @@ public class BillingWrapperTest {
         wrapper.setListener(mockPurchasesListener);
 
         assertThat(wrapper.billingClient).isNotNull();
+    }
+
+    @Test
+    public void doNotEndConnectionIfNotConnectedAndRemovingNewListener() {
+        setup();
+        when(mockClient.isReady()).thenReturn(false);
+        wrapper.setListener(null);
+        verify(mockClient, never()).endConnection();
     }
 
     private void mockNullSkuDetailsResponse() {
