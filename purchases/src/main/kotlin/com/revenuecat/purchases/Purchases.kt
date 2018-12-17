@@ -29,8 +29,16 @@ import java.util.concurrent.TimeUnit
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 
 /**
- * If true treats all purchases as restores, aliasing together appUserIDs that share a Play Store account.
- * @property [allowSharingPlayStoreAccount] If it should allow sharing Play Store accounts. False by default
+ * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
+ * for your user. This can be when a user logs in if you have accounts or on launch if you can
+ * generate a random user identifier.
+ * Make sure you follow the [quickstart](https://docs.revenuecat.com/docs/getting-started-1)
+ * guide to setup your RevenueCat account.
+ * @warning Only one instance of Purchases should be instantiated at a time!
+ * Set the [Purchases.sharedInstance] to let the SDK handle the singleton management for you.
+ * @property [allowSharingPlayStoreAccount] If it should allow sharing Play Store accounts. False by
+ * default. If true treats all purchases as restores, aliasing together appUserIDs that share a
+ * Play Store account.
  */
 class Purchases @JvmOverloads internal constructor(
     private val application: Application,
@@ -45,8 +53,7 @@ class Purchases @JvmOverloads internal constructor(
 ) : BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
 
     /**
-     * returns the passed in or generated app user ID
-     * @return appUserID
+     * The passed in or generated app user ID
      */
     var appUserID: String
 
@@ -267,7 +274,7 @@ class Purchases @JvmOverloads internal constructor(
 
     /**
      * Removes the [PurchasesListener]. You should call this to avoid memory leaks.
-     * @note This method just calls [setListener] passing a null
+     * @note This method just sets [listener] to null
      */
     fun removeListener() {
         listener = null
@@ -300,7 +307,11 @@ class Purchases @JvmOverloads internal constructor(
         @BillingClient.SkuType skuType: String,
         handler: GetSkusResponseHandler
     ) {
-        billingWrapper.querySkuDetailsAsync(skuType, skus, handler::onReceiveSkus)
+        billingWrapper.querySkuDetailsAsync(skuType, skus, object : BillingWrapper.SkuDetailsResponseListener {
+            override fun onReceiveSkuDetails(skuDetails: List<SkuDetails>) {
+                handler.onReceiveSkus(skuDetails)
+            }
+        })
     }
 
     private fun getCaches() {
@@ -404,28 +415,34 @@ class Purchases @JvmOverloads internal constructor(
 
         billingWrapper.querySkuDetailsAsync(
             BillingClient.SkuType.SUBS,
-            skus
-        ) { subscriptionsSKUDetails ->
-            val detailsByID = HashMap<String, SkuDetails>()
+            skus,
+            object : BillingWrapper.SkuDetailsResponseListener {
+                override fun onReceiveSkuDetails(subscriptionsSKUDetails: List<SkuDetails>) {
+                    val detailsByID = HashMap<String, SkuDetails>()
 
-            val inAPPSkus = skus -
-                    subscriptionsSKUDetails
-                        .map { details -> details.sku to details }
-                        .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
-                        .map { skuToDetails -> skuToDetails.first }
+                    val inAPPSkus = skus -
+                            subscriptionsSKUDetails
+                                .map { details -> details.sku to details }
+                                .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
+                                .map { skuToDetails -> skuToDetails.first }
 
-            if (inAPPSkus.isNotEmpty()) {
-                billingWrapper.querySkuDetailsAsync(
-                    BillingClient.SkuType.INAPP,
-                    inAPPSkus
-                ) { skuDetails ->
-                    detailsByID.putAll(skuDetails.map { it.sku to it })
-                    onCompleted(detailsByID)
+                    if (inAPPSkus.isNotEmpty()) {
+                        billingWrapper.querySkuDetailsAsync(
+                            BillingClient.SkuType.INAPP,
+                            inAPPSkus,
+                            object : BillingWrapper.SkuDetailsResponseListener {
+                                override fun onReceiveSkuDetails(skuDetails: List<SkuDetails>) {
+                                    detailsByID.putAll(skuDetails.map { it.sku to it })
+                                    onCompleted(detailsByID)
+                                }
+                            }
+                        )
+                    } else {
+                        onCompleted(detailsByID)
+                    }
                 }
-            } else {
-                onCompleted(detailsByID)
             }
-        }
+        )
     }
 
     private fun afterSetListener(value: PurchasesListener?) {
@@ -448,6 +465,9 @@ class Purchases @JvmOverloads internal constructor(
 
     // endregion
     // region Overriden methods
+    /**
+     * @suppress
+     */
     override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards Purchase>) {
         postPurchases(purchases, allowSharingPlayStoreAccount, true)
     }
@@ -510,8 +530,12 @@ class Purchases @JvmOverloads internal constructor(
     }
     // endregion
     // region Builder
+
     /**
      * Used to construct a Purchases object
+     * @param context Application context that will be used to communicate with Google
+     * @param apiKey RevenueCat apiKey. Make sure you follow the [quickstart](https://docs.revenuecat.com/docs/getting-started-1)
+     * guide to setup your RevenueCat account.
      */
     class Builder(
         private val context: Context,
@@ -521,6 +545,7 @@ class Purchases @JvmOverloads internal constructor(
             get() = context.applicationContext as Application
 
         private var appUserID: String? = null
+
         private var service: ExecutorService? = null
 
         init {
@@ -534,10 +559,21 @@ class Purchases @JvmOverloads internal constructor(
                 throw IllegalArgumentException("Needs an application context.")
         }
 
+        /**
+         * Used to set a user identifier. Check out this [guide](https://docs.revenuecat.com/docs/user-ids)
+         */
         fun appUserID(appUserID: String) = apply { this.appUserID = appUserID }
 
+        /**
+         * Used to set a network executor service for this Purchases instance
+         */
         fun networkExecutorService(service: ExecutorService) = apply { this.service = service }
 
+        /**
+         * Used to build the Purchases instance
+         * @return A Purchases instance. Make sure you set it as the [sharedInstance] if you
+         * want to reuse it.
+         */
         fun build(): Purchases {
 
             val service = this.service ?: createDefaultExecutor()
@@ -587,6 +623,7 @@ class Purchases @JvmOverloads internal constructor(
     companion object {
         /**
          * Singleton instance of Purchases
+         * @return A previously set singleton Purchases instance or null
          */
         @JvmStatic
         var sharedInstance: Purchases? = null
@@ -605,14 +642,33 @@ class Purchases @JvmOverloads internal constructor(
      * Different error domains
      */
     enum class ErrorDomains {
-        REVENUECAT_BACKEND, PLAY_BILLING
+        /**
+        * The error is related to the RevenueCat backend
+        */
+        REVENUECAT_BACKEND,
+        /**
+         * The error is related to Play Billing
+         */
+        PLAY_BILLING
     }
 
     /**
      * Different compatible attribution networks available
+     * @param serverValue Id of this attribution network in the RevenueCat server
      */
     enum class AttributionNetwork(val serverValue: Int)  {
-        ADJUST(1), APPSFLYER(2), BRANCH(3)
+        /**
+         * [https://www.adjust.com/]
+         */
+        ADJUST(1),
+        /**
+         * [https://www.appsflyer.com/]
+         */
+        APPSFLYER(2),
+        /**
+         * [http://branch.io/]
+         */
+        BRANCH(3)
     }
     // endregion
     // region Interfaces
@@ -620,12 +676,39 @@ class Purchases @JvmOverloads internal constructor(
      * Used to handle async updates from Purchases
      */
     interface PurchasesListener {
+        /**
+         * Called when purchase completes after a make purchase call or after a renewal
+         * @param sku Sku of the purchased product
+         * @param purchaserInfo Updated purchaser info after a successful purchase
+         */
         fun onCompletedPurchase(sku: String, purchaserInfo: PurchaserInfo)
+
+        /**
+         * Called when purchase fails after trying to make a purchase
+         * @param domain Can be REVENUECAT_BACKEND or PLAY_BILLING
+         * @param code The error code
+         * @param reason Message of the error
+         */
         fun onFailedPurchase(domain: ErrorDomains, code: Int, reason: String?)
 
+        /**
+         * Called when a new purchaser info has been received
+         * @param purchaserInfo Updated purchaser info after a successful purchase
+         */
         fun onReceiveUpdatedPurchaserInfo(purchaserInfo: PurchaserInfo)
 
+        /**
+         * Called after successfully restoring purchases after restorePurchasesForPlayStoreAccount
+         * @param purchaserInfo Updated purchaser info after a successful restore
+         */
         fun onRestoreTransactions(purchaserInfo: PurchaserInfo)
+
+        /**
+         * Called when restoring transactions fails after restorePurchasesForPlayStoreAccount
+         * @param domain Can be REVENUECAT_BACKEND or PLAY_BILLING
+         * @param code The error code
+         * @param reason Message of the error
+         */
         fun onRestoreTransactionsFailed(domain: ErrorDomains, code: Int, reason: String?)
     }
 
@@ -633,6 +716,10 @@ class Purchases @JvmOverloads internal constructor(
      * Used when retrieving subscriptions
      */
     interface GetSkusResponseHandler {
+        /**
+         * Will be called after fetching subscriptions
+         * @param skus List of SkuDetails
+         */
         fun onReceiveSkus(skus: @JvmSuppressWildcards List<SkuDetails>)
     }
 
@@ -640,12 +727,36 @@ class Purchases @JvmOverloads internal constructor(
      * Used when retrieving entitlements
      */
     interface GetEntitlementsHandler {
+        /**
+         * Will be called after a successful fetch of entitlements
+         * @param entitlementMap Map of entitlements keyed by name
+         */
         fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>)
+
+        /**
+         * Will be called if there was any problem fetching entitlements
+         * @param domain Can be REVENUECAT_BACKEND or PLAY_BILLING
+         * @param code The error code
+         * @param message Message of the error
+         */
         fun onReceiveEntitlementsError(domain: ErrorDomains, code: Int, message: String)
     }
 
+    /**
+     * Used when creating an alias
+     */
     interface AliasHandler {
+        /**
+         * Will be called after a successful create alias call
+         */
         fun onSuccess()
+
+        /**
+         * Will be called if an error happened while creating the alias
+         * @param domain Can be REVENUECAT_BACKEND or PLAY_BILLING
+         * @param code The error code
+         * @param message Message of the error
+         */
         fun onError(domain: ErrorDomains, code: Int, message: String)
     }
 

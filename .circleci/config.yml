@@ -1,12 +1,16 @@
-version: 2
-jobs:
-  build:
-    working_directory: ~/purchases-android
+version: 2.1
+executors:
+  android-executor:
     docker:
       - image: circleci/android:api-27-alpha
+    working_directory: ~/purchases-android
     environment:
       JVM_OPTS: -Xmx3200m
       CIRCLE_JDK_VERSION: oraclejdk8
+
+jobs:
+  build:
+    executor: android-executor
     steps:
       - checkout
       - restore_cache:
@@ -16,16 +20,69 @@ jobs:
           command: yes | sdkmanager --licenses || true
       - run:
           name: Build
-          command: ./gradlew check build test
+          command: ./gradlew build
       - save_cache:
           paths:
             - ~/.gradle
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}     
+
+  docs:
+    executor: android-executor
+    steps:
+      - checkout
+      - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+      - run:
+          name: Accept licenses
+          command: yes | sdkmanager --licenses || true
+      - run:
+          name: Install awscli
+          command: sudo pip install awscli
+      - run:
+          name: Dokka
+          command: ./gradlew dokka
+      - run:
+          name: Deploy to S3
+          command: aws s3 sync ~/purchases-android/docs s3://purchases-docs/android --delete --acl public-read
+      - run:
+          name: Invalidate CloudFront caches
+          command: aws cloudfront create-invalidation --distribution-id EPTW7F3CB566V --paths "/*"
+  
+  deploy:
+    executor: android-executor
+    steps:
+      - checkout
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+      - run:
+          name: Accept licenses
+          command: yes | sdkmanager --licenses || true
       - run:
           name: Deployment
           command: |
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              .buildscripts/deploy_snapshot.sh
-            else
-              echo "==> ignoring non-master branch"
-            fi
+            .buildscripts/deploy_snapshot.sh
+
+workflows:
+  version: 2
+  build-deploy-docs:
+    jobs:
+      - build
+      - hold:
+          requires:
+            - build
+          type: approval
+          filters:
+            branches:
+              only: master
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
+      - docs:
+          requires:
+            - hold
+          filters:
+            branches:
+              only: master

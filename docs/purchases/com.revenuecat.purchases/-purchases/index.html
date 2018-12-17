@@ -1,0 +1,259 @@
+<HTML>
+<HEAD>
+<meta charset="UTF-8">
+<title>Purchases - purchases</title>
+<link rel="stylesheet" href="../../../style.css">
+</HEAD>
+<BODY>
+<a href="../../index.html">purchases</a>&nbsp;/&nbsp;<a href="../index.html">com.revenuecat.purchases</a>&nbsp;/&nbsp;<a href="./index.html">Purchases</a><br/>
+<br/>
+<h1>Purchases</h1>
+<code><span class="keyword">class </span><span class="identifier">Purchases</span>&nbsp;<span class="symbol">:</span>&nbsp;<span class="identifier">PurchasesUpdatedListener</span><span class="symbol">, </span><a href="https://developer.android.com/reference/android/app/Application/ActivityLifecycleCallbacks.html"><span class="identifier">ActivityLifecycleCallbacks</span></a></code>
+<p>Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
+for your user. This can be when a user logs in if you have accounts or on launch if you can
+generate a random user identifier.
+Make sure you follow the <a href="https://docs.revenuecat.com/docs/getting-started-1">quickstart</a>
+guide to setup your RevenueCat account.</p>
+<p><strong>Warning</strong><br/>
+Only one instance of Purchases should be instantiated at a time!
+Set the <a href="shared-instance.html">Purchases.sharedInstance</a> to let the SDK handle the singleton management for you.</p>
+<h3>Types</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-alias-handler/index.html">AliasHandler</a></p>
+</td>
+<td>
+<code><span class="keyword">interface </span><span class="identifier">AliasHandler</span></code>
+<p>Used when creating an alias</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-attribution-network/index.html">AttributionNetwork</a></p>
+</td>
+<td>
+<code><span class="keyword">enum</span> <span class="keyword">class </span><span class="identifier">AttributionNetwork</span></code>
+<p>Different compatible attribution networks available</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-builder/index.html">Builder</a></p>
+</td>
+<td>
+<code><span class="keyword">class </span><span class="identifier">Builder</span></code>
+<p>Used to construct a Purchases object</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-error-domains/index.html">ErrorDomains</a></p>
+</td>
+<td>
+<code><span class="keyword">enum</span> <span class="keyword">class </span><span class="identifier">ErrorDomains</span></code>
+<p>Different error domains</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-get-entitlements-handler/index.html">GetEntitlementsHandler</a></p>
+</td>
+<td>
+<code><span class="keyword">interface </span><span class="identifier">GetEntitlementsHandler</span></code>
+<p>Used when retrieving entitlements</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-get-skus-response-handler/index.html">GetSkusResponseHandler</a></p>
+</td>
+<td>
+<code><span class="keyword">interface </span><span class="identifier">GetSkusResponseHandler</span></code>
+<p>Used when retrieving subscriptions</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-purchases-listener/index.html">PurchasesListener</a></p>
+</td>
+<td>
+<code><span class="keyword">interface </span><span class="identifier">PurchasesListener</span></code>
+<p>Used to handle async updates from Purchases</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>Properties</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="allow-sharing-play-store-account.html">allowSharingPlayStoreAccount</a></p>
+</td>
+<td>
+<code><span class="keyword">var </span><span class="identifier">allowSharingPlayStoreAccount</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html"><span class="identifier">Boolean</span></a></code>
+<p>If it should allow sharing Play Store accounts. False by
+default. If true treats all purchases as restores, aliasing together appUserIDs that share a
+Play Store account.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="app-user-i-d.html">appUserID</a></p>
+</td>
+<td>
+<code><span class="keyword">var </span><span class="identifier">appUserID</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a></code>
+<p>The passed in or generated app user ID</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="listener.html">listener</a></p>
+</td>
+<td>
+<code><span class="keyword">var </span><span class="identifier">listener</span><span class="symbol">: </span><a href="-purchases-listener/index.html"><span class="identifier">PurchasesListener</span></a><span class="symbol">?</span></code>
+<p>Adds a <a href="-purchases-listener/index.html">PurchasesListener</a> to handle async updates from Purchases. Remember to remove the
+listener when needed (i.e. <a href="https://developer.android.com/reference/android/app/Activity.html#onDestroy()">Activity.onDestroy</a> if it's an activity to avoid memory leaks)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="add-attribution-data.html">addAttributionData</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">addAttributionData</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Purchases$addAttributionData(org.json.JSONObject, com.revenuecat.purchases.Purchases.AttributionNetwork)/data">data</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/org/json/JSONObject.html"><span class="identifier">JSONObject</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Purchases$addAttributionData(org.json.JSONObject, com.revenuecat.purchases.Purchases.AttributionNetwork)/network">network</span><span class="symbol">:</span>&nbsp;<a href="-attribution-network/index.html"><span class="identifier">AttributionNetwork</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code><br/>
+<code><span class="keyword">fun </span><span class="identifier">addAttributionData</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Purchases$addAttributionData(kotlin.collections.Map((kotlin.String, )), com.revenuecat.purchases.Purchases.AttributionNetwork)/data">data</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html"><span class="identifier">Map</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">,</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">&gt;</span><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Purchases$addAttributionData(kotlin.collections.Map((kotlin.String, )), com.revenuecat.purchases.Purchases.AttributionNetwork)/network">network</span><span class="symbol">:</span>&nbsp;<a href="-attribution-network/index.html"><span class="identifier">AttributionNetwork</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Add attribution data from a supported network</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="close.html">close</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">close</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Call close when you are done with this instance of Purchases</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="create-alias.html">createAlias</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">createAlias</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Purchases$createAlias(kotlin.String, com.revenuecat.purchases.Purchases.AliasHandler)/newAppUserID">newAppUserID</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Purchases$createAlias(kotlin.String, com.revenuecat.purchases.Purchases.AliasHandler)/handler">handler</span><span class="symbol">:</span>&nbsp;<a href="-alias-handler/index.html"><span class="identifier">AliasHandler</span></a><span class="symbol">?</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>This function will alias two appUserIDs together.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="get-entitlements.html">getEntitlements</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">getEntitlements</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Purchases$getEntitlements(com.revenuecat.purchases.Purchases.GetEntitlementsHandler)/handler">handler</span><span class="symbol">:</span>&nbsp;<a href="-get-entitlements-handler/index.html"><span class="identifier">GetEntitlementsHandler</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Fetch the configured entitlements for this user. Entitlements allows you to configure your
+in-app products via RevenueCat and greatly simplifies management.
+See <a href="https://docs.revenuecat.com/v1.0/docs/entitlements">the guide</a> for more info.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="get-non-subscription-skus.html">getNonSubscriptionSkus</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">getNonSubscriptionSkus</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Purchases$getNonSubscriptionSkus(kotlin.collections.List((kotlin.String)), com.revenuecat.purchases.Purchases.GetSkusResponseHandler)/skus">skus</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html"><span class="identifier">List</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">&gt;</span><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Purchases$getNonSubscriptionSkus(kotlin.collections.List((kotlin.String)), com.revenuecat.purchases.Purchases.GetSkusResponseHandler)/handler">handler</span><span class="symbol">:</span>&nbsp;<a href="-get-skus-response-handler/index.html"><span class="identifier">GetSkusResponseHandler</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Gets the SKUDetails for the given list of non-subscription skus.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="get-subscription-skus.html">getSubscriptionSkus</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">getSubscriptionSkus</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Purchases$getSubscriptionSkus(kotlin.collections.List((kotlin.String)), com.revenuecat.purchases.Purchases.GetSkusResponseHandler)/skus">skus</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html"><span class="identifier">List</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">&gt;</span><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Purchases$getSubscriptionSkus(kotlin.collections.List((kotlin.String)), com.revenuecat.purchases.Purchases.GetSkusResponseHandler)/handler">handler</span><span class="symbol">:</span>&nbsp;<a href="-get-skus-response-handler/index.html"><span class="identifier">GetSkusResponseHandler</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Gets the SKUDetails for the given list of subscription skus.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="identify.html">identify</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">identify</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Purchases$identify(kotlin.String)/appUserID">appUserID</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>This function will change the current appUserID.
+Typically this would be used after a log out to identify a new user without calling configure</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="make-purchase.html">makePurchase</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">makePurchase</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Purchases$makePurchase(android.app.Activity, kotlin.String, kotlin.String, java.util.ArrayList((kotlin.String)))/activity">activity</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Purchases$makePurchase(android.app.Activity, kotlin.String, kotlin.String, java.util.ArrayList((kotlin.String)))/sku">sku</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Purchases$makePurchase(android.app.Activity, kotlin.String, kotlin.String, java.util.ArrayList((kotlin.String)))/skuType">skuType</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Purchases$makePurchase(android.app.Activity, kotlin.String, kotlin.String, java.util.ArrayList((kotlin.String)))/oldSkus">oldSkus</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/java/util/ArrayList.html"><span class="identifier">ArrayList</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">&gt;</span>&nbsp;<span class="symbol">=</span>&nbsp;ArrayList()<span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Make a purchase.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="remove-listener.html">removeListener</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">removeListener</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Removes the <a href="-purchases-listener/index.html">PurchasesListener</a>. You should call this to avoid memory leaks.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="reset.html">reset</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">reset</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Resets the Purchases client clearing the save appUserID. This will generate a random user id and save it in the cache.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="restore-purchases-for-play-store-account.html">restorePurchasesForPlayStoreAccount</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">restorePurchasesForPlayStoreAccount</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Restores purchases made with the current Play Store account for the current user.
+If you initialized Purchases with an <code>appUserID</code> any receipt tokens currently being used by
+other users of your app will not be restored. If you used an anonymous id, i.e. you
+initialized Purchases without an appUserID, any other anonymous users using the same
+purchases will be merged.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>Companion Object Properties</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="framework-version.html">frameworkVersion</a></p>
+</td>
+<td>
+<code><span class="keyword">val </span><span class="identifier">frameworkVersion</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a></code>
+<p>Current version of the Purchases SDK</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="shared-instance.html">sharedInstance</a></p>
+</td>
+<td>
+<code><span class="keyword">var </span><span class="identifier">sharedInstance</span><span class="symbol">: </span><a href="./index.html"><span class="identifier">Purchases</span></a><span class="symbol">?</span></code>
+<p>Singleton instance of Purchases</p>
+</td>
+</tr>
+</tbody>
+</table>
+</BODY>
+</HTML>

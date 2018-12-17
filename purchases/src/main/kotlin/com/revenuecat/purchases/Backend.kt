@@ -56,7 +56,7 @@ internal class Backend(
             }
         }
 
-        internal override fun onError(code: Int, message: String) {
+        override fun onError(code: Int, message: String) {
             handler.onError(code, message)
         }
     }
@@ -72,7 +72,7 @@ internal class Backend(
     }
 
     private fun enqueue(call: Dispatcher.AsyncCall) {
-        if (!dispatcher.isClosed) {
+        if (!dispatcher.isClosed()) {
             dispatcher.enqueue(call)
         }
     }
@@ -123,11 +123,11 @@ internal class Backend(
                 )
             }
 
-            internal override fun onError(code: Int, message: String) {
+            override fun onError(code: Int, message: String) {
                 handler.onError(code, message)
             }
 
-            internal override fun onCompletion(result: HTTPClient.Result) {
+            override fun onCompletion(result: HTTPClient.Result) {
                 if (result.responseCode < 300) {
                     try {
                         val entitlementsResponse = result.body!!.getJSONObject("entitlements")
