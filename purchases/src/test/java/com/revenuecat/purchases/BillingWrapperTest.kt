@@ -418,6 +418,9 @@ class BillingWrapperTest {
         every {
             mockClient.endConnection()
         } just Runs
+        every {
+            mockClient.isReady
+        } returns true
 
         wrapper!!.setListener(null)
         verify {
@@ -482,6 +485,9 @@ class BillingWrapperTest {
         every {
             mockClient.endConnection()
         } just Runs
+        every {
+            mockClient.isReady
+        } returns true
         wrapper!!.setListener(null)
 
         assertThat<BillingClient>(wrapper!!.billingClient).isNull()
@@ -493,6 +499,19 @@ class BillingWrapperTest {
         wrapper!!.setListener(mockPurchasesListener)
 
         assertThat<BillingClient>(wrapper!!.billingClient).isNotNull
+    }
+
+    @Test
+    fun doNotEndConnectionIfNotConnectedAndRemovingNewListener() {
+        setup()
+        every {
+            mockClient.isReady
+        } returns false
+
+        wrapper!!.setListener(null)
+        verify (exactly = 0) {
+            mockClient.endConnection()
+        }
     }
 
     private fun mockNullSkuDetailsResponse() {

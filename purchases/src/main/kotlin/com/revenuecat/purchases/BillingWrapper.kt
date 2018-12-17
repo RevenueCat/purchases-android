@@ -62,9 +62,9 @@ internal class BillingWrapper internal constructor(
             Log.d("Purchases", "starting connection for " + billingClient!!.toString())
             billingClient!!.startConnection(this)
         } else {
-            if (billingClient != null) {
+            billingClient?.takeIf { it.isReady }?.let {
                 Log.d("Purchases", "ending connection for " + billingClient!!.toString())
-                billingClient!!.endConnection()
+                it.endConnection()
             }
             billingClient = null
             clientConnected = false
