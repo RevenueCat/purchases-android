@@ -72,7 +72,7 @@ public class BillingWrapper implements PurchasesUpdatedListener, BillingClientSt
             Log.d("Purchases", "starting connection for " + billingClient.toString());
             billingClient.startConnection(this);
         } else {
-            if (billingClient != null) {
+            if (billingClient != null && clientConnected) {
                 Log.d("Purchases", "ending connection for " + billingClient.toString());
                 billingClient.endConnection();
             }
