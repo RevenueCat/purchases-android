@@ -632,7 +632,7 @@ class Purchases @JvmOverloads internal constructor(
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "1.4.2"
+        val frameworkVersion = "1.5.0-SNAPSHOT"
     }
 
     /**
