@@ -3,24 +3,26 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.support.test.runner.AndroidJUnit4
-
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-
-import org.json.JSONObject
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
-
-import java.util.ArrayList
-import java.util.HashMap
-
-import io.mockk.*
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
+import io.mockk.verifyOrder
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertSame
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import java.util.ArrayList
+import java.util.HashMap
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -303,12 +305,15 @@ class PurchasesTest {
     fun onResumeGetsSubscriberInfo() {
         setup()
         capturedActivityLifecycleCallbacks.captured.onActivityPaused(mockk())
+        verify(exactly = 2) {
+            listener.onReceiveUpdatedPurchaserInfo(any())
+        }
         capturedActivityLifecycleCallbacks.captured.onActivityResumed(mockk())
 
         verify {
             mockBackend.getSubscriberInfo(eq(appUserId), any())
         }
-        verify(exactly = 2) {
+        verify(exactly = 3) {
             listener.onReceiveUpdatedPurchaserInfo(any())
         }
     }
@@ -736,16 +741,6 @@ class PurchasesTest {
         setup()
 
         verify {
-            listener.onReceiveUpdatedPurchaserInfo(any())
-        }
-    }
-
-    @Test
-    fun cachedUserInfoEmitOnResumeActive() {
-        setup()
-        purchases!!.onActivityPaused(mockk())
-        purchases!!.onActivityResumed(mockk())
-        verify(exactly = 2) {
             listener.onReceiveUpdatedPurchaserInfo(any())
         }
     }
@@ -1350,6 +1345,14 @@ class PurchasesTest {
         Purchases.sharedInstance = purchases
         verify {
             purchases!!.close()
+        }
+    }
+
+    @Test
+    fun `when setting listener, cached purchaser info is sent if not null`() {
+        setup()
+        verify (exactly = 2) {
+            listener.onReceiveUpdatedPurchaserInfo(any())
         }
     }
 
