@@ -4,18 +4,16 @@ import android.Manifest
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Bundle
 import android.os.Handler
 import android.preference.PreferenceManager
 import android.util.Log
-
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-
 import org.json.JSONException
 import org.json.JSONObject
-
 import java.util.ArrayList
 import java.util.Date
 import java.util.HashMap
@@ -25,8 +23,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-
-import android.content.pm.PackageManager.PERMISSION_GRANTED
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -187,7 +183,7 @@ class Purchases @JvmOverloads internal constructor(
                                 allPurchases.addAll(inAppPurchasesList)
                                 if (allPurchases.isEmpty()) {
                                     if (cachesLastChecked != null && Date().time - cachesLastChecked!!.time < 60000) {
-                                        emitCachePurchaserInfo {
+                                        emitCachePurchaserInfoIfPresent {
                                             listener?.onRestoreTransactions(it)
                                         }
                                     } else {
@@ -282,7 +278,7 @@ class Purchases @JvmOverloads internal constructor(
 
     // region Private Methods
 
-    private fun emitCachePurchaserInfo(f: (PurchaserInfo) -> Unit) {
+    private fun emitCachePurchaserInfoIfPresent(f: (PurchaserInfo) -> Unit) {
         deviceCache.getCachedPurchaserInfo(appUserID)?.let { f(it) }
     }
 
@@ -316,7 +312,7 @@ class Purchases @JvmOverloads internal constructor(
 
     private fun getCaches() {
         if (cachesLastChecked != null && Date().time - cachesLastChecked!!.time < 60000) {
-            emitCachePurchaserInfo { listener?.onReceiveUpdatedPurchaserInfo(it) }
+            emitCachePurchaserInfoIfPresent { listener?.onReceiveUpdatedPurchaserInfo(it) }
         } else {
             cachesLastChecked = Date()
 
@@ -449,6 +445,7 @@ class Purchases @JvmOverloads internal constructor(
         if (value != null) {
             billingWrapper.setListener(this)
             application.registerActivityLifecycleCallbacks(this)
+            emitCachePurchaserInfoIfPresent { listener?.onReceiveUpdatedPurchaserInfo(it) }
             getCaches()
         } else {
             billingWrapper.setListener(null)
