@@ -1,3 +1,6 @@
+## 1.4.2
+- Sends cached purchaser info after listener is set to fix offline
+
 ## 1.4.1
 - Prevents calling endConnection if the service is not ready
 
