@@ -1,5 +1,12 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
+import android.os.Parcel
+import android.os.Parcelable
 import com.android.billingclient.api.SkuDetails
 
 /**
@@ -13,4 +20,64 @@ import com.android.billingclient.api.SkuDetails
 data class Offering @JvmOverloads internal constructor(
     val activeProductIdentifier: String,
     var skuDetails: SkuDetails? = null
-)
+) : Parcelable {
+
+    /**
+     * @hide
+     */
+    constructor(parcel: Parcel) : this(
+        parcel.readString(),
+        parcel.readString().takeUnless { it.isNullOrBlank() }?.let { SkuDetails(it) }
+    )
+
+    /**
+     * @hide
+     */
+    override fun toString() =
+        "<Offering activeProductIdentifier: $activeProductIdentifier, skuDetails: $skuDetails>"
+
+    /**
+     * @hide
+     */
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeString(activeProductIdentifier)
+        if (skuDetails != null) {
+            try {
+                val field = SkuDetails::class.java.getDeclaredField("mOriginalJson")
+                field.isAccessible = true
+                val value = field.get(skuDetails) as String
+                parcel.writeString(value)
+            } catch (e: NoSuchFieldException) {
+                errorLog("Error converting SkuDetails to Parcelable")
+                parcel.writeString("")
+            }
+        } else {
+            parcel.writeString("")
+        }
+    }
+
+    /**
+     * @hide
+     */
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    /**
+     * @hide
+     */
+    companion object CREATOR : Parcelable.Creator<Offering> {
+        /**
+         * @hide
+         */
+        override fun createFromParcel(parcel: Parcel): Offering {
+            return Offering(parcel)
+        }
+        /**
+         * @hide
+         */
+        override fun newArray(size: Int): Array<Offering?> {
+            return arrayOfNulls(size)
+        }
+    }
+}

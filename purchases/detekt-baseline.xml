@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <Blacklist timestamp="1547755406296"></Blacklist>
+  <Whitelist timestamp="1547755406296">
+    <ID>LargeClass:Purchases.kt$Purchases : PurchasesUpdatedListener</ID>
+    <ID>LongParameterList:Backend.kt$Backend$( purchaseToken: String, appUserID: String, productID: String, isRestore: Boolean, onSuccess: (PurchaserInfo) -&gt; Unit, onError: (PurchasesError) -&gt; Unit )</ID>
+    <ID>MagicNumber:Purchases.kt$Purchases.AttributionNetwork.BRANCH$3</ID>
+    <ID>MagicNumber:Purchases.kt$Purchases.AttributionNetwork.TENJIN$4</ID>
+    <ID>ThrowsCount:HTTPClient.kt$HTTPClient$@Throws(HTTPClient.HTTPErrorException::class) fun performRequest( path: String, body: JSONObject?, headers: Map&lt;String, String&gt;? ): Result</ID>
+    <ID>ThrowsCount:Purchases.kt$Purchases.Companion$ @JvmOverloads @JvmStatic fun configure( context: Context, apiKey: String, appUserID: String? = null, service: ExecutorService = createDefaultExecutor() ): Purchases</ID>
+    <ID>TooGenericExceptionCaught:Factories.kt$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:utils.kt$e: RuntimeException</ID>
+    <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
+    <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper : PurchasesUpdatedListenerBillingClientStateListener</ID>
+    <ID>TooManyFunctions:Purchases.kt$Purchases : PurchasesUpdatedListener</ID>
+  </Whitelist>
+</SmellBaseline>

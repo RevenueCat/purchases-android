@@ -17,7 +17,7 @@
 <p><a href="-entitlement/index.html">Entitlement</a></p>
 </td>
 <td>
-<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">Entitlement</span></code>
+<code><span class="keyword">class </span><span class="identifier">Entitlement</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable.html"><span class="identifier">Parcelable</span></a></code>
 <p>An entitlement represents features or content that a user is "entitled" to.
 Entitlements are unlocked by having an active subscription or making a one-time purchase.
 Many different products can unlock. Most subscription apps only have one entitlement,
@@ -32,7 +32,7 @@ See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for mo
 <p><a href="-offering/index.html">Offering</a></p>
 </td>
 <td>
-<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">Offering</span></code>
+<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">Offering</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable.html"><span class="identifier">Parcelable</span></a></code>
 <p>Most well monetized subscription apps provide many different offerings to purchase an
 entitlement. These are usually associated with different durations i.e. an annual plan and a
 monthly plan.
@@ -44,7 +44,7 @@ See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for mo
 <p><a href="-purchaser-info/index.html">PurchaserInfo</a></p>
 </td>
 <td>
-<code><span class="keyword">class </span><span class="identifier">PurchaserInfo</span></code>
+<code><span class="keyword">class </span><span class="identifier">PurchaserInfo</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable.html"><span class="identifier">Parcelable</span></a></code>
 <p>Class containing all information regarding the purchaser</p>
 </td>
 </tr>
@@ -53,12 +53,21 @@ See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for mo
 <p><a href="-purchases/index.html">Purchases</a></p>
 </td>
 <td>
-<code><span class="keyword">class </span><span class="identifier">Purchases</span>&nbsp;<span class="symbol">:</span>&nbsp;<span class="identifier">PurchasesUpdatedListener</span><span class="symbol">, </span><a href="https://developer.android.com/reference/android/app/Application/ActivityLifecycleCallbacks.html"><span class="identifier">ActivityLifecycleCallbacks</span></a></code>
+<code><span class="keyword">class </span><span class="identifier">Purchases</span>&nbsp;<span class="symbol">:</span>&nbsp;<span class="identifier">PurchasesUpdatedListener</span></code>
 <p>Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
 for your user. This can be when a user logs in if you have accounts or on launch if you can
 generate a random user identifier.
 Make sure you follow the <a href="https://docs.revenuecat.com/docs/getting-started-1">quickstart</a>
 guide to setup your RevenueCat account.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-purchases-error/index.html">PurchasesError</a></p>
+</td>
+<td>
+<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">PurchasesError</span></code>
+<p>This class represents an error</p>
 </td>
 </tr>
 </tbody>

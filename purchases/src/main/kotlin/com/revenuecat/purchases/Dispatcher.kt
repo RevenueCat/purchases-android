@@ -1,10 +1,14 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
 import android.os.Handler
 import android.os.Looper
 
 import java.util.concurrent.ExecutorService
-
 
 internal open class Dispatcher(private val executorService: ExecutorService) {
 
@@ -23,7 +27,6 @@ internal open class Dispatcher(private val executorService: ExecutorService) {
             } catch (e: HTTPClient.HTTPErrorException) {
                 mainHandler.post { onError(0, e.message!!) }
             }
-
         }
     }
 
@@ -36,5 +39,4 @@ internal open class Dispatcher(private val executorService: ExecutorService) {
     }
 
     open fun isClosed() = this.executorService.isShutdown
-
 }

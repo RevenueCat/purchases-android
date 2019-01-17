@@ -1,3 +1,8 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
 import android.Manifest
@@ -5,24 +10,31 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
-import android.os.Bundle
 import android.os.Handler
 import android.preference.PreferenceManager
+import android.support.annotation.VisibleForTesting
 import android.util.Log
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.interfaces.GetSkusResponseHandler
+import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
+import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
+import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
+import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.ArrayList
 import java.util.Date
 import java.util.HashMap
-import java.util.HashSet
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+
+private const val CACHE_REFRESH_PERIOD = 60000 * 5
+private const val HTTP_SERVER_ERROR = 500
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -37,38 +49,56 @@ import java.util.concurrent.TimeUnit
  * Play Store account.
  */
 class Purchases @JvmOverloads internal constructor(
-    private val application: Application,
-    _appUserID: String?,
+    backingFieldAppUserID: String?,
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
     var allowSharingPlayStoreAccount: Boolean = false,
-    internal val postedTokens: HashSet<String> = HashSet(),
-    private var cachesLastChecked: Date? = null,
-    private var cachedEntitlements: Map<String, Entitlement>? = null
-) : BillingWrapper.PurchasesUpdatedListener, Application.ActivityLifecycleCallbacks {
+    private var cachesLastUpdated: Date? = null
+) : BillingWrapper.PurchasesUpdatedListener {
 
     /**
      * The passed in or generated app user ID
      */
     var appUserID: String
 
-    private var shouldRefreshCaches = false
+    private var purchaseCallbacks: MutableMap<String, PurchaseCompletedListener> = mutableMapOf()
+    private var lastSentPurchaserInfo: PurchaserInfo? = null
 
     /**
-     * Adds a [PurchasesListener] to handle async updates from Purchases. Remember to remove the
-     * listener when needed (i.e. [Activity.onDestroy] if it's an activity to avoid memory leaks)
-     * @param [listener] Listener that will handle async updates from Purchases
+     * The listener is responsible for handling changes to purchaser information.
+     * Make sure [removeUpdatedPurchaserInfoListener] is called when the listener needs to be destroyed.
      */
-    var listener: PurchasesListener? = null
+    var updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null
         set(value) {
             field = value
             afterSetListener(value)
         }
 
+    internal var cachedEntitlements: Map<String, Entitlement>? = null
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        set(value) {
+            field = value
+        }
+        @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        get() = field
+
     init {
-        this.appUserID = _appUserID?.also { identify(it) } ?:
-                getAnonymousID().also { allowSharingPlayStoreAccount = true }
+        debugLog("Debug logging enabled.")
+        debugLog("SDK Version - $frameworkVersion")
+        debugLog("Initial App User ID - $backingFieldAppUserID")
+        if (backingFieldAppUserID != null) {
+            this.appUserID = backingFieldAppUserID
+            identify(this.appUserID)
+        } else {
+            this.appUserID = getAnonymousID().also {
+                debugLog("Generated New App User ID - $it")
+                allowSharingPlayStoreAccount = true
+            }
+            updateCaches()
+        }
+
+        billingWrapper.purchasesUpdatedListener = this
     }
 
     /**
@@ -107,25 +137,20 @@ class Purchases @JvmOverloads internal constructor(
      *
      * @param [handler] Called when entitlements are available. Called immediately if entitlements are cached.
      */
-    fun getEntitlements(handler: GetEntitlementsHandler) {
-        this.cachedEntitlements?.let {
-            handler.onReceiveEntitlements(it)
-        } ?: backend.getEntitlements(appUserID, object : Backend.EntitlementsResponseHandler() {
-
-            override fun onReceiveEntitlements(entitlements: Map<String, Entitlement>) {
-                getSkuDetails(entitlements) { detailsByID ->
-                    populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler)
-                }
+    fun getEntitlements(
+        handler: ReceiveEntitlementsListener
+    ) {
+        if (this.cachedEntitlements != null) {
+            debugLog("Vending entitlements from cache")
+            handler.onReceived(this.cachedEntitlements, null)
+            if (isCacheStale()) {
+                debugLog("Cache is stale, updating caches")
+                updateCaches()
             }
-
-            override fun onError(code: Int, message: String) {
-                handler.onReceiveEntitlementsError(
-                    ErrorDomains.REVENUECAT_BACKEND,
-                    code,
-                    "Error fetching entitlements: $message"
-                )
-            }
-        })
+        } else {
+            debugLog("No cached entitlements, fetching")
+            fetchAndCacheEntitlements(handler)
+        }
     }
 
     /**
@@ -133,7 +158,10 @@ class Purchases @JvmOverloads internal constructor(
      * @param [skus] List of skus
      * @param [handler] Response handler
      */
-    fun getSubscriptionSkus(skus: List<String>, handler: GetSkusResponseHandler) {
+    fun getSubscriptionSkus(
+        skus: List<String>,
+        handler: GetSkusResponseHandler
+    ) {
         getSkus(skus, BillingClient.SkuType.SUBS, handler)
     }
 
@@ -142,7 +170,10 @@ class Purchases @JvmOverloads internal constructor(
      * @param [skus] List of skus
      * @param [handler] Response handler
      */
-    fun getNonSubscriptionSkus(skus: List<String>, handler: GetSkusResponseHandler) {
+    fun getNonSubscriptionSkus(
+        skus: List<String>,
+        handler: GetSkusResponseHandler
+    ) {
         getSkus(skus, BillingClient.SkuType.INAPP, handler)
     }
 
@@ -152,15 +183,46 @@ class Purchases @JvmOverloads internal constructor(
      * @param [sku] The sku you wish to purchase
      * @param [skuType] The type of sku, INAPP or SUBS
      * @param [oldSkus] The skus you wish to upgrade from.
+     * @param [completion] The listener that will be called when purchase completes.
      */
-    @JvmOverloads
     fun makePurchase(
         activity: Activity,
         sku: String,
         @BillingClient.SkuType skuType: String,
-        oldSkus: ArrayList<String> = ArrayList()
+        oldSkus: ArrayList<String>,
+        completion: PurchaseCompletedListener
     ) {
-        billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
+        debugLog("makePurchase - $sku")
+        if (purchaseCallbacks.containsKey(sku)) {
+            completion.onCompleted(
+                null,
+                null,
+                PurchasesError(
+                    ErrorDomains.REVENUECAT_API,
+                    PurchasesAPIError.DUPLICATE_MAKE_PURCHASE_CALLS.ordinal,
+                    "Purchase already in progress for this product."
+                )
+            )
+        } else {
+            purchaseCallbacks[sku] = completion
+            billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
+        }
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [sku] The sku you wish to purchase
+     * @param [skuType] The type of sku, INAPP or SUBS
+     * @param [completion] The listener that will be called when purchase completes.
+     */
+    fun makePurchase(
+        activity: Activity,
+        sku: String,
+        @BillingClient.SkuType skuType: String,
+        completion: PurchaseCompletedListener
+    ) {
+        makePurchase(activity, sku, skuType, ArrayList(), completion)
     }
 
     /**
@@ -170,53 +232,27 @@ class Purchases @JvmOverloads internal constructor(
      * initialized Purchases without an appUserID, any other anonymous users using the same
      * purchases will be merged.
      */
-    fun restorePurchasesForPlayStoreAccount() {
+    fun restorePurchases(
+        completion: ReceivePurchaserInfoListener
+    ) {
+        debugLog("Restoring purchases")
         billingWrapper.queryPurchaseHistoryAsync(
             BillingClient.SkuType.SUBS,
-            object : BillingWrapper.PurchaseHistoryResponseListener {
-                override fun onReceivePurchaseHistory(subsPurchasesList: List<Purchase>) {
-                    billingWrapper.queryPurchaseHistoryAsync(
-                        BillingClient.SkuType.INAPP,
-                        object : BillingWrapper.PurchaseHistoryResponseListener {
-                            override fun onReceivePurchaseHistory(inAppPurchasesList: List<Purchase>) {
-                                val allPurchases = ArrayList(subsPurchasesList)
-                                allPurchases.addAll(inAppPurchasesList)
-                                if (allPurchases.isEmpty()) {
-                                    if (cachesLastChecked != null && Date().time - cachesLastChecked!!.time < 60000) {
-                                        emitCachePurchaserInfoIfPresent {
-                                            listener?.onRestoreTransactions(it)
-                                        }
-                                    } else {
-                                        cachesLastChecked = Date()
-
-                                        getSubscriberInfo { listener?.onRestoreTransactions(it) }
-                                    }
-                                } else {
-                                    postPurchases(allPurchases, true, false)
-                                }
-                            }
-
-                            override fun onReceivePurchaseHistoryError(
-                                responseCode: Int,
-                                message: String
-                            ) {
-                                listener?.onRestoreTransactionsFailed(
-                                    ErrorDomains.PLAY_BILLING,
-                                    responseCode,
-                                    message
-                                )
-                            }
-                        })
-                }
-
-                override fun onReceivePurchaseHistoryError(responseCode: Int, message: String) {
-                    listener?.onRestoreTransactionsFailed(
-                        ErrorDomains.PLAY_BILLING,
-                        responseCode,
-                        message
-                    )
-                }
-            })
+            { subsPurchasesList ->
+                billingWrapper.queryPurchaseHistoryAsync(
+                    BillingClient.SkuType.INAPP,
+                    { inAppPurchasesList ->
+                        val allPurchases = ArrayList(subsPurchasesList)
+                        allPurchases.addAll(inAppPurchasesList)
+                        if (allPurchases.isEmpty()) {
+                            getPurchaserInfo(completion)
+                        } else {
+                            postRestoredPurchases(allPurchases, completion)
+                        }
+                    },
+                    { error -> completion.onReceived(null, error) })
+            },
+            { error -> completion.onReceived(null, error) })
     }
 
     /**
@@ -224,16 +260,21 @@ class Purchases @JvmOverloads internal constructor(
      * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
      * @param [handler] An optional handler to listen for successes or errors.
      */
-    fun createAlias(newAppUserID: String, handler: AliasHandler?) {
+    @JvmOverloads
+    fun createAlias(
+        newAppUserID: String,
+        handler: ReceivePurchaserInfoListener? = null
+    ) {
+        debugLog("Creating an alias to $appUserID from $newAppUserID")
         backend.createAlias(
             appUserID,
             newAppUserID,
             {
-                identify(newAppUserID)
-                handler?.onSuccess()
+                debugLog("Alias created")
+                identify(newAppUserID, handler)
             },
-            { code, message ->
-                handler?.onError(ErrorDomains.REVENUECAT_BACKEND, code, message)
+            { error ->
+                handler?.onReceived(null, error)
             }
         )
     }
@@ -243,59 +284,108 @@ class Purchases @JvmOverloads internal constructor(
      * Typically this would be used after a log out to identify a new user without calling configure
      * @param appUserID The new appUserID that should be linked to the currently user
      */
-    fun identify(appUserID: String) {
-        clearCachedRandomId()
+    @JvmOverloads
+    fun identify(
+        appUserID: String,
+        completion: ReceivePurchaserInfoListener? = null
+    ) {
+        debugLog("Changing App User ID: ${this.appUserID} -> $appUserID")
+        clearCaches()
         this.appUserID = appUserID
-        postedTokens.clear()
-        makeCachesOutdatedAndNotifyIfNeeded()
+        purchaseCallbacks.clear()
+        updateCaches(completion)
     }
 
     /**
-     * Resets the Purchases client clearing the save appUserID. This will generate a random user id and save it in the cache.
+     * Resets the Purchases client clearing the save appUserID. This will generate a random user
+     * id and save it in the cache.
      */
-    fun reset() {
+    @JvmOverloads
+    fun reset(
+        completion: ReceivePurchaserInfoListener? = null
+    ) {
+        clearCaches()
         this.appUserID = createRandomIDAndCacheIt()
-        allowSharingPlayStoreAccount = true
-        postedTokens.clear()
-        makeCachesOutdatedAndNotifyIfNeeded()
+        purchaseCallbacks.clear()
+        updateCaches(completion)
     }
 
     /**
      * Call close when you are done with this instance of Purchases
      */
     fun close() {
+        purchaseCallbacks.clear()
         this.backend.close()
-        removeListener()
+        billingWrapper.purchasesUpdatedListener = null
     }
 
     /**
-     * Removes the [PurchasesListener]. You should call this to avoid memory leaks.
-     * @note This method just sets [listener] to null
+     * Get latest available purchaser info.
+     * @param completion A listener called when purchaser info is available and not stale.
+     * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    fun removeListener() {
-        listener = null
+    fun getPurchaserInfo(
+        completion: ReceivePurchaserInfoListener
+    ) {
+        val cachedPurchaserInfo = deviceCache.getCachedPurchaserInfo(appUserID)
+        if (cachedPurchaserInfo != null) {
+            debugLog("Vending purchaserInfo from cache")
+            completion.onReceived(cachedPurchaserInfo, null)
+            if (isCacheStale()) {
+                debugLog("Cache is stale, updating caches")
+                updateCaches()
+            }
+        } else {
+            debugLog("No cached purchaser info, fetching")
+            updateCaches(completion)
+        }
+    }
+
+    /**
+     * Call this when you are finished using the [updatedPurchaserInfoListener]. You should call this
+     * to avoid memory leaks.
+     */
+    fun removeUpdatedPurchaserInfoListener() {
+        this.updatedPurchaserInfoListener = null
     }
 
     // region Private Methods
-
-    private fun emitCachePurchaserInfoIfPresent(f: (PurchaserInfo) -> Unit) {
-        deviceCache.getCachedPurchaserInfo(appUserID)?.let { f(it) }
+    private fun fetchAndCacheEntitlements(handler: ReceiveEntitlementsListener? = null) {
+        backend.getEntitlements(
+            appUserID,
+            { entitlements ->
+                getSkuDetails(entitlements) { detailsByID ->
+                    cachedEntitlements = entitlements
+                    populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler)
+                }
+            },
+            { error ->
+                log("Error fetching entitlements - $error")
+                handler?.onReceived(
+                    null,
+                    error
+                )
+            })
     }
 
     private fun populateSkuDetailsAndCallHandler(
         details: Map<String, SkuDetails>,
         entitlements: Map<String, Entitlement>,
-        handler: GetEntitlementsHandler
+        handler: ReceiveEntitlementsListener?
     ) {
+        val missingProducts = mutableListOf<String>()
         entitlements.values.flatMap { it.offerings.values }.forEach { o ->
             if (details.containsKey(o.activeProductIdentifier)) {
                 o.skuDetails = details[o.activeProductIdentifier]
             } else {
-                Log.e("Purchases", "Failed to find SKU for " + o.activeProductIdentifier)
+                missingProducts.add(o.activeProductIdentifier)
             }
         }
-        cachedEntitlements = entitlements
-        handler.onReceiveEntitlements(entitlements)
+        if (missingProducts.isNotEmpty()) {
+            log("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
+            log("Ensure your products are correctly configured in Play Store Developer Console")
+        }
+        handler?.onReceived(entitlements, null)
     }
 
     private fun getSkus(
@@ -303,89 +393,93 @@ class Purchases @JvmOverloads internal constructor(
         @BillingClient.SkuType skuType: String,
         handler: GetSkusResponseHandler
     ) {
-        billingWrapper.querySkuDetailsAsync(skuType, skus, object : BillingWrapper.SkuDetailsResponseListener {
-            override fun onReceiveSkuDetails(skuDetails: List<SkuDetails>) {
-                handler.onReceiveSkus(skuDetails)
-            }
-        })
-    }
-
-    private fun getCaches() {
-        if (cachesLastChecked != null && Date().time - cachesLastChecked!!.time < 60000) {
-            emitCachePurchaserInfoIfPresent { listener?.onReceiveUpdatedPurchaserInfo(it) }
-        } else {
-            cachesLastChecked = Date()
-
-            getSubscriberInfo { listener?.onReceiveUpdatedPurchaserInfo(it) }
-
-            getEntitlements(object : GetEntitlementsHandler {
-                override fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>) {}
-
-                override fun onReceiveEntitlementsError(domain: ErrorDomains, code: Int, message: String) {}
-            })
+        billingWrapper.querySkuDetailsAsync(
+            skuType,
+            skus
+        ) { skuDetails ->
+            handler.onReceiveSkus(skuDetails)
         }
     }
 
-    private fun getSubscriberInfo(onReceived: (PurchaserInfo) -> Unit) {
-        backend.getSubscriberInfo(appUserID, object : Backend.BackendResponseHandler() {
-            override fun onReceivePurchaserInfo(info: PurchaserInfo) {
-                deviceCache.cachePurchaserInfo(appUserID, info)
-                onReceived(info)
-            }
+    private fun updateCaches(
+        completion: ReceivePurchaserInfoListener? = null
+    ) {
+        cachesLastUpdated = Date()
+        fetchAndCachePurchaserInfo(completion)
+        fetchAndCacheEntitlements()
+    }
 
-            override fun onError(code: Int, message: String?) {
-                Log.e("Purchases", "Error fetching subscriber data: $message")
-                cachesLastChecked = null
-            }
-        })
+    private fun fetchAndCachePurchaserInfo(completion: ReceivePurchaserInfoListener?) {
+        backend.getPurchaserInfo(
+            appUserID,
+            { info ->
+                cachePurchaserInfo(info)
+                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                completion?.onReceived(info, null)
+            },
+            { error ->
+                Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
+                clearCaches()
+                completion?.onReceived(null, error)
+            })
+    }
+
+    private fun isCacheStale() =
+        cachesLastUpdated == null || Date().time - cachesLastUpdated!!.time > CACHE_REFRESH_PERIOD
+
+    private fun clearCaches() {
+        deviceCache.clearCachedPurchaserInfo(appUserID)
+        deviceCache.clearCachedAppUserID()
+        cachesLastUpdated = null
+        cachedEntitlements = null
+    }
+
+    private fun cachePurchaserInfo(info: PurchaserInfo) {
+        deviceCache.cachePurchaserInfo(appUserID, info)
     }
 
     private fun postPurchases(
         purchases: List<Purchase>,
-        isRestore: Boolean,
-        isPurchase: Boolean
+        allowSharingPlayStoreAccount: Boolean,
+        onSuccess: (Purchase, PurchaserInfo) -> Unit,
+        onError: (Purchase, PurchasesError) -> Unit
     ) {
-        for (p in purchases) {
-            val token = p.purchaseToken
-            val sku = p.sku
-
-            if (postedTokens.contains(token)) continue
-            postedTokens.add(token)
+        purchases.forEach { purchase ->
             backend.postReceiptData(
-                token,
+                purchase.purchaseToken,
                 appUserID,
-                sku,
-                isRestore,
-                object : Backend.BackendResponseHandler() {
-                    override fun onReceivePurchaserInfo(info: PurchaserInfo) {
-                        billingWrapper.consumePurchase(token)
-
-                        deviceCache.cachePurchaserInfo(appUserID, info)
-                        when {
-                            isPurchase -> listener?.onCompletedPurchase(sku, info)
-                            isRestore -> listener?.onRestoreTransactions(info)
-                            else -> listener?.onReceiveUpdatedPurchaserInfo(info)
-                        }
+                purchase.sku,
+                allowSharingPlayStoreAccount,
+                { info ->
+                    billingWrapper.consumePurchase(purchase.purchaseToken)
+                    cachePurchaserInfo(info)
+                    sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                    onSuccess(purchase, info)
+                }, { error ->
+                    if (error.code < HTTP_SERVER_ERROR) {
+                        billingWrapper.consumePurchase(purchase.purchaseToken)
                     }
+                    onError(purchase, error)
+                })
+        }
+    }
 
-                    override fun onError(code: Int, message: String?) {
-                        if (code < 500) {
-                            billingWrapper.consumePurchase(token)
-                            postedTokens.remove(token)
-                        }
-
-                        when {
-                            isPurchase -> listener?.onFailedPurchase(
-                                ErrorDomains.REVENUECAT_BACKEND,
-                                code,
-                                message
-                            )
-                            isRestore -> listener?.onRestoreTransactionsFailed(
-                                ErrorDomains.REVENUECAT_BACKEND,
-                                code,
-                                message
-                            )
-                        }
+    private fun postRestoredPurchases(
+        purchases: List<Purchase>,
+        onCompletion: ReceivePurchaserInfoListener
+    ) {
+        purchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
+            postPurchases(
+                sortedByTime,
+                true,
+                { purchase, info ->
+                    if (sortedByTime.last() == purchase) {
+                        onCompletion.onReceived(info, null)
+                    }
+                },
+                { purchase, error ->
+                    if (sortedByTime.last() == purchase) {
+                        onCompletion.onReceived(null, error)
                     }
                 })
         }
@@ -401,152 +495,151 @@ class Purchases @JvmOverloads internal constructor(
         }
     }
 
-    private fun clearCachedRandomId() {
-        deviceCache.clearCachedAppUserID()
-    }
-
-    private fun getSkuDetails(entitlements: Map<String, Entitlement>, onCompleted: (HashMap<String, SkuDetails>) -> Unit) {
+    private fun getSkuDetails(
+        entitlements: Map<String, Entitlement>,
+        onCompleted: (HashMap<String, SkuDetails>) -> Unit
+    ) {
         val skus =
             entitlements.values.flatMap { it.offerings.values }.map { it.activeProductIdentifier }
 
         billingWrapper.querySkuDetailsAsync(
             BillingClient.SkuType.SUBS,
-            skus,
-            object : BillingWrapper.SkuDetailsResponseListener {
-                override fun onReceiveSkuDetails(subscriptionsSKUDetails: List<SkuDetails>) {
-                    val detailsByID = HashMap<String, SkuDetails>()
+            skus
+        ) { subscriptionsSKUDetails ->
+            val detailsByID = HashMap<String, SkuDetails>()
+            val inAPPSkus =
+                skus - subscriptionsSKUDetails
+                    .map { details -> details.sku to details }
+                    .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
+                    .map { skuToDetails -> skuToDetails.first }
 
-                    val inAPPSkus = skus -
-                            subscriptionsSKUDetails
-                                .map { details -> details.sku to details }
-                                .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
-                                .map { skuToDetails -> skuToDetails.first }
-
-                    if (inAPPSkus.isNotEmpty()) {
-                        billingWrapper.querySkuDetailsAsync(
-                            BillingClient.SkuType.INAPP,
-                            inAPPSkus,
-                            object : BillingWrapper.SkuDetailsResponseListener {
-                                override fun onReceiveSkuDetails(skuDetails: List<SkuDetails>) {
-                                    detailsByID.putAll(skuDetails.map { it.sku to it })
-                                    onCompleted(detailsByID)
-                                }
-                            }
-                        )
-                    } else {
-                        onCompleted(detailsByID)
-                    }
+            if (inAPPSkus.isNotEmpty()) {
+                billingWrapper.querySkuDetailsAsync(
+                    BillingClient.SkuType.INAPP,
+                    inAPPSkus
+                ) { skuDetails ->
+                    detailsByID.putAll(skuDetails.map { it.sku to it })
+                    onCompleted(detailsByID)
                 }
+            } else {
+                onCompleted(detailsByID)
             }
-        )
-    }
-
-    private fun afterSetListener(value: PurchasesListener?) {
-        if (value != null) {
-            billingWrapper.setListener(this)
-            application.registerActivityLifecycleCallbacks(this)
-            emitCachePurchaserInfoIfPresent { listener?.onReceiveUpdatedPurchaserInfo(it) }
-            getCaches()
-        } else {
-            billingWrapper.setListener(null)
-            application.unregisterActivityLifecycleCallbacks(this)
         }
     }
 
-    private fun makeCachesOutdatedAndNotifyIfNeeded() {
-        cachesLastChecked = null
+    private fun afterSetListener(listener: UpdatedPurchaserInfoListener?) {
         if (listener != null) {
-            getCaches()
+            debugLog("Listener set")
+            deviceCache.getCachedPurchaserInfo(appUserID)?.let {
+                this.sendUpdatedPurchaserInfoToDelegateIfChanged(it)
+            }
         }
     }
 
+    private fun sendUpdatedPurchaserInfoToDelegateIfChanged(info: PurchaserInfo) {
+        if (updatedPurchaserInfoListener != null) {
+            if (lastSentPurchaserInfo != info) {
+                if (lastSentPurchaserInfo != null) {
+                    debugLog("Purchaser info updated, sending to listener")
+                } else {
+                    debugLog("Sending latest purchaser info to delegate")
+                }
+                lastSentPurchaserInfo = info
+                updatedPurchaserInfoListener?.onReceived(info)
+            }
+        }
+    }
     // endregion
+
     // region Overriden methods
     /**
      * @suppress
      */
     override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards Purchase>) {
-        postPurchases(purchases, allowSharingPlayStoreAccount, true)
+        postPurchases(
+            purchases,
+            allowSharingPlayStoreAccount,
+            { purchase, info ->
+                purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info, null)
+            },
+            { purchase, error ->
+                purchaseCallbacks.remove(purchase.sku)?.onCompleted(
+                    null,
+                    null,
+                    PurchasesError(error.domain, error.code, error.message)
+                )
+            }
+        )
     }
 
     /**
      * @suppress
      */
-    override fun onPurchasesFailedToUpdate(responseCode: Int, message: String) {
-        listener?.onFailedPurchase(ErrorDomains.PLAY_BILLING, responseCode, message)
-    }
-
-    /**
-     * @suppress
-     */
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
-
-    }
-
-    /**
-     * @suppress
-     */
-    override fun onActivityStarted(activity: Activity) {
-
-    }
-
-    /**
-     * @suppress
-     */
-    override fun onActivityResumed(activity: Activity) {
-        if (shouldRefreshCaches) getCaches()
-        shouldRefreshCaches = false
-    }
-
-    /**
-     * @suppress
-     */
-    override fun onActivityPaused(activity: Activity) {
-        shouldRefreshCaches = true
-    }
-
-    /**
-     * @suppress
-     */
-    override fun onActivityStopped(activity: Activity) {
-
-    }
-
-    /**
-     * @suppress
-     */
-    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle?) {
-
-    }
-
-    /**
-     * @suppress
-     */
-    override fun onActivityDestroyed(activity: Activity) {
-
+    override fun onPurchasesFailedToUpdate(
+        purchases: List<Purchase>?,
+        @BillingClient.BillingResponse responseCode: Int,
+        message: String
+    ) {
+        purchases?.mapNotNull { purchaseCallbacks.remove(it.sku) }?.forEach {
+            it.onCompleted(
+                null,
+                null,
+                PurchasesError(ErrorDomains.PLAY_BILLING, responseCode, message)
+            )
+        }
     }
     // endregion
-    // region Builder
 
-    /**
-     * Used to construct a Purchases object
-     * @param context Application context that will be used to communicate with Google
-     * @param apiKey RevenueCat apiKey. Make sure you follow the [quickstart](https://docs.revenuecat.com/docs/getting-started-1)
-     * guide to setup your RevenueCat account.
-     */
-    class Builder(
-        private val context: Context,
-        private val apiKey: String
-    ) {
-        private val application: Application
-            get() = context.applicationContext as Application
+    // region Static
+    companion object {
+        /**
+         * Enable debug logging. Useful for debugging issues with the lovely team @RevenueCat
+         */
+        @JvmStatic
+        var debugLogsEnabled = false
 
-        private var appUserID: String? = null
+        private var backingFieldSharedInstance: Purchases? = null
+        /**
+         * Singleton instance of Purchases. [configure] will set this
+         * @return A previously set singleton Purchases instance or null
+         */
+        @JvmStatic
+        var sharedInstance: Purchases
+            get() =
+                backingFieldSharedInstance
+                    ?: throw UninitializedPropertyAccessException("There is no singleton instance. " +
+                            "Make sure you configure Purchases before trying to get the default instance.")
+            @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+            internal set(value) {
+                backingFieldSharedInstance?.close()
+                backingFieldSharedInstance = value
+            }
 
-        private var service: ExecutorService? = null
+        /**
+         * Current version of the Purchases SDK
+         */
+        @JvmStatic
+        val frameworkVersion = "1.5.0-SNAPSHOT"
 
-        init {
-            if (!hasPermission(context, Manifest.permission.INTERNET))
+        /**
+         * Configures an instance of the Purchases SDK with a specified API key. The instance will
+         * be set as a singleton. You should access the singleton instance using [Purchases.sharedInstance]
+         * @param apiKey The API Key generated for your app from https://app.revenuecat.com/
+         * @param appUserID Optional user identifier. Use this if your app has an account system.
+         * If `null` `[Purchases] will generate a unique identifier for the current device and persist
+         * it the SharedPreferences. This also affects the behavior of [restorePurchases].
+         * @param service Optional [ExecutorService] to use for the backend calls.
+         * @return An instantiated `[Purchases] object that has been set as a singleton.
+         */
+        @JvmOverloads
+        @JvmStatic
+        fun configure(
+            context: Context,
+            apiKey: String,
+            appUserID: String? = null,
+            service: ExecutorService = createDefaultExecutor()
+        ): Purchases {
+            if (!context.hasPermission(Manifest.permission.INTERNET))
                 throw IllegalArgumentException("Purchases requires INTERNET permission.")
 
             if (apiKey.isBlank())
@@ -554,54 +647,33 @@ class Purchases @JvmOverloads internal constructor(
 
             if (context.applicationContext !is Application)
                 throw IllegalArgumentException("Needs an application context.")
-        }
-
-        /**
-         * Used to set a user identifier. Check out this [guide](https://docs.revenuecat.com/docs/user-ids)
-         */
-        fun appUserID(appUserID: String) = apply { this.appUserID = appUserID }
-
-        /**
-         * Used to set a network executor service for this Purchases instance
-         */
-        fun networkExecutorService(service: ExecutorService) = apply { this.service = service }
-
-        /**
-         * Used to build the Purchases instance
-         * @return A Purchases instance. Make sure you set it as the [sharedInstance] if you
-         * want to reuse it.
-         */
-        fun build(): Purchases {
-
-            val service = this.service ?: createDefaultExecutor()
 
             val backend = Backend(
-                this.apiKey,
+                apiKey,
                 Dispatcher(service),
-                HTTPClient(),
-                PurchaserInfo.Factory,
-                Entitlement.Factory
+                HTTPClient()
             )
 
             val billingWrapper = BillingWrapper(
-                BillingWrapper.ClientFactory(application.applicationContext),
-                Handler(application.mainLooper)
+                BillingWrapper.ClientFactory((context.getApplication()).applicationContext),
+                Handler((context.getApplication()).mainLooper)
             )
 
-            val prefs = PreferenceManager.getDefaultSharedPreferences(this.application)
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context.getApplication())
             val cache = DeviceCache(prefs, apiKey)
 
             return Purchases(
-                application,
                 appUserID,
                 backend,
                 billingWrapper,
                 cache
-            )
+            ).also { sharedInstance = it }
         }
 
-        private fun hasPermission(context: Context, permission: String): Boolean {
-            return context.checkCallingOrSelfPermission(permission) == PERMISSION_GRANTED
+        private fun Context.getApplication() = applicationContext as Application
+
+        private fun Context.hasPermission(permission: String): Boolean {
+            return checkCallingOrSelfPermission(permission) == PERMISSION_GRANTED
         }
 
         private fun createDefaultExecutor(): ExecutorService {
@@ -613,26 +685,6 @@ class Purchases @JvmOverloads internal constructor(
                 LinkedBlockingQueue()
             )
         }
-
-    }
-    // endregion
-    // region Static
-    companion object {
-        /**
-         * Singleton instance of Purchases
-         * @return A previously set singleton Purchases instance or null
-         */
-        @JvmStatic
-        var sharedInstance: Purchases? = null
-            set(value) {
-                field?.close()
-                field = value
-            }
-        /**
-         * Current version of the Purchases SDK
-         */
-        @JvmStatic
-        val frameworkVersion = "1.5.0-SNAPSHOT"
     }
 
     /**
@@ -640,20 +692,34 @@ class Purchases @JvmOverloads internal constructor(
      */
     enum class ErrorDomains {
         /**
-        * The error is related to the RevenueCat backend
-        */
+         * The error is related to the RevenueCat backend
+         */
         REVENUECAT_BACKEND,
         /**
          * The error is related to Play Billing
          */
-        PLAY_BILLING
+        PLAY_BILLING,
+        /**
+         * The error is related to the Purchases SDK
+         */
+        REVENUECAT_API
+    }
+
+    /**
+     * Different errors related to the Purchases SDK functions
+     */
+    enum class PurchasesAPIError {
+        /**
+         * There is another [makePurchase] call waiting to be completed
+         */
+        DUPLICATE_MAKE_PURCHASE_CALLS
     }
 
     /**
      * Different compatible attribution networks available
      * @param serverValue Id of this attribution network in the RevenueCat server
      */
-    enum class AttributionNetwork(val serverValue: Int)  {
+    enum class AttributionNetwork(val serverValue: Int) {
         /**
          * [https://www.adjust.com/]
          */
@@ -665,96 +731,23 @@ class Purchases @JvmOverloads internal constructor(
         /**
          * [http://branch.io/]
          */
-        BRANCH(3)
+        BRANCH(3),
+        /**
+         * [http://tenjin.io/]
+         */
+        TENJIN(4)
     }
     // endregion
-    // region Interfaces
-    /**
-     * Used to handle async updates from Purchases
-     */
-    interface PurchasesListener {
-        /**
-         * Called when purchase completes after a make purchase call or after a renewal
-         * @param sku Sku of the purchased product
-         * @param purchaserInfo Updated purchaser info after a successful purchase
-         */
-        fun onCompletedPurchase(sku: String, purchaserInfo: PurchaserInfo)
-
-        /**
-         * Called when purchase fails after trying to make a purchase
-         * @param domain Can be REVENUECAT_BACKEND or PLAY_BILLING
-         * @param code The error code
-         * @param reason Message of the error
-         */
-        fun onFailedPurchase(domain: ErrorDomains, code: Int, reason: String?)
-
-        /**
-         * Called when a new purchaser info has been received
-         * @param purchaserInfo Updated purchaser info after a successful purchase
-         */
-        fun onReceiveUpdatedPurchaserInfo(purchaserInfo: PurchaserInfo)
-
-        /**
-         * Called after successfully restoring purchases after restorePurchasesForPlayStoreAccount
-         * @param purchaserInfo Updated purchaser info after a successful restore
-         */
-        fun onRestoreTransactions(purchaserInfo: PurchaserInfo)
-
-        /**
-         * Called when restoring transactions fails after restorePurchasesForPlayStoreAccount
-         * @param domain Can be REVENUECAT_BACKEND or PLAY_BILLING
-         * @param code The error code
-         * @param reason Message of the error
-         */
-        fun onRestoreTransactionsFailed(domain: ErrorDomains, code: Int, reason: String?)
-    }
-
-    /**
-     * Used when retrieving subscriptions
-     */
-    interface GetSkusResponseHandler {
-        /**
-         * Will be called after fetching subscriptions
-         * @param skus List of SkuDetails
-         */
-        fun onReceiveSkus(skus: @JvmSuppressWildcards List<SkuDetails>)
-    }
-
-    /**
-     * Used when retrieving entitlements
-     */
-    interface GetEntitlementsHandler {
-        /**
-         * Will be called after a successful fetch of entitlements
-         * @param entitlementMap Map of entitlements keyed by name
-         */
-        fun onReceiveEntitlements(entitlementMap: Map<String, Entitlement>)
-
-        /**
-         * Will be called if there was any problem fetching entitlements
-         * @param domain Can be REVENUECAT_BACKEND or PLAY_BILLING
-         * @param code The error code
-         * @param message Message of the error
-         */
-        fun onReceiveEntitlementsError(domain: ErrorDomains, code: Int, message: String)
-    }
-
-    /**
-     * Used when creating an alias
-     */
-    interface AliasHandler {
-        /**
-         * Will be called after a successful create alias call
-         */
-        fun onSuccess()
-
-        /**
-         * Will be called if an error happened while creating the alias
-         * @param domain Can be REVENUECAT_BACKEND or PLAY_BILLING
-         * @param code The error code
-         * @param message Message of the error
-         */
-        fun onError(domain: ErrorDomains, code: Int, message: String)
-    }
-
 }
+
+/**
+ * This class represents an error
+ * @param domain Domain of the error
+ * @param code Error code
+ * @param message Message explaining the error
+ */
+data class PurchasesError(
+    val domain: Purchases.ErrorDomains,
+    val code: Int,
+    val message: String?
+)

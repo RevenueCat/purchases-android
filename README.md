@@ -3,4 +3,4 @@
 
 Purchases is the client SDK for RevenueCat.
 
-[Quickstart Guide](https://docs.revenuecat.com/docs/)
+[Quickstart Guide](https://docs.revenuecat.com/v2.0/docs/)

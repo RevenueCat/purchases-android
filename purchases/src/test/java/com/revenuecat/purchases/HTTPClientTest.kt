@@ -1,3 +1,8 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
 import okhttp3.mockwebserver.MockResponse
@@ -10,7 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.net.URL
-import java.util.*
+import java.util.HashMap
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
@@ -95,7 +100,6 @@ class HTTPClientTest {
         } finally {
             server.takeRequest()
         }
-
     }
 
     // Headers
@@ -147,5 +151,4 @@ class HTTPClientTest {
         assertThat(request.body).`as`("body is not null").isNotNull
         assertThat(request.body.size()).isGreaterThan(0)
     }
-
 }

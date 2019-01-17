@@ -1,8 +1,13 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
+import android.os.Build
 import org.json.JSONException
 import org.json.JSONObject
-
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.IOException
@@ -14,9 +19,8 @@ import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
 
-
 internal class HTTPClient(
-    var baseURL: URL = URL("https://api.revenuecat.com/")
+    private var baseURL: URL = URL("https://api.revenuecat.com/")
 ) {
 
     private fun buffer(inputStream: InputStream): BufferedReader {
@@ -85,35 +89,14 @@ internal class HTTPClient(
         headers: Map<String, String>?
     ): Result {
         val fullURL: URL
-        try {
-            fullURL = URL(baseURL, "/v1$path")
-        } catch (e: MalformedURLException) {
-            throw RuntimeException(e)
-        }
-
         val connection: HttpURLConnection
         try {
-            connection = (fullURL.openConnection() as HttpURLConnection).apply{
-                headers?.forEach { (key, value) ->
-                    addRequestProperty(key, value)
-                }
-                addRequestProperty("Content-Type", "application/json")
-                addRequestProperty("X-Platform", "android")
-                addRequestProperty(
-                    "X-Platform-Version",
-                    Integer.toString(android.os.Build.VERSION.SDK_INT)
-                )
-                addRequestProperty("X-Version", Purchases.frameworkVersion)
-
-                if (body != null) {
-                    doOutput = true
-                    requestMethod = "POST"
-                    val os = outputStream
-                    writeFully(buffer(os), body.toString())
-                }
-            }
+            fullURL = URL(baseURL, "/v1$path")
+            connection = getConnection(fullURL, headers, body)
         } catch (e: IOException) {
             throw HTTPErrorException(-1, "Error establishing connection " + e.message)
+        } catch (e: MalformedURLException) {
+            throw RuntimeException(e)
         }
 
         val inputStream = getInputStream(connection)
@@ -121,6 +104,7 @@ internal class HTTPClient(
 
         val payload: String
         try {
+            debugLog("${connection.requestMethod} $path")
             result.responseCode = connection.responseCode
             payload = readFully(inputStream)
         } catch (e: IOException) {
@@ -131,11 +115,40 @@ internal class HTTPClient(
 
         try {
             result.body = JSONObject(payload)
+            debugLog("${connection.requestMethod} $path ${result.responseCode}")
         } catch (e: JSONException) {
-            throw HTTPErrorException(result.responseCode, "Error parsing JSON body: $payload")
+            log("Error parsing JSON ${e.localizedMessage}")
+            log("Data received: $payload")
+            throw HTTPErrorException(result.responseCode, "Error parsing JSON body: ${e.localizedMessage}")
         }
 
         return result
+    }
+
+    private fun getConnection(
+        fullURL: URL,
+        headers: Map<String, String>?,
+        body: JSONObject?
+    ): HttpURLConnection {
+        return (fullURL.openConnection() as HttpURLConnection).apply {
+            headers?.forEach { (key, value) ->
+                addRequestProperty(key, value)
+            }
+            addRequestProperty("Content-Type", "application/json")
+            addRequestProperty("X-Platform", "android")
+            addRequestProperty(
+                "X-Platform-Version",
+                Integer.toString(Build.VERSION.SDK_INT)
+            )
+            addRequestProperty("X-Version", Purchases.frameworkVersion)
+
+            if (body != null) {
+                doOutput = true
+                requestMethod = "POST"
+                val os = outputStream
+                writeFully(buffer(os), body.toString())
+            }
+        }
     }
 
     internal class Result {
@@ -145,5 +158,4 @@ internal class HTTPClient(
 
     internal class HTTPErrorException(httpCode: Int, message: String) :
         Exception("[$httpCode]: $message")
-
 }

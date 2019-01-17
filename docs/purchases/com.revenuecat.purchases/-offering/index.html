@@ -8,11 +8,35 @@
 <a href="../../index.html">purchases</a>&nbsp;/&nbsp;<a href="../index.html">com.revenuecat.purchases</a>&nbsp;/&nbsp;<a href="./index.html">Offering</a><br/>
 <br/>
 <h1>Offering</h1>
-<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">Offering</span></code>
+<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">Offering</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable.html"><span class="identifier">Parcelable</span></a></code>
 <p>Most well monetized subscription apps provide many different offerings to purchase an
 entitlement. These are usually associated with different durations i.e. an annual plan and a
 monthly plan.
 See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for more info</p>
+<h3>Types</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-c-r-e-a-t-o-r/index.html">CREATOR</a></p>
+</td>
+<td>
+<code><span class="keyword">companion</span> <span class="keyword">object </span><span class="identifier">CREATOR</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable/Creator.html"><span class="identifier">Creator</span></a><span class="symbol">&lt;</span><a href="./index.html"><span class="identifier">Offering</span></a><span class="symbol">&gt;</span></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Constructors</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-init-.html">&lt;init&gt;</a></p>
+</td>
+<td>
+<code><span class="identifier">Offering</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Offering$<init>(android.os.Parcel)/parcel">parcel</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcel.html"><span class="identifier">Parcel</span></a><span class="symbol">)</span></code></td>
+</tr>
+</tbody>
+</table>
 <h3>Properties</h3>
 <table>
 <tbody>
@@ -33,6 +57,51 @@ See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for mo
 <code><span class="keyword">var </span><span class="identifier">skuDetails</span><span class="symbol">: </span><span class="identifier">SkuDetails</span><span class="symbol">?</span></code>
 <p>Object containing an in-app product's or subscription's listing details</p>
 </td>
+</tr>
+</tbody>
+</table>
+<h3>Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="describe-contents.html">describeContents</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">describeContents</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="to-string.html">toString</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">toString</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="write-to-parcel.html">writeToParcel</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">writeToParcel</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Offering$writeToParcel(android.os.Parcel, kotlin.Int)/parcel">parcel</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcel.html"><span class="identifier">Parcel</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Offering$writeToParcel(android.os.Parcel, kotlin.Int)/flags">flags</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Companion Object Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="create-from-parcel.html">createFromParcel</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">createFromParcel</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Offering.CREATOR$createFromParcel(android.os.Parcel)/parcel">parcel</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcel.html"><span class="identifier">Parcel</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="./index.html"><span class="identifier">Offering</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="new-array.html">newArray</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">newArray</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Offering.CREATOR$newArray(kotlin.Int)/size">size</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html"><span class="identifier">Array</span></a><span class="symbol">&lt;</span><a href="./index.html"><span class="identifier">Offering</span></a><span class="symbol">?</span><span class="symbol">&gt;</span></code></td>
 </tr>
 </tbody>
 </table>

@@ -1,29 +1,30 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
 import android.support.test.runner.AndroidJUnit4
+import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-import org.assertj.core.api.Assertions.assertThat
-
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class PurchaserInfoTest {
 
-    // FactoryTests
-    private val factory = PurchaserInfo.Factory
-
     private fun fullPurchaserInfo(): PurchaserInfo {
-        return factory.build(JSONObject(validFullPurchaserResponse))
+        return JSONObject(validFullPurchaserResponse).buildPurchaserInfo()
     }
 
     @Test(expected = JSONException::class)
     fun failsToBeCreatedWithEmptyJSONObject() {
         val empty = JSONObject("{}")
-        factory.build(empty)
+        empty.buildPurchaserInfo()
     }
 
     @Test
@@ -31,7 +32,7 @@ class PurchaserInfoTest {
     fun `Given an empty response, empty object is created`() {
         val jsonObject = JSONObject(validEmptyPurchaserResponse)
 
-        val info = factory.build(jsonObject)
+        val info = jsonObject.buildPurchaserInfo()
 
         assertThat(info).isNotNull
         assertThat(info.activeSubscriptions).isEmpty()
@@ -97,7 +98,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given two valid products, json is deserialized properly`() {
-        val info = factory.build(JSONObject(validTwoProducts))
+        val info = JSONObject(validTwoProducts).buildPurchaserInfo()
         assertThat(info).isNotNull
     }
 
@@ -146,7 +147,7 @@ class PurchaserInfoTest {
     fun `Given a null request date, current date is used`() {
         val validNoRequestDate =
             "{'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
-        val info = factory.build(JSONObject(validNoRequestDate))
+        val info = JSONObject(validNoRequestDate).buildPurchaserInfo()
 
         val actives = info.allPurchasedSkus
 
@@ -172,5 +173,4 @@ class PurchaserInfoTest {
         internal const val validTwoProducts =
             "{'request_date': '2018-05-20T06:24:50Z', 'subscriber': {'original_application_version': '1.0','other_purchases': {},'subscriptions':{'product_a': {'expires_date': '2018-05-27T06:24:50Z','period_type': 'normal'},'product_b': {'expires_date': '2018-05-27T05:24:50Z','period_type': 'normal'}}}}"
     }
-
 }
