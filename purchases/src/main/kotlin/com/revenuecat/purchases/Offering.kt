@@ -26,7 +26,7 @@ data class Offering @JvmOverloads internal constructor(
      * @hide
      */
     constructor(parcel: Parcel) : this(
-        parcel.readString(),
+        parcel.readString()!!,
         parcel.readString().takeUnless { it.isNullOrBlank() }?.let { SkuDetails(it) }
     )
 

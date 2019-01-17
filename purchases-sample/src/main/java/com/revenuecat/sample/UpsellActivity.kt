@@ -9,7 +9,9 @@ import com.revenuecat.purchases.Entitlement
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
 import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
-import kotlinx.android.synthetic.main.activity_upsell.*
+import kotlinx.android.synthetic.main.activity_upsell.annual_purchase
+import kotlinx.android.synthetic.main.activity_upsell.monthly_purchase
+import kotlinx.android.synthetic.main.activity_upsell.skip
 
 class UpsellActivity : AppCompatActivity() {
 
@@ -18,7 +20,7 @@ class UpsellActivity : AppCompatActivity() {
         setContentView(R.layout.activity_upsell)
 
         showScreen(true)
-        Purchases.sharedInstance.getEntitlements(ReceiveEntitlementsListener { entitlementMap, error ->
+        Purchases.sharedInstance.getEntitlements(ReceiveEntitlementsListener { entitlementMap, _ ->
             showScreen(false, entitlementMap)
         })
         skip.setOnClickListener { startCats() }
