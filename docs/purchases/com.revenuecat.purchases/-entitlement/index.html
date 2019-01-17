@@ -8,7 +8,7 @@
 <a href="../../index.html">purchases</a>&nbsp;/&nbsp;<a href="../index.html">com.revenuecat.purchases</a>&nbsp;/&nbsp;<a href="./index.html">Entitlement</a><br/>
 <br/>
 <h1>Entitlement</h1>
-<code><span class="keyword">class </span><span class="identifier">Entitlement</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable.html"><span class="identifier">Parcelable</span></a></code>
+<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">Entitlement</span></code>
 <p>An entitlement represents features or content that a user is "entitled" to.
 Entitlements are unlocked by having an active subscription or making a one-time purchase.
 Many different products can unlock. Most subscription apps only have one entitlement,
@@ -16,30 +16,6 @@ unlocking all premium features. However, if you had two tiers of content such as
 premium_plus, you would have 2 entitlements. A common and simple setup example is one entitlement
 with identifier pro, one offering monthly, with one product.
 See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for more info</p>
-<h3>Types</h3>
-<table>
-<tbody>
-<tr>
-<td>
-<p><a href="-c-r-e-a-t-o-r/index.html">CREATOR</a></p>
-</td>
-<td>
-<code><span class="keyword">companion</span> <span class="keyword">object </span><span class="identifier">CREATOR</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable/Creator.html"><span class="identifier">Creator</span></a><span class="symbol">&lt;</span><a href="./index.html"><span class="identifier">Entitlement</span></a><span class="symbol">&gt;</span></code></td>
-</tr>
-</tbody>
-</table>
-<h3>Constructors</h3>
-<table>
-<tbody>
-<tr>
-<td>
-<p><a href="-init-.html">&lt;init&gt;</a></p>
-</td>
-<td>
-<code><span class="identifier">Entitlement</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Entitlement$<init>(android.os.Parcel)/parcel">parcel</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcel.html"><span class="identifier">Parcel</span></a><span class="symbol">)</span></code></td>
-</tr>
-</tbody>
-</table>
 <h3>Properties</h3>
 <table>
 <tbody>
@@ -51,51 +27,6 @@ See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for mo
 <code><span class="keyword">val </span><span class="identifier">offerings</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html"><span class="identifier">Map</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">,</span>&nbsp;<a href="../-offering/index.html"><span class="identifier">Offering</span></a><span class="symbol">&gt;</span></code>
 <p>Map of offering objects by name</p>
 </td>
-</tr>
-</tbody>
-</table>
-<h3>Functions</h3>
-<table>
-<tbody>
-<tr>
-<td>
-<p><a href="describe-contents.html">describeContents</a></p>
-</td>
-<td>
-<code><span class="keyword">fun </span><span class="identifier">describeContents</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a></code></td>
-</tr>
-<tr>
-<td>
-<p><a href="to-string.html">toString</a></p>
-</td>
-<td>
-<code><span class="keyword">fun </span><span class="identifier">toString</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a></code></td>
-</tr>
-<tr>
-<td>
-<p><a href="write-to-parcel.html">writeToParcel</a></p>
-</td>
-<td>
-<code><span class="keyword">fun </span><span class="identifier">writeToParcel</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Entitlement$writeToParcel(android.os.Parcel, kotlin.Int)/parcel">parcel</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcel.html"><span class="identifier">Parcel</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Entitlement$writeToParcel(android.os.Parcel, kotlin.Int)/flags">flags</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code></td>
-</tr>
-</tbody>
-</table>
-<h3>Companion Object Functions</h3>
-<table>
-<tbody>
-<tr>
-<td>
-<p><a href="create-from-parcel.html">createFromParcel</a></p>
-</td>
-<td>
-<code><span class="keyword">fun </span><span class="identifier">createFromParcel</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Entitlement.CREATOR$createFromParcel(android.os.Parcel)/parcel">parcel</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcel.html"><span class="identifier">Parcel</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="./index.html"><span class="identifier">Entitlement</span></a></code></td>
-</tr>
-<tr>
-<td>
-<p><a href="new-array.html">newArray</a></p>
-</td>
-<td>
-<code><span class="keyword">fun </span><span class="identifier">newArray</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Entitlement.CREATOR$newArray(kotlin.Int)/size">size</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-int/index.html"><span class="identifier">Int</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-array/index.html"><span class="identifier">Array</span></a><span class="symbol">&lt;</span><a href="./index.html"><span class="identifier">Entitlement</span></a><span class="symbol">?</span><span class="symbol">&gt;</span></code></td>
 </tr>
 </tbody>
 </table>
