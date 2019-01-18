@@ -5,10 +5,10 @@
 
 package com.revenuecat.purchases.interfaces;
 
-import android.support.annotation.Nullable;
-
 import com.revenuecat.purchases.PurchaserInfo;
 import com.revenuecat.purchases.PurchasesError;
+
+import androidx.annotation.Nullable;
 
 /**
  * Used when making a purchase

@@ -8,7 +8,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
-import kotlinx.android.synthetic.main.activity_cats.*
+import kotlinx.android.synthetic.main.activity_cats.cat_content_label
+import kotlinx.android.synthetic.main.activity_cats.expiration_date_label
+import kotlinx.android.synthetic.main.activity_cats.go_premium
+import kotlinx.android.synthetic.main.activity_cats.purchase_date_label
+import kotlinx.android.synthetic.main.activity_cats.purchase_restore
 
 class CatsActivity : AppCompatActivity() {
 

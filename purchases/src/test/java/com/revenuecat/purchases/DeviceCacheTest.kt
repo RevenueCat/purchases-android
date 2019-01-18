@@ -6,7 +6,7 @@
 package com.revenuecat.purchases
 
 import android.content.SharedPreferences
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchaserInfoTest.Companion.validFullPurchaserResponse
 import io.mockk.every
 import io.mockk.just

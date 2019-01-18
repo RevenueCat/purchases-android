@@ -5,12 +5,13 @@
 
 package com.revenuecat.purchases.interfaces;
 
-import android.support.annotation.Nullable;
 
 import com.revenuecat.purchases.Entitlement;
 import com.revenuecat.purchases.PurchasesError;
 
 import java.util.Map;
+
+import androidx.annotation.Nullable;
 
 /**
  * Used when retrieving entitlements
