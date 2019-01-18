@@ -22,7 +22,7 @@ internal class Backend(
     var callbacks: MutableMap<List<String>, MutableList<Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>>> =
         mutableMapOf()
     var entitlementsCallbacks =
-        mutableMapOf<List<String>, MutableList<Pair<(Map<String, Entitlement>) -> Unit, (PurchasesError) -> Unit>>>()
+        mutableMapOf<String, MutableList<Pair<(Map<String, Entitlement>) -> Unit, (PurchasesError) -> Unit>>>()
 
     private abstract inner class PurchaserInfoReceivingCall internal constructor(
         private val cacheKey: List<String>
@@ -139,10 +139,9 @@ internal class Backend(
         onError: (PurchasesError) -> Unit
     ) {
         val path = "/subscribers/" + encode(appUserID) + "/products"
-        val cacheKey = listOf(path)
 
-        if (!entitlementsCallbacks.containsKey(cacheKey)) {
-            entitlementsCallbacks[cacheKey] = mutableListOf(onSuccess to onError)
+        if (!entitlementsCallbacks.containsKey(path)) {
+            entitlementsCallbacks[path] = mutableListOf(onSuccess to onError)
 
             enqueue(object : Dispatcher.AsyncCall() {
                 override fun call(): HTTPClient.Result {
@@ -154,7 +153,7 @@ internal class Backend(
                 }
 
                 override fun onError(code: Int, message: String) {
-                    entitlementsCallbacks.remove(cacheKey)?.forEach { (_, onError) ->
+                    entitlementsCallbacks.remove(path)?.forEach { (_, onError) ->
                         onError(
                             PurchasesError(
                                 Purchases.ErrorDomains.REVENUECAT_BACKEND,
@@ -166,7 +165,7 @@ internal class Backend(
                 }
 
                 override fun onCompletion(result: HTTPClient.Result) {
-                    entitlementsCallbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
+                    entitlementsCallbacks.remove(path)?.forEach { (onSuccess, onError) ->
                         if (result.isSuccessful()) {
                             try {
                                 val entitlementsResponse =
@@ -194,7 +193,7 @@ internal class Backend(
                 }
             })
         } else {
-            entitlementsCallbacks[cacheKey]!!.add(onSuccess to onError)
+            entitlementsCallbacks[path]!!.add(onSuccess to onError)
         }
     }
 

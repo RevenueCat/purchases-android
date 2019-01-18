@@ -10,7 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.interfaces.GetSkusResponseHandler
+import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
 import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
@@ -84,9 +84,10 @@ class PurchasesTest {
 
         mockSkuDetailFetch(skuDetails, skus, BillingClient.SkuType.SUBS)
 
-        purchases.getSubscriptionSkus(skus, GetSkusResponseHandler { skuDetails ->
-            this@PurchasesTest.receivedSkus = skuDetails
-        })
+        purchases.getSubscriptionSkus(skus,
+            GetSkusResponseListener { skuDetails ->
+                this@PurchasesTest.receivedSkus = skuDetails
+            })
 
         assertSame(receivedSkus, skuDetails)
     }
@@ -102,9 +103,10 @@ class PurchasesTest {
 
         mockSkuDetailFetch(skuDetails, skus, BillingClient.SkuType.INAPP)
 
-        purchases.getNonSubscriptionSkus(skus, GetSkusResponseHandler { skuDetails ->
-            this@PurchasesTest.receivedSkus = skuDetails
-        })
+        purchases.getNonSubscriptionSkus(skus,
+            GetSkusResponseListener { skuDetails ->
+                this@PurchasesTest.receivedSkus = skuDetails
+            })
 
         assertSame(receivedSkus, skuDetails)
     }

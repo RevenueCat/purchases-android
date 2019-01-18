@@ -11,13 +11,14 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Handler
+import android.os.Looper
 import android.preference.PreferenceManager
-import android.support.annotation.VisibleForTesting
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.interfaces.GetSkusResponseHandler
+import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
 import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
@@ -100,7 +101,7 @@ class Purchases @JvmOverloads internal constructor(
 
         billingWrapper.purchasesUpdatedListener = this
     }
-
+    // region Public Methods
     /**
      * Add attribution data from a supported network
      * @param [data] JSONObject containing the data to post to the attribution network
@@ -135,46 +136,48 @@ class Purchases @JvmOverloads internal constructor(
      * Entitlements will be fetched and cached on instantiation so that, by the time they are needed,
      * your prices are loaded for your purchase flow. Time is money.
      *
-     * @param [handler] Called when entitlements are available. Called immediately if entitlements are cached.
+     * @param [completion] Called when entitlements are available. Called immediately if entitlements are cached.
      */
     fun getEntitlements(
-        handler: ReceiveEntitlementsListener
+        completion: ReceiveEntitlementsListener
     ) {
         if (this.cachedEntitlements != null) {
             debugLog("Vending entitlements from cache")
-            handler.onReceived(this.cachedEntitlements, null)
+            dispatch {
+                completion.onReceived(this.cachedEntitlements, null)
+            }
             if (isCacheStale()) {
                 debugLog("Cache is stale, updating caches")
                 updateCaches()
             }
         } else {
             debugLog("No cached entitlements, fetching")
-            fetchAndCacheEntitlements(handler)
+            fetchAndCacheEntitlements(completion)
         }
     }
 
     /**
      * Gets the SKUDetails for the given list of subscription skus.
      * @param [skus] List of skus
-     * @param [handler] Response handler
+     * @param [completion] Response completion
      */
     fun getSubscriptionSkus(
         skus: List<String>,
-        handler: GetSkusResponseHandler
+        completion: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.SUBS, handler)
+        getSkus(skus, BillingClient.SkuType.SUBS, completion)
     }
 
     /**
      * Gets the SKUDetails for the given list of non-subscription skus.
      * @param [skus] List of skus
-     * @param [handler] Response handler
+     * @param [completion] Response completion
      */
     fun getNonSubscriptionSkus(
         skus: List<String>,
-        handler: GetSkusResponseHandler
+        completion: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.INAPP, handler)
+        getSkus(skus, BillingClient.SkuType.INAPP, completion)
     }
 
     /**
@@ -194,15 +197,17 @@ class Purchases @JvmOverloads internal constructor(
     ) {
         debugLog("makePurchase - $sku")
         if (purchaseCallbacks.containsKey(sku)) {
-            completion.onCompleted(
-                null,
-                null,
-                PurchasesError(
-                    ErrorDomains.REVENUECAT_API,
-                    PurchasesAPIError.DUPLICATE_MAKE_PURCHASE_CALLS.ordinal,
-                    "Purchase already in progress for this product."
+            dispatch {
+                completion.onCompleted(
+                    null,
+                    null,
+                    PurchasesError(
+                        ErrorDomains.REVENUECAT_API,
+                        PurchasesAPIError.DUPLICATE_MAKE_PURCHASE_CALLS.ordinal,
+                        "Purchase already in progress for this product."
+                    )
                 )
-            )
+            }
         } else {
             purchaseCallbacks[sku] = completion
             billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
@@ -250,20 +255,20 @@ class Purchases @JvmOverloads internal constructor(
                             postRestoredPurchases(allPurchases, completion)
                         }
                     },
-                    { error -> completion.onReceived(null, error) })
+                    { error -> dispatch { completion.onReceived(null, error) } })
             },
-            { error -> completion.onReceived(null, error) })
+            { error -> dispatch { completion.onReceived(null, error) } })
     }
 
     /**
      * This function will alias two appUserIDs together.
      * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
-     * @param [handler] An optional handler to listen for successes or errors.
+     * @param [completion] An optional completion to listen for successes or errors.
      */
     @JvmOverloads
     fun createAlias(
         newAppUserID: String,
-        handler: ReceivePurchaserInfoListener? = null
+        completion: ReceivePurchaserInfoListener? = null
     ) {
         debugLog("Creating an alias to $appUserID from $newAppUserID")
         backend.createAlias(
@@ -271,10 +276,10 @@ class Purchases @JvmOverloads internal constructor(
             newAppUserID,
             {
                 debugLog("Alias created")
-                identify(newAppUserID, handler)
+                identify(newAppUserID, completion)
             },
             { error ->
-                handler?.onReceived(null, error)
+                dispatch { completion?.onReceived(null, error) }
             }
         )
     }
@@ -330,7 +335,7 @@ class Purchases @JvmOverloads internal constructor(
         val cachedPurchaserInfo = deviceCache.getCachedPurchaserInfo(appUserID)
         if (cachedPurchaserInfo != null) {
             debugLog("Vending purchaserInfo from cache")
-            completion.onReceived(cachedPurchaserInfo, null)
+            dispatch { completion.onReceived(cachedPurchaserInfo, null) }
             if (isCacheStale()) {
                 debugLog("Cache is stale, updating caches")
                 updateCaches()
@@ -348,30 +353,33 @@ class Purchases @JvmOverloads internal constructor(
     fun removeUpdatedPurchaserInfoListener() {
         this.updatedPurchaserInfoListener = null
     }
+    // endregion
 
     // region Private Methods
-    private fun fetchAndCacheEntitlements(handler: ReceiveEntitlementsListener? = null) {
+    private fun fetchAndCacheEntitlements(completion: ReceiveEntitlementsListener? = null) {
         backend.getEntitlements(
             appUserID,
             { entitlements ->
                 getSkuDetails(entitlements) { detailsByID ->
                     cachedEntitlements = entitlements
-                    populateSkuDetailsAndCallHandler(detailsByID, entitlements, handler)
+                    populateSkuDetailsAndCallCompletion(detailsByID, entitlements, completion)
                 }
             },
             { error ->
                 log("Error fetching entitlements - $error")
-                handler?.onReceived(
-                    null,
-                    error
-                )
+                dispatch {
+                    completion?.onReceived(
+                        null,
+                        error
+                    )
+                }
             })
     }
 
-    private fun populateSkuDetailsAndCallHandler(
+    private fun populateSkuDetailsAndCallCompletion(
         details: Map<String, SkuDetails>,
         entitlements: Map<String, Entitlement>,
-        handler: ReceiveEntitlementsListener?
+        completion: ReceiveEntitlementsListener?
     ) {
         val missingProducts = mutableListOf<String>()
         entitlements.values.flatMap { it.offerings.values }.forEach { o ->
@@ -385,19 +393,23 @@ class Purchases @JvmOverloads internal constructor(
             log("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
             log("Ensure your products are correctly configured in Play Store Developer Console")
         }
-        handler?.onReceived(entitlements, null)
+        dispatch {
+            completion?.onReceived(entitlements, null)
+        }
     }
 
     private fun getSkus(
         skus: List<String>,
         @BillingClient.SkuType skuType: String,
-        handler: GetSkusResponseHandler
+        completion: GetSkusResponseListener
     ) {
         billingWrapper.querySkuDetailsAsync(
             skuType,
             skus
         ) { skuDetails ->
-            handler.onReceiveSkus(skuDetails)
+            dispatch {
+                completion.onReceiveSkus(skuDetails)
+            }
         }
     }
 
@@ -415,12 +427,12 @@ class Purchases @JvmOverloads internal constructor(
             { info ->
                 cachePurchaserInfo(info)
                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                completion?.onReceived(info, null)
+                dispatch { completion?.onReceived(info, null) }
             },
             { error ->
                 Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
                 clearCaches()
-                completion?.onReceived(null, error)
+                dispatch { completion?.onReceived(null, error) }
             })
     }
 
@@ -474,12 +486,12 @@ class Purchases @JvmOverloads internal constructor(
                 true,
                 { purchase, info ->
                     if (sortedByTime.last() == purchase) {
-                        onCompletion.onReceived(info, null)
+                        dispatch { onCompletion.onReceived(info, null) }
                     }
                 },
                 { purchase, error ->
                     if (sortedByTime.last() == purchase) {
-                        onCompletion.onReceived(null, error)
+                        dispatch { onCompletion.onReceived(null, error) }
                     }
                 })
         }
@@ -545,8 +557,17 @@ class Purchases @JvmOverloads internal constructor(
                     debugLog("Sending latest purchaser info to delegate")
                 }
                 lastSentPurchaserInfo = info
-                updatedPurchaserInfoListener?.onReceived(info)
+                dispatch { updatedPurchaserInfoListener?.onReceived(info) }
             }
+        }
+    }
+
+    private val handler = Handler()
+    private fun dispatch(action: () -> Unit) {
+        if (Thread.currentThread() !== Looper.getMainLooper().thread) {
+            handler.post(action)
+        } else {
+            action()
         }
     }
     // endregion
@@ -560,14 +581,18 @@ class Purchases @JvmOverloads internal constructor(
             purchases,
             allowSharingPlayStoreAccount,
             { purchase, info ->
-                purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info, null)
+                dispatch {
+                    purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info, null)
+                }
             },
             { purchase, error ->
-                purchaseCallbacks.remove(purchase.sku)?.onCompleted(
-                    null,
-                    null,
-                    PurchasesError(error.domain, error.code, error.message)
-                )
+                dispatch {
+                    purchaseCallbacks.remove(purchase.sku)?.onCompleted(
+                        null,
+                        null,
+                        PurchasesError(error.domain, error.code, error.message)
+                    )
+                }
             }
         )
     }
@@ -581,11 +606,13 @@ class Purchases @JvmOverloads internal constructor(
         message: String
     ) {
         purchases?.mapNotNull { purchaseCallbacks.remove(it.sku) }?.forEach {
-            it.onCompleted(
-                null,
-                null,
-                PurchasesError(ErrorDomains.PLAY_BILLING, responseCode, message)
-            )
+            dispatch {
+                it.onCompleted(
+                    null,
+                    null,
+                    PurchasesError(ErrorDomains.PLAY_BILLING, responseCode, message)
+                )
+            }
         }
     }
     // endregion
@@ -740,14 +767,3 @@ class Purchases @JvmOverloads internal constructor(
     // endregion
 }
 
-/**
- * This class represents an error
- * @param domain Domain of the error
- * @param code Error code
- * @param message Message explaining the error
- */
-data class PurchasesError(
-    val domain: Purchases.ErrorDomains,
-    val code: Int,
-    val message: String?
-)

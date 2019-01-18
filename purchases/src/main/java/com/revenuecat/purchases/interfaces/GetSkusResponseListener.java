@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Used when retrieving subscriptions
  */
-public interface GetSkusResponseHandler {
+public interface GetSkusResponseListener {
     /**
      * Will be called after fetching subscriptions
      *

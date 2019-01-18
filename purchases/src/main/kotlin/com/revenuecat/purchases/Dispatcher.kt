@@ -5,12 +5,11 @@
 
 package com.revenuecat.purchases
 
-import android.os.Handler
-import android.os.Looper
-
 import java.util.concurrent.ExecutorService
 
-internal open class Dispatcher(private val executorService: ExecutorService) {
+internal open class Dispatcher(
+    private val executorService: ExecutorService
+) {
 
     internal abstract class AsyncCall : Runnable {
         @Throws(HTTPClient.HTTPErrorException::class)
@@ -20,17 +19,15 @@ internal open class Dispatcher(private val executorService: ExecutorService) {
         open fun onCompletion(result: HTTPClient.Result) {}
 
         override fun run() {
-            val mainHandler = Handler(Looper.getMainLooper())
             try {
-                val result = call()
-                mainHandler.post { onCompletion(result) }
+                onCompletion(call())
             } catch (e: HTTPClient.HTTPErrorException) {
-                mainHandler.post { onError(0, e.message!!) }
+                onError(0, e.message!!)
             }
         }
     }
 
-    open fun enqueue(call: AsyncCall) {
+    open fun enqueue(call: Dispatcher.AsyncCall) {
         this.executorService.submit(call)
     }
 
