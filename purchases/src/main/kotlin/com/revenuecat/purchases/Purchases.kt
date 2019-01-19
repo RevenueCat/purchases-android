@@ -98,16 +98,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
             updateCaches()
         }
-
         billingWrapper.purchasesUpdatedListener = this
     }
+
     // region Public Methods
     /**
      * Add attribution data from a supported network
      * @param [data] JSONObject containing the data to post to the attribution network
      * @param [network] [AttributionNetwork] to post the data to
      */
-    fun addAttributionData(data: JSONObject, network: AttributionNetwork) {
+    fun addAttributionData(
+        data: JSONObject,
+        network: AttributionNetwork
+    ) {
         backend.postAttributionData(appUserID, network, data)
     }
 
@@ -116,7 +119,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [data] Map containing the data to post to the attribution network
      * @param [network] [AttributionNetwork] to post the data to
      */
-    fun addAttributionData(data: Map<String, String>, network: AttributionNetwork) {
+    fun addAttributionData(
+        data: Map<String, String>,
+        network: AttributionNetwork
+    ) {
         val jsonObject = JSONObject()
         for (key in data.keys) {
             try {
@@ -136,48 +142,93 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Entitlements will be fetched and cached on instantiation so that, by the time they are needed,
      * your prices are loaded for your purchase flow. Time is money.
      *
-     * @param [completion] Called when entitlements are available. Called immediately if entitlements are cached.
+     * @param [listener] Called when entitlements are available. Called immediately if entitlements are cached.
      */
     fun getEntitlements(
-        completion: ReceiveEntitlementsListener
+        listener: ReceiveEntitlementsListener
     ) {
-        if (this.cachedEntitlements != null) {
+        cachedEntitlements?.let { cachedEntitlements ->
             debugLog("Vending entitlements from cache")
             dispatch {
-                completion.onReceived(this.cachedEntitlements, null)
+                listener.onReceived(cachedEntitlements)
             }
             if (isCacheStale()) {
                 debugLog("Cache is stale, updating caches")
                 updateCaches()
             }
-        } else {
+        }?: {
             debugLog("No cached entitlements, fetching")
-            fetchAndCacheEntitlements(completion)
-        }
+            fetchAndCacheEntitlements(listener)
+        }.invoke()
+    }
+
+    /**
+     * Fetch the configured entitlements for this user. Entitlements allows you to configure your
+     * in-app products via RevenueCat and greatly simplifies management.
+     * See [the guide](https://docs.revenuecat.com/v1.0/docs/entitlements) for more info.
+     *
+     * Entitlements will be fetched and cached on instantiation so that, by the time they are needed,
+     * your prices are loaded for your purchase flow. Time is money.
+     *
+     * @param [onSuccess] Will be called after a successful fetch of entitlements
+     * @param [onError] Will be called after an error fetching entitlements
+     */
+    @Suppress("unused")
+    fun getEntitlements(
+        onSuccess: ReceiveEntitlementsListenerSuccess,
+        onError: ReceivePurchaserInfoListenerError
+    ) {
+        getEntitlements(receiveEntitlementsListener(onSuccess, onError))
     }
 
     /**
      * Gets the SKUDetails for the given list of subscription skus.
      * @param [skus] List of skus
-     * @param [completion] Response completion
+     * @param [listener] Response listener
      */
     fun getSubscriptionSkus(
         skus: List<String>,
-        completion: GetSkusResponseListener
+        listener: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.SUBS, completion)
+        getSkus(skus, BillingClient.SkuType.SUBS, listener)
+    }
+
+    /**
+     * Gets the SKUDetails for the given list of subscription skus.
+     * @param [skus] List of skus
+     * @param [onReceiveSkus] Will be called after fetching subscriptions
+     */
+    @Suppress("unused")
+    fun getSubscriptionSkus(
+        skus: List<String>,
+        onReceiveSkus: (skus: List<SkuDetails>) -> Unit
+    ) {
+        getSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus))
     }
 
     /**
      * Gets the SKUDetails for the given list of non-subscription skus.
      * @param [skus] List of skus
-     * @param [completion] Response completion
+     * @param [listener] Response listener
      */
     fun getNonSubscriptionSkus(
         skus: List<String>,
-        completion: GetSkusResponseListener
+        listener: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.INAPP, completion)
+        getSkus(skus, BillingClient.SkuType.INAPP, listener)
+    }
+
+    /**
+     * Gets the SKUDetails for the given list of non-subscription skus.
+     * @param [skus] List of skus
+     * @param [onReceiveSkus] Will be called after fetching SkuDetails
+     */
+    @Suppress("unused")
+    fun getNonSubscriptionSkus(
+        skus: List<String>,
+        onReceiveSkus: (skus: List<SkuDetails>) -> Unit
+    ) {
+        getNonSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus))
     }
 
     /**
@@ -186,21 +237,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [sku] The sku you wish to purchase
      * @param [skuType] The type of sku, INAPP or SUBS
      * @param [oldSkus] The skus you wish to upgrade from.
-     * @param [completion] The listener that will be called when purchase completes.
+     * @param [listener] The listener that will be called when purchase completes.
      */
     fun makePurchase(
         activity: Activity,
         sku: String,
         @BillingClient.SkuType skuType: String,
         oldSkus: ArrayList<String>,
-        completion: PurchaseCompletedListener
+        listener: PurchaseCompletedListener
     ) {
         debugLog("makePurchase - $sku")
         if (purchaseCallbacks.containsKey(sku)) {
             dispatch {
-                completion.onCompleted(
-                    null,
-                    null,
+                listener.onError(
                     PurchasesError(
                         ErrorDomains.REVENUECAT_API,
                         PurchasesAPIError.DUPLICATE_MAKE_PURCHASE_CALLS.ordinal,
@@ -209,7 +258,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 )
             }
         } else {
-            purchaseCallbacks[sku] = completion
+            purchaseCallbacks[sku] = listener
             billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
         }
     }
@@ -219,15 +268,53 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [activity] Current activity
      * @param [sku] The sku you wish to purchase
      * @param [skuType] The type of sku, INAPP or SUBS
-     * @param [completion] The listener that will be called when purchase completes.
+     * @param [oldSkus] The skus you wish to upgrade from.
+     * @param [onSuccess] Will be called after the purchase has completed
+     * @param [onError] Will be called after the purchase has completed with error
      */
     fun makePurchase(
         activity: Activity,
         sku: String,
         @BillingClient.SkuType skuType: String,
-        completion: PurchaseCompletedListener
+        oldSkus: ArrayList<String>,
+        onSuccess: PurchaseCompletedListenerSuccess,
+        onError: PurchaseCompletedListenerError
     ) {
-        makePurchase(activity, sku, skuType, ArrayList(), completion)
+        makePurchase(activity, sku, skuType, oldSkus, purchaseCompletedListener(onSuccess, onError))
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [sku] The sku you wish to purchase
+     * @param [skuType] The type of sku, INAPP or SUBS
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun makePurchase(
+        activity: Activity,
+        sku: String,
+        @BillingClient.SkuType skuType: String,
+        listener: PurchaseCompletedListener
+    ) {
+        makePurchase(activity, sku, skuType, ArrayList(), listener)
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [sku] The sku you wish to purchase
+     * @param [skuType] The type of sku, INAPP or SUBS
+     * @param [onSuccess] Will be called after the purchase has completed
+     * @param [onError] Will be called after the purchase has completed with error
+     */
+    fun makePurchase(
+        activity: Activity,
+        sku: String,
+        @BillingClient.SkuType skuType: String,
+        onSuccess: PurchaseCompletedListenerSuccess,
+        onError: PurchaseCompletedListenerError
+    ) {
+        makePurchase(activity, sku, skuType, ArrayList(), purchaseCompletedListener(onSuccess, onError))
     }
 
     /**
@@ -236,9 +323,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * other users of your app will not be restored. If you used an anonymous id, i.e. you
      * initialized Purchases without an appUserID, any other anonymous users using the same
      * purchases will be merged.
+     * @param [listener] The listener that will be called when purchase restore completes.
      */
     fun restorePurchases(
-        completion: ReceivePurchaserInfoListener
+        listener: ReceivePurchaserInfoListener
     ) {
         debugLog("Restoring purchases")
         billingWrapper.queryPurchaseHistoryAsync(
@@ -250,25 +338,41 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         val allPurchases = ArrayList(subsPurchasesList)
                         allPurchases.addAll(inAppPurchasesList)
                         if (allPurchases.isEmpty()) {
-                            getPurchaserInfo(completion)
+                            getPurchaserInfo(listener)
                         } else {
-                            postRestoredPurchases(allPurchases, completion)
+                            postRestoredPurchases(allPurchases, listener)
                         }
                     },
-                    { error -> dispatch { completion.onReceived(null, error) } })
+                    { error -> dispatch { listener.onError(error) } })
             },
-            { error -> dispatch { completion.onReceived(null, error) } })
+            { error -> dispatch { listener.onError(error) } })
+    }
+
+    /**
+     * Restores purchases made with the current Play Store account for the current user.
+     * If you initialized Purchases with an `appUserID` any receipt tokens currently being used by
+     * other users of your app will not be restored. If you used an anonymous id, i.e. you
+     * initialized Purchases without an appUserID, any other anonymous users using the same
+     * purchases will be merged.
+     * @param [onSuccess] Will be called after the call has completed.
+     * @param [onError] Will be called after the call has completed with an error.
+     */
+    fun restorePurchases(
+        onSuccess: ReceivePurchaserInfoListenerSuccess,
+        onError: ReceivePurchaserInfoListenerError
+    ) {
+        restorePurchases(receivePurchaserInfoListener(onSuccess, onError))
     }
 
     /**
      * This function will alias two appUserIDs together.
      * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
-     * @param [completion] An optional completion to listen for successes or errors.
+     * @param [listener] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
     fun createAlias(
         newAppUserID: String,
-        completion: ReceivePurchaserInfoListener? = null
+        listener: ReceivePurchaserInfoListener? = null
     ) {
         debugLog("Creating an alias to $appUserID from $newAppUserID")
         backend.createAlias(
@@ -276,43 +380,90 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             newAppUserID,
             {
                 debugLog("Alias created")
-                identify(newAppUserID, completion)
+                identify(newAppUserID, listener)
             },
             { error ->
-                dispatch { completion?.onReceived(null, error) }
+                dispatch { listener?.onError(error) }
             }
         )
+    }
+
+    /**
+     * This function will alias two appUserIDs together.
+     * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
+     * @param [onSuccess] Will be called after the call has completed.
+     * @param [onError] Will be called after the call has completed with an error.
+     */
+    @Suppress("unused")
+    fun createAlias(
+        newAppUserID: String,
+        onSuccess: ReceivePurchaserInfoListenerSuccess?,
+        onError: ReceivePurchaserInfoListenerError?
+    ) {
+        createAlias(newAppUserID, receivePurchaserInfoListener(onSuccess, onError))
     }
 
     /**
      * This function will change the current appUserID.
      * Typically this would be used after a log out to identify a new user without calling configure
      * @param appUserID The new appUserID that should be linked to the currently user
+     * @param [listener] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
     fun identify(
         appUserID: String,
-        completion: ReceivePurchaserInfoListener? = null
+        listener: ReceivePurchaserInfoListener? = null
     ) {
         debugLog("Changing App User ID: ${this.appUserID} -> $appUserID")
         clearCaches()
         this.appUserID = appUserID
         purchaseCallbacks.clear()
-        updateCaches(completion)
+        updateCaches(listener)
+    }
+
+    /**
+     * This function will change the current appUserID.
+     * Typically this would be used after a log out to identify a new user without calling configure
+     * @param appUserID The new appUserID that should be linked to the currently user
+     * @param [onSuccess] Will be called after the call has completed.
+     * @param [onError] Will be called after the call has completed with an error.
+     */
+    @Suppress("unused")
+    fun identify(
+        appUserID: String,
+        onSuccess: ReceivePurchaserInfoListenerSuccess?,
+        onError: ReceivePurchaserInfoListenerError?
+    ) {
+        identify(appUserID, receivePurchaserInfoListener(onSuccess, onError))
     }
 
     /**
      * Resets the Purchases client clearing the save appUserID. This will generate a random user
      * id and save it in the cache.
+     * @param [listener] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
     fun reset(
-        completion: ReceivePurchaserInfoListener? = null
+        listener: ReceivePurchaserInfoListener? = null
     ) {
         clearCaches()
         this.appUserID = createRandomIDAndCacheIt()
         purchaseCallbacks.clear()
-        updateCaches(completion)
+        updateCaches(listener)
+    }
+
+    /**
+     * Resets the Purchases client clearing the save appUserID. This will generate a random user
+     * id and save it in the cache.
+     * @param [onSuccess] Will be called after the call has completed.
+     * @param [onError] Will be called after the call has completed with an error.
+     */
+    @Suppress("unused")
+    fun reset(
+        onSuccess: ReceivePurchaserInfoListenerSuccess?,
+        onError: ReceivePurchaserInfoListenerError?
+    ) {
+        reset(receivePurchaserInfoListener(onSuccess, onError))
     }
 
     /**
@@ -326,30 +477,45 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /**
      * Get latest available purchaser info.
-     * @param completion A listener called when purchaser info is available and not stale.
+     * @param listener A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
     fun getPurchaserInfo(
-        completion: ReceivePurchaserInfoListener
+        listener: ReceivePurchaserInfoListener
     ) {
         val cachedPurchaserInfo = deviceCache.getCachedPurchaserInfo(appUserID)
         if (cachedPurchaserInfo != null) {
             debugLog("Vending purchaserInfo from cache")
-            dispatch { completion.onReceived(cachedPurchaserInfo, null) }
+            dispatch { listener.onReceived(cachedPurchaserInfo) }
             if (isCacheStale()) {
                 debugLog("Cache is stale, updating caches")
                 updateCaches()
             }
         } else {
             debugLog("No cached purchaser info, fetching")
-            updateCaches(completion)
+            updateCaches(listener)
         }
+    }
+
+    /**
+     * Get latest available purchaser info.
+     * @param onSuccess Called when purchaser info is available and not stale. Called immediately if
+     * purchaser info is cached.
+     * @param onError Will be called after the call has completed with an error.
+     */
+    @Suppress("unused")
+    fun getPurchaserInfo(
+        onSuccess: ReceivePurchaserInfoListenerSuccess,
+        onError: ReceivePurchaserInfoListenerError
+    ) {
+        getPurchaserInfo(receivePurchaserInfoListener(onSuccess, onError))
     }
 
     /**
      * Call this when you are finished using the [updatedPurchaserInfoListener]. You should call this
      * to avoid memory leaks.
      */
+    @Suppress("MemberVisibilityCanBePrivate")
     fun removeUpdatedPurchaserInfoListener() {
         this.updatedPurchaserInfoListener = null
     }
@@ -368,10 +534,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             { error ->
                 log("Error fetching entitlements - $error")
                 dispatch {
-                    completion?.onReceived(
-                        null,
-                        error
-                    )
+                    completion?.onError(error)
                 }
             })
     }
@@ -394,7 +557,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             log("Ensure your products are correctly configured in Play Store Developer Console")
         }
         dispatch {
-            completion?.onReceived(entitlements, null)
+            completion?.onReceived(entitlements)
         }
     }
 
@@ -427,12 +590,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             { info ->
                 cachePurchaserInfo(info)
                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                dispatch { completion?.onReceived(info, null) }
+                dispatch { completion?.onReceived(info) }
             },
             { error ->
                 Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
                 clearCaches()
-                dispatch { completion?.onReceived(null, error) }
+                dispatch { completion?.onError(error) }
             })
     }
 
@@ -486,12 +649,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 true,
                 { purchase, info ->
                     if (sortedByTime.last() == purchase) {
-                        dispatch { onCompletion.onReceived(info, null) }
+                        dispatch { onCompletion.onReceived(info) }
                     }
                 },
                 { purchase, error ->
                     if (sortedByTime.last() == purchase) {
-                        dispatch { onCompletion.onReceived(null, error) }
+                        dispatch { onCompletion.onError(error) }
                     }
                 })
         }
@@ -582,14 +745,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             allowSharingPlayStoreAccount,
             { purchase, info ->
                 dispatch {
-                    purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info, null)
+                    purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info)
                 }
             },
             { purchase, error ->
                 dispatch {
-                    purchaseCallbacks.remove(purchase.sku)?.onCompleted(
-                        null,
-                        null,
+                    purchaseCallbacks.remove(purchase.sku)?.onError(
                         PurchasesError(error.domain, error.code, error.message)
                     )
                 }
@@ -607,9 +768,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         purchases?.mapNotNull { purchaseCallbacks.remove(it.sku) }?.forEach {
             dispatch {
-                it.onCompleted(
-                    null,
-                    null,
+                it.onError(
                     PurchasesError(ErrorDomains.PLAY_BILLING, responseCode, message)
                 )
             }
