@@ -22,12 +22,9 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertNotNull
-import junit.framework.Assert.assertSame
-import junit.framework.Assert.fail
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -67,10 +64,28 @@ class PurchasesTest {
         )
     }
 
+    private fun setupAnonymous() {
+        val mockInfo = mockk<PurchaserInfo>()
+
+        mockCache(mockInfo)
+        mockBackend(mockInfo)
+        mockBillingWrapper()
+        every {
+            listener.onReceived(any())
+        } just Runs
+
+        purchases = Purchases(
+            null,
+            mockBackend,
+            mockBillingWrapper,
+            mockCache
+        )
+    }
+
     @Test
     fun canBeCreated() {
         setup()
-        assertNotNull(purchases)
+        assertThat(purchases).isNotNull
     }
 
     @Test
@@ -85,11 +100,11 @@ class PurchasesTest {
         mockSkuDetailFetch(skuDetails, skus, BillingClient.SkuType.SUBS)
 
         purchases.getSubscriptionSkus(skus,
-            GetSkusResponseListener { skuDetails ->
-                this@PurchasesTest.receivedSkus = skuDetails
+            GetSkusResponseListener {
+                receivedSkus = it
             })
 
-        assertSame(receivedSkus, skuDetails)
+        assertThat(receivedSkus).isEqualTo(skuDetails)
     }
 
     @Test
@@ -104,11 +119,11 @@ class PurchasesTest {
         mockSkuDetailFetch(skuDetails, skus, BillingClient.SkuType.INAPP)
 
         purchases.getNonSubscriptionSkus(skus,
-            GetSkusResponseListener { skuDetails ->
-                this@PurchasesTest.receivedSkus = skuDetails
+            GetSkusResponseListener {
+                receivedSkus = it
             })
 
-        assertSame(receivedSkus, skuDetails)
+        assertThat(receivedSkus).isEqualTo(skuDetails)
     }
 
     @Test
@@ -270,11 +285,11 @@ class PurchasesTest {
             mockCache
         )
 
-        assertNotNull(purchases)
+        assertThat(purchases).isNotNull
 
         val appUserID = purchases.appUserID
-        assertNotNull(appUserID)
-        assertEquals(36, appUserID.length)
+        assertThat(appUserID).isNotNull()
+        assertThat(appUserID.length).isEqualTo(36)
     }
 
     @Test
@@ -312,7 +327,7 @@ class PurchasesTest {
             mockCache
         )
 
-        assertEquals(appUserID, p.appUserID)
+        assertThat(appUserID).isEqualTo(p.appUserID)
     }
 
     @Test
@@ -494,7 +509,7 @@ class PurchasesTest {
         }
 
         var restoreCalled = false
-        purchases.restorePurchases(ReceivePurchaserInfoListener { purchaserInfo, purchasesError ->
+        purchases.restorePurchases(ReceivePurchaserInfoListener { _, purchasesError ->
             if (purchasesError != null) {
                 fail("Should not be an error")
             }
@@ -756,8 +771,8 @@ class PurchasesTest {
             }
         })
 
-        assertEquals(errorMessage.size, 0)
-        assertNotNull(this.receivedEntitlementMap)
+        assertThat(errorMessage.size).isZero()
+        assertThat(this.receivedEntitlementMap).isNotNull
     }
 
     @Test
@@ -1114,6 +1129,78 @@ class PurchasesTest {
         }
     }
 
+    @Test
+    fun `when setting listener, listener is called`() {
+        setup()
+        purchases.updatedPurchaserInfoListener = listener
+
+        verify (exactly = 1) {
+            listener.onReceived(any())
+        }
+    }
+
+    @Test
+    fun `when setting listener for anonymous user, listener is called`() {
+        setupAnonymous()
+        purchases.updatedPurchaserInfoListener = listener
+
+        verify (exactly = 1) {
+            listener.onReceived(any())
+        }
+    }
+
+    @Test
+    fun `given a random purchase update, listener is called if purchaser info has changed`() {
+        setup()
+        val info = mockk<PurchaserInfo>()
+        every {
+            mockBackend.postReceiptData(any(), any(), any(), any(), captureLambda(), any())
+        } answers {
+            lambda<(PurchaserInfo) -> Unit>().captured.invoke(info)
+        }
+        purchases.updatedPurchaserInfoListener = listener
+        val p: Purchase = mockk()
+        val sku = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        every {
+            p.sku
+        } returns sku
+        every {
+            p.purchaseToken
+        } returns purchaseToken
+
+        purchases.onPurchasesUpdated(listOf(p))
+
+        verify (exactly = 2) {
+            listener.onReceived(any())
+        }
+    }
+
+    @Test
+    fun `given a random purchase update, listener is not called if purchaser info has not changed`() {
+        setup()
+        purchases.updatedPurchaserInfoListener = listener
+        val p: Purchase = mockk()
+        val sku = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        every {
+            p.sku
+        } returns sku
+        every {
+            p.purchaseToken
+        } returns purchaseToken
+
+        purchases.onPurchasesUpdated(listOf(p))
+
+        verify (exactly = 1) {
+            listener.onReceived(any())
+        }
+    }
+
+
+    // region Private Methods
     private fun mockSkuDetailFetch(details: List<SkuDetails>, skus: List<String>, skuType: String) {
         every {
             mockBillingWrapper.querySkuDetailsAsync(
@@ -1222,4 +1309,5 @@ class PurchasesTest {
             mockBillingWrapper.purchasesUpdatedListener = null
         } just Runs
     }
+    // endregion
 }

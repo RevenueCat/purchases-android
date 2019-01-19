@@ -22,7 +22,7 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    api "androidx.annotation:annotation:1.0.1"
+    api 'androidx.annotation:annotation:1.0.1'
     api 'com.android.billingclient:billing:1.0'
     testImplementation 'androidx.test:core:1.1.0'
     testImplementation 'androidx.test:runner:1.1.1'
@@ -32,8 +32,8 @@ dependencies {
     testImplementation 'com.squareup.okhttp3:mockwebserver:3.10.0'
     testImplementation 'org.mockito:mockito-core:2.17.0'
     testImplementation 'com.android.billingclient:billing:1.0'
-    testImplementation "io.mockk:mockk:1.8.9"
-    testImplementation "org.assertj:assertj-core:3.11.1"
+    testImplementation 'io.mockk:mockk:1.8.9'
+    testImplementation 'org.assertj:assertj-core:3.11.1'
 }
 
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
