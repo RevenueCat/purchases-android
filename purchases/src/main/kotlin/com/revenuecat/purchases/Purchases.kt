@@ -49,7 +49,7 @@ private const val HTTP_SERVER_ERROR = 500
  * default. If true treats all purchases as restores, aliasing together appUserIDs that share a
  * Play Store account.
  */
-class Purchases @JvmOverloads internal constructor(
+class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
     backingFieldAppUserID: String?,
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
