@@ -7,6 +7,8 @@ import android.view.View.VISIBLE
 import androidx.appcompat.app.AppCompatActivity
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.getPurchaserInfoWith
+import com.revenuecat.purchases.restorePurchasesWith
 import kotlinx.android.synthetic.main.activity_cats.cat_content_label
 import kotlinx.android.synthetic.main.activity_cats.expiration_date_label
 import kotlinx.android.synthetic.main.activity_cats.go_premium
@@ -24,22 +26,15 @@ class CatsActivity : AppCompatActivity() {
         }
         purchase_restore.setOnClickListener {
             purchase_restore.text = "Loading..."
-            Purchases.sharedInstance.restorePurchases({ purchaserInfo ->
+            Purchases.sharedInstance.restorePurchasesWith(::showError) { purchaserInfo ->
                 purchase_restore.text = "Restore Purchases"
-                configureContentFor(purchaserInfo!!)
-            }, { error ->
-                showError(error.message!!)
-            })
+                configureContent(purchaserInfo)
+            }
         }
-
-        Purchases.sharedInstance.getPurchaserInfo({ purchaserInfo ->
-            configureContentFor(purchaserInfo!!)
-        }, { error ->
-            showError(error.message!!)
-        })
+        Purchases.sharedInstance.getPurchaserInfoWith(::showError, ::configureContent)
     }
 
-    private fun configureContentFor(purchaserInfo: PurchaserInfo) {
+    private fun configureContent(purchaserInfo: PurchaserInfo) {
         if (purchaserInfo.activeEntitlements.contains("pro")) {
             Log.i("Purchases Sample", "Hey there premium, you're a happy cat 😻")
             cat_content_label.text = "😻"

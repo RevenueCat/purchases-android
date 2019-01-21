@@ -66,6 +66,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private var purchaseCallbacks: MutableMap<String, PurchaseCompletedListener> = mutableMapOf()
     private var lastSentPurchaserInfo: PurchaserInfo? = null
 
+    private val receivePurchaserInfoListenerStub = object : ReceivePurchaserInfoListener {
+        override fun onReceived(purchaserInfo: PurchaserInfo) {
+        }
+
+        override fun onError(error: PurchasesError) {
+        }
+    }
     /**
      * The listener is responsible for handling changes to purchaser information.
      * Make sure [removeUpdatedPurchaserInfoListener] is called when the listener needs to be destroyed.
@@ -162,24 +169,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }.invoke()
     }
 
-    /**
-     * Fetch the configured entitlements for this user. Entitlements allows you to configure your
-     * in-app products via RevenueCat and greatly simplifies management.
-     * See [the guide](https://docs.revenuecat.com/v1.0/docs/entitlements) for more info.
-     *
-     * Entitlements will be fetched and cached on instantiation so that, by the time they are needed,
-     * your prices are loaded for your purchase flow. Time is money.
-     *
-     * @param [onSuccess] Will be called after a successful fetch of entitlements
-     * @param [onError] Will be called after an error fetching entitlements
-     */
-    @Suppress("unused")
-    fun getEntitlements(
-        onSuccess: ReceiveEntitlementsSuccessFunction,
-        onError: ErrorFunction
-    ) {
-        getEntitlements(receiveEntitlementsListener(onSuccess, onError))
-    }
 
     /**
      * Gets the SKUDetails for the given list of subscription skus.
@@ -194,19 +183,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * Gets the SKUDetails for the given list of subscription skus.
-     * @param [skus] List of skus
-     * @param [onReceiveSkus] Will be called after fetching subscriptions
-     */
-    @Suppress("unused")
-    fun getSubscriptionSkus(
-        skus: List<String>,
-        onReceiveSkus: (skus: List<SkuDetails>) -> Unit
-    ) {
-        getSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus))
-    }
-
-    /**
      * Gets the SKUDetails for the given list of non-subscription skus.
      * @param [skus] List of skus
      * @param [listener] Response listener
@@ -216,19 +192,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: GetSkusResponseListener
     ) {
         getSkus(skus, BillingClient.SkuType.INAPP, listener)
-    }
-
-    /**
-     * Gets the SKUDetails for the given list of non-subscription skus.
-     * @param [skus] List of skus
-     * @param [onReceiveSkus] Will be called after fetching SkuDetails
-     */
-    @Suppress("unused")
-    fun getNonSubscriptionSkus(
-        skus: List<String>,
-        onReceiveSkus: (skus: List<SkuDetails>) -> Unit
-    ) {
-        getNonSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus))
     }
 
     /**
@@ -268,26 +231,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [activity] Current activity
      * @param [sku] The sku you wish to purchase
      * @param [skuType] The type of sku, INAPP or SUBS
-     * @param [oldSkus] The skus you wish to upgrade from.
-     * @param [onSuccess] Will be called after the purchase has completed
-     * @param [onError] Will be called after the purchase has completed with error
-     */
-    fun makePurchase(
-        activity: Activity,
-        sku: String,
-        @BillingClient.SkuType skuType: String,
-        oldSkus: ArrayList<String>,
-        onSuccess: PurchaseCompletedSuccessFunction,
-        onError: ErrorFunction
-    ) {
-        makePurchase(activity, sku, skuType, oldSkus, purchaseCompletedListener(onSuccess, onError))
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [sku] The sku you wish to purchase
-     * @param [skuType] The type of sku, INAPP or SUBS
      * @param [listener] The listener that will be called when purchase completes.
      */
     fun makePurchase(
@@ -297,24 +240,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: PurchaseCompletedListener
     ) {
         makePurchase(activity, sku, skuType, ArrayList(), listener)
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [sku] The sku you wish to purchase
-     * @param [skuType] The type of sku, INAPP or SUBS
-     * @param [onSuccess] Will be called after the purchase has completed
-     * @param [onError] Will be called after the purchase has completed with error
-     */
-    fun makePurchase(
-        activity: Activity,
-        sku: String,
-        @BillingClient.SkuType skuType: String,
-        onSuccess: PurchaseCompletedSuccessFunction,
-        onError: ErrorFunction
-    ) {
-        makePurchase(activity, sku, skuType, ArrayList(), purchaseCompletedListener(onSuccess, onError))
     }
 
     /**
@@ -349,22 +274,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * Restores purchases made with the current Play Store account for the current user.
-     * If you initialized Purchases with an `appUserID` any receipt tokens currently being used by
-     * other users of your app will not be restored. If you used an anonymous id, i.e. you
-     * initialized Purchases without an appUserID, any other anonymous users using the same
-     * purchases will be merged.
-     * @param [onSuccess] Will be called after the call has completed.
-     * @param [onError] Will be called after the call has completed with an error.
-     */
-    fun restorePurchases(
-        onSuccess: ReceivePurchaserInfoSuccessFunction,
-        onError: ErrorFunction
-    ) {
-        restorePurchases(receivePurchaserInfoListener(onSuccess, onError))
-    }
-
-    /**
      * This function will alias two appUserIDs together.
      * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
      * @param [listener] An optional listener to listen for successes or errors.
@@ -372,7 +281,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmOverloads
     fun createAlias(
         newAppUserID: String,
-        listener: ReceivePurchaserInfoListener? = null
+        listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
     ) {
         debugLog("Creating an alias to $appUserID from $newAppUserID")
         backend.createAlias(
@@ -383,24 +292,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 identify(newAppUserID, listener)
             },
             { error ->
-                dispatch { listener?.onError(error) }
+                dispatch { listener.onError(error) }
             }
         )
-    }
-
-    /**
-     * This function will alias two appUserIDs together.
-     * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
-     * @param [onSuccess] Will be called after the call has completed.
-     * @param [onError] Will be called after the call has completed with an error.
-     */
-    @Suppress("unused")
-    fun createAlias(
-        newAppUserID: String,
-        onSuccess: ReceivePurchaserInfoSuccessFunction?,
-        onError: ErrorFunction?
-    ) {
-        createAlias(newAppUserID, receivePurchaserInfoListener(onSuccess, onError))
     }
 
     /**
@@ -412,7 +306,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmOverloads
     fun identify(
         appUserID: String,
-        listener: ReceivePurchaserInfoListener? = null
+        listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
     ) {
         debugLog("Changing App User ID: ${this.appUserID} -> $appUserID")
         clearCaches()
@@ -422,48 +316,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * This function will change the current appUserID.
-     * Typically this would be used after a log out to identify a new user without calling configure
-     * @param appUserID The new appUserID that should be linked to the currently user
-     * @param [onSuccess] Will be called after the call has completed.
-     * @param [onError] Will be called after the call has completed with an error.
-     */
-    @Suppress("unused")
-    fun identify(
-        appUserID: String,
-        onSuccess: ReceivePurchaserInfoSuccessFunction?,
-        onError: ErrorFunction?
-    ) {
-        identify(appUserID, receivePurchaserInfoListener(onSuccess, onError))
-    }
-
-    /**
      * Resets the Purchases client clearing the save appUserID. This will generate a random user
      * id and save it in the cache.
      * @param [listener] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
     fun reset(
-        listener: ReceivePurchaserInfoListener? = null
+        listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
     ) {
         clearCaches()
         this.appUserID = createRandomIDAndCacheIt()
         purchaseCallbacks.clear()
         updateCaches(listener)
-    }
-
-    /**
-     * Resets the Purchases client clearing the save appUserID. This will generate a random user
-     * id and save it in the cache.
-     * @param [onSuccess] Will be called after the call has completed.
-     * @param [onError] Will be called after the call has completed with an error.
-     */
-    @Suppress("unused")
-    fun reset(
-        onSuccess: ReceivePurchaserInfoSuccessFunction?,
-        onError: ErrorFunction?
-    ) {
-        reset(receivePurchaserInfoListener(onSuccess, onError))
     }
 
     /**
@@ -495,20 +359,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             debugLog("No cached purchaser info, fetching")
             updateCaches(listener)
         }
-    }
-
-    /**
-     * Get latest available purchaser info.
-     * @param onSuccess Called when purchaser info is available and not stale. Called immediately if
-     * purchaser info is cached.
-     * @param onError Will be called after the call has completed with an error.
-     */
-    @Suppress("unused")
-    fun getPurchaserInfo(
-        onSuccess: ReceivePurchaserInfoSuccessFunction,
-        onError: ErrorFunction
-    ) {
-        getPurchaserInfo(receivePurchaserInfoListener(onSuccess, onError))
     }
 
     /**

@@ -2,12 +2,13 @@ package com.revenuecat.sample
 
 import android.os.Bundle
 import android.widget.Button
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.Entitlement
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.getEntitlementsWith
+import com.revenuecat.purchases.makePurchaseWith
 import kotlinx.android.synthetic.main.activity_upsell.annual_purchase
 import kotlinx.android.synthetic.main.activity_upsell.monthly_purchase
 import kotlinx.android.synthetic.main.activity_upsell.skip
@@ -19,13 +20,9 @@ class UpsellActivity : AppCompatActivity() {
         setContentView(R.layout.activity_upsell)
 
         showScreen(true)
-        Purchases.sharedInstance.getEntitlements (
-            { entitlementMap ->
-                showScreen(false, entitlementMap)
-            },{ error ->
-                Toast.makeText(this, "Something went wrong", Toast.LENGTH_SHORT).show()
-            }
-        )
+        Purchases.sharedInstance.getEntitlementsWith(::showError) { entitlementMap ->
+            showScreen(false, entitlementMap)
+        }
         skip.setOnClickListener { startCats() }
     }
 
@@ -82,19 +79,17 @@ class UpsellActivity : AppCompatActivity() {
 
     private fun makePurchase(product: SkuDetails, button: Button) {
         button.showLoading(true)
-        Purchases.sharedInstance.makePurchase(
+        Purchases.sharedInstance.makePurchaseWith(
             this,
             product.sku,
             BillingClient.SkuType.SUBS,
-            { _, purchaserInfo ->
+            ::showError) { _, purchaserInfo ->
                 button.showLoading(false)
                 if (purchaserInfo.activeEntitlements.contains("pro")) {
                     startCats()
                 }
-            },{ error ->
-                showError(error.message!!)
             }
-        )
+
     }
 
     private fun Button.showLoading(loading: Boolean) {
