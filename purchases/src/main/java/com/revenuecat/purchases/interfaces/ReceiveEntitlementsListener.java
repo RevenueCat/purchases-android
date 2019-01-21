@@ -16,7 +16,6 @@ import androidx.annotation.NonNull;
 /**
  * Used when retrieving entitlements
  */
-@FunctionalInterface
 public interface ReceiveEntitlementsListener {
 
     /**

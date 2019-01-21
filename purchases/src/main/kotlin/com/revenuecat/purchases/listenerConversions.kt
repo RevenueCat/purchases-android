@@ -7,19 +7,14 @@ import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 
-typealias PurchaseCompletedListenerSuccess = (sku: String, purchaserInfo: PurchaserInfo) -> Unit
-typealias PurchaseCompletedListenerError = (error: PurchasesError) -> Unit
-
-typealias ReceiveEntitlementsListenerSuccess = (entitlementMap: Map<String, Entitlement>) -> Unit
-typealias ReceiveEntitlementsListenerError = (error: PurchasesError) -> Unit
-
-typealias ReceivePurchaserInfoListenerSuccess = (purchaserInfo: PurchaserInfo) -> Unit
-typealias ReceivePurchaserInfoListenerError = (error: PurchasesError) -> Unit
-
+typealias PurchaseCompletedSuccessFunction = (sku: String, purchaserInfo: PurchaserInfo) -> Unit
+typealias ReceiveEntitlementsSuccessFunction = (entitlementMap: Map<String, Entitlement>) -> Unit
+typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: PurchaserInfo) -> Unit
+typealias ErrorFunction = (error: PurchasesError) -> Unit
 
 internal fun purchaseCompletedListener(
-    onSuccess: PurchaseCompletedListenerSuccess,
-    onError: PurchaseCompletedListenerError
+    onSuccess: PurchaseCompletedSuccessFunction,
+    onError: ErrorFunction
 ) = object : PurchaseCompletedListener {
     override fun onCompleted(sku: String, purchaserInfo: PurchaserInfo) {
         onSuccess(sku, purchaserInfo)
@@ -35,8 +30,8 @@ internal fun getSkusResponseListener(
 ) = GetSkusResponseListener { onReceived(it) }
 
 internal fun receiveEntitlementsListener(
-    onSuccess: ReceiveEntitlementsListenerSuccess,
-    onError: ReceiveEntitlementsListenerError
+    onSuccess: ReceiveEntitlementsSuccessFunction,
+    onError: ErrorFunction
 ) = object : ReceiveEntitlementsListener {
     override fun onReceived(entitlementMap: MutableMap<String, Entitlement>) {
         onSuccess(entitlementMap)
@@ -48,8 +43,8 @@ internal fun receiveEntitlementsListener(
 }
 
 internal fun receivePurchaserInfoListener(
-    onSuccess: ReceivePurchaserInfoListenerSuccess?,
-    onError: ReceivePurchaserInfoListenerError?
+    onSuccess: ReceivePurchaserInfoSuccessFunction?,
+    onError: ErrorFunction?
 ) = object : ReceivePurchaserInfoListener {
     override fun onReceived(purchaserInfo: PurchaserInfo) {
         onSuccess?.invoke(purchaserInfo)

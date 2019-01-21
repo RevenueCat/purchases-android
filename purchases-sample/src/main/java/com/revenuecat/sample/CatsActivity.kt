@@ -7,7 +7,6 @@ import android.view.View.VISIBLE
 import androidx.appcompat.app.AppCompatActivity
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import kotlinx.android.synthetic.main.activity_cats.cat_content_label
 import kotlinx.android.synthetic.main.activity_cats.expiration_date_label
 import kotlinx.android.synthetic.main.activity_cats.go_premium
@@ -25,22 +24,18 @@ class CatsActivity : AppCompatActivity() {
         }
         purchase_restore.setOnClickListener {
             purchase_restore.text = "Loading..."
-            Purchases.sharedInstance.restorePurchases(ReceivePurchaserInfoListener { purchaserInfo, error ->
+            Purchases.sharedInstance.restorePurchases({ purchaserInfo ->
                 purchase_restore.text = "Restore Purchases"
-                if (error != null) {
-                    showError(error.message!!)
-                } else {
-                    configureContentFor(purchaserInfo!!)
-                }
+                configureContentFor(purchaserInfo!!)
+            }, { error ->
+                showError(error.message!!)
             })
         }
 
-        Purchases.sharedInstance.getPurchaserInfo(ReceivePurchaserInfoListener { purchaserInfo, error ->
-            if (error != null) {
-                showError(error.message!!)
-            } else {
-                configureContentFor(purchaserInfo!!)
-            }
+        Purchases.sharedInstance.getPurchaserInfo({ purchaserInfo ->
+            configureContentFor(purchaserInfo!!)
+        }, { error ->
+            showError(error.message!!)
         })
     }
 

@@ -11,8 +11,6 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
-import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import io.mockk.Runs
@@ -138,8 +136,7 @@ class PurchasesTest {
             activity,
             sku,
             BillingClient.SkuType.SUBS,
-            completion = PurchaseCompletedListener { _, _, _ ->
-            })
+            { _, _ -> }, { })
 
         verify {
             mockBillingWrapper.makePurchaseAsync(
@@ -244,7 +241,8 @@ class PurchasesTest {
             "sku",
             "SKUS",
             ArrayList(),
-            PurchaseCompletedListener { _, _, error ->
+            { _, _ ->
+            }, { error ->
                 errorCalled = true
                 assertThat(error).isEqualTo(
                     PurchasesError(
@@ -464,7 +462,7 @@ class PurchasesTest {
             lambda<(List<Purchase>) -> Unit>().captured.invoke(listOf(mockk(relaxed = true)))
         }
 
-        purchases.restorePurchases(ReceivePurchaserInfoListener { _, _ -> })
+        purchases.restorePurchases({ }, { })
 
         verify {
             mockBillingWrapper.queryPurchaseHistoryAsync(
@@ -509,11 +507,10 @@ class PurchasesTest {
         }
 
         var restoreCalled = false
-        purchases.restorePurchases(ReceivePurchaserInfoListener { _, purchasesError ->
-            if (purchasesError != null) {
-                fail("Should not be an error")
-            }
+        purchases.restorePurchases({
             restoreCalled = true
+        }, {
+            fail("Should not be an error")
         })
         assertThat(restoreCalled).isTrue()
 
@@ -544,13 +541,11 @@ class PurchasesTest {
         }
 
         var onErrorCalled = false
-        purchases.restorePurchases(ReceivePurchaserInfoListener { _, error ->
-            if (error != null) {
-                onErrorCalled = true
-                assertThat(error).isEqualTo(purchasesError)
-            } else {
-                fail("should be an error")
-            }
+        purchases.restorePurchases({
+            fail("should be an error")
+        },{ error ->
+            onErrorCalled = true
+            assertThat(error).isEqualTo(purchasesError)
         })
 
         assertThat(onErrorCalled).isTrue()
@@ -605,14 +600,15 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            lambda<(PurchaserInfo)->Unit>().captured.invoke(mockInfo)
+            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
         }
 
         var callbackCalled = false
-        purchases.restorePurchases(ReceivePurchaserInfoListener { info, error ->
+        purchases.restorePurchases({ info ->
             assertThat(mockInfo).isEqualTo(info)
-            assertThat(error).isNull()
             callbackCalled = true
+        }, {
+            fail("should be success")
         })
 
         verify(exactly = 2) {
@@ -682,8 +678,10 @@ class PurchasesTest {
         mockProducts(skus)
         val details = mockSkuDetails(skus, skus, BillingClient.SkuType.SUBS)
 
-        purchases.getEntitlements(ReceiveEntitlementsListener { entitlementMap, _ ->
+        purchases.getEntitlements({ entitlementMap ->
             this@PurchasesTest.receivedEntitlementMap = entitlementMap
+        },{
+            fail("should be a success")
         })
 
         assertThat(receivedEntitlementMap).isNotNull
@@ -744,8 +742,10 @@ class PurchasesTest {
         mockProducts(skus)
         mockSkuDetails(skus, skus, BillingClient.SkuType.SUBS)
 
-        purchases.getEntitlements(ReceiveEntitlementsListener { entitlementMap, _ ->
+        purchases.getEntitlements({ entitlementMap ->
             receivedEntitlementMap = entitlementMap
+        }, {
+            fail("should be a success")
         })
 
         assertThat(receivedEntitlementMap).isNotNull
@@ -763,12 +763,10 @@ class PurchasesTest {
 
         val errorMessage = emptyArray<PurchasesError>()
 
-        purchases.getEntitlements(ReceiveEntitlementsListener { entitlementMap, error ->
-            if (error != null) {
-                errorMessage[0] = error
-            } else {
-                receivedEntitlementMap = entitlementMap
-            }
+        purchases.getEntitlements({ entitlementMap ->
+            receivedEntitlementMap = entitlementMap
+        }, { error ->
+            errorMessage[0] = error
         })
 
         assertThat(errorMessage.size).isZero()
@@ -786,21 +784,21 @@ class PurchasesTest {
                 captureLambda()
             )
         } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(
-                Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                0,
-                "nope"
-            ))
+            lambda<(PurchasesError) -> Unit>().captured.invoke(
+                PurchasesError(
+                    Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                    0,
+                    "nope"
+                )
+            )
         }
 
         var purchasesError: PurchasesError? = null
 
-        purchases.getEntitlements(ReceiveEntitlementsListener { _, error ->
-            if (error == null) {
-                fail("should be an error")
-            } else {
-                purchasesError = error
-            }
+        purchases.getEntitlements({
+            fail("should be an error")
+        }, { error ->
+            purchasesError = error
         })
 
         assertThat(purchasesError).isNotNull
@@ -858,11 +856,13 @@ class PurchasesTest {
                 captureLambda()
             )
         } answers {
-            lambda<(PurchasesError)->Unit>().captured.invoke(PurchasesError(
-                Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                402,
-                "This is fake"
-            ))
+            lambda<(PurchasesError) -> Unit>().captured.invoke(
+                PurchasesError(
+                    Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                    402,
+                    "This is fake"
+                )
+            )
         }
 
         setup()
@@ -896,11 +896,13 @@ class PurchasesTest {
                 captureLambda()
             )
         } answers {
-            lambda<(PurchasesError)->Unit>().captured.invoke(PurchasesError(
-                Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                502,
-                "This is fake"
-            ))
+            lambda<(PurchasesError) -> Unit>().captured.invoke(
+                PurchasesError(
+                    Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                    502,
+                    "This is fake"
+                )
+            )
         }
 
         setup()
@@ -951,7 +953,7 @@ class PurchasesTest {
         purchases.restorePurchases(mockCompletion)
 
         verify {
-            mockCompletion.onReceived(any(), null)
+            mockCompletion.onReceived(any())
         }
     }
 
@@ -982,7 +984,7 @@ class PurchasesTest {
         )
 
         verify {
-            mockCompletion.onReceived(mockInfo, null)
+            mockCompletion.onReceived(mockInfo)
         }
     }
 
@@ -1010,10 +1012,7 @@ class PurchasesTest {
             mockReceivePurchaserInfoListener
         )
         verify {
-            mockReceivePurchaserInfoListener.onReceived(
-                null,
-                eq(purchasesError)
-            )
+            mockReceivePurchaserInfoListener.onError(eq(purchasesError))
         }
     }
 
@@ -1134,7 +1133,7 @@ class PurchasesTest {
         setup()
         purchases.updatedPurchaserInfoListener = listener
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             listener.onReceived(any())
         }
     }
@@ -1144,7 +1143,7 @@ class PurchasesTest {
         setupAnonymous()
         purchases.updatedPurchaserInfoListener = listener
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             listener.onReceived(any())
         }
     }
@@ -1172,7 +1171,7 @@ class PurchasesTest {
 
         purchases.onPurchasesUpdated(listOf(p))
 
-        verify (exactly = 2) {
+        verify(exactly = 2) {
             listener.onReceived(any())
         }
     }
@@ -1194,7 +1193,7 @@ class PurchasesTest {
 
         purchases.onPurchasesUpdated(listOf(p))
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             listener.onReceived(any())
         }
     }
@@ -1282,7 +1281,13 @@ class PurchasesTest {
             mockBackend.getEntitlements(any(), captureLambda(), any())
         } answers {
             val offeringMap = skus.map { sku -> sku + "_offering" to Offering(sku) }.toMap()
-            lambda<(Map<String, Entitlement>) -> Unit>().captured.invoke(mapOf("pro" to Entitlement(offeringMap)))
+            lambda<(Map<String, Entitlement>) -> Unit>().captured.invoke(
+                mapOf(
+                    "pro" to Entitlement(
+                        offeringMap
+                    )
+                )
+            )
         }
     }
 

@@ -2,13 +2,12 @@ package com.revenuecat.sample
 
 import android.os.Bundle
 import android.widget.Button
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.Entitlement
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
-import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import kotlinx.android.synthetic.main.activity_upsell.annual_purchase
 import kotlinx.android.synthetic.main.activity_upsell.monthly_purchase
 import kotlinx.android.synthetic.main.activity_upsell.skip
@@ -20,15 +19,19 @@ class UpsellActivity : AppCompatActivity() {
         setContentView(R.layout.activity_upsell)
 
         showScreen(true)
-        Purchases.sharedInstance.getEntitlements(ReceiveEntitlementsListener { entitlementMap, _ ->
-            showScreen(false, entitlementMap)
-        })
+        Purchases.sharedInstance.getEntitlements (
+            { entitlementMap ->
+                showScreen(false, entitlementMap)
+            },{ error ->
+                Toast.makeText(this, "Something went wrong", Toast.LENGTH_SHORT).show()
+            }
+        )
         skip.setOnClickListener { startCats() }
     }
 
     private fun showScreen(
         loading: Boolean,
-        entitlementMap: MutableMap<String, Entitlement>? = null
+        entitlementMap: Map<String, Entitlement>? = null
     ) {
         if (loading) {
             monthly_purchase.text = "Loading..."
@@ -83,16 +86,15 @@ class UpsellActivity : AppCompatActivity() {
             this,
             product.sku,
             BillingClient.SkuType.SUBS,
-            PurchaseCompletedListener { _, purchaserInfo, error ->
+            { _, purchaserInfo ->
                 button.showLoading(false)
-                if (error != null) {
-                    showError(error.message!!)
-                } else {
-                    if (purchaserInfo!!.activeEntitlements.contains("pro")) {
-                        startCats()
-                    }
+                if (purchaserInfo.activeEntitlements.contains("pro")) {
+                    startCats()
                 }
-            })
+            },{ error ->
+                showError(error.message!!)
+            }
+        )
     }
 
     private fun Button.showLoading(loading: Boolean) {

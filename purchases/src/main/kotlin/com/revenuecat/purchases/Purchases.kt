@@ -175,8 +175,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @Suppress("unused")
     fun getEntitlements(
-        onSuccess: ReceiveEntitlementsListenerSuccess,
-        onError: ReceivePurchaserInfoListenerError
+        onSuccess: ReceiveEntitlementsSuccessFunction,
+        onError: ErrorFunction
     ) {
         getEntitlements(receiveEntitlementsListener(onSuccess, onError))
     }
@@ -277,8 +277,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         sku: String,
         @BillingClient.SkuType skuType: String,
         oldSkus: ArrayList<String>,
-        onSuccess: PurchaseCompletedListenerSuccess,
-        onError: PurchaseCompletedListenerError
+        onSuccess: PurchaseCompletedSuccessFunction,
+        onError: ErrorFunction
     ) {
         makePurchase(activity, sku, skuType, oldSkus, purchaseCompletedListener(onSuccess, onError))
     }
@@ -311,8 +311,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         activity: Activity,
         sku: String,
         @BillingClient.SkuType skuType: String,
-        onSuccess: PurchaseCompletedListenerSuccess,
-        onError: PurchaseCompletedListenerError
+        onSuccess: PurchaseCompletedSuccessFunction,
+        onError: ErrorFunction
     ) {
         makePurchase(activity, sku, skuType, ArrayList(), purchaseCompletedListener(onSuccess, onError))
     }
@@ -358,8 +358,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [onError] Will be called after the call has completed with an error.
      */
     fun restorePurchases(
-        onSuccess: ReceivePurchaserInfoListenerSuccess,
-        onError: ReceivePurchaserInfoListenerError
+        onSuccess: ReceivePurchaserInfoSuccessFunction,
+        onError: ErrorFunction
     ) {
         restorePurchases(receivePurchaserInfoListener(onSuccess, onError))
     }
@@ -397,8 +397,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @Suppress("unused")
     fun createAlias(
         newAppUserID: String,
-        onSuccess: ReceivePurchaserInfoListenerSuccess?,
-        onError: ReceivePurchaserInfoListenerError?
+        onSuccess: ReceivePurchaserInfoSuccessFunction?,
+        onError: ErrorFunction?
     ) {
         createAlias(newAppUserID, receivePurchaserInfoListener(onSuccess, onError))
     }
@@ -431,8 +431,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @Suppress("unused")
     fun identify(
         appUserID: String,
-        onSuccess: ReceivePurchaserInfoListenerSuccess?,
-        onError: ReceivePurchaserInfoListenerError?
+        onSuccess: ReceivePurchaserInfoSuccessFunction?,
+        onError: ErrorFunction?
     ) {
         identify(appUserID, receivePurchaserInfoListener(onSuccess, onError))
     }
@@ -460,8 +460,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @Suppress("unused")
     fun reset(
-        onSuccess: ReceivePurchaserInfoListenerSuccess?,
-        onError: ReceivePurchaserInfoListenerError?
+        onSuccess: ReceivePurchaserInfoSuccessFunction?,
+        onError: ErrorFunction?
     ) {
         reset(receivePurchaserInfoListener(onSuccess, onError))
     }
@@ -505,8 +505,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @Suppress("unused")
     fun getPurchaserInfo(
-        onSuccess: ReceivePurchaserInfoListenerSuccess,
-        onError: ReceivePurchaserInfoListenerError
+        onSuccess: ReceivePurchaserInfoSuccessFunction,
+        onError: ErrorFunction
     ) {
         getPurchaserInfo(receivePurchaserInfoListener(onSuccess, onError))
     }
