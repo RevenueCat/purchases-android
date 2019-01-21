@@ -133,11 +133,11 @@ class PurchasesTest {
         val sku = "onemonth_freetrial"
         val oldSkus = ArrayList<String>()
 
-        purchases.makePurchase(
+        purchases.makePurchaseWith(
             activity,
             sku,
-            BillingClient.SkuType.SUBS,
-            { _, _ -> }, { })
+            BillingClient.SkuType.SUBS
+        ) { _, _ -> }
 
         verify {
             mockBillingWrapper.makePurchaseAsync(
@@ -165,7 +165,7 @@ class PurchasesTest {
             p.purchaseToken
         } returns purchaseToken
 
-        purchases.onPurchasesUpdated(listOf(p))
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p))
 
         verify {
             mockBackend.postReceiptData(
@@ -201,7 +201,7 @@ class PurchasesTest {
             purchasesList.add(p)
         }
 
-        purchases.onPurchasesUpdated(purchasesList)
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(purchasesList)
 
         verify(exactly = 2) {
             mockBackend.postReceiptData(
@@ -219,7 +219,7 @@ class PurchasesTest {
     fun doesntPostIfNotOK() {
         setup()
 
-        purchases.onPurchasesFailedToUpdate(emptyList(), 0, "fail")
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(emptyList(), 0, "fail")
 
         verify(exactly = 0) {
             mockBackend.postReceiptData(
@@ -237,13 +237,11 @@ class PurchasesTest {
     fun passesUpErrors() {
         setup()
         var errorCalled = false
-        purchases.makePurchase(
+        purchases.makePurchaseWith(
             mockk(),
             "sku",
             "SKUS",
-            ArrayList(),
-            { _, _ ->
-            }, { error ->
+            onError = { error ->
                 errorCalled = true
                 assertThat(error).isEqualTo(
                     PurchasesError(
@@ -252,11 +250,11 @@ class PurchasesTest {
                         ""
                     )
                 )
-            }
-        )
+            }) { _, _ -> }
+
         val purchase = mockk<Purchase>(relaxed = true)
         every { purchase.sku } returns "sku"
-        purchases.onPurchasesFailedToUpdate(listOf(purchase), 0, "")
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(listOf(purchase), 0, "")
         assertThat(errorCalled).isTrue()
     }
 
@@ -355,7 +353,7 @@ class PurchasesTest {
 
         purchasesList.add(p)
 
-        purchases.onPurchasesUpdated(purchasesList)
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(purchasesList)
 
         verify {
             mockBackend.postReceiptData(
@@ -395,7 +393,7 @@ class PurchasesTest {
 
         purchasesList.add(p)
 
-        purchases.onPurchasesUpdated(purchasesList)
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(purchasesList)
 
         verify {
             mockBackend.postReceiptData(
@@ -436,7 +434,7 @@ class PurchasesTest {
 
         purchasesList.add(p)
 
-        purchases.onPurchasesUpdated(purchasesList)
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(purchasesList)
 
         verify {
             mockBackend.postReceiptData(
@@ -463,7 +461,7 @@ class PurchasesTest {
             lambda<(List<Purchase>) -> Unit>().captured.invoke(listOf(mockk(relaxed = true)))
         }
 
-        purchases.restorePurchases({ }, { })
+        purchases.restorePurchasesWith {  }
 
         verify {
             mockBillingWrapper.queryPurchaseHistoryAsync(
@@ -508,9 +506,9 @@ class PurchasesTest {
         }
 
         var restoreCalled = false
-        purchases.restorePurchases({
+        purchases.restorePurchasesWith(onSuccess = {
             restoreCalled = true
-        }, {
+        }, onError = {
             fail("Should not be an error")
         })
         assertThat(restoreCalled).isTrue()
@@ -542,9 +540,9 @@ class PurchasesTest {
         }
 
         var onErrorCalled = false
-        purchases.restorePurchases({
+        purchases.restorePurchasesWith(onSuccess = {
             fail("should be an error")
-        }, { error ->
+        }, onError = { error ->
             onErrorCalled = true
             assertThat(error).isEqualTo(purchasesError)
         })
@@ -605,10 +603,10 @@ class PurchasesTest {
         }
 
         var callbackCalled = false
-        purchases.restorePurchases({ info ->
+        purchases.restorePurchasesWith( onSuccess = { info ->
             assertThat(mockInfo).isEqualTo(info)
             callbackCalled = true
-        }, {
+        }, onError = {
             fail("should be success")
         })
 
@@ -638,7 +636,7 @@ class PurchasesTest {
 
         purchasesList.add(p)
 
-        purchases.onPurchasesUpdated(purchasesList)
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(purchasesList)
 
         verify {
             mockBackend.postReceiptData(
@@ -679,9 +677,9 @@ class PurchasesTest {
         mockProducts(skus)
         val details = mockSkuDetails(skus, skus, BillingClient.SkuType.SUBS)
 
-        purchases.getEntitlements({ entitlementMap ->
+        purchases.getEntitlementsWith(onSuccess = { entitlementMap ->
             this@PurchasesTest.receivedEntitlementMap = entitlementMap
-        }, {
+        }, onError = {
             fail("should be a success")
         })
 
@@ -743,9 +741,9 @@ class PurchasesTest {
         mockProducts(skus)
         mockSkuDetails(skus, skus, BillingClient.SkuType.SUBS)
 
-        purchases.getEntitlements({ entitlementMap ->
+        purchases.getEntitlementsWith(onSuccess = { entitlementMap ->
             receivedEntitlementMap = entitlementMap
-        }, {
+        }, onError = {
             fail("should be a success")
         })
 
@@ -764,9 +762,9 @@ class PurchasesTest {
 
         val errorMessage = emptyArray<PurchasesError>()
 
-        purchases.getEntitlements({ entitlementMap ->
+        purchases.getEntitlementsWith(onSuccess = { entitlementMap ->
             receivedEntitlementMap = entitlementMap
-        }, { error ->
+        }, onError = { error ->
             errorMessage[0] = error
         })
 
@@ -796,9 +794,9 @@ class PurchasesTest {
 
         var purchasesError: PurchasesError? = null
 
-        purchases.getEntitlements({
+        purchases.getEntitlementsWith(onSuccess = {
             fail("should be an error")
-        }, { error ->
+        }, onError = { error ->
             purchasesError = error
         })
 
@@ -868,7 +866,7 @@ class PurchasesTest {
 
         setup()
 
-        purchases.onPurchasesUpdated(listOf(mockk<Purchase>().also {
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(mockk<Purchase>().also {
             every {
                 it.sku
             } returns sku
@@ -908,7 +906,7 @@ class PurchasesTest {
 
         setup()
 
-        purchases.onPurchasesUpdated(listOf(mockk<Purchase>().also {
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(mockk<Purchase>().also {
             every {
                 it.sku
             } returns sku
@@ -931,7 +929,7 @@ class PurchasesTest {
 
         verify { mockBackend.close() }
         verifyOrder {
-            mockBillingWrapper.purchasesUpdatedListener = purchases
+            mockBillingWrapper.purchasesUpdatedListener = capturedPurchasesUpdatedListener.captured
             mockBillingWrapper.purchasesUpdatedListener = null
         }
     }
@@ -1037,10 +1035,7 @@ class PurchasesTest {
             lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockk())
         }
 
-        purchases.createAlias(
-            "new_id",
-            null
-        )
+        purchases.createAlias("new_id")
 
         verify(exactly = 2) {
             mockCache.clearCachedAppUserID()
@@ -1170,7 +1165,7 @@ class PurchasesTest {
             p.purchaseToken
         } returns purchaseToken
 
-        purchases.onPurchasesUpdated(listOf(p))
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p))
 
         verify(exactly = 2) {
             listener.onReceived(any())
@@ -1192,7 +1187,7 @@ class PurchasesTest {
             p.purchaseToken
         } returns purchaseToken
 
-        purchases.onPurchasesUpdated(listOf(p))
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p))
 
         verify(exactly = 1) {
             listener.onReceived(any())
@@ -1205,26 +1200,23 @@ class PurchasesTest {
         purchases.updatedPurchaserInfoListener = listener
         val sku = "onemonth_freetrial"
 
-        purchases.makePurchase(
+        purchases.makePurchaseWith(
             mockk(),
             sku,
             BillingClient.SkuType.SUBS,
-            { _, _ ->
+            onError = { fail("Should be success") }) { _, _ ->
                 // First one works
-            },
-            {
-                fail("Should be success")
             }
-        )
+
         var errorCalled: PurchasesError? = null
-        purchases.makePurchase(
+        purchases.makePurchaseWith(
             mockk(),
             sku,
             BillingClient.SkuType.SUBS,
-            { _, _ ->
+            onSuccess = { _, _ ->
                 fail("Should be error")
             },
-            {
+            onError = {
                 errorCalled = it
             }
         )
@@ -1249,16 +1241,16 @@ class PurchasesTest {
         } returns purchaseToken
 
         var callCount = 0
-        purchases.makePurchase(
+        purchases.makePurchaseWith(
             activity,
             sku,
             BillingClient.SkuType.SUBS,
-            { _, _ ->
+            onSuccess = { _, _ ->
                 callCount++
-            }, { fail("should be successful") })
+            }, onError = { fail("should be successful") })
 
-        purchases.onPurchasesUpdated(listOf(p))
-        purchases.onPurchasesUpdated(listOf(p))
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p))
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p))
 
         assertThat(callCount).isEqualTo(1)
     }
@@ -1290,15 +1282,15 @@ class PurchasesTest {
         } returns purchaseToken1
 
         var callCount = 0
-        purchases.makePurchase(
+        purchases.makePurchaseWith(
             activity,
             sku,
             BillingClient.SkuType.SUBS,
-            { _, _ ->
+            onSuccess = { _, _ ->
                 callCount++
-            }, { fail("should be successful") })
+            }, onError = { fail("should be successful") })
 
-        purchases.onPurchasesUpdated(listOf(p1))
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p1))
 
         assertThat(callCount).isEqualTo(0)
     }
@@ -1313,10 +1305,10 @@ class PurchasesTest {
             // Timeout
         }
 
-        var receivedInfo : PurchaserInfo? = null
-        purchases.getPurchaserInfo({
+        var receivedInfo: PurchaserInfo? = null
+        purchases.getPurchaserInfoWith(onSuccess = {
             receivedInfo = it
-        }, {
+        }, onError = {
             fail("supposed to be successful")
         })
 
@@ -1335,15 +1327,15 @@ class PurchasesTest {
             // Timeout
         }
 
-        var receivedInfo : PurchaserInfo? = null
-        purchases.getPurchaserInfo({
+        var receivedInfo: PurchaserInfo? = null
+        purchases.getPurchaserInfoWith(onSuccess = {
             receivedInfo = it
-        }, {
+        }, onError = {
             fail("supposed to be successful")
         })
 
         assertThat(receivedInfo).isEqualTo(null)
-        verify (exactly = 2) { mockBackend.getPurchaserInfo(any(), any(), any()) }
+        verify(exactly = 2) { mockBackend.getPurchaserInfo(any(), any(), any()) }
     }
 
     // region Private Methods
