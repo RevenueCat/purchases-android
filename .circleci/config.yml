@@ -67,17 +67,13 @@ workflows:
   build-deploy-docs:
     jobs:
       - build
-        tags:
-          filters:
-          - /.*-rc.*/
       - hold:
           requires:
             - build
           type: approval
           filters:
             branches:
-              only:
-                - master
+              only: master
       - deploy:
           requires:
             - build
