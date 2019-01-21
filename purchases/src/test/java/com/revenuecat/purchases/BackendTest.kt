@@ -1,39 +1,61 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
-import android.support.test.runner.AndroidJUnit4
-import io.mockk.*
-import org.json.JSONException
-import org.json.JSONObject
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
-
-import java.net.MalformedURLException
-import java.util.HashMap
-import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ThreadLocalRandom
-
+import android.net.Uri
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.mockk.Called
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.slot
+import io.mockk.verify
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNull
 import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
+import org.json.JSONObject
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import java.lang.Thread.sleep
+import java.util.HashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+
+private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
+@Config(manifest= Config.NONE)
 class BackendTest {
-    private var mockInfoFactory: PurchaserInfo.Factory = mockk(relaxed = true)
-    private var mockEntitlementFactory: Entitlement.Factory = mockk(relaxed = true)
     private var mockClient: HTTPClient = mockk(relaxed = true)
-    private var dispatcher: Dispatcher = SyncDispatcher()
-    private val API_KEY = "TEST_API_KEY"
     private var backend: Backend = Backend(
         API_KEY,
-        dispatcher,
-        mockClient,
-        mockInfoFactory,
-        mockEntitlementFactory
+        SyncDispatcher(),
+        mockClient
+    )
+    private var asyncBackend: Backend = Backend(
+        API_KEY,
+        Dispatcher(
+            ThreadPoolExecutor(
+                1,
+                2,
+                0,
+                TimeUnit.MILLISECONDS,
+                LinkedBlockingQueue()
+            )
+        ),
+        mockClient
     )
     private val appUserID = "jerry"
 
@@ -42,31 +64,25 @@ class BackendTest {
     private var receivedMessage: String? = null
     private var receivedEntitlements: Map<String, Entitlement>? = null
 
-
-    private val handler = object : Backend.BackendResponseHandler() {
-
-        override fun onReceivePurchaserInfo(info: PurchaserInfo) {
+    private val onReceivePurchaserInfoSuccessHandler: (PurchaserInfo) -> Unit = { info ->
             this@BackendTest.receivedPurchaserInfo = info
         }
 
-        override fun onError(code: Int, message: String?) {
+    private val onReceivePurchaserInfoErrorHandler: (PurchasesError) -> Unit = {
             this@BackendTest.receivedCode = -1
-            this@BackendTest.receivedMessage = message
+            this@BackendTest.receivedMessage = it.message
         }
+
+    private val onReceiveEntitlementsSuccessHandler: (Map<String, Entitlement>) -> Unit = { entitlements ->
+        this@BackendTest.receivedEntitlements = entitlements
     }
 
-    private val entitlementsHandler = object : Backend.EntitlementsResponseHandler() {
-        override fun onReceiveEntitlements(entitlements: Map<String, Entitlement>) {
-            this@BackendTest.receivedEntitlements = entitlements
-        }
-
-        override fun onError(code: Int, message: String) {
-            this@BackendTest.receivedCode = code
-            this@BackendTest.receivedMessage = message
-        }
+    private val onReceiveEntitlementsErrorHandler: (PurchasesError) -> Unit = {
+        this@BackendTest.receivedCode = it.code
+        this@BackendTest.receivedMessage = it.message
     }
 
-    private inner class SyncDispatcher: Dispatcher(mockk()) {
+    private inner class SyncDispatcher : Dispatcher(mockk()) {
 
         private var closed = false
 
@@ -91,13 +107,13 @@ class BackendTest {
         assertNotNull(backend)
     }
 
-    @Throws(JSONException::class, HTTPClient.HTTPErrorException::class)
     private fun mockResponse(
         path: String,
         body: Map<String, Any?>?,
         responseCode: Int,
         clientException: HTTPClient.HTTPErrorException?,
-        resultBody: String?
+        resultBody: String?,
+        delayed: Boolean = false
     ): PurchaserInfo {
         val info: PurchaserInfo = mockk()
 
@@ -108,12 +124,13 @@ class BackendTest {
         val headers = HashMap<String, String>()
         headers["Authorization"] = "Bearer $API_KEY"
 
+        mockkStatic("com.revenuecat.purchases.FactoriesKt")
+
         every {
-            mockInfoFactory.build(eq(result.body!!))
+            result.body!!.buildPurchaserInfo()
         } returns info
 
-
-        val every = every {
+        val everyMockedCall = every {
             mockClient.performRequest(
                 eq(path),
                 (if (body == null) any() else eq(body)) as Map<*, *>,
@@ -122,40 +139,55 @@ class BackendTest {
         }
 
         if (clientException == null) {
-            every returns result
+            everyMockedCall answers {
+                if (delayed) sleep(200)
+                result
+            }
         } else {
-            every throws clientException
+            everyMockedCall throws clientException
         }
 
         return info
     }
 
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     private fun postReceipt(
         responseCode: Int,
-        isRestore: Boolean?,
+        isRestore: Boolean,
         clientException: HTTPClient.HTTPErrorException?,
         resultBody: String?
     ): PurchaserInfo {
 
+        val (fetchToken, productID, info) = mockPostReceiptResponse(
+            isRestore,
+            responseCode,
+            clientException,
+            resultBody
+        )
+
+        backend.postReceiptData(fetchToken, appUserID, productID, isRestore, onReceivePurchaserInfoSuccessHandler, onReceivePurchaserInfoErrorHandler)
+
+        return info
+    }
+
+    private fun mockPostReceiptResponse(
+        isRestore: Boolean,
+        responseCode: Int,
+        clientException: HTTPClient.HTTPErrorException?,
+        resultBody: String?,
+        delayed: Boolean = false
+    ): Triple<String, String, PurchaserInfo> {
         val fetchToken = "fetch_token"
         val productID = "product_id"
-
         val body = mapOf(
             "fetch_token" to fetchToken,
             "app_user_id" to appUserID,
             "product_id" to productID,
             "is_restore" to isRestore
         )
-
-        val info = mockResponse("/receipts", body, responseCode, clientException, resultBody)
-
-        backend.postReceiptData(fetchToken, appUserID, productID, isRestore, handler)
-
-        return info
+        val info = mockResponse("/receipts", body, responseCode, clientException, resultBody, delayed)
+        return Triple(fetchToken, productID, info)
     }
 
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     private fun getPurchaserInfo(
         responseCode: Int,
         clientException: HTTPClient.HTTPErrorException?,
@@ -164,13 +196,12 @@ class BackendTest {
         val info =
             mockResponse("/subscribers/$appUserID", null, responseCode, clientException, resultBody)
 
-        backend.getSubscriberInfo(appUserID, handler)
+        backend.getPurchaserInfo(appUserID, onReceivePurchaserInfoSuccessHandler, onReceivePurchaserInfoErrorHandler)
 
         return info
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun getSubscriberInfoCallsProperURL() {
 
         val info = getPurchaserInfo(200, null, null)
@@ -180,7 +211,6 @@ class BackendTest {
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun getSubscriberInfoFailsIfNot20X() {
         val failureCode = ThreadLocalRandom.current().nextInt(300, 500 + 1)
 
@@ -191,7 +221,6 @@ class BackendTest {
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun clientErrorCallsErrorHandler() {
         getPurchaserInfo(200, HTTPClient.HTTPErrorException(0, ""), null)
 
@@ -200,7 +229,6 @@ class BackendTest {
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun attemptsToParseErrorMessageFromServer() {
         getPurchaserInfo(404, null, "{'message': 'Dude not found'}")
 
@@ -209,14 +237,12 @@ class BackendTest {
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun handlesMissingMessageInErrorBody() {
         getPurchaserInfo(404, null, "{'no_message': 'Dude not found'}")
         assertNotNull(receivedMessage)
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun postReceiptCallsProperURL() {
         val info = postReceipt(200, false, null, null)
 
@@ -225,7 +251,6 @@ class BackendTest {
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun postReceiptCallsFailsFor40X() {
         postReceipt(401, false, null, null)
 
@@ -234,31 +259,28 @@ class BackendTest {
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun canGetEntitlementsWhenEmpty() {
 
         mockResponse("/subscribers/$appUserID/products", null, 200, null, "{'entitlements': {}}")
 
-        backend.getEntitlements(appUserID, entitlementsHandler)
+        backend.getEntitlements(appUserID, onReceiveEntitlementsSuccessHandler, onReceiveEntitlementsErrorHandler)
 
         assertNotNull(receivedEntitlements)
         assertEquals(0, receivedEntitlements!!.size)
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun canHandleBadEntitlementsResponse() {
 
         mockResponse("/subscribers/$appUserID/products", null, 200, null, "{}")
 
-        backend.getEntitlements(appUserID, entitlementsHandler)
+        backend.getEntitlements(appUserID, onReceiveEntitlementsSuccessHandler, onReceiveEntitlementsErrorHandler)
 
         assertNull(receivedEntitlements)
         assertNotNull(receivedMessage)
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun passesEntitlementsFieldToFactory() {
         mockResponse(
             "/subscribers/$appUserID/products",
@@ -267,19 +289,19 @@ class BackendTest {
             null,
             "{'entitlements': {'pro': {}}}"
         )
-        every {
-            mockEntitlementFactory.build(any() as JSONObject)
+
+        every  {
+            (any() as JSONObject).buildEntitlementsMap()
         } returns HashMap()
 
-        backend.getEntitlements(appUserID, entitlementsHandler)
+        backend.getEntitlements(appUserID, onReceiveEntitlementsSuccessHandler, onReceiveEntitlementsErrorHandler)
 
         verify {
-            mockEntitlementFactory.build(any() as JSONObject)
+            (any() as JSONObject).buildEntitlementsMap()
         }
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun canPostBasicAttributionData() {
         val path = "/subscribers/$appUserID/attribution"
 
@@ -303,12 +325,11 @@ class BackendTest {
             )
         }
         val captured = slot.captured
-        assertTrue(captured.has("network") && captured.has("data")
-                && captured.getInt("network") == Purchases.AttributionNetwork.APPSFLYER.serverValue)
+        assertTrue(captured.has("network") && captured.has("data") &&
+                captured.getInt("network") == Purchases.AttributionNetwork.APPSFLYER.serverValue)
     }
 
     @Test
-    @Throws(HTTPClient.HTTPErrorException::class, JSONException::class)
     fun doesntPostEmptyAttributionData() {
         backend.postAttributionData(
             appUserID,
@@ -321,11 +342,6 @@ class BackendTest {
     }
 
     @Test
-    @Throws(
-        JSONException::class,
-        MalformedURLException::class,
-        HTTPClient.HTTPErrorException::class
-    )
     fun encodesAppUserId() {
         val encodeableUserID = "userid with spaces"
 
@@ -348,7 +364,6 @@ class BackendTest {
                 any()
             )
         }
-
     }
 
     @Test
@@ -373,18 +388,136 @@ class BackendTest {
             null
         )
 
-        val onSuccessHandler = mockk<() -> Unit>(relaxed = true)
+        val onSuccess = mockk<() -> Unit>(relaxed = true)
         backend.createAlias(
             appUserID,
             "newId",
-            onSuccessHandler,
-            { _, _ ->
+            onSuccess,
+            {
                 fail("Should have called success")
             }
         )
 
         verify {
-            onSuccessHandler.invoke()
+            onSuccess.invoke()
+        }
+    }
+
+    @Test
+    fun `given multiple get calls for same subscriber, only one is triggered`() {
+        mockResponse(
+            "/subscribers/$appUserID",
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getPurchaserInfo(appUserID, {
+            lock.countDown()
+        }, onReceivePurchaserInfoErrorHandler)
+        asyncBackend.getPurchaserInfo(appUserID, {
+            lock.countDown()
+        }, onReceivePurchaserInfoErrorHandler)
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify (exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/" + Uri.encode(appUserID),
+                null as Map<*, *>?,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple post calls for same subscriber, only one is triggered`() {
+        val (fetchToken, productID, _) = mockPostReceiptResponse(
+            false,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.postReceiptData(fetchToken, appUserID, productID, false, {
+            lock.countDown()
+        }, onReceivePurchaserInfoErrorHandler)
+        asyncBackend.postReceiptData(fetchToken, appUserID, productID, false, {
+            lock.countDown()
+        }, onReceivePurchaserInfoErrorHandler)
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify (exactly = 1) {
+            mockClient.performRequest(
+                "/receipts",
+                any() as Map<*, *>?,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple entitlement get calls for same user, only one is triggered`() {
+        mockResponse(
+            "/subscribers/$appUserID/products",
+            null,
+            200,
+            null,
+            "{'entitlements': {}}",
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getEntitlements(appUserID, {
+            lock.countDown()
+        }, onReceiveEntitlementsErrorHandler)
+        asyncBackend.getEntitlements(appUserID, {
+            lock.countDown()
+        }, onReceiveEntitlementsErrorHandler)
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify (exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/$appUserID/products",
+                null as Map<*, *>?,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple entitlement get calls for different user, both are triggered`() {
+        mockResponse(
+            "/subscribers/$appUserID/products",
+            null,
+            200,
+            null,
+            "{'entitlements': {}}",
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getEntitlements(appUserID, {
+            lock.countDown()
+        }, onReceiveEntitlementsErrorHandler)
+        asyncBackend.getEntitlements("anotherUser", {
+            lock.countDown()
+        }, onReceiveEntitlementsErrorHandler)
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify (exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/$appUserID/products",
+                null as Map<*, *>?,
+                any()
+            )
+        }
+        verify (exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/anotherUser/products",
+                null as Map<*, *>?,
+                any()
+            )
         }
     }
 

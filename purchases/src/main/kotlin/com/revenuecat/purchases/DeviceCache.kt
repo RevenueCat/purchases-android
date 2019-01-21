@@ -1,3 +1,8 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
 import android.content.SharedPreferences
@@ -9,7 +14,6 @@ internal class DeviceCache(
     private val preferences: SharedPreferences,
     apiKey: String
 ) {
-    private val infoFactory: PurchaserInfo.Factory = PurchaserInfo.Factory
     private val appUserIDCacheKey = "com.revenuecat.purchases.$apiKey"
 
     private fun purchaserInfoCacheKey(appUserID: String) = "$appUserIDCacheKey.$appUserID"
@@ -18,7 +22,7 @@ internal class DeviceCache(
         return preferences.getString(purchaserInfoCacheKey(appUserID), null)
             ?.let { json ->
                 try {
-                    this.infoFactory.build(JSONObject(json))
+                    JSONObject(json).buildPurchaserInfo()
                 } catch (e: JSONException) {
                     null
                 }
@@ -33,18 +37,20 @@ internal class DeviceCache(
             ).apply()
     }
 
+    fun clearCachedPurchaserInfo(appUserID: String) {
+        preferences.edit()
+            .remove(purchaserInfoCacheKey(appUserID))
+            .apply()
+    }
+
     fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
 
-    fun cacheAppUserID(appUserID: String?) {
-        if (appUserID == null) {
-            clearCachedAppUserID()
-        } else {
-            preferences.edit()
-                .putString(
-                    appUserIDCacheKey,
-                    appUserID
-                ).apply()
-        }
+    fun cacheAppUserID(appUserID: String) {
+        preferences.edit()
+            .putString(
+                appUserIDCacheKey,
+                appUserID
+            ).apply()
     }
 
     fun clearCachedAppUserID() {

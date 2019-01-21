@@ -1,7 +1,12 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
-import org.json.JSONException
-import org.json.JSONObject
+import android.os.Parcel
+import android.os.Parcelable
 
 /**
  * An entitlement represents features or content that a user is "entitled" to.
@@ -13,38 +18,65 @@ import org.json.JSONObject
  * See [this link](https://docs.revenuecat.com/docs/entitlements) for more info
  * @property offerings Map of offering objects by name
  */
-data class Entitlement internal constructor(
+class Entitlement internal constructor(
     val offerings: Map<String, Offering>
-) {
+) : Parcelable {
 
-    internal object Factory {
-
-        private const val ACTIVE_PRODUCT_IDENTIFIER_KEY = "active_product_identifier"
-        private const val OFFERINGS_KEY = "offerings"
-
-        private fun JSONObject.parseActiveProductIdentifier() =
-            Offering(getString(ACTIVE_PRODUCT_IDENTIFIER_KEY))
-
-        private fun JSONObject.parseEntitlement(): Entitlement {
-            return Entitlement(
-                getJSONObject(OFFERINGS_KEY).mapKeyAndContent { parseActiveProductIdentifier() }
-            )
+    /**
+     * @hide
+     */
+    constructor(parcel: Parcel) : this(
+        parcel.readInt().let { size ->
+            (0 until size).map {
+                parcel.readString() to parcel.readParcelable<Offering>(Offering::class.java.classLoader)
+            }.toMap()
         }
+    )
 
-        fun build(jsonObject: JSONObject): Map<String, Entitlement> {
-            return jsonObject.mapKeyAndContent { parseEntitlement() }
+    /**
+     * @hide
+     */
+    override fun toString(): String =
+        "<Entitlement offerings: {\n" +
+                offerings.map { (_, offering) ->
+                    "\t $offering => {activeProduct: ${offering.activeProductIdentifier}, " +
+                            "loaded: ${offering.skuDetails?.let { "YES" } ?: "NO" }\n"
+                } +
+                "} >"
+
+    /**
+     * @hide
+     */
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeInt(offerings.size)
+        offerings.forEach { (key, offering) ->
+            parcel.writeString(key)
+            parcel.writeParcelable(offering, flags)
         }
-
     }
 
-}
+    /**
+     * @hide
+     */
+    override fun describeContents(): Int {
+        return 0
+    }
 
-private fun <T> JSONObject.mapKeyAndContent(transformation: JSONObject.() -> T): Map<String, T> {
-    return keys().asSequence().map { jsonName ->
-        try {
-            jsonName to transformation.invoke(getJSONObject(jsonName))
-        } catch (ignored: JSONException) {
-            null
+    /**
+     * @hide
+     */
+    companion object CREATOR : Parcelable.Creator<Entitlement> {
+        /**
+         * @hide
+         */
+        override fun createFromParcel(parcel: Parcel): Entitlement {
+            return Entitlement(parcel)
         }
-    }.filterNotNull().toMap()
+        /**
+         * @hide
+         */
+        override fun newArray(size: Int): Array<Entitlement?> {
+            return arrayOfNulls(size)
+        }
+    }
 }

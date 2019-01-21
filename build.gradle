@@ -6,10 +6,18 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.2.1'
+        classpath 'com.android.tools.build:gradle:3.3.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.jetbrains.dokka:dokka-android-gradle-plugin:$dokka_version"
     }
+}
+
+plugins {
+    id "io.gitlab.arturbosch.detekt" version "1.0.0-RC12"
+}
+
+allprojects {
+    apply from: "$rootDir/detekt.gradle"
 }
 
 subprojects {

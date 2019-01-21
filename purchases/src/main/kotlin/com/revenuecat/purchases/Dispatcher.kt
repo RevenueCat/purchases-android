@@ -1,12 +1,15 @@
-package com.revenuecat.purchases
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
 
-import android.os.Handler
-import android.os.Looper
+package com.revenuecat.purchases
 
 import java.util.concurrent.ExecutorService
 
-
-internal open class Dispatcher(private val executorService: ExecutorService) {
+internal open class Dispatcher(
+    private val executorService: ExecutorService
+) {
 
     internal abstract class AsyncCall : Runnable {
         @Throws(HTTPClient.HTTPErrorException::class)
@@ -16,18 +19,15 @@ internal open class Dispatcher(private val executorService: ExecutorService) {
         open fun onCompletion(result: HTTPClient.Result) {}
 
         override fun run() {
-            val mainHandler = Handler(Looper.getMainLooper())
             try {
-                val result = call()
-                mainHandler.post { onCompletion(result) }
+                onCompletion(call())
             } catch (e: HTTPClient.HTTPErrorException) {
-                mainHandler.post { onError(0, e.message!!) }
+                onError(0, e.message!!)
             }
-
         }
     }
 
-    open fun enqueue(call: AsyncCall) {
+    open fun enqueue(call: Dispatcher.AsyncCall) {
         this.executorService.submit(call)
     }
 
@@ -36,5 +36,4 @@ internal open class Dispatcher(private val executorService: ExecutorService) {
     }
 
     open fun isClosed() = this.executorService.isShutdown
-
 }

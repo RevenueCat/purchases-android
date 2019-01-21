@@ -1,18 +1,20 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-import org.assertj.core.api.Assertions.assertThat
-
 @RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
+@Config(manifest= Config.NONE)
 class EntitlementTest {
-
-    private val factory = Entitlement.Factory
 
     @Test
     fun `given an empty case, factory can handle it`() {
@@ -72,6 +74,6 @@ class EntitlementTest {
     }
 
     private fun buildEntitlementMap(json: String): Map<String, Entitlement> {
-        return factory.build(JSONObject(json))
+        return JSONObject(json).buildEntitlementsMap()
     }
 }

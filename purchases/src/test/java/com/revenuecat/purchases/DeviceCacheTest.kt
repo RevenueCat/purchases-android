@@ -1,18 +1,26 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
 import android.content.SharedPreferences
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchaserInfoTest.Companion.validFullPurchaserResponse
-
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.verify
+import io.mockk.verifyAll
+import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
 import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-
-import io.mockk.*
-import org.assertj.core.api.Assertions.assertThat
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -91,7 +99,7 @@ class DeviceCacheTest {
     @Throws(JSONException::class)
     fun `given a purchaser info, the information is cached`() {
         val jsonObject = JSONObject(validFullPurchaserResponse)
-        val info = PurchaserInfo.Factory.build(jsonObject)
+        val info = jsonObject.buildPurchaserInfo()
 
         cache.cachePurchaserInfo(appUserID, info)
         verifyAll {

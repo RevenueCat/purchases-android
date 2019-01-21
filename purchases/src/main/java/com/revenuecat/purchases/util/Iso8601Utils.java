@@ -38,10 +38,10 @@ import java.util.TimeZone;
 public final class Iso8601Utils {
 
     /** ID to represent the 'GMT' string */
-    static final String GMT_ID = "GMT";
+    private static final String GMT_ID = "GMT";
 
     /** The GMT timezone, prefetched to avoid more lookups. */
-    static final TimeZone TIMEZONE_Z = TimeZone.getTimeZone(GMT_ID);
+    private static final TimeZone TIMEZONE_Z = TimeZone.getTimeZone(GMT_ID);
 
     /** Returns {@code date} formatted as yyyy-MM-ddThh:mm:ss.sssZ */
     public static String format(Date date) {
