@@ -88,7 +88,7 @@ workflows:
               only: master
   rc-build-deploy:
     jobs:
-    - build
+    - build:
       filters:
         tags:
           only: /2.0.0-rc.*/
