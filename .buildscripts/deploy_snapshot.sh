@@ -9,7 +9,6 @@
 REPO="purchases-android"
 USERNAME="RevenueCat"
 JDK="oraclejdk8"
-BRANCH="master"
 
 if [ "$CIRCLE_PROJECT_REPONAME" != "$REPO" ]; then
   echo "Skipping snapshot deployment: wrong repository. Expected '$REPO' but was '$CIRCLE_PROJECT_REPONAME'."
@@ -18,8 +17,6 @@ elif [ "$CIRCLE_PROJECT_USERNAME" != "$USERNAME" ]; then
 elif [ "$CIRCLE_JDK_VERSION" != "$JDK" ]; then
   # $CIRCLE_JDK_VERSION must be manually set in circle.yml
   echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
-elif [ "$CIRCLE_BRANCH" != "$BRANCH" ]; then
-  echo "Skipping snapshot deployment: wrong branch. Expected '$BRANCH' but was '$CIRCLE_BRANCH'."
 else
   echo "Deploying snapshot..."
   ./gradlew uploadArchives -P signing.keyId=$GPG_SIGNING_KEY_ID -Psigning.password=$GPG_SIGNING_KEY_PW -Psigning.secretKeyRingFile=./secring.gpg \
