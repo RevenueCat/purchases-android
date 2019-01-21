@@ -56,7 +56,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val deviceCache: DeviceCache,
     var allowSharingPlayStoreAccount: Boolean = false,
     private var cachesLastUpdated: Date? = null
-) : BillingWrapper.PurchasesUpdatedListener {
+) {
 
     /**
      * The passed in or generated app user ID
@@ -105,7 +105,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
             updateCaches()
         }
-        billingWrapper.purchasesUpdatedListener = this
+        billingWrapper.purchasesUpdatedListener = getPurchasesUpdatedListener()
     }
 
     // region Public Methods
@@ -583,49 +583,44 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             action()
         }
     }
-    // endregion
 
-    // region Overriden methods
-    /**
-     * @suppress
-     */
-    override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards Purchase>) {
-        postPurchases(
-            purchases,
-            allowSharingPlayStoreAccount,
-            { purchase, info ->
-                dispatch {
-                    purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info)
-                }
-            },
-            { purchase, error ->
-                dispatch {
-                    purchaseCallbacks.remove(purchase.sku)?.onError(
-                        PurchasesError(error.domain, error.code, error.message)
-                    )
-                }
-            }
-        )
-    }
-
-    /**
-     * @suppress
-     */
-    override fun onPurchasesFailedToUpdate(
-        purchases: List<Purchase>?,
-        @BillingClient.BillingResponse responseCode: Int,
-        message: String
-    ) {
-        purchases?.mapNotNull { purchaseCallbacks.remove(it.sku) }?.forEach {
-            dispatch {
-                it.onError(
-                    PurchasesError(ErrorDomains.PLAY_BILLING, responseCode, message)
+    private fun getPurchasesUpdatedListener(): BillingWrapper.PurchasesUpdatedListener {
+        return object : BillingWrapper.PurchasesUpdatedListener {
+            override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards Purchase>) {
+                postPurchases(
+                    purchases,
+                    allowSharingPlayStoreAccount,
+                    { purchase, info ->
+                        dispatch {
+                            purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info)
+                        }
+                    },
+                    { purchase, error ->
+                        dispatch {
+                            purchaseCallbacks.remove(purchase.sku)?.onError(
+                                PurchasesError(error.domain, error.code, error.message)
+                            )
+                        }
+                    }
                 )
+            }
+
+            override fun onPurchasesFailedToUpdate(
+                purchases: List<Purchase>?,
+                @BillingClient.BillingResponse responseCode: Int,
+                message: String
+            ) {
+                purchases?.mapNotNull { purchaseCallbacks.remove(it.sku) }?.forEach {
+                    dispatch {
+                        it.onError(
+                            PurchasesError(ErrorDomains.PLAY_BILLING, responseCode, message)
+                        )
+                    }
+                }
             }
         }
     }
     // endregion
-
     // region Static
     companion object {
         /**
