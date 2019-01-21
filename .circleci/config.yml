@@ -67,19 +67,45 @@ workflows:
   build-deploy-docs:
     jobs:
       - build
+        tags:
+          filters:
+          - /.*-rc.*/
       - hold:
           requires:
             - build
           type: approval
           filters:
             branches:
-              only: master
+              only:
+                - master
       - deploy:
           requires:
-            - hold
+            - build
+          filters:
+            branches:
+              only: master
       - docs:
           requires:
             - hold
           filters:
             branches:
               only: master
+  rc-build-deploy:
+    jobs:
+    - build
+      filters:
+        tags:
+          only: /2.0.0-rc.*/
+    - hold:
+        requires:
+          - build
+        type: approval
+        filters:
+          tags:
+            only: /2.0.0-rc.*/
+    - deploy:
+        requires:
+          - hold
+        filters:
+          tags:
+            only: /2.0.0-rc.*/
