@@ -44,7 +44,7 @@ class PurchasesTest {
     private var receivedSkus: List<SkuDetails>? = null
     private var receivedEntitlementMap: Map<String, Entitlement>? = null
 
-    private fun setup() {
+    private fun setup(): PurchaserInfo {
         val mockInfo = mockk<PurchaserInfo>()
 
         mockCache(mockInfo)
@@ -60,6 +60,7 @@ class PurchasesTest {
             mockBillingWrapper,
             mockCache
         )
+        return mockInfo
     }
 
     private fun setupAnonymous() {
@@ -543,7 +544,7 @@ class PurchasesTest {
         var onErrorCalled = false
         purchases.restorePurchases({
             fail("should be an error")
-        },{ error ->
+        }, { error ->
             onErrorCalled = true
             assertThat(error).isEqualTo(purchasesError)
         })
@@ -680,7 +681,7 @@ class PurchasesTest {
 
         purchases.getEntitlements({ entitlementMap ->
             this@PurchasesTest.receivedEntitlementMap = entitlementMap
-        },{
+        }, {
             fail("should be a success")
         })
 
@@ -1198,6 +1199,152 @@ class PurchasesTest {
         }
     }
 
+    @Test
+    fun `when making another purchase for a product for a pending product, error is issued`() {
+        setup()
+        purchases.updatedPurchaserInfoListener = listener
+        val sku = "onemonth_freetrial"
+
+        purchases.makePurchase(
+            mockk(),
+            sku,
+            BillingClient.SkuType.SUBS,
+            { _, _ ->
+                // First one works
+            },
+            {
+                fail("Should be success")
+            }
+        )
+        var errorCalled: PurchasesError? = null
+        purchases.makePurchase(
+            mockk(),
+            sku,
+            BillingClient.SkuType.SUBS,
+            { _, _ ->
+                fail("Should be error")
+            },
+            {
+                errorCalled = it
+            }
+        )
+        assertThat(errorCalled!!.code).isEqualTo(Purchases.PurchasesAPIError.DUPLICATE_MAKE_PURCHASE_CALLS.ordinal)
+    }
+
+    @Test
+    fun `when making purchase, completion block is called once`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+
+        val p: Purchase = mockk()
+        val purchaseToken = "crazy_purchase_token"
+
+        every {
+            p.sku
+        } returns sku
+        every {
+            p.purchaseToken
+        } returns purchaseToken
+
+        var callCount = 0
+        purchases.makePurchase(
+            activity,
+            sku,
+            BillingClient.SkuType.SUBS,
+            { _, _ ->
+                callCount++
+            }, { fail("should be successful") })
+
+        purchases.onPurchasesUpdated(listOf(p))
+        purchases.onPurchasesUpdated(listOf(p))
+
+        assertThat(callCount).isEqualTo(1)
+    }
+
+
+    @Test
+    fun `when making purchase, completion block not called for different products`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+        val sku1 = "onemonth_freetrial_1"
+
+        val p: Purchase = mockk()
+        val p1: Purchase = mockk()
+        val purchaseToken = "crazy_purchase_token"
+        val purchaseToken1 = "crazy_purchase_token_1"
+        every {
+            p.sku
+        } returns sku
+        every {
+            p.purchaseToken
+        } returns purchaseToken
+        every {
+            p1.sku
+        } returns sku1
+        every {
+            p1.purchaseToken
+        } returns purchaseToken1
+
+        var callCount = 0
+        purchases.makePurchase(
+            activity,
+            sku,
+            BillingClient.SkuType.SUBS,
+            { _, _ ->
+                callCount++
+            }, { fail("should be successful") })
+
+        purchases.onPurchasesUpdated(listOf(p1))
+
+        assertThat(callCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `sends cached purchaser info to getter`() {
+        val info = setup()
+
+        every {
+            mockBackend.getPurchaserInfo(any(), captureLambda(), any())
+        } answers {
+            // Timeout
+        }
+
+        var receivedInfo : PurchaserInfo? = null
+        purchases.getPurchaserInfo({
+            receivedInfo = it
+        }, {
+            fail("supposed to be successful")
+        })
+
+        assertThat(receivedInfo).isEqualTo(info)
+    }
+
+    @Test
+    fun `given no cached purchaser info, backend is called again`() {
+        setup()
+        every {
+            mockCache.getCachedPurchaserInfo(any())
+        } returns null
+        every {
+            mockBackend.getPurchaserInfo(any(), captureLambda(), any())
+        } answers {
+            // Timeout
+        }
+
+        var receivedInfo : PurchaserInfo? = null
+        purchases.getPurchaserInfo({
+            receivedInfo = it
+        }, {
+            fail("supposed to be successful")
+        })
+
+        assertThat(receivedInfo).isEqualTo(null)
+        verify (exactly = 2) { mockBackend.getPurchaserInfo(any(), any(), any()) }
+    }
 
     // region Private Methods
     private fun mockSkuDetailFetch(details: List<SkuDetails>, skus: List<String>, skuType: String) {
