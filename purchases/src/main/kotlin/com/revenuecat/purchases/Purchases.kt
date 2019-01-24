@@ -280,21 +280,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @JvmOverloads
     fun createAlias(
-        newAppUserID: String,
-        listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
+            newAppUserID: String,
+            listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
     ) {
-        debugLog("Creating an alias to $appUserID from $newAppUserID")
-        backend.createAlias(
-            appUserID,
-            newAppUserID,
-            {
-                debugLog("Alias created")
-                identify(newAppUserID, listener)
-            },
-            { error ->
-                dispatch { listener.onError(error) }
-            }
-        )
+        if (this.appUserID != newAppUserID) {
+            debugLog("Creating an alias to $appUserID from $newAppUserID")
+            backend.createAlias(
+                    appUserID,
+                    newAppUserID,
+                    {
+                        debugLog("Alias created")
+                        identify(newAppUserID, listener)
+                    },
+                    { error ->
+                        dispatch { listener.onError(error) }
+                    }
+            )
+        } else {
+            dispatch { listener.onSuccess() }
+        }
     }
 
     /**
@@ -305,14 +309,20 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @JvmOverloads
     fun identify(
-        appUserID: String,
-        listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
+            appUserID: String,
+            listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
     ) {
-        debugLog("Changing App User ID: ${this.appUserID} -> $appUserID")
-        clearCaches()
-        this.appUserID = appUserID
-        purchaseCallbacks.clear()
-        updateCaches(listener)
+        if (this.appUserID != appUserID) {
+            debugLog("Changing App User ID: ${this.appUserID} -> $appUserID")
+            clearCaches()
+            this.appUserID = appUserID
+            purchaseCallbacks.clear()
+            updateCaches(listener)
+        } else {
+            if (listener != null) {
+                getCaches()
+            }
+        }
     }
 
     /**

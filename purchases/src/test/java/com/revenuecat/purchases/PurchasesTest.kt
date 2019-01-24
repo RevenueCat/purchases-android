@@ -27,6 +27,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.ArrayList
+import java.util.HashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -1336,6 +1339,39 @@ class PurchasesTest {
 
         assertThat(receivedInfo).isEqualTo(null)
         verify(exactly = 2) { mockBackend.getPurchaserInfo(any(), any(), any()) }
+    }
+
+
+    @Test
+    fun `don't create an alias if the new app user id is the same`() {
+        setup()
+
+        val lock = CountDownLatch(1)
+        purchases!!.createAlias(appUserId, object : Purchases.AliasHandler {
+            override fun onSuccess() {
+                lock.countDown()
+            }
+
+            override fun onError(domain: Purchases.ErrorDomains, code: Int, message: String) {
+            }
+
+        })
+        lock.await(200, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isZero()
+        verify (exactly = 0) {
+            mockBackend.createAlias(appUserId, appUserId, any(), any())
+        }
+    }
+
+    @Test
+    fun `don't identify if the new app user id is the same`() {
+        setup()
+
+        purchases!!.identify(appUserId)
+
+        verify (exactly = 2) {
+            mockCache.getCachedPurchaserInfo(appUserId)
+        }
     }
 
     // region Private Methods
