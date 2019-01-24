@@ -61,7 +61,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * The passed in or generated app user ID
      */
-    var appUserID: String
+    lateinit var appUserID: String
 
     private var purchaseCallbacks: MutableMap<String, PurchaseCompletedListener> = mutableMapOf()
     private var lastSentPurchaserInfo: PurchaserInfo? = null
@@ -96,14 +96,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         debugLog("SDK Version - $frameworkVersion")
         debugLog("Initial App User ID - $backingFieldAppUserID")
         if (backingFieldAppUserID != null) {
-            this.appUserID = backingFieldAppUserID
-            identify(this.appUserID)
+            identify(backingFieldAppUserID)
         } else {
-            this.appUserID = getAnonymousID().also {
+            identify(getAnonymousID().also {
                 debugLog("Generated New App User ID - $it")
                 allowSharingPlayStoreAccount = true
-            }
-            updateCaches()
+            })
         }
         billingWrapper.purchasesUpdatedListener = getPurchasesUpdatedListener()
     }
@@ -280,24 +278,24 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @JvmOverloads
     fun createAlias(
-            newAppUserID: String,
-            listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
+        newAppUserID: String,
+        listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
     ) {
         if (this.appUserID != newAppUserID) {
-            debugLog("Creating an alias to $appUserID from $newAppUserID")
+            debugLog("Creating an alias to ${this.appUserID} from $newAppUserID")
             backend.createAlias(
-                    appUserID,
-                    newAppUserID,
-                    {
-                        debugLog("Alias created")
-                        identify(newAppUserID, listener)
-                    },
-                    { error ->
-                        dispatch { listener.onError(error) }
-                    }
+                appUserID,
+                newAppUserID,
+                {
+                    debugLog("Alias created")
+                    identify(newAppUserID, listener)
+                },
+                { error ->
+                    dispatch { listener.onError(error) }
+                }
             )
         } else {
-            dispatch { listener.onSuccess() }
+            getPurchaserInfo(listener)
         }
     }
 
@@ -309,18 +307,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @JvmOverloads
     fun identify(
-            appUserID: String,
-            listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
+        appUserID: String,
+        listener: ReceivePurchaserInfoListener? = null
     ) {
-        if (this.appUserID != appUserID) {
+        if (this::appUserID.isInitialized && this.appUserID != appUserID) {
             debugLog("Changing App User ID: ${this.appUserID} -> $appUserID")
             clearCaches()
             this.appUserID = appUserID
             purchaseCallbacks.clear()
             updateCaches(listener)
+        } else if (!this::appUserID.isInitialized) {
+            debugLog("Identifying App User ID: $appUserID")
+            this.appUserID = appUserID
+            updateCaches(listener)
         } else {
             if (listener != null) {
-                getCaches()
+                getPurchaserInfo(listener)
             }
         }
     }
@@ -463,8 +465,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         cachesLastUpdated == null || Date().time - cachesLastUpdated!!.time > CACHE_REFRESH_PERIOD
 
     private fun clearCaches() {
-        deviceCache.clearCachedPurchaserInfo(appUserID)
-        deviceCache.clearCachedAppUserID()
+        deviceCache.clearCachedPurchaserInfo(this.appUserID)
         cachesLastUpdated = null
         cachedEntitlements = null
     }
