@@ -126,6 +126,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [data] Map containing the data to post to the attribution network
      * @param [network] [AttributionNetwork] to post the data to
      */
+    @Throws(JSONException::class)
     fun addAttributionData(
         data: Map<String, String>,
         network: AttributionNetwork
