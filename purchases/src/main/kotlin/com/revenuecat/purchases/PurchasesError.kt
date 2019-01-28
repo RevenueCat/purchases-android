@@ -16,7 +16,7 @@ class PurchasesError(
 ) : Parcelable {
 
     constructor(parcel: Parcel) : this(
-        Purchases.ErrorDomains.valueOf(parcel.readString()!!),
+        parcel.readParcelable(Purchases.ErrorDomains::class.java.classLoader)!!,
         parcel.readInt(),
         parcel.readString()
     )
@@ -46,7 +46,7 @@ class PurchasesError(
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeString(domain.name)
+        parcel.writeParcelable(domain, flags)
         parcel.writeInt(code)
         parcel.writeString(message)
     }

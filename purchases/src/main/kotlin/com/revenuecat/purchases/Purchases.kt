@@ -12,6 +12,8 @@ import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Handler
 import android.os.Looper
+import android.os.Parcel
+import android.os.Parcelable
 import android.preference.PreferenceManager
 import android.util.Log
 import androidx.annotation.VisibleForTesting
@@ -722,7 +724,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Different error domains
      */
-    enum class ErrorDomains {
+    enum class ErrorDomains : Parcelable {
         /**
          * The error is related to the RevenueCat backend
          */
@@ -734,7 +736,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         /**
          * The error is related to the Purchases SDK
          */
-        REVENUECAT_API
+        REVENUECAT_API;
+
+        override fun writeToParcel(parcel: Parcel, flags: Int) {
+            parcel.writeInt(ordinal)
+        }
+
+        override fun describeContents(): Int {
+            return 0
+        }
+
+        companion object CREATOR : Parcelable.Creator<ErrorDomains> {
+            override fun createFromParcel(parcel: Parcel): ErrorDomains {
+                return ErrorDomains.values()[parcel.readInt()]
+            }
+
+            override fun newArray(size: Int): Array<ErrorDomains?> {
+                return arrayOfNulls(size)
+            }
+        }
     }
 
     /**
