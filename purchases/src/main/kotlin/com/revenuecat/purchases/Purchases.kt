@@ -340,6 +340,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         purchaseCallbacks.clear()
         this.backend.close()
         billingWrapper.purchasesUpdatedListener = null
+        updatedPurchaserInfoListener = null
     }
 
     /**
