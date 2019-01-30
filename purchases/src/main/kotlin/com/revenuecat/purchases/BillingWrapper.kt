@@ -105,8 +105,8 @@ internal class BillingWrapper internal constructor(
                 .setType(itemType).setSkusList(skuList).build()
             billingClient!!.querySkuDetailsAsync(params) { responseCode, skuDetailsList ->
                 if (responseCode == BillingClient.BillingResponse.OK) {
-                    debugLog("Products request finished")
-                    debugLog("skuDetailsList: " )
+                    debugLog("Products request finished for ${skuList.joinToString()}")
+                    debugLog("Retrieved skuDetailsList: ${skuDetailsList.joinToString { it.toString() }}")
                     skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
                         debugLog("${it.sku} - $it")
                     }
