@@ -11,19 +11,19 @@ import com.revenuecat.purchases.PurchasesError;
 import androidx.annotation.NonNull;
 
 /**
- * Used when making a purchase
+ * Interface to be implemented when making purchases.
  */
 public interface PurchaseCompletedListener {
     /**
      * Will be called after the purchase has completed
-     * @param sku Sku for the purchased product. Null if an error has occurred.
-     * @param purchaserInfo Updated purchaser info. Null if an error has occurred.
+     * @param sku Sku for the purchased product.
+     * @param purchaserInfo Updated [PurchaserInfo].
      */
     void onCompleted(@NonNull String sku, @NonNull PurchaserInfo purchaserInfo);
 
     /**
      * Will be called after the purchase has completed with error
-     * @param error Not null if there has been an error when making the purchase
+     * @param error A [PurchasesError] containing the reason for the failure when making the purchase
      */
     void onError(@NonNull PurchasesError error);
 }

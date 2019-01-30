@@ -8,7 +8,8 @@ package com.revenuecat.purchases.interfaces;
 import com.revenuecat.purchases.PurchaserInfo;
 
 /**
- * Used to handle async updates from Purchases
+ * Used to handle async updates from [Purchases]. This interface should be implemented to receive updates
+ * when the [PurchaserInfo] changes.
  */
 @FunctionalInterface
 public interface UpdatedPurchaserInfoListener {

@@ -5,21 +5,20 @@
 
 package com.revenuecat.purchases.interfaces;
 
+import androidx.annotation.NonNull;
 import com.android.billingclient.api.SkuDetails;
 
 import java.util.List;
 
-import androidx.annotation.NonNull;
-
 /**
- * Used when retrieving SkuDetails
+ * Interface to be implemented when making calls to fetch [SkuDetails]
  */
 @FunctionalInterface
 public interface GetSkusResponseListener {
     /**
-     * Will be called after fetching SkuDetails
+     * Will be called after SkuDetails have been fetched successfully
      *
-     * @param skus List of SkuDetails
+     * @param skus List of [SkuDetails] retrieved after a successful call to fetch [SkuDetails]
      */
     void onReceiveSkus(@NonNull List<SkuDetails> skus);
 }

@@ -12,18 +12,18 @@ import com.revenuecat.purchases.PurchasesError;
 import androidx.annotation.NonNull;
 
 /**
- * Used by calls that send back a purchaser info.
+ * Interface to be implemented when making calls that return a [PurchaserInfo]
  */
 public interface ReceivePurchaserInfoListener {
     /**
      * Will be called after the call has completed.
-     * @param purchaserInfo Purchaser info. Null if an error has occurred.
+     * @param purchaserInfo [PurchaserInfo] class sent back when the call has completed
      */
     void onReceived(@NonNull PurchaserInfo purchaserInfo);
 
      /**
      * Will be called after the call has completed with an error.
-     * @param error Not null if there has been an error.
+      * @param error A [PurchasesError] containing the reason for the failure of the call
      */
     void onError(@NonNull PurchasesError error);
 }
