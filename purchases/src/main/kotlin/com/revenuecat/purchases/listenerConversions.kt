@@ -31,8 +31,17 @@ internal fun purchaseCompletedListener(
 }
 
 internal fun getSkusResponseListener(
-    onReceived: (skus: List<SkuDetails>) -> Unit
-) = GetSkusResponseListener { onReceived(it) }
+    onReceived: (skus: List<SkuDetails>) -> Unit,
+    onError: ErrorFunction
+) = object : GetSkusResponseListener {
+    override fun onReceived(skus: MutableList<SkuDetails>) {
+        onReceived(skus)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
+    }
+}
 
 internal fun receiveEntitlementsListener(
     onSuccess: ReceiveEntitlementsSuccessFunction,
@@ -204,9 +213,10 @@ fun Purchases.getPurchaserInfoWith(
 @Suppress("unused")
 fun Purchases.getSubscriptionSkusWith(
     skus: List<String>,
+    onError: ErrorFunction = onErrorStub,
     onReceiveSkus: (skus: List<SkuDetails>) -> Unit
 ) {
-    getSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus))
+    getSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus, onError))
 }
 
 /**
@@ -217,7 +227,8 @@ fun Purchases.getSubscriptionSkusWith(
 @Suppress("unused")
 fun Purchases.getNonSubscriptionSkusWith(
     skus: List<String>,
+    onError: ErrorFunction,
     onReceiveSkus: (skus: List<SkuDetails>) -> Unit
 ) {
-    getNonSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus))
+    getNonSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus, onError))
 }

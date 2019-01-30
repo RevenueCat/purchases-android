@@ -82,7 +82,7 @@ internal class BillingWrapper internal constructor(
 
     private fun endConnection() {
         billingClient?.takeIf { it.isReady }?.let {
-            debugLog("Ending connection for " + it.toString())
+            debugLog("Ending connection for $it")
             it.endConnection()
         }
         billingClient = null
@@ -96,7 +96,8 @@ internal class BillingWrapper internal constructor(
     fun querySkuDetailsAsync(
         @BillingClient.SkuType itemType: String,
         skuList: List<String>,
-        onReceiveSkuDetails: (List<SkuDetails>) -> Unit
+        onReceiveSkuDetails: (List<SkuDetails>) -> Unit,
+        onError: (PurchasesError) ->  Unit
     ) {
         debugLog("Requesting products with identifiers: ${skuList.joinToString()}")
         executeRequest(Runnable {
@@ -105,15 +106,16 @@ internal class BillingWrapper internal constructor(
             billingClient!!.querySkuDetailsAsync(params) { responseCode, skuDetailsList ->
                 if (responseCode == BillingClient.BillingResponse.OK) {
                     debugLog("Products request finished")
+                    debugLog("skuDetailsList: " )
+                    skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
+                        debugLog("${it.sku} - $it")
+                    }
+
+                    onReceiveSkuDetails(skuDetailsList ?: emptyList())
                 } else {
-                    debugLog("Error fetching products $responseCode")
+                    errorLog("Error ${responseCode.getBillingResponseCodeName()} when fetching products.")
+                    onError(PurchasesError(Purchases.ErrorDomains.PLAY_BILLING, responseCode, "Error fetching products"))
                 }
-
-                skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
-                    debugLog("${it.sku} - $it")
-                }
-
-                onReceiveSkuDetails(skuDetailsList ?: emptyList())
             }
         })
     }
@@ -160,7 +162,7 @@ internal class BillingWrapper internal constructor(
                     } ?: debugLog("Purchase history is empty.")
                     onReceivePurchaseHistory(purchasesList)
                 } else {
-                    errorLog("Error receiving purchase history")
+                    errorLog("Error receiving purchase history ${responseCode.getBillingResponseCodeName()}")
                     onReceivePurchaseHistoryError(
                         PurchasesError(
                             Purchases.ErrorDomains.PLAY_BILLING,
@@ -178,14 +180,14 @@ internal class BillingWrapper internal constructor(
         executeRequest(Runnable { billingClient!!.consumeAsync(token) { _, _ -> } })
     }
 
-    override fun onPurchasesUpdated(responseCode: Int, purchases: List<Purchase>?) {
+    override fun onPurchasesUpdated(@BillingClient.BillingResponse responseCode: Int, purchases: List<Purchase>?) {
         if (responseCode == BillingClient.BillingResponse.OK && purchases != null) {
             purchases.forEach {
                 debugLog("BillingWrapper purchases updated: ${it.toHumanReadableDescription()}")
             }
             purchasesUpdatedListener!!.onPurchasesUpdated(purchases)
         } else {
-            debugLog("BillingWrapper purchases failed to update: responseCode $responseCode " +
+            debugLog("BillingWrapper purchases failed to update: responseCode ${responseCode.getBillingResponseCodeName()}" +
                     "${purchases?.takeUnless { it.isEmpty() }?.let { purchase ->
                         "Purchases:" + purchase.joinToString(
                             ", ",
@@ -200,18 +202,18 @@ internal class BillingWrapper internal constructor(
                     BillingClient.BillingResponse.ERROR
                 else
                     responseCode,
-                "Error updating purchases $responseCode"
+                "Error updating purchases ${responseCode.getBillingResponseCodeName()}"
             )
         }
     }
 
-    override fun onBillingSetupFinished(responseCode: Int) {
+    override fun onBillingSetupFinished(@BillingClient.BillingResponse responseCode: Int) {
         if (responseCode == BillingClient.BillingResponse.OK) {
             debugLog("Billing Service Setup finished for ${billingClient?.toString()}")
             clientConnected = true
             executePendingRequests()
         } else {
-            errorLog("Billing Service Setup finished with error code: $responseCode")
+            errorLog("Billing Service Setup finished with error code: ${responseCode.getBillingResponseCodeName()}")
         }
     }
 

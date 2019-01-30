@@ -379,10 +379,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         backend.getEntitlements(
             appUserID,
             { entitlements ->
-                getSkuDetails(entitlements) { detailsByID ->
+                getSkuDetails(entitlements, { detailsByID ->
                     cachedEntitlements = entitlements
                     populateSkuDetailsAndCallCompletion(detailsByID, entitlements, completion)
-                }
+                },{
+                    dispatch {
+                        completion?.onError(it)
+                    }
+                })
             },
             { error ->
                 log("Error fetching entitlements - $error")
@@ -421,12 +425,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         billingWrapper.querySkuDetailsAsync(
             skuType,
-            skus
-        ) { skuDetails ->
-            dispatch {
-                completion.onReceiveSkus(skuDetails)
-            }
-        }
+            skus,
+            { skuDetails ->
+                dispatch {
+                    completion.onReceived(skuDetails)
+                }
+            }, {
+                dispatch {
+                    completion.onError(it)
+                }
+            })
     }
 
     private fun updateCaches(
@@ -525,7 +533,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getSkuDetails(
         entitlements: Map<String, Entitlement>,
-        onCompleted: (HashMap<String, SkuDetails>) -> Unit
+        onCompleted: (HashMap<String, SkuDetails>) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
         val skus =
             entitlements.values.flatMap { it.offerings.values }.map { it.activeProductIdentifier }
@@ -533,26 +542,31 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         billingWrapper.querySkuDetailsAsync(
             BillingClient.SkuType.SUBS,
             skus
-        ) { subscriptionsSKUDetails ->
-            val detailsByID = HashMap<String, SkuDetails>()
-            val inAPPSkus =
-                skus - subscriptionsSKUDetails
-                    .map { details -> details.sku to details }
-                    .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
-                    .map { skuToDetails -> skuToDetails.first }
+            , { subscriptionsSKUDetails ->
+                val detailsByID = HashMap<String, SkuDetails>()
+                val inAPPSkus =
+                    skus - subscriptionsSKUDetails
+                        .map { details -> details.sku to details }
+                        .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
+                        .map { skuToDetails -> skuToDetails.first }
 
-            if (inAPPSkus.isNotEmpty()) {
-                billingWrapper.querySkuDetailsAsync(
-                    BillingClient.SkuType.INAPP,
-                    inAPPSkus
-                ) { skuDetails ->
-                    detailsByID.putAll(skuDetails.map { it.sku to it })
+                if (inAPPSkus.isNotEmpty()) {
+                    billingWrapper.querySkuDetailsAsync(
+                        BillingClient.SkuType.INAPP,
+                        inAPPSkus
+                        , { skuDetails ->
+                            detailsByID.putAll(skuDetails.map { it.sku to it })
+                            onCompleted(detailsByID)
+                        }, {
+                            onError(it)
+                        }
+                    )
+                } else {
                     onCompleted(detailsByID)
                 }
-            } else {
-                onCompleted(detailsByID)
-            }
-        }
+            }, {
+                onError(it)
+            })
     }
 
     private fun afterSetListener(listener: UpdatedPurchaserInfoListener?) {
@@ -624,6 +638,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         }
     }
+
     // endregion
     // region Static
     companion object {
@@ -642,8 +657,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         var sharedInstance: Purchases
             get() =
                 backingFieldSharedInstance
-                    ?: throw UninitializedPropertyAccessException("There is no singleton instance. " +
-                            "Make sure you configure Purchases before trying to get the default instance.")
+                    ?: throw UninitializedPropertyAccessException(
+                        "There is no singleton instance. " +
+                            "Make sure you configure Purchases before trying to get the default instance."
+                    )
             @VisibleForTesting(otherwise = VisibleForTesting.NONE)
             internal set(value) {
                 backingFieldSharedInstance?.close()
