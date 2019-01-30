@@ -614,9 +614,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 @BillingClient.BillingResponse responseCode: Int,
                 message: String
             ) {
-                purchases?.mapNotNull { purchaseCallbacks.remove(it.sku) }?.forEach {
+                purchaseCallbacks.forEach { (key, value) ->
+                    purchaseCallbacks.remove(key)
                     dispatch {
-                        it.onError(
+                        value.onError(
                             PurchasesError(ErrorDomains.PLAY_BILLING, responseCode, message)
                         )
                     }
