@@ -18,7 +18,7 @@ import java.net.URL
 import java.util.HashMap
 
 @RunWith(AndroidJUnit4::class)
-@Config(manifest= Config.NONE)
+@Config(manifest = Config.NONE)
 class HTTPClientTest {
 
     companion object {

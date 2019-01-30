@@ -277,5 +277,4 @@ internal class Backend(
     private fun HTTPClient.Result.isSuccessful(): Boolean {
         return responseCode < UNSUCCESSFUL_HTTP_STATUS_CODE
     }
-
 }

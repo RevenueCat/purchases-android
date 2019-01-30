@@ -461,7 +461,7 @@ class PurchasesTest {
             lambda<(List<Purchase>) -> Unit>().captured.invoke(listOf(mockk(relaxed = true)))
         }
 
-        purchases.restorePurchasesWith {  }
+        purchases.restorePurchasesWith { }
 
         verify {
             mockBillingWrapper.queryPurchaseHistoryAsync(
@@ -603,7 +603,7 @@ class PurchasesTest {
         }
 
         var callbackCalled = false
-        purchases.restorePurchasesWith( onSuccess = { info ->
+        purchases.restorePurchasesWith(onSuccess = { info ->
             assertThat(mockInfo).isEqualTo(info)
             callbackCalled = true
         }, onError = {
@@ -1254,7 +1254,6 @@ class PurchasesTest {
 
         assertThat(callCount).isEqualTo(1)
     }
-
 
     @Test
     fun `when making purchase, completion block not called for different products`() {

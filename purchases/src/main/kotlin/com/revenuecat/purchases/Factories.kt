@@ -4,7 +4,6 @@ import com.revenuecat.purchases.util.Iso8601Utils
 import org.json.JSONException
 import org.json.JSONObject
 
-
 /**
  * Builds a PurchaserInfo
  * @throws [JSONException] If the json is invalid.

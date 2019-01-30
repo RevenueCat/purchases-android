@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit
 private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
-@Config(manifest= Config.NONE)
+@Config(manifest = Config.NONE)
 class BackendTest {
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private var backend: Backend = Backend(
@@ -290,7 +290,7 @@ class BackendTest {
             "{'entitlements': {'pro': {}}}"
         )
 
-        every  {
+        every {
             (any() as JSONObject).buildEntitlementsMap()
         } returns HashMap()
 
@@ -422,7 +422,7 @@ class BackendTest {
         }, onReceivePurchaserInfoErrorHandler)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockClient.performRequest(
                 "/subscribers/" + Uri.encode(appUserID),
                 null as Map<*, *>?,
@@ -449,7 +449,7 @@ class BackendTest {
         }, onReceivePurchaserInfoErrorHandler)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockClient.performRequest(
                 "/receipts",
                 any() as Map<*, *>?,
@@ -477,7 +477,7 @@ class BackendTest {
         }, onReceiveEntitlementsErrorHandler)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockClient.performRequest(
                 "/subscribers/$appUserID/products",
                 null as Map<*, *>?,
@@ -505,14 +505,14 @@ class BackendTest {
         }, onReceiveEntitlementsErrorHandler)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockClient.performRequest(
                 "/subscribers/$appUserID/products",
                 null as Map<*, *>?,
                 any()
             )
         }
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockClient.performRequest(
                 "/subscribers/anotherUser/products",
                 null as Map<*, *>?,
@@ -520,5 +520,4 @@ class BackendTest {
             )
         }
     }
-
 }

@@ -33,7 +33,7 @@ import org.robolectric.annotation.Config
 import java.util.ArrayList
 
 @RunWith(AndroidJUnit4::class)
-@Config(manifest= Config.NONE)
+@Config(manifest = Config.NONE)
 class BillingWrapperTest {
     private var mockClientFactory: BillingWrapper.ClientFactory = mockk()
     private var mockClient: BillingClient = mockk()

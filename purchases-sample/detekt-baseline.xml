@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <SmellBaseline>
   <Blacklist timestamp="1547755407489"></Blacklist>
-  <Whitelist timestamp="1547755407489">
+  <Whitelist timestamp="1548884546368">
     <ID>NewLineAtEndOfFile:MainApplication.kt$com.revenuecat.sample.MainApplication.kt</ID>
   </Whitelist>
 </SmellBaseline>

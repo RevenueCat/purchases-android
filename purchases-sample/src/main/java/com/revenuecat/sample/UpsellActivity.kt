@@ -84,7 +84,6 @@ class UpsellActivity : AppCompatActivity() {
                     startCatsActivity()
                 }
             }
-
     }
 
     private fun Button.showLoading(loading: Boolean) {

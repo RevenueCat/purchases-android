@@ -138,7 +138,6 @@ class PurchaserInfo internal constructor(
                 "nonConsumablePurchases: $purchasedNonSubscriptionSkus,\n" +
                 "requestDate: $requestDate\n>"
 
-
     /**
      * @hide
      */
@@ -192,4 +191,3 @@ class PurchaserInfo internal constructor(
         }
     }
 }
-

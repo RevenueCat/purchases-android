@@ -166,12 +166,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 debugLog("Cache is stale, updating caches")
                 updateCaches()
             }
-        }?: {
+        } ?: {
             debugLog("No cached entitlements, fetching")
             fetchAndCacheEntitlements(listener)
         }.invoke()
     }
-
 
     /**
      * Gets the SKUDetails for the given list of subscription skus.
@@ -793,4 +792,3 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
     // endregion
 }
-
