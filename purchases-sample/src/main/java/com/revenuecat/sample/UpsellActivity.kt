@@ -17,29 +17,26 @@ class UpsellActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_upsell)
 
-        showScreen(true)
+        showScreen()
         Purchases.sharedInstance.getEntitlementsWith(::showError) { entitlementMap ->
-            showScreen(false, entitlementMap)
+            showScreen(entitlementMap)
         }
         skip.setOnClickListener { startCatsActivity() }
     }
 
     private fun showScreen(
-        loading: Boolean,
         entitlementMap: Map<String, Entitlement>? = null
     ) {
-        if (loading) {
+        if (entitlementMap == null) {
             monthly_purchase.text = "Loading..."
             monthly_purchase.isEnabled = false
             annual_purchase.text = "Loading..."
             annual_purchase.isEnabled = false
         } else {
-            entitlementMap?.let { entitlements ->
-                entitlements["pro"]?.let { proEntitlement ->
-                    loadMonthlyOffering(proEntitlement)
-                    loadAnnualOffering(proEntitlement)
-                } ?: showError("Error finding pro entitlement")
-            }
+            entitlementMap["pro"]?.let { proEntitlement ->
+                loadMonthlyOffering(proEntitlement)
+                loadAnnualOffering(proEntitlement)
+            } ?: showError("Error finding pro entitlement")
         }
     }
 
