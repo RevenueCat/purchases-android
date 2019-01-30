@@ -11,6 +11,10 @@ import org.json.JSONObject
 
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 
+typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
+typealias CallbackCacheKey = List<String>
+typealias EntitlementMapCallback = Pair<(Map<String, Entitlement>) -> Unit, (PurchasesError) -> Unit>
+
 internal class Backend(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
@@ -19,13 +23,11 @@ internal class Backend(
 
     internal val authenticationHeaders: MutableMap<String, String>
 
-    var callbacks: MutableMap<List<String>, MutableList<Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>>> =
-        mutableMapOf()
-    var entitlementsCallbacks =
-        mutableMapOf<String, MutableList<Pair<(Map<String, Entitlement>) -> Unit, (PurchasesError) -> Unit>>>()
+    var callbacks = mutableMapOf<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
+    var entitlementsCallbacks = mutableMapOf<String, MutableList<EntitlementMapCallback>>()
 
     private abstract inner class PurchaserInfoReceivingCall internal constructor(
-        private val cacheKey: List<String>
+        private val cacheKey: CallbackCacheKey
     ) : Dispatcher.AsyncCall() {
 
         override fun onCompletion(result: HTTPClient.Result) {
