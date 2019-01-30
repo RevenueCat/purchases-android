@@ -15,7 +15,7 @@ class InitialActivity : AppCompatActivity() {
             if (purchaserInfo.activeEntitlements.contains("pro")) {
                 startCatsActivity()
             } else {
-                startUpsell()
+                startUpsellActivity()
             }
         }
     }

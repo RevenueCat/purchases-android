@@ -6,6 +6,6 @@ import android.content.Intent
 fun Context.startCatsActivity() {
     startActivity(Intent(this, CatsActivity::class.java))
 }
-fun Context.startUpsell() {
+fun Context.startUpsellActivity() {
     startActivity(Intent(this, UpsellActivity::class.java))
 }
