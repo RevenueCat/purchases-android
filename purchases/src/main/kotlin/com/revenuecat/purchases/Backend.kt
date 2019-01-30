@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import android.net.Uri
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.concurrent.ConcurrentHashMap
 
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 
@@ -23,8 +24,8 @@ internal class Backend(
 
     internal val authenticationHeaders: MutableMap<String, String>
 
-    var callbacks = mutableMapOf<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
-    var entitlementsCallbacks = mutableMapOf<String, MutableList<EntitlementMapCallback>>()
+    var callbacks = ConcurrentHashMap<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
+    var entitlementsCallbacks = ConcurrentHashMap<String, MutableList<EntitlementMapCallback>>()
 
     private abstract inner class PurchaserInfoReceivingCall internal constructor(
         private val cacheKey: CallbackCacheKey
