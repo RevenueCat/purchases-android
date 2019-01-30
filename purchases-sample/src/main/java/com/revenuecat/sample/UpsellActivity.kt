@@ -34,13 +34,13 @@ class UpsellActivity : AppCompatActivity() {
             annual_purchase.isEnabled = false
         } else {
             entitlementMap["pro"]?.let { proEntitlement ->
-                loadMonthlyOffering(proEntitlement)
-                loadAnnualOffering(proEntitlement)
+                setupMonthlyOfferingButton(proEntitlement)
+                setupAnnualOfferingButton(proEntitlement)
             } ?: showError("Error finding pro entitlement")
         }
     }
 
-    private fun loadMonthlyOffering(proEntitlement: Entitlement) {
+    private fun setupMonthlyOfferingButton(proEntitlement: Entitlement) {
         proEntitlement.offerings["monthly"]?.let { monthly ->
             monthly.skuDetails?.let { monthlyProduct ->
                 with(monthly_purchase) {
@@ -56,7 +56,7 @@ class UpsellActivity : AppCompatActivity() {
         } ?: showError("Error finding monthly offering")
     }
 
-    private fun loadAnnualOffering(proEntitlement: Entitlement) {
+    private fun setupAnnualOfferingButton(proEntitlement: Entitlement) {
         proEntitlement.offerings["annual"]?.let { annual ->
             annual.skuDetails?.let { annualProduct ->
                 with(annual_purchase) {
