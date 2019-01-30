@@ -8,7 +8,6 @@ package com.revenuecat.purchases
 import android.net.Uri
 import org.json.JSONException
 import org.json.JSONObject
-import java.util.concurrent.ConcurrentHashMap
 
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 
@@ -24,47 +23,51 @@ internal class Backend(
 
     internal val authenticationHeaders: MutableMap<String, String>
 
-    var callbacks = ConcurrentHashMap<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
-    var entitlementsCallbacks = ConcurrentHashMap<String, MutableList<EntitlementMapCallback>>()
+    var callbacks = mutableMapOf<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
+    var entitlementsCallbacks = mutableMapOf<String, MutableList<EntitlementMapCallback>>()
 
     private abstract inner class PurchaserInfoReceivingCall internal constructor(
         private val cacheKey: CallbackCacheKey
     ) : Dispatcher.AsyncCall() {
 
         override fun onCompletion(result: HTTPClient.Result) {
-            callbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
-                if (result.isSuccessful()) {
-                    try {
-                        onSuccess(result.body!!.buildPurchaserInfo())
-                    } catch (e: JSONException) {
-                        log("Error parsing JSON ${e.localizedMessage}")
+            synchronized(this) {
+                callbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccess(result.body!!.buildPurchaserInfo())
+                        } catch (e: JSONException) {
+                            log("Error parsing JSON ${e.localizedMessage}")
+                            onError(
+                                PurchasesError(
+                                    Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                                    result.responseCode,
+                                    e.localizedMessage
+                                )
+                            )
+                        }
+                    } else {
                         onError(
                             PurchasesError(
                                 Purchases.ErrorDomains.REVENUECAT_BACKEND,
                                 result.responseCode,
-                                e.localizedMessage
+                                try {
+                                    "Server error: ${result.body!!.getString("message")}"
+                                } catch (jsonException: JSONException) {
+                                    "Unexpected error from backend ${result.responseCode}"
+                                }
                             )
                         )
                     }
-                } else {
-                    onError(
-                        PurchasesError(
-                            Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                            result.responseCode,
-                            try {
-                                "Server error: ${result.body!!.getString("message")}"
-                            } catch (jsonException: JSONException) {
-                                "Unexpected error from backend ${result.responseCode}"
-                            }
-                        )
-                    )
                 }
             }
         }
 
         override fun onError(code: Int, message: String) {
-            callbacks.remove(cacheKey)?.forEach { (_, onError) ->
-                onError(PurchasesError(Purchases.ErrorDomains.REVENUECAT_BACKEND, code, message))
+            synchronized(this) {
+                callbacks.remove(cacheKey)?.forEach { (_, onError) ->
+                    onError(PurchasesError(Purchases.ErrorDomains.REVENUECAT_BACKEND, code, message))
+                }
             }
         }
     }
@@ -91,19 +94,21 @@ internal class Backend(
     ) {
         val path = "/subscribers/" + encode(appUserID)
         val cacheKey = listOf(path)
-        if (!callbacks.containsKey(cacheKey)) {
-            callbacks[cacheKey] = mutableListOf(onSuccess to onError)
-            enqueue(object : PurchaserInfoReceivingCall(cacheKey) {
-                override fun call(): HTTPClient.Result {
-                    return httpClient.performRequest(
-                        "/subscribers/" + encode(appUserID),
-                        null as Map<*, *>?,
-                        authenticationHeaders
-                    )
-                }
-            })
-        } else {
-            callbacks[cacheKey]!!.add(onSuccess to onError)
+        synchronized(this) {
+            if (!callbacks.containsKey(cacheKey)) {
+                callbacks[cacheKey] = mutableListOf(onSuccess to onError)
+                enqueue(object : PurchaserInfoReceivingCall(cacheKey) {
+                    override fun call(): HTTPClient.Result {
+                        return httpClient.performRequest(
+                            "/subscribers/" + encode(appUserID),
+                            null as Map<*, *>?,
+                            authenticationHeaders
+                        )
+                    }
+                })
+            } else {
+                callbacks[cacheKey]!!.add(onSuccess to onError)
+            }
         }
     }
 
@@ -116,23 +121,25 @@ internal class Backend(
         onError: (PurchasesError) -> Unit
     ) {
         val cacheKey = listOf(purchaseToken, productID, appUserID, isRestore.toString())
-        if (!callbacks.containsKey(cacheKey)) {
-            callbacks[cacheKey] = mutableListOf(onSuccess to onError)
+        synchronized(this) {
+            if (!callbacks.containsKey(cacheKey)) {
+                callbacks[cacheKey] = mutableListOf(onSuccess to onError)
 
-            val body = HashMap<String, Any?>()
+                val body = HashMap<String, Any?>()
 
-            body["fetch_token"] = purchaseToken
-            body["product_id"] = productID
-            body["app_user_id"] = appUserID
-            body["is_restore"] = isRestore
+                body["fetch_token"] = purchaseToken
+                body["product_id"] = productID
+                body["app_user_id"] = appUserID
+                body["is_restore"] = isRestore
 
-            enqueue(object : PurchaserInfoReceivingCall(cacheKey) {
-                override fun call(): HTTPClient.Result {
-                    return httpClient.performRequest("/receipts", body, authenticationHeaders)
-                }
-            })
-        } else {
-            callbacks[cacheKey]!!.add(onSuccess to onError)
+                enqueue(object : PurchaserInfoReceivingCall(cacheKey) {
+                    override fun call(): HTTPClient.Result {
+                        return httpClient.performRequest("/receipts", body, authenticationHeaders)
+                    }
+                })
+            } else {
+                callbacks[cacheKey]!!.add(onSuccess to onError)
+            }
         }
     }
 
@@ -143,60 +150,66 @@ internal class Backend(
     ) {
         val path = "/subscribers/" + encode(appUserID) + "/products"
 
-        if (!entitlementsCallbacks.containsKey(path)) {
-            entitlementsCallbacks[path] = mutableListOf(onSuccess to onError)
+        synchronized(this) {
+            if (!entitlementsCallbacks.containsKey(path)) {
+                entitlementsCallbacks[path] = mutableListOf(onSuccess to onError)
 
-            enqueue(object : Dispatcher.AsyncCall() {
-                override fun call(): HTTPClient.Result {
-                    return httpClient.performRequest(
-                        path,
-                        null as Map<*, *>?,
-                        authenticationHeaders
-                    )
-                }
-
-                override fun onError(code: Int, message: String) {
-                    entitlementsCallbacks.remove(path)?.forEach { (_, onError) ->
-                        onError(
-                            PurchasesError(
-                                Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                                code,
-                                message
-                            )
+                enqueue(object : Dispatcher.AsyncCall() {
+                    override fun call(): HTTPClient.Result {
+                        return httpClient.performRequest(
+                            path,
+                            null as Map<*, *>?,
+                            authenticationHeaders
                         )
                     }
-                }
 
-                override fun onCompletion(result: HTTPClient.Result) {
-                    entitlementsCallbacks.remove(path)?.forEach { (onSuccess, onError) ->
-                        if (result.isSuccessful()) {
-                            try {
-                                val entitlementsResponse =
-                                    result.body!!.getJSONObject("entitlements")
-                                onSuccess(entitlementsResponse.buildEntitlementsMap())
-                            } catch (e: JSONException) {
+                    override fun onError(code: Int, message: String) {
+                        synchronized(this) {
+                            entitlementsCallbacks.remove(path)?.forEach { (_, onError) ->
                                 onError(
                                     PurchasesError(
                                         Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                                        result.responseCode,
-                                        "Error parsing products JSON " + e.localizedMessage
+                                        code,
+                                        message
                                     )
                                 )
                             }
-                        } else {
-                            onError(
-                                PurchasesError(
-                                    Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                                    result.responseCode,
-                                    "Backend error"
-                                )
-                            )
                         }
                     }
-                }
-            })
-        } else {
-            entitlementsCallbacks[path]!!.add(onSuccess to onError)
+
+                    override fun onCompletion(result: HTTPClient.Result) {
+                        synchronized(this) {
+                            entitlementsCallbacks.remove(path)?.forEach { (onSuccess, onError) ->
+                                if (result.isSuccessful()) {
+                                    try {
+                                        val entitlementsResponse =
+                                            result.body!!.getJSONObject("entitlements")
+                                        onSuccess(entitlementsResponse.buildEntitlementsMap())
+                                    } catch (e: JSONException) {
+                                        onError(
+                                            PurchasesError(
+                                                Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                                                result.responseCode,
+                                                "Error parsing products JSON " + e.localizedMessage
+                                            )
+                                        )
+                                    }
+                                } else {
+                                    onError(
+                                        PurchasesError(
+                                            Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                                            result.responseCode,
+                                            "Backend error"
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                })
+            } else {
+                entitlementsCallbacks[path]!!.add(onSuccess to onError)
+            }
         }
     }
 
