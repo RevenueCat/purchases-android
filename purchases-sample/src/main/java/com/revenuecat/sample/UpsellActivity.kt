@@ -9,9 +9,7 @@ import com.revenuecat.purchases.Entitlement
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getEntitlementsWith
 import com.revenuecat.purchases.makePurchaseWith
-import kotlinx.android.synthetic.main.activity_upsell.annual_purchase
-import kotlinx.android.synthetic.main.activity_upsell.monthly_purchase
-import kotlinx.android.synthetic.main.activity_upsell.skip
+import kotlinx.android.synthetic.main.activity_upsell.*
 
 class UpsellActivity : AppCompatActivity() {
 
@@ -23,7 +21,7 @@ class UpsellActivity : AppCompatActivity() {
         Purchases.sharedInstance.getEntitlementsWith(::showError) { entitlementMap ->
             showScreen(false, entitlementMap)
         }
-        skip.setOnClickListener { startCats() }
+        skip.setOnClickListener { startCatsActivity() }
     }
 
     private fun showScreen(
@@ -86,7 +84,7 @@ class UpsellActivity : AppCompatActivity() {
             ::showError) { _, purchaserInfo ->
                 button.showLoading(false)
                 if (purchaserInfo.activeEntitlements.contains("pro")) {
-                    startCats()
+                    startCatsActivity()
                 }
             }
 
