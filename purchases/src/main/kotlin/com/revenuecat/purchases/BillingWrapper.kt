@@ -67,7 +67,8 @@ internal class BillingWrapper internal constructor(
                 executePendingRequests()
             }
         } else {
-            log("There is no listener set. Skipping. Make sure you set a listener before calling anything else.")
+            throw IllegalStateException("There is no listener set. Skipping." +
+                "Make sure you set a listener before calling anything else.")
         }
     }
 
