@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases.interfaces;
 
+import androidx.annotation.NonNull;
 import com.revenuecat.purchases.PurchaserInfo;
 
 /**
@@ -16,5 +17,5 @@ public interface UpdatedPurchaserInfoListener {
      * Called when a new purchaser info has been received
      * @param purchaserInfo Updated purchaser info
      */
-    void onReceived(PurchaserInfo purchaserInfo);
+    void onReceived(@NonNull PurchaserInfo purchaserInfo);
 }
