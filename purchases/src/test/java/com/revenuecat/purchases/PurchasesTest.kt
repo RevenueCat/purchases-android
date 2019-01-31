@@ -27,6 +27,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.ArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -1053,9 +1055,6 @@ class PurchasesTest {
         purchases.createAlias("new_id")
 
         verify(exactly = 2) {
-            mockCache.clearCachedAppUserID()
-        }
-        verify(exactly = 2) {
             mockCache.cachePurchaserInfo(any(), any())
         }
         assertThat(purchases.allowSharingPlayStoreAccount).isEqualTo(false)
@@ -1074,9 +1073,6 @@ class PurchasesTest {
 
         purchases.identify("new_id")
 
-        verify(exactly = 2) {
-            mockCache.clearCachedAppUserID()
-        }
         verify(exactly = 2) {
             mockCache.cachePurchaserInfo(any(), any())
         }
@@ -1099,9 +1095,6 @@ class PurchasesTest {
     @Test
     fun `when setting up, and passing a appUserID, user is identified`() {
         setup()
-        verify(exactly = 1) {
-            mockCache.clearCachedAppUserID()
-        }
         verify(exactly = 1) {
             mockCache.cachePurchaserInfo(any(), any())
         }
@@ -1352,6 +1345,38 @@ class PurchasesTest {
         verify(exactly = 2) { mockBackend.getPurchaserInfo(any(), any(), any()) }
     }
 
+
+    @Test
+    fun `don't create an alias if the new app user id is the same`() {
+        setup()
+
+        val lock = CountDownLatch(1)
+        purchases!!.createAliasWith(appUserId) {
+            lock.countDown()
+        }
+
+        lock.await(200, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isZero()
+        verify (exactly = 0) {
+            mockBackend.createAlias(appUserId, appUserId, any(), any())
+        }
+    }
+
+    @Test
+    fun `don't identify if the new app user id is the same`() {
+        val info = setup()
+
+        var receivedInfo: PurchaserInfo? = null
+        purchases!!.identifyWith(appUserId) {
+           receivedInfo = it
+        }
+
+        verify (exactly = 1) {
+            mockCache.getCachedPurchaserInfo(appUserId)
+        }
+        assertThat(receivedInfo).isEqualTo(info)
+    }
+
     // region Private Methods
     private fun mockSkuDetailFetch(details: List<SkuDetails>, skus: List<String>, skuType: String) {
         every {
@@ -1415,9 +1440,6 @@ class PurchasesTest {
             every {
                 getCachedPurchaserInfo(any())
             } returns mockInfo
-            every {
-                clearCachedAppUserID()
-            } just Runs
             every {
                 cachePurchaserInfo(any(), any())
             } just Runs

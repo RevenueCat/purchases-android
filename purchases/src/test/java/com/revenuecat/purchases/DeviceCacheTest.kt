@@ -134,15 +134,6 @@ class DeviceCacheTest {
         }
     }
 
-    @Test
-    fun `clear cache removes cached app user id`() {
-        cache.clearCachedAppUserID()
-        verify {
-            mockEditor.remove(eq(userIDCacheKey))
-            mockEditor.apply()
-        }
-    }
-
     private fun mockString(key: String, value: String?) {
         every {
             mockPrefs.getString(eq(key), isNull())
