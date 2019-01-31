@@ -18,10 +18,14 @@ class UpsellActivity : AppCompatActivity() {
         setContentView(R.layout.activity_upsell)
 
         showScreen()
+        skip.setOnClickListener { startCatsActivity() }
+    }
+
+    override fun onResume() {
+        super.onResume()
         Purchases.sharedInstance.getEntitlementsWith(::showError) { entitlementMap ->
             showScreen(entitlementMap)
         }
-        skip.setOnClickListener { startCatsActivity() }
     }
 
     private fun showScreen(

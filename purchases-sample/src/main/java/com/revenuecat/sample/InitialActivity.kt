@@ -10,13 +10,18 @@ class InitialActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_initial)
+    }
+
+    override fun onResume() {
+        super.onResume()
 
         Purchases.sharedInstance.getPurchaserInfoWith(::showError) { purchaserInfo ->
             if (purchaserInfo.activeEntitlements.contains("pro")) {
-                startCatsActivity()
+                startCatsActivity(true)
             } else {
-                startUpsellActivity()
+                startUpsellActivity(true)
             }
+            finish()
         }
     }
 }

@@ -9,11 +9,7 @@ import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.purchases.restorePurchasesWith
-import kotlinx.android.synthetic.main.activity_cats.cat_content_label
-import kotlinx.android.synthetic.main.activity_cats.expiration_date_label
-import kotlinx.android.synthetic.main.activity_cats.go_premium
-import kotlinx.android.synthetic.main.activity_cats.purchase_date_label
-import kotlinx.android.synthetic.main.activity_cats.purchase_restore
+import kotlinx.android.synthetic.main.activity_cats.*
 
 class CatsActivity : AppCompatActivity() {
 
@@ -31,6 +27,10 @@ class CatsActivity : AppCompatActivity() {
                 configureContent(purchaserInfo)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
         Purchases.sharedInstance.getPurchaserInfoWith(::showError, ::configureContent)
     }
 
