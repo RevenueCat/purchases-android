@@ -53,9 +53,4 @@ internal class DeviceCache(
             ).apply()
     }
 
-    fun clearCachedAppUserID() {
-        preferences.edit()
-            .remove(appUserIDCacheKey)
-            .apply()
-    }
 }
