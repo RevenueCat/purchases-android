@@ -99,8 +99,14 @@ class PurchasesTest {
         mockSkuDetailFetch(skuDetails, skus, BillingClient.SkuType.SUBS)
 
         purchases.getSubscriptionSkus(skus,
-            GetSkusResponseListener {
-                receivedSkus = it
+            object : GetSkusResponseListener {
+                override fun onReceived(skus: MutableList<SkuDetails>) {
+                    receivedSkus = skus
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
             })
 
         assertThat(receivedSkus).isEqualTo(skuDetails)
@@ -118,8 +124,14 @@ class PurchasesTest {
         mockSkuDetailFetch(skuDetails, skus, BillingClient.SkuType.INAPP)
 
         purchases.getNonSubscriptionSkus(skus,
-            GetSkusResponseListener {
-                receivedSkus = it
+            object : GetSkusResponseListener {
+                override fun onReceived(skus: MutableList<SkuDetails>) {
+                    receivedSkus = skus
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
             })
 
         assertThat(receivedSkus).isEqualTo(skuDetails)
@@ -689,6 +701,7 @@ class PurchasesTest {
             mockBillingWrapper.querySkuDetailsAsync(
                 eq(BillingClient.SkuType.SUBS),
                 eq(skus),
+                any(),
                 any()
             )
         }
@@ -721,6 +734,7 @@ class PurchasesTest {
             mockBillingWrapper.querySkuDetailsAsync(
                 eq(BillingClient.SkuType.SUBS),
                 eq<List<String>>(skus),
+                any(),
                 any()
             )
         }
@@ -728,6 +742,7 @@ class PurchasesTest {
             mockBillingWrapper.querySkuDetailsAsync(
                 eq(BillingClient.SkuType.INAPP),
                 eq<List<String>>(inappSkus),
+                any(),
                 any()
             )
         }
@@ -1343,7 +1358,8 @@ class PurchasesTest {
             mockBillingWrapper.querySkuDetailsAsync(
                 eq(skuType),
                 eq(skus),
-                captureLambda()
+                captureLambda(),
+                any()
             )
         } answers {
             lambda<(List<SkuDetails>) -> Unit>().captured.invoke(details)
@@ -1353,7 +1369,7 @@ class PurchasesTest {
     private fun mockBillingWrapper() {
         with(mockBillingWrapper) {
             every {
-                querySkuDetailsAsync(any(), any(), captureLambda())
+                querySkuDetailsAsync(any(), any(), any(), any())
             } just Runs
             every {
                 makePurchaseAsync(any(), any(), any(), any(), any())

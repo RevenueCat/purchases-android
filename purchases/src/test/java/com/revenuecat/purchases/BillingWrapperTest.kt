@@ -138,10 +138,12 @@ class BillingWrapperTest {
 
         wrapper!!.querySkuDetailsAsync(
             BillingClient.SkuType.SUBS,
-            productIDs
-        ) {
-            this@BillingWrapperTest.skuDetailsList = it
-        }
+            productIDs,
+            {
+                this@BillingWrapperTest.skuDetailsList = it
+            }, {
+                fail("shouldn't be an error")
+            })
 
         assertNull(skuDetailsList)
 
@@ -158,12 +160,23 @@ class BillingWrapperTest {
         val productIDs = ArrayList<String>()
         productIDs.add("product_a")
 
-        wrapper!!.querySkuDetailsAsync(BillingClient.SkuType.SUBS, productIDs) {
-            this@BillingWrapperTest.skuDetailsResponseCalled += 1
-        }
-        wrapper!!.querySkuDetailsAsync(BillingClient.SkuType.SUBS, productIDs) {
-            this@BillingWrapperTest.skuDetailsResponseCalled += 1
-        }
+        wrapper!!.querySkuDetailsAsync(
+            BillingClient.SkuType.SUBS,
+            productIDs,
+            {
+                this@BillingWrapperTest.skuDetailsResponseCalled += 1
+            },
+            {
+                fail("shouldn't be an error")
+            })
+        wrapper!!.querySkuDetailsAsync(
+            BillingClient.SkuType.SUBS,
+            productIDs
+            , {
+                this@BillingWrapperTest.skuDetailsResponseCalled += 1
+            }, {
+                fail("shouldn't be an error")
+            })
 
         assertEquals(0, skuDetailsResponseCalled)
 
@@ -182,10 +195,12 @@ class BillingWrapperTest {
 
         wrapper!!.querySkuDetailsAsync(
             BillingClient.SkuType.SUBS,
-            productIDs
-        ) {
-            // DO NOTHING
-        }
+            productIDs,
+            {
+                // DO NOTHING
+            }, {
+                // DO NOTHING
+            })
 
         verify(exactly = 2) {
             mockClient.startConnection(billingClientStateListener!!)
@@ -446,11 +461,17 @@ class BillingWrapperTest {
         )
 
         billingWrapper.purchasesUpdatedListener = null
-        billingWrapper.consumePurchase("token")
+        var exceptionCaught = false
+        try {
+            billingWrapper.consumePurchase("token")
+        } catch (e: Exception) {
+            exceptionCaught = true
+        }
 
         verify(exactly = 0) {
             billingClient.startConnection(eq(billingWrapper))
         }
+        assertThat(exceptionCaught).isTrue()
     }
 
     @Test
@@ -464,10 +485,11 @@ class BillingWrapperTest {
         var receivedList: List<SkuDetails>? = null
         wrapper!!.querySkuDetailsAsync(
             BillingClient.SkuType.SUBS,
-            productIDs
-        ) {
-            receivedList = it
-        }
+            productIDs, {
+                receivedList = it
+            }, {
+                fail("shouldn't be an error")
+            })
         wrapper!!.onBillingSetupFinished(BillingClient.BillingResponse.OK)
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isZero()
