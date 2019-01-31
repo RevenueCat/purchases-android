@@ -1,3 +1,10 @@
+## 2.0.0
+- Refactor to all block based methods
+- Optional listener method to receive changes in Purchaser Info
+- Ability to turn on detailed logging by setting `debugLogsEnabled`
+- Use of AndroidX dependencies
+- Upgraded Kotlin, compile and target versions
+
 ## 1.4.2
 - Sends cached purchaser info after listener is set to fix offline
 
