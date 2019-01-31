@@ -94,18 +94,19 @@ internal class Backend(
     ) {
         val path = "/subscribers/" + encode(appUserID)
         val cacheKey = listOf(path)
+        val call = object : PurchaserInfoReceivingCall(cacheKey) {
+            override fun call(): HTTPClient.Result {
+                return httpClient.performRequest(
+                    "/subscribers/" + encode(appUserID),
+                    null as Map<*, *>?,
+                    authenticationHeaders
+                )
+            }
+        }
         synchronized(this) {
             if (!callbacks.containsKey(cacheKey)) {
                 callbacks[cacheKey] = mutableListOf(onSuccess to onError)
-                enqueue(object : PurchaserInfoReceivingCall(cacheKey) {
-                    override fun call(): HTTPClient.Result {
-                        return httpClient.performRequest(
-                            "/subscribers/" + encode(appUserID),
-                            null as Map<*, *>?,
-                            authenticationHeaders
-                        )
-                    }
-                })
+                enqueue(call)
             } else {
                 callbacks[cacheKey]!!.add(onSuccess to onError)
             }
@@ -121,22 +122,23 @@ internal class Backend(
         onError: (PurchasesError) -> Unit
     ) {
         val cacheKey = listOf(purchaseToken, productID, appUserID, isRestore.toString())
-        synchronized(this) {
+
+        val body = HashMap<String, Any?>()
+        body["fetch_token"] = purchaseToken
+        body["product_id"] = productID
+        body["app_user_id"] = appUserID
+        body["is_restore"] = isRestore
+
+        val call = object : PurchaserInfoReceivingCall(cacheKey) {
+            override fun call(): HTTPClient.Result {
+                return httpClient.performRequest("/receipts", body, authenticationHeaders)
+            }
+        }
+        synchronized(callbacks) {
             if (!callbacks.containsKey(cacheKey)) {
                 callbacks[cacheKey] = mutableListOf(onSuccess to onError)
 
-                val body = HashMap<String, Any?>()
-
-                body["fetch_token"] = purchaseToken
-                body["product_id"] = productID
-                body["app_user_id"] = appUserID
-                body["is_restore"] = isRestore
-
-                enqueue(object : PurchaserInfoReceivingCall(cacheKey) {
-                    override fun call(): HTTPClient.Result {
-                        return httpClient.performRequest("/receipts", body, authenticationHeaders)
-                    }
-                })
+                enqueue(call)
             } else {
                 callbacks[cacheKey]!!.add(onSuccess to onError)
             }
