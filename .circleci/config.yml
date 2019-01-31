@@ -2,7 +2,7 @@ version: 2.1
 executors:
   android-executor:
     docker:
-      - image: circleci/android:api-27-alpha
+      - image: circleci/android:api-28-alpha
     working_directory: ~/purchases-android
     environment:
       JVM_OPTS: -Xmx3200m
@@ -67,22 +67,22 @@ workflows:
   build-deploy-docs:
     jobs:
       - build
-      - hold:
-          requires:
-            - build
-          type: approval
-          filters:
-            branches:
-              only: master
       - deploy:
           requires:
             - build
           filters:
             branches:
               only: master
+      - hold-docs:
+          requires:
+            - build
+          type: approval
+          filters:
+            branches:
+              only: master
       - docs:
           requires:
-            - hold
+            - hold-docs
           filters:
             branches:
               only: master

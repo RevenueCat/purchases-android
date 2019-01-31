@@ -1,18 +1,20 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
-import android.support.test.runner.AndroidJUnit4
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-
+import junit.framework.Assert.assertNotNull
+import junit.framework.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-
 import java.util.concurrent.ExecutorService
-
-import junit.framework.Assert.assertNotNull
-import junit.framework.Assert.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -51,7 +53,6 @@ class DispatcherTest {
     @Test
     fun asyncCallHandlesFailures() {
         val call = object : Dispatcher.AsyncCall() {
-            @Throws(HTTPClient.HTTPErrorException::class)
             override fun call(): HTTPClient.Result {
                 throw HTTPClient.HTTPErrorException(0, "")
             }
@@ -70,7 +71,6 @@ class DispatcherTest {
     fun asyncCallHandlesSuccess() {
         val result = HTTPClient.Result()
         val call = object : Dispatcher.AsyncCall() {
-            @Throws(HTTPClient.HTTPErrorException::class)
             override fun call(): HTTPClient.Result {
                 return result
             }
@@ -84,7 +84,6 @@ class DispatcherTest {
 
         assertNotNull(this.result)
     }
-
 
     @Test
     fun closeStopsThreads() {

@@ -1,68 +1,78 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
 import android.net.Uri
-
 import org.json.JSONException
 import org.json.JSONObject
 
-import java.util.HashMap
+private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
+
+typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
+typealias CallbackCacheKey = List<String>
+typealias EntitlementMapCallback = Pair<(Map<String, Entitlement>) -> Unit, (PurchasesError) -> Unit>
 
 internal class Backend(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
-    private val httpClient: HTTPClient,
-    private val purchaserInfoFactory: PurchaserInfo.Factory,
-    private val entitlementFactory: Entitlement.Factory
+    private val httpClient: HTTPClient
 ) {
 
     internal val authenticationHeaders: MutableMap<String, String>
 
-    abstract class BackendResponseHandler {
-        abstract fun onReceivePurchaserInfo(info: PurchaserInfo)
-        abstract fun onError(code: Int, message: String?)
-    }
+    var callbacks = mutableMapOf<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
+    var entitlementsCallbacks = mutableMapOf<String, MutableList<EntitlementMapCallback>>()
 
-    abstract class EntitlementsResponseHandler {
-        abstract fun onReceiveEntitlements(entitlements: Map<String, Entitlement>)
-        abstract fun onError(code: Int, message: String)
-    }
+    private abstract inner class PurchaserInfoReceivingCall internal constructor(
+        private val cacheKey: CallbackCacheKey
+    ) : Dispatcher.AsyncCall() {
 
-    abstract class AliasResponseHandler {
-        abstract fun onSuccess()
-        abstract fun onError(code: Int, message: String)
-    }
-
-    private abstract inner class PurchaserInfoReceivingCall internal constructor(private val handler: BackendResponseHandler) :
-        Dispatcher.AsyncCall() {
-
-        public override fun onCompletion(result: HTTPClient.Result) {
-            if (result.responseCode < 300) {
-                try {
-                    handler.onReceivePurchaserInfo(purchaserInfoFactory.build(result.body!!))
-                } catch (e: JSONException) {
-                    handler.onError(result.responseCode, e.message)
+        override fun onCompletion(result: HTTPClient.Result) {
+            synchronized(this) {
+                callbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccess(result.body!!.buildPurchaserInfo())
+                        } catch (e: JSONException) {
+                            log("Error parsing JSON ${e.localizedMessage}")
+                            onError(
+                                PurchasesError(
+                                    Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                                    result.responseCode,
+                                    e.localizedMessage
+                                )
+                            )
+                        }
+                    } else {
+                        onError(
+                            PurchasesError(
+                                Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                                result.responseCode,
+                                try {
+                                    "Server error: ${result.body!!.getString("message")}"
+                                } catch (jsonException: JSONException) {
+                                    "Unexpected error from backend ${result.responseCode}"
+                                }
+                            )
+                        )
+                    }
                 }
-
-            } else {
-                var errorMessage: String? = null
-                try {
-                    val message = result.body!!.getString("message")
-                    errorMessage = "Server error: $message"
-                } catch (jsonException: JSONException) {
-                    errorMessage = "Unexpected server error " + result.responseCode
-                }
-
-                handler.onError(result.responseCode, errorMessage)
             }
         }
 
         override fun onError(code: Int, message: String) {
-            handler.onError(code, message)
+            synchronized(this) {
+                callbacks.remove(cacheKey)?.forEach { (_, onError) ->
+                    onError(PurchasesError(Purchases.ErrorDomains.REVENUECAT_BACKEND, code, message))
+                }
+            }
         }
     }
 
     init {
-
         this.authenticationHeaders = HashMap()
         this.authenticationHeaders["Authorization"] = "Bearer " + this.apiKey
     }
@@ -77,9 +87,14 @@ internal class Backend(
         }
     }
 
-    fun getSubscriberInfo(appUserID: String, handler: BackendResponseHandler) {
-        enqueue(object : PurchaserInfoReceivingCall(handler) {
-            @Throws(HTTPClient.HTTPErrorException::class)
+    fun getPurchaserInfo(
+        appUserID: String,
+        onSuccess: (PurchaserInfo) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        val path = "/subscribers/" + encode(appUserID)
+        val cacheKey = listOf(path)
+        val call = object : PurchaserInfoReceivingCall(cacheKey) {
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest(
                     "/subscribers/" + encode(appUserID),
@@ -87,64 +102,117 @@ internal class Backend(
                     authenticationHeaders
                 )
             }
-        })
+        }
+        synchronized(this) {
+            if (!callbacks.containsKey(cacheKey)) {
+                callbacks[cacheKey] = mutableListOf(onSuccess to onError)
+                enqueue(call)
+            } else {
+                callbacks[cacheKey]!!.add(onSuccess to onError)
+            }
+        }
     }
 
     fun postReceiptData(
         purchaseToken: String,
         appUserID: String,
         productID: String,
-        isRestore: Boolean?,
-        handler: BackendResponseHandler
+        isRestore: Boolean,
+        onSuccess: (PurchaserInfo) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
-        val body = HashMap<String, Any?>()
+        val cacheKey = listOf(purchaseToken, productID, appUserID, isRestore.toString())
 
+        val body = HashMap<String, Any?>()
         body["fetch_token"] = purchaseToken
         body["product_id"] = productID
         body["app_user_id"] = appUserID
         body["is_restore"] = isRestore
 
-        enqueue(object : PurchaserInfoReceivingCall(handler) {
-            @Throws(HTTPClient.HTTPErrorException::class)
+        val call = object : PurchaserInfoReceivingCall(cacheKey) {
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest("/receipts", body, authenticationHeaders)
             }
-        })
+        }
+        synchronized(callbacks) {
+            if (!callbacks.containsKey(cacheKey)) {
+                callbacks[cacheKey] = mutableListOf(onSuccess to onError)
+
+                enqueue(call)
+            } else {
+                callbacks[cacheKey]!!.add(onSuccess to onError)
+            }
+        }
     }
 
-    fun getEntitlements(appUserID: String, handler: EntitlementsResponseHandler) {
-        enqueue(object : Dispatcher.AsyncCall() {
-            @Throws(HTTPClient.HTTPErrorException::class)
-            override fun call(): HTTPClient.Result {
-                return httpClient.performRequest(
-                    "/subscribers/" + encode(appUserID) + "/products",
-                    null as Map<*, *>?,
-                    authenticationHeaders
-                )
-            }
+    fun getEntitlements(
+        appUserID: String,
+        onSuccess: (Map<String, Entitlement>) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        val path = "/subscribers/" + encode(appUserID) + "/products"
 
-            override fun onError(code: Int, message: String) {
-                handler.onError(code, message)
-            }
+        synchronized(this) {
+            if (!entitlementsCallbacks.containsKey(path)) {
+                entitlementsCallbacks[path] = mutableListOf(onSuccess to onError)
 
-            override fun onCompletion(result: HTTPClient.Result) {
-                if (result.responseCode < 300) {
-                    try {
-                        val entitlementsResponse = result.body!!.getJSONObject("entitlements")
-                        val entitlementMap = entitlementFactory.build(entitlementsResponse)
-                        handler.onReceiveEntitlements(entitlementMap)
-                    } catch (e: JSONException) {
-                        handler.onError(
-                            result.responseCode,
-                            "Error parsing products JSON " + e.localizedMessage
+                enqueue(object : Dispatcher.AsyncCall() {
+                    override fun call(): HTTPClient.Result {
+                        return httpClient.performRequest(
+                            path,
+                            null as Map<*, *>?,
+                            authenticationHeaders
                         )
                     }
 
-                } else {
-                    handler.onError(result.responseCode, "Backend error")
-                }
+                    override fun onError(code: Int, message: String) {
+                        synchronized(this) {
+                            entitlementsCallbacks.remove(path)?.forEach { (_, onError) ->
+                                onError(
+                                    PurchasesError(
+                                        Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                                        code,
+                                        message
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    override fun onCompletion(result: HTTPClient.Result) {
+                        synchronized(this) {
+                            entitlementsCallbacks.remove(path)?.forEach { (onSuccess, onError) ->
+                                if (result.isSuccessful()) {
+                                    try {
+                                        val entitlementsResponse =
+                                            result.body!!.getJSONObject("entitlements")
+                                        onSuccess(entitlementsResponse.buildEntitlementsMap())
+                                    } catch (e: JSONException) {
+                                        onError(
+                                            PurchasesError(
+                                                Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                                                result.responseCode,
+                                                "Error parsing products JSON " + e.localizedMessage
+                                            )
+                                        )
+                                    }
+                                } else {
+                                    onError(
+                                        PurchasesError(
+                                            Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                                            result.responseCode,
+                                            "Backend error"
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                })
+            } else {
+                entitlementsCallbacks[path]!!.add(onSuccess to onError)
             }
-        })
+        }
     }
 
     private fun encode(string: String): String {
@@ -167,7 +235,6 @@ internal class Backend(
         }
 
         enqueue(object : Dispatcher.AsyncCall() {
-            @Throws(HTTPClient.HTTPErrorException::class)
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest(
                     "/subscribers/" + encode(appUserID) + "/attribution",
@@ -182,14 +249,13 @@ internal class Backend(
         appUserID: String,
         newAppUserID: String,
         onSuccessHandler: () -> Unit,
-        onErrorHandler: (Int, String) -> Unit
+        onErrorHandler: (PurchasesError) -> Unit
     ) {
         val body = mapOf(
             "new_app_user_id" to newAppUserID
         )
 
         enqueue(object : Dispatcher.AsyncCall() {
-            @Throws(HTTPClient.HTTPErrorException::class)
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest(
                     "/subscribers/" + encode(appUserID) + "/alias",
@@ -199,20 +265,32 @@ internal class Backend(
             }
 
             override fun onError(code: Int, message: String) {
-                onErrorHandler(code, message)
+                onErrorHandler(
+                    PurchasesError(
+                        Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                        code,
+                        message
+                    )
+                )
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
-                if (result.responseCode < 300) {
-                    try {
-                        onSuccessHandler()
-                    } catch (e: JSONException) {
-                        onErrorHandler(result.responseCode, "Backend error")
-                    }
+                if (result.isSuccessful()) {
+                    onSuccessHandler()
                 } else {
-                    onErrorHandler(result.responseCode, "Backend error")
+                    onErrorHandler(
+                        PurchasesError(
+                            Purchases.ErrorDomains.REVENUECAT_BACKEND,
+                            result.responseCode,
+                            "Backend error"
+                        )
+                    )
                 }
             }
         })
+    }
+
+    private fun HTTPClient.Result.isSuccessful(): Boolean {
+        return responseCode < UNSUCCESSFUL_HTTP_STATUS_CODE
     }
 }

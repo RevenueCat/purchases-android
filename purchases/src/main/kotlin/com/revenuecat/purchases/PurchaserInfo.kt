@@ -1,12 +1,14 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases
 
-import com.revenuecat.purchases.util.Iso8601Utils
-
-import org.json.JSONException
+import android.os.Parcel
+import android.os.Parcelable
 import org.json.JSONObject
-
 import java.util.Date
-import java.util.HashMap
 
 /**
  * Class containing all information regarding the purchaser
@@ -17,7 +19,7 @@ import java.util.HashMap
  * @property allPurchaseDatesByEntitlement Map of entitlement ids to purchase dates
  * @property requestDate Date when this info was requested
  */
-class PurchaserInfo private constructor(
+class PurchaserInfo internal constructor(
     val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
@@ -25,7 +27,19 @@ class PurchaserInfo private constructor(
     val allPurchaseDatesByEntitlement: Map<String, Date?>,
     val requestDate: Date?,
     internal val jsonObject: JSONObject
-) {
+) : Parcelable {
+    /**
+     * @hide
+     */
+    constructor(parcel: Parcel): this(
+        parcel.readInt().let { size -> (0 until size).map { parcel.readString() }.toSet() },
+        parcel.readStringDateMap(),
+        parcel.readStringDateMap(),
+        parcel.readStringDateMap(),
+        parcel.readStringDateMap(),
+        parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
+        JSONObject(parcel.readString())
+    )
 
     /**
      * @return Set of active subscription skus
@@ -88,109 +102,92 @@ class PurchaserInfo private constructor(
     }
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
-        return expirations.filterValues { date -> date == null || isAfterReferenceDate(date) }.keys
+        return expirations.filterValues { date -> date == null || date.after(requestDate ?: Date()) }.keys
     }
 
-    private fun isAfterReferenceDate(date: Date): Boolean {
-        return date.after(requestDate?: Date())
+    /**
+     * @hide
+     */
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as PurchaserInfo
+
+        if (allExpirationDatesByProduct != other.allExpirationDatesByProduct) return false
+        if (allPurchaseDatesByProduct != other.allPurchaseDatesByProduct) return false
+        if (allExpirationDatesByEntitlement != other.allExpirationDatesByEntitlement) return false
+        if (allPurchaseDatesByEntitlement != other.allPurchaseDatesByEntitlement) return false
+        if (purchasedNonSubscriptionSkus != other.purchasedNonSubscriptionSkus) return false
+        if (activeEntitlements != other.activeEntitlements) return false
+
+        return true
+    }
+    /**
+     * @hide
+     */
+    override fun toString() =
+        "<PurchaserInfo\n " +
+                "latestExpirationDate: $latestExpirationDate\n" +
+                "activeSubscriptions:  ${activeSubscriptions.map {
+                    it to mapOf("expiresDate" to getExpirationDateForSku(it))
+                }.toMap()},\n" +
+                "activeEntitlements: ${activeEntitlements.map {
+                    it to mapOf("expiresDate" to getExpirationDateForEntitlement(it))
+                }.toMap()},\n" +
+                "nonConsumablePurchases: $purchasedNonSubscriptionSkus,\n" +
+                "requestDate: $requestDate\n>"
+
+    /**
+     * @hide
+     */
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeInt(purchasedNonSubscriptionSkus.size)
+        purchasedNonSubscriptionSkus.forEach { entry -> parcel.writeString(entry) }
+        parcel.writeStringDateMap(allExpirationDatesByProduct)
+        parcel.writeStringDateMap(allPurchaseDatesByProduct)
+        parcel.writeStringDateMap(allExpirationDatesByEntitlement)
+        parcel.writeStringDateMap(allPurchaseDatesByEntitlement)
+        parcel.writeLong(requestDate?.time ?: -1)
+        parcel.writeString(jsonObject.toString())
     }
 
-    internal object Factory {
-
-        /**
-         * Parses expiration dates in a JSONObject
-         * @param jsonObject JSONObject to deserialize
-         * @throws [JSONException] If the json is invalid.
-         */
-        private fun parseExpirations(expirations: JSONObject): Map<String, Date?> {
-            return parseDates(expirations, "expires_date")
-        }
-
-        /**
-         * Parses purchase dates in a JSONObject
-         * @param jsonObject JSONObject to deserialize
-         * @throws [JSONException] If the json is invalid.
-         */
-        private fun parsePurchaseDates(expirations: JSONObject): Map<String, Date?> {
-            return parseDates(expirations, "purchase_date")
-        }
-
-        /**
-         * Parses dates that match a JSON key in a JSONObject
-         * @param jsonObject JSONObject to deserialize
-         * @param jsonKey Key of the dates to deserialize from the JSONObject
-         * @throws [JSONException] If the json is invalid.
-         */
-        private fun parseDates(dates: JSONObject, jsonKey: String): HashMap<String, Date?> {
-            val expirationDates = HashMap<String, Date?>()
-
-            val it = dates.keys()
-            while (it.hasNext()) {
-                val key = it.next()
-
-                val expirationObject = dates.getJSONObject(key)
-
-                if (expirationObject.isNull(jsonKey)) {
-                    expirationDates[key] = null
-                } else {
-                    val dateValue = expirationObject.getString(jsonKey)
-                    try {
-                        val date = Iso8601Utils.parse(dateValue)
-                        expirationDates[key] = date
-                    } catch (e: RuntimeException) {
-                        throw JSONException(e.message)
-                    }
-                }
-            }
-
-            return expirationDates
-        }
-
-        /**
-         * Builds a PurchaserInfo
-         * @param jsonObject JSONObject to deserialize
-         * @throws [JSONException] If the json is invalid.
-         */
-        @Throws(JSONException::class)
-        fun build(jsonObject: JSONObject): PurchaserInfo {
-            val subscriber = jsonObject.getJSONObject("subscriber")
-
-            val otherPurchases = subscriber.getJSONObject("other_purchases")
-            val nonSubscriptionPurchases = otherPurchases.keys().asSequence().toSet()
-            val subscriptions = subscriber.getJSONObject("subscriptions")
-            val expirationDatesByProduct = parseExpirations(subscriptions)
-            val purchaseDatesByProduct = parsePurchaseDates(subscriptions)
-
-            var entitlements = JSONObject()
-            if (subscriber.has("entitlements")) {
-                entitlements = subscriber.getJSONObject("entitlements")
-            }
-
-            val expirationDatesByEntitlement = parseExpirations(entitlements)
-            val purchaseDatesByEntitlement = parsePurchaseDates(entitlements)
-
-            val requestDate =
-                if (jsonObject.has("request_date")) {
-                    try {
-                        jsonObject.getString("request_date").takeUnless { it.isNullOrBlank() }
-                            ?.let {
-                                Iso8601Utils.parse(it)
-                            }
-                    } catch (e: RuntimeException) {
-                        throw JSONException(e.message)
-                    }
-                } else null
-
-            return PurchaserInfo(
-                nonSubscriptionPurchases,
-                expirationDatesByProduct,
-                purchaseDatesByProduct,
-                expirationDatesByEntitlement,
-                purchaseDatesByEntitlement,
-                requestDate,
-                jsonObject
-            )
-        }
+    /**
+     * @hide
+     */
+    override fun describeContents(): Int {
+        return 0
     }
 
+    /**
+     * @hide
+     */
+    override fun hashCode(): Int {
+        var result = purchasedNonSubscriptionSkus.hashCode()
+        result = 31 * result + allExpirationDatesByProduct.hashCode()
+        result = 31 * result + allPurchaseDatesByProduct.hashCode()
+        result = 31 * result + allExpirationDatesByEntitlement.hashCode()
+        result = 31 * result + allPurchaseDatesByEntitlement.hashCode()
+        result = 31 * result + (requestDate?.hashCode() ?: 0)
+        result = 31 * result + jsonObject.hashCode()
+        return result
+    }
+
+    /**
+     * @hide
+     */
+    companion object CREATOR : Parcelable.Creator<PurchaserInfo> {
+        /**
+         * @hide
+         */
+        override fun createFromParcel(parcel: Parcel): PurchaserInfo {
+            return PurchaserInfo(parcel)
+        }
+        /**
+         * @hide
+         */
+        override fun newArray(size: Int): Array<PurchaserInfo?> {
+            return arrayOfNulls(size)
+        }
+    }
 }
