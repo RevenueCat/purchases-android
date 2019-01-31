@@ -86,10 +86,3 @@ workflows:
           filters:
             branches:
               only: master
-      - hold-force-deploy:
-          requires:
-            - build
-          type: approval
-      - deploy:
-          requires:
-            - hold-force-deploy
