@@ -402,7 +402,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 getSkuDetails(entitlements, { detailsByID ->
                     cachedEntitlements = entitlements
                     populateSkuDetailsAndCallCompletion(detailsByID, entitlements, completion)
-                },{
+                }, {
                     dispatch {
                         completion?.onError(it)
                     }
@@ -598,15 +598,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun sendUpdatedPurchaserInfoToDelegateIfChanged(info: PurchaserInfo) {
-        if (updatedPurchaserInfoListener != null) {
-            if (lastSentPurchaserInfo != info) {
-                if (lastSentPurchaserInfo != null) {
-                    debugLog("Purchaser info updated, sending to listener")
-                } else {
-                    debugLog("Sending latest purchaser info to delegate")
+        synchronized(this) {
+            if (updatedPurchaserInfoListener != null) {
+                if (lastSentPurchaserInfo != info) {
+                    if (lastSentPurchaserInfo != null) {
+                        debugLog("Purchaser info updated, sending to listener")
+                    } else {
+                        debugLog("Sending latest purchaser info to delegate")
+                    }
+                    lastSentPurchaserInfo = info
+                    dispatch { updatedPurchaserInfoListener?.onReceived(info) }
                 }
-                lastSentPurchaserInfo = info
-                dispatch { updatedPurchaserInfoListener?.onReceived(info) }
             }
         }
     }
