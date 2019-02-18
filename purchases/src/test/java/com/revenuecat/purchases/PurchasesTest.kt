@@ -1351,7 +1351,7 @@ class PurchasesTest {
         setup()
 
         val lock = CountDownLatch(1)
-        purchases!!.createAliasWith(appUserId) {
+        purchases.createAliasWith(appUserId) {
             lock.countDown()
         }
 
@@ -1367,7 +1367,7 @@ class PurchasesTest {
         val info = setup()
 
         var receivedInfo: PurchaserInfo? = null
-        purchases!!.identifyWith(appUserId) {
+        purchases.identifyWith(appUserId) {
            receivedInfo = it
         }
 
@@ -1375,6 +1375,31 @@ class PurchasesTest {
             mockCache.getCachedPurchaserInfo(appUserId)
         }
         assertThat(receivedInfo).isEqualTo(info)
+    }
+
+    @Test
+    fun `when multiple make purchase callbacks, a failure doesn't throw ConcurrentModificationException`() {
+        setup()
+
+        val activity: Activity = mockk()
+
+        purchases.makePurchaseWith(
+            activity,
+            "onemonth_freetrial",
+            BillingClient.SkuType.SUBS
+        ) { _, _ -> }
+
+        purchases.makePurchaseWith(
+            activity,
+            "annual_freetrial",
+            BillingClient.SkuType.SUBS
+        ) { _, _ -> }
+
+        try {
+            capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(emptyList(), 0, "fail")
+        } catch (e: ConcurrentModificationException) {
+            fail("Test throws ConcurrentModificationException")
+        }
     }
 
     // region Private Methods
