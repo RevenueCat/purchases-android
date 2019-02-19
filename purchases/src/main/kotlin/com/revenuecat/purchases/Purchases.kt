@@ -210,19 +210,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: PurchaseCompletedListener
     ) {
         debugLog("makePurchase - $sku")
-        if (purchaseCallbacks.containsKey(sku)) {
-            dispatch {
-                listener.onError(
-                    PurchasesError(
-                        ErrorDomains.REVENUECAT_API,
-                        PurchasesAPIError.DUPLICATE_MAKE_PURCHASE_CALLS.ordinal,
-                        "Purchase already in progress for this product."
+        synchronized(this) {
+            if (purchaseCallbacks.containsKey(sku)) {
+                dispatch {
+                    listener.onError(
+                        PurchasesError(
+                            ErrorDomains.REVENUECAT_API,
+                            PurchasesAPIError.DUPLICATE_MAKE_PURCHASE_CALLS.ordinal,
+                            "Purchase already in progress for this product."
+                        )
                     )
-                )
+                }
+            } else {
+                purchaseCallbacks[sku] = listener
+                billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
             }
-        } else {
-            purchaseCallbacks[sku] = listener
-            billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
         }
     }
 
@@ -316,7 +318,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             debugLog("Changing App User ID: ${this.appUserID} -> $appUserID")
             clearCaches()
             this.appUserID = appUserID
-            purchaseCallbacks.clear()
+            synchronized(this) {
+                purchaseCallbacks.clear()
+            }
             updateCaches(listener)
         } else if (!this::appUserID.isInitialized) {
             debugLog("Identifying App User ID: $appUserID")
@@ -340,7 +344,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         clearCaches()
         this.appUserID = createRandomIDAndCacheIt()
-        purchaseCallbacks.clear()
+        synchronized(this) {
+            purchaseCallbacks.clear()
+        }
         updateCaches(listener)
     }
 
@@ -348,7 +354,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Call close when you are done with this instance of Purchases
      */
     fun close() {
-        purchaseCallbacks.clear()
+        synchronized(this) {
+            purchaseCallbacks.clear()
+        }
         this.backend.close()
         billingWrapper.purchasesUpdatedListener = null
         updatedPurchaserInfoListener = null
@@ -394,7 +402,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 getSkuDetails(entitlements, { detailsByID ->
                     cachedEntitlements = entitlements
                     populateSkuDetailsAndCallCompletion(detailsByID, entitlements, completion)
-                },{
+                }, {
                     dispatch {
                         completion?.onError(it)
                     }
@@ -590,15 +598,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun sendUpdatedPurchaserInfoToDelegateIfChanged(info: PurchaserInfo) {
-        if (updatedPurchaserInfoListener != null) {
-            if (lastSentPurchaserInfo != info) {
-                if (lastSentPurchaserInfo != null) {
-                    debugLog("Purchaser info updated, sending to listener")
-                } else {
-                    debugLog("Sending latest purchaser info to delegate")
+        synchronized(this) {
+            if (updatedPurchaserInfoListener != null) {
+                if (lastSentPurchaserInfo != info) {
+                    if (lastSentPurchaserInfo != null) {
+                        debugLog("Purchaser info updated, sending to listener")
+                    } else {
+                        debugLog("Sending latest purchaser info to delegate")
+                    }
+                    lastSentPurchaserInfo = info
+                    dispatch { updatedPurchaserInfoListener?.onReceived(info) }
                 }
-                lastSentPurchaserInfo = info
-                dispatch { updatedPurchaserInfoListener?.onReceived(info) }
             }
         }
     }
@@ -619,15 +629,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     purchases,
                     allowSharingPlayStoreAccount,
                     { purchase, info ->
-                        dispatch {
-                            purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info)
+                        synchronized(this) {
+                            dispatch {
+                                purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info)
+                            }
                         }
                     },
                     { purchase, error ->
-                        dispatch {
-                            purchaseCallbacks.remove(purchase.sku)?.onError(
-                                PurchasesError(error.domain, error.code, error.message)
-                            )
+                        synchronized(this) {
+                            dispatch {
+                                purchaseCallbacks.remove(purchase.sku)?.onError(
+                                    PurchasesError(error.domain, error.code, error.message)
+                                )
+                            }
                         }
                     }
                 )
@@ -638,13 +652,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 @BillingClient.BillingResponse responseCode: Int,
                 message: String
             ) {
-                purchaseCallbacks.forEach { (key, value) ->
-                    purchaseCallbacks.remove(key)
-                    dispatch {
-                        value.onError(
-                            PurchasesError(ErrorDomains.PLAY_BILLING, responseCode, message)
-                        )
+                synchronized(this) {
+                    purchaseCallbacks.forEach { (_, value) ->
+                        dispatch {
+                            value.onError(
+                                PurchasesError(ErrorDomains.PLAY_BILLING, responseCode, message)
+                            )
+                        }
                     }
+                    purchaseCallbacks.clear()
                 }
             }
         }
