@@ -73,16 +73,3 @@ workflows:
           filters:
             branches:
               only: master
-      - hold-docs:
-          requires:
-            - build
-          type: approval
-          filters:
-            branches:
-              only: master
-      - docs:
-          requires:
-            - hold-docs
-          filters:
-            branches:
-              only: master
