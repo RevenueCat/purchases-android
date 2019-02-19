@@ -19,4 +19,4 @@ Releasing
  1. `git commit -am "Prepare next development version."`
  1. `git push`
  1. Update the version in the Quickstart guide https://docs.revenuecat.com/docs/android
-
+ 1. Create a Release in GitHub
