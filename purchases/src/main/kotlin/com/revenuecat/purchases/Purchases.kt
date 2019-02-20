@@ -21,6 +21,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
+import com.revenuecat.purchases.interfaces.IsSupportedListener
 import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
 import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
@@ -391,6 +392,28 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @Suppress("MemberVisibilityCanBePrivate")
     fun removeUpdatedPurchaserInfoListener() {
         this.updatedPurchaserInfoListener = null
+    }
+
+    /**
+     * Check if billing is supported in the device. This method is asynchronous since tries to connect the billing client
+     * and checks for the result of the connection. If Billing is supported, IN-APP purchases are supported. If you want
+     * to check if Subscriptions or other type defined in [BillingClient.FeatureType], call [isFeatureSupported].
+     * @param context A context object that will be used to connect to the billing client
+     * @param isSupportedListener Listener that will be notified when the check is done.
+     */
+    fun isBillingSupported(context: Context, isSupportedListener: IsSupportedListener) {
+        this.billingWrapper.isBillingSupported(context) { dispatch { isSupportedListener.onReceived(it) } }
+    }
+
+    /**
+     * Use this method if you want to check if Subscriptions or other type defined in [BillingClient.FeatureType] is supported.\
+     * This method is asynchronous since it requires a connected billing client.
+     * @param feature A feature type to check for support. Must be one of [BillingClient.FeatureType]
+     * @param context A context object that will be used to connect to the billing client
+     * @param isSupportedListener Listener that will be notified when the check is done.
+     */
+    fun isFeatureSupported(@BillingClient.FeatureType feature: String, context: Context, isSupportedListener: IsSupportedListener) {
+        this.billingWrapper.isFeatureSupported(feature, context) { dispatch { isSupportedListener.onReceived(it) } }
     }
     // endregion
 

@@ -33,7 +33,6 @@ internal class BillingWrapper internal constructor(
             }
         }
 
-    private var clientConnected: Boolean = false
     private val serviceRequests = ConcurrentLinkedQueue<Runnable>()
 
     internal class ClientFactory(private val context: Context) {
@@ -52,7 +51,7 @@ internal class BillingWrapper internal constructor(
     }
 
     private fun executePendingRequests() {
-        while (clientConnected && !serviceRequests.isEmpty()) {
+        while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
             val request = serviceRequests.remove()
             request.run()
         }
@@ -61,7 +60,7 @@ internal class BillingWrapper internal constructor(
     private fun executeRequest(request: Runnable) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
-            if (!clientConnected) {
+            if (billingClient?.isReady == false) {
                 startConnection()
             } else {
                 executePendingRequests()
@@ -86,7 +85,6 @@ internal class BillingWrapper internal constructor(
             it.endConnection()
         }
         billingClient = null
-        clientConnected = false
     }
 
     private fun executeRequestOnUIThread(request: Runnable) {
@@ -210,7 +208,6 @@ internal class BillingWrapper internal constructor(
     override fun onBillingSetupFinished(@BillingClient.BillingResponse responseCode: Int) {
         if (responseCode == BillingClient.BillingResponse.OK) {
             debugLog("Billing Service Setup finished for ${billingClient?.toString()}")
-            clientConnected = true
             executePendingRequests()
         } else {
             errorLog("Billing Service Setup finished with error code: ${responseCode.getBillingResponseCodeName()}")
@@ -218,7 +215,52 @@ internal class BillingWrapper internal constructor(
     }
 
     override fun onBillingServiceDisconnected() {
-        clientConnected = false
         debugLog("Billing Service disconnected for ${billingClient?.toString()}")
+    }
+
+    fun isBillingSupported(context: Context, completion: (Boolean) -> Unit) {
+        if (billingClient?.isReady == true) {
+            // It also means that IN-APP items are supported for purchasing
+            completion(true)
+        } else {
+            debugLog("Billing Client is null connecting")
+
+            val localBillingClient = BillingClient.newBuilder(context).setListener { _, _ ->  }.build()
+            localBillingClient.startConnection(
+                object : BillingClientStateListener {
+                    override fun onBillingSetupFinished(responseCode: Int) {
+                        completion(responseCode == BillingClient.BillingResponse.OK)
+                        localBillingClient.endConnection()
+                    }
+
+                    override fun onBillingServiceDisconnected() {
+                        completion(false)
+                        localBillingClient.endConnection()
+                    }
+                })
+        }
+    }
+
+    fun isFeatureSupported(@BillingClient.FeatureType feature: String, context: Context, completion: (Boolean) -> Unit) {
+        if (billingClient?.isReady == true) {
+            // It also means that IN-APP items are supported for purchasing
+            completion(billingClient?.isFeatureSupported(feature) == BillingClient.BillingResponse.OK)
+        } else {
+            debugLog("Billing Client is null connecting")
+
+            val localBillingClient = BillingClient.newBuilder(context).setListener { _, _ ->  }.build()
+            localBillingClient.startConnection(
+                object : BillingClientStateListener {
+                    override fun onBillingSetupFinished(responseCode: Int) {
+                        completion(billingClient?.isFeatureSupported(feature) == BillingClient.BillingResponse.OK)
+                        localBillingClient.endConnection()
+                    }
+
+                    override fun onBillingServiceDisconnected() {
+                        completion(false)
+                        localBillingClient.endConnection()
+                    }
+                })
+        }
     }
 }
