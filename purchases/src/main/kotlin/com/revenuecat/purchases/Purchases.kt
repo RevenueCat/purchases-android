@@ -631,7 +631,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     { purchase, info ->
                         synchronized(this) {
                             dispatch {
-                                purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info)
+                                val purchaseCompletedListener = purchaseCallbacks.remove(purchase.sku)
+                                purchaseCompletedListener?.onCompleted(purchase.sku, info)
+                                purchaseCompletedListener?.onCompleted(purchase, info)
                             }
                         }
                     },

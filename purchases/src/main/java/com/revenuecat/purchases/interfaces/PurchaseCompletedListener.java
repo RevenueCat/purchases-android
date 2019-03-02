@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases.interfaces;
 
+import com.android.billingclient.api.Purchase;
 import com.revenuecat.purchases.PurchaserInfo;
 import com.revenuecat.purchases.PurchasesError;
 
@@ -20,6 +21,13 @@ public interface PurchaseCompletedListener {
      * @param purchaserInfo Updated [PurchaserInfo].
      */
     void onCompleted(@NonNull String sku, @NonNull PurchaserInfo purchaserInfo);
+
+    /**
+     * Will be called after the purchase has completed
+     * @param purchase Purchase.
+     * @param purchaserInfo Updated [PurchaserInfo].
+     */
+    void onCompleted(@NonNull Purchase purchase, @NonNull PurchaserInfo purchaserInfo);
 
     /**
      * Will be called after the purchase has completed with error
