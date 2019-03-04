@@ -12,7 +12,7 @@ import androidx.annotation.NonNull;
 
 /**
  * Interface to be implemented when making purchases.
- *  @deprecated  As of release 2.0.2, replaced by [MakePurchaseListener] to return full Purchase object in the onCompleted function.
+ *  @deprecated  As of release 2.1.0, replaced by [MakePurchaseListener] to return full Purchase object in the onCompleted function.
  */
 @Deprecated
 public interface PurchaseCompletedListener {
