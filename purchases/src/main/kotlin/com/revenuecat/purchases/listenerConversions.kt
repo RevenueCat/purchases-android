@@ -2,15 +2,16 @@ package com.revenuecat.purchases
 
 import android.app.Activity
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
+import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import java.util.ArrayList
 
-private typealias PurchaseCompletedSuccessFunction = (sku: String, purchaserInfo: PurchaserInfo) -> Unit
+private typealias MakePurchaseCompletedSuccessFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
 private typealias ReceiveEntitlementsSuccessFunction = (entitlementMap: Map<String, Entitlement>) -> Unit
 private typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: PurchaserInfo) -> Unit
 private typealias ErrorFunction = (error: PurchasesError) -> Unit
@@ -18,11 +19,11 @@ private typealias ErrorFunction = (error: PurchasesError) -> Unit
 private val onErrorStub: ErrorFunction = {}
 
 internal fun purchaseCompletedListener(
-    onSuccess: PurchaseCompletedSuccessFunction,
+    onSuccess: MakePurchaseCompletedSuccessFunction,
     onError: ErrorFunction
-) = object : PurchaseCompletedListener {
-    override fun onCompleted(sku: String, purchaserInfo: PurchaserInfo) {
-        onSuccess(sku, purchaserInfo)
+) = object : MakePurchaseListener {
+    override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
+        onSuccess(purchase, purchaserInfo)
     }
 
     override fun onError(error: PurchasesError) {
@@ -107,7 +108,7 @@ fun Purchases.makePurchaseWith(
     @BillingClient.SkuType skuType: String,
     oldSkus: ArrayList<String>,
     onError: ErrorFunction = onErrorStub,
-    onSuccess: PurchaseCompletedSuccessFunction
+    onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
     makePurchase(activity, sku, skuType, oldSkus, purchaseCompletedListener(onSuccess, onError))
 }
@@ -125,7 +126,7 @@ fun Purchases.makePurchaseWith(
     sku: String,
     @BillingClient.SkuType skuType: String,
     onError: ErrorFunction = onErrorStub,
-    onSuccess: PurchaseCompletedSuccessFunction
+    onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
     makePurchase(activity, sku, skuType, ArrayList(), purchaseCompletedListener(onSuccess, onError))
 }
