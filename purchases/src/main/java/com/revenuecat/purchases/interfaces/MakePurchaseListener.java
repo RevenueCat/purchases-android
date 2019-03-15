@@ -5,23 +5,21 @@
 
 package com.revenuecat.purchases.interfaces;
 
+import androidx.annotation.NonNull;
+import com.android.billingclient.api.Purchase;
 import com.revenuecat.purchases.PurchaserInfo;
 import com.revenuecat.purchases.PurchasesError;
 
-import androidx.annotation.NonNull;
-
 /**
  * Interface to be implemented when making purchases.
- *  @deprecated  As of release 2.1.0, replaced by [MakePurchaseListener] to return full Purchase object in the onCompleted function.
  */
-@Deprecated
-public interface PurchaseCompletedListener {
+public interface MakePurchaseListener {
     /**
      * Will be called after the purchase has completed
-     * @param sku Sku for the purchased product.
+     * @param purchase Purchase object for the purchased product.
      * @param purchaserInfo Updated [PurchaserInfo].
      */
-    void onCompleted(@NonNull String sku, @NonNull PurchaserInfo purchaserInfo);
+    void onCompleted(@NonNull Purchase purchase, @NonNull PurchaserInfo purchaserInfo);
 
     /**
      * Will be called after the purchase has completed with error

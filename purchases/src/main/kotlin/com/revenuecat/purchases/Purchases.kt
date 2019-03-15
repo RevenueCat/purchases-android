@@ -22,6 +22,7 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.IsSupportedListener
+import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
 import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
@@ -66,7 +67,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     lateinit var appUserID: String
 
-    private var purchaseCallbacks: MutableMap<String, PurchaseCompletedListener> = mutableMapOf()
+    private var purchaseCallbacks: MutableMap<String, MakePurchaseListener> = mutableMapOf()
     private var lastSentPurchaserInfo: PurchaserInfo? = null
 
     private val receivePurchaserInfoListenerStub = object : ReceivePurchaserInfoListener {
@@ -203,12 +204,39 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [oldSkus] The skus you wish to upgrade from.
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated("use makePurchase accepting a MakePurchaseListener instead")
     fun makePurchase(
         activity: Activity,
         sku: String,
         @BillingClient.SkuType skuType: String,
         oldSkus: ArrayList<String>,
         listener: PurchaseCompletedListener
+    ) {
+        makePurchase(activity, sku, skuType, oldSkus, object : MakePurchaseListener {
+            override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
+                listener.onCompleted(purchase.sku, purchaserInfo)
+            }
+
+            override fun onError(error: PurchasesError) {
+                listener.onError(error)
+            }
+        })
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [sku] The sku you wish to purchase
+     * @param [skuType] The type of sku, INAPP or SUBS
+     * @param [oldSkus] The skus you wish to upgrade from.
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun makePurchase(
+        activity: Activity,
+        sku: String,
+        @BillingClient.SkuType skuType: String,
+        oldSkus: ArrayList<String>,
+        listener: MakePurchaseListener
     ) {
         debugLog("makePurchase - $sku")
         synchronized(this) {
@@ -236,11 +264,30 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skuType] The type of sku, INAPP or SUBS
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated("use makePurchase accepting a MakePurchaseListener instead",
+        ReplaceWith("makePurchase(activity, sku, skuType, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener")
+    )
     fun makePurchase(
         activity: Activity,
         sku: String,
         @BillingClient.SkuType skuType: String,
         listener: PurchaseCompletedListener
+    ) {
+        makePurchase(activity, sku, skuType, ArrayList(), listener)
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [sku] The sku you wish to purchase
+     * @param [skuType] The type of sku, INAPP or SUBS
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun makePurchase(
+        activity: Activity,
+        sku: String,
+        @BillingClient.SkuType skuType: String,
+        listener: MakePurchaseListener
     ) {
         makePurchase(activity, sku, skuType, ArrayList(), listener)
     }
@@ -654,7 +701,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     { purchase, info ->
                         synchronized(this) {
                             dispatch {
-                                purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase.sku, info)
+                                purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase, info)
                             }
                         }
                     },
