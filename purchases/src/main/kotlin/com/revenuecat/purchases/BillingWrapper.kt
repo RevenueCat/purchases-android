@@ -246,13 +246,13 @@ internal class BillingWrapper internal constructor(
             // It also means that IN-APP items are supported for purchasing
             completion(billingClient?.isFeatureSupported(feature) == BillingClient.BillingResponse.OK)
         } else {
-            debugLog("Billing Client is null connecting")
+            debugLog("Billing Client is not ready, connecting")
 
             val localBillingClient = BillingClient.newBuilder(context).setListener { _, _ ->  }.build()
             localBillingClient.startConnection(
                 object : BillingClientStateListener {
                     override fun onBillingSetupFinished(responseCode: Int) {
-                        completion(billingClient?.isFeatureSupported(feature) == BillingClient.BillingResponse.OK)
+                        completion(localBillingClient?.isFeatureSupported(feature) == BillingClient.BillingResponse.OK)
                         localBillingClient.endConnection()
                     }
 
