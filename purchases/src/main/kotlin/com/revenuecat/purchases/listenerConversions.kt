@@ -1,13 +1,10 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
-import android.content.Context
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.IsSupportedListener
-import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
@@ -235,30 +232,4 @@ fun Purchases.getNonSubscriptionSkusWith(
     onReceiveSkus: (skus: List<SkuDetails>) -> Unit
 ) {
     getNonSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus, onError))
-}
-
-/**
- * Check if billing is supported in the device. This method is asynchronous since tries to connect the billing client
- * and checks for the result of the connection. If Billing is supported, IN-APP purchases are supported. If you want
- * to check if Subscriptions or other type defined in [BillingClient.FeatureType], call [isFeatureSupportedWith].
- * @param context A context object that will be used to connect to the billing client
- * @param completion Completion block that will be notified when the check is done.
- */
-fun Purchases.isBillingSupportedWith(context: Context, completion: (Boolean) -> Unit) {
-    Purchases.sharedInstance.isBillingSupported(context, IsSupportedListener {
-        completion(it)
-    })
-}
-
-/**
- * Use this method if you want to check if Subscriptions or other type defined in [BillingClient.FeatureType] is supported.\
- * This method is asynchronous since it requires a connected billing client.
- * @param feature A feature type to check for support. Must be one of [BillingClient.FeatureType]
- * @param context A context object that will be used to connect to the billing client
- * @param completion Completion block that will be notified when the check is done.
- */
-fun Purchases.isFeatureSupportedWith(@BillingClient.FeatureType feature: String, context: Context, completion: (Boolean) -> Unit) {
-    Purchases.sharedInstance.isFeatureSupported(feature, context, IsSupportedListener {
-        completion(it)
-    })
 }

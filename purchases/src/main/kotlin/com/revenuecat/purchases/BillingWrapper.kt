@@ -218,49 +218,4 @@ internal class BillingWrapper internal constructor(
         debugLog("Billing Service disconnected for ${billingClient?.toString()}")
     }
 
-    fun isBillingSupported(context: Context, completion: (Boolean) -> Unit) {
-        if (billingClient?.isReady == true) {
-            // It also means that IN-APP items are supported for purchasing
-            completion(true)
-        } else {
-            debugLog("Billing Client is null connecting")
-
-            val localBillingClient = BillingClient.newBuilder(context).setListener { _, _ ->  }.build()
-            localBillingClient.startConnection(
-                object : BillingClientStateListener {
-                    override fun onBillingSetupFinished(responseCode: Int) {
-                        completion(responseCode == BillingClient.BillingResponse.OK)
-                        localBillingClient.endConnection()
-                    }
-
-                    override fun onBillingServiceDisconnected() {
-                        completion(false)
-                        localBillingClient.endConnection()
-                    }
-                })
-        }
-    }
-
-    fun isFeatureSupported(@BillingClient.FeatureType feature: String, context: Context, completion: (Boolean) -> Unit) {
-        if (billingClient?.isReady == true) {
-            // It also means that IN-APP items are supported for purchasing
-            completion(billingClient?.isFeatureSupported(feature) == BillingClient.BillingResponse.OK)
-        } else {
-            debugLog("Billing Client is not ready, connecting")
-
-            val localBillingClient = BillingClient.newBuilder(context).setListener { _, _ ->  }.build()
-            localBillingClient.startConnection(
-                object : BillingClientStateListener {
-                    override fun onBillingSetupFinished(responseCode: Int) {
-                        completion(localBillingClient?.isFeatureSupported(feature) == BillingClient.BillingResponse.OK)
-                        localBillingClient.endConnection()
-                    }
-
-                    override fun onBillingServiceDisconnected() {
-                        completion(false)
-                        localBillingClient.endConnection()
-                    }
-                })
-        }
-    }
 }
