@@ -6,7 +6,6 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
-import android.content.Context
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
@@ -21,7 +20,6 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.AssertionsForClassTypes.assertThat
@@ -552,165 +550,6 @@ class BillingWrapperTest {
         verify(exactly = 0) {
             mockClient.endConnection()
         }
-    }
-
-    @Test
-    fun `when billing client is connected, billing is supported`() {
-        setup()
-        var receivedIsBillingSupported = false
-        wrapper!!.isBillingSupported(mockk()) {
-            receivedIsBillingSupported = it
-        }
-        assertThat(receivedIsBillingSupported).isTrue()
-    }
-
-    @Test
-    fun `when billing client is not connected, start connection to see if it's supported`() {
-        setup()
-        every { mockClient.isReady } returns false
-        val mockContext = mockk<Context>(relaxed = true)
-        var receivedIsBillingSupported = false
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        mockkStatic(BillingClient::class)
-        val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
-        every { BillingClient.newBuilder(any()) } returns mockBuilder
-        every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.build() } returns mockLocalBillingClient
-        val listener = slot<BillingClientStateListener>()
-        every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
-        wrapper!!.isBillingSupported(mockContext) {
-            receivedIsBillingSupported = it
-        }
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.OK)
-        assertThat(receivedIsBillingSupported).isTrue()
-        verify (exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when billing client is not connected, and try to connect and disconnects occurs, billing not supported`() {
-        setup()
-        every { mockClient.isReady } returns false
-        val mockContext = mockk<Context>(relaxed = true)
-        var receivedIsBillingSupported = false
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        mockkStatic(BillingClient::class)
-        val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
-        every { BillingClient.newBuilder(any()) } returns mockBuilder
-        every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.build() } returns mockLocalBillingClient
-        val listener = slot<BillingClientStateListener>()
-        every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
-        wrapper!!.isBillingSupported(mockContext) {
-            receivedIsBillingSupported = it
-        }
-        listener.captured.onBillingServiceDisconnected()
-        assertThat(receivedIsBillingSupported).isFalse()
-        verify (exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when billing client is not connected, and connection is not OK, billing not supported`() {
-        setup()
-        every { mockClient.isReady } returns false
-        val mockContext = mockk<Context>(relaxed = true)
-        var receivedIsBillingSupported = false
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        mockkStatic(BillingClient::class)
-        val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
-        every { BillingClient.newBuilder(any()) } returns mockBuilder
-        every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.build() } returns mockLocalBillingClient
-        val listener = slot<BillingClientStateListener>()
-        every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
-        wrapper!!.isBillingSupported(mockContext) {
-            receivedIsBillingSupported = it
-        }
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
-        assertThat(receivedIsBillingSupported).isFalse()
-        verify (exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when billing client is connected, feature is supported if response is OK`() {
-        setup()
-        every { mockClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS) } returns BillingClient.BillingResponse.OK
-        val mockContext = mockk<Context>(relaxed = true)
-        var featureSupported = false
-        wrapper!!.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext) {
-            featureSupported = it
-        }
-        assertThat(featureSupported).isTrue()
-    }
-
-    @Test
-    fun `when billing client is not connected, start connection to see if feature supported`() {
-        setup()
-        every { mockClient.isReady } returns false
-        val mockContext = mockk<Context>(relaxed = true)
-        var featureSupported = false
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        every { mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS) } returns BillingClient.BillingResponse.OK
-        mockkStatic(BillingClient::class)
-        val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
-        every { BillingClient.newBuilder(any()) } returns mockBuilder
-        every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.build() } returns mockLocalBillingClient
-        val listener = slot<BillingClientStateListener>()
-        every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
-        wrapper!!.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext) {
-            featureSupported = it
-        }
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.OK)
-        assertThat(featureSupported).isTrue()
-        verify (exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when billing client is not connected, and trying to connect, disconnections means not supported`() {
-        setup()
-        every { mockClient.isReady } returns false
-        val mockContext = mockk<Context>(relaxed = true)
-        var featureSupported = false
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        mockkStatic(BillingClient::class)
-        val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
-        every { BillingClient.newBuilder(any()) } returns mockBuilder
-        every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.build() } returns mockLocalBillingClient
-        val listener = slot<BillingClientStateListener>()
-        every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
-        every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
-        wrapper!!.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext) {
-            featureSupported = it
-        }
-        listener.captured.onBillingServiceDisconnected()
-        assertThat(featureSupported).isFalse()
-        verify (exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when billing client is not connected, and connection is not OK, feature not supported`() {
-        setup()
-        every { mockClient.isReady } returns false
-        val mockContext = mockk<Context>(relaxed = true)
-        var featureSupported = false
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        every {
-            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
-        } returns BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED
-        mockkStatic(BillingClient::class)
-        val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
-        every { BillingClient.newBuilder(any()) } returns mockBuilder
-        every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.build() } returns mockLocalBillingClient
-        val listener = slot<BillingClientStateListener>()
-        every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
-        wrapper!!.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext) {
-            featureSupported = it
-        }
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
-        assertThat(featureSupported).isFalse()
-        verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
     private fun mockNullSkuDetailsResponse() {
