@@ -54,22 +54,7 @@ internal class BillingWrapper internal constructor(
 
     private fun executePendingRequests() {
         while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
-            val request = serviceRequests.remove()
-            request.run()
-        }
-    }
-
-    private fun executeRequest(request: Runnable) {
-        if (purchasesUpdatedListener != null) {
-            serviceRequests.add(request)
-            if (billingClient?.isReady == false) {
-                startConnection()
-            } else {
-                executePendingRequests()
-            }
-        } else {
-            throw IllegalStateException("There is no listener set. Skipping." +
-                "Make sure you set a listener before calling anything else.")
+            serviceRequests.remove().let { mainHandler.post(it) }
         }
     }
 
@@ -94,7 +79,14 @@ internal class BillingWrapper internal constructor(
     }
 
     private fun executeRequestOnUIThread(request: Runnable) {
-        executeRequest(Runnable { mainHandler.post(request) })
+        if (purchasesUpdatedListener != null) {
+            serviceRequests.add(request)
+            if (billingClient?.isReady == false) {
+                startConnection()
+            } else {
+                executePendingRequests()
+            }
+        }
     }
 
     fun querySkuDetailsAsync(
