@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
+import androidx.annotation.UiThread
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -33,10 +34,10 @@ internal class BillingWrapper internal constructor(
             }
         }
 
-    private var clientConnected: Boolean = false
     private val serviceRequests = ConcurrentLinkedQueue<Runnable>()
 
     internal class ClientFactory(private val context: Context) {
+        @UiThread
         fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
             return BillingClient.newBuilder(context).setListener(listener).build()
         }
@@ -52,7 +53,7 @@ internal class BillingWrapper internal constructor(
     }
 
     private fun executePendingRequests() {
-        while (clientConnected && !serviceRequests.isEmpty()) {
+        while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
             val request = serviceRequests.remove()
             request.run()
         }
@@ -61,7 +62,7 @@ internal class BillingWrapper internal constructor(
     private fun executeRequest(request: Runnable) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
-            if (!clientConnected) {
+            if (billingClient?.isReady == false) {
                 startConnection()
             } else {
                 executePendingRequests()
@@ -73,20 +74,23 @@ internal class BillingWrapper internal constructor(
     }
 
     private fun startConnection() {
-        if (billingClient == null) {
-            billingClient = clientFactory.buildClient(this)
+        mainHandler.post {
+            if (billingClient == null) {
+                billingClient = clientFactory.buildClient(this)
+            }
+            debugLog("Starting connection for " + billingClient!!.toString())
+            billingClient!!.startConnection(this)
         }
-        debugLog("Starting connection for " + billingClient!!.toString())
-        billingClient!!.startConnection(this)
     }
 
     private fun endConnection() {
-        billingClient?.takeIf { it.isReady }?.let {
-            debugLog("Ending connection for $it")
-            it.endConnection()
+        mainHandler.post {
+            billingClient!!.takeIf { it.isReady }?.let {
+                debugLog("Ending connection for $it")
+                it.endConnection()
+            }
+            billingClient = null
         }
-        billingClient = null
-        clientConnected = false
     }
 
     private fun executeRequestOnUIThread(request: Runnable) {
@@ -100,7 +104,7 @@ internal class BillingWrapper internal constructor(
         onError: (PurchasesError) ->  Unit
     ) {
         debugLog("Requesting products with identifiers: ${skuList.joinToString()}")
-        executeRequest(Runnable {
+        executeRequestOnUIThread(Runnable {
             val params = SkuDetailsParams.newBuilder()
                 .setType(itemType).setSkusList(skuList).build()
             billingClient!!.querySkuDetailsAsync(params) { responseCode, skuDetailsList ->
@@ -127,7 +131,11 @@ internal class BillingWrapper internal constructor(
         oldSkus: ArrayList<String>,
         @BillingClient.SkuType skuType: String
     ) {
-
+        if (oldSkus.isNotEmpty()) {
+            debugLog("Upgrading old skus $oldSkus with sku: $sku")
+        } else {
+            debugLog("Making purchase for sku: $sku")
+        }
         executeRequestOnUIThread(Runnable {
             val builder = BillingFlowParams.newBuilder()
                 .setSku(sku)
@@ -154,8 +162,8 @@ internal class BillingWrapper internal constructor(
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
         debugLog("Querying purchase history for type $skuType")
-        executeRequest(Runnable {
-            billingClient!!.queryPurchaseHistoryAsync(skuType) { responseCode, purchasesList ->
+        executeRequestOnUIThread(Runnable {
+            billingClient?.queryPurchaseHistoryAsync(skuType) { responseCode, purchasesList ->
                 if (responseCode == BillingClient.BillingResponse.OK) {
                     purchasesList.takeUnless { it.isEmpty() }?.forEach {
                         debugLog("Purchase history retrieved ${it.toHumanReadableDescription()}")
@@ -177,7 +185,7 @@ internal class BillingWrapper internal constructor(
 
     fun consumePurchase(token: String) {
         debugLog("Consuming purchase with token $token")
-        executeRequest(Runnable { billingClient!!.consumeAsync(token) { _, _ -> } })
+        executeRequestOnUIThread(Runnable { billingClient?.consumeAsync(token) { _, _ -> } })
     }
 
     override fun onPurchasesUpdated(@BillingClient.BillingResponse responseCode: Int, purchases: List<Purchase>?) {
@@ -185,7 +193,7 @@ internal class BillingWrapper internal constructor(
             purchases.forEach {
                 debugLog("BillingWrapper purchases updated: ${it.toHumanReadableDescription()}")
             }
-            purchasesUpdatedListener!!.onPurchasesUpdated(purchases)
+            purchasesUpdatedListener?.onPurchasesUpdated(purchases)
         } else {
             debugLog("BillingWrapper purchases failed to update: responseCode ${responseCode.getBillingResponseCodeName()}" +
                     "${purchases?.takeUnless { it.isEmpty() }?.let { purchase ->
@@ -196,7 +204,7 @@ internal class BillingWrapper internal constructor(
                     }}"
             )
 
-            purchasesUpdatedListener!!.onPurchasesFailedToUpdate(
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(
                 purchases,
                 if (purchases == null && responseCode == BillingClient.BillingResponse.OK)
                     BillingClient.BillingResponse.ERROR
@@ -210,7 +218,6 @@ internal class BillingWrapper internal constructor(
     override fun onBillingSetupFinished(@BillingClient.BillingResponse responseCode: Int) {
         if (responseCode == BillingClient.BillingResponse.OK) {
             debugLog("Billing Service Setup finished for ${billingClient?.toString()}")
-            clientConnected = true
             executePendingRequests()
         } else {
             errorLog("Billing Service Setup finished with error code: ${responseCode.getBillingResponseCodeName()}")
@@ -218,7 +225,6 @@ internal class BillingWrapper internal constructor(
     }
 
     override fun onBillingServiceDisconnected() {
-        clientConnected = false
         debugLog("Billing Service disconnected for ${billingClient?.toString()}")
     }
 }
