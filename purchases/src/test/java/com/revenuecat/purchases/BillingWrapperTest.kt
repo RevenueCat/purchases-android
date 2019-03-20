@@ -23,9 +23,8 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
-import junit.framework.Assert.assertNotNull
-import junit.framework.Assert.fail
 import org.assertj.core.api.AssertionsForClassTypes.assertThat
+import org.assertj.core.api.AssertionsForClassTypes.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -103,7 +102,7 @@ class BillingWrapperTest {
     @Test
     fun canBeCreated() {
         setup()
-        assertNotNull(wrapper)
+        assertThat(wrapper).`as`("Wrapper is not null").isNotNull
     }
 
     @Test
@@ -137,7 +136,6 @@ class BillingWrapperTest {
     @Test
     fun defersCallingSkuQueryUntilConnected() {
         setup()
-
         mockStandardSkuDetailsResponse()
         every { mockClient.isReady } returns false
 
@@ -188,7 +186,6 @@ class BillingWrapperTest {
             }, {
                 fail("shouldn't be an error")
             })
-
         assertThat(skuDetailsResponseCalled).isZero()
 
         every { mockClient.isReady } returns true

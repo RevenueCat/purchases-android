@@ -18,8 +18,10 @@ import android.preference.PreferenceManager
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
@@ -796,6 +798,76 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             ).also { sharedInstance = it }
         }
 
+        /**
+         * Check if billing is supported in the device. This method is asynchronous since it tries to connect the billing
+         * client and checks for the result of the connection. If billing is supported, IN-APP purchases are supported.
+         * If you want to check if SUBSCRIPTIONS or other type defined in [BillingClient.FeatureType],
+         * call [isFeatureSupported].
+         * @param context A context object that will be used to connect to the billing client
+         * @param callback Callback that will be notified when the check is complete.
+         */
+        @JvmStatic
+        fun isBillingSupported(context: Context, callback: Callback<Boolean>) {
+            BillingClient.newBuilder(context).setListener { _, _ ->  }.build().let {
+                it.startConnection(
+                    object : BillingClientStateListener {
+                        override fun onBillingSetupFinished(responseCode: Int) {
+                            // It also means that IN-APP items are supported for purchasing
+                            try {
+                                it.endConnection()
+                                callback.onReceived(responseCode == BillingClient.BillingResponse.OK)
+                            } catch (e: IllegalArgumentException) {
+                                // Play Services not available
+                                callback.onReceived(false)
+                            }
+                        }
+
+                        override fun onBillingServiceDisconnected() {
+                            try {
+                                it.endConnection()
+                            } catch (e: IllegalArgumentException) {
+                            } finally {
+                                callback.onReceived(false)
+                            }
+                        }
+                    })
+            }
+        }
+
+        /**
+         * Use this method if you want to check if Subscriptions or other type defined in [BillingClient.FeatureType] is supported.\
+         * This method is asynchronous since it requires a connected billing client.
+         * @param feature A feature type to check for support. Must be one of [BillingClient.FeatureType]
+         * @param context A context object that will be used to connect to the billing client
+         * @param callback Callback that will be notified when the check is complete.
+         */
+        @JvmStatic
+        fun isFeatureSupported(@BillingClient.FeatureType feature: String, context: Context, callback: Callback<Boolean>) {
+            BillingClient.newBuilder(context).setListener { _, _ ->  }.build().let {
+                it.startConnection(
+                    object : BillingClientStateListener {
+                        override fun onBillingSetupFinished(responseCode: Int) {
+                            try {
+                                it.endConnection()
+                                callback.onReceived(it.isFeatureSupported(feature) == BillingClient.BillingResponse.OK)
+                            } catch (e: IllegalArgumentException) {
+                                // Play Services not available
+                                callback.onReceived(false)
+                            }
+                        }
+
+                        override fun onBillingServiceDisconnected() {
+                            try {
+                                it.endConnection()
+                            } catch (e: IllegalArgumentException) {
+                            } finally {
+                                callback.onReceived(false)
+                            }
+                        }
+                    })
+            }
+        }
+
         private fun Context.getApplication() = applicationContext as Application
 
         private fun Context.hasPermission(permission: String): Boolean {
@@ -882,4 +954,5 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         TENJIN(4)
     }
     // endregion
+
 }
