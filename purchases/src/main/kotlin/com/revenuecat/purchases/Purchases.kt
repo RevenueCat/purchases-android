@@ -799,9 +799,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
-         * Check if billing is supported in the device. This method is asynchronous since tries to connect the billing client
-         * and checks for the result of the connection. If Billing is supported, IN-APP purchases are supported. If you want
-         * to check if Subscriptions or other type defined in [BillingClient.FeatureType], call [isFeatureSupported].
+         * Check if billing is supported in the device. This method is asynchronous since it tries to connect the billing
+         * client and checks for the result of the connection. If billing is supported, IN-APP purchases are supported.
+         * If you want to check if SUBSCRIPTIONS or other type defined in [BillingClient.FeatureType],
+         * call [isFeatureSupported].
          * @param context A context object that will be used to connect to the billing client
          * @param callback Callback that will be notified when the check is complete.
          */
