@@ -20,6 +20,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.AssertionsForClassTypes.assertThat
@@ -72,6 +73,10 @@ class BillingWrapperTest {
         } answers {
             billingClientStateListener = billingClientStateListenerSlot.captured
         }
+
+        every {
+            mockClient.endConnection()
+        } just runs
 
         val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
         every {
@@ -184,6 +189,7 @@ class BillingWrapperTest {
         assertThat(skuDetailsResponseCalled).isZero()
 
         every { mockClient.isReady } returns true
+
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponse.OK)
 
         assertThat(skuDetailsResponseCalled).isEqualTo(2)
@@ -317,7 +323,7 @@ class BillingWrapperTest {
 
         wrapper!!.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
 
-        verify(exactly = 0) {
+        verify(exactly = 2) {
             handler.post(any())
         }
 
@@ -325,7 +331,7 @@ class BillingWrapperTest {
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponse.OK)
 
-        verify {
+        verify(exactly = 3) {
             handler.post(any())
         }
     }
@@ -470,30 +476,16 @@ class BillingWrapperTest {
 
     @Test
     fun whenExecutingRequestAndThereIsNoListenerDoNotTryToStartConnection() {
-        val clientFactory: BillingWrapper.ClientFactory = mockk()
-        val billingClient: BillingClient = mockk()
-
+        setup()
         every {
-            clientFactory.buildClient(any())
-        } returns billingClient
+            mockClient.endConnection()
+        } just Runs
+        wrapper!!.purchasesUpdatedListener = null
+        wrapper!!.consumePurchase("token")
 
-        val billingWrapper = BillingWrapper(
-            clientFactory,
-            mockk()
-        )
-
-        billingWrapper.purchasesUpdatedListener = null
-        var exceptionCaught = false
-        try {
-            billingWrapper.consumePurchase("token")
-        } catch (e: Exception) {
-            exceptionCaught = true
+        verify(exactly = 1) { // Just the original connection
+            mockClient.startConnection(wrapper!!)
         }
-
-        verify(exactly = 0) {
-            billingClient.startConnection(eq(billingWrapper))
-        }
-        assertThat(exceptionCaught).isTrue()
     }
 
     @Test
@@ -540,14 +532,44 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun doNotEndConnectionIfNotConnectedAndRemovingNewListener() {
+    fun `calling close before setup finishes doesn't crash`() {
+        setup()
+        every {
+            mockClient.isReady
+        } returns false
+
+        wrapper!!.querySkuDetailsAsync(
+            BillingClient.SkuType.SUBS,
+            listOf("product_a"),
+            {},
+            {
+                fail("shouldn't be an error")
+            })
+
+        wrapper!!.purchasesUpdatedListener = null
+        wrapper!!.onBillingSetupFinished(BillingClient.BillingResponse.OK)
+    }
+
+    @Test
+    fun `calling close before purchase completes doesn't crash`() {
         setup()
         every {
             mockClient.isReady
         } returns false
 
         wrapper!!.purchasesUpdatedListener = null
-        verify(exactly = 0) {
+        wrapper!!.onPurchasesUpdated(BillingClient.BillingResponse.DEVELOPER_ERROR, emptyList())
+    }
+
+    @Test
+    fun `calling end connection before client is ready ends connection`() {
+        setup()
+        every {
+            mockClient.isReady
+        } returns false
+
+        wrapper!!.purchasesUpdatedListener = null
+        verify {
             mockClient.endConnection()
         }
     }

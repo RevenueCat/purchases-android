@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
+import androidx.annotation.UiThread
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -36,6 +37,7 @@ internal class BillingWrapper internal constructor(
     private val serviceRequests = ConcurrentLinkedQueue<Runnable>()
 
     internal class ClientFactory(private val context: Context) {
+        @UiThread
         fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
             return BillingClient.newBuilder(context).setListener(listener).build()
         }
@@ -52,12 +54,31 @@ internal class BillingWrapper internal constructor(
 
     private fun executePendingRequests() {
         while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
-            val request = serviceRequests.remove()
-            request.run()
+            serviceRequests.remove().let { mainHandler.post(it) }
         }
     }
 
-    private fun executeRequest(request: Runnable) {
+    private fun startConnection() {
+        mainHandler.post {
+            if (billingClient == null) {
+                billingClient = clientFactory.buildClient(this)
+            }
+            debugLog("Starting connection for " + billingClient!!.toString())
+            billingClient!!.startConnection(this)
+        }
+    }
+
+    private fun endConnection() {
+        mainHandler.post {
+            billingClient?.let {
+                debugLog("Ending connection for $it")
+                it.endConnection()
+            }
+            billingClient = null
+        }
+    }
+
+    private fun executeRequestOnUIThread(request: Runnable) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
             if (billingClient?.isReady == false) {
@@ -65,30 +86,7 @@ internal class BillingWrapper internal constructor(
             } else {
                 executePendingRequests()
             }
-        } else {
-            throw IllegalStateException("There is no listener set. Skipping." +
-                "Make sure you set a listener before calling anything else.")
         }
-    }
-
-    private fun startConnection() {
-        if (billingClient == null) {
-            billingClient = clientFactory.buildClient(this)
-        }
-        debugLog("Starting connection for " + billingClient!!.toString())
-        billingClient!!.startConnection(this)
-    }
-
-    private fun endConnection() {
-        billingClient?.takeIf { it.isReady }?.let {
-            debugLog("Ending connection for $it")
-            it.endConnection()
-        }
-        billingClient = null
-    }
-
-    private fun executeRequestOnUIThread(request: Runnable) {
-        executeRequest(Runnable { mainHandler.post(request) })
     }
 
     fun querySkuDetailsAsync(
@@ -98,7 +96,7 @@ internal class BillingWrapper internal constructor(
         onError: (PurchasesError) ->  Unit
     ) {
         debugLog("Requesting products with identifiers: ${skuList.joinToString()}")
-        executeRequest(Runnable {
+        executeRequestOnUIThread(Runnable {
             val params = SkuDetailsParams.newBuilder()
                 .setType(itemType).setSkusList(skuList).build()
             billingClient!!.querySkuDetailsAsync(params) { responseCode, skuDetailsList ->
@@ -125,7 +123,11 @@ internal class BillingWrapper internal constructor(
         oldSkus: ArrayList<String>,
         @BillingClient.SkuType skuType: String
     ) {
-
+        if (oldSkus.isNotEmpty()) {
+            debugLog("Upgrading old skus $oldSkus with sku: $sku")
+        } else {
+            debugLog("Making purchase for sku: $sku")
+        }
         executeRequestOnUIThread(Runnable {
             val builder = BillingFlowParams.newBuilder()
                 .setSku(sku)
@@ -152,8 +154,8 @@ internal class BillingWrapper internal constructor(
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
         debugLog("Querying purchase history for type $skuType")
-        executeRequest(Runnable {
-            billingClient!!.queryPurchaseHistoryAsync(skuType) { responseCode, purchasesList ->
+        executeRequestOnUIThread(Runnable {
+            billingClient?.queryPurchaseHistoryAsync(skuType) { responseCode, purchasesList ->
                 if (responseCode == BillingClient.BillingResponse.OK) {
                     purchasesList.takeUnless { it.isEmpty() }?.forEach {
                         debugLog("Purchase history retrieved ${it.toHumanReadableDescription()}")
@@ -175,7 +177,7 @@ internal class BillingWrapper internal constructor(
 
     fun consumePurchase(token: String) {
         debugLog("Consuming purchase with token $token")
-        executeRequest(Runnable { billingClient!!.consumeAsync(token) { _, _ -> } })
+        executeRequestOnUIThread(Runnable { billingClient?.consumeAsync(token) { _, _ -> } })
     }
 
     override fun onPurchasesUpdated(@BillingClient.BillingResponse responseCode: Int, purchases: List<Purchase>?) {
@@ -183,7 +185,7 @@ internal class BillingWrapper internal constructor(
             purchases.forEach {
                 debugLog("BillingWrapper purchases updated: ${it.toHumanReadableDescription()}")
             }
-            purchasesUpdatedListener!!.onPurchasesUpdated(purchases)
+            purchasesUpdatedListener?.onPurchasesUpdated(purchases)
         } else {
             debugLog("BillingWrapper purchases failed to update: responseCode ${responseCode.getBillingResponseCodeName()}" +
                     "${purchases?.takeUnless { it.isEmpty() }?.let { purchase ->
@@ -194,7 +196,7 @@ internal class BillingWrapper internal constructor(
                     }}"
             )
 
-            purchasesUpdatedListener!!.onPurchasesFailedToUpdate(
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(
                 purchases,
                 if (purchases == null && responseCode == BillingClient.BillingResponse.OK)
                     BillingClient.BillingResponse.ERROR
