@@ -70,7 +70,7 @@ internal class BillingWrapper internal constructor(
 
     private fun endConnection() {
         mainHandler.post {
-            billingClient!!.takeIf { it.isReady }?.let {
+            billingClient?.let {
                 debugLog("Ending connection for $it")
                 it.endConnection()
             }
