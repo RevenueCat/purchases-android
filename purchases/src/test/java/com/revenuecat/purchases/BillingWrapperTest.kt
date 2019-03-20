@@ -20,6 +20,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import junit.framework.Assert.assertNotNull
@@ -73,6 +74,10 @@ class BillingWrapperTest {
         } answers {
             billingClientStateListener = billingClientStateListenerSlot.captured
         }
+
+        every {
+            mockClient.endConnection()
+        } just runs
 
         val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
         every {
@@ -530,19 +535,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun doNotEndConnectionIfNotConnectedAndRemovingNewListener() {
-        setup()
-        every {
-            mockClient.isReady
-        } returns false
-
-        wrapper!!.purchasesUpdatedListener = null
-        verify(exactly = 0) {
-            mockClient.endConnection()
-        }
-    }
-
-    @Test
     fun `calling close before setup finishes doesn't crash`() {
         setup()
         every {
@@ -570,6 +562,19 @@ class BillingWrapperTest {
 
         wrapper!!.purchasesUpdatedListener = null
         wrapper!!.onPurchasesUpdated(BillingClient.BillingResponse.DEVELOPER_ERROR, emptyList())
+    }
+
+    @Test
+    fun `calling end connection before client is ready ends connection`() {
+        setup()
+        every {
+            mockClient.isReady
+        } returns false
+
+        wrapper!!.purchasesUpdatedListener = null
+        verify {
+            mockClient.endConnection()
+        }
     }
 
     private fun mockNullSkuDetailsResponse() {
