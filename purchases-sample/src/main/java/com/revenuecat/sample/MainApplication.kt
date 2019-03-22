@@ -4,16 +4,13 @@ import android.app.Application
 import android.util.Log
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.interfaces.Callback
 
 class MainApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Purchases.isBillingSupported(this, Callback {
-            Purchases.debugLogsEnabled = true
-            Purchases.configure(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN")
-        })
+        Purchases.debugLogsEnabled = true
+        Purchases.configure(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN")
     }
 }
 
