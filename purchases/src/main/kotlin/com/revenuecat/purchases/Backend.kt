@@ -10,8 +10,10 @@ import org.json.JSONException
 import org.json.JSONObject
 
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
+private const val HTTP_SERVER_ERROR_CODE = 500
 
 typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
+typealias PostReceiptCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError, shouldConsumePurchase: Boolean) -> Unit>
 typealias CallbackCacheKey = List<String>
 typealias EntitlementMapCallback = Pair<(Map<String, Entitlement>) -> Unit, (PurchasesError) -> Unit>
 
@@ -21,61 +23,11 @@ internal class Backend(
     private val httpClient: HTTPClient
 ) {
 
-    internal val authenticationHeaders: MutableMap<String, String>
+    internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
     var callbacks = mutableMapOf<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
+    var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
     var entitlementsCallbacks = mutableMapOf<String, MutableList<EntitlementMapCallback>>()
-
-    private abstract inner class PurchaserInfoReceivingCall internal constructor(
-        private val cacheKey: CallbackCacheKey
-    ) : Dispatcher.AsyncCall() {
-
-        override fun onCompletion(result: HTTPClient.Result) {
-            synchronized(this) {
-                callbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
-                    if (result.isSuccessful()) {
-                        try {
-                            onSuccess(result.body!!.buildPurchaserInfo())
-                        } catch (e: JSONException) {
-                            log("Error parsing JSON ${e.localizedMessage}")
-                            onError(
-                                PurchasesError(
-                                    Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                                    result.responseCode,
-                                    e.localizedMessage
-                                )
-                            )
-                        }
-                    } else {
-                        onError(
-                            PurchasesError(
-                                Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                                result.responseCode,
-                                try {
-                                    "Server error: ${result.body!!.getString("message")}"
-                                } catch (jsonException: JSONException) {
-                                    "Unexpected error from backend ${result.responseCode}"
-                                }
-                            )
-                        )
-                    }
-                }
-            }
-        }
-
-        override fun onError(code: Int, message: String) {
-            synchronized(this) {
-                callbacks.remove(cacheKey)?.forEach { (_, onError) ->
-                    onError(PurchasesError(Purchases.ErrorDomains.REVENUECAT_BACKEND, code, message))
-                }
-            }
-        }
-    }
-
-    init {
-        this.authenticationHeaders = HashMap()
-        this.authenticationHeaders["Authorization"] = "Bearer " + this.apiKey
-    }
 
     fun close() {
         this.dispatcher.close()
@@ -94,7 +46,8 @@ internal class Backend(
     ) {
         val path = "/subscribers/" + encode(appUserID)
         val cacheKey = listOf(path)
-        val call = object : PurchaserInfoReceivingCall(cacheKey) {
+        val call = object : Dispatcher.AsyncCall() {
+
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest(
                     "/subscribers/" + encode(appUserID),
@@ -102,15 +55,32 @@ internal class Backend(
                     authenticationHeaders
                 )
             }
-        }
-        synchronized(this) {
-            if (!callbacks.containsKey(cacheKey)) {
-                callbacks[cacheKey] = mutableListOf(onSuccess to onError)
-                enqueue(call)
-            } else {
-                callbacks[cacheKey]!!.add(onSuccess to onError)
+
+            override fun onCompletion(result: HTTPClient.Result) {
+                synchronized(this) {
+                    callbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
+                        try {
+                            if (result.isSuccessful()) {
+                                onSuccess(result.body!!.buildPurchaserInfo())
+                            } else {
+                                onError(result.toPurchasesError())
+                            }
+                        } catch (e: JSONException) {
+                            onError(e.toPurchasesError())
+                        }
+                    }
+                }
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this) {
+                    callbacks.remove(cacheKey)?.forEach { (_, onError) ->
+                        onError(error)
+                    }
+                }
             }
         }
+        callbacks.addCallback(call, cacheKey, onSuccess to onError)
     }
 
     fun postReceiptData(
@@ -119,30 +89,49 @@ internal class Backend(
         productID: String,
         isRestore: Boolean,
         onSuccess: (PurchaserInfo) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError, shouldConsumePurchase: Boolean) -> Unit
     ) {
         val cacheKey = listOf(purchaseToken, productID, appUserID, isRestore.toString())
 
-        val body = HashMap<String, Any?>()
-        body["fetch_token"] = purchaseToken
-        body["product_id"] = productID
-        body["app_user_id"] = appUserID
-        body["is_restore"] = isRestore
+        val body = mapOf(
+            "fetch_token" to purchaseToken,
+            "product_id" to productID,
+            "app_user_id" to appUserID,
+            "is_restore" to isRestore
+        )
 
-        val call = object : PurchaserInfoReceivingCall(cacheKey) {
+        val call = object : Dispatcher.AsyncCall() {
+
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest("/receipts", body, authenticationHeaders)
             }
-        }
-        synchronized(callbacks) {
-            if (!callbacks.containsKey(cacheKey)) {
-                callbacks[cacheKey] = mutableListOf(onSuccess to onError)
 
-                enqueue(call)
-            } else {
-                callbacks[cacheKey]!!.add(onSuccess to onError)
+            override fun onCompletion(result: HTTPClient.Result) {
+                synchronized(this) {
+                    postReceiptCallbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
+                        try {
+                            if (result.isSuccessful()) {
+                                onSuccess(result.body!!.buildPurchaserInfo())
+                            } else {
+                                onError(result.toPurchasesError(), result.responseCode < HTTP_SERVER_ERROR_CODE)
+                            }
+                        } catch (e: JSONException) {
+                            onError(e.toPurchasesError(), false)
+                        }
+                    }
+                }
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this) {
+                    postReceiptCallbacks.remove(cacheKey)?.forEach { (_, onError) ->
+                        onError(error, false)
+                    }
+                }
             }
         }
+
+        postReceiptCallbacks.addCallback(call, cacheKey, onSuccess to onError)
     }
 
     fun getEntitlements(
@@ -151,68 +140,40 @@ internal class Backend(
         onError: (PurchasesError) -> Unit
     ) {
         val path = "/subscribers/" + encode(appUserID) + "/products"
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPClient.Result {
+                return httpClient.performRequest(
+                    path,
+                    null as Map<*, *>?,
+                    authenticationHeaders
+                )
+            }
 
-        synchronized(this) {
-            if (!entitlementsCallbacks.containsKey(path)) {
-                entitlementsCallbacks[path] = mutableListOf(onSuccess to onError)
-
-                enqueue(object : Dispatcher.AsyncCall() {
-                    override fun call(): HTTPClient.Result {
-                        return httpClient.performRequest(
-                            path,
-                            null as Map<*, *>?,
-                            authenticationHeaders
-                        )
+            override fun onError(error: PurchasesError) {
+                synchronized(this) {
+                    entitlementsCallbacks.remove(path)?.forEach { (_, onError) ->
+                        onError(error)
                     }
+                }
+            }
 
-                    override fun onError(code: Int, message: String) {
-                        synchronized(this) {
-                            entitlementsCallbacks.remove(path)?.forEach { (_, onError) ->
-                                onError(
-                                    PurchasesError(
-                                        Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                                        code,
-                                        message
-                                    )
-                                )
+            override fun onCompletion(result: HTTPClient.Result) {
+                synchronized(this) {
+                    entitlementsCallbacks.remove(path)?.forEach { (onSuccess, onError) ->
+                        if (result.isSuccessful()) {
+                            try {
+                                onSuccess(result.body!!.getJSONObject("entitlements").buildEntitlementsMap())
+                            } catch (e: JSONException) {
+                                onError(e.toPurchasesError())
                             }
+                        } else {
+                            onError(result.toPurchasesError())
                         }
                     }
-
-                    override fun onCompletion(result: HTTPClient.Result) {
-                        synchronized(this) {
-                            entitlementsCallbacks.remove(path)?.forEach { (onSuccess, onError) ->
-                                if (result.isSuccessful()) {
-                                    try {
-                                        val entitlementsResponse =
-                                            result.body!!.getJSONObject("entitlements")
-                                        onSuccess(entitlementsResponse.buildEntitlementsMap())
-                                    } catch (e: JSONException) {
-                                        onError(
-                                            PurchasesError(
-                                                Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                                                result.responseCode,
-                                                "Error parsing products JSON " + e.localizedMessage
-                                            )
-                                        )
-                                    }
-                                } else {
-                                    onError(
-                                        PurchasesError(
-                                            Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                                            result.responseCode,
-                                            "Backend error"
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    }
-                })
-            } else {
-                entitlementsCallbacks[path]!!.add(onSuccess to onError)
+                }
             }
         }
+        entitlementsCallbacks.addCallback(call, path, onSuccess to onError)
     }
 
     private fun encode(string: String): String {
@@ -251,40 +212,24 @@ internal class Backend(
         onSuccessHandler: () -> Unit,
         onErrorHandler: (PurchasesError) -> Unit
     ) {
-        val body = mapOf(
-            "new_app_user_id" to newAppUserID
-        )
-
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest(
                     "/subscribers/" + encode(appUserID) + "/alias",
-                    body,
+                    mapOf("new_app_user_id" to newAppUserID),
                     authenticationHeaders
                 )
             }
 
-            override fun onError(code: Int, message: String) {
-                onErrorHandler(
-                    PurchasesError(
-                        Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                        code,
-                        message
-                    )
-                )
+            override fun onError(error: PurchasesError) {
+                onErrorHandler(error)
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
                 if (result.isSuccessful()) {
                     onSuccessHandler()
                 } else {
-                    onErrorHandler(
-                        PurchasesError(
-                            Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                            result.responseCode,
-                            "Backend error"
-                        )
-                    )
+                    onErrorHandler(result.toPurchasesError())
                 }
             }
         })
@@ -293,4 +238,16 @@ internal class Backend(
     private fun HTTPClient.Result.isSuccessful(): Boolean {
         return responseCode < UNSUCCESSFUL_HTTP_STATUS_CODE
     }
+
+    private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(call: Dispatcher.AsyncCall, cacheKey: K, functions: Pair<S, E>) {
+        synchronized(this) {
+            if (!containsKey(cacheKey)) {
+                this[cacheKey] = mutableListOf(functions)
+                enqueue(call)
+            } else {
+                this[cacheKey]!!.add(functions)
+            }
+        }
+    }
+
 }

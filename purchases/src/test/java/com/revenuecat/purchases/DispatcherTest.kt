@@ -6,11 +6,14 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertTrue
+import org.json.JSONException
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -32,12 +35,12 @@ class DispatcherTest {
     }
 
     @Test
-    fun submitsToExecutor() {
+    fun executesInExecutor() {
         val result = HTTPClient.Result()
 
         every {
-            executorService.submit(any())
-        } returns null
+            executorService.execute(any())
+        } just Runs
 
         dispatcher.enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
@@ -46,7 +49,7 @@ class DispatcherTest {
         })
 
         verify {
-            executorService.submit(any())
+            executorService.execute(any())
         }
     }
 
@@ -54,10 +57,10 @@ class DispatcherTest {
     fun asyncCallHandlesFailures() {
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
-                throw HTTPClient.HTTPErrorException(0, "")
+                throw JSONException("an exception")
             }
 
-            override fun onError(code: Int, message: String) {
+            override fun onError(error: PurchasesError) {
                 this@DispatcherTest.errorCalled = true
             }
         }

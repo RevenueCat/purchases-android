@@ -19,5 +19,5 @@ fun showError(message: String) {
 }
 
 fun showError(error: PurchasesError) {
-    showError(error.message!!)
+    showError(error.message)
 }

@@ -34,7 +34,7 @@ internal class BillingWrapper internal constructor(
             }
         }
 
-    private val serviceRequests = ConcurrentLinkedQueue<Runnable>()
+    private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
 
     internal class ClientFactory(private val context: Context) {
         @UiThread
@@ -54,7 +54,7 @@ internal class BillingWrapper internal constructor(
 
     private fun executePendingRequests() {
         while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
-            serviceRequests.remove().let { mainHandler.post(it) }
+            serviceRequests.remove().let { mainHandler.post { it(null) } }
         }
     }
 
@@ -78,7 +78,7 @@ internal class BillingWrapper internal constructor(
         }
     }
 
-    private fun executeRequestOnUIThread(request: Runnable) {
+    private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
             if (billingClient?.isReady == false) {
@@ -96,24 +96,28 @@ internal class BillingWrapper internal constructor(
         onError: (PurchasesError) ->  Unit
     ) {
         debugLog("Requesting products with identifiers: ${skuList.joinToString()}")
-        executeRequestOnUIThread(Runnable {
-            val params = SkuDetailsParams.newBuilder()
-                .setType(itemType).setSkusList(skuList).build()
-            billingClient!!.querySkuDetailsAsync(params) { responseCode, skuDetailsList ->
-                if (responseCode == BillingClient.BillingResponse.OK) {
-                    debugLog("Products request finished for ${skuList.joinToString()}")
-                    debugLog("Retrieved skuDetailsList: ${skuDetailsList?.joinToString { it.toString() }}")
-                    skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
-                        debugLog("${it.sku} - $it")
-                    }
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                val params = SkuDetailsParams.newBuilder()
+                    .setType(itemType).setSkusList(skuList).build()
+                billingClient!!.querySkuDetailsAsync(params) { responseCode, skuDetailsList ->
+                    if (responseCode == BillingClient.BillingResponse.OK) {
+                        debugLog("Products request finished for ${skuList.joinToString()}")
+                        debugLog("Retrieved skuDetailsList: ${skuDetailsList?.joinToString { it.toString() }}")
+                        skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
+                            debugLog("${it.sku} - $it")
+                        }
 
-                    onReceiveSkuDetails(skuDetailsList ?: emptyList())
-                } else {
-                    errorLog("Error ${responseCode.getBillingResponseCodeName()} when fetching products.")
-                    onError(PurchasesError(Purchases.ErrorDomains.PLAY_BILLING, responseCode, "Error fetching products"))
+                        onReceiveSkuDetails(skuDetailsList ?: emptyList())
+                    } else {
+                        log("Error ${responseCode.getBillingResponseCodeName()} when fetching products.")
+                        onError(responseCode.billingResponseToPurchasesError("Error ${responseCode.getBillingResponseCodeName()} when fetching products."))
+                    }
                 }
+            } else {
+                onError(connectionError)
             }
-        })
+        }
     }
 
     fun makePurchaseAsync(
@@ -128,7 +132,7 @@ internal class BillingWrapper internal constructor(
         } else {
             debugLog("Making purchase for sku: $sku")
         }
-        executeRequestOnUIThread(Runnable {
+        executeRequestOnUIThread {
             val builder = BillingFlowParams.newBuilder()
                 .setSku(sku)
                 .setType(skuType)
@@ -140,12 +144,11 @@ internal class BillingWrapper internal constructor(
 
             val params = builder.build()
 
-            @BillingClient.BillingResponse val response =
-                billingClient!!.launchBillingFlow(activity, params)
+            @BillingClient.BillingResponse val response = billingClient!!.launchBillingFlow(activity, params)
             if (response != BillingClient.BillingResponse.OK) {
-                errorLog("Failed to launch billing intent $response")
+                log("Failed to launch billing intent $response")
             }
-        })
+        }
     }
 
     fun queryPurchaseHistoryAsync(
@@ -154,30 +157,33 @@ internal class BillingWrapper internal constructor(
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
         debugLog("Querying purchase history for type $skuType")
-        executeRequestOnUIThread(Runnable {
-            billingClient?.queryPurchaseHistoryAsync(skuType) { responseCode, purchasesList ->
-                if (responseCode == BillingClient.BillingResponse.OK) {
-                    purchasesList.takeUnless { it.isEmpty() }?.forEach {
-                        debugLog("Purchase history retrieved ${it.toHumanReadableDescription()}")
-                    } ?: debugLog("Purchase history is empty.")
-                    onReceivePurchaseHistory(purchasesList)
-                } else {
-                    errorLog("Error receiving purchase history ${responseCode.getBillingResponseCodeName()}")
-                    onReceivePurchaseHistoryError(
-                        PurchasesError(
-                            Purchases.ErrorDomains.PLAY_BILLING,
-                            responseCode,
-                            "Error receiving purchase history"
-                        )
-                    )
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                billingClient?.queryPurchaseHistoryAsync(skuType) { responseCode, purchasesList ->
+                    if (responseCode == BillingClient.BillingResponse.OK) {
+                        purchasesList.takeUnless { it.isEmpty() }?.forEach {
+                            debugLog("Purchase history retrieved ${it.toHumanReadableDescription()}")
+                        } ?: debugLog("Purchase history is empty.")
+                        onReceivePurchaseHistory(purchasesList)
+                    } else {
+                        onReceivePurchaseHistoryError(responseCode.billingResponseToPurchasesError(
+                            "Error receiving purchase history ${responseCode.getBillingResponseCodeName()}"
+                        ))
+                    }
                 }
+            } else {
+                onReceivePurchaseHistoryError(connectionError)
             }
-        })
+        }
     }
 
     fun consumePurchase(token: String) {
         debugLog("Consuming purchase with token $token")
-        executeRequestOnUIThread(Runnable { billingClient?.consumeAsync(token) { _, _ -> } })
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                billingClient?.consumeAsync(token) { _, _ -> }
+            }
+        }
     }
 
     override fun onPurchasesUpdated(@BillingClient.BillingResponse responseCode: Int, purchases: List<Purchase>?) {
@@ -208,11 +214,33 @@ internal class BillingWrapper internal constructor(
     }
 
     override fun onBillingSetupFinished(@BillingClient.BillingResponse responseCode: Int) {
-        if (responseCode == BillingClient.BillingResponse.OK) {
-            debugLog("Billing Service Setup finished for ${billingClient?.toString()}")
-            executePendingRequests()
-        } else {
-            errorLog("Billing Service Setup finished with error code: ${responseCode.getBillingResponseCodeName()}")
+        when(responseCode) {
+            BillingClient.BillingResponse.OK -> {
+                debugLog("Billing Service Setup finished for ${billingClient?.toString()}.")
+                executePendingRequests()
+            }
+            BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED,
+            BillingClient.BillingResponse.BILLING_UNAVAILABLE -> {
+                log("Billing is not available in this device. ${responseCode.getBillingResponseCodeName()}")
+                // The calls will fail with an error that will be surfaced. We want to surface these errors
+                // Can't call executePendingRequests because it will not do anything since it checks for isReady()
+                while (!serviceRequests.isEmpty()) {
+                    serviceRequests.remove()
+                        .let { mainHandler.post { it(responseCode.billingResponseToPurchasesError("Billing is not available in this device. ${responseCode.getBillingResponseCodeName()}")) } }
+                }
+            }
+            BillingClient.BillingResponse.SERVICE_DISCONNECTED,
+            BillingClient.BillingResponse.USER_CANCELED,
+            BillingClient.BillingResponse.SERVICE_UNAVAILABLE,
+            BillingClient.BillingResponse.ITEM_UNAVAILABLE,
+            BillingClient.BillingResponse.ERROR,
+            BillingClient.BillingResponse.ITEM_ALREADY_OWNED,
+            BillingClient.BillingResponse.ITEM_NOT_OWNED -> {
+                log("Billing Service Setup finished with error code: ${responseCode.getBillingResponseCodeName()}")
+            }
+            BillingClient.BillingResponse.DEVELOPER_ERROR -> {
+                // Billing service is already trying to connect. Don't do anything.
+            }
         }
     }
 

@@ -24,6 +24,8 @@ public interface MakePurchaseListener {
     /**
      * Will be called after the purchase has completed with error
      * @param error A [PurchasesError] containing the reason for the failure when making the purchase
+     * @param userCancelled A boolean indicating if the user cancelled the purchase. In that case the error will also be
+     *                     [PurchasesErrorCode.PurchaseCancelledError]
      */
-    void onError(@NonNull PurchasesError error);
+    void onError(@NonNull PurchasesError error, Boolean userCancelled);
 }

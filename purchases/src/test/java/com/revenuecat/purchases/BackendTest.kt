@@ -16,7 +16,6 @@ import io.mockk.verify
 import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertNotNull
 import junit.framework.Assert.assertNull
-import junit.framework.Assert.assertSame
 import junit.framework.Assert.assertTrue
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
@@ -24,6 +23,7 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.IOException
 import java.lang.Thread.sleep
 import java.util.HashMap
 import java.util.concurrent.CountDownLatch
@@ -60,17 +60,19 @@ class BackendTest {
     private val appUserID = "jerry"
 
     private var receivedPurchaserInfo: PurchaserInfo? = null
-    private var receivedCode = -1
-    private var receivedMessage: String? = null
     private var receivedEntitlements: Map<String, Entitlement>? = null
+    private var receivedError: PurchasesError? = null
 
     private val onReceivePurchaserInfoSuccessHandler: (PurchaserInfo) -> Unit = { info ->
             this@BackendTest.receivedPurchaserInfo = info
         }
 
+    private val postReceiptErrorCallback: (PurchasesError, Boolean) -> Unit = { error, consume ->
+        this@BackendTest.receivedError = error
+    }
+
     private val onReceivePurchaserInfoErrorHandler: (PurchasesError) -> Unit = {
-            this@BackendTest.receivedCode = -1
-            this@BackendTest.receivedMessage = it.message
+            this@BackendTest.receivedError = it
         }
 
     private val onReceiveEntitlementsSuccessHandler: (Map<String, Entitlement>) -> Unit = { entitlements ->
@@ -78,8 +80,7 @@ class BackendTest {
     }
 
     private val onReceiveEntitlementsErrorHandler: (PurchasesError) -> Unit = {
-        this@BackendTest.receivedCode = it.code
-        this@BackendTest.receivedMessage = it.message
+        this@BackendTest.receivedError = it
     }
 
     private inner class SyncDispatcher : Dispatcher(mockk()) {
@@ -111,7 +112,7 @@ class BackendTest {
         path: String,
         body: Map<String, Any?>?,
         responseCode: Int,
-        clientException: HTTPClient.HTTPErrorException?,
+        clientException: Exception?,
         resultBody: String?,
         delayed: Boolean = false
     ): PurchaserInfo {
@@ -153,7 +154,7 @@ class BackendTest {
     private fun postReceipt(
         responseCode: Int,
         isRestore: Boolean,
-        clientException: HTTPClient.HTTPErrorException?,
+        clientException: Exception?,
         resultBody: String?
     ): PurchaserInfo {
 
@@ -164,7 +165,14 @@ class BackendTest {
             resultBody
         )
 
-        backend.postReceiptData(fetchToken, appUserID, productID, isRestore, onReceivePurchaserInfoSuccessHandler, onReceivePurchaserInfoErrorHandler)
+        backend.postReceiptData(
+            fetchToken,
+            appUserID,
+            productID,
+            isRestore,
+            onReceivePurchaserInfoSuccessHandler,
+            postReceiptErrorCallback
+        )
 
         return info
     }
@@ -172,7 +180,7 @@ class BackendTest {
     private fun mockPostReceiptResponse(
         isRestore: Boolean,
         responseCode: Int,
-        clientException: HTTPClient.HTTPErrorException?,
+        clientException: Exception?,
         resultBody: String?,
         delayed: Boolean = false
     ): Triple<String, String, PurchaserInfo> {
@@ -190,13 +198,17 @@ class BackendTest {
 
     private fun getPurchaserInfo(
         responseCode: Int,
-        clientException: HTTPClient.HTTPErrorException?,
+        clientException: Exception?,
         resultBody: String?
     ): PurchaserInfo {
         val info =
             mockResponse("/subscribers/$appUserID", null, responseCode, clientException, resultBody)
 
-        backend.getPurchaserInfo(appUserID, onReceivePurchaserInfoSuccessHandler, onReceivePurchaserInfoErrorHandler)
+        backend.getPurchaserInfo(
+            appUserID,
+            onReceivePurchaserInfoSuccessHandler,
+            onReceivePurchaserInfoErrorHandler
+        )
 
         return info
     }
@@ -217,45 +229,46 @@ class BackendTest {
         getPurchaserInfo(failureCode, null, null)
 
         assertNull(receivedPurchaserInfo)
-        assertNotNull(receivedMessage)
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
     fun clientErrorCallsErrorHandler() {
-        getPurchaserInfo(200, HTTPClient.HTTPErrorException(0, ""), null)
+        getPurchaserInfo(200, IOException(), null)
 
         assertNull(receivedPurchaserInfo)
-        assertNotNull(receivedMessage)
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
     fun attemptsToParseErrorMessageFromServer() {
-        getPurchaserInfo(404, null, "{'message': 'Dude not found'}")
+        getPurchaserInfo(404, null, "{'code': 7225, 'message': 'Dude not found'}")
 
-        assertNotNull(receivedMessage)
-        assertTrue(receivedMessage!!.contains("Dude not found"))
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+        assertThat(receivedError!!.underlyingErrorMessage).`as`("Received underlying message is not null").isNotNull()
+        assertTrue(receivedError!!.underlyingErrorMessage!!.contains("Dude not found"))
     }
 
     @Test
     fun handlesMissingMessageInErrorBody() {
         getPurchaserInfo(404, null, "{'no_message': 'Dude not found'}")
-        assertNotNull(receivedMessage)
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
     fun postReceiptCallsProperURL() {
         val info = postReceipt(200, false, null, null)
 
-        assertNotNull(receivedPurchaserInfo)
-        assertSame(info, receivedPurchaserInfo)
+        assertThat(receivedPurchaserInfo).`as`("Received info is not null").isNotNull
+        assertThat(info).isEqualTo(receivedPurchaserInfo)
     }
 
     @Test
     fun postReceiptCallsFailsFor40X() {
         postReceipt(401, false, null, null)
 
-        assertNull(receivedPurchaserInfo)
-        assertNotNull(receivedMessage)
+        assertThat(receivedPurchaserInfo).`as`("Received info is null").isNull()
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
@@ -277,7 +290,7 @@ class BackendTest {
         backend.getEntitlements(appUserID, onReceiveEntitlementsSuccessHandler, onReceiveEntitlementsErrorHandler)
 
         assertNull(receivedEntitlements)
-        assertNotNull(receivedMessage)
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
@@ -443,10 +456,10 @@ class BackendTest {
         val lock = CountDownLatch(2)
         asyncBackend.postReceiptData(fetchToken, appUserID, productID, false, {
             lock.countDown()
-        }, onReceivePurchaserInfoErrorHandler)
+        }, postReceiptErrorCallback)
         asyncBackend.postReceiptData(fetchToken, appUserID, productID, false, {
             lock.countDown()
-        }, onReceivePurchaserInfoErrorHandler)
+        }, postReceiptErrorCallback)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {

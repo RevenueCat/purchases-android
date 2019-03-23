@@ -82,7 +82,11 @@ class UpsellActivity : AppCompatActivity() {
             this,
             product.sku,
             BillingClient.SkuType.SUBS,
-            ::showError) { _, purchaserInfo ->
+            { error, userCancelled ->
+                if (!userCancelled) {
+                    showError(error)
+                }
+            }) { _, purchaserInfo ->
                 button.showLoading(false)
                 if (purchaserInfo.activeEntitlements.contains("pro")) {
                     startCatsActivity()

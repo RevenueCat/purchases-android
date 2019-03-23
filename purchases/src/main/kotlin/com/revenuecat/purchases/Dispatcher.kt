@@ -5,6 +5,8 @@
 
 package com.revenuecat.purchases
 
+import org.json.JSONException
+import java.io.IOException
 import java.util.concurrent.ExecutorService
 
 internal open class Dispatcher(
@@ -12,23 +14,25 @@ internal open class Dispatcher(
 ) {
 
     internal abstract class AsyncCall : Runnable {
-        @Throws(HTTPClient.HTTPErrorException::class)
+        @Throws(JSONException::class, IOException::class)
         abstract fun call(): HTTPClient.Result
 
-        open fun onError(code: Int, message: String) {}
+        open fun onError(error: PurchasesError) {}
         open fun onCompletion(result: HTTPClient.Result) {}
 
         override fun run() {
             try {
                 onCompletion(call())
-            } catch (e: HTTPClient.HTTPErrorException) {
-                onError(0, e.message!!)
+            } catch (e: JSONException) {
+                onError(e.toPurchasesError())
+            } catch (e: IOException) {
+                onError(e.toPurchasesError())
             }
         }
     }
 
     open fun enqueue(call: Dispatcher.AsyncCall) {
-        this.executorService.submit(call)
+        this.executorService.execute(call)
     }
 
     open fun close() {

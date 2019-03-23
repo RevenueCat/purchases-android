@@ -15,19 +15,21 @@ private typealias MakePurchaseCompletedSuccessFunction = (purchase: Purchase, pu
 private typealias ReceiveEntitlementsSuccessFunction = (entitlementMap: Map<String, Entitlement>) -> Unit
 private typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: PurchaserInfo) -> Unit
 private typealias ErrorFunction = (error: PurchasesError) -> Unit
+private typealias MakePurchaseErrorFunction = (error: PurchasesError, userCancelled: Boolean) -> Unit
 
 private val onErrorStub: ErrorFunction = {}
+private val onMakePurchaseErrorStub: MakePurchaseErrorFunction = { _, _ -> }
 
 internal fun purchaseCompletedListener(
     onSuccess: MakePurchaseCompletedSuccessFunction,
-    onError: ErrorFunction
+    onError: MakePurchaseErrorFunction
 ) = object : MakePurchaseListener {
     override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
         onSuccess(purchase, purchaserInfo)
     }
 
-    override fun onError(error: PurchasesError) {
-        onError(error)
+    override fun onError(error: PurchasesError, userCancelled: Boolean) {
+        onError(error, userCancelled)
     }
 }
 
@@ -107,7 +109,7 @@ fun Purchases.makePurchaseWith(
     sku: String,
     @BillingClient.SkuType skuType: String,
     oldSkus: ArrayList<String>,
-    onError: ErrorFunction = onErrorStub,
+    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
     onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
     makePurchase(activity, sku, skuType, oldSkus, purchaseCompletedListener(onSuccess, onError))
@@ -125,7 +127,7 @@ fun Purchases.makePurchaseWith(
     activity: Activity,
     sku: String,
     @BillingClient.SkuType skuType: String,
-    onError: ErrorFunction = onErrorStub,
+    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
     onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
     makePurchase(activity, sku, skuType, ArrayList(), purchaseCompletedListener(onSuccess, onError))

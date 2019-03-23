@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONException
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
@@ -89,7 +90,7 @@ class HTTPClientTest {
 
     // Errors
 
-    @Test(expected = HTTPClient.HTTPErrorException::class)
+    @Test(expected = JSONException::class)
     fun reWrapsBadJSONError() {
         val response = MockResponse().setBody("not uh jason")
         server.enqueue(response)
