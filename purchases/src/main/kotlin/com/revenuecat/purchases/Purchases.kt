@@ -238,7 +238,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         debugLog("makePurchase - $sku")
         synchronized(this) {
-            if (purchaseCallbacks.isNotEmpty()) {
+            if (purchaseCallbacks.containsKey(sku)) {
                 dispatch {
                     listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
                 }
