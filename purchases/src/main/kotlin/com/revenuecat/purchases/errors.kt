@@ -52,7 +52,10 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidPlayStoreCredentials(7107),
     BackendEmptyAppUserId(7220),
     BackendInvalidAuthToken(7224),
-    BackendInvalidAPIKey(7225);
+    BackendInvalidAPIKey(7225),
+    BackendPlayStoreQuotaExceeded(7229),
+    BackendPlayStoreInvalidPackageName(7230),
+    BackendPlayStoreGenericError(7231);
 
     companion object {
         fun valueOf(backendErrorCode: Int) : BackendErrorCode? {
@@ -92,6 +95,9 @@ internal fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendInvalidPaymentModeOrIntroPriceNotProvided,
         BackendErrorCode.BackendProductIdForGoogleReceiptNotProvided -> PurchasesErrorCode.PurchaseInvalidError
         BackendErrorCode.BackendEmptyAppUserId ->  PurchasesErrorCode.InvalidAppUserIdError
+        BackendErrorCode.BackendPlayStoreQuotaExceeded -> PurchasesErrorCode.StoreProblemError
+        BackendErrorCode.BackendPlayStoreInvalidPackageName -> PurchasesErrorCode.StoreProblemError
+        BackendErrorCode.BackendPlayStoreGenericError -> PurchasesErrorCode.StoreProblemError
     }
 }
 
