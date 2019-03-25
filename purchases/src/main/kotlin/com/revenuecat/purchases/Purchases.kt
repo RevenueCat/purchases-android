@@ -441,7 +441,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             { entitlements ->
                 getSkuDetails(entitlements, { detailsByID ->
                     entitlements.values.flatMap { it.offerings.values }.let { offerings ->
-                        val missingProducts= populateSkuDetails(offerings, detailsByID)
+                        val missingProducts = populateSkuDetails(offerings, detailsByID)
                         if (missingProducts.isNotEmpty()) {
                             log("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
                             log("Ensure your products are correctly configured in Play Store Developer Console")
