@@ -48,7 +48,7 @@ data class Offering @JvmOverloads internal constructor(
                 val value = field.get(skuDetails) as String
                 parcel.writeString(value)
             } catch (e: NoSuchFieldException) {
-                errorLog("Error converting SkuDetails to Parcelable")
+                log("Error converting SkuDetails to Parcelable")
                 parcel.writeString("")
             }
         } else {

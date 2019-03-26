@@ -12,8 +12,6 @@ import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Handler
 import android.os.Looper
-import android.os.Parcel
-import android.os.Parcelable
 import android.preference.PreferenceManager
 import android.util.Log
 import androidx.annotation.VisibleForTesting
@@ -40,7 +38,6 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 private const val CACHE_REFRESH_PERIOD = 60000 * 5
-private const val HTTP_SERVER_ERROR = 500
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -218,7 +215,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 listener.onCompleted(purchase.sku, purchaserInfo)
             }
 
-            override fun onError(error: PurchasesError) {
+            override fun onError(error: PurchasesError, userCancelled: Boolean) {
                 listener.onError(error)
             }
         })
@@ -243,13 +240,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         synchronized(this) {
             if (purchaseCallbacks.containsKey(sku)) {
                 dispatch {
-                    listener.onError(
-                        PurchasesError(
-                            ErrorDomains.REVENUECAT_API,
-                            PurchasesAPIError.DUPLICATE_MAKE_PURCHASE_CALLS.ordinal,
-                            "Purchase already in progress for this product."
-                        )
-                    )
+                    listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
                 }
             } else {
                 purchaseCallbacks[sku] = listener
@@ -449,8 +440,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             appUserID,
             { entitlements ->
                 getSkuDetails(entitlements, { detailsByID ->
-                    cachedEntitlements = entitlements
-                    populateSkuDetailsAndCallCompletion(detailsByID, entitlements, completion)
+                    entitlements.values.flatMap { it.offerings.values }.let { offerings ->
+                        val missingProducts = populateSkuDetails(offerings, detailsByID)
+                        if (missingProducts.isNotEmpty()) {
+                            log("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
+                            log("Ensure your products are correctly configured in Play Store Developer Console")
+                        }
+                        if (offerings.mapNotNull { it.skuDetails }.isNotEmpty()) {
+                            cachedEntitlements = entitlements
+                        } else {
+                            cachedEntitlements = null
+                        }
+                        dispatch {
+                            completion?.onReceived(entitlements)
+                        }
+                    }
                 }, {
                     dispatch {
                         completion?.onError(it)
@@ -465,26 +469,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             })
     }
 
-    private fun populateSkuDetailsAndCallCompletion(
-        details: Map<String, SkuDetails>,
-        entitlements: Map<String, Entitlement>,
-        completion: ReceiveEntitlementsListener?
-    ) {
+    private fun populateSkuDetails(
+        offerings: List<Offering>,
+        detailsByID: HashMap<String, SkuDetails>
+    ) : List<String> {
         val missingProducts = mutableListOf<String>()
-        entitlements.values.flatMap { it.offerings.values }.forEach { o ->
-            if (details.containsKey(o.activeProductIdentifier)) {
-                o.skuDetails = details[o.activeProductIdentifier]
+        offerings.forEach { offering ->
+            if (detailsByID.containsKey(offering.activeProductIdentifier)) {
+                offering.skuDetails = detailsByID[offering.activeProductIdentifier]
             } else {
-                missingProducts.add(o.activeProductIdentifier)
+                missingProducts.add(offering.activeProductIdentifier)
             }
         }
-        if (missingProducts.isNotEmpty()) {
-            log("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
-            log("Ensure your products are correctly configured in Play Store Developer Console")
-        }
-        dispatch {
-            completion?.onReceived(entitlements)
-        }
+        return missingProducts
     }
 
     private fun getSkus(
@@ -559,8 +556,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     cachePurchaserInfo(info)
                     sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                     onSuccess(purchase, info)
-                }, { error ->
-                    if (error.code < HTTP_SERVER_ERROR) {
+                }, { error, shouldConsumePurchase ->
+                    if (shouldConsumePurchase) {
                         billingWrapper.consumePurchase(purchase.purchaseToken)
                     }
                     onError(purchase, error)
@@ -609,8 +606,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
         billingWrapper.querySkuDetailsAsync(
             BillingClient.SkuType.SUBS,
-            skus
-            , { subscriptionsSKUDetails ->
+            skus,
+            { subscriptionsSKUDetails ->
                 val detailsByID = HashMap<String, SkuDetails>()
                 val inAPPSkus =
                     skus - subscriptionsSKUDetails
@@ -621,8 +618,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 if (inAPPSkus.isNotEmpty()) {
                     billingWrapper.querySkuDetailsAsync(
                         BillingClient.SkuType.INAPP,
-                        inAPPSkus
-                        , { skuDetails ->
+                        inAPPSkus,
+                        { skuDetails ->
                             detailsByID.putAll(skuDetails.map { it.sku to it })
                             onCompleted(detailsByID)
                         }, {
@@ -688,7 +685,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         synchronized(this) {
                             dispatch {
                                 purchaseCallbacks.remove(purchase.sku)?.onError(
-                                    PurchasesError(error.domain, error.code, error.message)
+                                    error,
+                                    error.code == PurchasesErrorCode.PurchaseCancelledError
                                 )
                             }
                         }
@@ -702,11 +700,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 message: String
             ) {
                 synchronized(this) {
-                    purchaseCallbacks.forEach { (_, value) ->
+                    purchaseCallbacks.forEach { (_, callback) ->
+                        val purchasesError = responseCode.billingResponseToPurchasesError(message)
                         dispatch {
-                            value.onError(
-                                PurchasesError(ErrorDomains.PLAY_BILLING, responseCode, message)
-                            )
+                            callback.onError(purchasesError, purchasesError.code == PurchasesErrorCode.PurchaseCancelledError)
                         }
                     }
                     purchaseCallbacks.clear()
@@ -883,52 +880,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 LinkedBlockingQueue()
             )
         }
-    }
-
-    /**
-     * Different error domains
-     */
-    enum class ErrorDomains : Parcelable {
-        /**
-         * The error is related to the RevenueCat backend
-         */
-        REVENUECAT_BACKEND,
-        /**
-         * The error is related to Play Billing
-         */
-        PLAY_BILLING,
-        /**
-         * The error is related to the Purchases SDK
-         */
-        REVENUECAT_API;
-
-        override fun writeToParcel(parcel: Parcel, flags: Int) {
-            parcel.writeInt(ordinal)
-        }
-
-        override fun describeContents(): Int {
-            return 0
-        }
-
-        companion object CREATOR : Parcelable.Creator<ErrorDomains> {
-            override fun createFromParcel(parcel: Parcel): ErrorDomains {
-                return ErrorDomains.values()[parcel.readInt()]
-            }
-
-            override fun newArray(size: Int): Array<ErrorDomains?> {
-                return arrayOfNulls(size)
-            }
-        }
-    }
-
-    /**
-     * Different errors related to the Purchases SDK functions
-     */
-    enum class PurchasesAPIError {
-        /**
-         * There is another [makePurchase] call waiting to be completed
-         */
-        DUPLICATE_MAKE_PURCHASE_CALLS
     }
 
     /**

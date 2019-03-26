@@ -260,20 +260,14 @@ class PurchasesTest {
             mockk(),
             "sku",
             "SKUS",
-            onError = { error ->
+            onError = { error, _ ->
                 errorCalled = true
-                assertThat(error).isEqualTo(
-                    PurchasesError(
-                        Purchases.ErrorDomains.PLAY_BILLING,
-                        0,
-                        ""
-                    )
-                )
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
             }) { _, _ -> }
 
         val purchase = mockk<Purchase>(relaxed = true)
         every { purchase.sku } returns "sku"
-        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(listOf(purchase), 0, "")
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(listOf(purchase), 2, "")
         assertThat(errorCalled).isTrue()
     }
 
@@ -547,11 +541,7 @@ class PurchasesTest {
     @Test
     fun failedToRestorePurchases() {
         setup()
-        val purchasesError = PurchasesError(
-            Purchases.ErrorDomains.PLAY_BILLING,
-            0,
-            "Broken"
-        )
+        val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         every {
             mockBillingWrapper.queryPurchaseHistoryAsync(any(), any(), captureLambda())
         } answers {
@@ -806,11 +796,7 @@ class PurchasesTest {
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(
-                PurchasesError(
-                    Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                    0,
-                    "nope"
-                )
+                PurchasesError(PurchasesErrorCode.StoreProblemError)
             )
         }
 
@@ -877,12 +863,9 @@ class PurchasesTest {
                 captureLambda()
             )
         } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(
-                PurchasesError(
-                    Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                    402,
-                    "This is fake"
-                )
+            lambda<(PurchasesError, Boolean) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+                true
             )
         }
 
@@ -917,12 +900,9 @@ class PurchasesTest {
                 captureLambda()
             )
         } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(
-                PurchasesError(
-                    Purchases.ErrorDomains.REVENUECAT_BACKEND,
-                    502,
-                    "This is fake"
-                )
+            lambda<(PurchasesError, Boolean) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+                true
             )
         }
 
@@ -1012,11 +992,7 @@ class PurchasesTest {
     @Test
     fun `given an unsuccessful aliasing, onError handler is called`() {
         setup()
-        val purchasesError = PurchasesError(
-            Purchases.ErrorDomains.REVENUECAT_BACKEND,
-            0,
-            "error"
-        )
+        val purchasesError = PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
         every {
             mockBackend.createAlias(
                 eq(appUserId),
@@ -1217,7 +1193,7 @@ class PurchasesTest {
             mockk(),
             sku,
             BillingClient.SkuType.SUBS,
-            onError = { fail("Should be success") }) { _, _ ->
+            onError = { _, _ -> fail("Should be success") }) { _, _ ->
                 // First one works
             }
 
@@ -1226,14 +1202,13 @@ class PurchasesTest {
             mockk(),
             sku,
             BillingClient.SkuType.SUBS,
-            onSuccess = { _, _ ->
+            onError = { error, _  ->
+                errorCalled = error
+            }) { _, _ ->
                 fail("Should be error")
-            },
-            onError = {
-                errorCalled = it
             }
-        )
-        assertThat(errorCalled!!.code).isEqualTo(Purchases.PurchasesAPIError.DUPLICATE_MAKE_PURCHASE_CALLS.ordinal)
+
+        assertThat(errorCalled!!.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
     }
 
     @Test
@@ -1260,7 +1235,7 @@ class PurchasesTest {
             BillingClient.SkuType.SUBS,
             onSuccess = { _, _ ->
                 callCount++
-            }, onError = { fail("should be successful") })
+            }, onError = { _, _ -> fail("should be successful") })
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p))
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p))
@@ -1300,7 +1275,7 @@ class PurchasesTest {
             BillingClient.SkuType.SUBS,
             onSuccess = { _, _ ->
                 callCount++
-            }, onError = { fail("should be successful") })
+            }, onError = { _, _ -> fail("should be successful") })
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p1))
 

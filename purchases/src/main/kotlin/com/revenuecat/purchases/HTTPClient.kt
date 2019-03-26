@@ -47,7 +47,7 @@ internal class HTTPClient(
         return sb.toString()
     }
 
-    private fun getInputStream(connection: HttpURLConnection): InputStream {
+    private fun getInputStream(connection: HttpURLConnection): InputStream? {
         return try {
             connection.inputStream
         } catch (e: IOException) {
@@ -66,9 +66,10 @@ internal class HTTPClient(
      * @param body The body of the request, for GET must be null
      * @param headers Map of headers, basic headers are added automatically
      * @return Result containing the HTTP response code and the parsed JSON body
-     * @throws HTTPErrorException Thrown for any unexpected errors, not thrown for returned HTTP error codes
+     * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
+     * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
      */
-    @Throws(HTTPClient.HTTPErrorException::class)
+    @Throws(JSONException::class, IOException::class)
     fun performRequest(
         path: String,
         body: Map<*, *>?,
@@ -82,7 +83,7 @@ internal class HTTPClient(
         return performRequest(path, jsonBody, headers)
     }
 
-    @Throws(HTTPClient.HTTPErrorException::class)
+    @Throws(JSONException::class, IOException::class)
     fun performRequest(
         path: String,
         body: JSONObject?,
@@ -93,8 +94,6 @@ internal class HTTPClient(
         try {
             fullURL = URL(baseURL, "/v1$path")
             connection = getConnection(fullURL, headers, body)
-        } catch (e: IOException) {
-            throw HTTPErrorException(-1, "Error establishing connection " + e.message)
         } catch (e: MalformedURLException) {
             throw RuntimeException(e)
         }
@@ -102,25 +101,17 @@ internal class HTTPClient(
         val inputStream = getInputStream(connection)
         val result = HTTPClient.Result()
 
-        val payload: String
+        val payload: String?
         try {
             debugLog("${connection.requestMethod} $path")
             result.responseCode = connection.responseCode
-            payload = readFully(inputStream)
-        } catch (e: IOException) {
-            throw HTTPErrorException(result.responseCode, "Error reading response: " + e.message)
+            payload = inputStream?.let { readFully(it) }
         } finally {
             connection.disconnect()
         }
 
-        try {
-            result.body = JSONObject(payload)
-            debugLog("${connection.requestMethod} $path ${result.responseCode}")
-        } catch (e: JSONException) {
-            log("Error parsing JSON ${e.localizedMessage}")
-            log("Data received: $payload")
-            throw HTTPErrorException(result.responseCode, "Error parsing JSON body: ${e.localizedMessage}")
-        }
+        result.body = JSONObject(payload)
+        debugLog("${connection.requestMethod} $path ${result.responseCode}")
 
         return result
     }
@@ -156,6 +147,4 @@ internal class HTTPClient(
         var body: JSONObject? = null
     }
 
-    internal class HTTPErrorException(httpCode: Int, message: String) :
-        Exception("[$httpCode]: $message")
 }

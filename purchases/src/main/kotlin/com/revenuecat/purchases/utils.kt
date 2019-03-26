@@ -24,7 +24,9 @@ internal fun log(message: String) {
 }
 
 internal fun errorLog(message: String) {
-    Log.e("[Purchases] - ERROR", message)
+    if (Purchases.debugLogsEnabled) {
+        Log.e("[Purchases] - ERROR", message)
+    }
 }
 
 internal fun Purchase.toHumanReadableDescription() =

@@ -417,10 +417,10 @@ class BillingWrapperTest {
         wrapper!!.queryPurchaseHistoryAsync(
             BillingClient.SkuType.SUBS,
             {
-                fail("shouldn't go to on error")
+                fail("should go to on error")
             },
             {
-                assertThat(it.code).isEqualTo(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
+                assertThat(it.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
                 errorCalled = true
             }
         )
