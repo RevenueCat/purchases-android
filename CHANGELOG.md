@@ -1,3 +1,10 @@
+## 2.1.0
+
+- Adds userCancelled as a parameter to the completion block of the makePurchase function
+- Better error codes
+- The entitlements call now fails if the service returns FEATURE_NOT_SUPPORTED or BILLING_UNAVAILABLE. Also that DEVELOPER_ERROR that was always displaying in the logs, now shows as "Billing Service Setup is already trying to connect."
+- Fixes some exceptions not being reported. We might start seeing more crashes that were silent before.
+
 ## 2.0.1
 
 - Fixes ConcurrentModificationException when making a purchase fails.
