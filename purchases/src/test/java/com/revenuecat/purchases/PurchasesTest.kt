@@ -1561,6 +1561,118 @@ class PurchasesTest {
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
+    @Test
+    fun `when finishTransactions is set to false, do not consume purchases`() {
+        setup()
+        purchases.finishTransactions = false
+        val p: Purchase = mockk()
+        val sku = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        every {
+            p.sku
+        } returns sku
+        every {
+            p.purchaseToken
+        } returns purchaseToken
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p))
+
+        verify {
+            mockBackend.postReceiptData(
+                eq(purchaseToken),
+                eq(appUserId),
+                eq(sku),
+                eq(false),
+                any(),
+                any()
+            )
+        }
+        verify (exactly = 0){
+            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+        }
+    }
+
+    @Test
+    fun `when finishTransactions is set to false, don't consume subscriptions on 40x`() {
+        val sku = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        every {
+            mockBackend.postReceiptData(
+                eq(purchaseToken),
+                eq(appUserId),
+                eq(sku),
+                eq(false),
+                any(),
+                captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError, Boolean) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+                true
+            )
+        }
+
+        setup()
+
+        purchases.finishTransactions = false
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(mockk<Purchase>().also {
+            every {
+                it.sku
+            } returns sku
+            every {
+                it.purchaseToken
+            } returns purchaseToken
+        }))
+
+        verify (exactly = 0) {
+            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+        }
+    }
+
+    @Test
+    fun `when finishTransactions is set to false, don't consume subscriptions on 50x`() {
+        val sku = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        every {
+            mockBackend.postReceiptData(
+                eq(purchaseToken),
+                eq(appUserId),
+                eq(sku),
+                eq(false),
+                any(),
+                captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError, Boolean) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+                true
+            )
+        }
+
+        setup()
+
+        purchases.finishTransactions = false
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(mockk<Purchase>().also {
+            every {
+                it.sku
+            } returns sku
+            every {
+                it.purchaseToken
+            } returns purchaseToken
+        }))
+
+        verify (exactly = 0) {
+            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+        }
+    }
+
+
+
     // region Private Methods
     private fun mockSkuDetailFetch(details: List<SkuDetails>, skus: List<String>, skuType: String) {
         every {

@@ -50,6 +50,7 @@ private const val CACHE_REFRESH_PERIOD = 60000 * 5
  * @property [allowSharingPlayStoreAccount] If it should allow sharing Play Store accounts. False by
  * default. If true treats all purchases as restores, aliasing together appUserIDs that share a
  * Play Store account.
+ * @property [finishTransactions] Default to TRUE, set this to FALSE if you are consuming transactions on your own.
  */
 class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
     backingFieldAppUserID: String?,
@@ -57,7 +58,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
     var allowSharingPlayStoreAccount: Boolean = false,
-    private var cachesLastUpdated: Date? = null
+    private var cachesLastUpdated: Date? = null,
+    var finishTransactions: Boolean = true
 ) {
 
     /**
@@ -237,6 +239,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: MakePurchaseListener
     ) {
         debugLog("makePurchase - $sku")
+        if (!finishTransactions) {
+            debugLog("finishTransactions is set to false and makePurchase has been called. Are you sure you want to do this?")
+        }
         synchronized(this) {
             if (purchaseCallbacks.containsKey(sku)) {
                 dispatch {
@@ -552,12 +557,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 purchase.sku,
                 allowSharingPlayStoreAccount,
                 { info ->
-                    billingWrapper.consumePurchase(purchase.purchaseToken)
+                    if (finishTransactions) {
+                        billingWrapper.consumePurchase(purchase.purchaseToken)
+                    }
                     cachePurchaserInfo(info)
                     sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                     onSuccess(purchase, info)
                 }, { error, shouldConsumePurchase ->
-                    if (shouldConsumePurchase) {
+                    if (shouldConsumePurchase && finishTransactions) {
                         billingWrapper.consumePurchase(purchase.purchaseToken)
                     }
                     onError(purchase, error)
