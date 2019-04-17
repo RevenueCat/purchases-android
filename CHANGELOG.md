@@ -1,3 +1,7 @@
+## 2.1.1
+
+- Adds setFinishTransactions. Set this to false if you are finishing transactions outside of the Purchases SDK
+
 ## 2.1.0
 
 - Adds userCancelled as a parameter to the completion block of the makePurchase function
