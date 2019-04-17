@@ -50,7 +50,8 @@ private const val CACHE_REFRESH_PERIOD = 60000 * 5
  * @property [allowSharingPlayStoreAccount] If it should allow sharing Play Store accounts. False by
  * default. If true treats all purchases as restores, aliasing together appUserIDs that share a
  * Play Store account.
- * @property [finishTransactions] Default to TRUE, set this to FALSE if you are consuming transactions on your own.
+ * @property [finishTransactions] Default to TRUE, set this to FALSE if you are consuming
+ * transactions outside of the Purchases SDK.
  */
 class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
     backingFieldAppUserID: String?,
