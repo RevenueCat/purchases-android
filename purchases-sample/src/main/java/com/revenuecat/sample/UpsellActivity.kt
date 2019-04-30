@@ -3,7 +3,6 @@ package com.revenuecat.sample
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.Entitlement
 import com.revenuecat.purchases.Purchases
@@ -48,9 +47,7 @@ class UpsellActivity : AppCompatActivity() {
         proEntitlement.offerings["monthly"]?.let { monthly ->
             monthly.skuDetails?.let { monthlyProduct ->
                 with(monthly_purchase) {
-                    loadedText = "Buy Monthly - " +
-                            "${monthlyProduct.priceCurrencyCode}" +
-                            "${monthlyProduct.price}"
+                    loadedText = "Buy Monthly - ${monthlyProduct.priceCurrencyCode} ${monthlyProduct.price}"
                     showLoading(false)
                     setOnClickListener {
                         makePurchase(monthlyProduct, this)
@@ -64,9 +61,7 @@ class UpsellActivity : AppCompatActivity() {
         proEntitlement.offerings["annual"]?.let { annual ->
             annual.skuDetails?.let { annualProduct ->
                 with(annual_purchase) {
-                    loadedText = "Buy Monthly - " +
-                            "${annualProduct.priceCurrencyCode}" +
-                            "${annualProduct.price}"
+                    loadedText = "Buy Monthly - ${annualProduct.priceCurrencyCode} ${annualProduct.price}"
                     showLoading(false)
                     setOnClickListener {
                         makePurchase(annualProduct, this)
@@ -80,8 +75,7 @@ class UpsellActivity : AppCompatActivity() {
         button.showLoading(true)
         Purchases.sharedInstance.makePurchaseWith(
             this,
-            product.sku,
-            BillingClient.SkuType.SUBS,
+            product,
             { error, userCancelled ->
                 if (!userCancelled) {
                     showError(error)

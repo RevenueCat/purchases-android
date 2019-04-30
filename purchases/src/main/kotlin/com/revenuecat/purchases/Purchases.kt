@@ -205,7 +205,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [oldSkus] The skus you wish to upgrade from.
      * @param [listener] The listener that will be called when purchase completes.
      */
-    @Deprecated("use makePurchase accepting a MakePurchaseListener instead")
+    @Deprecated("use makePurchase accepting a MakePurchaseListener instead",
+        ReplaceWith("makePurchase(activity, skuDetails, oldSku, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener"))
     fun makePurchase(
         activity: Activity,
         sku: String,
@@ -232,6 +233,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [oldSkus] The skus you wish to upgrade from.
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated("use makePurchase accepting a MakePurchaseListener instead",
+        ReplaceWith("makePurchase(activity, skuDetails, oldSku, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener"))
     fun makePurchase(
         activity: Activity,
         sku: String,
@@ -251,6 +254,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             } else {
                 purchaseCallbacks[sku] = listener
                 billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
+
+                billingWrapper.querySkuDetailsAsync(skuType, listOf(sku), {
+                    billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
+                }, {
+                    listener.onError(it, false)
+                })
             }
         }
     }
@@ -281,6 +290,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skuType] The type of sku, INAPP or SUBS
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated("use makePurchase accepting SkuDetails instead",
+        ReplaceWith("makePurchase(activity, skuDetails, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener")
+    )
     fun makePurchase(
         activity: Activity,
         sku: String,
@@ -288,6 +300,36 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: MakePurchaseListener
     ) {
         makePurchase(activity, sku, skuType, ArrayList(), listener)
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [skuDetails] The skuDetails of the product you wish to purchase
+     * @param [oldSku] The sku you wish to upgrade from.
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun makePurchase(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        oldSku: String,
+        listener: MakePurchaseListener
+    ) {
+        startPurchase(activity, skuDetails, oldSku, listener)
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [skuDetails] The skuDetails of the product you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun makePurchase(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        listener: MakePurchaseListener
+    ) {
+        startPurchase(activity, skuDetails, null, listener)
     }
 
     /**
@@ -716,6 +758,28 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     }
                     purchaseCallbacks.clear()
                 }
+            }
+        }
+    }
+
+    private fun startPurchase(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        oldSku: String?,
+        listener: MakePurchaseListener
+    ) {
+        debugLog("makePurchase - $skuDetails")
+        if (!finishTransactions) {
+            debugLog("finishTransactions is set to false and makePurchase has been called. Are you sure you want to do this?")
+        }
+        synchronized(this) {
+            if (purchaseCallbacks.containsKey(skuDetails.sku)) {
+                dispatch {
+                    listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
+                }
+            } else {
+                purchaseCallbacks[skuDetails.sku] = listener
+                billingWrapper.makePurchaseAsync(activity, appUserID, skuDetails, oldSku)
             }
         }
     }
