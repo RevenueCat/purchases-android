@@ -112,6 +112,33 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     // region Public Methods
+
+    /**
+     * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
+     * for subscriptions anytime a sync is needed, like after a successful purchase.
+     */
+    fun syncPurchases()  {
+        debugLog("Syncing purchases")
+        billingWrapper.queryPurchaseHistoryAsync(
+            BillingClient.SkuType.SUBS,
+            { subsPurchasesList ->
+                billingWrapper.queryPurchaseHistoryAsync(
+                    BillingClient.SkuType.INAPP,
+                    { inAppPurchasesList ->
+                        val allPurchases = ArrayList(subsPurchasesList)
+                        allPurchases.addAll(inAppPurchasesList)
+                        if (allPurchases.isNotEmpty()) {
+                            postSyncedPurchases(
+                                allPurchases,
+                                { debugLog("Purchases synced") },
+                                { errorLog("Error syncing purchases $it") })
+                        }
+                    },
+                    { errorLog("Error syncing purchases $it") })
+            },
+            { errorLog("Error syncing purchases $it") })
+    }
+
     /**
      * Add attribution data from a supported network
      * @param [data] JSONObject containing the data to post to the attribution network
@@ -344,6 +371,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: ReceivePurchaserInfoListener
     ) {
         debugLog("Restoring purchases")
+        if (!allowSharingPlayStoreAccount) {
+            debugLog("allowSharingPlayStoreAccount is set to false and restorePurchases has been called. Are you sure you want to do this?")
+        }
         billingWrapper.queryPurchaseHistoryAsync(
             BillingClient.SkuType.SUBS,
             { subsPurchasesList ->
@@ -355,7 +385,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         if (allPurchases.isEmpty()) {
                             getPurchaserInfo(listener)
                         } else {
-                            postRestoredPurchases(allPurchases, listener)
+                            postRestoredPurchases(allPurchases, {
+                                dispatch { listener.onReceived(it) }
+                            }, {
+                                dispatch { listener.onError(it) }
+                            })
                         }
                     },
                     { error -> dispatch { listener.onError(error) } })
@@ -615,9 +649,32 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
+    private fun postSyncedPurchases(
+        purchases: List<Purchase>,
+        onSuccess: () -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        purchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
+            postPurchases(
+                sortedByTime,
+                allowSharingPlayStoreAccount,
+                { purchase, _ ->
+                    if (sortedByTime.last() == purchase) {
+                        onSuccess()
+                    }
+                },
+                { purchase, error ->
+                    if (sortedByTime.last() == purchase) {
+                        onError(error)
+                    }
+                })
+        }
+    }
+
     private fun postRestoredPurchases(
         purchases: List<Purchase>,
-        onCompletion: ReceivePurchaserInfoListener
+        onSuccess: (PurchaserInfo) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
         purchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
             postPurchases(
@@ -625,12 +682,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 true,
                 { purchase, info ->
                     if (sortedByTime.last() == purchase) {
-                        dispatch { onCompletion.onReceived(info) }
+                        onSuccess(info)
                     }
                 },
                 { purchase, error ->
                     if (sortedByTime.last() == purchase) {
-                        dispatch { onCompletion.onError(error) }
+                        onError(error)
                     }
                 })
         }
@@ -826,6 +883,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * If `null` `[Purchases] will generate a unique identifier for the current device and persist
          * it the SharedPreferences. This also affects the behavior of [restorePurchases].
          * @param service Optional [ExecutorService] to use for the backend calls.
+         * @param observerMode Optional boolean set to FALSE by default. Set to TRUE if you are using your own
+         * subscription system and you want to use RevenueCat's backend only. If set to TRUE, you should be consuming
+         * transactions outside of the Purchases SDK.
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
         @JvmOverloads
@@ -834,7 +894,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             context: Context,
             apiKey: String,
             appUserID: String? = null,
-            service: ExecutorService = createDefaultExecutor()
+            service: ExecutorService = createDefaultExecutor(),
+            observerMode: Boolean = false
         ): Purchases {
             if (!context.hasPermission(Manifest.permission.INTERNET))
                 throw IllegalArgumentException("Purchases requires INTERNET permission.")
@@ -863,7 +924,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 appUserID,
                 backend,
                 billingWrapper,
-                cache
+                cache,
+                finishTransactions = !observerMode
             ).also { sharedInstance = it }
         }
 
