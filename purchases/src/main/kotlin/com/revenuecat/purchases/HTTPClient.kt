@@ -99,7 +99,7 @@ internal class HTTPClient(
         }
 
         val inputStream = getInputStream(connection)
-        val result = HTTPClient.Result()
+        val result = Result()
 
         val payload: String?
         try {
@@ -110,7 +110,7 @@ internal class HTTPClient(
             connection.disconnect()
         }
 
-        result.body = JSONObject(payload)
+        result.body = payload?.let{ JSONObject(it) }
         debugLog("${connection.requestMethod} $path ${result.responseCode}")
 
         return result
