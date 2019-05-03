@@ -667,9 +667,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private val handler = Handler()
+    private val handler = Handler(Looper.getMainLooper())
     private fun dispatch(action: () -> Unit) {
-        if (Thread.currentThread() !== Looper.getMainLooper().thread) {
+        if (Thread.currentThread() != Looper.getMainLooper().thread) {
             handler.post(action)
         } else {
             action()
