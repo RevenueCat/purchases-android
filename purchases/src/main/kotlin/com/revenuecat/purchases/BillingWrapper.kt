@@ -120,7 +120,7 @@ internal class BillingWrapper internal constructor(
         }
     }
 
-    @Deprecated("", ReplaceWith("BillingWrapper.makePurchaseAsync(activity, appUserID, skuDetails, oldSku)"))
+    @Deprecated("", ReplaceWith("makePurchaseAsync(activity, appUserID, skuDetails, oldSku)"))
     fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
@@ -198,6 +198,25 @@ internal class BillingWrapper internal constructor(
                 onReceivePurchaseHistoryError(connectionError)
             }
         }
+    }
+
+    fun queryAllPurchases(
+        onReceivePurchaseHistory: (List<Purchase>) -> Unit,
+        onReceivePurchaseHistoryError: (PurchasesError) -> Unit
+    ) {
+        queryPurchaseHistoryAsync(
+            BillingClient.SkuType.SUBS,
+            { subsPurchasesList ->
+                queryPurchaseHistoryAsync(
+                    BillingClient.SkuType.INAPP,
+                    { inAppPurchasesList ->
+                        onReceivePurchaseHistory(subsPurchasesList + inAppPurchasesList)
+                    },
+                    onReceivePurchaseHistoryError
+                )
+            },
+            onReceivePurchaseHistoryError
+        )
     }
 
     fun consumePurchase(token: String) {

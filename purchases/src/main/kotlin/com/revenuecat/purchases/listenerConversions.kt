@@ -142,7 +142,7 @@ fun Purchases.makePurchaseWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
-@Deprecated("Replace with makePurchaseWith accepting SkuDetails and a single oldSku", ReplaceWith("Purchases.makePurchaseWith(activity, skuDetails, onError, onSuccess)"))
+@Deprecated("Replace with makePurchaseWith accepting SkuDetails object", ReplaceWith("makePurchaseWith(activity, skuDetails, onError, onSuccess)"))
 fun Purchases.makePurchaseWith(
     activity: Activity,
     sku: String,

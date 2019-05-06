@@ -119,24 +119,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     fun syncPurchases()  {
         debugLog("Syncing purchases")
-        billingWrapper.queryPurchaseHistoryAsync(
-            BillingClient.SkuType.SUBS,
-            { subsPurchasesList ->
-                billingWrapper.queryPurchaseHistoryAsync(
-                    BillingClient.SkuType.INAPP,
-                    { inAppPurchasesList ->
-                        val allPurchases = ArrayList(subsPurchasesList)
-                        allPurchases.addAll(inAppPurchasesList)
-                        if (allPurchases.isNotEmpty()) {
-                            postSyncedPurchases(
-                                allPurchases,
-                                { debugLog("Purchases synced") },
-                                { errorLog("Error syncing purchases $it") })
-                        }
-                    },
+        billingWrapper.queryAllPurchases({ allPurchases ->
+            if (allPurchases.isNotEmpty()) {
+                postPurchasesSortedByTime(
+                    allPurchases,
+                    allowSharingPlayStoreAccount,
+                    { debugLog("Purchases synced") },
                     { errorLog("Error syncing purchases $it") })
-            },
-            { errorLog("Error syncing purchases $it") })
+            }
+        }, { errorLog("Error syncing purchases $it") })
     }
 
     /**
@@ -374,27 +365,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (!allowSharingPlayStoreAccount) {
             debugLog("allowSharingPlayStoreAccount is set to false and restorePurchases has been called. Are you sure you want to do this?")
         }
-        billingWrapper.queryPurchaseHistoryAsync(
-            BillingClient.SkuType.SUBS,
-            { subsPurchasesList ->
-                billingWrapper.queryPurchaseHistoryAsync(
-                    BillingClient.SkuType.INAPP,
-                    { inAppPurchasesList ->
-                        val allPurchases = ArrayList(subsPurchasesList)
-                        allPurchases.addAll(inAppPurchasesList)
-                        if (allPurchases.isEmpty()) {
-                            getPurchaserInfo(listener)
-                        } else {
-                            postRestoredPurchases(allPurchases, {
-                                dispatch { listener.onReceived(it) }
-                            }, {
-                                dispatch { listener.onError(it) }
-                            })
-                        }
-                    },
-                    { error -> dispatch { listener.onError(error) } })
-            },
-            { error -> dispatch { listener.onError(error) } })
+        billingWrapper.queryAllPurchases({ allPurchases ->
+            if (allPurchases.isEmpty()) {
+                getPurchaserInfo(listener)
+            } else {
+                postPurchasesSortedByTime(
+                    allPurchases,
+                    true,
+                    { dispatch { listener.onReceived(it) } },
+                    { dispatch { listener.onError(it) } }
+                )
+            }
+        }, { dispatch { listener.onError(it) } })
     }
 
     /**
@@ -649,37 +631,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun postSyncedPurchases(
+    private fun postPurchasesSortedByTime(
         purchases: List<Purchase>,
-        onSuccess: () -> Unit,
-        onError: (PurchasesError) -> Unit
-    ) {
-        purchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
-            postPurchases(
-                sortedByTime,
-                allowSharingPlayStoreAccount,
-                { purchase, _ ->
-                    if (sortedByTime.last() == purchase) {
-                        onSuccess()
-                    }
-                },
-                { purchase, error ->
-                    if (sortedByTime.last() == purchase) {
-                        onError(error)
-                    }
-                })
-        }
-    }
-
-    private fun postRestoredPurchases(
-        purchases: List<Purchase>,
+        allowSharingPlayStoreAccount: Boolean,
         onSuccess: (PurchaserInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         purchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
             postPurchases(
                 sortedByTime,
-                true,
+                allowSharingPlayStoreAccount,
                 { purchase, info ->
                     if (sortedByTime.last() == purchase) {
                         onSuccess(info)

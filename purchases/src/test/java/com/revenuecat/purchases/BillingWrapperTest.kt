@@ -574,6 +574,39 @@ class BillingWrapperTest {
         }
     }
 
+    @Test
+    fun `getting all purchases gets both subs and inapps`() {
+        setup()
+
+        val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
+        every {
+            mockClient.queryPurchaseHistoryAsync(
+                any(),
+                capture(billingClientPurchaseHistoryListenerSlot)
+            )
+        } answers {
+            billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
+                BillingClient.BillingResponse.OK,
+                listOf(mockk(relaxed = true))
+            )
+        }
+
+        var receivedPurchases = listOf<Purchase>()
+        wrapper!!.queryAllPurchases({
+            receivedPurchases = it
+        }, { fail("Shouldn't be error") })
+
+        assertThat(receivedPurchases.size).isNotZero()
+
+        verify (exactly = 1){
+            mockClient.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, any())
+        }
+
+        verify (exactly = 1){
+            mockClient.queryPurchaseHistoryAsync(BillingClient.SkuType.INAPP, any())
+        }
+    }
+
     private fun mockNullSkuDetailsResponse() {
         val slot = slot<SkuDetailsResponseListener>()
         every {
