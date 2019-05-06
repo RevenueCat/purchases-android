@@ -108,3 +108,5 @@ tmp/
 # kotlin
 annotations/
 .project
+purchases/.classpath
+purchases-sample/.classpath

@@ -1,3 +1,9 @@
+## 2.1.2
+
+- Fixes exception when inputstream is null.
+- Fixes an exception when Purchases is instantiated from a background thread.
+- Fixes concurrency issue on servicerequests.
+
 ## 2.1.1
 
 - Adds setFinishTransactions. Set this to false if you are finishing transactions outside of the Purchases SDK
