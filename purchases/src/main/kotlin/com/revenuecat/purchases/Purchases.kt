@@ -116,6 +116,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
      * for subscriptions anytime a sync is needed, like after a successful purchase.
+     *
+     * @warning This function should only be called if you're not calling makePurchase.
      */
     fun syncPurchases()  {
         debugLog("Syncing purchases")
@@ -363,7 +365,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         debugLog("Restoring purchases")
         if (!allowSharingPlayStoreAccount) {
-            debugLog("allowSharingPlayStoreAccount is set to false and restorePurchases has been called. Are you sure you want to do this?")
+            debugLog("allowSharingPlayStoreAccount is set to false and restorePurchases has been called. This will 'alias' any app user id's sharing the same receipt. Are you sure you want to do this?")
         }
         billingWrapper.queryAllPurchases({ allPurchases ->
             if (allPurchases.isEmpty()) {
