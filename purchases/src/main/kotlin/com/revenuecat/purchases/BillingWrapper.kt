@@ -53,8 +53,10 @@ internal class BillingWrapper internal constructor(
     }
 
     private fun executePendingRequests() {
-        while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
-            serviceRequests.remove().let { mainHandler.post { it(null) } }
+        synchronized(serviceRequests) {
+            while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
+                serviceRequests.remove().let { mainHandler.post { it(null) } }
+            }
         }
     }
 
@@ -224,9 +226,11 @@ internal class BillingWrapper internal constructor(
                 log("Billing is not available in this device. ${responseCode.getBillingResponseCodeName()}")
                 // The calls will fail with an error that will be surfaced. We want to surface these errors
                 // Can't call executePendingRequests because it will not do anything since it checks for isReady()
-                while (!serviceRequests.isEmpty()) {
-                    serviceRequests.remove()
-                        .let { mainHandler.post { it(responseCode.billingResponseToPurchasesError("Billing is not available in this device. ${responseCode.getBillingResponseCodeName()}")) } }
+                synchronized(serviceRequests) {
+                    while (!serviceRequests.isEmpty()) {
+                        serviceRequests.remove()
+                            .let { mainHandler.post { it(responseCode.billingResponseToPurchasesError("Billing is not available in this device. ${responseCode.getBillingResponseCodeName()}")) } }
+                    }
                 }
             }
             BillingClient.BillingResponse.SERVICE_DISCONNECTED,

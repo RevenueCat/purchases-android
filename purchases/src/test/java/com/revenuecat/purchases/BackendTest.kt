@@ -87,7 +87,7 @@ class BackendTest {
 
         private var closed = false
 
-        override fun enqueue(call: Dispatcher.AsyncCall) {
+        override fun enqueue(call: AsyncCall) {
             if (closed) {
                 throw RejectedExecutionException()
             }
