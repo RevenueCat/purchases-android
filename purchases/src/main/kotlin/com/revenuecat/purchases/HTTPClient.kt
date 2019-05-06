@@ -110,7 +110,7 @@ internal class HTTPClient(
             connection.disconnect()
         }
 
-        result.body = payload?.let{ JSONObject(it) }
+        result.body = payload?.let{ JSONObject(it) } ?: throw IOException("Network call payload is null.")
         debugLog("${connection.requestMethod} $path ${result.responseCode}")
 
         return result
