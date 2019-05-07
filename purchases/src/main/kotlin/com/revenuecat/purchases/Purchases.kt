@@ -112,6 +112,28 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     // region Public Methods
+
+    /**
+     * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
+     * for subscriptions anytime a sync is needed, like after a successful purchase.
+     *
+     * @warning This function should only be called if you're not calling makePurchase.
+     */
+    fun syncPurchases()  {
+        debugLog("Syncing purchases")
+        billingWrapper.queryAllPurchases({ allPurchases ->
+            if (allPurchases.isNotEmpty()) {
+                postPurchasesSortedByTime(
+                    allPurchases,
+                    allowSharingPlayStoreAccount,
+                    false,
+                    { debugLog("Purchases synced") },
+                    { errorLog("Error syncing purchases $it") }
+                )
+            }
+        }, { errorLog("Error syncing purchases $it") })
+    }
+
     /**
      * Add attribution data from a supported network
      * @param [data] JSONObject containing the data to post to the attribution network
@@ -205,7 +227,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [oldSkus] The skus you wish to upgrade from.
      * @param [listener] The listener that will be called when purchase completes.
      */
-    @Deprecated("use makePurchase accepting a MakePurchaseListener instead")
+    @Deprecated("use makePurchase accepting a MakePurchaseListener instead",
+        ReplaceWith("makePurchase(activity, skuDetails, oldSku, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener"))
     fun makePurchase(
         activity: Activity,
         sku: String,
@@ -232,6 +255,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [oldSkus] The skus you wish to upgrade from.
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated("use makePurchase accepting a MakePurchaseListener instead",
+        ReplaceWith("makePurchase(activity, skuDetails, oldSku, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener"))
     fun makePurchase(
         activity: Activity,
         sku: String,
@@ -251,6 +276,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             } else {
                 purchaseCallbacks[sku] = listener
                 billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
+
+                billingWrapper.querySkuDetailsAsync(skuType, listOf(sku), {
+                    billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
+                }, {
+                    listener.onError(it, false)
+                })
             }
         }
     }
@@ -281,6 +312,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skuType] The type of sku, INAPP or SUBS
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated("use makePurchase accepting SkuDetails instead",
+        ReplaceWith("makePurchase(activity, skuDetails, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener")
+    )
     fun makePurchase(
         activity: Activity,
         sku: String,
@@ -288,6 +322,36 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: MakePurchaseListener
     ) {
         makePurchase(activity, sku, skuType, ArrayList(), listener)
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [skuDetails] The skuDetails of the product you wish to purchase
+     * @param [oldSku] The sku you wish to upgrade from.
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun makePurchase(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        oldSku: String,
+        listener: MakePurchaseListener
+    ) {
+        startPurchase(activity, skuDetails, oldSku, listener)
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [skuDetails] The skuDetails of the product you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun makePurchase(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        listener: MakePurchaseListener
+    ) {
+        startPurchase(activity, skuDetails, null, listener)
     }
 
     /**
@@ -302,23 +366,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: ReceivePurchaserInfoListener
     ) {
         debugLog("Restoring purchases")
-        billingWrapper.queryPurchaseHistoryAsync(
-            BillingClient.SkuType.SUBS,
-            { subsPurchasesList ->
-                billingWrapper.queryPurchaseHistoryAsync(
-                    BillingClient.SkuType.INAPP,
-                    { inAppPurchasesList ->
-                        val allPurchases = ArrayList(subsPurchasesList)
-                        allPurchases.addAll(inAppPurchasesList)
-                        if (allPurchases.isEmpty()) {
-                            getPurchaserInfo(listener)
-                        } else {
-                            postRestoredPurchases(allPurchases, listener)
-                        }
-                    },
-                    { error -> dispatch { listener.onError(error) } })
-            },
-            { error -> dispatch { listener.onError(error) } })
+        if (!allowSharingPlayStoreAccount) {
+            debugLog("allowSharingPlayStoreAccount is set to false and restorePurchases has been called. This will 'alias' any app user id's sharing the same receipt. Are you sure you want to do this?")
+        }
+        billingWrapper.queryAllPurchases({ allPurchases ->
+            if (allPurchases.isEmpty()) {
+                getPurchaserInfo(listener)
+            } else {
+                postPurchasesSortedByTime(
+                    allPurchases,
+                    true,
+                    finishTransactions,
+                    { dispatch { listener.onReceived(it) } },
+                    { dispatch { listener.onError(it) } }
+                )
+            }
+        }, { dispatch { listener.onError(it) } })
     }
 
     /**
@@ -548,6 +611,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun postPurchases(
         purchases: List<Purchase>,
         allowSharingPlayStoreAccount: Boolean,
+        consumeAllTransactions: Boolean,
         onSuccess: (Purchase, PurchaserInfo) -> Unit,
         onError: (Purchase, PurchasesError) -> Unit
     ) {
@@ -558,14 +622,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 purchase.sku,
                 allowSharingPlayStoreAccount,
                 { info ->
-                    if (finishTransactions) {
+                    if (consumeAllTransactions) {
                         billingWrapper.consumePurchase(purchase.purchaseToken)
                     }
                     cachePurchaserInfo(info)
                     sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                     onSuccess(purchase, info)
                 }, { error, shouldConsumePurchase ->
-                    if (shouldConsumePurchase && finishTransactions) {
+                    if (shouldConsumePurchase && consumeAllTransactions) {
                         billingWrapper.consumePurchase(purchase.purchaseToken)
                     }
                     onError(purchase, error)
@@ -573,24 +637,29 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun postRestoredPurchases(
+    private fun postPurchasesSortedByTime(
         purchases: List<Purchase>,
-        onCompletion: ReceivePurchaserInfoListener
+        allowSharingPlayStoreAccount: Boolean,
+        consumeAllTransactions: Boolean,
+        onSuccess: (PurchaserInfo) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
         purchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
             postPurchases(
                 sortedByTime,
-                true,
+                allowSharingPlayStoreAccount,
+                consumeAllTransactions,
                 { purchase, info ->
                     if (sortedByTime.last() == purchase) {
-                        dispatch { onCompletion.onReceived(info) }
+                        onSuccess(info)
                     }
                 },
                 { purchase, error ->
                     if (sortedByTime.last() == purchase) {
-                        dispatch { onCompletion.onError(error) }
+                        onError(error)
                     }
-                })
+                }
+            )
         }
     }
 
@@ -682,6 +751,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 postPurchases(
                     purchases,
                     allowSharingPlayStoreAccount,
+                    finishTransactions,
                     { purchase, info ->
                         synchronized(this) {
                             dispatch {
@@ -716,6 +786,28 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     }
                     purchaseCallbacks.clear()
                 }
+            }
+        }
+    }
+
+    private fun startPurchase(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        oldSku: String?,
+        listener: MakePurchaseListener
+    ) {
+        debugLog("makePurchase - $skuDetails")
+        if (!finishTransactions) {
+            debugLog("finishTransactions is set to false and makePurchase has been called. Are you sure you want to do this?")
+        }
+        synchronized(this) {
+            if (purchaseCallbacks.containsKey(skuDetails.sku)) {
+                dispatch {
+                    listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
+                }
+            } else {
+                purchaseCallbacks[skuDetails.sku] = listener
+                billingWrapper.makePurchaseAsync(activity, appUserID, skuDetails, oldSku)
             }
         }
     }
@@ -762,6 +854,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * If `null` `[Purchases] will generate a unique identifier for the current device and persist
          * it the SharedPreferences. This also affects the behavior of [restorePurchases].
          * @param service Optional [ExecutorService] to use for the backend calls.
+         * @param observerMode Optional boolean set to FALSE by default. Set to TRUE if you are using your own
+         * subscription system and you want to use RevenueCat's backend only. If set to TRUE, you should be consuming
+         * transactions outside of the Purchases SDK.
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
         @JvmOverloads
@@ -770,7 +865,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             context: Context,
             apiKey: String,
             appUserID: String? = null,
-            service: ExecutorService = createDefaultExecutor()
+            service: ExecutorService = createDefaultExecutor(),
+            observerMode: Boolean = false
         ): Purchases {
             if (!context.hasPermission(Manifest.permission.INTERNET))
                 throw IllegalArgumentException("Purchases requires INTERNET permission.")
@@ -799,7 +895,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 appUserID,
                 backend,
                 billingWrapper,
-                cache
+                cache,
+                finishTransactions = !observerMode
             ).also { sharedInstance = it }
         }
 

@@ -122,6 +122,7 @@ internal class BillingWrapper internal constructor(
         }
     }
 
+    @Deprecated("", ReplaceWith("makePurchaseAsync(activity, appUserID, skuDetails, oldSku)"))
     fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
@@ -135,22 +136,44 @@ internal class BillingWrapper internal constructor(
             debugLog("Making purchase for sku: $sku")
         }
         executeRequestOnUIThread {
-            val builder = BillingFlowParams.newBuilder()
+            val params = BillingFlowParams.newBuilder()
                 .setSku(sku)
                 .setType(skuType)
                 .setAccountId(appUserID)
+                .setOldSkus(oldSkus).build()
 
-            if (oldSkus.size > 0) {
-                builder.setOldSkus(oldSkus)
-            }
-
-            val params = builder.build()
-
-            @BillingClient.BillingResponse val response = billingClient!!.launchBillingFlow(activity, params)
-            if (response != BillingClient.BillingResponse.OK) {
-                log("Failed to launch billing intent $response")
-            }
+            launchBillingFlow(activity, params)
         }
+    }
+
+    fun makePurchaseAsync(
+        activity: Activity,
+        appUserID: String,
+        skuDetails: SkuDetails,
+        oldSku: String?
+    ) {
+        if (oldSku != null) {
+            debugLog("Upgrading old sku $oldSku with sku: ${skuDetails.sku}")
+        } else {
+            debugLog("Making purchase for sku: ${skuDetails.sku}")
+        }
+        executeRequestOnUIThread {
+            val params = BillingFlowParams.newBuilder()
+                .setSkuDetails(skuDetails)
+                .setAccountId(appUserID)
+                .setOldSku(oldSku).build()
+
+            launchBillingFlow(activity, params)
+        }
+    }
+
+    private fun launchBillingFlow(
+        activity: Activity,
+        params: BillingFlowParams
+    ) {
+        billingClient!!.launchBillingFlow(activity, params)
+            .takeIf { response -> response != BillingClient.BillingResponse.OK}
+            ?.let { response -> log("Failed to launch billing intent $response") }
     }
 
     fun queryPurchaseHistoryAsync(
@@ -177,6 +200,25 @@ internal class BillingWrapper internal constructor(
                 onReceivePurchaseHistoryError(connectionError)
             }
         }
+    }
+
+    fun queryAllPurchases(
+        onReceivePurchaseHistory: (List<Purchase>) -> Unit,
+        onReceivePurchaseHistoryError: (PurchasesError) -> Unit
+    ) {
+        queryPurchaseHistoryAsync(
+            BillingClient.SkuType.SUBS,
+            { subsPurchasesList ->
+                queryPurchaseHistoryAsync(
+                    BillingClient.SkuType.INAPP,
+                    { inAppPurchasesList ->
+                        onReceivePurchaseHistory(subsPurchasesList + inAppPurchasesList)
+                    },
+                    onReceivePurchaseHistoryError
+                )
+            },
+            onReceivePurchaseHistoryError
+        )
     }
 
     fun consumePurchase(token: String) {

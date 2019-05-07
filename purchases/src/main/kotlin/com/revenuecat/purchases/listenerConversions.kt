@@ -104,6 +104,7 @@ fun Purchases.getEntitlementsWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
+@Deprecated("Replace with makePurchaseWith accepting SkuDetails and a single oldSku", ReplaceWith("Purchases.makePurchaseWith(activity, skuDetails, oldSku, onError, onSuccess)"))
 fun Purchases.makePurchaseWith(
     activity: Activity,
     sku: String,
@@ -115,6 +116,24 @@ fun Purchases.makePurchaseWith(
     makePurchase(activity, sku, skuType, oldSkus, purchaseCompletedListener(onSuccess, onError))
 }
 
+
+/**
+ * Make a purchase.
+ * @param [activity] Current activity
+ * @param [skuDetails] The skuDetails of the product you wish to purchase
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+fun Purchases.makePurchaseWith(
+    activity: Activity,
+    skuDetails: SkuDetails,
+    oldSku: String,
+    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
+    onSuccess: MakePurchaseCompletedSuccessFunction
+) {
+    makePurchase(activity, skuDetails, oldSku, purchaseCompletedListener(onSuccess, onError))
+}
+
 /**
  * Make a purchase.
  * @param [activity] Current activity
@@ -123,6 +142,7 @@ fun Purchases.makePurchaseWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
+@Deprecated("Replace with makePurchaseWith accepting SkuDetails object", ReplaceWith("makePurchaseWith(activity, skuDetails, onError, onSuccess)"))
 fun Purchases.makePurchaseWith(
     activity: Activity,
     sku: String,
@@ -130,7 +150,23 @@ fun Purchases.makePurchaseWith(
     onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
     onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
-    makePurchase(activity, sku, skuType, ArrayList(), purchaseCompletedListener(onSuccess, onError))
+    makePurchase(activity, sku, skuType, purchaseCompletedListener(onSuccess, onError))
+}
+
+/**
+ * Make a purchase.
+ * @param [activity] Current activity
+ * @param [skuDetails] The skuDetails of the product you wish to purchase
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+fun Purchases.makePurchaseWith(
+    activity: Activity,
+    skuDetails: SkuDetails,
+    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
+    onSuccess: MakePurchaseCompletedSuccessFunction
+) {
+    makePurchase(activity, skuDetails, purchaseCompletedListener(onSuccess, onError))
 }
 
 /**
