@@ -15,6 +15,7 @@ internal class DeviceCache(
     apiKey: String
 ) {
     private val appUserIDCacheKey = "com.revenuecat.purchases.$apiKey"
+    private val attributionCacheKey = "com.revenuecat.purchases.attribution"
 
     private fun purchaserInfoCacheKey(appUserID: String) = "$appUserIDCacheKey.$appUserID"
 
@@ -51,6 +52,13 @@ internal class DeviceCache(
                 appUserIDCacheKey,
                 appUserID
             ).apply()
+    }
+
+    fun getCachedAttributionData(network: Purchases.AttributionNetwork, userId: String): String? =
+        preferences.getString("$attributionCacheKey.$userId.$network", null)
+
+    fun cacheAttributionData(network: Purchases.AttributionNetwork, userId: String, cacheValue: String) {
+        preferences.edit().putString("$attributionCacheKey.$userId.$network", cacheValue).apply()
     }
 
 }

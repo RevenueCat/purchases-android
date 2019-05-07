@@ -26,6 +26,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
 import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.ArrayList
@@ -54,6 +55,7 @@ private const val CACHE_REFRESH_PERIOD = 60000 * 5
  * transactions outside of the Purchases SDK.
  */
 class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
+    private val applicationContext: Context,
     backingFieldAppUserID: String?,
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
@@ -139,11 +141,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [data] JSONObject containing the data to post to the attribution network
      * @param [network] [AttributionNetwork] to post the data to
      */
+    @Deprecated("use static addAttributionData", ReplaceWith("Purchases.addAttributionData(data, network)"))
     fun addAttributionData(
         data: JSONObject,
         network: AttributionNetwork
     ) {
-        backend.postAttributionData(appUserID, network, data)
+        postAttributionData(data, network, appUserID)
     }
 
     /**
@@ -151,20 +154,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [data] Map containing the data to post to the attribution network
      * @param [network] [AttributionNetwork] to post the data to
      */
+    @Deprecated("use static addAttributionData", ReplaceWith("Purchases.addAttributionData(data, network)"))
     @Throws(JSONException::class)
     fun addAttributionData(
         data: Map<String, String>,
         network: AttributionNetwork
     ) {
-        val jsonObject = JSONObject()
-        for (key in data.keys) {
-            try {
-                jsonObject.put(key, data[key])
-            } catch (e: JSONException) {
-                Log.e("Purchases", "Failed to add key $key to attribution map")
-            }
-        }
-        backend.postAttributionData(appUserID, network, jsonObject)
+        postAttributionData(data, network, appUserID)
     }
 
     /**
@@ -234,7 +230,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         sku: String,
         @BillingClient.SkuType skuType: String,
         oldSkus: ArrayList<String>,
-        listener: PurchaseCompletedListener
+        @Suppress("DEPRECATION") listener: PurchaseCompletedListener
     ) {
         makePurchase(activity, sku, skuType, oldSkus, object : MakePurchaseListener {
             override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
@@ -300,8 +296,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         activity: Activity,
         sku: String,
         @BillingClient.SkuType skuType: String,
-        listener: PurchaseCompletedListener
+        @Suppress("DEPRECATION") listener: PurchaseCompletedListener
     ) {
+        @Suppress("DEPRECATION")
         makePurchase(activity, sku, skuType, ArrayList(), listener)
     }
 
@@ -502,7 +499,50 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         this.updatedPurchaserInfoListener = null
     }
     // endregion
+    // region Internal Methods
 
+    internal fun postAttributionData(
+        data: Map<String, String>,
+        network: AttributionNetwork,
+        userID: String = appUserID
+    ) {
+        val jsonObject = JSONObject()
+        for (key in data.keys) {
+            try {
+                jsonObject.put(key, data[key])
+            } catch (e: JSONException) {
+                Log.e("Purchases", "Failed to add key $key to attribution map")
+            }
+        }
+
+        postAttributionData(jsonObject, network, userID)
+    }
+
+    internal fun postAttributionData(
+        jsonObject: JSONObject,
+        network: AttributionNetwork,
+        networkUserId: String?
+    ) {
+        AdvertisingIdClient.getAdvertisingIdInfo(applicationContext) { adInfo ->
+            val latestAttributionDataId = deviceCache.getCachedAttributionData(network, appUserID)
+            val newCacheValue = "${adInfo?.takeIf { !it.isLimitAdTrackingEnabled }?.id ?: ""}_${networkUserId ?: ""}"
+
+            if (latestAttributionDataId != null && latestAttributionDataId == newCacheValue) {
+                debugLog("Attribution data is the same as latest. Skipping.")
+            } else {
+                if (adInfo?.isLimitAdTrackingEnabled == false) {
+                    jsonObject.put("rc_gps_adid", adInfo.id)
+                }
+
+                jsonObject.put("rc_${network.name.toLowerCase()}_id", networkUserId)
+
+                backend.postAttributionData(appUserID, network, jsonObject)
+                deviceCache.cacheAttributionData(network, appUserID, newCacheValue)
+            }
+        }
+    }
+
+    // endregion
     // region Private Methods
     private fun fetchAndCacheEntitlements(completion: ReceiveEntitlementsListener? = null) {
         backend.getEntitlements(
@@ -815,13 +855,26 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Static
     companion object {
+        internal var postponedAttributionData = mutableListOf<AttributionData>()
+            @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+            get() = field
+            @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+            internal set(value) {
+                field = value
+            }
         /**
          * Enable debug logging. Useful for debugging issues with the lovely team @RevenueCat
          */
         @JvmStatic
         var debugLogsEnabled = false
 
-        private var backingFieldSharedInstance: Purchases? = null
+        internal var backingFieldSharedInstance: Purchases? = null
+            @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+            get() = field
+            @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+            internal set(value) {
+                field = value
+            }
         /**
          * Singleton instance of Purchases. [configure] will set this
          * @return A previously set singleton Purchases instance or null
@@ -838,6 +891,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             internal set(value) {
                 backingFieldSharedInstance?.close()
                 backingFieldSharedInstance = value
+                val iterator = postponedAttributionData.iterator()
+                while(iterator.hasNext()) {
+                    val next = iterator.next()
+                    value.postAttributionData(next.data, next.network, next.networkUserId)
+                    iterator.remove()
+                }
             }
 
         /**
@@ -892,12 +951,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             val cache = DeviceCache(prefs, apiKey)
 
             return Purchases(
+                context,
                 appUserID,
                 backend,
                 billingWrapper,
                 cache,
                 finishTransactions = !observerMode
-            ).also { sharedInstance = it }
+            ).also { instance ->
+                sharedInstance = instance
+            }
         }
 
         /**
@@ -970,6 +1032,47 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         }
 
+        /**
+         * Add attribution data from a supported network
+         * @param [data] JSONObject containing the data to post to the attribution network
+         * @param [network] [AttributionNetwork] to post the data to
+         * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
+         */
+        @JvmOverloads
+        fun addAttributionData(
+            data: JSONObject,
+            network: AttributionNetwork,
+            networkUserId: String? = null
+        ) {
+            backingFieldSharedInstance?.postAttributionData(data, network, networkUserId) ?: {
+                postponedAttributionData.add(AttributionData(data, network, networkUserId))
+            }.invoke()
+        }
+
+        /**
+         * Add attribution data from a supported network
+         * @param [data] Map containing the data to post to the attribution network
+         * @param [network] [AttributionNetwork] to post the data to
+         * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
+         */
+        @Throws(JSONException::class)
+        @JvmOverloads
+        fun addAttributionData(
+            data: Map<String, String>,
+            network: AttributionNetwork,
+            networkUserId: String? = null
+        ) {
+            val jsonObject = JSONObject()
+            for (key in data.keys) {
+                try {
+                    jsonObject.put(key, data[key])
+                } catch (e: JSONException) {
+                    Log.e("Purchases", "Failed to add key $key to attribution map")
+                }
+            }
+            this.addAttributionData(jsonObject, network, networkUserId)
+        }
+
         private fun Context.getApplication() = applicationContext as Application
 
         private fun Context.hasPermission(permission: String): Boolean {
@@ -1009,6 +1112,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         TENJIN(4)
     }
+
+    internal data class AttributionData(
+        val data: JSONObject,
+        val network: AttributionNetwork,
+        val networkUserId: String?
+    )
     // endregion
 
 }
