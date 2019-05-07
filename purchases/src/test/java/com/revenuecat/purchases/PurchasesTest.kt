@@ -1899,6 +1899,47 @@ class PurchasesTest {
             )
         }
     }
+
+    @Test
+    fun `syncing transactions never consumes transactions`() {
+        setup()
+
+        val p: Purchase = mockk(relaxed = true)
+        val sku = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+        purchases.allowSharingPlayStoreAccount = true
+        every {
+            p.sku
+        } returns sku
+        every {
+            p.purchaseToken
+        } returns purchaseToken
+
+        every {
+            mockBillingWrapper.queryAllPurchases(
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(List<Purchase>) -> Unit>().captured.invoke(listOf(p))
+        }
+
+        purchases.syncPurchases()
+
+        verify {
+            mockBackend.postReceiptData(
+                eq(purchaseToken),
+                eq(purchases.appUserID),
+                eq(sku),
+                eq(true),
+                any(),
+                any()
+            )
+        }
+        verify (exactly = 0){
+            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+        }
+    }
     // region Private Methods
     private fun mockSkuDetailFetch(details: List<SkuDetails>, skus: List<String>, skuType: String) {
         every {

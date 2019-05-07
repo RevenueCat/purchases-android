@@ -126,8 +126,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 postPurchasesSortedByTime(
                     allPurchases,
                     allowSharingPlayStoreAccount,
+                    false,
                     { debugLog("Purchases synced") },
-                    { errorLog("Error syncing purchases $it") })
+                    { errorLog("Error syncing purchases $it") }
+                )
             }
         }, { errorLog("Error syncing purchases $it") })
     }
@@ -374,6 +376,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 postPurchasesSortedByTime(
                     allPurchases,
                     true,
+                    finishTransactions,
                     { dispatch { listener.onReceived(it) } },
                     { dispatch { listener.onError(it) } }
                 )
@@ -608,6 +611,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun postPurchases(
         purchases: List<Purchase>,
         allowSharingPlayStoreAccount: Boolean,
+        consumeAllTransactions: Boolean,
         onSuccess: (Purchase, PurchaserInfo) -> Unit,
         onError: (Purchase, PurchasesError) -> Unit
     ) {
@@ -618,14 +622,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 purchase.sku,
                 allowSharingPlayStoreAccount,
                 { info ->
-                    if (finishTransactions) {
+                    if (consumeAllTransactions) {
                         billingWrapper.consumePurchase(purchase.purchaseToken)
                     }
                     cachePurchaserInfo(info)
                     sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                     onSuccess(purchase, info)
                 }, { error, shouldConsumePurchase ->
-                    if (shouldConsumePurchase && finishTransactions) {
+                    if (shouldConsumePurchase && consumeAllTransactions) {
                         billingWrapper.consumePurchase(purchase.purchaseToken)
                     }
                     onError(purchase, error)
@@ -636,6 +640,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun postPurchasesSortedByTime(
         purchases: List<Purchase>,
         allowSharingPlayStoreAccount: Boolean,
+        consumeAllTransactions: Boolean,
         onSuccess: (PurchaserInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
@@ -643,6 +648,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             postPurchases(
                 sortedByTime,
                 allowSharingPlayStoreAccount,
+                consumeAllTransactions,
                 { purchase, info ->
                     if (sortedByTime.last() == purchase) {
                         onSuccess(info)
@@ -652,7 +658,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     if (sortedByTime.last() == purchase) {
                         onError(error)
                     }
-                })
+                }
+            )
         }
     }
 
@@ -744,6 +751,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 postPurchases(
                     purchases,
                     allowSharingPlayStoreAccount,
+                    finishTransactions,
                     { purchase, info ->
                         synchronized(this) {
                             dispatch {
