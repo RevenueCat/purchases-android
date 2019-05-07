@@ -20,7 +20,8 @@ import java.net.MalformedURLException
 import java.net.URL
 
 internal class HTTPClient(
-    private var baseURL: URL = URL("https://api.revenuecat.com/")
+    private var baseURL: URL = URL("https://api.revenuecat.com/"),
+    private val languageTag: String
 ) {
 
     private fun buffer(inputStream: InputStream): BufferedReader {
@@ -110,7 +111,7 @@ internal class HTTPClient(
             connection.disconnect()
         }
 
-        result.body = payload?.let{ JSONObject(it) } ?: throw IOException("Network call payload is null.")
+        result.body = payload?.let { JSONObject(it) } ?: throw IOException("Network call payload is null.")
         debugLog("${connection.requestMethod} $path ${result.responseCode}")
 
         return result
@@ -132,6 +133,7 @@ internal class HTTPClient(
                 Integer.toString(Build.VERSION.SDK_INT)
             )
             addRequestProperty("X-Version", Purchases.frameworkVersion)
+            addRequestProperty("X-Client-Locale", languageTag)
 
             if (body != null) {
                 doOutput = true
@@ -146,5 +148,4 @@ internal class HTTPClient(
         var responseCode: Int = 0
         var body: JSONObject? = null
     }
-
 }

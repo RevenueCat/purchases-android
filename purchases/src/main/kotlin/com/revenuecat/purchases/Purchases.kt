@@ -880,7 +880,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             val backend = Backend(
                 apiKey,
                 Dispatcher(service),
-                HTTPClient()
+                HTTPClient(languageTag = context.getLocale().toBCP47())
             )
 
             val billingWrapper = BillingWrapper(
