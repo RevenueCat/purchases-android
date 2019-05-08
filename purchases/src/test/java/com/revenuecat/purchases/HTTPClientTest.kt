@@ -42,9 +42,11 @@ class HTTPClientTest {
         }
     }
 
+    private val appConfig = AppConfig("en-US", "1.0")
+
     @Test
     fun canBeCreated() {
-        HTTPClient(baseURL, "en-US")
+        HTTPClient(baseURL, appConfig)
     }
 
     @Test
@@ -52,7 +54,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
 
-        HTTPClient(baseURL, "en-US")
+        HTTPClient(baseURL, appConfig)
             .apply {
                 performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
             }
@@ -67,7 +69,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}").setResponseCode(223)
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, "en-US")
+        val client = HTTPClient(baseURL, appConfig)
         val result = client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
 
         server.takeRequest()
@@ -80,7 +82,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{'response': 'OK'}").setResponseCode(223)
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, "en-US")
+        val client = HTTPClient(baseURL, appConfig)
         val result = client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
 
         server.takeRequest()
@@ -95,7 +97,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("not uh jason")
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, "en-US")
+        val client = HTTPClient(baseURL, appConfig)
         try {
             client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
         } finally {
@@ -112,7 +114,7 @@ class HTTPClientTest {
         val headers = HashMap<String, String>()
         headers["Authentication"] = "Bearer todd"
 
-        val client = HTTPClient(baseURL, "en-US")
+        val client = HTTPClient(baseURL, appConfig)
         client.performRequest("/resource", null as Map<*, *>?, headers)
 
         val request = server.takeRequest()
@@ -125,7 +127,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, "en-US")
+        val client = HTTPClient(baseURL, appConfig)
         client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
 
         val request = server.takeRequest()
@@ -134,7 +136,8 @@ class HTTPClientTest {
         assertThat(request.getHeader("X-Platform")).isEqualTo("android")
         assertThat(request.getHeader("X-Platform-Version")).isEqualTo(Integer.toString(android.os.Build.VERSION.SDK_INT))
         assertThat(request.getHeader("X-Version")).isEqualTo(Purchases.frameworkVersion)
-        assertThat(request.getHeader("X-Client-Locale")).isEqualTo("en-US")
+        assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
+        assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
     }
 
     @Test
@@ -145,7 +148,7 @@ class HTTPClientTest {
         val body = HashMap<String, String>()
         body["user_id"] = "jerry"
 
-        val client = HTTPClient(baseURL, "en-US")
+        val client = HTTPClient(baseURL, appConfig)
         client.performRequest("/resource", body, mapOf("" to ""))
 
         val request = server.takeRequest()

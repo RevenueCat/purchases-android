@@ -21,7 +21,7 @@ import java.net.URL
 
 internal class HTTPClient(
     private var baseURL: URL = URL("https://api.revenuecat.com/"),
-    private val languageTag: String
+    private val appConfig: AppConfig
 ) {
 
     private fun buffer(inputStream: InputStream): BufferedReader {
@@ -133,7 +133,8 @@ internal class HTTPClient(
                 Integer.toString(Build.VERSION.SDK_INT)
             )
             addRequestProperty("X-Version", Purchases.frameworkVersion)
-            addRequestProperty("X-Client-Locale", languageTag)
+            addRequestProperty("X-Client-Locale", appConfig.languageTag)
+            addRequestProperty("X-Client-Version", appConfig.versionName)
 
             if (body != null) {
                 doOutput = true
