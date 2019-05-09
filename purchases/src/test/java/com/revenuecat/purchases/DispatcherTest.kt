@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutorService
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class DispatcherTest {
+class  DispatcherTest {
     private var executorService: ExecutorService = mockk()
     private var dispatcher: Dispatcher = Dispatcher(executorService)
 

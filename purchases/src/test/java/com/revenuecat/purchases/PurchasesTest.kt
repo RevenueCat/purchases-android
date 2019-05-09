@@ -864,18 +864,20 @@ class PurchasesTest {
         jsonObject.put("key", "value")
         val network = Purchases.AttributionNetwork.APPSFLYER
 
-        val lst = slot<JSONObject>()
+        val jsonSlot = slot<JSONObject>()
         every {
-            mockBackend.postAttributionData(appUserId, network, capture(lst))
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, capture(jsonSlot), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         val networkUserID = "networkid"
         mockAdInfo(false, networkUserID)
 
         Purchases.addAttributionData(jsonObject, network, networkUserID)
 
-        verify { mockBackend.postAttributionData(appUserId, network, any()) }
-        assertThat(lst.captured["key"]).isEqualTo("value")
+        verify { mockBackend.postAttributionData(appUserId, network, any(), any()) }
+        assertThat(jsonSlot.captured["key"]).isEqualTo("value")
     }
 
     @Test
@@ -885,8 +887,10 @@ class PurchasesTest {
         val network = Purchases.AttributionNetwork.APPSFLYER
 
         every {
-            mockBackend.postAttributionData(appUserId, network, any())
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, any(), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         val networkUserID = "networkUserID"
         mockAdInfo(false, networkUserID)
@@ -897,6 +901,7 @@ class PurchasesTest {
             mockBackend.postAttributionData(
                 eq(appUserId),
                 eq(network),
+                any(),
                 any()
             )
         }
@@ -1117,10 +1122,16 @@ class PurchasesTest {
     @Test
     fun `when resetting, random app user id is generated and saved`() {
         setup()
+        every {
+            mockCache.clearLatestAttributionData(appUserId)
+        } just Runs
         purchases.reset()
         val randomID = slot<String>()
         verify {
             mockCache.cacheAppUserID(capture(randomID))
+        }
+        verify {
+            mockCache.clearLatestAttributionData(appUserId)
         }
         assertThat(purchases.appUserID).isEqualTo(randomID.captured)
         assertThat(randomID.captured).isNotNull()
@@ -1969,8 +1980,10 @@ class PurchasesTest {
         val network = Purchases.AttributionNetwork.APPSFLYER
 
         every {
-            mockBackend.postAttributionData(appUserId, network, jsonObject)
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, jsonObject, captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         val networkUserID = "networkUserID"
         Purchases.addAttributionData(jsonObject, network, networkUserID)
@@ -1979,7 +1992,7 @@ class PurchasesTest {
 
         setup()
 
-        verify { mockBackend.postAttributionData(eq(appUserId), eq(network), eq(jsonObject)) }
+        verify { mockBackend.postAttributionData(eq(appUserId), eq(network), eq(jsonObject), any()) }
     }
 
     @Test
@@ -1988,8 +2001,10 @@ class PurchasesTest {
         val capturedJSONObject = slot<JSONObject>()
 
         every {
-            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject))
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         val networkUserID = "networkUserID"
         mockAdInfo(false, networkUserID)
@@ -1998,11 +2013,7 @@ class PurchasesTest {
         setup()
 
         verify {
-            mockBackend.postAttributionData(
-                eq(appUserId),
-                eq(network),
-                any()
-            )
+            mockBackend.postAttributionData(eq(appUserId), eq(network), any(), any())
         }
         assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
     }
@@ -2013,8 +2024,10 @@ class PurchasesTest {
         val capturedJSONObject = slot<JSONObject>()
 
         every {
-            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject))
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         val networkUserID = "networkUserID"
         mockAdInfo(false, networkUserID)
@@ -2027,6 +2040,7 @@ class PurchasesTest {
             mockBackend.postAttributionData(
                 eq(appUserId),
                 eq(network),
+                any(),
                 any()
             )
         }
@@ -2040,8 +2054,10 @@ class PurchasesTest {
         val capturedJSONObject = slot<JSONObject>()
 
         every {
-            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject))
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         val networkUserID = "networkUserID"
         mockAdInfo(true, networkUserID)
@@ -2051,11 +2067,7 @@ class PurchasesTest {
         setup()
 
         verify {
-            mockBackend.postAttributionData(
-                eq(appUserId),
-                eq(network),
-                any()
-            )
+            mockBackend.postAttributionData(eq(appUserId), eq(network), any(), any())
         }
         assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
         assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isFalse()
@@ -2067,8 +2079,10 @@ class PurchasesTest {
         val capturedJSONObject = slot<JSONObject>()
 
         every {
-            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject))
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         val networkUserID = "networkUserID"
         mockAdInfo(true, networkUserID)
@@ -2081,6 +2095,7 @@ class PurchasesTest {
             mockBackend.postAttributionData(
                 eq(appUserId),
                 eq(network),
+                any(),
                 any()
             )
         }
@@ -2096,8 +2111,10 @@ class PurchasesTest {
         val capturedJSONObject = slot<JSONObject>()
 
         every {
-            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject))
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         val networkUserID = "networkUserID"
         mockAdInfo(false, networkUserID)
@@ -2109,7 +2126,7 @@ class PurchasesTest {
         Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
 
         verify (exactly = 0){
-            mockBackend.postAttributionData(appUserId, network, any())
+            mockBackend.postAttributionData(appUserId, network, any(), any())
         }
     }
 
@@ -2121,8 +2138,10 @@ class PurchasesTest {
         val capturedJSONObject = slot<JSONObject>()
 
         every {
-            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject))
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         val networkUserID = "networkid"
         mockAdInfo(false, networkUserID)
@@ -2134,7 +2153,7 @@ class PurchasesTest {
         Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
 
         verify (exactly = 1){
-            mockBackend.postAttributionData(appUserId, network, any())
+            mockBackend.postAttributionData(appUserId, network, any(), any())
         }
 
         verify (exactly = 1){
@@ -2148,8 +2167,10 @@ class PurchasesTest {
         val capturedJSONObject = slot<JSONObject>()
 
         every {
-            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject))
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
         val networkUserID = "networkUserID"
         mockAdInfo(false, networkUserID)
@@ -2159,14 +2180,10 @@ class PurchasesTest {
         setup()
 
         verify {
-            mockBackend.postAttributionData(
-                eq(appUserId),
-                eq(network),
-                any()
-            )
+            mockBackend.postAttributionData(eq(appUserId), eq(network), any(), any())
         }
         assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
-        assertThat(capturedJSONObject.captured.get("rc_appsflyer_id")).isEqualTo(networkUserID)
+        assertThat(capturedJSONObject.captured.get("rc_attribution_network_id")).isEqualTo(networkUserID)
         assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isTrue()
     }
 
@@ -2312,7 +2329,11 @@ class PurchasesTest {
         }
 
         every {
-            mockCache.cacheAttributionData(Purchases.AttributionNetwork.APPSFLYER, appUserId, "${ if (limitAdTrackingEnabled) "" else adID }_$networkUserID")
+            mockCache.cacheAttributionData(
+                Purchases.AttributionNetwork.APPSFLYER,
+                appUserId,
+                listOfNotNull(adID.takeUnless { limitAdTrackingEnabled }, networkUserID).joinToString("_")
+            )
         } just Runs
     }
     // endregion
