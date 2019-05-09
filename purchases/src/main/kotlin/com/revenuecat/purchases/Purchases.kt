@@ -876,7 +876,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             val backend = Backend(
                 apiKey,
                 Dispatcher(service),
-                HTTPClient()
+                HTTPClient(
+                    appConfig = AppConfig(
+                        context.getLocale()?.toBCP47() ?: "",
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+                    )
+                )
             )
 
             val billingWrapper = BillingWrapper(
