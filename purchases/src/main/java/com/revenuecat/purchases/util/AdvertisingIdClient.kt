@@ -35,11 +35,15 @@ object AdvertisingIdClient {
             try {
                 if (context.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
                     with(AdvertisingInterface(connection.binder)) {
-                        id?.let { id -> completion(AdInfo(id, isLimitAdTrackingEnabled())) }
+                        id?.let { id ->
+                            completion(AdInfo(id, isLimitAdTrackingEnabled()))
+                            return@Runnable
+                        }
                     }
                 }
             } catch(e: Exception) {
                 completion(null)
+                return@Runnable
             } finally {
                 context.unbindService(connection)
             }

@@ -183,7 +183,8 @@ internal class Backend(
     fun postAttributionData(
         appUserID: String,
         network: Purchases.AttributionNetwork,
-        data: JSONObject
+        data: JSONObject,
+        onSuccessHandler: () -> Unit
     ) {
         if (data.length() == 0) return
 
@@ -202,6 +203,12 @@ internal class Backend(
                     body,
                     authenticationHeaders
                 )
+            }
+
+            override fun onCompletion(result: HTTPClient.Result) {
+                if (result.isSuccessful()) {
+                    onSuccessHandler()
+                }
             }
         })
     }

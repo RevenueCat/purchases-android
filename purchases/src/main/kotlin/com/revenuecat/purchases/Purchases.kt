@@ -449,6 +449,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: ReceivePurchaserInfoListener = receivePurchaserInfoListenerStub
     ) {
         clearCaches()
+        deviceCache.clearLatestAttributionData(this.appUserID)
         this.appUserID = createRandomIDAndCacheIt()
         synchronized(this) {
             purchaseCallbacks.clear()
@@ -525,7 +526,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         AdvertisingIdClient.getAdvertisingIdInfo(applicationContext) { adInfo ->
             val latestAttributionDataId = deviceCache.getCachedAttributionData(network, appUserID)
-            val newCacheValue = "${adInfo?.takeIf { !it.isLimitAdTrackingEnabled }?.id ?: ""}_${networkUserId ?: ""}"
+            val newCacheValue = adInfo.generateAttributionDataCacheValue(networkUserId)
 
             if (latestAttributionDataId != null && latestAttributionDataId == newCacheValue) {
                 debugLog("Attribution data is the same as latest. Skipping.")
@@ -534,13 +535,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     jsonObject.put("rc_gps_adid", adInfo.id)
                 }
 
-                jsonObject.put("rc_${network.name.toLowerCase()}_id", networkUserId)
+                jsonObject.put("rc_attribution_network_id", networkUserId)
 
-                backend.postAttributionData(appUserID, network, jsonObject)
-                deviceCache.cacheAttributionData(network, appUserID, newCacheValue)
+                backend.postAttributionData(appUserID, network, jsonObject) {
+                    deviceCache.cacheAttributionData(network, appUserID, newCacheValue)
+                }
             }
         }
     }
+
+    private fun AdvertisingIdClient.AdInfo?.generateAttributionDataCacheValue(networkUserId: String?) =
+        listOfNotNull(this?.takeIf { !it.isLimitAdTrackingEnabled }?.id, networkUserId).joinToString("_")
 
     // endregion
     // region Private Methods
