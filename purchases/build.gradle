@@ -57,6 +57,10 @@ artifacts {
     archives sourcesJar
 }
 
+tasks.withType(Javadoc).all {
+    enabled = false
+}
+
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
 
 apply plugin: 'org.jetbrains.dokka-android'

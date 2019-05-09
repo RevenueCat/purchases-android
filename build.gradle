@@ -18,6 +18,11 @@ plugins {
 
 allprojects {
     apply from: "$rootDir/detekt.gradle"
+
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+        options.addStringOption('encoding', 'UTF-8')
+    }
 }
 
 subprojects {
