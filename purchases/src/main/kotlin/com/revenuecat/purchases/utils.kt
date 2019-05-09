@@ -99,7 +99,7 @@ internal fun JSONObject.parseDates(jsonKey: String): HashMap<String, Date?> {
     return expirationDates
 }
 
-internal fun Context.getLocale(): Locale =
+internal fun Context.getLocale(): Locale? =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         resources.configuration.locales.get(0)
     } else {

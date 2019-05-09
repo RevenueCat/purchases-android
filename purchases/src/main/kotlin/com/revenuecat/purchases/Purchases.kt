@@ -882,8 +882,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 Dispatcher(service),
                 HTTPClient(
                     appConfig = AppConfig(
-                        context.getLocale().toBCP47(),
-                        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                        context.getLocale()?.toBCP47() ?: "",
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
                     )
                 )
             )
