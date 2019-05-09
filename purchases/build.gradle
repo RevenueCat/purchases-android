@@ -62,6 +62,7 @@ dependencies {
 //}
 
 apply plugin: 'org.jetbrains.dokka-android'
+apply plugin: 'com.vanniktech.maven.publish'
 
 dokka {
     moduleName = 'purchases'

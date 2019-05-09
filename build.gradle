@@ -43,11 +43,7 @@ wrapper {
     gradleVersion = '5.1.1'
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
-}
 //
 //task javadoc(type: Javadoc) {
 //    excludes = ['**/*.kt'] // < ---- Exclude all kotlin files from javadoc file.
 //}
-apply plugin: "com.vanniktech.maven.publish"
