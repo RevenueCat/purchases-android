@@ -15,7 +15,8 @@ android {
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
-        androidTest.java.srcDirs += 'src/androidTest/kotlin'
+        main.java.srcDirs += 'src/main/java'
+        test.java.srcDirs += 'src/test/java'
     }
 }
 
@@ -34,6 +35,26 @@ dependencies {
     testImplementation 'com.android.billingclient:billing:1.2.2'
     testImplementation 'io.mockk:mockk:1.9.3.kotlin12'
     testImplementation 'org.assertj:assertj-core:3.12.2'
+}
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
 }
 
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
