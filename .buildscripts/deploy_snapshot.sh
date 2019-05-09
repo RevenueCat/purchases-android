@@ -19,7 +19,7 @@ elif [ "$CIRCLE_JDK_VERSION" != "$JDK" ]; then
   echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
 else
   echo "Deploying snapshot..."
-  ./gradlew uploadArchives -P signing.keyId=$GPG_SIGNING_KEY_ID -Psigning.password=$GPG_SIGNING_KEY_PW -Psigning.secretKeyRingFile=./secring.gpg \
+  ./gradlew androidSourcesJar androidJavadocsJar uploadArchives -P signing.keyId=$GPG_SIGNING_KEY_ID -Psigning.password=$GPG_SIGNING_KEY_PW -Psigning.secretKeyRingFile=./secring.gpg \
                            -PSONATYPE_NEXUS_USERNAME=$SONATYPE_NEXUS_USERNAME -PSONATYPE_NEXUS_PASSWORD=$SONATYPE_NEXUS_PASSWORD
   echo "Snapshot deployed!"
 fi
