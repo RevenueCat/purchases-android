@@ -897,7 +897,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 backingFieldSharedInstance?.close()
                 backingFieldSharedInstance = value
                 val iterator = postponedAttributionData.iterator()
-                while(iterator.hasNext()) {
+                while (iterator.hasNext()) {
                     val next = iterator.next()
                     value.postAttributionData(next.data, next.network, next.networkUserId)
                     iterator.remove()
@@ -1053,7 +1053,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [network] [AttributionNetwork] to post the data to
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
-        @Throws(JSONException::class)
         @JvmOverloads
         fun addAttributionData(
             data: Map<String, String>,
