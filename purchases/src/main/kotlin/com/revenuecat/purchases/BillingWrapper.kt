@@ -281,6 +281,7 @@ internal class BillingWrapper internal constructor(
             BillingClient.BillingResponse.ITEM_UNAVAILABLE,
             BillingClient.BillingResponse.ERROR,
             BillingClient.BillingResponse.ITEM_ALREADY_OWNED,
+            BillingClient.BillingResponse.SERVICE_TIMEOUT,
             BillingClient.BillingResponse.ITEM_NOT_OWNED -> {
                 log("Billing Service Setup finished with error code: ${responseCode.getBillingResponseCodeName()}")
             }

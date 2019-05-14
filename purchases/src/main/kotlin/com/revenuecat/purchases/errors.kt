@@ -101,7 +101,8 @@ internal fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
     }
 }
 
-internal fun Int.getBillingResponseCodeName(): String {
+@BillingClient.BillingResponse
+internal fun @receiver:BillingClient.BillingResponse Int.getBillingResponseCodeName(): String {
     return when (this) {
         BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED -> "FEATURE_NOT_SUPPORTED"
         BillingClient.BillingResponse.SERVICE_DISCONNECTED -> "SERVICE_DISCONNECTED"
@@ -114,6 +115,7 @@ internal fun Int.getBillingResponseCodeName(): String {
         BillingClient.BillingResponse.ERROR -> "ERROR"
         BillingClient.BillingResponse.ITEM_ALREADY_OWNED -> "ITEM_ALREADY_OWNED"
         BillingClient.BillingResponse.ITEM_NOT_OWNED -> "ITEM_NOT_OWNED"
+        BillingClient.BillingResponse.SERVICE_TIMEOUT -> "SERVICE_TIMEOUT"
         else -> "$this"
     }
 }
@@ -132,6 +134,7 @@ internal fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String)
         BillingClient.BillingResponse.ERROR -> PurchasesErrorCode.StoreProblemError
         BillingClient.BillingResponse.ITEM_ALREADY_OWNED -> PurchasesErrorCode.ProductAlreadyPurchasedError
         BillingClient.BillingResponse.ITEM_NOT_OWNED -> PurchasesErrorCode.PurchaseNotAllowedError
+        BillingClient.BillingResponse.SERVICE_TIMEOUT -> PurchasesErrorCode.StoreProblemError
         else -> PurchasesErrorCode.UnknownError
     }
     return PurchasesError(errorCode, underlyingErrorMessage)

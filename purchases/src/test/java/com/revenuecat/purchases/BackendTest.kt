@@ -325,7 +325,9 @@ class BackendTest {
         expectedBody.put("network", Purchases.AttributionNetwork.APPSFLYER)
         expectedBody.put("data", `object`)
 
-        backend.postAttributionData(appUserID, Purchases.AttributionNetwork.APPSFLYER, `object`)
+        backend.postAttributionData(appUserID, Purchases.AttributionNetwork.APPSFLYER, `object`) {
+
+        }
 
         val headers = HashMap<String, String>()
         headers["Authorization"] = "Bearer $API_KEY"
@@ -348,7 +350,7 @@ class BackendTest {
             appUserID,
             Purchases.AttributionNetwork.APPSFLYER,
             JSONObject()
-        )
+        ) {}
         verify {
             mockClient wasNot Called
         }
@@ -368,7 +370,7 @@ class BackendTest {
             encodeableUserID,
             Purchases.AttributionNetwork.APPSFLYER,
             `object`
-        )
+        ) { }
 
         verify {
             mockClient.performRequest(
@@ -381,11 +383,11 @@ class BackendTest {
 
     @Test
     fun doesntDispatchIfClosed() {
-        backend.postAttributionData("id", Purchases.AttributionNetwork.APPSFLYER, JSONObject())
+        backend.postAttributionData("id", Purchases.AttributionNetwork.APPSFLYER, JSONObject()) { }
 
         backend.close()
 
-        backend.postAttributionData("id", Purchases.AttributionNetwork.APPSFLYER, JSONObject())
+        backend.postAttributionData("id", Purchases.AttributionNetwork.APPSFLYER, JSONObject()) { }
     }
 
     @Test

@@ -16,10 +16,12 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.util.AdvertisingIdClient
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
@@ -27,6 +29,7 @@ import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
+import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,13 +46,21 @@ class PurchasesTest {
     private val mockBackend: Backend = mockk()
     private val mockCache: DeviceCache = mockk()
     private val listener: UpdatedPurchaserInfoListener = mockk()
+    private val mockContext = mockk<Context>(relaxed = true)
 
     private var capturedPurchasesUpdatedListener = slot<BillingWrapper.PurchasesUpdatedListener>()
 
     private val appUserId = "fakeUserID"
+    private val adID = "123"
     private lateinit var purchases: Purchases
     private var receivedSkus: List<SkuDetails>? = null
     private var receivedEntitlementMap: Map<String, Entitlement>? = null
+
+    @After
+    fun tearDown() {
+        Purchases.backingFieldSharedInstance = null
+        Purchases.postponedAttributionData = mutableListOf()
+    }
 
     private fun setup(): PurchaserInfo {
         val mockInfo = mockk<PurchaserInfo>()
@@ -62,11 +73,13 @@ class PurchasesTest {
         } just Runs
 
         purchases = Purchases(
+            mockContext,
             appUserId,
             mockBackend,
             mockBillingWrapper,
             mockCache
         )
+        Purchases.sharedInstance = purchases
         return mockInfo
     }
 
@@ -81,11 +94,13 @@ class PurchasesTest {
         } just Runs
 
         purchases = Purchases(
+            mockContext,
             null,
             mockBackend,
             mockBillingWrapper,
             mockCache
         )
+        Purchases.sharedInstance = purchases
     }
 
     @Test
@@ -334,6 +349,7 @@ class PurchasesTest {
         mockBillingWrapper()
 
         val purchases = Purchases(
+            mockContext,
             null,
             mockBackend,
             mockBillingWrapper,
@@ -356,6 +372,7 @@ class PurchasesTest {
         mockBillingWrapper()
 
         Purchases(
+            mockContext,
             null,
             mockBackend,
             mockBillingWrapper,
@@ -376,6 +393,7 @@ class PurchasesTest {
             mockCache.getCachedAppUserID()
         } returns appUserID
         val p = Purchases(
+            mockContext,
             null,
             mockBackend,
             mockBillingWrapper,
@@ -390,6 +408,7 @@ class PurchasesTest {
         setup()
 
         val purchases = Purchases(
+            mockContext,
             null,
             mockBackend,
             mockBillingWrapper,
@@ -430,6 +449,7 @@ class PurchasesTest {
         setup()
 
         val purchases = Purchases(
+            mockContext,
             "a_fixed_id",
             mockBackend,
             mockBillingWrapper,
@@ -470,6 +490,7 @@ class PurchasesTest {
         setup()
 
         val purchases = Purchases(
+            mockContext,
             "a_fixed_id",
             mockBackend,
             mockBillingWrapper,
@@ -839,16 +860,24 @@ class PurchasesTest {
     fun addAttributionPassesDataToBackend() {
         setup()
 
-        val jsonObject = mockk<JSONObject>()
+        val jsonObject = JSONObject()
+        jsonObject.put("key", "value")
         val network = Purchases.AttributionNetwork.APPSFLYER
 
+        val jsonSlot = slot<JSONObject>()
         every {
-            mockBackend.postAttributionData(appUserId, network, jsonObject)
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, capture(jsonSlot), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
-        purchases.addAttributionData(jsonObject, network)
+        val networkUserID = "networkid"
+        mockAdInfo(false, networkUserID)
 
-        verify { mockBackend.postAttributionData(eq(appUserId), eq(network), eq(jsonObject)) }
+        Purchases.addAttributionData(jsonObject, network, networkUserID)
+
+        verify { mockBackend.postAttributionData(appUserId, network, any(), any()) }
+        assertThat(jsonSlot.captured["key"]).isEqualTo("value")
     }
 
     @Test
@@ -858,15 +887,21 @@ class PurchasesTest {
         val network = Purchases.AttributionNetwork.APPSFLYER
 
         every {
-            mockBackend.postAttributionData(appUserId, network, any())
-        } just Runs
+            mockBackend.postAttributionData(appUserId, network, any(), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
 
-        purchases.addAttributionData(mapOf("key" to "value"), network)
+        val networkUserID = "networkUserID"
+        mockAdInfo(false, networkUserID)
+
+        Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
 
         verify {
             mockBackend.postAttributionData(
                 eq(appUserId),
                 eq(network),
+                any(),
                 any()
             )
         }
@@ -1087,10 +1122,16 @@ class PurchasesTest {
     @Test
     fun `when resetting, random app user id is generated and saved`() {
         setup()
+        every {
+            mockCache.clearLatestAttributionData(appUserId)
+        } just Runs
         purchases.reset()
         val randomID = slot<String>()
         verify {
             mockCache.cacheAppUserID(capture(randomID))
+        }
+        verify {
+            mockCache.clearLatestAttributionData(appUserId)
         }
         assertThat(purchases.appUserID).isEqualTo(randomID.captured)
         assertThat(randomID.captured).isNotNull()
@@ -1538,7 +1579,6 @@ class PurchasesTest {
     @Test
     fun `when checking if Billing is supported, an OK response when starting connection means it's supported`() {
         setup()
-        val mockContext = mockk<Context>(relaxed = true)
         var receivedIsBillingSupported = false
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         mockkStatic(BillingClient::class)
@@ -1559,7 +1599,6 @@ class PurchasesTest {
     @Test
     fun `when checking if Billing is supported, disconnections mean billing is not supported`() {
         setup()
-        val mockContext = mockk<Context>(relaxed = true)
         var receivedIsBillingSupported = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         mockkStatic(BillingClient::class)
@@ -1580,7 +1619,6 @@ class PurchasesTest {
     @Test
     fun `when checking if Billing is supported, a non OK response when starting connection means it's not supported`() {
         setup()
-        val mockContext = mockk<Context>(relaxed = true)
         var receivedIsBillingSupported = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         mockkStatic(BillingClient::class)
@@ -1601,7 +1639,6 @@ class PurchasesTest {
     @Test
     fun `when checking if feature is supported, an OK response when starting connection means it's supported`() {
         setup()
-        val mockContext = mockk<Context>(relaxed = true)
         var featureSupported = false
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         every { mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS) } returns BillingClient.BillingResponse.OK
@@ -1623,7 +1660,6 @@ class PurchasesTest {
     @Test
     fun `when checking if feature is supported, disconnections mean billing is not supported`() {
         setup()
-        val mockContext = mockk<Context>(relaxed = true)
         var featureSupported = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         mockkStatic(BillingClient::class)
@@ -1645,7 +1681,6 @@ class PurchasesTest {
     @Test
     fun `when checking if feature is supported, a non OK response when starting connection means it's not supported`() {
         setup()
-        val mockContext = mockk<Context>(relaxed = true)
         var featureSupported = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         every {
@@ -1669,7 +1704,6 @@ class PurchasesTest {
     @Test
     fun `when no play services, feature is not supported`() {
         setup()
-        val mockContext = mockk<Context>(relaxed = true)
         var featureSupported = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         every {
@@ -1695,7 +1729,6 @@ class PurchasesTest {
     @Test
     fun `when no play services, billing is not supported`() {
         setup()
-        val mockContext = mockk<Context>(relaxed = true)
         var receivedIsBillingSupported = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         mockkStatic(BillingClient::class)
@@ -1940,6 +1973,221 @@ class PurchasesTest {
             mockBillingWrapper.consumePurchase(eq(purchaseToken))
         }
     }
+
+    @Test
+    fun `Data is successfully postponed if no instance is set`() {
+        val jsonObject = JSONObject()
+        val network = Purchases.AttributionNetwork.APPSFLYER
+
+        every {
+            mockBackend.postAttributionData(appUserId, network, jsonObject, captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        val networkUserID = "networkUserID"
+        Purchases.addAttributionData(jsonObject, network, networkUserID)
+
+        mockAdInfo(false, networkUserID)
+
+        setup()
+
+        verify { mockBackend.postAttributionData(eq(appUserId), eq(network), eq(jsonObject), any()) }
+    }
+
+    @Test
+    fun `Data is successfully postponed if no instance is set when sending map`() {
+        val network = Purchases.AttributionNetwork.APPSFLYER
+        val capturedJSONObject = slot<JSONObject>()
+
+        every {
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        val networkUserID = "networkUserID"
+        mockAdInfo(false, networkUserID)
+        Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
+
+        setup()
+
+        verify {
+            mockBackend.postAttributionData(eq(appUserId), eq(network), any(), any())
+        }
+        assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
+    }
+
+    @Test
+    fun `GPS ID is automatically added`() {
+        val network = Purchases.AttributionNetwork.APPSFLYER
+        val capturedJSONObject = slot<JSONObject>()
+
+        every {
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        val networkUserID = "networkUserID"
+        mockAdInfo(false, networkUserID)
+
+        Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
+
+        setup()
+
+        verify {
+            mockBackend.postAttributionData(
+                eq(appUserId),
+                eq(network),
+                any(),
+                any()
+            )
+        }
+        assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
+        assertThat(capturedJSONObject.captured.get("rc_gps_adid")).isEqualTo(adID)
+    }
+
+    @Test
+    fun `GPS ID is not added if limited`() {
+        val network = Purchases.AttributionNetwork.APPSFLYER
+        val capturedJSONObject = slot<JSONObject>()
+
+        every {
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        val networkUserID = "networkUserID"
+        mockAdInfo(true, networkUserID)
+
+        Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
+
+        setup()
+
+        verify {
+            mockBackend.postAttributionData(eq(appUserId), eq(network), any(), any())
+        }
+        assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
+        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isFalse()
+    }
+
+    @Test
+    fun `GPS ID is not added if not present`() {
+        val network = Purchases.AttributionNetwork.APPSFLYER
+        val capturedJSONObject = slot<JSONObject>()
+
+        every {
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        val networkUserID = "networkUserID"
+        mockAdInfo(true, networkUserID)
+
+        Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
+
+        setup()
+
+        verify {
+            mockBackend.postAttributionData(
+                eq(appUserId),
+                eq(network),
+                any(),
+                any()
+            )
+        }
+        assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
+        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isFalse()
+    }
+
+    @Test
+    fun `do not resend last attribution data to backend`() {
+        setup()
+
+        val network = Purchases.AttributionNetwork.APPSFLYER
+        val capturedJSONObject = slot<JSONObject>()
+
+        every {
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        val networkUserID = "networkUserID"
+        mockAdInfo(false, networkUserID)
+
+        every {
+            mockCache.getCachedAttributionData(Purchases.AttributionNetwork.APPSFLYER, appUserId)
+        } returns "${adID}_networkUserID"
+
+        Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
+
+        verify (exactly = 0){
+            mockBackend.postAttributionData(appUserId, network, any(), any())
+        }
+    }
+
+    @Test
+    fun `cache last sent attribution data`() {
+        setup()
+
+        val network = Purchases.AttributionNetwork.APPSFLYER
+        val capturedJSONObject = slot<JSONObject>()
+
+        every {
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        val networkUserID = "networkid"
+        mockAdInfo(false, networkUserID)
+
+        every {
+            mockCache.getCachedAttributionData(Purchases.AttributionNetwork.APPSFLYER, appUserId)
+        } returns null
+
+        Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
+
+        verify (exactly = 1){
+            mockBackend.postAttributionData(appUserId, network, any(), any())
+        }
+
+        verify (exactly = 1){
+            mockCache.cacheAttributionData(network, appUserId, "${adID}_$networkUserID")
+        }
+    }
+
+    @Test
+    fun `network ID is set`() {
+        val network = Purchases.AttributionNetwork.APPSFLYER
+        val capturedJSONObject = slot<JSONObject>()
+
+        every {
+            mockBackend.postAttributionData(appUserId, network, capture(capturedJSONObject), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        val networkUserID = "networkUserID"
+        mockAdInfo(false, networkUserID)
+
+        Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
+
+        setup()
+
+        verify {
+            mockBackend.postAttributionData(eq(appUserId), eq(network), any(), any())
+        }
+        assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
+        assertThat(capturedJSONObject.captured.get("rc_attribution_network_id")).isEqualTo(networkUserID)
+        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isTrue()
+    }
+
+
     // region Private Methods
     private fun mockSkuDetailFetch(details: List<SkuDetails>, skus: List<String>, skuType: String) {
         every {
@@ -1971,6 +2219,9 @@ class PurchasesTest {
             every {
                 consumePurchase(any())
             } just Runs
+            every {
+                purchasesUpdatedListener = null
+            } just Runs
         }
     }
 
@@ -1995,6 +2246,9 @@ class PurchasesTest {
             } answers {
                 lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
             }
+            every {
+                close()
+            } just Runs
         }
     }
 
@@ -2015,6 +2269,9 @@ class PurchasesTest {
             every {
                 clearCachedPurchaserInfo(any())
             } just Runs
+            every {
+                mockCache.getCachedAttributionData(Purchases.AttributionNetwork.APPSFLYER, appUserId)
+            } returns null
         }
     }
 
@@ -2054,6 +2311,29 @@ class PurchasesTest {
         } just Runs
         every {
             mockBillingWrapper.purchasesUpdatedListener = null
+        } just Runs
+    }
+
+    private fun mockAdInfo(limitAdTrackingEnabled: Boolean, networkUserID: String) {
+        val adInfo = mockk<AdvertisingIdClient.AdInfo>()
+        every { adInfo.isLimitAdTrackingEnabled } returns limitAdTrackingEnabled
+        every { adInfo.id } returns if (!limitAdTrackingEnabled) adID else ""
+
+        mockkObject(AdvertisingIdClient)
+
+        val lst = slot<(AdvertisingIdClient.AdInfo?) -> Unit>()
+        every {
+            AdvertisingIdClient.getAdvertisingIdInfo(any(), capture(lst))
+        } answers {
+            lst.captured.invoke(adInfo)
+        }
+
+        every {
+            mockCache.cacheAttributionData(
+                Purchases.AttributionNetwork.APPSFLYER,
+                appUserId,
+                listOfNotNull(adID.takeUnless { limitAdTrackingEnabled }, networkUserID).joinToString("_")
+            )
         } just Runs
     }
     // endregion
