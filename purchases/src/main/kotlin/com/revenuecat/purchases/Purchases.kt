@@ -916,10 +916,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param appUserID Optional user identifier. Use this if your app has an account system.
          * If `null` `[Purchases] will generate a unique identifier for the current device and persist
          * it the SharedPreferences. This also affects the behavior of [restorePurchases].
-         * @param service Optional [ExecutorService] to use for the backend calls.
          * @param observerMode Optional boolean set to FALSE by default. Set to TRUE if you are using your own
          * subscription system and you want to use RevenueCat's backend only. If set to TRUE, you should be consuming
          * transactions outside of the Purchases SDK.
+         * @param service Optional [ExecutorService] to use for the backend calls.
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
         @JvmOverloads
@@ -928,8 +928,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             context: Context,
             apiKey: String,
             appUserID: String? = null,
-            service: ExecutorService = createDefaultExecutor(),
-            observerMode: Boolean = false
+            observerMode: Boolean = false,
+            service: ExecutorService = createDefaultExecutor()
         ): Purchases {
             if (!context.hasPermission(Manifest.permission.INTERNET))
                 throw IllegalArgumentException("Purchases requires INTERNET permission.")
