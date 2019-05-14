@@ -155,7 +155,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [network] [AttributionNetwork] to post the data to
      */
     @Deprecated("use static addAttributionData", ReplaceWith("Purchases.addAttributionData(data, network)"))
-    @Throws(JSONException::class)
     fun addAttributionData(
         data: Map<String, String>,
         network: AttributionNetwork
@@ -502,7 +501,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Internal Methods
 
-    internal fun postAttributionData(
+    private fun postAttributionData(
         data: Map<String, String>,
         network: AttributionNetwork,
         userID: String = appUserID
@@ -1046,7 +1045,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [network] [AttributionNetwork] to post the data to
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
-        @JvmOverloads
         @JvmStatic
         fun addAttributionData(
             data: JSONObject,
@@ -1064,7 +1062,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [network] [AttributionNetwork] to post the data to
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
-        @JvmOverloads
         @JvmStatic
         fun addAttributionData(
             data: Map<String, String>,
