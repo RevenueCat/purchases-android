@@ -1,3 +1,14 @@
+## 2.2.0
+
+- **BREAKING CHANGE** Call `syncTransactions` to send purchases information to RevenueCat after any restore or purchase if you are using the SDK in `observerMode`. See our guide on Migrating Subscriptions for more information on `syncTransactions`: https://docs.revenuecat.com/docs/migrating-existing-subscriptions
+- `addAttribution` is now a static method that can be called before the SDK is configured.
+- `addAttribution` will automatically add the `rc_gps_adid` parameter.
+- A network user identifier can be send to the `addAttribution` function, replacing the previous `rc_appsflyer_id` parameter.
+- Adds an optional configuration boolean `observerMode`. This will set the value of `finishTransactions` at configuration time.
+- Updated BillingClient to 1.2.2.
+- `makePurchase` now requires a SKUDetails product instead of a sku and type.
+- Header updates to include client version and locale which will be used for debugging and reporting in the future.
+
 ## 2.1.2
 
 - Fixes exception when inputstream is null.

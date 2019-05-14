@@ -908,7 +908,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "2.2.0-SNAPSHOT"
+        val frameworkVersion = "2.2.0"
 
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
@@ -1047,6 +1047,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
         @JvmOverloads
+        @JvmStatic
         fun addAttributionData(
             data: JSONObject,
             network: AttributionNetwork,
@@ -1064,6 +1065,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
         @JvmOverloads
+        @JvmStatic
         fun addAttributionData(
             data: Map<String, String>,
             network: AttributionNetwork,
