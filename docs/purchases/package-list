@@ -2,3 +2,4 @@ $dokka.format:html
 $dokka.linkExtension:html
 
 com.revenuecat.purchases
+com.revenuecat.purchases.interfaces

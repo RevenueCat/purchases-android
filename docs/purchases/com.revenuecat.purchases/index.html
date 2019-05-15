@@ -17,7 +17,7 @@
 <p><a href="-entitlement/index.html">Entitlement</a></p>
 </td>
 <td>
-<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">Entitlement</span></code>
+<code><span class="keyword">class </span><span class="identifier">Entitlement</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable.html"><span class="identifier">Parcelable</span></a></code>
 <p>An entitlement represents features or content that a user is "entitled" to.
 Entitlements are unlocked by having an active subscription or making a one-time purchase.
 Many different products can unlock. Most subscription apps only have one entitlement,
@@ -32,7 +32,7 @@ See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for mo
 <p><a href="-offering/index.html">Offering</a></p>
 </td>
 <td>
-<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">Offering</span></code>
+<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">Offering</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable.html"><span class="identifier">Parcelable</span></a></code>
 <p>Most well monetized subscription apps provide many different offerings to purchase an
 entitlement. These are usually associated with different durations i.e. an annual plan and a
 monthly plan.
@@ -44,7 +44,7 @@ See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for mo
 <p><a href="-purchaser-info/index.html">PurchaserInfo</a></p>
 </td>
 <td>
-<code><span class="keyword">class </span><span class="identifier">PurchaserInfo</span></code>
+<code><span class="keyword">class </span><span class="identifier">PurchaserInfo</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/os/Parcelable.html"><span class="identifier">Parcelable</span></a></code>
 <p>Class containing all information regarding the purchaser</p>
 </td>
 </tr>
@@ -53,12 +53,158 @@ See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for mo
 <p><a href="-purchases/index.html">Purchases</a></p>
 </td>
 <td>
-<code><span class="keyword">class </span><span class="identifier">Purchases</span>&nbsp;<span class="symbol">:</span>&nbsp;<span class="identifier">PurchasesUpdatedListener</span><span class="symbol">, </span><a href="https://developer.android.com/reference/android/app/Application/ActivityLifecycleCallbacks.html"><span class="identifier">ActivityLifecycleCallbacks</span></a></code>
+<code><span class="keyword">class </span><span class="identifier">Purchases</span></code>
 <p>Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
 for your user. This can be when a user logs in if you have accounts or on launch if you can
 generate a random user identifier.
 Make sure you follow the <a href="https://docs.revenuecat.com/docs/getting-started-1">quickstart</a>
 guide to setup your RevenueCat account.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-purchases-error/index.html">PurchasesError</a></p>
+</td>
+<td>
+<code><span class="keyword">class </span><span class="identifier">PurchasesError</span></code>
+<p>This class represents an error</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="-purchases-error-code/index.html">PurchasesErrorCode</a></p>
+</td>
+<td>
+<code><span class="keyword">enum</span> <span class="keyword">class </span><span class="identifier">PurchasesErrorCode</span></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Type Aliases</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-callback-cache-key.html">CallbackCacheKey</a></p>
+</td>
+<td>
+<code><span class="keyword">typealias </span><span class="identifier">CallbackCacheKey</span>&nbsp;<span class="symbol">=</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html"><span class="identifier">List</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">&gt;</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-entitlement-map-callback.html">EntitlementMapCallback</a></p>
+</td>
+<td>
+<code><span class="keyword">typealias </span><span class="identifier">EntitlementMapCallback</span>&nbsp;<span class="symbol">=</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-pair/index.html"><span class="identifier">Pair</span></a><span class="symbol">&lt;</span><span class="symbol">(</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-map/index.html"><span class="identifier">Map</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">,</span>&nbsp;<a href="-entitlement/index.html"><span class="identifier">Entitlement</span></a><span class="symbol">&gt;</span><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">,</span>&nbsp;<span class="symbol">(</span><a href="-purchases-error/index.html"><span class="identifier">PurchasesError</span></a><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">&gt;</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-post-receipt-callback.html">PostReceiptCallback</a></p>
+</td>
+<td>
+<code><span class="keyword">typealias </span><span class="identifier">PostReceiptCallback</span>&nbsp;<span class="symbol">=</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-pair/index.html"><span class="identifier">Pair</span></a><span class="symbol">&lt;</span><span class="symbol">(</span><a href="-purchaser-info/index.html"><span class="identifier">PurchaserInfo</span></a><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">,</span>&nbsp;<span class="symbol">(</span><a href="-purchases-error/index.html"><span class="identifier">PurchasesError</span></a><span class="symbol">,</span>&nbsp;<span class="identifier">shouldConsumePurchase</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html"><span class="identifier">Boolean</span></a><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">&gt;</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="-purchaser-info-callback.html">PurchaserInfoCallback</a></p>
+</td>
+<td>
+<code><span class="keyword">typealias </span><span class="identifier">PurchaserInfoCallback</span>&nbsp;<span class="symbol">=</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-pair/index.html"><span class="identifier">Pair</span></a><span class="symbol">&lt;</span><span class="symbol">(</span><a href="-purchaser-info/index.html"><span class="identifier">PurchaserInfo</span></a><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">,</span>&nbsp;<span class="symbol">(</span><a href="-purchases-error/index.html"><span class="identifier">PurchasesError</span></a><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">&gt;</span></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="create-alias-with.html">createAliasWith</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><span class="identifier">createAliasWith</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$createAliasWith(com.revenuecat.purchases.Purchases, kotlin.String, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/newAppUserID">newAppUserID</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$createAliasWith(com.revenuecat.purchases.Purchases, kotlin.String, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">ErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$createAliasWith(com.revenuecat.purchases.Purchases, kotlin.String, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onSuccess">onSuccess</span><span class="symbol">:</span>&nbsp;<span class="identifier">ReceivePurchaserInfoSuccessFunction</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>This function will alias two appUserIDs together.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="get-entitlements-with.html">getEntitlementsWith</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><span class="identifier">getEntitlementsWith</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$getEntitlementsWith(com.revenuecat.purchases.Purchases, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((kotlin.collections.Map((kotlin.String, com.revenuecat.purchases.Entitlement)), kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">ErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$getEntitlementsWith(com.revenuecat.purchases.Purchases, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((kotlin.collections.Map((kotlin.String, com.revenuecat.purchases.Entitlement)), kotlin.Unit)))/onSuccess">onSuccess</span><span class="symbol">:</span>&nbsp;<span class="identifier">ReceiveEntitlementsSuccessFunction</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Fetch the configured entitlements for this user. Entitlements allows you to configure your
+in-app products via RevenueCat and greatly simplifies management.
+See <a href="https://docs.revenuecat.com/v1.0/docs/entitlements">the guide</a> for more info.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="get-non-subscription-skus-with.html">getNonSubscriptionSkusWith</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><span class="identifier">getNonSubscriptionSkusWith</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$getNonSubscriptionSkusWith(com.revenuecat.purchases.Purchases, kotlin.collections.List((kotlin.String)), kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((kotlin.collections.List((com.android.billingclient.api.SkuDetails)), kotlin.Unit)))/skus">skus</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html"><span class="identifier">List</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">&gt;</span><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$getNonSubscriptionSkusWith(com.revenuecat.purchases.Purchases, kotlin.collections.List((kotlin.String)), kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((kotlin.collections.List((com.android.billingclient.api.SkuDetails)), kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">ErrorFunction</span><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$getNonSubscriptionSkusWith(com.revenuecat.purchases.Purchases, kotlin.collections.List((kotlin.String)), kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((kotlin.collections.List((com.android.billingclient.api.SkuDetails)), kotlin.Unit)))/onReceiveSkus">onReceiveSkus</span><span class="symbol">:</span>&nbsp;<span class="symbol">(</span><span class="identifier">skus</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html"><span class="identifier">List</span></a><span class="symbol">&lt;</span><span class="identifier">SkuDetails</span><span class="symbol">&gt;</span><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Gets the SKUDetails for the given list of non-subscription skus.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="get-purchaser-info-with.html">getPurchaserInfoWith</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><span class="identifier">getPurchaserInfoWith</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$getPurchaserInfoWith(com.revenuecat.purchases.Purchases, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">ErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$getPurchaserInfoWith(com.revenuecat.purchases.Purchases, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onSuccess">onSuccess</span><span class="symbol">:</span>&nbsp;<span class="identifier">ReceivePurchaserInfoSuccessFunction</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Get latest available purchaser info.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="get-subscription-skus-with.html">getSubscriptionSkusWith</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><span class="identifier">getSubscriptionSkusWith</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$getSubscriptionSkusWith(com.revenuecat.purchases.Purchases, kotlin.collections.List((kotlin.String)), kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((kotlin.collections.List((com.android.billingclient.api.SkuDetails)), kotlin.Unit)))/skus">skus</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html"><span class="identifier">List</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">&gt;</span><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$getSubscriptionSkusWith(com.revenuecat.purchases.Purchases, kotlin.collections.List((kotlin.String)), kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((kotlin.collections.List((com.android.billingclient.api.SkuDetails)), kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">ErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$getSubscriptionSkusWith(com.revenuecat.purchases.Purchases, kotlin.collections.List((kotlin.String)), kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((kotlin.collections.List((com.android.billingclient.api.SkuDetails)), kotlin.Unit)))/onReceiveSkus">onReceiveSkus</span><span class="symbol">:</span>&nbsp;<span class="symbol">(</span><span class="identifier">skus</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-list/index.html"><span class="identifier">List</span></a><span class="symbol">&lt;</span><span class="identifier">SkuDetails</span><span class="symbol">&gt;</span><span class="symbol">)</span>&nbsp;<span class="symbol">-&gt;</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Gets the SKUDetails for the given list of subscription skus.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="identify-with.html">identifyWith</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><span class="identifier">identifyWith</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$identifyWith(com.revenuecat.purchases.Purchases, kotlin.String, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/appUserID">appUserID</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$identifyWith(com.revenuecat.purchases.Purchases, kotlin.String, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">ErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$identifyWith(com.revenuecat.purchases.Purchases, kotlin.String, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onSuccess">onSuccess</span><span class="symbol">:</span>&nbsp;<span class="identifier">ReceivePurchaserInfoSuccessFunction</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>This function will change the current appUserID.
+Typically this would be used after a log out to identify a new user without calling configure</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="make-purchase-with.html">makePurchaseWith</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><s><span class="identifier">makePurchaseWith</span></s><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, java.util.ArrayList((kotlin.String)), kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/activity">activity</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, java.util.ArrayList((kotlin.String)), kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/sku">sku</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, java.util.ArrayList((kotlin.String)), kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/skuType">skuType</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, java.util.ArrayList((kotlin.String)), kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/oldSkus">oldSkus</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/java/util/ArrayList.html"><span class="identifier">ArrayList</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">&gt;</span><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, java.util.ArrayList((kotlin.String)), kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">MakePurchaseErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onMakePurchaseErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, java.util.ArrayList((kotlin.String)), kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onSuccess">onSuccess</span><span class="symbol">:</span>&nbsp;<span class="identifier">MakePurchaseCompletedSuccessFunction</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code><br/>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><span class="identifier">makePurchaseWith</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, com.android.billingclient.api.SkuDetails, kotlin.String, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/activity">activity</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, com.android.billingclient.api.SkuDetails, kotlin.String, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/skuDetails">skuDetails</span><span class="symbol">:</span>&nbsp;<span class="identifier">SkuDetails</span><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, com.android.billingclient.api.SkuDetails, kotlin.String, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/oldSku">oldSku</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, com.android.billingclient.api.SkuDetails, kotlin.String, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">MakePurchaseErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onMakePurchaseErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, com.android.billingclient.api.SkuDetails, kotlin.String, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onSuccess">onSuccess</span><span class="symbol">:</span>&nbsp;<span class="identifier">MakePurchaseCompletedSuccessFunction</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code><br/>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><s><span class="identifier">makePurchaseWith</span></s><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/activity">activity</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/sku">sku</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/skuType">skuType</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">MakePurchaseErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onMakePurchaseErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, kotlin.String, kotlin.String, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onSuccess">onSuccess</span><span class="symbol">:</span>&nbsp;<span class="identifier">MakePurchaseCompletedSuccessFunction</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code><br/>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><span class="identifier">makePurchaseWith</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, com.android.billingclient.api.SkuDetails, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/activity">activity</span><span class="symbol">:</span>&nbsp;<a href="https://developer.android.com/reference/android/app/Activity.html"><span class="identifier">Activity</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, com.android.billingclient.api.SkuDetails, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/skuDetails">skuDetails</span><span class="symbol">:</span>&nbsp;<span class="identifier">SkuDetails</span><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, com.android.billingclient.api.SkuDetails, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">MakePurchaseErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onMakePurchaseErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$makePurchaseWith(com.revenuecat.purchases.Purchases, android.app.Activity, com.android.billingclient.api.SkuDetails, kotlin.Function2((com.revenuecat.purchases.PurchasesError, kotlin.Boolean, kotlin.Unit)), kotlin.Function2((com.android.billingclient.api.Purchase, com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onSuccess">onSuccess</span><span class="symbol">:</span>&nbsp;<span class="identifier">MakePurchaseCompletedSuccessFunction</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Make a purchase.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="reset-with.html">resetWith</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><span class="identifier">resetWith</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$resetWith(com.revenuecat.purchases.Purchases, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">ErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$resetWith(com.revenuecat.purchases.Purchases, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onSuccess">onSuccess</span><span class="symbol">:</span>&nbsp;<span class="identifier">ReceivePurchaserInfoSuccessFunction</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Resets the Purchases client clearing the save appUserID. This will generate a random user
+id and save it in the cache.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="restore-purchases-with.html">restorePurchasesWith</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><a href="-purchases/index.html"><span class="identifier">Purchases</span></a><span class="symbol">.</span><span class="identifier">restorePurchasesWith</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases$restorePurchasesWith(com.revenuecat.purchases.Purchases, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onError">onError</span><span class="symbol">:</span>&nbsp;<span class="identifier">ErrorFunction</span>&nbsp;<span class="symbol">=</span>&nbsp;onErrorStub<span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases$restorePurchasesWith(com.revenuecat.purchases.Purchases, kotlin.Function1((com.revenuecat.purchases.PurchasesError, kotlin.Unit)), kotlin.Function1((com.revenuecat.purchases.PurchaserInfo, kotlin.Unit)))/onSuccess">onSuccess</span><span class="symbol">:</span>&nbsp;<span class="identifier">ReceivePurchaserInfoSuccessFunction</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code>
+<p>Restores purchases made with the current Play Store account for the current user.
+If you initialized Purchases with an <code>appUserID</code> any receipt tokens currently being used by
+other users of your app will not be restored. If you used an anonymous id, i.e. you
+initialized Purchases without an appUserID, any other anonymous users using the same
+purchases will be merged.</p>
 </td>
 </tr>
 </tbody>

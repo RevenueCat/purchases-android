@@ -22,11 +22,6 @@ plugins {
 
 allprojects {
     apply from: "$rootDir/detekt.gradle"
-//
-//    tasks.withType(Javadoc) {
-//        options.addStringOption('Xdoclint:none', '-quiet')
-//        options.addStringOption('encoding', 'UTF-8')
-//    }
 }
 
 subprojects {
@@ -46,7 +41,3 @@ wrapper {
     gradleVersion = '5.1.1'
 }
 
-//
-//task javadoc(type: Javadoc) {
-//    excludes = ['**/*.kt'] // < ---- Exclude all kotlin files from javadoc file.
-//}

@@ -491,7 +491,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * Call this when you are finished using the [updatedPurchaserInfoListener]. You should call this
+     * Call this when you are finished using the [UpdatedPurchaserInfoListener]. You should call this
      * to avoid memory leaks.
      */
     @Suppress("MemberVisibilityCanBePrivate")
