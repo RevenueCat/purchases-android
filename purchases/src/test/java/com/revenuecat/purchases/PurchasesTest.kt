@@ -2187,6 +2187,52 @@ class PurchasesTest {
         assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isTrue()
     }
 
+    @Test
+    fun `caches are not cleared if update purchaser info fails`() {
+        val mockInfo = mockk<PurchaserInfo>()
+
+        mockCache(mockInfo)
+        with(mockBackend) {
+            val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
+            every {
+                getPurchaserInfo(any(), any(), captureLambda())
+            } answers {
+                lambda<(PurchasesError) -> Unit>().captured.invoke(purchasesError)
+            }
+            every {
+                getEntitlements(any(), captureLambda(), any())
+            } answers {
+                lambda<(Map<String, Entitlement>) -> Unit>().captured.invoke(
+                    mapOf(
+                        "entitlement" to Entitlement(mapOf("sku" to Offering("sku")))
+                    )
+                )
+            }
+            every {
+                postReceiptData(any(), any(), any(), any(), captureLambda(), any())
+            } answers {
+                lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+            }
+            every {
+                close()
+            } just Runs
+        }
+        mockBillingWrapper()
+        every {
+            listener.onReceived(any())
+        } just Runs
+
+        purchases = Purchases(
+            mockContext,
+            appUserId,
+            mockBackend,
+            mockBillingWrapper,
+            mockCache
+        )
+        Purchases.sharedInstance = purchases
+
+        verify (exactly = 0) { mockCache.clearCachedPurchaserInfo(any()) }
+    }
 
     // region Private Methods
     private fun mockSkuDetailFetch(details: List<SkuDetails>, skus: List<String>, skuType: String) {
