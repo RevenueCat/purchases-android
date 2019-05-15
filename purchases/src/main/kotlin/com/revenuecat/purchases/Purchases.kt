@@ -419,22 +419,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         appUserID: String,
         listener: ReceivePurchaserInfoListener? = null
     ) {
-        if (this::appUserID.isInitialized && this.appUserID != appUserID) {
-            debugLog("Changing App User ID: ${this.appUserID} -> $appUserID")
+        if (this::appUserID.isInitialized && this.appUserID == appUserID) {
+            if (listener != null) {
+                getPurchaserInfo(listener)
+            }
+        } else {
+            if (this::appUserID.isInitialized) {
+                debugLog("Changing App User ID: ${this.appUserID} -> $appUserID")
+            } else {
+                debugLog("Identifying App User ID: $appUserID")
+            }
             clearCaches()
             this.appUserID = appUserID
             synchronized(this) {
                 purchaseCallbacks.clear()
             }
             updateCaches(listener)
-        } else if (!this::appUserID.isInitialized) {
-            debugLog("Identifying App User ID: $appUserID")
-            this.appUserID = appUserID
-            updateCaches(listener)
-        } else {
-            if (listener != null) {
-                getPurchaserInfo(listener)
-            }
         }
     }
 
@@ -634,7 +634,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             { error ->
                 Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
-                clearCaches()
+                cachesLastUpdated = null
                 dispatch { completion?.onError(error) }
             })
     }
@@ -643,7 +643,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         cachesLastUpdated == null || Date().time - cachesLastUpdated!!.time > CACHE_REFRESH_PERIOD
 
     private fun clearCaches() {
-        deviceCache.clearCachedPurchaserInfo(this.appUserID)
+        if (this::appUserID.isInitialized) {
+            deviceCache.clearCachedPurchaserInfo(this.appUserID)
+        }
         cachesLastUpdated = null
         cachedEntitlements = null
     }
