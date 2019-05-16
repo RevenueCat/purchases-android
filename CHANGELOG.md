@@ -1,3 +1,8 @@
+## 2.2.2
+
+- Fixes KotlinNullPointerException in Backend:248
+- Fixes NullPointerException in Purchases:673
+
 ## 2.2.1
 
 - Bugfix release: avoids caches being cleared when there is an error fetching purchaser info. Fixes https://github.com/RevenueCat/purchases-android/issues/68
