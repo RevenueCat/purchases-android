@@ -118,8 +118,8 @@ class DeviceCacheTest {
     @Test
     fun `given a non cached appuserid, the cached appuserid is returned`() {
         mockString(userIDCacheKey, appUserID)
-        val appUserID = cache.getCachedAppUserID()
-        assertThat(appUserID).`as`("appUserID is the same as the cached appUserID").isEqualTo(appUserID)
+        val returnedAppUserID = cache.getCachedAppUserID()
+        assertThat(returnedAppUserID).`as`("appUserID is the same as the cached appUserID").isEqualTo(appUserID)
     }
 
     @Test
