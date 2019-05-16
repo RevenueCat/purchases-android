@@ -263,7 +263,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (!finishTransactions) {
             debugLog("finishTransactions is set to false and makePurchase has been called. Are you sure you want to do this?")
         }
-        synchronized(this) {
+        synchronized(purchaseCallbacks) {
             if (purchaseCallbacks.containsKey(sku)) {
                 dispatch {
                     listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
@@ -431,7 +431,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
             clearCaches()
             this.appUserID = appUserID
-            synchronized(this) {
+            synchronized(purchaseCallbacks) {
                 purchaseCallbacks.clear()
             }
             updateCaches(listener)
@@ -450,7 +450,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         clearCaches()
         deviceCache.clearLatestAttributionData(this.appUserID)
         this.appUserID = createRandomIDAndCacheIt()
-        synchronized(this) {
+        synchronized(purchaseCallbacks) {
             purchaseCallbacks.clear()
         }
         updateCaches(listener)
@@ -460,7 +460,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Call close when you are done with this instance of Purchases
      */
     fun close() {
-        synchronized(this) {
+        synchronized(purchaseCallbacks) {
             purchaseCallbacks.clear()
         }
         this.backend.close()
@@ -768,7 +768,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun sendUpdatedPurchaserInfoToDelegateIfChanged(info: PurchaserInfo) {
         synchronized(this) {
-            if (updatedPurchaserInfoListener != null) {
+            updatedPurchaserInfoListener?.let { listener ->
                 if (lastSentPurchaserInfo != info) {
                     if (lastSentPurchaserInfo != null) {
                         debugLog("Purchaser info updated, sending to listener")
@@ -776,16 +776,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         debugLog("Sending latest purchaser info to delegate")
                     }
                     lastSentPurchaserInfo = info
-                    dispatch { updatedPurchaserInfoListener?.onReceived(info) }
+                    dispatch { listener.onReceived(info) }
                 }
             }
         }
     }
 
-    private val handler = Handler(Looper.getMainLooper())
+    private val handler : Handler? = Handler(Looper.getMainLooper())
     private fun dispatch(action: () -> Unit) {
         if (Thread.currentThread() != Looper.getMainLooper().thread) {
-            handler.post(action)
+            handler?.post(action) ?: Handler(Looper.getMainLooper()).post(action)
         } else {
             action()
         }
@@ -799,14 +799,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     allowSharingPlayStoreAccount,
                     finishTransactions,
                     { purchase, info ->
-                        synchronized(this) {
+                        synchronized(purchaseCallbacks) {
                             dispatch {
                                 purchaseCallbacks.remove(purchase.sku)?.onCompleted(purchase, info)
                             }
                         }
                     },
                     { purchase, error ->
-                        synchronized(this) {
+                        synchronized(purchaseCallbacks) {
                             dispatch {
                                 purchaseCallbacks.remove(purchase.sku)?.onError(
                                     error,
@@ -823,7 +823,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 @BillingClient.BillingResponse responseCode: Int,
                 message: String
             ) {
-                synchronized(this) {
+                synchronized(purchaseCallbacks) {
                     purchaseCallbacks.forEach { (_, callback) ->
                         val purchasesError = responseCode.billingResponseToPurchasesError(message)
                         dispatch {
@@ -846,7 +846,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (!finishTransactions) {
             debugLog("finishTransactions is set to false and makePurchase has been called. Are you sure you want to do this?")
         }
-        synchronized(this) {
+        synchronized(purchaseCallbacks) {
             if (purchaseCallbacks.containsKey(skuDetails.sku)) {
                 dispatch {
                     listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)

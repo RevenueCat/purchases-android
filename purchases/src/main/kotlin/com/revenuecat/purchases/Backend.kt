@@ -57,7 +57,7 @@ internal class Backend(
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
-                synchronized(this) {
+                synchronized(callbacks) {
                     callbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
                         try {
                             if (result.isSuccessful()) {
@@ -73,14 +73,16 @@ internal class Backend(
             }
 
             override fun onError(error: PurchasesError) {
-                synchronized(this) {
+                synchronized(callbacks) {
                     callbacks.remove(cacheKey)?.forEach { (_, onError) ->
                         onError(error)
                     }
                 }
             }
         }
-        callbacks.addCallback(call, cacheKey, onSuccess to onError)
+        synchronized(callbacks) {
+            callbacks.addCallback(call, cacheKey, onSuccess to onError)
+        }
     }
 
     fun postReceiptData(
@@ -107,7 +109,7 @@ internal class Backend(
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
-                synchronized(this) {
+                synchronized(postReceiptCallbacks) {
                     postReceiptCallbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
                         try {
                             if (result.isSuccessful()) {
@@ -123,15 +125,16 @@ internal class Backend(
             }
 
             override fun onError(error: PurchasesError) {
-                synchronized(this) {
+                synchronized(postReceiptCallbacks) {
                     postReceiptCallbacks.remove(cacheKey)?.forEach { (_, onError) ->
                         onError(error, false)
                     }
                 }
             }
         }
-
-        postReceiptCallbacks.addCallback(call, cacheKey, onSuccess to onError)
+        synchronized(postReceiptCallbacks) {
+            postReceiptCallbacks.addCallback(call, cacheKey, onSuccess to onError)
+        }
     }
 
     fun getEntitlements(
@@ -150,7 +153,7 @@ internal class Backend(
             }
 
             override fun onError(error: PurchasesError) {
-                synchronized(this) {
+                synchronized(entitlementsCallbacks) {
                     entitlementsCallbacks.remove(path)?.forEach { (_, onError) ->
                         onError(error)
                     }
@@ -158,7 +161,7 @@ internal class Backend(
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
-                synchronized(this) {
+                synchronized(entitlementsCallbacks) {
                     entitlementsCallbacks.remove(path)?.forEach { (onSuccess, onError) ->
                         if (result.isSuccessful()) {
                             try {
@@ -173,7 +176,9 @@ internal class Backend(
                 }
             }
         }
-        entitlementsCallbacks.addCallback(call, path, onSuccess to onError)
+        synchronized(entitlementsCallbacks) {
+            entitlementsCallbacks.addCallback(call, path, onSuccess to onError)
+        }
     }
 
     private fun encode(string: String): String {
@@ -247,13 +252,11 @@ internal class Backend(
     }
 
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(call: Dispatcher.AsyncCall, cacheKey: K, functions: Pair<S, E>) {
-        synchronized(this) {
-            if (!containsKey(cacheKey)) {
-                this[cacheKey] = mutableListOf(functions)
-                enqueue(call)
-            } else {
-                this[cacheKey]!!.add(functions)
-            }
+        if (!containsKey(cacheKey)) {
+            this[cacheKey] = mutableListOf(functions)
+            enqueue(call)
+        } else {
+            this[cacheKey]!!.add(functions)
         }
     }
 
