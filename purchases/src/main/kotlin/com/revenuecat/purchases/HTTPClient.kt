@@ -20,7 +20,7 @@ import java.net.MalformedURLException
 import java.net.URL
 
 internal class HTTPClient(
-    private var baseURL: URL = URL("https://api.revenuecat.com/"),
+    private val baseURL: URL = URL("https://api.revenuecat.com/"),
     private val appConfig: AppConfig
 ) {
 

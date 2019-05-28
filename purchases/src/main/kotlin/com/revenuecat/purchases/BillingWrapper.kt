@@ -23,17 +23,23 @@ internal class BillingWrapper internal constructor(
     private val mainHandler: Handler
 ) : PurchasesUpdatedListener, BillingClientStateListener {
 
-    internal var billingClient: BillingClient? = null
-    internal var purchasesUpdatedListener: PurchasesUpdatedListener? = null
-        set(value) {
+    @Volatile internal var billingClient: BillingClient? = null
+        @Synchronized get() = field
+        @Synchronized set(value) {
             field = value
+        }
+    @Volatile internal var purchasesUpdatedListener: PurchasesUpdatedListener? = null
+        @Synchronized get() = field
+        set(value) {
+            synchronized(this@BillingWrapper) {
+                field = value
+            }
             if (value != null) {
                 startConnection()
             } else {
                 endConnection()
             }
         }
-
     private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
 
     internal class ClientFactory(private val context: Context) {
@@ -53,7 +59,7 @@ internal class BillingWrapper internal constructor(
     }
 
     private fun executePendingRequests() {
-        synchronized(serviceRequests) {
+        synchronized(this@BillingWrapper) {
             while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
                 serviceRequests.remove().let { mainHandler.post { it(null) } }
             }
@@ -62,25 +68,31 @@ internal class BillingWrapper internal constructor(
 
     private fun startConnection() {
         mainHandler.post {
-            if (billingClient == null) {
-                billingClient = clientFactory.buildClient(this)
+            synchronized(this@BillingWrapper) {
+                if (billingClient == null) {
+                    billingClient = clientFactory.buildClient(this)
+                }
+                billingClient?.let {
+                    debugLog("Starting connection for $it")
+                    it.startConnection(this)
+                }
             }
-            debugLog("Starting connection for " + billingClient!!.toString())
-            billingClient!!.startConnection(this)
         }
     }
 
     private fun endConnection() {
         mainHandler.post {
-            billingClient?.let {
-                debugLog("Ending connection for $it")
-                it.endConnection()
+            synchronized(this@BillingWrapper) {
+                billingClient?.let {
+                    debugLog("Ending connection for $it")
+                    it.endConnection()
+                }
+                billingClient = null
             }
-            billingClient = null
         }
     }
 
-    private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
+    @Synchronized private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
             if (billingClient?.isReady == false) {
@@ -102,7 +114,7 @@ internal class BillingWrapper internal constructor(
             if (connectionError == null) {
                 val params = SkuDetailsParams.newBuilder()
                     .setType(itemType).setSkusList(skuList).build()
-                billingClient!!.querySkuDetailsAsync(params) { responseCode, skuDetailsList ->
+                billingClient?.querySkuDetailsAsync(params) { responseCode, skuDetailsList ->
                     if (responseCode == BillingClient.BillingResponse.OK) {
                         debugLog("Products request finished for ${skuList.joinToString()}")
                         debugLog("Retrieved skuDetailsList: ${skuDetailsList?.joinToString { it.toString() }}")
@@ -167,11 +179,12 @@ internal class BillingWrapper internal constructor(
         }
     }
 
+    @UiThread
     private fun launchBillingFlow(
         activity: Activity,
         params: BillingFlowParams
     ) {
-        billingClient!!.launchBillingFlow(activity, params)
+        billingClient?.launchBillingFlow(activity, params)
             .takeIf { response -> response != BillingClient.BillingResponse.OK}
             ?.let { response -> log("Failed to launch billing intent $response") }
     }
@@ -268,7 +281,7 @@ internal class BillingWrapper internal constructor(
                 log("Billing is not available in this device. ${responseCode.getBillingResponseCodeName()}")
                 // The calls will fail with an error that will be surfaced. We want to surface these errors
                 // Can't call executePendingRequests because it will not do anything since it checks for isReady()
-                synchronized(serviceRequests) {
+                synchronized(this@BillingWrapper) {
                     while (!serviceRequests.isEmpty()) {
                         serviceRequests.remove()
                             .let { mainHandler.post { it(responseCode.billingResponseToPurchasesError("Billing is not available in this device. ${responseCode.getBillingResponseCodeName()}")) } }
