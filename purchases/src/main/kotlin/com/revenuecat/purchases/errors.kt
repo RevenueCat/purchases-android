@@ -59,7 +59,7 @@ internal enum class BackendErrorCode(val value: Int) {
 
     companion object {
         fun valueOf(backendErrorCode: Int) : BackendErrorCode? {
-            return BackendErrorCode.values().firstOrNull { it.value == backendErrorCode }
+            return values().firstOrNull { it.value == backendErrorCode }
         }
     }
 }

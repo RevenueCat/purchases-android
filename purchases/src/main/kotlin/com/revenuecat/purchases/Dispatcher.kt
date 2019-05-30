@@ -31,7 +31,7 @@ internal open class Dispatcher(
         }
     }
 
-    open fun enqueue(call: Dispatcher.AsyncCall) {
+    open fun enqueue(call: AsyncCall) {
         this.executorService.execute(call)
     }
 

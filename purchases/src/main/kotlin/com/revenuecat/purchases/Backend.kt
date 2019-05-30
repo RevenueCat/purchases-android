@@ -25,9 +25,21 @@ internal class Backend(
 
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
-    var callbacks = mutableMapOf<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
-    var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
-    var entitlementsCallbacks = mutableMapOf<String, MutableList<EntitlementMapCallback>>()
+    @Volatile var callbacks = mutableMapOf<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
+        @Synchronized get() = field
+        @Synchronized set(value) {
+            field = value
+        }
+    @Volatile var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
+        @Synchronized get() = field
+        @Synchronized set(value) {
+            field = value
+        }
+    @Volatile var entitlementsCallbacks = mutableMapOf<String, MutableList<EntitlementMapCallback>>()
+        @Synchronized get() = field
+        @Synchronized set(value) {
+            field = value
+        }
 
     fun close() {
         this.dispatcher.close()
@@ -57,30 +69,30 @@ internal class Backend(
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
-                synchronized(callbacks) {
-                    callbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
-                        try {
-                            if (result.isSuccessful()) {
-                                onSuccess(result.body!!.buildPurchaserInfo())
-                            } else {
-                                onError(result.toPurchasesError())
-                            }
-                        } catch (e: JSONException) {
-                            onError(e.toPurchasesError())
+                synchronized(this@Backend) {
+                    callbacks.remove(cacheKey)
+                }?.forEach { (onSuccess, onError) ->
+                    try {
+                        if (result.isSuccessful()) {
+                            onSuccess(result.body!!.buildPurchaserInfo())
+                        } else {
+                            onError(result.toPurchasesError())
                         }
+                    } catch (e: JSONException) {
+                        onError(e.toPurchasesError())
                     }
                 }
             }
 
             override fun onError(error: PurchasesError) {
-                synchronized(callbacks) {
-                    callbacks.remove(cacheKey)?.forEach { (_, onError) ->
-                        onError(error)
-                    }
+                synchronized(this@Backend) {
+                    callbacks.remove(cacheKey)
+                }?.forEach { (_, onError) ->
+                    onError(error)
                 }
             }
         }
-        synchronized(callbacks) {
+        synchronized(this@Backend) {
             callbacks.addCallback(call, cacheKey, onSuccess to onError)
         }
     }
@@ -109,30 +121,30 @@ internal class Backend(
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
-                synchronized(postReceiptCallbacks) {
-                    postReceiptCallbacks.remove(cacheKey)?.forEach { (onSuccess, onError) ->
-                        try {
-                            if (result.isSuccessful()) {
-                                onSuccess(result.body!!.buildPurchaserInfo())
-                            } else {
-                                onError(result.toPurchasesError(), result.responseCode < HTTP_SERVER_ERROR_CODE)
-                            }
-                        } catch (e: JSONException) {
-                            onError(e.toPurchasesError(), false)
+                synchronized(this@Backend) {
+                    postReceiptCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccess, onError) ->
+                    try {
+                        if (result.isSuccessful()) {
+                            onSuccess(result.body!!.buildPurchaserInfo())
+                        } else {
+                            onError(result.toPurchasesError(), result.responseCode < HTTP_SERVER_ERROR_CODE)
                         }
+                    } catch (e: JSONException) {
+                        onError(e.toPurchasesError(), false)
                     }
                 }
             }
 
             override fun onError(error: PurchasesError) {
-                synchronized(postReceiptCallbacks) {
-                    postReceiptCallbacks.remove(cacheKey)?.forEach { (_, onError) ->
-                        onError(error, false)
-                    }
+                synchronized(this@Backend) {
+                    postReceiptCallbacks.remove(cacheKey)
+                }?.forEach { (_, onError) ->
+                    onError(error, false)
                 }
             }
         }
-        synchronized(postReceiptCallbacks) {
+        synchronized(this@Backend) {
             postReceiptCallbacks.addCallback(call, cacheKey, onSuccess to onError)
         }
     }
@@ -153,30 +165,30 @@ internal class Backend(
             }
 
             override fun onError(error: PurchasesError) {
-                synchronized(entitlementsCallbacks) {
-                    entitlementsCallbacks.remove(path)?.forEach { (_, onError) ->
-                        onError(error)
-                    }
+                synchronized(this@Backend) {
+                    entitlementsCallbacks.remove(path)
+                }?.forEach { (_, onError) ->
+                    onError(error)
                 }
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
-                synchronized(entitlementsCallbacks) {
-                    entitlementsCallbacks.remove(path)?.forEach { (onSuccess, onError) ->
-                        if (result.isSuccessful()) {
-                            try {
-                                onSuccess(result.body!!.getJSONObject("entitlements").buildEntitlementsMap())
-                            } catch (e: JSONException) {
-                                onError(e.toPurchasesError())
-                            }
-                        } else {
-                            onError(result.toPurchasesError())
+                synchronized(this@Backend) {
+                    entitlementsCallbacks.remove(path)
+                }?.forEach { (onSuccess, onError) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccess(result.body!!.getJSONObject("entitlements").buildEntitlementsMap())
+                        } catch (e: JSONException) {
+                            onError(e.toPurchasesError())
                         }
+                    } else {
+                        onError(result.toPurchasesError())
                     }
                 }
             }
         }
-        synchronized(entitlementsCallbacks) {
+        synchronized(this@Backend) {
             entitlementsCallbacks.addCallback(call, path, onSuccess to onError)
         }
     }

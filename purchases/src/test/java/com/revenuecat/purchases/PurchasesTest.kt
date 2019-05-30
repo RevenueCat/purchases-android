@@ -805,7 +805,7 @@ class PurchasesTest {
         })
 
         assertThat(receivedEntitlementMap).isNotNull
-        assertThat(purchases.cachedEntitlements).isEqualTo(receivedEntitlementMap)
+        assertThat(purchases.state.cachedEntitlements).isEqualTo(receivedEntitlementMap)
     }
 
     @Test
