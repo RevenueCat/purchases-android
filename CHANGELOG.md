@@ -1,3 +1,7 @@
+## 2.2.3
+
+- Fixes multi threading issues
+
 ## 2.2.2
 
 - Fixes KotlinNullPointerException in Backend:248
