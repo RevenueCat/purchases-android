@@ -1,3 +1,7 @@
+## 2.2.4
+
+- Fixes Proguard issue
+
 ## 2.2.3
 
 - Fixes multi threading issues
