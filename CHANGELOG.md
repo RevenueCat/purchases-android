@@ -1,3 +1,7 @@
+## 2.2.5
+
+- Removes duplicated makePurchase call in deprecated makePurchase method.
+
 ## 2.2.4
 
 - Fixes Proguard issue

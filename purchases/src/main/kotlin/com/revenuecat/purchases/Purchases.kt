@@ -30,6 +30,7 @@ import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.ArrayList
+import java.util.Collections.emptyMap
 import java.util.Date
 import java.util.HashMap
 import java.util.UUID
@@ -291,12 +292,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
         userPurchasing?.let { appUserID ->
             billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
-
-            billingWrapper.querySkuDetailsAsync(skuType, listOf(sku), {
-                billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
-            }, { error ->
-                listener.onError(error, false)
-            })
         } ?: dispatch {
             listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
         }
@@ -986,7 +981,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "2.3.0-SNAPSHOT"
+        val frameworkVersion = "2.2.5"
 
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will

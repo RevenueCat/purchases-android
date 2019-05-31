@@ -35,6 +35,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.ArrayList
+import java.util.Collections.emptyList
+import java.util.ConcurrentModificationException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -167,13 +169,19 @@ class PurchasesTest {
         val sku = "onemonth_freetrial"
         val oldSkus = ArrayList<String>()
 
+        every {
+            mockBillingWrapper.querySkuDetailsAsync(any(), any(), captureLambda(), any())
+        } answers {
+            lambda<(List<Purchase>) -> Unit>().captured.invoke(listOf(mockk(relaxed = true)))
+        }
+
         purchases.makePurchaseWith(
             activity,
             sku,
             BillingClient.SkuType.SUBS
         ) { _, _ -> }
 
-        verify {
+        verify (exactly = 1) {
             mockBillingWrapper.makePurchaseAsync(
                 eq(activity),
                 eq(appUserId),
