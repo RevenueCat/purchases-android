@@ -135,21 +135,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     fun syncPurchases() {
         debugLog("Syncing purchases")
-        synchronized(this@Purchases) {
-            state.allowSharingPlayStoreAccount
-        }.let { allowSharingPlayStoreAccount ->
-            billingWrapper.queryAllPurchases({ allPurchases ->
-                if (allPurchases.isNotEmpty()) {
-                    postPurchasesSortedByTime(
-                        allPurchases,
-                        allowSharingPlayStoreAccount,
-                        false,
-                        { debugLog("Purchases synced") },
-                        { errorLog("Error syncing purchases $it") }
-                    )
-                }
-            }, { errorLog("Error syncing purchases $it") })
-        }
+        val allowSharingPlayStoreAccount = synchronized(this@Purchases) { state.allowSharingPlayStoreAccount }
+
+        billingWrapper.queryAllPurchases({ allPurchases ->
+            if (allPurchases.isNotEmpty()) {
+                postPurchasesSortedByTime(
+                    allPurchases,
+                    allowSharingPlayStoreAccount,
+                    false,
+                    { debugLog("Purchases synced") },
+                    { errorLog("Error syncing purchases $it") }
+                )
+            }
+        }, { errorLog("Error syncing purchases $it") })
     }
 
     /**

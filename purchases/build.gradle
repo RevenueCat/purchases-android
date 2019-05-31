@@ -11,6 +11,7 @@ android {
         versionName "2.3.0-SNAPSHOT"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles 'consumer-proguard-rules.pro'
     }
 
     sourceSets {
