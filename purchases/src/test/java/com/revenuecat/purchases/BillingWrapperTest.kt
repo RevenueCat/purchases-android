@@ -33,6 +33,7 @@ import java.util.ArrayList
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class BillingWrapperTest {
+    private var onConnectedCalled: Boolean = false
     private var mockClientFactory: BillingWrapper.ClientFactory = mockk()
     private var mockClient: BillingClient = mockk()
     private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
@@ -97,6 +98,12 @@ class BillingWrapperTest {
 
         wrapper = BillingWrapper(mockClientFactory, handler)
         wrapper!!.purchasesUpdatedListener = mockPurchasesListener
+        onConnectedCalled = false
+        wrapper!!.stateListener = object : BillingWrapper.StateListener {
+            override fun onConnected() {
+                onConnectedCalled = true
+            }
+        }
     }
 
     @Test
@@ -605,6 +612,14 @@ class BillingWrapperTest {
         verify (exactly = 1){
             mockClient.queryPurchaseHistoryAsync(BillingClient.SkuType.INAPP, any())
         }
+    }
+
+    @Test
+    fun `on successfully connected billing client, listener is called`() {
+        setup()
+
+        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponse.OK)
+        assertThat(onConnectedCalled).isTrue()
     }
 
     private fun mockNullSkuDetailsResponse() {

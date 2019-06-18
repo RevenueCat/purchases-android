@@ -16,6 +16,7 @@ internal class DeviceCache(
 ) {
     private val appUserIDCacheKey = "com.revenuecat.purchases.$apiKey"
     private val attributionCacheKey = "com.revenuecat.purchases.attribution"
+    private val tokensCacheKey = "com.revenuecat.purchases.$apiKey.tokens"
 
     private fun purchaserInfoCacheKey(appUserID: String) = "$appUserIDCacheKey.$appUserID"
 
@@ -68,6 +69,14 @@ internal class DeviceCache(
         }
         editor.apply()
     }
+
+    @Synchronized fun getSentTokens(): Set<String> = preferences.getStringSet(tokensCacheKey, emptySet())!!.toSet()
+
+    @Synchronized fun addSuccessfullyPostedToken(token: String) =
+        setSavedTokens(getSentTokens().toMutableSet().apply { add(token.sha1()) })
+
+    @Synchronized fun setSavedTokens(newSet: Set<String>) =
+        preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
 
     private fun getAttributionDataCacheKey(
         userId: String,

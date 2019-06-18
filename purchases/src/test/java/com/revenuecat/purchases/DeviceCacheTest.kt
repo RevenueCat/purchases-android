@@ -33,6 +33,7 @@ class DeviceCacheTest {
     private val appUserID = "app_user_id"
     private val userIDCacheKey = "com.revenuecat.purchases.$apiKey"
     private val purchaserInfoCacheKey = "$userIDCacheKey.$appUserID"
+    private val tokensCacheKey = "com.revenuecat.purchases.$apiKey.tokens"
 
     @Before
     fun setup() {
@@ -131,6 +132,35 @@ class DeviceCacheTest {
         verify {
             mockEditor.putString(eq(userIDCacheKey), any())
             mockEditor.apply()
+        }
+    }
+
+    @Test
+    fun `getting sent tokens works`() {
+        val tokens = setOf("token1", "token2")
+        every {
+            mockPrefs.getStringSet(tokensCacheKey, any())
+        } returns tokens
+        val sentTokens = cache.getSentTokens()
+        assertThat(sentTokens).isEqualTo(tokens)
+    }
+
+    @Test
+    fun `token is hashed then added`() {
+        every {
+            mockPrefs.getStringSet(tokensCacheKey, any())
+        } returns setOf("token1", "token2")
+        val sha1 = "token3".sha1()
+        every {
+            mockEditor.putStringSet(tokensCacheKey, setOf("token1", "token2", sha1))
+        } returns mockEditor
+        every {
+            mockEditor.apply()
+        } just runs
+
+        cache.addSuccessfullyPostedToken("token3")
+        verify {
+            mockEditor.putStringSet(tokensCacheKey, setOf("token1", "token2", sha1))
         }
     }
 

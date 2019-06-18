@@ -5,8 +5,10 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.Entitlement
+import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getEntitlementsWith
+import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.makePurchaseWith
 import kotlinx.android.synthetic.main.activity_upsell.*
 
@@ -18,6 +20,7 @@ class UpsellActivity : AppCompatActivity() {
 
         showScreen()
         skip.setOnClickListener { startCatsActivity() }
+        Purchases.sharedInstance.updatedPurchaserInfoListener = UpdatedPurchaserInfoListener { purchaserInfo -> checkForProEntitlement(purchaserInfo) }
     }
 
     override fun onResume() {
@@ -82,10 +85,14 @@ class UpsellActivity : AppCompatActivity() {
                 }
             }) { _, purchaserInfo ->
                 button.showLoading(false)
-                if (purchaserInfo.activeEntitlements.contains("pro")) {
-                    startCatsActivity()
-                }
+            checkForProEntitlement(purchaserInfo)
             }
+    }
+
+    private fun checkForProEntitlement(purchaserInfo: PurchaserInfo) {
+        if (purchaserInfo.activeEntitlements.contains("pro")) {
+            startCatsActivity()
+        }
     }
 
     private fun Button.showLoading(loading: Boolean) {

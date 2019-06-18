@@ -10,6 +10,7 @@ import android.content.Context
 import android.os.Handler
 import androidx.annotation.UiThread
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingClient.SkuType
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.Purchase
@@ -22,6 +23,12 @@ internal class BillingWrapper internal constructor(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler
 ) : PurchasesUpdatedListener, BillingClientStateListener {
+
+    @Volatile internal var stateListener: StateListener? = null
+        @Synchronized get() = field
+        @Synchronized set(value) {
+            field = value
+        }
 
     @Volatile internal var billingClient: BillingClient? = null
         @Synchronized get() = field
@@ -49,13 +56,17 @@ internal class BillingWrapper internal constructor(
         }
     }
 
-    interface PurchasesUpdatedListener {
+    internal interface PurchasesUpdatedListener {
         fun onPurchasesUpdated(purchases: List<Purchase>)
         fun onPurchasesFailedToUpdate(
             purchases: List<Purchase>?,
             @BillingClient.BillingResponse responseCode: Int,
             message: String
         )
+    }
+
+    internal interface StateListener {
+        fun onConnected()
     }
 
     private fun executePendingRequests() {
@@ -220,10 +231,10 @@ internal class BillingWrapper internal constructor(
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
         queryPurchaseHistoryAsync(
-            BillingClient.SkuType.SUBS,
+            SkuType.SUBS,
             { subsPurchasesList ->
                 queryPurchaseHistoryAsync(
-                    BillingClient.SkuType.INAPP,
+                    SkuType.INAPP,
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(subsPurchasesList + inAppPurchasesList)
                     },
@@ -240,6 +251,13 @@ internal class BillingWrapper internal constructor(
             if (connectionError == null) {
                 billingClient?.consumeAsync(token) { _, _ -> }
             }
+        }
+    }
+
+    fun queryPurchases(@SkuType skuType: String): Purchase.PurchasesResult? {
+        return billingClient?.let {
+            debugLog("Querying $skuType")
+            it.queryPurchases(skuType)
         }
     }
 
@@ -274,6 +292,7 @@ internal class BillingWrapper internal constructor(
         when(responseCode) {
             BillingClient.BillingResponse.OK -> {
                 debugLog("Billing Service Setup finished for ${billingClient?.toString()}.")
+                stateListener?.onConnected()
                 executePendingRequests()
             }
             BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED,
