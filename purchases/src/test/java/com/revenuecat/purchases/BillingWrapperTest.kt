@@ -448,7 +448,7 @@ class BillingWrapperTest {
         } just Runs
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponse.OK)
-        wrapper!!.consumePurchase(token)
+        wrapper!!.consumePurchase(token) { _, _ -> }
 
         verify {
             mockClient.consumeAsync(eq(token), any())
@@ -488,7 +488,7 @@ class BillingWrapperTest {
             mockClient.endConnection()
         } just Runs
         wrapper!!.purchasesUpdatedListener = null
-        wrapper!!.consumePurchase("token")
+        wrapper!!.consumePurchase("token") { _, _ -> }
 
         verify(exactly = 1) { // Just the original connection
             mockClient.startConnection(wrapper!!)

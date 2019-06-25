@@ -56,7 +56,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
-    observerMode: Boolean = false
+    observerMode: Boolean = false,
+    private val executorService: ExecutorService
 ) {
 
     @Volatile
@@ -150,11 +151,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         updateCaches(newAppUserID)
         billingWrapper.stateListener = object : BillingWrapper.StateListener {
             override fun onConnected() {
-                updatePendingPurchaseQueue()
+                updatePendingPurchaseQueue {
+                    applicationContext.getApplication().registerActivityLifecycleCallbacks(activityLifecycleCallback)
+                }
+            }
+
+            override fun onDisconnected() {
+                applicationContext.getApplication().unregisterActivityLifecycleCallbacks(activityLifecycleCallback)
             }
         }
         billingWrapper.purchasesUpdatedListener = getPurchasesUpdatedListener()
-        applicationContext.getApplication().registerActivityLifecycleCallbacks(activityLifecycleCallback)
     }
 
     // region Public Methods
@@ -743,33 +749,42 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onError: (Purchase, PurchasesError) -> Unit
     ) {
         synchronized(this@Purchases) { state.appUserID }.let { appUserID ->
-            purchases.forEach { purchase ->
+             purchases.forEach { purchase ->
                 backend.postReceiptData(
                     purchase.purchaseToken,
                     appUserID,
                     purchase.sku,
                     allowSharingPlayStoreAccount,
                     { info ->
-                        if (consumeAllTransactions) {
-                            billingWrapper.consumePurchase(purchase.purchaseToken)
-                        }
-                        synchronized(deviceCache) {
-                            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-                        }
+                        consumeAndSave(consumeAllTransactions, purchase)
                         cachePurchaserInfo(info)
                         sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                         onSuccess(purchase, info)
                     }, { error, errorIsFinishable ->
                         if (errorIsFinishable) {
-                            if (consumeAllTransactions) {
-                                billingWrapper.consumePurchase(purchase.purchaseToken)
-                            }
-                            synchronized(deviceCache) {
-                                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-                            }
+                            consumeAndSave(consumeAllTransactions, purchase)
                         }
                         onError(purchase, error)
                     })
+            }
+        }
+    }
+
+    private fun consumeAndSave(
+        consumeAllTransactions: Boolean,
+        purchase: Purchase
+    ) {
+        if (consumeAllTransactions) {
+            billingWrapper.consumePurchase(purchase.purchaseToken) { responseCode, purchaseToken ->
+                if (responseCode == BillingClient.BillingResponse.OK) {
+                    synchronized(deviceCache) {
+                        deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                    }
+                }
+            }
+        } else {
+            synchronized(deviceCache) {
+                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
             }
         }
     }
@@ -970,16 +985,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun updatePendingPurchaseQueue() {
-        val querySUBS = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
-        val queryINAPP = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
-        if (querySUBS?.responseCode == BillingClient.BillingResponse.OK && queryINAPP?.responseCode == BillingClient.BillingResponse.OK) {
-            val queried = (querySUBS.purchasesList + queryINAPP.purchasesList).map { it.purchaseToken to it }.toMap().toMutableMap()
-            var alreadySentTokens: MutableSet<String>
-            synchronized(deviceCache) {
-                alreadySentTokens = deviceCache.getSentTokens().toMutableSet()
-                alreadySentTokens.forEach { queried.remove(it) ?: alreadySentTokens.remove(it) }
-                deviceCache.setSavedTokens(alreadySentTokens)
+    private fun updatePendingPurchaseQueue(onCompleted: () -> Unit = {}) {
+        executorService.execute {
+            val querySUBS = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
+            val queryINAPP = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
+            var queried = mutableMapOf<String, Purchase>()
+            if (querySUBS?.responseCode == BillingClient.BillingResponse.OK && queryINAPP?.responseCode == BillingClient.BillingResponse.OK) {
+                queried =
+                    (querySUBS.purchasesList + queryINAPP.purchasesList).map { it.purchaseToken to it }.toMap()
+                        .toMutableMap()
+                var alreadySentTokens: MutableSet<String>
+                synchronized(deviceCache) {
+                    alreadySentTokens = deviceCache.getSentTokens().toMutableSet()
+                    alreadySentTokens.forEach { queried.remove(it) ?: alreadySentTokens.remove(it) }
+                    deviceCache.setSavedTokens(alreadySentTokens)
+                }
             }
             postPurchases(
                 queried.values.toList(),
@@ -988,6 +1008,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 { _, _ -> },
                 { _, _ -> }
             )
+            onCompleted.invoke()
         }
     }
 
@@ -1100,7 +1121,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 backend,
                 billingWrapper,
                 cache,
-                observerMode
+                observerMode,
+                service
             ).also { sharedInstance = it }
         }
 

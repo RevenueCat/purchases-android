@@ -67,6 +67,7 @@ internal class BillingWrapper internal constructor(
 
     internal interface StateListener {
         fun onConnected()
+        fun onDisconnected()
     }
 
     private fun executePendingRequests() {
@@ -245,11 +246,14 @@ internal class BillingWrapper internal constructor(
         )
     }
 
-    fun consumePurchase(token: String) {
+    fun consumePurchase(
+        token: String,
+        onConsumed: (responseCode: Int, purchaseToken: String) -> Unit
+    ) {
         debugLog("Consuming purchase with token $token")
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                billingClient?.consumeAsync(token) { _, _ -> }
+                billingClient?.consumeAsync(token) { responseCode, purchaseToken -> onConsumed(responseCode, purchaseToken) }
             }
         }
     }
@@ -325,6 +329,7 @@ internal class BillingWrapper internal constructor(
 
     override fun onBillingServiceDisconnected() {
         debugLog("Billing Service disconnected for ${billingClient?.toString()}")
+        stateListener?.onDisconnected()
     }
 
 }

@@ -66,6 +66,7 @@ class PurchasesTest {
 
     private var capturedPurchasesUpdatedListener = slot<BillingWrapper.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingWrapper.StateListener>()
+    private var capturedConsumeResponseListener = slot<(Int, String) -> Unit>()
 
     private val appUserId = "fakeUserID"
     private val adID = "123"
@@ -94,7 +95,8 @@ class PurchasesTest {
             appUserId,
             mockBackend,
             mockBillingWrapper,
-            mockCache
+            mockCache,
+            executorService = executorService
         )
         Purchases.sharedInstance = purchases
         return mockInfo
@@ -115,7 +117,8 @@ class PurchasesTest {
             null,
             mockBackend,
             mockBillingWrapper,
-            mockCache
+            mockCache,
+            executorService = executorService
         )
         Purchases.sharedInstance = purchases
     }
@@ -260,7 +263,7 @@ class PurchasesTest {
             )
         }
         verify {
-            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+            mockBillingWrapper.consumePurchase(eq(purchaseToken), any())
         }
     }
 
@@ -376,7 +379,8 @@ class PurchasesTest {
             null,
             mockBackend,
             mockBillingWrapper,
-            mockCache
+            mockCache,
+            executorService = executorService
         )
 
         assertThat(purchases).isNotNull
@@ -399,7 +403,8 @@ class PurchasesTest {
             null,
             mockBackend,
             mockBillingWrapper,
-            mockCache
+            mockCache,
+            executorService = executorService
         )
 
         verify {
@@ -420,7 +425,8 @@ class PurchasesTest {
             null,
             mockBackend,
             mockBillingWrapper,
-            mockCache
+            mockCache,
+            executorService = executorService
         )
 
         assertThat(appUserID).isEqualTo(p.appUserID)
@@ -435,7 +441,8 @@ class PurchasesTest {
             null,
             mockBackend,
             mockBillingWrapper,
-            mockCache
+            mockCache,
+            executorService = executorService
         )
 
         val p: Purchase = mockk()
@@ -476,7 +483,8 @@ class PurchasesTest {
             "a_fixed_id",
             mockBackend,
             mockBillingWrapper,
-            mockCache
+            mockCache,
+            executorService = executorService
         )
 
         val p: Purchase = mockk()
@@ -517,7 +525,8 @@ class PurchasesTest {
             "a_fixed_id",
             mockBackend,
             mockBillingWrapper,
-            mockCache
+            mockCache,
+            executorService = executorService
         )
         purchases.allowSharingPlayStoreAccount = true
 
@@ -965,7 +974,7 @@ class PurchasesTest {
         }))
 
         verify {
-            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+            mockBillingWrapper.consumePurchase(eq(purchaseToken),  any())
         }
         assertThat(capturedLambda).isNotNull
     }
@@ -1003,7 +1012,7 @@ class PurchasesTest {
         }))
 
         verify {
-            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+            mockBillingWrapper.consumePurchase(eq(purchaseToken), any())
         }
     }
 
@@ -1767,7 +1776,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when finishTransactions is set to false, do not consume purchases`() {
+    fun `when finishTransactions is set to false, do not consume purchases but save token in cache`() {
         setup()
         purchases.finishTransactions = false
         val p: Purchase = mockk()
@@ -1782,24 +1791,26 @@ class PurchasesTest {
         } returns purchaseToken
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(p))
-
-        verify {
+        verify(exactly = 1){
             mockBackend.postReceiptData(
-                eq(purchaseToken),
-                eq(appUserId),
-                eq(sku),
-                eq(false),
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
                 any(),
                 any()
             )
         }
-        verify (exactly = 0){
-            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+        verify(exactly = 0) {
+            mockBillingWrapper.consumePurchase(purchaseToken, any())
+        }
+        verify(exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(purchaseToken)
         }
     }
 
     @Test
-    fun `when finishTransactions is set to false, don't consume subscriptions on 40x`() {
+    fun `when finishTransactions is set to false, don't consume subscriptions on 40x but save token in cache`() {
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
@@ -1833,12 +1844,15 @@ class PurchasesTest {
         }))
 
         verify (exactly = 0) {
-            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+            mockBillingWrapper.consumePurchase(eq(purchaseToken), any())
+        }
+        verify(exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(purchaseToken)
         }
     }
 
     @Test
-    fun `when finishTransactions is set to false, don't consume subscriptions on 50x`() {
+    fun `when finishTransactions is set to false, don't consume subscriptions on 50x but save token in cache`() {
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
@@ -1872,7 +1886,10 @@ class PurchasesTest {
         }))
 
         verify (exactly = 0) {
-            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+            mockBillingWrapper.consumePurchase(purchaseToken, any())
+        }
+        verify(exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(purchaseToken)
         }
     }
 
@@ -1989,7 +2006,7 @@ class PurchasesTest {
             )
         }
         verify (exactly = 0){
-            mockBillingWrapper.consumePurchase(eq(purchaseToken))
+            mockBillingWrapper.consumePurchase(eq(purchaseToken), any())
         }
     }
 
@@ -2246,7 +2263,8 @@ class PurchasesTest {
             appUserId,
             mockBackend,
             mockBillingWrapper,
-            mockCache
+            mockCache,
+            executorService = executorService
         )
         Purchases.sharedInstance = purchases
 
@@ -2254,7 +2272,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `successfully posted receipts are saved in cache`() {
+    fun `successfully posted receipts are not saved in cache if consumption fails`() {
         setup()
         val crazyPurchaseToken = "crazy_purchase_token"
 
@@ -2268,7 +2286,68 @@ class PurchasesTest {
         })
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(purchases)
+        capturedConsumeResponseListener.captured.invoke(2, crazyPurchaseToken)
+        verify (exactly = 0) {
+            mockCache.addSuccessfullyPostedToken(crazyPurchaseToken)
+        }
+    }
 
+    @Test
+    fun `when error posting receipts tokens are not saved in cache if error is finishable and consumption fails`() {
+        val sku = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        setup()
+
+        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        every {
+            mockBackend.postReceiptData(
+                eq(purchaseToken),
+                eq(appUserId),
+                eq(sku),
+                eq(false),
+                any(),
+                captureLambda()
+            )
+        } answers {
+            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
+        }
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(mockk<Purchase>().also {
+            every {
+                it.sku
+            } returns "onemonth_freetrial"
+            every {
+                it.purchaseToken
+            } returns "crazy_purchase_token"
+        }))
+        capturedLambda!!.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+            true
+        )
+        capturedConsumeResponseListener.captured.invoke(2, "crazy_purchase_token")
+        verify (exactly = 0 ) {
+            mockCache.addSuccessfullyPostedToken("crazy_purchase_token")
+        }
+    }
+
+
+    @Test
+    fun `successfully posted receipts are saved in cache after consumption`() {
+        setup()
+        val crazyPurchaseToken = "crazy_purchase_token"
+
+        val purchases: List<Purchase> = listOf(mockk<Purchase>().apply {
+            every {
+                sku
+            } returns "onemonth_freetrial"
+            every {
+                purchaseToken
+            } returns crazyPurchaseToken
+        })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(purchases)
+        capturedConsumeResponseListener.captured.invoke(0, crazyPurchaseToken)
         verify (exactly = 1) {
             mockCache.addSuccessfullyPostedToken(crazyPurchaseToken)
         }
@@ -2307,6 +2386,7 @@ class PurchasesTest {
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
             true
         )
+        capturedConsumeResponseListener.captured.invoke(0, "crazy_purchase_token")
         verify (exactly = 1) {
             mockCache.addSuccessfullyPostedToken("crazy_purchase_token")
         }
@@ -2541,7 +2621,7 @@ class PurchasesTest {
                 purchasesUpdatedListener = capture(capturedPurchasesUpdatedListener)
             } just Runs
             every {
-                consumePurchase(any())
+                consumePurchase(any(), capture(capturedConsumeResponseListener))
             } just Runs
             every {
                 purchasesUpdatedListener = null
