@@ -72,8 +72,12 @@ internal class DeviceCache(
 
     @Synchronized fun getSentTokens(): Set<String> = preferences.getStringSet(tokensCacheKey, emptySet())!!.toSet()
 
-    @Synchronized fun addSuccessfullyPostedToken(token: String) =
+    @Synchronized fun addSuccessfullyPostedToken(token: String) {
+        debugLog("Saving token $token with hash ${token.sha1()}")
+        debugLog("Already sent tokens ${getSentTokens()}")
         setSavedTokens(getSentTokens().toMutableSet().apply { add(token.sha1()) })
+    }
+
 
     @Synchronized fun setSavedTokens(newSet: Set<String>) =
         preferences.edit().putStringSet(tokensCacheKey, newSet).apply()

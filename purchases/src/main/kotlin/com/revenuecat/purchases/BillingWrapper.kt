@@ -47,6 +47,9 @@ internal class BillingWrapper internal constructor(
                 endConnection()
             }
         }
+
+    private val productTypes = mutableMapOf<String, String>()
+
     private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
 
     internal class ClientFactory(private val context: Context) {
@@ -57,7 +60,7 @@ internal class BillingWrapper internal constructor(
     }
 
     internal interface PurchasesUpdatedListener {
-        fun onPurchasesUpdated(purchases: List<Purchase>)
+        fun onPurchasesUpdated(purchases: List<PurchaseWrapper>)
         fun onPurchasesFailedToUpdate(
             purchases: List<Purchase>?,
             @BillingClient.BillingResponse responseCode: Int,
@@ -159,6 +162,9 @@ internal class BillingWrapper internal constructor(
         } else {
             debugLog("Making purchase for sku: $sku")
         }
+        synchronized(this@BillingWrapper) {
+            productTypes[sku] = skuType
+        }
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
                 .setSku(sku)
@@ -180,6 +186,9 @@ internal class BillingWrapper internal constructor(
             debugLog("Upgrading old sku $oldSku with sku: ${skuDetails.sku}")
         } else {
             debugLog("Making purchase for sku: ${skuDetails.sku}")
+        }
+        synchronized(this@BillingWrapper) {
+            productTypes[skuDetails.sku] = skuDetails.type
         }
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
@@ -228,7 +237,7 @@ internal class BillingWrapper internal constructor(
     }
 
     fun queryAllPurchases(
-        onReceivePurchaseHistory: (List<Purchase>) -> Unit,
+        onReceivePurchaseHistory: (List<PurchaseWrapper>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
         queryPurchaseHistoryAsync(
@@ -237,7 +246,10 @@ internal class BillingWrapper internal constructor(
                 queryPurchaseHistoryAsync(
                     SkuType.INAPP,
                     { inAppPurchasesList ->
-                        onReceivePurchaseHistory(subsPurchasesList + inAppPurchasesList)
+                        onReceivePurchaseHistory(
+                            subsPurchasesList.map { PurchaseWrapper(it, SkuType.SUBS) } +
+                                inAppPurchasesList.map { PurchaseWrapper(it, SkuType.INAPP) }
+                        )
                     },
                     onReceivePurchaseHistoryError
                 )
@@ -267,10 +279,16 @@ internal class BillingWrapper internal constructor(
 
     override fun onPurchasesUpdated(@BillingClient.BillingResponse responseCode: Int, purchases: List<Purchase>?) {
         if (responseCode == BillingClient.BillingResponse.OK && purchases != null) {
-            purchases.forEach {
-                debugLog("BillingWrapper purchases updated: ${it.toHumanReadableDescription()}")
+            purchases.map { purchase ->
+                debugLog("BillingWrapper purchases updated: ${purchase.toHumanReadableDescription()}")
+                var type: String?
+                synchronized(this@BillingWrapper) {
+                    type = productTypes[purchase.sku]
+                }
+                PurchaseWrapper(purchase, type)
+            }.let { mappedPurchases ->
+                purchasesUpdatedListener?.onPurchasesUpdated(mappedPurchases)
             }
-            purchasesUpdatedListener?.onPurchasesUpdated(purchases)
         } else {
             debugLog("BillingWrapper purchases failed to update: responseCode ${responseCode.getBillingResponseCodeName()}" +
                     "${purchases?.takeUnless { it.isEmpty() }?.let { purchase ->

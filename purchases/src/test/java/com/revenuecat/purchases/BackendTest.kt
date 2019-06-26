@@ -409,7 +409,7 @@ class BackendTest {
             "newId",
             onSuccess,
             {
-                fail("Should have called success")
+                fail<String>("Should have called success")
             }
         )
 

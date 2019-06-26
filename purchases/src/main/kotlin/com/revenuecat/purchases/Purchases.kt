@@ -742,11 +742,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun postPurchases(
-        purchases: List<Purchase>,
+        purchases: List<PurchaseWrapper>,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
-        onSuccess: (Purchase, PurchaserInfo) -> Unit,
-        onError: (Purchase, PurchasesError) -> Unit
+        onSuccess: (PurchaseWrapper, PurchaserInfo) -> Unit,
+        onError: (PurchaseWrapper, PurchasesError) -> Unit
     ) {
         synchronized(this@Purchases) { state.appUserID }.let { appUserID ->
              purchases.forEach { purchase ->
@@ -771,15 +771,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun consumeAndSave(
-        consumeAllTransactions: Boolean,
-        purchase: Purchase
+        shouldTryToConsume: Boolean,
+        purchase: PurchaseWrapper
     ) {
-        if (consumeAllTransactions) {
+        if (purchase.type == null) {
+            // Could happen if purchase occurred outside of app. Will retry next activity resume
+            return
+        }
+        if (purchase.isConsumable && shouldTryToConsume) {
             billingWrapper.consumePurchase(purchase.purchaseToken) { responseCode, purchaseToken ->
                 if (responseCode == BillingClient.BillingResponse.OK) {
                     synchronized(deviceCache) {
                         deviceCache.addSuccessfullyPostedToken(purchaseToken)
                     }
+                } else {
+                    debugLog("ResponseCode from consuming purchase $responseCode")
                 }
             }
         } else {
@@ -790,7 +796,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun postPurchasesSortedByTime(
-        purchases: List<Purchase>,
+        purchases: List<PurchaseWrapper>,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         onSuccess: (PurchaserInfo) -> Unit,
@@ -898,9 +904,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
+    @Synchronized private fun getPurchaseCallback(sku: String): MakePurchaseListener? {
+        return state.purchaseCallbacks[sku].also {
+            state = state.copy(purchaseCallbacks = state.purchaseCallbacks.filterNot { it.key == sku })
+        }
+    }
+
     private fun getPurchasesUpdatedListener(): BillingWrapper.PurchasesUpdatedListener {
         return object : BillingWrapper.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards Purchase>) {
+            override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards PurchaseWrapper>) {
                 synchronized(this@Purchases) {
                     state.allowSharingPlayStoreAccount to state.finishTransactions
                 }.let { (allowSharingPlayStoreAccount, finishTransactions) ->
@@ -909,26 +921,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         allowSharingPlayStoreAccount,
                         finishTransactions,
                         { purchase, info ->
-                            synchronized(this@Purchases) {
-                                state.purchaseCallbacks[purchase.sku].also {
-                                    state =
-                                        state.copy(purchaseCallbacks = state.purchaseCallbacks.filterNot { it.key == purchase.sku })
-                                }
-                            }?.let { callback ->
+                            getPurchaseCallback(purchase.sku)?.let { callback ->
                                 dispatch {
-                                    callback.onCompleted(purchase, info)
+                                    callback.onCompleted(purchase.containedPurchase, info)
                                 }
                             }
                         },
                         { purchase, error ->
-                            synchronized(this@Purchases) {
-                                state.purchaseCallbacks[purchase.sku]?.also {
-                                    state =
-                                        state.copy(purchaseCallbacks = state.purchaseCallbacks.filterNot { it.key == purchase.sku })
-                                }
-                            }?.let { callback ->
+                            getPurchaseCallback(purchase.sku)?.let { callback ->
                                 dispatch {
-                                    callback.onError(error, error.code == PurchasesErrorCode.PurchaseCancelledError)
+                                    callback.onError(
+                                        error,
+                                        error.code == PurchasesErrorCode.PurchaseCancelledError
+                                    )
                                 }
                             }
                         }
@@ -985,18 +990,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun updatePendingPurchaseQueue(onCompleted: () -> Unit = {}) {
+    @JvmSynthetic internal fun updatePendingPurchaseQueue(onCompleted: () -> Unit = {}) {
+        debugLog("Updating pending purchase queue")
         executorService.execute {
             val querySUBS = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
             val queryINAPP = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
-            var queried = mutableMapOf<String, Purchase>()
+            val queried = mutableMapOf<String, PurchaseWrapper>()
             if (querySUBS?.responseCode == BillingClient.BillingResponse.OK && queryINAPP?.responseCode == BillingClient.BillingResponse.OK) {
-                queried =
-                    (querySUBS.purchasesList + queryINAPP.purchasesList).map { it.purchaseToken to it }.toMap()
-                        .toMutableMap()
+                queried.putAll(querySUBS.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.SUBS)})
+                queried.putAll(queryINAPP.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.INAPP)})
                 var alreadySentTokens: MutableSet<String>
                 synchronized(deviceCache) {
                     alreadySentTokens = deviceCache.getSentTokens().toMutableSet()
+                    debugLog("Already sent tokens: $alreadySentTokens")
                     alreadySentTokens.forEach { queried.remove(it) ?: alreadySentTokens.remove(it) }
                     deviceCache.setSavedTokens(alreadySentTokens)
                 }

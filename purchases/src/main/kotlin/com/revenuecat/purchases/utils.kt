@@ -168,5 +168,5 @@ internal data class AppConfig(
 internal fun String.sha1() =
     MessageDigest.getInstance("SHA-1")
         .digest(this.toByteArray()).let {
-            String(Base64.encode(it, Base64.DEFAULT))
+            String(Base64.encode(it, Base64.NO_WRAP))
         }
