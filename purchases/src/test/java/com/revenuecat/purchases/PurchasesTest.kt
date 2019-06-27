@@ -257,11 +257,25 @@ class PurchasesTest {
         )
 
         verify (exactly = 1) {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, false, any(), any())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                any(),
+                any()
+            )
         }
 
         verify (exactly = 1) {
-            mockBackend.postReceiptData(purchaseTokenSub, appUserId, skuSub, false, any(), any())
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                any(),
+                any()
+            )
         }
 
         verify (exactly = 1){
@@ -301,9 +315,9 @@ class PurchasesTest {
         verify(exactly = 2) {
             mockBackend.postReceiptData(
                 any(),
-                eq(appUserId),
-                eq(sku),
-                eq(false),
+                appUserId,
+                sku,
+                false,
                 any(),
                 any()
             )
@@ -321,7 +335,7 @@ class PurchasesTest {
                 any(),
                 any(),
                 any(),
-                eq(false),
+                false,
                 any(),
                 any()
             )
@@ -577,7 +591,14 @@ class PurchasesTest {
         assertThat(restoreCalled).isTrue()
 
         verify (exactly = 1) {
-            mockBackend.postReceiptData(purchaseToken, purchases.appUserID, sku, true, any(), any())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                purchases.appUserID,
+                sku,
+                true,
+                any(),
+                any()
+            )
         }
 
         verify (exactly = 1) {
@@ -636,7 +657,7 @@ class PurchasesTest {
                 any(),
                 any(),
                 any(),
-                eq(true),
+                true,
                 captureLambda(),
                 any()
             )
@@ -1176,7 +1197,7 @@ class PurchasesTest {
         setup()
         val info = mockk<PurchaserInfo>()
         every {
-            mockBackend.postReceiptData(any(), any(), any(), any(), captureLambda(), any())
+            mockBackend.postReceiptData(any(), any(), any(), any(), captureLambda(), any(), any())
         } answers {
             lambda<(PurchaserInfo) -> Unit>().captured.invoke(info)
         }
@@ -2247,10 +2268,10 @@ class PurchasesTest {
         var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
         every {
             mockBackend.postReceiptData(
-                eq(purchaseToken),
-                eq(appUserId),
-                eq(sku),
-                eq(false),
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2281,14 +2302,28 @@ class PurchasesTest {
         var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
         var capturedLambda1: ((PurchasesError, Boolean) -> Unit)? = null
         every {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, false, any(), captureLambda())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                any(),
+                captureLambda()
+            )
         } answers {
             capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
                 it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), false)
             }
         }
         every {
-            mockBackend.postReceiptData(purchaseTokenSub, appUserId, skuSub, false, any(), captureLambda())
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                any(),
+                captureLambda()
+            )
         } answers {
             capturedLambda1 = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
                 it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), false)
@@ -2333,7 +2368,15 @@ class PurchasesTest {
         } just Runs
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 1) {
-            mockBackend.postReceiptData("token", appUserId, "product", true, any(), any())
+            mockBackend.postReceiptData(
+                "token",
+                appUserId,
+                "product",
+                true,
+                any(),
+                any(),
+                true
+            )
         }
     }
 
@@ -2414,7 +2457,15 @@ class PurchasesTest {
         } just Runs
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 1) {
-            mockBackend.postReceiptData("token", appUserId, "product", false, any(), any())
+            mockBackend.postReceiptData(
+                "token",
+                appUserId,
+                "product",
+                false,
+                any(),
+                any(),
+                true
+            )
         }
     }
 
@@ -2441,7 +2492,15 @@ class PurchasesTest {
         } just Runs
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 0) {
-            mockBackend.postReceiptData(token, appUserId, "product", false, any(), any())
+            mockBackend.postReceiptData(
+                token,
+                appUserId,
+                "product",
+                false,
+                any(),
+                any(),
+                true
+            )
         }
     }
 
@@ -2476,7 +2535,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `on billing wrapper connected, query purchases`() {
+    fun `on billing wrapper connected, query purchases and register lifecycle callbacks`() {
         setup()
         every {
             mockCache.getSentTokens()
@@ -2497,11 +2556,10 @@ class PurchasesTest {
         verify (exactly = 1) {
             mockBillingWrapper.queryPurchases(INAPP)
         }
-    }
-
-    @Test
-    fun `when connected to billing client register lifecycle callbacks after updating queue`(){
-        // TODO: implement
+        verify (exactly = 1) {
+            mockApplication.registerActivityLifecycleCallbacks(any())
+        }
+        assertThat(capturedActivityLifecycleListener.captured).isNotNull
     }
 
     // region Private Methods
@@ -2562,7 +2620,7 @@ class PurchasesTest {
                 )
             }
             every {
-                postReceiptData(any(), any(), any(), any(), captureLambda(), any())
+                postReceiptData(any(), any(), any(), any(), captureLambda(), any(), any())
             } answers {
                 lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
             }

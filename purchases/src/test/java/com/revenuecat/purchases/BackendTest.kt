@@ -535,4 +535,30 @@ class BackendTest {
             )
         }
     }
+
+    @Test
+    fun `avoid resending the same token if skipIfAlreadySent`() {
+        val (fetchToken, productID, _) = mockPostReceiptResponse(
+            false,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(1)
+        asyncBackend.postReceiptData(fetchToken, appUserID, productID, false, {
+            lock.countDown()
+        }, postReceiptErrorCallback)
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        asyncBackend.postReceiptData(fetchToken, appUserID, productID, false,  {},
+            postReceiptErrorCallback, true)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/receipts",
+                any() as Map<*, *>?,
+                any()
+            )
+        }
+    }
 }

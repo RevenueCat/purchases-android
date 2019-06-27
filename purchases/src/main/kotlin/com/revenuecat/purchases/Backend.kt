@@ -23,6 +23,7 @@ internal class Backend(
     private val httpClient: HTTPClient
 ) {
 
+    private val alreadyPostedReceipts: MutableSet<List<String>> = mutableSetOf()
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
     @Volatile var callbacks = mutableMapOf<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
@@ -103,9 +104,16 @@ internal class Backend(
         productID: String,
         isRestore: Boolean,
         onSuccess: (PurchaserInfo) -> Unit,
-        onError: (PurchasesError, errorIsFinishable: Boolean) -> Unit
+        onError: (PurchasesError, errorIsFinishable: Boolean) -> Unit,
+        silentlySkipIfAlreadySent: Boolean = false// Note it will not call the completion functions
     ) {
         val cacheKey = listOf(purchaseToken, productID, appUserID, isRestore.toString())
+        synchronized(this@Backend) {
+            if (alreadyPostedReceipts.contains(cacheKey) && silentlySkipIfAlreadySent) {
+                return
+            }
+            alreadyPostedReceipts.add(cacheKey)
+        }
 
         val body = mapOf(
             "fetch_token" to purchaseToken,

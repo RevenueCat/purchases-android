@@ -745,8 +745,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         purchases: List<PurchaseWrapper>,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
-        onSuccess: (PurchaseWrapper, PurchaserInfo) -> Unit,
-        onError: (PurchaseWrapper, PurchasesError) -> Unit
+        onSuccess: ((PurchaseWrapper, PurchaserInfo) -> Unit)? = null,
+        onError: ((PurchaseWrapper, PurchasesError) -> Unit)? =  null,
+        skipIfAlreadySent: Boolean = false
     ) {
         synchronized(this@Purchases) { state.appUserID }.let { appUserID ->
              purchases.forEach { purchase ->
@@ -759,13 +760,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         consumeAndSave(consumeAllTransactions, purchase)
                         cachePurchaserInfo(info)
                         sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                        onSuccess(purchase, info)
+                        onSuccess?.let { it(purchase, info) }
                     }, { error, errorIsFinishable ->
                         if (errorIsFinishable) {
                             consumeAndSave(consumeAllTransactions, purchase)
                         }
-                        onError(purchase, error)
-                    })
+                        onError?.let { it(purchase, error) }
+                    }, skipIfAlreadySent)
             }
         }
     }
@@ -785,7 +786,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         deviceCache.addSuccessfullyPostedToken(purchaseToken)
                     }
                 } else {
-                    debugLog("ResponseCode from consuming purchase $responseCode")
+                    debugLog("ResponseCode from consuming purchase $responseCode. Will retry next queryPurchases.")
                 }
             }
         } else {
@@ -1021,8 +1022,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 queried.values.toList(),
                 allowSharingPlayStoreAccount,
                 finishTransactions,
-                { _, _ -> },
-                { _, _ -> }
+                skipIfAlreadySent = true
             )
             onCompleted.invoke()
         }

@@ -42,8 +42,24 @@ class UpsellActivity : AppCompatActivity() {
             entitlementMap["pro"]?.let { proEntitlement ->
                 setupMonthlyOfferingButton(proEntitlement)
                 setupAnnualOfferingButton(proEntitlement)
+                setupUnlimitedOfferingButton(proEntitlement)
             } ?: showError("Error finding pro entitlement")
         }
+    }
+
+    private fun setupUnlimitedOfferingButton(proEntitlement: Entitlement) {
+        proEntitlement.offerings["unlimited"]?.let { unlimited ->
+            unlimited.skuDetails?.let { unlimitedProduct ->
+                with(unlimited_purchase) {
+                    loadedText = "Buy Unlimited - ${unlimitedProduct.priceCurrencyCode} ${unlimitedProduct.price}"
+                    showLoading(false)
+                    setOnClickListener {
+                        makePurchase(unlimitedProduct, this)
+                    }
+                }
+            } ?: showError("Error finding unlimited active product")
+        } ?: showError("Error finding unlimited offering")
+
     }
 
     private fun setupMonthlyOfferingButton(proEntitlement: Entitlement) {
