@@ -999,12 +999,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (querySUBS?.responseCode == BillingClient.BillingResponse.OK && queryINAPP?.responseCode == BillingClient.BillingResponse.OK) {
                 queried.putAll(querySUBS.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.SUBS)})
                 queried.putAll(queryINAPP.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.INAPP)})
-                var alreadySentTokens: MutableSet<String>
+                debugLog("Queried tokens: $queried")
                 synchronized(deviceCache) {
-                    alreadySentTokens = deviceCache.getSentTokens().toMutableSet()
-                    debugLog("Already sent tokens: $alreadySentTokens")
-                    alreadySentTokens.forEach { queried.remove(it) ?: alreadySentTokens.remove(it) }
-                    deviceCache.setSavedTokens(alreadySentTokens)
+                    val cachedTokens = deviceCache.getSentTokens().toMutableSet()
+                    debugLog("Already sent tokens: $cachedTokens")
+                    val iterator = cachedTokens.iterator()
+                    while(iterator.hasNext()) {
+                        val token = iterator.next()
+                        if (queried.containsKey(token)) {
+                            debugLog("Token $token still active")
+                            queried.remove(token)
+                        } else {
+                            debugLog("Token $token not active,  will be removed from cache")
+                            iterator.remove()
+                        }
+                    }
+                    deviceCache.setSavedTokens(cachedTokens)
                 }
             }
             postPurchases(
