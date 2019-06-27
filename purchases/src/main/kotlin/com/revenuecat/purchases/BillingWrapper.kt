@@ -70,7 +70,6 @@ internal class BillingWrapper internal constructor(
 
     internal interface StateListener {
         fun onConnected()
-        fun onDisconnected()
     }
 
     private fun executePendingRequests() {
@@ -272,7 +271,7 @@ internal class BillingWrapper internal constructor(
 
     fun queryPurchases(@SkuType skuType: String): Purchase.PurchasesResult? {
         return billingClient?.let {
-            debugLog("Querying $skuType")
+            debugLog("[QueryPurchases] Querying $skuType")
             it.queryPurchases(skuType)
         }
     }
@@ -347,7 +346,7 @@ internal class BillingWrapper internal constructor(
 
     override fun onBillingServiceDisconnected() {
         debugLog("Billing Service disconnected for ${billingClient?.toString()}")
-        stateListener?.onDisconnected()
     }
 
+    fun isConnected(): Boolean = billingClient?.isReady ?: false
 }

@@ -10,7 +10,6 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
-import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.preference.PreferenceManager
@@ -58,7 +57,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val deviceCache: DeviceCache,
     observerMode: Boolean = false,
     private val executorService: ExecutorService
-) {
+) : LifeCycleDelegate {
 
     @Volatile
     var state = PurchasesState()
@@ -109,29 +108,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             afterSetListener(value)
         }
 
-    private val activityLifecycleCallback: Application.ActivityLifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
-        override fun onActivityPaused(activity: Activity?) {
-        }
-
-        override fun onActivityResumed(activity: Activity?) {
-            updatePendingPurchaseQueue()
-        }
-
-        override fun onActivityStarted(activity: Activity?) {
-        }
-
-        override fun onActivityDestroyed(activity: Activity?) {
-        }
-
-        override fun onActivitySaveInstanceState(activity: Activity?, outState: Bundle?) {
-        }
-
-        override fun onActivityStopped(activity: Activity?) {
-        }
-
-        override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {
-        }
-    }
+    private val lifecycleHandler = AppLifecycleHandler(this)
 
     init {
         debugLog("Debug logging enabled.")
@@ -149,18 +126,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             )
         }
         updateCaches(newAppUserID)
+        applicationContext.getApplication().registerActivityLifecycleCallbacks(lifecycleHandler)
+        applicationContext.getApplication().registerComponentCallbacks(lifecycleHandler)
         billingWrapper.stateListener = object : BillingWrapper.StateListener {
             override fun onConnected() {
-                updatePendingPurchaseQueue {
-                    applicationContext.getApplication().registerActivityLifecycleCallbacks(activityLifecycleCallback)
-                }
-            }
-
-            override fun onDisconnected() {
-                applicationContext.getApplication().unregisterActivityLifecycleCallbacks(activityLifecycleCallback)
+                updatePendingPurchaseQueue()
             }
         }
         billingWrapper.purchasesUpdatedListener = getPurchasesUpdatedListener()
+    }
+
+    override fun onAppBackgrounded() {
+    }
+
+    override fun onAppForegrounded() {
+        updatePendingPurchaseQueue()
     }
 
     // region Public Methods
@@ -528,7 +508,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         this.backend.close()
         billingWrapper.purchasesUpdatedListener = null
         updatedPurchaserInfoListener = null // Do not call on state since the setter does more stuff
-        applicationContext.getApplication().unregisterActivityLifecycleCallbacks(activityLifecycleCallback)
+        applicationContext.getApplication().registerActivityLifecycleCallbacks(lifecycleHandler)
+        applicationContext.getApplication().registerComponentCallbacks(lifecycleHandler)
     }
 
     /**
@@ -746,8 +727,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         onSuccess: ((PurchaseWrapper, PurchaserInfo) -> Unit)? = null,
-        onError: ((PurchaseWrapper, PurchasesError) -> Unit)? =  null,
-        skipIfAlreadySent: Boolean = false
+        onError: ((PurchaseWrapper, PurchasesError) -> Unit)? = null
     ) {
         synchronized(this@Purchases) { state.appUserID }.let { appUserID ->
              purchases.forEach { purchase ->
@@ -766,7 +746,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             consumeAndSave(consumeAllTransactions, purchase)
                         }
                         onError?.let { it(purchase, error) }
-                    }, skipIfAlreadySent)
+                    })
             }
         }
     }
@@ -992,39 +972,42 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     @JvmSynthetic internal fun updatePendingPurchaseQueue(onCompleted: () -> Unit = {}) {
-        debugLog("Updating pending purchase queue")
-        executorService.execute {
-            val querySUBS = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
-            val queryINAPP = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
-            val queried = mutableMapOf<String, PurchaseWrapper>()
-            if (querySUBS?.responseCode == BillingClient.BillingResponse.OK && queryINAPP?.responseCode == BillingClient.BillingResponse.OK) {
-                queried.putAll(querySUBS.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.SUBS)})
-                queried.putAll(queryINAPP.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.INAPP)})
-                debugLog("Queried tokens: $queried")
-                synchronized(deviceCache) {
-                    val cachedTokens = deviceCache.getSentTokens().toMutableSet()
-                    debugLog("Already sent tokens: $cachedTokens")
-                    val iterator = cachedTokens.iterator()
-                    while(iterator.hasNext()) {
-                        val token = iterator.next()
-                        if (queried.containsKey(token)) {
-                            debugLog("Token $token still active")
-                            queried.remove(token)
-                        } else {
-                            debugLog("Token $token not active,  will be removed from cache")
-                            iterator.remove()
+        if (billingWrapper.isConnected()) {
+            debugLog("[QueryPurchases] Updating pending purchase queue")
+            executorService.execute {
+                val querySUBS = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
+                val queryINAPP = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
+                val queried = mutableMapOf<String, PurchaseWrapper>()
+                if (querySUBS?.responseCode == BillingClient.BillingResponse.OK && queryINAPP?.responseCode == BillingClient.BillingResponse.OK) {
+                    queried.putAll(querySUBS.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.SUBS)})
+                    queried.putAll(queryINAPP.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.INAPP)})
+                    debugLog("[QueryPurchases] Queried tokens: $queried")
+                    synchronized(deviceCache) {
+                        val cachedTokens = deviceCache.getSentTokens().toMutableSet()
+                        debugLog("[QueryPurchases] Already sent tokens: $cachedTokens")
+                        val iterator = cachedTokens.iterator()
+                        while(iterator.hasNext()) {
+                            val token = iterator.next()
+                            if (queried.containsKey(token)) {
+                                debugLog("[QueryPurchases] Token $token still active")
+                                queried.remove(token)
+                            } else {
+                                debugLog("[QueryPurchases] Token $token not active,  will be removed from cache")
+                                iterator.remove()
+                            }
                         }
+                        deviceCache.setSavedTokens(cachedTokens)
                     }
-                    deviceCache.setSavedTokens(cachedTokens)
                 }
+                postPurchases(
+                    queried.values.toList(),
+                    allowSharingPlayStoreAccount,
+                    finishTransactions
+                )
+                onCompleted.invoke()
             }
-            postPurchases(
-                queried.values.toList(),
-                allowSharingPlayStoreAccount,
-                finishTransactions,
-                skipIfAlreadySent = true
-            )
-            onCompleted.invoke()
+        } else {
+            debugLog("[QueryPurchases] Skipping updating pending purchase queue since BillingClient is not connected yet")
         }
     }
 

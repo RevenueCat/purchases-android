@@ -503,7 +503,14 @@ class PurchasesTest {
         )
 
         verify {
-            mockBackend.postReceiptData(purchaseToken, purchases.appUserID, sku, false, any(), any())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                purchases.appUserID,
+                sku,
+                false,
+                any(),
+                any()
+            )
         }
     }
 
@@ -602,7 +609,14 @@ class PurchasesTest {
         }
 
         verify (exactly = 1) {
-            mockBackend.postReceiptData(purchaseTokenSub, purchases.appUserID, skuSub, true, any(), any())
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                purchases.appUserID,
+                skuSub,
+                true,
+                any(),
+                any()
+            )
         }
     }
 
@@ -911,7 +925,14 @@ class PurchasesTest {
 
         var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
         every {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, false, any(), captureLambda())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                any(),
+                captureLambda()
+            )
         } answers {
             capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
             capturedLambda?.invoke(
@@ -947,7 +968,14 @@ class PurchasesTest {
         var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
         var capturedLambda1: ((PurchasesError, Boolean) -> Unit)? = null
         every {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, false, any(), captureLambda())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                any(),
+                captureLambda()
+            )
         } answers {
             capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
                 it.invoke(
@@ -957,7 +985,14 @@ class PurchasesTest {
             }
         }
         every {
-            mockBackend.postReceiptData(purchaseTokenSub, appUserId, skuSub, false, any(), captureLambda())
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                any(),
+                captureLambda()
+            )
         } answers {
             capturedLambda1 = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
                 it.invoke(
@@ -1197,7 +1232,7 @@ class PurchasesTest {
         setup()
         val info = mockk<PurchaserInfo>()
         every {
-            mockBackend.postReceiptData(any(), any(), any(), any(), captureLambda(), any(), any())
+            mockBackend.postReceiptData(any(), any(), any(), any(), captureLambda(), any())
         } answers {
             lambda<(PurchaserInfo) -> Unit>().captured.invoke(info)
         }
@@ -1744,7 +1779,14 @@ class PurchasesTest {
         var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
         var capturedLambda1: ((PurchasesError, Boolean) -> Unit)? = null
         every {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, false, any(), captureLambda())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                any(),
+                captureLambda()
+            )
         } answers {
             capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
                 it.invoke(
@@ -1754,7 +1796,14 @@ class PurchasesTest {
             }
         }
         every {
-            mockBackend.postReceiptData(purchaseTokenSub, appUserId, skuSub, false, any(), captureLambda())
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                any(),
+                captureLambda()
+            )
         } answers {
             capturedLambda1 = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
                 it.invoke(
@@ -1798,7 +1847,14 @@ class PurchasesTest {
 
         var captured: ((PurchasesError, Boolean) -> Unit)? = null
         every {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, false, any(), captureLambda())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                any(),
+                captureLambda()
+            )
         } answers {
             captured = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
                 it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), true)
@@ -1855,10 +1911,24 @@ class PurchasesTest {
 
         assertThat(capturedLambda).isNotNull
         verify (exactly = 1) {
-            mockBackend.postReceiptData(purchaseToken, purchases.appUserID, sku, false, any(), any())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                purchases.appUserID,
+                sku,
+                false,
+                any(),
+                any()
+            )
         }
         verify (exactly = 1) {
-            mockBackend.postReceiptData(purchaseTokenSub, purchases.appUserID, skuSub, false, any(), any())
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                purchases.appUserID,
+                skuSub,
+                false,
+                any(),
+                any()
+            )
         }
     }
 
@@ -1894,7 +1964,14 @@ class PurchasesTest {
             mockBackend.postReceiptData(purchaseToken, purchases.appUserID, sku, true, any(), any())
         }
         verify (exactly = 1) {
-            mockBackend.postReceiptData(purchaseTokenSub, purchases.appUserID, skuSub, true, any(), any())
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                purchases.appUserID,
+                skuSub,
+                true,
+                any(),
+                any()
+            )
         }
     }
 
@@ -2374,8 +2451,7 @@ class PurchasesTest {
                 "product",
                 true,
                 any(),
-                any(),
-                true
+                any()
             )
         }
     }
@@ -2463,8 +2539,7 @@ class PurchasesTest {
                 "product",
                 false,
                 any(),
-                any(),
-                true
+                any()
             )
         }
     }
@@ -2498,8 +2573,7 @@ class PurchasesTest {
                 "product",
                 false,
                 any(),
-                any(),
-                true
+                any()
             )
         }
     }
@@ -2620,7 +2694,7 @@ class PurchasesTest {
                 )
             }
             every {
-                postReceiptData(any(), any(), any(), any(), captureLambda(), any(), any())
+                postReceiptData(any(), any(), any(), any(), captureLambda(), any())
             } answers {
                 lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
             }

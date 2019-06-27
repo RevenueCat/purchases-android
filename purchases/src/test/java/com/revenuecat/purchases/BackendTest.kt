@@ -551,8 +551,10 @@ class BackendTest {
         }, postReceiptErrorCallback)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
-        asyncBackend.postReceiptData(fetchToken, appUserID, productID, false,  {},
-            postReceiptErrorCallback, true)
+        asyncBackend.postReceiptData(
+            fetchToken, appUserID, productID, false, {},
+            postReceiptErrorCallback
+        )
         verify(exactly = 1) {
             mockClient.performRequest(
                 "/receipts",
