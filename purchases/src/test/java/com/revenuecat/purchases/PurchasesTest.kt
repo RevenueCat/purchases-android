@@ -52,15 +52,7 @@ class PurchasesTest {
     private val mockBackend: Backend = mockk()
     private val mockCache: DeviceCache = mockk()
     private val listener: UpdatedPurchaserInfoListener = mockk()
-    private val capturedActivityLifecycleListener = slot<Application.ActivityLifecycleCallbacks>()
-    private val mockApplication = mockk<Application>().apply {
-        every {
-            registerActivityLifecycleCallbacks(capture(capturedActivityLifecycleListener))
-        } just Runs
-        every {
-            unregisterActivityLifecycleCallbacks(any())
-        } just Runs
-    }
+    private val mockApplication = mockk<Application>(relaxed = true)
     private val mockContext = mockk<Context>(relaxed = true).apply {
         every {
             applicationContext
@@ -2609,7 +2601,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `on billing wrapper connected, query purchases and register lifecycle callbacks`() {
+    fun `on billing wrapper connected, query purchases`() {
         setup()
         every {
             mockCache.getSentTokens()
@@ -2630,10 +2622,45 @@ class PurchasesTest {
         verify (exactly = 1) {
             mockBillingWrapper.queryPurchases(INAPP)
         }
+    }
+
+    @Test
+    fun `on app foregrounded query purchases`() {
+        setup()
+        every {
+            mockCache.getSentTokens()
+        } returns setOf("1234token".sha1())
+        every {
+            mockCache.setSavedTokens(any())
+        } just Runs
+        every {
+            mockBillingWrapper.queryPurchases(SUBS)
+        } returns Purchase.PurchasesResult(0, emptyList())
+        every {
+            mockBillingWrapper.queryPurchases(INAPP)
+        } returns Purchase.PurchasesResult(0, emptyList())
+        purchases.onAppForegrounded()
         verify (exactly = 1) {
-            mockApplication.registerActivityLifecycleCallbacks(any())
+            mockBillingWrapper.queryPurchases(SUBS)
         }
-        assertThat(capturedActivityLifecycleListener.captured).isNotNull
+        verify (exactly = 1) {
+            mockBillingWrapper.queryPurchases(INAPP)
+        }
+    }
+
+    @Test
+    fun `if billing client not connected do not query purchases`() {
+        setup()
+        every {
+            mockBillingWrapper.isConnected()
+        } returns false
+        purchases.updatePendingPurchaseQueue()
+        verify (exactly = 0) {
+            mockBillingWrapper.queryPurchases(SUBS)
+        }
+        verify (exactly = 0) {
+            mockBillingWrapper.queryPurchases(INAPP)
+        }
     }
 
     // region Private Methods
@@ -2674,6 +2701,9 @@ class PurchasesTest {
             every {
                 stateListener = capture(capturedBillingWrapperStateListener)
             } just Runs
+            every {
+                isConnected()
+            } returns true
         }
     }
 
@@ -2798,6 +2828,9 @@ class PurchasesTest {
         assertThat(purchases.updatedPurchaserInfoListener).isNull()
         verify {
             mockApplication.unregisterActivityLifecycleCallbacks(any())
+        }
+        verify {
+            mockApplication.unregisterComponentCallbacks(any())
         }
         verifyOrder {
             mockBillingWrapper.purchasesUpdatedListener = capturedPurchasesUpdatedListener.captured

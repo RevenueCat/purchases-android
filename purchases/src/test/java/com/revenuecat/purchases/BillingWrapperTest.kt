@@ -34,7 +34,6 @@ import java.util.ArrayList
 @Config(manifest = Config.NONE)
 class BillingWrapperTest {
     private var onConnectedCalled: Boolean = false
-    private var onDisconnectedCalled: Boolean = false
     private var mockClientFactory: BillingWrapper.ClientFactory = mockk()
     private var mockClient: BillingClient = mockk()
     private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
@@ -100,12 +99,7 @@ class BillingWrapperTest {
         wrapper = BillingWrapper(mockClientFactory, handler)
         wrapper!!.purchasesUpdatedListener = mockPurchasesListener
         onConnectedCalled = false
-        onDisconnectedCalled = false
         wrapper!!.stateListener = object : BillingWrapper.StateListener {
-            override fun onDisconnected() {
-                onDisconnectedCalled = true
-            }
-
             override fun onConnected() {
                 onConnectedCalled = true
             }
@@ -625,14 +619,6 @@ class BillingWrapperTest {
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponse.OK)
         assertThat(onConnectedCalled).isTrue()
-    }
-
-    @Test
-    fun `on disconnected billing client, listener is called`() {
-        setup()
-
-        billingClientStateListener!!.onBillingServiceDisconnected()
-        assertThat(onDisconnectedCalled).isTrue()
     }
 
     private fun mockNullSkuDetailsResponse() {

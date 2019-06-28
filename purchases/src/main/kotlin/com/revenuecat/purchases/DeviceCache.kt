@@ -70,7 +70,8 @@ internal class DeviceCache(
         editor.apply()
     }
 
-    @Synchronized fun getSentTokens(): Set<String> = preferences.getStringSet(tokensCacheKey, emptySet())!!.toSet()
+    @Synchronized fun getSentTokens(): Set<String> =
+        preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()
 
     @Synchronized fun addSuccessfullyPostedToken(token: String) {
         debugLog("[QueryPurchases] Saving token $token with hash ${token.sha1()}")

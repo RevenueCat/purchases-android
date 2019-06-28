@@ -508,8 +508,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         this.backend.close()
         billingWrapper.purchasesUpdatedListener = null
         updatedPurchaserInfoListener = null // Do not call on state since the setter does more stuff
-        applicationContext.getApplication().registerActivityLifecycleCallbacks(lifecycleHandler)
-        applicationContext.getApplication().registerComponentCallbacks(lifecycleHandler)
+        applicationContext.getApplication().unregisterActivityLifecycleCallbacks(lifecycleHandler)
+        applicationContext.getApplication().unregisterComponentCallbacks(lifecycleHandler)
     }
 
     /**
@@ -971,7 +971,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    @JvmSynthetic internal fun updatePendingPurchaseQueue(onCompleted: () -> Unit = {}) {
+    @JvmSynthetic internal fun updatePendingPurchaseQueue() {
         if (billingWrapper.isConnected()) {
             debugLog("[QueryPurchases] Updating pending purchase queue")
             executorService.execute {
@@ -1004,7 +1004,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     allowSharingPlayStoreAccount,
                     finishTransactions
                 )
-                onCompleted.invoke()
             }
         } else {
             debugLog("[QueryPurchases] Skipping updating pending purchase queue since BillingClient is not connected yet")
