@@ -57,7 +57,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val deviceCache: DeviceCache,
     observerMode: Boolean = false,
     private val executorService: ExecutorService
-) : LifeCycleDelegate {
+) : LifecycleDelegate {
 
     @Volatile
     var state = PurchasesState()
@@ -730,7 +730,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onError: ((PurchaseWrapper, PurchasesError) -> Unit)? = null
     ) {
         synchronized(this@Purchases) { state.appUserID }.let { appUserID ->
-             purchases.forEach { purchase ->
+            purchases.forEach { purchase ->
                 backend.postReceiptData(
                     purchase.purchaseToken,
                     appUserID,
@@ -975,32 +975,31 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (billingWrapper.isConnected()) {
             debugLog("[QueryPurchases] Updating pending purchase queue")
             executorService.execute {
-                val querySUBS = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
-                val queryINAPP = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
-                val queried = mutableMapOf<String, PurchaseWrapper>()
-                if (querySUBS?.responseCode == BillingClient.BillingResponse.OK && queryINAPP?.responseCode == BillingClient.BillingResponse.OK) {
-                    queried.putAll(querySUBS.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.SUBS)})
-                    queried.putAll(queryINAPP.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.INAPP)})
-                    debugLog("[QueryPurchases] Queried tokens: $queried")
+                val queriedSUBS = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
+                val queriedINAPPs = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
+                val tokensToPost = mutableMapOf<String, PurchaseWrapper>()
+                if (queriedSUBS?.responseCode == BillingClient.BillingResponse.OK && queriedINAPPs?.responseCode == BillingClient.BillingResponse.OK) {
+                    tokensToPost.putAll(queriedSUBS.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.SUBS)})
+                    tokensToPost.putAll(queriedINAPPs.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.INAPP)})
+                    debugLog("[QueryPurchases] Active subscriptions and unconsumed iaps hashes: $tokensToPost")
                     synchronized(deviceCache) {
                         val cachedTokens = deviceCache.getSentTokens().toMutableSet()
-                        debugLog("[QueryPurchases] Already sent tokens: $cachedTokens")
-                        val iterator = cachedTokens.iterator()
-                        while(iterator.hasNext()) {
-                            val token = iterator.next()
-                            if (queried.containsKey(token)) {
-                                debugLog("[QueryPurchases] Token $token still active")
-                                queried.remove(token)
+                        debugLog("[QueryPurchases] Tokens already posted: $cachedTokens")
+                        val tokensToSaveInCache = cachedTokens.toMutableSet()
+                        cachedTokens.forEach { token ->
+                            if (!tokensToPost.contains(token)) {
+                                debugLog("[QueryPurchases] Token will be removed from cache $token since it's not an active subscription or has been consumed.")
+                                tokensToSaveInCache.remove(token)
                             } else {
-                                debugLog("[QueryPurchases] Token $token not active,  will be removed from cache")
-                                iterator.remove()
+                                debugLog("[QueryPurchases] Token $token has already been posted. Will not be posted again.")
+                                tokensToPost.remove(token)
                             }
                         }
-                        deviceCache.setSavedTokens(cachedTokens)
+                        deviceCache.setSavedTokens(tokensToSaveInCache)
                     }
                 }
                 postPurchases(
-                    queried.values.toList(),
+                    tokensToPost.values.toList(),
                     allowSharingPlayStoreAccount,
                     finishTransactions
                 )

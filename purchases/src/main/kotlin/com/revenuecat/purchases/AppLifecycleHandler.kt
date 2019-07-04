@@ -6,7 +6,7 @@ import android.content.ComponentCallbacks2
 import android.content.res.Configuration
 import android.os.Bundle
 
-internal class AppLifecycleHandler(private val lifeCycleDelegate: LifeCycleDelegate) :
+internal class AppLifecycleHandler(private val lifecycleDelegate: LifecycleDelegate) :
     Application.ActivityLifecycleCallbacks, ComponentCallbacks2 {
 
     private var appInForeground = false
@@ -16,7 +16,7 @@ internal class AppLifecycleHandler(private val lifeCycleDelegate: LifeCycleDeleg
     override fun onActivityResumed(p0: Activity?) {
         if (!appInForeground) {
             appInForeground = true
-            lifeCycleDelegate.onAppForegrounded()
+            lifecycleDelegate.onAppForegrounded()
         }
     }
 
@@ -42,12 +42,12 @@ internal class AppLifecycleHandler(private val lifeCycleDelegate: LifeCycleDeleg
     override fun onTrimMemory(level: Int) {
         if (level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
             appInForeground = false
-            lifeCycleDelegate.onAppBackgrounded()
+            lifecycleDelegate.onAppBackgrounded()
         }
     }
 }
 
-internal interface LifeCycleDelegate {
+internal interface LifecycleDelegate {
     fun onAppBackgrounded()
     fun onAppForegrounded()
 }
