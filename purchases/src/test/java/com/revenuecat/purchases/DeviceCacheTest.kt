@@ -7,6 +7,8 @@ package com.revenuecat.purchases
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.BillingClient.SkuType.INAPP
+import com.android.billingclient.api.BillingClient.SkuType.SUBS
 import com.revenuecat.purchases.PurchaserInfoTest.Companion.validFullPurchaserResponse
 import io.mockk.every
 import io.mockk.just
@@ -141,7 +143,7 @@ class DeviceCacheTest {
         every {
             mockPrefs.getStringSet(tokensCacheKey, any())
         } returns tokens
-        val sentTokens = cache.getSentTokens()
+        val sentTokens = cache.getPreviouslySentHashedTokens()
         assertThat(sentTokens).isEqualTo(tokens)
     }
 
@@ -162,6 +164,59 @@ class DeviceCacheTest {
         verify {
             mockEditor.putStringSet(tokensCacheKey, setOf("token1", "token2", sha1))
         }
+    }
+
+    @Test
+    fun `if token is not active anymore, remove it from database`() {
+        every {
+            mockEditor.putStringSet(tokensCacheKey, setOf("token3"))
+        } returns mockEditor
+        every {
+            mockEditor.apply()
+        } just runs
+        every {
+            mockPrefs.getStringSet(tokensCacheKey, any())
+        } returns setOf("token1", "token2", "token3")
+        cache.cleanPreviouslySentTokens(
+            setOf("token3"),
+            setOf("token4")
+        )
+        verify {
+            mockEditor.putStringSet(tokensCacheKey, setOf("token3"))
+        }
+    }
+
+    @Test
+    fun `if all tokens are active, do not remove any`() {
+        every {
+            mockEditor.putStringSet(tokensCacheKey, setOf("token1", "token2"))
+        } returns mockEditor
+        every {
+            mockEditor.apply()
+        } just runs
+        every {
+            mockPrefs.getStringSet(tokensCacheKey, any())
+        } returns setOf("token1", "token2")
+        cache.cleanPreviouslySentTokens(
+            setOf("token1"),
+            setOf("token2")
+        )
+        verify {
+            mockEditor.putStringSet(tokensCacheKey, setOf("token1", "token2"))
+        }
+    }
+
+    @Test
+    fun `getting the tokens not in cache returns all the active tokens that have not been sent`() {
+        every {
+            mockPrefs.getStringSet(tokensCacheKey, any())
+        } returns setOf("token1", "hash2", "token3")
+        val activeSub = PurchaseWrapper(mockk(relaxed = true), SUBS)
+        val activePurchasesNotInCache =
+            cache.getActivePurchasesNotInCache(
+                mapOf("hash1" to activeSub),
+                mapOf("hash2" to PurchaseWrapper(mockk(relaxed = true), INAPP)))
+        assertThat(activePurchasesNotInCache).contains(activeSub)
     }
 
     private fun mockString(key: String, value: String?) {

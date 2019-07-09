@@ -975,34 +975,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (billingWrapper.isConnected()) {
             debugLog("[QueryPurchases] Updating pending purchase queue")
             executorService.execute {
-                val queriedSUBS = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
-                val queriedINAPPs = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
-                val tokensToPost = mutableMapOf<String, PurchaseWrapper>()
-                if (queriedSUBS?.responseCode == BillingClient.BillingResponse.OK && queriedINAPPs?.responseCode == BillingClient.BillingResponse.OK) {
-                    tokensToPost.putAll(queriedSUBS.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.SUBS)})
-                    tokensToPost.putAll(queriedINAPPs.purchasesList.map { it.purchaseToken.sha1() to PurchaseWrapper(it, BillingClient.SkuType.INAPP)})
-                    debugLog("[QueryPurchases] Active subscriptions and unconsumed iaps hashes: $tokensToPost")
-                    synchronized(deviceCache) {
-                        val cachedTokens = deviceCache.getSentTokens().toMutableSet()
-                        debugLog("[QueryPurchases] Tokens already posted: $cachedTokens")
-                        val tokensToSaveInCache = cachedTokens.toMutableSet()
-                        cachedTokens.forEach { token ->
-                            if (!tokensToPost.contains(token)) {
-                                debugLog("[QueryPurchases] Token will be removed from cache $token since it's not an active subscription or has been consumed.")
-                                tokensToSaveInCache.remove(token)
-                            } else {
-                                debugLog("[QueryPurchases] Token $token has already been posted. Will not be posted again.")
-                                tokensToPost.remove(token)
-                            }
-                        }
-                        deviceCache.setSavedTokens(tokensToSaveInCache)
-                    }
+                val queryActiveSubscriptionsResult = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
+                val queryUnconsumedInAppsRequest = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
+                if (queryActiveSubscriptionsResult?.isSuccessful() == true && queryUnconsumedInAppsRequest?.isSuccessful() == true) {
+                    deviceCache.cleanPreviouslySentTokens(
+                        queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
+                        queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
+                    )
+                    postPurchases(
+                        deviceCache.getActivePurchasesNotInCache(
+                            queryActiveSubscriptionsResult.purchasesByHashedToken,
+                            queryUnconsumedInAppsRequest.purchasesByHashedToken
+                        ),
+                        allowSharingPlayStoreAccount,
+                        finishTransactions
+                    )
                 }
-                postPurchases(
-                    tokensToPost.values.toList(),
-                    allowSharingPlayStoreAccount,
-                    finishTransactions
-                )
             }
         } else {
             debugLog("[QueryPurchases] Skipping updating pending purchase queue since BillingClient is not connected yet")

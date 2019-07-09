@@ -2423,18 +2423,12 @@ class PurchasesTest {
             every { purchaseToken } returns "token"
             every { sku } returns "product"
         }
-        every {
-            mockBillingWrapper.queryPurchases(SUBS)
-        } returns Purchase.PurchasesResult(0, listOf(purchase))
-        every {
-            mockBillingWrapper.queryPurchases(INAPP)
-        } returns Purchase.PurchasesResult(0, emptyList())
-        every {
-            mockCache.getSentTokens()
-        } returns setOf("1234token".sha1())
-        every {
-            mockCache.setSavedTokens(any())
-        } just Runs
+        val activePurchase = PurchaseWrapper(purchase, SUBS)
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = mapOf(purchase.purchaseToken.sha1() to activePurchase),
+            queriedINAPP = emptyMap(),
+            notInCache = listOf(activePurchase)
+        )
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -2460,47 +2454,18 @@ class PurchasesTest {
     @Test
     fun `when updating pending purchases, retrieve both INAPPS and SUBS`() {
         setup()
-        every {
-            mockBillingWrapper.queryPurchases(SUBS)
-        } returns Purchase.PurchasesResult(0, emptyList())
-        every {
-            mockBillingWrapper.queryPurchases(INAPP)
-        } returns Purchase.PurchasesResult(0, emptyList())
-        every {
-            mockCache.getSentTokens()
-        } returns setOf("1234token".sha1())
-        val capturedSetTokens = slot<Set<String>>()
-        every {
-            mockCache.setSavedTokens(capture(capturedSetTokens))
-        } just Runs
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = emptyMap(),
+            queriedINAPP = emptyMap(),
+            notInCache = emptyList()
+        )
         purchases.updatePendingPurchaseQueue()
-        assertThat(capturedSetTokens.captured).isEmpty()
         verify (exactly = 1) {
             mockBillingWrapper.queryPurchases(SUBS)
         }
         verify (exactly = 1) {
             mockBillingWrapper.queryPurchases(INAPP)
         }
-    }
-
-    @Test
-    fun `when updating pending purchases, if token is not active anymore, remove it from database`() {
-        setup()
-        every {
-            mockBillingWrapper.queryPurchases(SUBS)
-        } returns Purchase.PurchasesResult(0, emptyList())
-        every {
-            mockBillingWrapper.queryPurchases(INAPP)
-        } returns Purchase.PurchasesResult(0, emptyList())
-        every {
-            mockCache.getSentTokens()
-        } returns setOf("1234token".sha1())
-        val capturedSetTokens = slot<Set<String>>()
-        every {
-            mockCache.setSavedTokens(capture(capturedSetTokens))
-        } just Runs
-        purchases.updatePendingPurchaseQueue()
-        assertThat(capturedSetTokens.captured).isEmpty()
     }
 
     @Test
@@ -2510,19 +2475,12 @@ class PurchasesTest {
             every { purchaseToken } returns "token"
             every { sku } returns "product"
         }
-        every {
-            mockBillingWrapper.queryPurchases(SUBS)
-        } returns Purchase.PurchasesResult(0, listOf(purchase))
-        every {
-            mockBillingWrapper.queryPurchases(INAPP)
-        } returns Purchase.PurchasesResult(0, emptyList())
-        every {
-            mockCache.getSentTokens()
-        } returns setOf("1234token".sha1())
-        val capturedSetTokens = slot<Set<String>>()
-        every {
-            mockCache.setSavedTokens(capture(capturedSetTokens))
-        } just Runs
+        val newPurchase = PurchaseWrapper(purchase, SUBS)
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = mapOf(purchase.purchaseToken.sha1() to newPurchase),
+            queriedINAPP = emptyMap(),
+            notInCache = listOf(newPurchase)
+        )
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -2544,19 +2502,11 @@ class PurchasesTest {
             every { purchaseToken } returns token
             every { sku } returns "product"
         }
-        every {
-            mockBillingWrapper.queryPurchases(SUBS)
-        } returns Purchase.PurchasesResult(0, listOf(purchase))
-        every {
-            mockBillingWrapper.queryPurchases(INAPP)
-        } returns Purchase.PurchasesResult(0, emptyList())
-        every {
-            mockCache.getSentTokens()
-        } returns setOf(token.sha1())
-        val capturedSetTokens = slot<Set<String>>()
-        every {
-            mockCache.setSavedTokens(capture(capturedSetTokens))
-        } just Runs
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = mapOf(purchase.purchaseToken.sha1() to PurchaseWrapper(purchase, SUBS)),
+            queriedINAPP = emptyMap(),
+            notInCache = emptyList()
+        )
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 0) {
             mockBackend.postReceiptData(
@@ -2575,13 +2525,13 @@ class PurchasesTest {
         setup()
         every {
             mockBillingWrapper.queryPurchases(SUBS)
-        } returns Purchase.PurchasesResult(-1, emptyList())
+        } returns BillingWrapper.QueryPurchasesResult(-1, emptyMap())
         every {
             mockBillingWrapper.queryPurchases(INAPP)
-        } returns Purchase.PurchasesResult(0, emptyList())
+        } returns BillingWrapper.QueryPurchasesResult(0, emptyMap())
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 0) {
-            mockCache.getSentTokens()
+            mockCache.getPreviouslySentHashedTokens()
         }
     }
 
@@ -2590,31 +2540,24 @@ class PurchasesTest {
         setup()
         every {
             mockBillingWrapper.queryPurchases(SUBS)
-        } returns Purchase.PurchasesResult(0, emptyList())
+        } returns BillingWrapper.QueryPurchasesResult(0, emptyMap())
         every {
             mockBillingWrapper.queryPurchases(INAPP)
-        } returns Purchase.PurchasesResult(-1, emptyList())
+        } returns BillingWrapper.QueryPurchasesResult(-1, emptyMap())
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 0) {
-            mockCache.getSentTokens()
+            mockCache.getPreviouslySentHashedTokens()
         }
     }
 
     @Test
     fun `on billing wrapper connected, query purchases`() {
         setup()
-        every {
-            mockCache.getSentTokens()
-        } returns setOf("1234token".sha1())
-        every {
-            mockCache.setSavedTokens(any())
-        } just Runs
-        every {
-            mockBillingWrapper.queryPurchases(SUBS)
-        } returns Purchase.PurchasesResult(0, emptyList())
-        every {
-            mockBillingWrapper.queryPurchases(INAPP)
-        } returns Purchase.PurchasesResult(0, emptyList())
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = emptyMap(),
+            queriedINAPP = emptyMap(),
+            notInCache = emptyList()
+        )
         capturedBillingWrapperStateListener.captured.onConnected()
         verify (exactly = 1) {
             mockBillingWrapper.queryPurchases(SUBS)
@@ -2627,18 +2570,11 @@ class PurchasesTest {
     @Test
     fun `on app foregrounded query purchases`() {
         setup()
-        every {
-            mockCache.getSentTokens()
-        } returns setOf("1234token".sha1())
-        every {
-            mockCache.setSavedTokens(any())
-        } just Runs
-        every {
-            mockBillingWrapper.queryPurchases(SUBS)
-        } returns Purchase.PurchasesResult(0, emptyList())
-        every {
-            mockBillingWrapper.queryPurchases(INAPP)
-        } returns Purchase.PurchasesResult(0, emptyList())
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = emptyMap(),
+            queriedINAPP = emptyMap(),
+            notInCache = emptyList()
+        )
         purchases.onAppForegrounded()
         verify (exactly = 1) {
             mockBillingWrapper.queryPurchases(SUBS)
@@ -2856,6 +2792,33 @@ class PurchasesTest {
         val purchasesList = ArrayList<PurchaseWrapper>()
         purchasesList.add(PurchaseWrapper(p, skuType))
         return purchasesList
+    }
+
+    private fun mockSuccessfulQueryPurchases(
+        queriedSUBS: Map<String, PurchaseWrapper>,
+        queriedINAPP: Map<String, PurchaseWrapper>,
+        notInCache: List<PurchaseWrapper>
+    ) {
+        val queryPurchasesResultSUBS = BillingWrapper.QueryPurchasesResult(0, queriedSUBS)
+        val queryPurchasesResultINAPP = BillingWrapper.QueryPurchasesResult(0, queriedINAPP)
+        every {
+            mockCache.cleanPreviouslySentTokens(
+                queryPurchasesResultSUBS.purchasesByHashedToken.keys,
+                queryPurchasesResultINAPP.purchasesByHashedToken.keys
+            )
+        } just Runs
+        every {
+            mockCache.getActivePurchasesNotInCache(
+                queryPurchasesResultSUBS.purchasesByHashedToken,
+                queryPurchasesResultINAPP.purchasesByHashedToken
+            )
+        } returns notInCache
+        every {
+            mockBillingWrapper.queryPurchases(SUBS)
+        } returns queryPurchasesResultSUBS
+        every {
+            mockBillingWrapper.queryPurchases(INAPP)
+        } returns queryPurchasesResultINAPP
     }
 
     // endregion

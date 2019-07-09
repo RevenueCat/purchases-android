@@ -269,10 +269,25 @@ internal class BillingWrapper internal constructor(
         }
     }
 
-    fun queryPurchases(@SkuType skuType: String): Purchase.PurchasesResult? {
+    data class QueryPurchasesResult(
+        @BillingClient.BillingResponse val responseCode: Int,
+        val purchasesByHashedToken: Map<String, PurchaseWrapper>
+    ) {
+        fun isSuccessful(): Boolean = responseCode == BillingClient.BillingResponse.OK
+    }
+
+    fun queryPurchases(@SkuType skuType: String): QueryPurchasesResult? {
         return billingClient?.let {
             debugLog("[QueryPurchases] Querying $skuType")
-            it.queryPurchases(skuType)
+            val result = it.queryPurchases(skuType)
+            QueryPurchasesResult(
+                result.responseCode,
+                result.purchasesList.map { purchase ->
+                    val hash = purchase.purchaseToken.sha1()
+                    debugLog("[QueryPurchases] Purchase of type $skuType with hash $hash")
+                    hash to PurchaseWrapper(purchase, SkuType.SUBS)
+                }.toMap()
+            )
         }
     }
 
