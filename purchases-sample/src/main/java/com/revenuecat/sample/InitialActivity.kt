@@ -16,7 +16,7 @@ class InitialActivity : AppCompatActivity() {
         super.onResume()
 
         Purchases.sharedInstance.getPurchaserInfoWith(::showError) { purchaserInfo ->
-            if (purchaserInfo.activeEntitlements.contains("pro")) {
+            if (purchaserInfo.activeEntitlements.contains("pro_cat")) {
                 startCatsActivity(true)
             } else {
                 startUpsellActivity(true)

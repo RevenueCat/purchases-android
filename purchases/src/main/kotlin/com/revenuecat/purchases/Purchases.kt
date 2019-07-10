@@ -1153,7 +1153,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         /**
          * [http://tenjin.io/]
          */
-        TENJIN(4)
+        TENJIN(4),
+        /**
+         * [https://developers.facebook.com/]
+         */
+        FACEBOOK(5)
     }
 
     internal data class AttributionData(
