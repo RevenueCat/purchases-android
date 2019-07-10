@@ -10,7 +10,7 @@ class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Purchases.debugLogsEnabled = true
-        Purchases.configure(this, "LQmxAoIaaQaHpPiWJJayypBDhIpAZCZN")
+        Purchases.configure(this, "my_api_key")
     }
 }
 

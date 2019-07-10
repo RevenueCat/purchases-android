@@ -36,7 +36,7 @@ class UpsellActivity : AppCompatActivity() {
             annual_purchase.text = "Loading..."
             annual_purchase.isEnabled = false
         } else {
-            entitlementMap["pro"]?.let { proEntitlement ->
+            entitlementMap["pro_cat"]?.let { proEntitlement ->
                 setupMonthlyOfferingButton(proEntitlement)
                 setupAnnualOfferingButton(proEntitlement)
             } ?: showError("Error finding pro entitlement")
@@ -44,7 +44,7 @@ class UpsellActivity : AppCompatActivity() {
     }
 
     private fun setupMonthlyOfferingButton(proEntitlement: Entitlement) {
-        proEntitlement.offerings["monthly"]?.let { monthly ->
+        proEntitlement.offerings["monthly_cats"]?.let { monthly ->
             monthly.skuDetails?.let { monthlyProduct ->
                 with(monthly_purchase) {
                     loadedText = "Buy Monthly - ${monthlyProduct.priceCurrencyCode} ${monthlyProduct.price}"
@@ -58,10 +58,10 @@ class UpsellActivity : AppCompatActivity() {
     }
 
     private fun setupAnnualOfferingButton(proEntitlement: Entitlement) {
-        proEntitlement.offerings["annual"]?.let { annual ->
+        proEntitlement.offerings["annual_cats"]?.let { annual ->
             annual.skuDetails?.let { annualProduct ->
                 with(annual_purchase) {
-                    loadedText = "Buy Monthly - ${annualProduct.priceCurrencyCode} ${annualProduct.price}"
+                    loadedText = "Buy Annual - ${annualProduct.priceCurrencyCode} ${annualProduct.price}"
                     showLoading(false)
                     setOnClickListener {
                         makePurchase(annualProduct, this)
@@ -82,7 +82,7 @@ class UpsellActivity : AppCompatActivity() {
                 }
             }) { _, purchaserInfo ->
                 button.showLoading(false)
-                if (purchaserInfo.activeEntitlements.contains("pro")) {
+                if (purchaserInfo.activeEntitlements.contains("pro_cat")) {
                     startCatsActivity()
                 }
             }
