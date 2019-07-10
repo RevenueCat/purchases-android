@@ -22,14 +22,12 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
-import com.revenuecat.purchases.interfaces.PurchaseCompletedListener
 import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
-import java.util.ArrayList
 import java.util.Collections.emptyMap
 import java.util.Date
 import java.util.HashMap
@@ -248,109 +246,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: GetSkusResponseListener
     ) {
         getSkus(skus, BillingClient.SkuType.INAPP, listener)
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [sku] The sku you wish to purchase
-     * @param [skuType] The type of sku, INAPP or SUBS
-     * @param [oldSkus] The skus you wish to upgrade from.
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Deprecated("use makePurchase accepting a MakePurchaseListener instead",
-        ReplaceWith("makePurchase(activity, skuDetails, oldSku, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener"))
-    fun makePurchase(
-        activity: Activity,
-        sku: String,
-        @BillingClient.SkuType skuType: String,
-        oldSkus: ArrayList<String>,
-        @Suppress("DEPRECATION") listener: PurchaseCompletedListener
-    ) {
-        makePurchase(activity, sku, skuType, oldSkus, object : MakePurchaseListener {
-            override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
-                listener.onCompleted(purchase.sku, purchaserInfo)
-            }
-
-            override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                listener.onError(error)
-            }
-        })
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [sku] The sku you wish to purchase
-     * @param [skuType] The type of sku, INAPP or SUBS
-     * @param [oldSkus] The skus you wish to upgrade from.
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Deprecated("use makePurchase accepting a MakePurchaseListener instead",
-        ReplaceWith("makePurchase(activity, skuDetails, oldSku, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener"))
-    fun makePurchase(
-        activity: Activity,
-        sku: String,
-        @BillingClient.SkuType skuType: String,
-        oldSkus: ArrayList<String>,
-        listener: MakePurchaseListener
-    ) {
-        debugLog("makePurchase - $sku")
-        var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
-        synchronized(this@Purchases) {
-            if (!state.finishTransactions) {
-                debugLog("finishTransactions is set to false and makePurchase has been called. Are you sure you want to do this?")
-            }
-            if (!state.purchaseCallbacks.containsKey(sku)) {
-                state = state.copy(purchaseCallbacks = state.purchaseCallbacks + mapOf(sku to listener))
-                userPurchasing = state.appUserID
-            }
-        }
-
-        userPurchasing?.let { appUserID ->
-            billingWrapper.makePurchaseAsync(activity, appUserID, sku, oldSkus, skuType)
-        } ?: dispatch {
-            listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
-        }
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [sku] The sku you wish to purchase
-     * @param [skuType] The type of sku, INAPP or SUBS
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Deprecated("use makePurchase accepting a MakePurchaseListener instead",
-        ReplaceWith("makePurchase(activity, sku, skuType, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener")
-    )
-    fun makePurchase(
-        activity: Activity,
-        sku: String,
-        @BillingClient.SkuType skuType: String,
-        @Suppress("DEPRECATION") listener: PurchaseCompletedListener
-    ) {
-        @Suppress("DEPRECATION")
-        makePurchase(activity, sku, skuType, ArrayList(), listener)
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [sku] The sku you wish to purchase
-     * @param [skuType] The type of sku, INAPP or SUBS
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Deprecated("use makePurchase accepting SkuDetails instead",
-        ReplaceWith("makePurchase(activity, skuDetails, listener)", "import com.revenuecat.purchases.interfaces.MakePurchaseListener")
-    )
-    fun makePurchase(
-        activity: Activity,
-        sku: String,
-        @BillingClient.SkuType skuType: String,
-        listener: MakePurchaseListener
-    ) {
-        makePurchase(activity, sku, skuType, ArrayList(), listener)
     }
 
     /**

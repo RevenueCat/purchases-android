@@ -1,15 +1,12 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
-import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
-import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
-import java.util.ArrayList
 
 private typealias MakePurchaseCompletedSuccessFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
 private typealias ReceiveEntitlementsSuccessFunction = (entitlementMap: Map<String, Entitlement>) -> Unit
@@ -72,10 +69,6 @@ internal fun receivePurchaserInfoListener(
     }
 }
 
-internal fun updatedPurchaserInfoListener(
-    onSuccess: (purchaserInfo: PurchaserInfo) -> Unit
-) = UpdatedPurchaserInfoListener { onSuccess(it) }
-
 /**
  * Fetch the configured entitlements for this user. Entitlements allows you to configure your
  * in-app products via RevenueCat and greatly simplifies management.
@@ -98,28 +91,6 @@ fun Purchases.getEntitlementsWith(
 /**
  * Make a purchase.
  * @param [activity] Current activity
- * @param [sku] The sku you wish to purchase
- * @param [skuType] The type of sku, INAPP or SUBS
- * @param [oldSkus] The skus you wish to upgrade from.
- * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called after the purchase has completed with error
- */
-@Deprecated("Replace with makePurchaseWith accepting SkuDetails and a single oldSku", ReplaceWith("Purchases.makePurchaseWith(activity, skuDetails, oldSku, onError, onSuccess)"))
-fun Purchases.makePurchaseWith(
-    activity: Activity,
-    sku: String,
-    @BillingClient.SkuType skuType: String,
-    oldSkus: ArrayList<String>,
-    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
-    onSuccess: MakePurchaseCompletedSuccessFunction
-) {
-    makePurchase(activity, sku, skuType, oldSkus, purchaseCompletedListener(onSuccess, onError))
-}
-
-
-/**
- * Make a purchase.
- * @param [activity] Current activity
  * @param [skuDetails] The skuDetails of the product you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
@@ -132,25 +103,6 @@ fun Purchases.makePurchaseWith(
     onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
     makePurchase(activity, skuDetails, oldSku, purchaseCompletedListener(onSuccess, onError))
-}
-
-/**
- * Make a purchase.
- * @param [activity] Current activity
- * @param [sku] The sku you wish to purchase
- * @param [skuType] The type of sku, INAPP or SUBS
- * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called after the purchase has completed with error
- */
-@Deprecated("Replace with makePurchaseWith accepting SkuDetails object", ReplaceWith("makePurchaseWith(activity, skuDetails, onError, onSuccess)"))
-fun Purchases.makePurchaseWith(
-    activity: Activity,
-    sku: String,
-    @BillingClient.SkuType skuType: String,
-    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
-    onSuccess: MakePurchaseCompletedSuccessFunction
-) {
-    makePurchase(activity, sku, skuType, purchaseCompletedListener(onSuccess, onError))
 }
 
 /**

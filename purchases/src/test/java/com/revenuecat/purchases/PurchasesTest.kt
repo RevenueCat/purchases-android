@@ -178,38 +178,6 @@ class PurchasesTest {
         assertThat(receivedSkus).isEqualTo(skuDetails)
     }
 
-    @Suppress("DEPRECATION")
-    @Test
-    fun canMakePurchaseDeprecated() {
-        setup()
-
-        val activity: Activity = mockk()
-        val sku = "onemonth_freetrial"
-        val oldSkus = ArrayList<String>()
-
-        every {
-            mockBillingWrapper.querySkuDetailsAsync(any(), any(), captureLambda(), any())
-        } answers {
-            lambda<(List<Purchase>) -> Unit>().captured.invoke(listOf(mockk(relaxed = true)))
-        }
-
-        purchases.makePurchaseWith(
-            activity,
-            sku,
-            SUBS
-        ) { _, _ -> }
-
-        verify (exactly = 1) {
-            mockBillingWrapper.makePurchaseAsync(
-                eq(activity),
-                eq(appUserId),
-                eq(sku),
-                eq(oldSkus),
-                eq(SUBS)
-            )
-        }
-    }
-
     @Test
     fun canMakePurchase() {
         setup()
@@ -332,26 +300,6 @@ class PurchasesTest {
                 any()
             )
         }
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun passesUpErrorsDeprecated() {
-        setup()
-        var errorCalled = false
-        purchases.makePurchaseWith(
-            mockk(),
-            "sku",
-            "SKUS",
-            onError = { error, _ ->
-                errorCalled = true
-                assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
-            }) { _, _ -> }
-
-        val purchase = mockk<Purchase>(relaxed = true)
-        every { purchase.sku } returns "sku"
-        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(listOf(purchase), 2, "")
-        assertThat(errorCalled).isTrue()
     }
 
     @Test
@@ -1257,35 +1205,6 @@ class PurchasesTest {
         }
     }
 
-    @Suppress("DEPRECATION")
-    @Test
-    fun `DEPRECATED when making another purchase for a product for a pending product, error is issued`() {
-        setup()
-        purchases.updatedPurchaserInfoListener = listener
-        val sku = "onemonth_freetrial"
-
-        purchases.makePurchaseWith(
-            mockk(),
-            sku,
-            SUBS,
-            onError = { _, _ -> fail("Should be success") }) { _, _ ->
-                // First one works
-            }
-
-        var errorCalled: PurchasesError? = null
-        purchases.makePurchaseWith(
-            mockk(),
-            sku,
-            SUBS,
-            onError = { error, _  ->
-                errorCalled = error
-            }) { _, _ ->
-                fail("Should be error")
-            }
-
-        assertThat(errorCalled!!.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
-    }
-
     @Test
     fun `when making another purchase for a product for a pending product, error is issued`() {
         setup()
@@ -1312,34 +1231,6 @@ class PurchasesTest {
         }
 
         assertThat(errorCalled!!.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `DEPRECATED when making purchase, completion block is called once`() {
-        setup()
-
-        val activity: Activity = mockk()
-        val sku = "onemonth_freetrial"
-        val purchaseToken = "crazy_purchase_token"
-
-        var callCount = 0
-        purchases.makePurchaseWith(
-            activity,
-            sku,
-            SUBS,
-            onSuccess = { _, _ ->
-                callCount++
-            }, onError = { _, _ -> fail("should be successful") })
-
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, SUBS)
-        )
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, SUBS)
-        )
-
-        assertThat(callCount).isEqualTo(1)
     }
 
     @Test
@@ -1371,31 +1262,6 @@ class PurchasesTest {
         )
 
         assertThat(callCount).isEqualTo(1)
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `DEPRECATED when making purchase, completion block not called for different products`() {
-        setup()
-
-        val activity: Activity = mockk()
-        val sku = "onemonth_freetrial"
-        val sku1 = "onemonth_freetrial_1"
-        val purchaseToken1 = "crazy_purchase_token_1"
-        var callCount = 0
-        purchases.makePurchaseWith(
-            activity,
-            sku,
-            SUBS,
-            onSuccess = { _, _ ->
-                callCount++
-            }, onError = { _, _ -> fail("should be successful") })
-
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku1, purchaseToken1, SUBS)
-        )
-
-        assertThat(callCount).isEqualTo(0)
     }
 
     @Test
@@ -1496,32 +1362,6 @@ class PurchasesTest {
             mockCache.getCachedPurchaserInfo(appUserId)
         }
         assertThat(receivedInfo).isEqualTo(info)
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `DEPRECATED when multiple make purchase callbacks, a failure doesn't throw ConcurrentModificationException`() {
-        setup()
-
-        val activity: Activity = mockk()
-
-        purchases.makePurchaseWith(
-            activity,
-            "onemonth_freetrial",
-            SUBS
-        ) { _, _ -> }
-
-        purchases.makePurchaseWith(
-            activity,
-            "annual_freetrial",
-            SUBS
-        ) { _, _ -> }
-
-        try {
-            capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(emptyList(), 0, "fail")
-        } catch (e: ConcurrentModificationException) {
-            fail("Test throws ConcurrentModificationException")
-        }
     }
 
     @Test
@@ -2617,10 +2457,6 @@ class PurchasesTest {
         with(mockBillingWrapper) {
             every {
                 querySkuDetailsAsync(any(), any(), any(), any())
-            } just Runs
-            every {
-                @Suppress("DEPRECATION")
-                makePurchaseAsync(any(), any(), any(), any(), any())
             } just Runs
             every {
                 makePurchaseAsync(any(), any(), any(), any())

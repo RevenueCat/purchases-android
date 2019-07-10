@@ -148,33 +148,6 @@ internal class BillingWrapper internal constructor(
         }
     }
 
-    @Deprecated("", ReplaceWith("makePurchaseAsync(activity, appUserID, skuDetails, oldSku)"))
-    fun makePurchaseAsync(
-        activity: Activity,
-        appUserID: String,
-        sku: String,
-        oldSkus: ArrayList<String>,
-        @BillingClient.SkuType skuType: String
-    ) {
-        if (oldSkus.isNotEmpty()) {
-            debugLog("Upgrading old skus $oldSkus with sku: $sku")
-        } else {
-            debugLog("Making purchase for sku: $sku")
-        }
-        synchronized(this@BillingWrapper) {
-            productTypes[sku] = skuType
-        }
-        executeRequestOnUIThread {
-            val params = BillingFlowParams.newBuilder()
-                .setSku(sku)
-                .setType(skuType)
-                .setAccountId(appUserID)
-                .setOldSkus(oldSkus).build()
-
-            launchBillingFlow(activity, params)
-        }
-    }
-
     fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
