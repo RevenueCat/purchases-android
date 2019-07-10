@@ -11,8 +11,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
-import junit.framework.Assert.assertNotNull
-import junit.framework.Assert.assertTrue
+import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,7 +30,7 @@ class DispatcherTest {
 
     @Test
     fun canBeCreated() {
-        assertNotNull(dispatcher)
+        assertThat(dispatcher).isNotNull
     }
 
     @Test
@@ -67,7 +66,7 @@ class DispatcherTest {
 
         call.run()
 
-        assertTrue(this.errorCalled!!)
+        assertThat(this.errorCalled!!).isTrue()
     }
 
     @Test
@@ -85,7 +84,7 @@ class DispatcherTest {
 
         call.run()
 
-        assertNotNull(this.result)
+        assertThat(this.result).isNotNull
     }
 
     @Test

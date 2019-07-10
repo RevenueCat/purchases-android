@@ -269,7 +269,7 @@ class BillingWrapperTest {
             val params = slot.captured
             assertThat(sku).isEqualTo(params.sku)
             assertThat(skuType).isEqualTo(params.skuType)
-            assertThat(oldSku).isEqualTo(params.oldSkus)
+            assertThat(oldSku).isEqualTo(params.oldSku)
             assertThat(appUserID).isEqualTo(params.accountId)
             BillingClient.BillingResponse.OK
         }
