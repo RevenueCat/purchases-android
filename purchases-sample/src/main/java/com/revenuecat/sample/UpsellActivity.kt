@@ -5,8 +5,10 @@ import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.Entitlement
+import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getEntitlementsWith
+import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.makePurchaseWith
 import kotlinx.android.synthetic.main.activity_upsell.*
 
@@ -18,6 +20,7 @@ class UpsellActivity : AppCompatActivity() {
 
         showScreen()
         skip.setOnClickListener { startCatsActivity() }
+        Purchases.sharedInstance.updatedPurchaserInfoListener = UpdatedPurchaserInfoListener { purchaserInfo -> checkForProEntitlement(purchaserInfo) }
     }
 
     override fun onResume() {
@@ -39,8 +42,24 @@ class UpsellActivity : AppCompatActivity() {
             entitlementMap["pro_cat"]?.let { proEntitlement ->
                 setupMonthlyOfferingButton(proEntitlement)
                 setupAnnualOfferingButton(proEntitlement)
+                setupUnlimitedOfferingButton(proEntitlement)
             } ?: showError("Error finding pro entitlement")
         }
+    }
+
+    private fun setupUnlimitedOfferingButton(proEntitlement: Entitlement) {
+        proEntitlement.offerings["unlimited"]?.let { unlimited ->
+            unlimited.skuDetails?.let { unlimitedProduct ->
+                with(unlimited_purchase) {
+                    loadedText = "Buy Unlimited - ${unlimitedProduct.priceCurrencyCode} ${unlimitedProduct.price}"
+                    showLoading(false)
+                    setOnClickListener {
+                        makePurchase(unlimitedProduct, this)
+                    }
+                }
+            } ?: showError("Error finding unlimited active product")
+        } ?: showError("Error finding unlimited offering")
+
     }
 
     private fun setupMonthlyOfferingButton(proEntitlement: Entitlement) {
@@ -82,10 +101,14 @@ class UpsellActivity : AppCompatActivity() {
                 }
             }) { _, purchaserInfo ->
                 button.showLoading(false)
-                if (purchaserInfo.activeEntitlements.contains("pro_cat")) {
-                    startCatsActivity()
-                }
+                checkForProEntitlement(purchaserInfo)
             }
+    }
+
+    private fun checkForProEntitlement(purchaserInfo: PurchaserInfo) {
+        if (purchaserInfo.activeEntitlements.contains("pro_cat")) {
+            startCatsActivity()
+        }
     }
 
     private fun Button.showLoading(loading: Boolean) {

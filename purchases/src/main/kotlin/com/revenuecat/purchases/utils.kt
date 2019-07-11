@@ -8,11 +8,13 @@ package com.revenuecat.purchases
 import android.content.Context
 import android.os.Build
 import android.os.Parcel
+import android.util.Base64
 import android.util.Log
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.util.Iso8601Utils
 import org.json.JSONException
 import org.json.JSONObject
+import java.security.MessageDigest
 import java.util.Date
 import java.util.Locale
 
@@ -162,3 +164,9 @@ internal data class AppConfig(
     val languageTag: String,
     val versionName: String
 )
+
+internal fun String.sha1() =
+    MessageDigest.getInstance("SHA-1")
+        .digest(this.toByteArray()).let {
+            String(Base64.encode(it, Base64.NO_WRAP))
+        }

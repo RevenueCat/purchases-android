@@ -24,15 +24,15 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'androidx.annotation:annotation:1.0.2'
+    implementation 'androidx.annotation:annotation:1.1.0'
     api 'com.android.billingclient:billing:1.2.2'
-    testImplementation 'androidx.test:core:1.1.0'
-    testImplementation 'androidx.test:runner:1.1.1'
-    testImplementation 'androidx.test:rules:1.1.1'
-    testImplementation 'androidx.test.ext:junit:1.1.0'
-    testImplementation 'org.robolectric:robolectric:4.0'
-    testImplementation 'com.squareup.okhttp3:mockwebserver:3.14.1'
-    testImplementation 'org.mockito:mockito-core:2.27.0'
+    testImplementation 'androidx.test:core:1.2.0'
+    testImplementation 'androidx.test:runner:1.2.0'
+    testImplementation 'androidx.test:rules:1.2.0'
+    testImplementation 'androidx.test.ext:junit:1.1.1'
+    testImplementation 'org.robolectric:robolectric:4.3'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:3.14.2'
+    testImplementation 'org.mockito:mockito-core:2.28.2'
     testImplementation 'com.android.billingclient:billing:1.2.2'
     testImplementation 'io.mockk:mockk:1.9.3.kotlin12'
     testImplementation 'org.assertj:assertj-core:3.12.2'

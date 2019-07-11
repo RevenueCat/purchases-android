@@ -103,7 +103,7 @@ internal class Backend(
         productID: String,
         isRestore: Boolean,
         onSuccess: (PurchaserInfo) -> Unit,
-        onError: (PurchasesError, shouldConsumePurchase: Boolean) -> Unit
+        onError: (PurchasesError, errorIsFinishable: Boolean) -> Unit
     ) {
         val cacheKey = listOf(purchaseToken, productID, appUserID, isRestore.toString())
 

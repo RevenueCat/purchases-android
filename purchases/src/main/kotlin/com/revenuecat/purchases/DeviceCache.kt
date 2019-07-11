@@ -16,6 +16,7 @@ internal class DeviceCache(
 ) {
     private val appUserIDCacheKey = "com.revenuecat.purchases.$apiKey"
     private val attributionCacheKey = "com.revenuecat.purchases.attribution"
+    private val tokensCacheKey = "com.revenuecat.purchases.$apiKey.tokens"
 
     private fun purchaserInfoCacheKey(appUserID: String) = "$appUserIDCacheKey.$appUserID"
 
@@ -69,8 +70,54 @@ internal class DeviceCache(
         editor.apply()
     }
 
+    @Synchronized internal fun getPreviouslySentHashedTokens(): Set<String> {
+        return (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
+            debugLog("[QueryPurchases] Tokens already posted: $it")
+        }
+    }
+
+    @Synchronized fun addSuccessfullyPostedToken(token: String) {
+        debugLog("[QueryPurchases] Saving token $token with hash ${token.sha1()}")
+        getPreviouslySentHashedTokens().let {
+            debugLog("[QueryPurchases] Tokens in cache before saving $it")
+            setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
+        }
+    }
+
+    @Synchronized private fun setSavedTokenHashes(newSet: Set<String>) {
+        debugLog("[QueryPurchases] Saving tokens $newSet")
+        preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
+    }
+
+    /**
+     * Removes from the database all hashed tokens that are not considered active anymore, i.e. all
+     * consumed in-apps or inactive subscriptions hashed tokens that are still in the local cache.
+     */
+    @Synchronized fun cleanPreviouslySentTokens(
+        activeSubsHashedTokens: Set<String>,
+        unconsumedInAppsHashedTokens: Set<String>
+    ) {
+        setSavedTokenHashes((activeSubsHashedTokens + unconsumedInAppsHashedTokens).intersect(getPreviouslySentHashedTokens()))
+    }
+
+    /**
+     * Returns a list containing all tokens that are in [mapOfActivePurchasesByTheirHashedToken] map that are not present
+     * in the device cache. In other words, returns all hashed tokens that are active and have not
+     * been posted to our backend yet.
+     */
+    @Synchronized fun getActivePurchasesNotInCache(
+        activeSubsByTheirHashedToken: Map<String, PurchaseWrapper>,
+        activeInAppsByTheirHashedToken: Map<String, PurchaseWrapper>
+    ): List<PurchaseWrapper> {
+        return activeSubsByTheirHashedToken
+            .plus(activeInAppsByTheirHashedToken)
+            .minus(getPreviouslySentHashedTokens())
+            .values.toList()
+    }
+
     private fun getAttributionDataCacheKey(
         userId: String,
         network: Purchases.AttributionNetwork
     ) = "$attributionCacheKey.$userId.$network"
+
 }

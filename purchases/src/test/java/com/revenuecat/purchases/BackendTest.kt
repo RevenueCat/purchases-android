@@ -13,10 +13,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
-import junit.framework.Assert.assertEquals
-import junit.framework.Assert.assertNotNull
-import junit.framework.Assert.assertNull
-import junit.framework.Assert.assertTrue
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
 import org.json.JSONObject
@@ -105,7 +101,7 @@ class BackendTest {
 
     @Test
     fun canBeCreated() {
-        assertNotNull(backend)
+        assertThat(backend).isNotNull
     }
 
     private fun mockResponse(
@@ -218,8 +214,8 @@ class BackendTest {
 
         val info = getPurchaserInfo(200, null, null)
 
-        assertNotNull(receivedPurchaserInfo)
-        assertEquals(info, receivedPurchaserInfo)
+        assertThat(receivedPurchaserInfo).isNotNull
+        assertThat(receivedPurchaserInfo).isEqualTo(info)
     }
 
     @Test
@@ -228,7 +224,7 @@ class BackendTest {
 
         getPurchaserInfo(failureCode, null, null)
 
-        assertNull(receivedPurchaserInfo)
+        assertThat(receivedPurchaserInfo).isNull()
         assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
@@ -236,7 +232,7 @@ class BackendTest {
     fun clientErrorCallsErrorHandler() {
         getPurchaserInfo(200, IOException(), null)
 
-        assertNull(receivedPurchaserInfo)
+        assertThat(receivedPurchaserInfo).isNull()
         assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
@@ -246,7 +242,7 @@ class BackendTest {
 
         assertThat(receivedError).`as`("Received error is not null").isNotNull
         assertThat(receivedError!!.underlyingErrorMessage).`as`("Received underlying message is not null").isNotNull()
-        assertTrue(receivedError!!.underlyingErrorMessage!!.contains("Dude not found"))
+        assertThat(receivedError!!.underlyingErrorMessage!!).contains("Dude not found")
     }
 
     @Test
@@ -278,8 +274,8 @@ class BackendTest {
 
         backend.getEntitlements(appUserID, onReceiveEntitlementsSuccessHandler, onReceiveEntitlementsErrorHandler)
 
-        assertNotNull(receivedEntitlements)
-        assertEquals(0, receivedEntitlements!!.size)
+        assertThat(receivedEntitlements).isNotNull
+        assertThat(receivedEntitlements!!).isEmpty()
     }
 
     @Test
@@ -289,7 +285,7 @@ class BackendTest {
 
         backend.getEntitlements(appUserID, onReceiveEntitlementsSuccessHandler, onReceiveEntitlementsErrorHandler)
 
-        assertNull(receivedEntitlements)
+        assertThat(receivedEntitlements).isNull()
         assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
@@ -340,8 +336,8 @@ class BackendTest {
             )
         }
         val captured = slot.captured
-        assertTrue(captured.has("network") && captured.has("data") &&
-                captured.getInt("network") == Purchases.AttributionNetwork.APPSFLYER.serverValue)
+        assertThat(captured.has("network") && captured.has("data") &&
+                captured.getInt("network") == Purchases.AttributionNetwork.APPSFLYER.serverValue).isTrue()
     }
 
     @Test
@@ -409,7 +405,7 @@ class BackendTest {
             "newId",
             onSuccess,
             {
-                fail("Should have called success")
+                fail<String>("Should have called success")
             }
         )
 
