@@ -97,12 +97,14 @@ internal class DeviceCache(
         activeSubsHashedTokens: Set<String>,
         unconsumedInAppsHashedTokens: Set<String>
     ) {
+        debugLog("[QueryPurchases] Cleaning previously sent tokens")
         setSavedTokenHashes((activeSubsHashedTokens + unconsumedInAppsHashedTokens).intersect(getPreviouslySentHashedTokens()))
     }
 
     /**
-     * Returns a list containing all tokens that are in [mapOfActivePurchasesByTheirHashedToken] map that are not present
-     * in the device cache. In other words, returns all hashed tokens that are active and have not
+     * Returns a list containing all tokens that are in [activeSubsByTheirHashedToken] and
+     * [activeInAppsByTheirHashedToken] map that are not present in the device cache.
+     * In other words, returns all hashed tokens that are active and have not
      * been posted to our backend yet.
      */
     @Synchronized fun getActivePurchasesNotInCache(

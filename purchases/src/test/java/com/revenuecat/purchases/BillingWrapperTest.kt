@@ -624,6 +624,77 @@ class BillingWrapperTest {
         assertThat(onConnectedCalled).isTrue()
     }
 
+    @Test
+    fun `when querying INAPPs and there is no billing client, don't return anything`() {
+        wrapper = BillingWrapper(mockClientFactory, handler)
+
+        assertThat(wrapper!!.queryPurchases(BillingClient.SkuType.INAPP)).isNull()
+    }
+
+    @Test
+    fun `when querying SUBs and there is no billing client, don't return anything`() {
+        wrapper = BillingWrapper(mockClientFactory, handler)
+        assertThat(wrapper!!.queryPurchases(BillingClient.SkuType.SUBS)).isNull()
+    }
+
+    @Test
+    fun `when querying INAPPs result is created properly`() {
+        setup()
+        val resultCode = 0
+        val token = "token"
+        val type = BillingClient.SkuType.INAPP
+        val time = System.currentTimeMillis()
+        val sku = "sku"
+        val purchase = mockk<Purchase>().also {
+            every { it.purchaseToken } returns token
+            every { it.purchaseTime } returns time
+            every { it.sku } returns sku
+        }
+        every {
+            mockClient.queryPurchases(type)
+        } returns Purchase.PurchasesResult(resultCode, listOf(purchase))
+        val queryPurchasesResult = wrapper!!.queryPurchases(type)
+        assertThat(queryPurchasesResult).isNotNull
+        assertThat(queryPurchasesResult!!.responseCode).isEqualTo(resultCode)
+        assertThat(queryPurchasesResult.isSuccessful()).isTrue()
+        assertThat(queryPurchasesResult.purchasesByHashedToken.isNotEmpty()).isTrue()
+        val purchaseWrapper = queryPurchasesResult.purchasesByHashedToken[token.sha1()]
+        assertThat(purchaseWrapper).isNotNull
+        assertThat(purchaseWrapper!!.type).isEqualTo(type)
+        assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
+        assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
+        assertThat(purchaseWrapper.sku).isEqualTo(sku)
+    }
+
+    @Test
+    fun `when querying SUBS result is created properly`() {
+        setup()
+        val resultCode = 0
+        val token = "token"
+        val type = BillingClient.SkuType.SUBS
+        val time = System.currentTimeMillis()
+        val sku = "sku"
+        val purchase = mockk<Purchase>().also {
+            every { it.purchaseToken } returns token
+            every { it.purchaseTime } returns time
+            every { it.sku } returns sku
+        }
+        every {
+            mockClient.queryPurchases(type)
+        } returns Purchase.PurchasesResult(resultCode, listOf(purchase))
+        val queryPurchasesResult = wrapper!!.queryPurchases(type)
+        assertThat(queryPurchasesResult).isNotNull
+        assertThat(queryPurchasesResult!!.responseCode).isEqualTo(resultCode)
+        assertThat(queryPurchasesResult.isSuccessful()).isTrue()
+        assertThat(queryPurchasesResult.purchasesByHashedToken.isNotEmpty()).isTrue()
+        val purchaseWrapper = queryPurchasesResult.purchasesByHashedToken[token.sha1()]
+        assertThat(purchaseWrapper).isNotNull
+        assertThat(purchaseWrapper!!.type).isEqualTo(type)
+        assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
+        assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
+        assertThat(purchaseWrapper.sku).isEqualTo(sku)
+    }
+
     private fun mockNullSkuDetailsResponse() {
         val slot = slot<SkuDetailsResponseListener>()
         every {

@@ -258,7 +258,7 @@ internal class BillingWrapper internal constructor(
                 result.purchasesList.map { purchase ->
                     val hash = purchase.purchaseToken.sha1()
                     debugLog("[QueryPurchases] Purchase of type $skuType with hash $hash")
-                    hash to PurchaseWrapper(purchase, SkuType.SUBS)
+                    hash to PurchaseWrapper(purchase, skuType)
                 }.toMap()
             )
         }
