@@ -1,3 +1,9 @@
+## 2.3.0
+
+- **BREAKING CHANGE** Removed deprecated makePurchase methods
+- Improved logic on purchase tokens management
+- **NEW FEATURE** Added Facebook as supported attribution network https://docs.revenuecat.com/docs/facebook-ads.
+
 ## 2.2.5
 
 - Removes duplicated makePurchase call in deprecated makePurchase method.

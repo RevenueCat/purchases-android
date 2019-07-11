@@ -943,7 +943,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "2.3.0-SNAPSHOT"
+        val frameworkVersion = "2.3.0"
 
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
