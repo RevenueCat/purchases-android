@@ -48,7 +48,7 @@ class UpsellActivity : AppCompatActivity() {
     }
 
     private fun setupUnlimitedOfferingButton(proEntitlement: Entitlement) {
-        proEntitlement.offerings["unlimited"]?.let { unlimited ->
+        proEntitlement.offerings["one_time"]?.let { unlimited ->
             unlimited.skuDetails?.let { unlimitedProduct ->
                 with(unlimited_purchase) {
                     loadedText = "Buy Unlimited - ${unlimitedProduct.priceCurrencyCode} ${unlimitedProduct.price}"
