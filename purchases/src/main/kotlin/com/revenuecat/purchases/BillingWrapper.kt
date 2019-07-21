@@ -253,14 +253,16 @@ internal class BillingWrapper internal constructor(
         return billingClient?.let {
             debugLog("[QueryPurchases] Querying $skuType")
             val result = it.queryPurchases(skuType)
-            QueryPurchasesResult(
-                result.responseCode,
-                result.purchasesList.map { purchase ->
-                    val hash = purchase.purchaseToken.sha1()
-                    debugLog("[QueryPurchases] Purchase of type $skuType with hash $hash")
-                    hash to PurchaseWrapper(purchase, skuType)
-                }.toMap()
-            )
+            result.purchasesList?.let { purchasesList ->
+                QueryPurchasesResult(
+                    result.responseCode,
+                    purchasesList.map { purchase ->
+                        val hash = purchase.purchaseToken.sha1()
+                        debugLog("[QueryPurchases] Purchase of type $skuType with hash $hash")
+                        hash to PurchaseWrapper(purchase, skuType)
+                    }.toMap()
+                )
+            }
         }
     }
 
