@@ -45,7 +45,8 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         expirationDatesByEntitlement,
         purchaseDatesByEntitlement,
         requestDate,
-        this
+        this,
+        optInt("schema_version")
     )
 }
 

@@ -26,7 +26,8 @@ class PurchaserInfo internal constructor(
     val allExpirationDatesByEntitlement: Map<String, Date?>,
     val allPurchaseDatesByEntitlement: Map<String, Date?>,
     val requestDate: Date?,
-    internal val jsonObject: JSONObject
+    internal val jsonObject: JSONObject,
+    internal val schemaVersion: Int
 ) : Parcelable {
     /**
      * @hide
@@ -38,7 +39,8 @@ class PurchaserInfo internal constructor(
         parcel.readStringDateMap(),
         parcel.readStringDateMap(),
         parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
-        JSONObject(parcel.readString())
+        JSONObject(parcel.readString()),
+        parcel.readInt()
     )
 
     /**
@@ -150,6 +152,7 @@ class PurchaserInfo internal constructor(
         parcel.writeStringDateMap(allPurchaseDatesByEntitlement)
         parcel.writeLong(requestDate?.time ?: -1)
         parcel.writeString(jsonObject.toString())
+        parcel.writeInt(schemaVersion)
     }
 
     /**
@@ -170,24 +173,24 @@ class PurchaserInfo internal constructor(
         result = 31 * result + allPurchaseDatesByEntitlement.hashCode()
         result = 31 * result + (requestDate?.hashCode() ?: 0)
         result = 31 * result + jsonObject.hashCode()
+        result = 31 * result + schemaVersion
         return result
     }
 
     /**
-     * @hide
-     */
-    companion object CREATOR : Parcelable.Creator<PurchaserInfo> {
-        /**
-         * @hide
-         */
-        override fun createFromParcel(parcel: Parcel): PurchaserInfo {
-            return PurchaserInfo(parcel)
-        }
-        /**
-         * @hide
-         */
-        override fun newArray(size: Int): Array<PurchaserInfo?> {
-            return arrayOfNulls(size)
-        }
+    * @hide
+    */
+    companion object {
+
+        internal const val SCHEMA_VERSION = 2
+
+        @JvmField
+        val CREATOR: Parcelable.Creator<PurchaserInfo> =
+            object : Parcelable.Creator<PurchaserInfo> {
+                override fun createFromParcel(source: Parcel): PurchaserInfo = PurchaserInfo(source)
+                override fun newArray(size: Int): Array<PurchaserInfo?> = arrayOfNulls(size)
+            }
+
     }
+
 }

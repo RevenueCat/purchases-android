@@ -14,6 +14,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
@@ -109,6 +110,40 @@ class DeviceCacheTest {
             mockEditor.putString(eq(purchaserInfoCacheKey), any())
             mockEditor.apply()
         }
+    }
+
+    @Test
+    fun `given a purchaser info, the information is cached with a schema version`() {
+        val jsonObject = JSONObject(validFullPurchaserResponse)
+        val info = jsonObject.buildPurchaserInfo()
+        val infoJSONSlot = slot<String>()
+
+        every {
+            mockEditor.putString(any(), capture(infoJSONSlot))
+        } returns mockEditor
+        cache.cachePurchaserInfo(appUserID, info)
+
+        val cachedJSON = JSONObject(infoJSONSlot.captured)
+        assertThat(cachedJSON.has("schema_version"))
+        assertThat(cachedJSON.getInt("schema_version")).isEqualTo(PurchaserInfo.SCHEMA_VERSION)
+    }
+    private val oldCachedPurchaserInfo =
+        "{'schema_version': 0, 'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
+    private val validCachedPurchaserInfo =
+        "{'schema_version': ${PurchaserInfo.SCHEMA_VERSION}, 'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
+
+    @Test
+    fun `given an older version of purchaser info, nothing is returned`() {
+        mockString(purchaserInfoCacheKey, oldCachedPurchaserInfo)
+        val info = cache.getCachedPurchaserInfo(appUserID)
+        assertThat(info).`as`("info is null").isNull()
+    }
+
+    @Test
+    fun `given a valid version purchaser info, it is returned`() {
+        mockString(purchaserInfoCacheKey, validCachedPurchaserInfo)
+        val info = cache.getCachedPurchaserInfo(appUserID)
+        assertThat(info).`as`("info is not null").isNotNull()
     }
 
     @Test
