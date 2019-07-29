@@ -29,6 +29,9 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class DeviceCacheTest {
 
+    private fun validCachedPurchaserInfo(schemaVersion: Int = PurchaserInfo.SCHEMA_VERSION) =
+        "{'schema_version': $schemaVersion, 'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
+
     private lateinit var cache: DeviceCache
     private lateinit var mockPrefs: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
@@ -86,8 +89,8 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a valid purchaser info, the JSON is parsed correcly`() {
-        mockString(purchaserInfoCacheKey, validFullPurchaserResponse)
+    fun `given a valid purchaser info, the JSON is parsed correctly`() {
+        mockString(purchaserInfoCacheKey, validCachedPurchaserInfo())
         val info = cache.getCachedPurchaserInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
     }
@@ -127,21 +130,17 @@ class DeviceCacheTest {
         assertThat(cachedJSON.has("schema_version"))
         assertThat(cachedJSON.getInt("schema_version")).isEqualTo(PurchaserInfo.SCHEMA_VERSION)
     }
-    private val oldCachedPurchaserInfo =
-        "{'schema_version': 0, 'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
-    private val validCachedPurchaserInfo =
-        "{'schema_version': ${PurchaserInfo.SCHEMA_VERSION}, 'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
 
     @Test
     fun `given an older version of purchaser info, nothing is returned`() {
-        mockString(purchaserInfoCacheKey, oldCachedPurchaserInfo)
+        mockString(purchaserInfoCacheKey, validCachedPurchaserInfo(0))
         val info = cache.getCachedPurchaserInfo(appUserID)
         assertThat(info).`as`("info is null").isNull()
     }
 
     @Test
     fun `given a valid version purchaser info, it is returned`() {
-        mockString(purchaserInfoCacheKey, validCachedPurchaserInfo)
+        mockString(purchaserInfoCacheKey, validCachedPurchaserInfo())
         val info = cache.getCachedPurchaserInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull()
     }
