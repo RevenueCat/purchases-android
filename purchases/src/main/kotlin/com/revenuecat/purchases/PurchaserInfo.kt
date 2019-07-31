@@ -18,6 +18,8 @@ import java.util.Date
  * @property allExpirationDatesByEntitlement Map of entitlement ids to expiration dates
  * @property allPurchaseDatesByEntitlement Map of entitlement ids to purchase dates
  * @property requestDate Date when this info was requested
+ * @property firstSeen The date this user was first seen in RevenueCat.
+ * @property originalAppUserId The original App User Id recorded for this user.
  */
 class PurchaserInfo internal constructor(
     val purchasedNonSubscriptionSkus: Set<String>,
@@ -27,7 +29,9 @@ class PurchaserInfo internal constructor(
     val allPurchaseDatesByEntitlement: Map<String, Date?>,
     val requestDate: Date?,
     internal val jsonObject: JSONObject,
-    internal val schemaVersion: Int
+    internal val schemaVersion: Int,
+    val firstSeen: Date?,
+    val originalAppUserId: String
 ) : Parcelable {
     /**
      * @hide
@@ -40,7 +44,9 @@ class PurchaserInfo internal constructor(
         parcel.readStringDateMap(),
         parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
         JSONObject(parcel.readString()),
-        parcel.readInt()
+        parcel.readInt(),
+        parcel.readSerializable() as Date,
+        parcel.readString() ?: ""
     )
 
     /**
@@ -77,7 +83,7 @@ class PurchaserInfo internal constructor(
     }
 
     /**
-     * Get the purchase date for given sku
+     * Get the latest purchase or renewal date for given sku
      * @param sku Sku for which to retrieve expiration date
      * @return Purchase date for given sku
      */
@@ -86,7 +92,7 @@ class PurchaserInfo internal constructor(
     }
 
     /**
-     * Get the expiration date for a given entitlement
+     * Get the expiration date for a given entitlement identifier.
      * @param entitlement Entitlement for which to return expiration date
      * @return Expiration date for a given entitlement
      */
@@ -95,7 +101,7 @@ class PurchaserInfo internal constructor(
     }
 
     /**
-     * Get the purchase date for a given entitlement
+     * Get the latest purchase or renewal date for a given entitlement identifier.
      * @param entitlement Entitlement for which to return purchase date
      * @return Purchase date for given entitlement
      */
@@ -116,15 +122,19 @@ class PurchaserInfo internal constructor(
 
         other as PurchaserInfo
 
+        if (purchasedNonSubscriptionSkus != other.purchasedNonSubscriptionSkus) return false
         if (allExpirationDatesByProduct != other.allExpirationDatesByProduct) return false
         if (allPurchaseDatesByProduct != other.allPurchaseDatesByProduct) return false
         if (allExpirationDatesByEntitlement != other.allExpirationDatesByEntitlement) return false
         if (allPurchaseDatesByEntitlement != other.allPurchaseDatesByEntitlement) return false
-        if (purchasedNonSubscriptionSkus != other.purchasedNonSubscriptionSkus) return false
         if (activeEntitlements != other.activeEntitlements) return false
+        if (schemaVersion != other.schemaVersion) return false
+        if (firstSeen != other.firstSeen) return false
+        if (originalAppUserId != other.originalAppUserId) return false
 
         return true
     }
+
     /**
      * @hide
      */
@@ -153,6 +163,8 @@ class PurchaserInfo internal constructor(
         parcel.writeLong(requestDate?.time ?: -1)
         parcel.writeString(jsonObject.toString())
         parcel.writeInt(schemaVersion)
+        parcel.writeSerializable(firstSeen)
+        parcel.writeString(originalAppUserId)
     }
 
     /**
@@ -174,6 +186,8 @@ class PurchaserInfo internal constructor(
         result = 31 * result + (requestDate?.hashCode() ?: 0)
         result = 31 * result + jsonObject.hashCode()
         result = 31 * result + schemaVersion
+        result = 31 * result + firstSeen.hashCode()
+        result = 31 * result + originalAppUserId.hashCode()
         return result
     }
 

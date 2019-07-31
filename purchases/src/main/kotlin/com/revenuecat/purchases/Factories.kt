@@ -38,6 +38,18 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
             }
         } else null
 
+    val firstSeen =
+        if (has("first_seen")) {
+            try {
+                getString("first_seen").takeUnless { it.isNullOrBlank() }
+                    ?.let {
+                        Iso8601Utils.parse(it)
+                    }
+            } catch (e: RuntimeException) {
+                throw JSONException(e.localizedMessage)
+            }
+        } else null
+
     return PurchaserInfo(
         nonSubscriptionPurchases,
         expirationDatesByProduct,
@@ -46,7 +58,9 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         purchaseDatesByEntitlement,
         requestDate,
         this,
-        optInt("schema_version")
+        optInt("schema_version"),
+        firstSeen,
+        optString("original_app_user_id")
     )
 }
 
