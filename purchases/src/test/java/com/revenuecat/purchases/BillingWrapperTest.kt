@@ -638,6 +638,17 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `when querying anything and billing client returns a null list, returns an empty list`() {
+        setup()
+
+        every {
+            mockClient.queryPurchases(any())
+        } returns Purchase.PurchasesResult(BillingClient.BillingResponse.OK, null)
+
+        assertThat(wrapper!!.queryPurchases(BillingClient.SkuType.SUBS)!!.purchasesByHashedToken).isNotNull
+    }
+
+    @Test
     fun `when querying INAPPs result is created properly`() {
         setup()
         val resultCode = 0
