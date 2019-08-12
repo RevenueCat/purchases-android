@@ -255,7 +255,7 @@ internal class BillingWrapper internal constructor(
             val result = it.queryPurchases(skuType)
 
             // Purchases.PurchaseResult#purchasesList is not marked as nullable, but it does sometimes return null.
-            val purchasesList = if (result.purchasesList != null) result.purchasesList else emptyList<Purchase>()
+            val purchasesList = result.purchasesList ?: emptyList<Purchase>()
 
             QueryPurchasesResult(
                 result.responseCode,
