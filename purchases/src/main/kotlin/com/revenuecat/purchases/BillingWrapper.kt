@@ -253,9 +253,13 @@ internal class BillingWrapper internal constructor(
         return billingClient?.let {
             debugLog("[QueryPurchases] Querying $skuType")
             val result = it.queryPurchases(skuType)
+
+            // Purchases.PurchaseResult#purchasesList is not marked as nullable, but it does sometimes return null.
+            val purchasesList = result.purchasesList ?: emptyList<Purchase>()
+
             QueryPurchasesResult(
                 result.responseCode,
-                result.purchasesList.map { purchase ->
+                purchasesList.map { purchase ->
                     val hash = purchase.purchaseToken.sha1()
                     debugLog("[QueryPurchases] Purchase of type $skuType with hash $hash")
                     hash to PurchaseWrapper(purchase, skuType)
