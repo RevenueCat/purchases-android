@@ -27,6 +27,9 @@ internal open class Dispatcher(
                 onError(e.toPurchasesError())
             } catch (e: IOException) {
                 onError(e.toPurchasesError())
+            } catch (e: SecurityException) {
+                // This can happen if a user disables the INTERNET permission.
+                onError(e.toPurchasesError())
             }
         }
     }

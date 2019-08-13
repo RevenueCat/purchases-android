@@ -39,6 +39,7 @@ enum class PurchasesErrorCode(val description: String) {
     InvalidAppUserIdError("The app user id is not valid."),
     OperationAlreadyInProgressError("The operation is already in progress."),
     UnknownBackendError("There was an unknown backend error."),
+    InsufficientPermissionsError("App does not have sufficient permissions to make purchases.")
 }
 
 internal enum class BackendErrorCode(val value: Int) {
@@ -67,6 +68,8 @@ internal enum class BackendErrorCode(val value: Int) {
 internal fun Exception.toPurchasesError(): PurchasesError {
     if (this is JSONException || this is IOException) {
         return PurchasesError(PurchasesErrorCode.NetworkError, localizedMessage)
+    } else if (this is SecurityException) {
+        return PurchasesError(PurchasesErrorCode.InsufficientPermissionsError, localizedMessage)
     }
     return PurchasesError(PurchasesErrorCode.UnknownError, localizedMessage)
 }

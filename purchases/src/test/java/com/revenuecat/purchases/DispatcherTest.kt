@@ -17,6 +17,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -98,5 +99,24 @@ class DispatcherTest {
         verify {
             executorService.shutdownNow()
         }
+    }
+
+    @Test
+    fun securityExceptionsAreCorrectlyConvertedToPurchaseErrors() {
+        val errorHolder = AtomicReference<PurchasesError>()
+
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPClient.Result {
+                throw SecurityException("missing permissoins")
+            }
+
+            override fun onError(error: PurchasesError) {
+                errorHolder.set(error)
+            }
+        }
+
+        call.run()
+
+        assertThat(errorHolder.get().code).isEqualTo(PurchasesErrorCode.InsufficientPermissionsError)
     }
 }
