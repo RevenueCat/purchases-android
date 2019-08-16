@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import android.content.Context
 import android.os.Build
 import android.os.Parcel
+import android.os.Parcelable
 import android.util.Base64
 import android.util.Log
 import com.android.billingclient.api.Purchase
@@ -47,11 +48,27 @@ internal fun Parcel.readStringDateMap(): Map<String, Date?> {
     }
 }
 
+internal fun <T : Parcelable> Parcel.readStringParcelableMap(loader: ClassLoader?): Map<String, T> {
+    return readInt().let { size ->
+        (0 until size).map {
+            readString() to readParcelable<T>(loader)
+        }.toMap()
+    }
+}
+
 internal fun Parcel.writeStringDateMap(mapStringDate: Map<String, Date?>) {
     writeInt(mapStringDate.size)
     mapStringDate.forEach { (entry, date) ->
         writeString(entry)
         writeLong(date?.time ?: -1)
+    }
+}
+
+internal fun Parcel.writeStringParcelableMap(mapStringParcelable: Map<String, Parcelable>) {
+    writeInt(mapStringParcelable.size)
+    mapStringParcelable.forEach { (entry, parcelable) ->
+        writeString(entry)
+        writeParcelable(parcelable, 0)
     }
 }
 

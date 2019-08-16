@@ -22,11 +22,10 @@ import java.util.Date
  * @property originalAppUserId The original App User Id recorded for this user.
  */
 class PurchaserInfo internal constructor(
+    val entitlements: EntitlementInfos,
     val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
-    val allExpirationDatesByEntitlement: Map<String, Date?>,
-    val allPurchaseDatesByEntitlement: Map<String, Date?>,
     val requestDate: Date?,
     internal val jsonObject: JSONObject,
     internal val schemaVersion: Int,
@@ -37,16 +36,15 @@ class PurchaserInfo internal constructor(
      * @hide
      */
     constructor(parcel: Parcel): this(
-        parcel.readInt().let { size -> (0 until size).map { parcel.readString() }.toSet() },
-        parcel.readStringDateMap(),
-        parcel.readStringDateMap(),
-        parcel.readStringDateMap(),
-        parcel.readStringDateMap(),
-        parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
-        JSONObject(parcel.readString()),
-        parcel.readInt(),
-        parcel.readSerializable() as Date,
-        parcel.readString() ?: ""
+        entitlements = parcel.readParcelable<EntitlementInfos>(EntitlementInfos::class.java.classLoader),
+        purchasedNonSubscriptionSkus = parcel.readInt().let { size -> (0 until size).map { parcel.readString() }.toSet() },
+        allExpirationDatesByProduct = parcel.readStringDateMap(),
+        allPurchaseDatesByProduct = parcel.readStringDateMap(),
+        requestDate = parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
+        jsonObject = JSONObject(parcel.readString()),
+        schemaVersion = parcel.readInt(),
+        firstSeen = parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
+        originalAppUserId = parcel.readString() ?: ""
     )
 
     /**
@@ -71,7 +69,7 @@ class PurchaserInfo internal constructor(
      * The identifiers of all the active entitlements
      */
     val activeEntitlements: Set<String>
-        get() = activeIdentifiers(allExpirationDatesByEntitlement)
+        get() = entitlements.active.keys
 
     /**
      * Get the expiration date for a given sku
@@ -97,7 +95,7 @@ class PurchaserInfo internal constructor(
      * @return Expiration date for a given entitlement
      */
     fun getExpirationDateForEntitlement(entitlement: String): Date? {
-        return allExpirationDatesByEntitlement[entitlement]
+        return entitlements.all[entitlement]?.expirationDate
     }
 
     /**
@@ -106,7 +104,7 @@ class PurchaserInfo internal constructor(
      * @return Purchase date for given entitlement
      */
     fun getPurchaseDateForEntitlement(entitlement: String): Date? {
-        return allPurchaseDatesByEntitlement[entitlement]
+        return entitlements.all[entitlement]?.latestPurchaseDate
     }
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
@@ -125,8 +123,6 @@ class PurchaserInfo internal constructor(
         if (purchasedNonSubscriptionSkus != other.purchasedNonSubscriptionSkus) return false
         if (allExpirationDatesByProduct != other.allExpirationDatesByProduct) return false
         if (allPurchaseDatesByProduct != other.allPurchaseDatesByProduct) return false
-        if (allExpirationDatesByEntitlement != other.allExpirationDatesByEntitlement) return false
-        if (allPurchaseDatesByEntitlement != other.allPurchaseDatesByEntitlement) return false
         if (activeEntitlements != other.activeEntitlements) return false
         if (schemaVersion != other.schemaVersion) return false
         if (firstSeen != other.firstSeen) return false
@@ -158,12 +154,10 @@ class PurchaserInfo internal constructor(
         purchasedNonSubscriptionSkus.forEach { entry -> parcel.writeString(entry) }
         parcel.writeStringDateMap(allExpirationDatesByProduct)
         parcel.writeStringDateMap(allPurchaseDatesByProduct)
-        parcel.writeStringDateMap(allExpirationDatesByEntitlement)
-        parcel.writeStringDateMap(allPurchaseDatesByEntitlement)
         parcel.writeLong(requestDate?.time ?: -1)
         parcel.writeString(jsonObject.toString())
         parcel.writeInt(schemaVersion)
-        parcel.writeSerializable(firstSeen)
+        parcel.writeLong(firstSeen?.time ?: -1)
         parcel.writeString(originalAppUserId)
     }
 
@@ -181,8 +175,6 @@ class PurchaserInfo internal constructor(
         var result = purchasedNonSubscriptionSkus.hashCode()
         result = 31 * result + allExpirationDatesByProduct.hashCode()
         result = 31 * result + allPurchaseDatesByProduct.hashCode()
-        result = 31 * result + allExpirationDatesByEntitlement.hashCode()
-        result = 31 * result + allPurchaseDatesByEntitlement.hashCode()
         result = 31 * result + (requestDate?.hashCode() ?: 0)
         result = 31 * result + jsonObject.hashCode()
         result = 31 * result + schemaVersion
