@@ -10,9 +10,6 @@ class Responses {
         val validEmptyPurchaserResponse by lazy {
             getJSONFromPath("responses/valid_empty_purchaser_response.json")
         }
-        val validTwoProductsResponse by lazy {
-            getJSONFromPath("responses/valid_two_products_response.json")
-        }
 
         private fun getJSONFromPath(fileName: String): String {
             val classLoader = this::class.java.classLoader

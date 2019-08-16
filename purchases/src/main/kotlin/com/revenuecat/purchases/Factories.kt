@@ -24,8 +24,15 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     }
 
     val subscriptions = subscriber.getJSONObject("subscriptions")
-    val expirationDatesByProduct = subscriptions.parseExpirations() + nonSubscriptionsLatestPurchases.parseExpirations()
+    val expirationDatesByProduct = subscriptions.parseExpirations()
     val purchaseDatesByProduct = subscriptions.parsePurchaseDates() + nonSubscriptionsLatestPurchases.parsePurchaseDates()
+
+    var entitlements = JSONObject()
+    if (subscriber.has("entitlements")) {
+        entitlements = subscriber.getJSONObject("entitlements")
+    }
+    val expirationDatesByEntitlement = entitlements.parseExpirations()
+    val purchaseDatesByEntitlement = entitlements.parsePurchaseDates()
 
     val requestDate =
         if (has("request_date")) {
@@ -51,17 +58,19 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
             }
         } else null
 
-    val entitlements = if (subscriber.has("entitlements")) {
+    val entitlementInfos = if (subscriber.has("entitlements")) {
         subscriber.getJSONObject("entitlements").buildEntitlementInfos(subscriptions, nonSubscriptionsLatestPurchases, requestDate)
     } else {
         EntitlementInfos(emptyMap())
     }
 
     return PurchaserInfo(
-        entitlements,
+        entitlementInfos,
         nonSubscriptions.keys().asSequence().toSet(),
         expirationDatesByProduct,
         purchaseDatesByProduct,
+        expirationDatesByEntitlement,
+        purchaseDatesByEntitlement,
         requestDate,
         this,
         optInt("schema_version"),

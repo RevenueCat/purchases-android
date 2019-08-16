@@ -99,7 +99,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given two valid products, json is deserialized properly`() {
-        val info = JSONObject(Responses.validTwoProductsResponse).buildPurchaserInfo()
+        val info = JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo()
         assertThat(info).isNotNull
     }
 
@@ -146,9 +146,9 @@ class PurchaserInfoTest {
 
     @Test
     fun `Given a null request date, current date is used`() {
-        val validNoRequestDate =
-            "{'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
-        val info = JSONObject(validNoRequestDate).buildPurchaserInfo()
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        jsonObject.remove("request_date")
+        val info = jsonObject.buildPurchaserInfo()
 
         val actives = info.allPurchasedSkus
 
@@ -173,16 +173,21 @@ class PurchaserInfoTest {
 
     @Test
     fun `Given two empty purchaser infos with different request dates, both are equal`() {
-        val info = JSONObject("{'request_date': '2018-06-20T06:24:50Z', 'subscriber': {'other_purchases': {},'subscriptions':{}}}").buildPurchaserInfo()
-        val info1 = JSONObject("{'request_date': '2018-05-20T06:24:50Z', 'subscriber': {'other_purchases': {},'subscriptions':{}}}").buildPurchaserInfo()
-        assertThat(info == info1).isTrue()
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        jsonObject.put("request_date", "2018-06-20T06:24:50Z")
+        val info = jsonObject.buildPurchaserInfo()
+        jsonObject.put("request_date", "2018-05-20T06:24:50Z")
+        val info1 = jsonObject.buildPurchaserInfo()
+        assertThat(info).isEqualTo(info1)
     }
 
     @Test
     fun `Given two empty purchaser infos with different active entitlements, both are not equal`() {
-        val info1 = JSONObject("{'request_date': '2018-12-20T02:40:36Z', 'subscriber': {'other_purchases': {}, 'subscriptions': {}, 'entitlements': { 'pro': { 'expires_date' : '2018-12-19T02:40:36Z' } }}}").buildPurchaserInfo()
-        val info2 = JSONObject("{'request_date': '2018-11-19T02:40:36Z', 'subscriber': {'other_purchases': {}, 'subscriptions': {}, 'entitlements': { 'pro': { 'expires_date' : '2018-12-19T02:40:36Z' } }}}").buildPurchaserInfo()
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val info = jsonObject.buildPurchaserInfo()
+        jsonObject.put("request_date", "2101-05-20T06:24:50Z")
+        val info1 = jsonObject.buildPurchaserInfo()
 
-        assertThat(info1 == info2).isFalse()
+        assertThat(info).isNotEqualTo(info1)
     }
 }

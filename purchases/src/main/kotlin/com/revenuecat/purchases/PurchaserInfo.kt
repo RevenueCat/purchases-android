@@ -24,8 +24,10 @@ import java.util.Date
 class PurchaserInfo internal constructor(
     val entitlements: EntitlementInfos,
     val purchasedNonSubscriptionSkus: Set<String>,
-    @JvmSynthetic internal val allExpirationDatesByProduct: Map<String, Date?>,
-    @JvmSynthetic internal val allPurchaseDatesByProduct: Map<String, Date?>,
+    val allExpirationDatesByProduct: Map<String, Date?>,
+    val allPurchaseDatesByProduct: Map<String, Date?>,
+    @Deprecated("Use getExpirationDateForEntitlement instead") val allExpirationDatesByEntitlement: Map<String, Date?>,
+    @Deprecated("Use getPurchaseDateForEntitlement instead") val allPurchaseDatesByEntitlement: Map<String, Date?>,
     val requestDate: Date?,
     internal val jsonObject: JSONObject,
     internal val schemaVersion: Int,
@@ -40,6 +42,8 @@ class PurchaserInfo internal constructor(
         purchasedNonSubscriptionSkus = parcel.readInt().let { size -> (0 until size).map { parcel.readString() }.toSet() },
         allExpirationDatesByProduct = parcel.readStringDateMap(),
         allPurchaseDatesByProduct = parcel.readStringDateMap(),
+        allExpirationDatesByEntitlement = parcel.readStringDateMap(),
+        allPurchaseDatesByEntitlement = parcel.readStringDateMap(),
         requestDate = parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
         jsonObject = JSONObject(parcel.readString()),
         schemaVersion = parcel.readInt(),
@@ -157,6 +161,8 @@ class PurchaserInfo internal constructor(
         purchasedNonSubscriptionSkus.forEach { entry -> parcel.writeString(entry) }
         parcel.writeStringDateMap(allExpirationDatesByProduct)
         parcel.writeStringDateMap(allPurchaseDatesByProduct)
+        parcel.writeStringDateMap(allExpirationDatesByEntitlement)
+        parcel.writeStringDateMap(allPurchaseDatesByEntitlement)
         parcel.writeLong(requestDate?.time ?: -1)
         parcel.writeString(jsonObject.toString())
         parcel.writeInt(schemaVersion)
