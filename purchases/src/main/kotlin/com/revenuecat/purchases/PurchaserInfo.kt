@@ -68,6 +68,9 @@ class PurchaserInfo internal constructor(
     /**
      * The identifiers of all the active entitlements
      */
+    @Deprecated("Use PurchaserInfo.entitlements.active instead.",
+        ReplaceWith("entitlements.active")
+    )
     val activeEntitlements: Set<String>
         get() = entitlements.active.keys
 
