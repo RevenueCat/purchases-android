@@ -1,0 +1,17 @@
+{
+  "request_date": "2018-05-20T06:24:50Z",
+  "subscriber": {
+    "original_application_version": "1.0",
+    "other_purchases": {},
+    "subscriptions": {
+      "product_a": {
+        "expires_date": "2018-05-27T06:24:50Z",
+        "period_type": "normal"
+      },
+      "product_b": {
+        "expires_date": "2018-05-27T05:24:50Z",
+        "period_type": "normal"
+      }
+    }
+  }
+}

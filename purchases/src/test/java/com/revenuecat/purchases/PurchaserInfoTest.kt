@@ -18,7 +18,7 @@ import org.robolectric.annotation.Config
 class PurchaserInfoTest {
 
     private fun fullPurchaserInfo(): PurchaserInfo {
-        return JSONObject(validFullPurchaserResponse).buildPurchaserInfo()
+        return JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo()
     }
 
     @Test(expected = JSONException::class)
@@ -30,7 +30,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given an empty response, empty object is created`() {
-        val jsonObject = JSONObject(validEmptyPurchaserResponse)
+        val jsonObject = JSONObject(Responses.validEmptyPurchaserResponse)
 
         val info = jsonObject.buildPurchaserInfo()
 
@@ -99,7 +99,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given two valid products, json is deserialized properly`() {
-        val info = JSONObject(validTwoProducts).buildPurchaserInfo()
+        val info = JSONObject(Responses.validTwoProductsResponse).buildPurchaserInfo()
         assertThat(info).isNotNull
     }
 
@@ -161,14 +161,13 @@ class PurchaserInfoTest {
     @Test
     fun `Given a valid purchaser info, purchase date is parsed`() {
         val info = fullPurchaserInfo()
-        assertThat(info.allPurchaseDatesByEntitlement).isNotEmpty
         assertThat(info.getPurchaseDateForEntitlement("pro")).isNotNull()
     }
 
     @Test
     fun `Given two empty purchaser infos, both are equal`() {
-        val info = JSONObject(emptyPurchaserInfo).buildPurchaserInfo()
-        val info1 = JSONObject(emptyPurchaserInfo).buildPurchaserInfo()
+        val info = JSONObject(Responses.validEmptyPurchaserResponse).buildPurchaserInfo()
+        val info1 = JSONObject(Responses.validEmptyPurchaserResponse).buildPurchaserInfo()
         assertThat(info == info1).isTrue()
     }
 
@@ -185,17 +184,5 @@ class PurchaserInfoTest {
         val info2 = JSONObject("{'request_date': '2018-11-19T02:40:36Z', 'subscriber': {'other_purchases': {}, 'subscriptions': {}, 'entitlements': { 'pro': { 'expires_date' : '2018-12-19T02:40:36Z' } }}}").buildPurchaserInfo()
 
         assertThat(info1 == info2).isFalse()
-    }
-
-    companion object {
-
-        internal const val validEmptyPurchaserResponse =
-            "{'request_date': '', 'subscriber': {'other_purchases': {}, 'subscriptions': {}, 'entitlements': {}}}"
-        internal const val validFullPurchaserResponse =
-            "{'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
-        internal const val validTwoProducts =
-            "{'request_date': '2018-05-20T06:24:50Z', 'subscriber': {'original_application_version': '1.0','other_purchases': {},'subscriptions':{'product_a': {'expires_date': '2018-05-27T06:24:50Z','period_type': 'normal'},'product_b': {'expires_date': '2018-05-27T05:24:50Z','period_type': 'normal'}}}}"
-        internal const val emptyPurchaserInfo =
-            "{'subscriber': {'other_purchases': {},'subscriptions':{}}}"
     }
 }

@@ -40,9 +40,9 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         } else null
 
     val firstSeen =
-        if (has("first_seen")) {
+        if (subscriber.has("first_seen")) {
             try {
-                getString("first_seen").takeUnless { it.isNullOrBlank() }
+                subscriber.getString("first_seen").takeUnless { it.isNullOrBlank() }
                     ?.let {
                         Iso8601Utils.parse(it)
                     }
@@ -66,7 +66,7 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         this,
         optInt("schema_version"),
         firstSeen,
-        optString("original_app_user_id")
+        subscriber.optString("original_app_user_id")
     )
 }
 
@@ -78,60 +78,70 @@ private fun JSONObject.buildEntitlementInfos(
     val all = mutableMapOf<String, EntitlementInfo>()
     keys().forEach { entitlementId ->
         val entitlement = getJSONObject(entitlementId)
-        if (entitlement.has("product_identifier")) {
-            val productIdentifier = entitlement.getString("product_identifier")
-            // TODO: is it possible that consumable and subscription have the same ID?
+        entitlement.optString("product_identifier").takeIf { it.isNotEmpty() }?.let { productIdentifier ->
             if (subscriptions.has(productIdentifier)) {
-                all[entitlementId] = subscriptions.getJSONObject(productIdentifier).buildEntitlementInfo(productIdentifier, requestDate)
+                all[entitlementId] = entitlement.buildEntitlementInfo(
+                    productIdentifier,
+                    subscriptions.getJSONObject(productIdentifier),
+                    requestDate
+                )
             } else if (nonSubscriptionsLatestPurchases.has(productIdentifier)) {
-                all[entitlementId] = nonSubscriptionsLatestPurchases.getJSONObject(productIdentifier).buildEntitlementInfo(productIdentifier, requestDate)
+                all[entitlementId] = entitlement.buildEntitlementInfo(
+                    productIdentifier,
+                    nonSubscriptionsLatestPurchases.getJSONObject(productIdentifier),
+                    requestDate
+                )
             }
         }
-
     }
     return EntitlementInfos(all)
 }
 
+private fun JSONObject.optDate(name: String) =
+    takeUnless { isNull(name) }?.getString(name)?.let {
+        Iso8601Utils.parse(it)
+    }
+
+private fun JSONObject.getDate(name: String) = Iso8601Utils.parse(getString(name))
+
+private fun JSONObject.getStore(name: String) = when(getString(name)) {
+    "app_store" -> Store.APP_STORE
+    "mac_app_store" -> Store.MAC_APP_STORE
+    "play_store" -> Store.PLAY_STORE
+    "stripe" -> Store.STRIPE
+    "promotional" -> Store.PROMOTIONAL
+    else -> Store.UNKNOWN_STORE
+}
+
+private fun JSONObject.optPeriodType(name: String) = when(optString(name)) {
+    "normal" -> PeriodType.NORMAL
+    "intro" -> PeriodType.INTRO
+    "trial" -> PeriodType.TRIAL
+    else -> PeriodType.NORMAL
+}
+
 private fun JSONObject.buildEntitlementInfo(
     identifier: String,
+    productData: JSONObject,
     requestDate: Date?
 ): EntitlementInfo {
-    val expirationDate = Iso8601Utils.parse(getString("expires_date"))
-    val unsubscribeDetectedAt = Iso8601Utils.parse(getString("unsubscribe_detected_at"))
-    val billingIssueDetectedAt = Iso8601Utils.parse(getString("unsubscribe_detected_at"))
+    val expirationDate = optDate("expires_date")
+    val unsubscribeDetectedAt = productData.optDate("unsubscribe_detected_at")
+    val billingIssueDetectedAt = productData.optDate("billing_issues_detected_at")
     return EntitlementInfo(
-        identifier,
-        expirationDate == null || expirationDate.after(requestDate ?: Date()),
-        expirationDate == null || (unsubscribeDetectedAt == null && billingIssueDetectedAt == null),
-        getString("period_type").parsePeriodType(),
-        Iso8601Utils.parse(getString("purchase_date")),
-        Iso8601Utils.parse(getString("original_purchase_date")),
-        Iso8601Utils.parse(getString("expires_date")),
-        getString("store").parseStore(),
-        getString("product_identifier"),
-        getBoolean("is_sandbox"),
-        unsubscribeDetectedAt, billingIssueDetectedAt
+        identifier = identifier,
+        isActive = expirationDate == null || expirationDate.after(requestDate ?: Date()),
+        willRenew = expirationDate == null || (unsubscribeDetectedAt == null && billingIssueDetectedAt == null),
+        periodType = productData.optPeriodType("period_type"),
+        latestPurchaseDate = getDate("purchase_date"),
+        originalPurchaseDate = productData.getDate("original_purchase_date"),
+        expirationDate = expirationDate,
+        store = productData.getStore("store"),
+        productIdentifier = getString("product_identifier"),
+        isSandbox = productData.getBoolean("is_sandbox"),
+        unsubscribeDetectedAt = unsubscribeDetectedAt,
+        billingIssueDetectedAt = billingIssueDetectedAt
     )
-}
-
-private fun String.parseStore(): Store {
-    return when(this) {
-        "app_store" -> Store.APP_STORE
-        "mac_app_store" -> Store.MAC_APP_STORE
-        "play_store" -> Store.PLAY_STORE
-        "stripe" -> Store.STRIPE
-        "promotional" -> Store.PROMOTIONAL
-        else -> Store.UNKNOWN_STORE
-    }
-}
-
-private fun String.parsePeriodType(): PeriodType {
-    return when(this) {
-        "normal" -> PeriodType.NORMAL
-        "intro" -> PeriodType.INTRO
-        "trial" -> PeriodType.TRIAL
-        else -> PeriodType.NORMAL
-    }
 }
 
 internal fun JSONObject.buildEntitlementsMap(): Map<String, Entitlement> {

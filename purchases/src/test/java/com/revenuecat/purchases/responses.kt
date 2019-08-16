@@ -1,0 +1,23 @@
+package com.revenuecat.purchases
+
+import java.io.File
+
+class Responses {
+    companion object {
+        val validFullPurchaserResponse by lazy {
+            getJSONFromPath("responses/valid_full_purchaser_response.json")
+        }
+        val validEmptyPurchaserResponse by lazy {
+            getJSONFromPath("responses/valid_empty_purchaser_response.json")
+        }
+        val validTwoProductsResponse by lazy {
+            getJSONFromPath("responses/valid_two_products_response.json")
+        }
+
+        private fun getJSONFromPath(fileName: String): String {
+            val classLoader = this::class.java.classLoader
+            val resource = classLoader!!.getResource(fileName)
+            return File(resource.path).readText()
+        }
+    }
+}
