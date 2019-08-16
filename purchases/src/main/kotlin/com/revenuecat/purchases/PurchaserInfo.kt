@@ -24,8 +24,8 @@ import java.util.Date
 class PurchaserInfo internal constructor(
     val entitlements: EntitlementInfos,
     val purchasedNonSubscriptionSkus: Set<String>,
-    val allExpirationDatesByProduct: Map<String, Date?>,
-    val allPurchaseDatesByProduct: Map<String, Date?>,
+    internal val allExpirationDatesByProduct: Map<String, Date?>,
+    internal val allPurchaseDatesByProduct: Map<String, Date?>,
     val requestDate: Date?,
     internal val jsonObject: JSONObject,
     internal val schemaVersion: Int,
