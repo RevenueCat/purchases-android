@@ -2364,6 +2364,9 @@ class PurchasesTest {
     fun `when updating pending purchases, if result from query SUBS is not positive skip`() {
         setup()
         every {
+            mockExecutorService.isShutdown
+        } returns false
+        every {
             mockBillingWrapper.queryPurchases(SUBS)
         } returns BillingWrapper.QueryPurchasesResult(-1, emptyMap())
         every {
@@ -2378,6 +2381,9 @@ class PurchasesTest {
     @Test
     fun `when updating pending purchases, if result from query INAPP is not positive skip`() {
         setup()
+        every {
+            mockExecutorService.isShutdown
+        } returns false
         every {
             mockBillingWrapper.queryPurchases(SUBS)
         } returns BillingWrapper.QueryPurchasesResult(0, emptyMap())
@@ -2436,6 +2442,18 @@ class PurchasesTest {
         }
         verify (exactly = 0) {
             mockBillingWrapper.queryPurchases(INAPP)
+        }
+    }
+
+    @Test
+    fun `when updating pending purchases, do not do anything if executor service disconnected`() {
+        setup()
+        every {
+            mockExecutorService.isShutdown
+        } returns true
+        purchases.updatePendingPurchaseQueue()
+        verify (exactly = 0) {
+            mockBillingWrapper.queryPurchases(any())
         }
     }
 
@@ -2635,6 +2653,9 @@ class PurchasesTest {
         queriedINAPP: Map<String, PurchaseWrapper>,
         notInCache: List<PurchaseWrapper>
     ) {
+        every {
+            mockExecutorService.isShutdown
+        } returns false
         val queryPurchasesResultSUBS = BillingWrapper.QueryPurchasesResult(0, queriedSUBS)
         val queryPurchasesResultINAPP = BillingWrapper.QueryPurchasesResult(0, queriedINAPP)
         every {
