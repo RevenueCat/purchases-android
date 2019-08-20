@@ -90,13 +90,13 @@ private fun JSONObject.buildEntitlementInfos(
         entitlement.optString("product_identifier").takeIf { it.isNotEmpty() }?.let { productIdentifier ->
             if (subscriptions.has(productIdentifier)) {
                 all[entitlementId] = entitlement.buildEntitlementInfo(
-                    productIdentifier,
+                    entitlementId,
                     subscriptions.getJSONObject(productIdentifier),
                     requestDate
                 )
             } else if (nonSubscriptionsLatestPurchases.has(productIdentifier)) {
                 all[entitlementId] = entitlement.buildEntitlementInfo(
-                    productIdentifier,
+                    entitlementId,
                     nonSubscriptionsLatestPurchases.getJSONObject(productIdentifier),
                     requestDate
                 )

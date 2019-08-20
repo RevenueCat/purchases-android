@@ -9,6 +9,8 @@ class EntitlementInfos internal constructor(
 
     val active = all.filter { it.value.isActive }
 
+    operator fun get(s: String) = all[s]
+
     constructor(parcel: Parcel) : this(
         all = parcel.readStringParcelableMap(EntitlementInfo::class.java.classLoader)
     )
