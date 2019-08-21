@@ -38,7 +38,9 @@ class PurchaserInfo internal constructor(
      * @hide
      */
     constructor(parcel: Parcel): this(
-        entitlements = parcel.readParcelable<EntitlementInfos>(EntitlementInfos::class.java.classLoader),
+        entitlements =
+            parcel.readParcelable<EntitlementInfos>(EntitlementInfos::class.java.classLoader)
+                ?: EntitlementInfos(emptyMap()),
         purchasedNonSubscriptionSkus = parcel.readInt().let { size -> (0 until size).map { parcel.readString() }.toSet() },
         allExpirationDatesByProduct = parcel.readStringDateMap(),
         allPurchaseDatesByProduct = parcel.readStringDateMap(),
@@ -156,11 +158,14 @@ class PurchaserInfo internal constructor(
      * @hide
      */
     override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeParcelable(entitlements, flags)
         parcel.writeInt(purchasedNonSubscriptionSkus.size)
         purchasedNonSubscriptionSkus.forEach { entry -> parcel.writeString(entry) }
         parcel.writeStringDateMap(allExpirationDatesByProduct)
         parcel.writeStringDateMap(allPurchaseDatesByProduct)
+        @Suppress("DEPRECATION")
         parcel.writeStringDateMap(allExpirationDatesByEntitlement)
+        @Suppress("DEPRECATION")
         parcel.writeStringDateMap(allPurchaseDatesByEntitlement)
         parcel.writeLong(requestDate.time)
         parcel.writeString(jsonObject.toString())
