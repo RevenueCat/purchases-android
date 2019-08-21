@@ -34,29 +34,9 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     val expirationDatesByEntitlement = entitlements.parseExpirations()
     val purchaseDatesByEntitlement = entitlements.parsePurchaseDates()
 
-    val requestDate =
-        if (has("request_date")) {
-            try {
-                getString("request_date").takeUnless { it.isNullOrBlank() }
-                    ?.let {
-                        Iso8601Utils.parse(it)
-                    }
-            } catch (e: RuntimeException) {
-                throw JSONException(e.localizedMessage)
-            }
-        } else null
+    val requestDate= Iso8601Utils.parse(getString("request_date"))
 
-    val firstSeen =
-        if (subscriber.has("first_seen")) {
-            try {
-                subscriber.getString("first_seen").takeUnless { it.isNullOrBlank() }
-                    ?.let {
-                        Iso8601Utils.parse(it)
-                    }
-            } catch (e: RuntimeException) {
-                throw JSONException(e.localizedMessage)
-            }
-        } else null
+    val firstSeen = Iso8601Utils.parse(subscriber.getString("first_seen"))
 
     val entitlementInfos = if (subscriber.has("entitlements")) {
         subscriber.getJSONObject("entitlements").buildEntitlementInfos(subscriptions, nonSubscriptionsLatestPurchases, requestDate)
