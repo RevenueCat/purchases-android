@@ -106,7 +106,7 @@ class UpsellActivity : AppCompatActivity() {
     }
 
     private fun checkForProEntitlement(purchaserInfo: PurchaserInfo) {
-        if (purchaserInfo.activeEntitlements.contains("pro_cat")) {
+        if (purchaserInfo.entitlements["pro_cat"]?.isActive == true) {
             startCatsActivity()
         }
     }
