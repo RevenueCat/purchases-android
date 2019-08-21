@@ -22,6 +22,7 @@ class EntitlementInfosTests {
         subscriptions: JSONObject = JSONObject()
     ) {
         response = JSONObject().apply {
+            put("request_date", "2019-08-26T23:29:50Z")
             put("subscriber", JSONObject().apply {
                 put("entitlements", entitlements)
                 put("first_seen", "2019-07-26T23:29:50Z")

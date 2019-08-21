@@ -145,20 +145,6 @@ class PurchaserInfoTest {
     }
 
     @Test
-    fun `Given a null request date, current date is used`() {
-        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        jsonObject.remove("request_date")
-        val info = jsonObject.buildPurchaserInfo()
-
-        val actives = info.allPurchasedSkus
-
-        assertThat(actives.size).isEqualTo(3)
-        assertThat(actives).contains("onemonth_freetrial")
-        assertThat(actives).contains("onetime_purchase")
-        assertThat(actives).contains("threemonth_freetrial")
-    }
-
-    @Test
     fun `Given a valid purchaser info, purchase date is parsed`() {
         val info = fullPurchaserInfo()
         assertThat(info.getPurchaseDateForEntitlement("pro")).isNotNull()

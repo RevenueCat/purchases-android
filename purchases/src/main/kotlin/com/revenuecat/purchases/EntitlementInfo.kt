@@ -90,6 +90,28 @@ class EntitlementInfo internal constructor(
             "billingIssueDetectedAt=$billingIssueDetectedAt)"
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as EntitlementInfo
+
+        if (identifier != other.identifier) return false
+        if (isActive != other.isActive) return false
+        if (willRenew != other.willRenew) return false
+        if (periodType != other.periodType) return false
+        if (latestPurchaseDate != other.latestPurchaseDate) return false
+        if (originalPurchaseDate != other.originalPurchaseDate) return false
+        if (expirationDate != other.expirationDate) return false
+        if (store != other.store) return false
+        if (productIdentifier != other.productIdentifier) return false
+        if (isSandbox != other.isSandbox) return false
+        if (unsubscribeDetectedAt != other.unsubscribeDetectedAt) return false
+        if (billingIssueDetectedAt != other.billingIssueDetectedAt) return false
+
+        return true
+    }
+
     companion object {
         @JvmField
         val CREATOR = object : Parcelable.Creator<EntitlementInfo> {
