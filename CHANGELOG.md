@@ -1,3 +1,8 @@
+## 2.4.0
+
+- Fixes crash in `updatePendingPurchaseQueue` ([#81] (https://github.com/RevenueCat/purchases-android/pull/81))
+- Deprecates activeEntitlements in RCPurchaserInfo and adds entitlements object to RCPurchaserInfo. For more info check out https://docs.revenuecat.com/docs/purchaserinfo 
+
 ## 2.3.1
 
 - Fix NullPointerException in BilingWrapper ([#79](https://github.com/RevenueCat/purchases-android/pull/79))
