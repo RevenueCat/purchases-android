@@ -1,7 +1,5 @@
 Releasing
 =========
-
- 1. Run `gradle assembleRelease` in the `purchases-sample` folder.
  1. Change the version in `gradle.properties` to a non-SNAPSHOT version.
  1. Change the version number in `Purchases.kt`
  1. Change the versionName in `purchases/build.gradle`.

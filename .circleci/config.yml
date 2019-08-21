@@ -62,11 +62,29 @@ jobs:
           command: |
             .buildscripts/deploy_snapshot.sh
 
+  release-builds:
+    executor: android-executor
+    steps:
+      - checkout
+      - restore_cache:
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+      - run:
+          name: Accept licenses
+          command: yes | sdkmanager --licenses || true
+      - run:
+          name: Build
+          command: ./gradlew assembleRelease
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}  
+
 workflows:
   version: 2
   build-deploy-docs:
     jobs:
       - build
+      - release-builds
       - deploy:
           requires:
             - build
