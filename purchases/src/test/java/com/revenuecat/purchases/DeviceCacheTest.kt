@@ -9,11 +9,11 @@ import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient.SkuType.INAPP
 import com.android.billingclient.api.BillingClient.SkuType.SUBS
-import com.revenuecat.purchases.PurchaserInfoTest.Companion.validFullPurchaserResponse
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
@@ -27,6 +27,15 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class DeviceCacheTest {
+
+    private val validCachedPurchaserInfo by lazy {
+        JSONObject(Responses.validFullPurchaserResponse).apply {
+            put("schema_version", PurchaserInfo.SCHEMA_VERSION)
+        }.toString()
+    }
+
+    private val oldCachedPurchaserInfo =
+        "{'schema_version': 0, 'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
 
     private lateinit var cache: DeviceCache
     private lateinit var mockPrefs: SharedPreferences
@@ -77,7 +86,7 @@ class DeviceCacheTest {
 
     @Test
     fun `given a purchaser info, the key in the cache is correct`() {
-        mockString(purchaserInfoCacheKey, validFullPurchaserResponse)
+        mockString(purchaserInfoCacheKey, Responses.validFullPurchaserResponse)
         cache.getCachedPurchaserInfo(appUserID)
         verify {
             mockPrefs.getString(eq(purchaserInfoCacheKey), isNull())
@@ -85,8 +94,8 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a valid purchaser info, the JSON is parsed correcly`() {
-        mockString(purchaserInfoCacheKey, validFullPurchaserResponse)
+    fun `given a valid purchaser info, the JSON is parsed correctly`() {
+        mockString(purchaserInfoCacheKey, validCachedPurchaserInfo)
         val info = cache.getCachedPurchaserInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
     }
@@ -101,7 +110,7 @@ class DeviceCacheTest {
     @Test
     @Throws(JSONException::class)
     fun `given a purchaser info, the information is cached`() {
-        val jsonObject = JSONObject(validFullPurchaserResponse)
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
         val info = jsonObject.buildPurchaserInfo()
 
         cache.cachePurchaserInfo(appUserID, info)
@@ -109,6 +118,36 @@ class DeviceCacheTest {
             mockEditor.putString(eq(purchaserInfoCacheKey), any())
             mockEditor.apply()
         }
+    }
+
+    @Test
+    fun `given a purchaser info, the information is cached with a schema version`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val info = jsonObject.buildPurchaserInfo()
+        val infoJSONSlot = slot<String>()
+
+        every {
+            mockEditor.putString(any(), capture(infoJSONSlot))
+        } returns mockEditor
+        cache.cachePurchaserInfo(appUserID, info)
+
+        val cachedJSON = JSONObject(infoJSONSlot.captured)
+        assertThat(cachedJSON.has("schema_version"))
+        assertThat(cachedJSON.getInt("schema_version")).isEqualTo(PurchaserInfo.SCHEMA_VERSION)
+    }
+
+    @Test
+    fun `given an older version of purchaser info, nothing is returned`() {
+        mockString(purchaserInfoCacheKey, oldCachedPurchaserInfo)
+        val info = cache.getCachedPurchaserInfo(appUserID)
+        assertThat(info).`as`("info is null").isNull()
+    }
+
+    @Test
+    fun `given a valid version purchaser info, it is returned`() {
+        mockString(purchaserInfoCacheKey, validCachedPurchaserInfo)
+        val info = cache.getCachedPurchaserInfo(appUserID)
+        assertThat(info).`as`("info is not null").isNotNull()
     }
 
     @Test

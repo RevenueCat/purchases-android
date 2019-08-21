@@ -24,7 +24,13 @@ internal class DeviceCache(
         return preferences.getString(purchaserInfoCacheKey(appUserID), null)
             ?.let { json ->
                 try {
-                    JSONObject(json).buildPurchaserInfo()
+                    val cachedJSONObject = JSONObject(json)
+                    val schemaVersion = cachedJSONObject.optInt("schema_version")
+                    return if (schemaVersion == PurchaserInfo.SCHEMA_VERSION) {
+                        cachedJSONObject.buildPurchaserInfo()
+                    } else {
+                        null
+                    }
                 } catch (e: JSONException) {
                     null
                 }
@@ -32,10 +38,13 @@ internal class DeviceCache(
     }
 
     fun cachePurchaserInfo(appUserID: String, info: PurchaserInfo) {
+        val jsonObject = info.jsonObject.also {
+            it.put("schema_version", PurchaserInfo.SCHEMA_VERSION)
+        }
         preferences.edit()
             .putString(
                 purchaserInfoCacheKey(appUserID),
-                info.jsonObject.toString()
+                jsonObject.toString()
             ).apply()
     }
 

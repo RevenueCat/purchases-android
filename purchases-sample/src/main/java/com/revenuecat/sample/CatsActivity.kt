@@ -35,7 +35,7 @@ class CatsActivity : AppCompatActivity() {
     }
 
     private fun configureContent(purchaserInfo: PurchaserInfo) {
-        if (purchaserInfo.activeEntitlements.contains("pro_cat")) {
+        if (purchaserInfo.entitlements["pro_cat"]?.isActive == true) {
             Log.i("Purchases Sample", "Hey there premium, you're a happy cat 😻")
             cat_content_label.text = "😻"
             go_premium.visibility = GONE

@@ -1,0 +1,13 @@
+{
+  "request_date": "2019-08-16T10:30:42Z",
+  "request_date_ms": 1565951442879,
+  "subscriber": {
+    "entitlements": {},
+    "first_seen": "2019-07-17T00:05:54Z",
+    "non_subscriptions": {},
+    "original_app_user_id": "",
+    "original_application_version": "1.0",
+    "other_purchases": {},
+    "subscriptions": {}
+  }
+}
