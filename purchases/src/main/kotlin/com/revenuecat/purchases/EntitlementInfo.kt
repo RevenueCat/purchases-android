@@ -5,6 +5,7 @@ import android.os.Parcelable
 import java.util.Date
 
 /**
+ * This object gives you access to all of the information about the status of a user's entitlements.
  * @property identifier The entitlement identifier configured in the RevenueCat dashboard.
  * @property isActive True if the user has access to this entitlement.
  * @property willRenew True if the underlying subscription is set to renew at the end of the billing
@@ -73,8 +74,25 @@ class EntitlementInfo internal constructor(
         return 0
     }
 
+    override fun toString(): String {
+        return "EntitlementInfo(" +
+            "identifier='$identifier', " +
+            "isActive=$isActive, " +
+            "willRenew=$willRenew, " +
+            "periodType=$periodType, " +
+            "latestPurchaseDate=$latestPurchaseDate, " +
+            "originalPurchaseDate=$originalPurchaseDate, " +
+            "expirationDate=$expirationDate, " +
+            "store=$store, " +
+            "productIdentifier='$productIdentifier', " +
+            "isSandbox=$isSandbox, " +
+            "unsubscribeDetectedAt=$unsubscribeDetectedAt, " +
+            "billingIssueDetectedAt=$billingIssueDetectedAt)"
+    }
+
     companion object {
-        @JvmField val CREATOR = object : Parcelable.Creator<EntitlementInfo> {
+        @JvmField
+        val CREATOR = object : Parcelable.Creator<EntitlementInfo> {
             override fun createFromParcel(parcel: Parcel): EntitlementInfo {
                 return EntitlementInfo(parcel)
             }
@@ -115,7 +133,6 @@ enum class Store {
      */
     UNKNOWN_STORE,
 }
-
 
 /**
  * Enum of supported period types for an entitlement.

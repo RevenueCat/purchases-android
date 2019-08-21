@@ -28,10 +28,10 @@ class PurchaserInfo internal constructor(
     val allPurchaseDatesByProduct: Map<String, Date?>,
     @Deprecated("Use getExpirationDateForEntitlement instead") val allExpirationDatesByEntitlement: Map<String, Date?>,
     @Deprecated("Use getPurchaseDateForEntitlement instead") val allPurchaseDatesByEntitlement: Map<String, Date?>,
-    val requestDate: Date?,
+    val requestDate: Date,
     internal val jsonObject: JSONObject,
     internal val schemaVersion: Int,
-    val firstSeen: Date?,
+    val firstSeen: Date,
     val originalAppUserId: String
 ) : Parcelable {
     /**
@@ -44,10 +44,10 @@ class PurchaserInfo internal constructor(
         allPurchaseDatesByProduct = parcel.readStringDateMap(),
         allExpirationDatesByEntitlement = parcel.readStringDateMap(),
         allPurchaseDatesByEntitlement = parcel.readStringDateMap(),
-        requestDate = parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
+        requestDate = Date(parcel.readLong()),
         jsonObject = JSONObject(parcel.readString()),
         schemaVersion = parcel.readInt(),
-        firstSeen = parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
+        firstSeen = Date(parcel.readLong()),
         originalAppUserId = parcel.readString() ?: ""
     )
 
@@ -115,7 +115,7 @@ class PurchaserInfo internal constructor(
     }
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
-        return expirations.filterValues { date -> date == null || date.after(requestDate ?: Date()) }.keys
+        return expirations.filterValues { date -> date == null || date.after(requestDate) }.keys
     }
 
     /**
@@ -130,7 +130,7 @@ class PurchaserInfo internal constructor(
         if (purchasedNonSubscriptionSkus != other.purchasedNonSubscriptionSkus) return false
         if (allExpirationDatesByProduct != other.allExpirationDatesByProduct) return false
         if (allPurchaseDatesByProduct != other.allPurchaseDatesByProduct) return false
-        if (activeEntitlements != other.activeEntitlements) return false
+        if (entitlements != other.entitlements) return false
         if (schemaVersion != other.schemaVersion) return false
         if (firstSeen != other.firstSeen) return false
         if (originalAppUserId != other.originalAppUserId) return false
@@ -147,9 +147,8 @@ class PurchaserInfo internal constructor(
                 "activeSubscriptions:  ${activeSubscriptions.map {
                     it to mapOf("expiresDate" to getExpirationDateForSku(it))
                 }.toMap()},\n" +
-                "activeEntitlements: ${activeEntitlements.map {
-                    it to mapOf("expiresDate" to getExpirationDateForEntitlement(it))
-                }.toMap()},\n" +
+                "activeEntitlements: ${entitlements.active.map { it.toString() }},\n" +
+                "entitlements: ${entitlements.all.map { it.toString() }},\n" +
                 "nonConsumablePurchases: $purchasedNonSubscriptionSkus,\n" +
                 "requestDate: $requestDate\n>"
 
@@ -163,10 +162,10 @@ class PurchaserInfo internal constructor(
         parcel.writeStringDateMap(allPurchaseDatesByProduct)
         parcel.writeStringDateMap(allExpirationDatesByEntitlement)
         parcel.writeStringDateMap(allPurchaseDatesByEntitlement)
-        parcel.writeLong(requestDate?.time ?: -1)
+        parcel.writeLong(requestDate.time)
         parcel.writeString(jsonObject.toString())
         parcel.writeInt(schemaVersion)
-        parcel.writeLong(firstSeen?.time ?: -1)
+        parcel.writeLong(firstSeen.time)
         parcel.writeString(originalAppUserId)
     }
 
@@ -177,14 +176,12 @@ class PurchaserInfo internal constructor(
         return 0
     }
 
-    /**
-     * @hide
-     */
     override fun hashCode(): Int {
-        var result = purchasedNonSubscriptionSkus.hashCode()
+        var result = entitlements.hashCode()
+        result = 31 * result + purchasedNonSubscriptionSkus.hashCode()
         result = 31 * result + allExpirationDatesByProduct.hashCode()
         result = 31 * result + allPurchaseDatesByProduct.hashCode()
-        result = 31 * result + (requestDate?.hashCode() ?: 0)
+        result = 31 * result + requestDate.hashCode()
         result = 31 * result + jsonObject.hashCode()
         result = 31 * result + schemaVersion
         result = 31 * result + firstSeen.hashCode()
