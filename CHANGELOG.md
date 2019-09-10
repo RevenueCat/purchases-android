@@ -1,3 +1,7 @@
+## 2.4.1
+
+- Adds missing close call on inputStream.
+
 ## 2.4.0
 
 - Fixes crash in `updatePendingPurchaseQueue` ([#81] (https://github.com/RevenueCat/purchases-android/pull/81))
