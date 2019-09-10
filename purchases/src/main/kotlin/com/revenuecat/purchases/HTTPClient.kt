@@ -108,12 +108,12 @@ internal class HTTPClient(
             result.responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
         } finally {
+            inputStream?.close()
             connection.disconnect()
         }
 
         result.body = payload?.let { JSONObject(it) } ?: throw IOException("Network call payload is null.")
         debugLog("${connection.requestMethod} $path ${result.responseCode}")
-        inputStream?.close()
         return result
     }
 

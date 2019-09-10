@@ -7,13 +7,15 @@ import android.util.Log
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 
+
+
 class MainApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
         StrictMode.setVmPolicy(
             VmPolicy.Builder()
-                .detectAll()
+                .detectLeakedClosableObjects()
                 .penaltyLog()
                 .penaltyDeath()
                 .build()
