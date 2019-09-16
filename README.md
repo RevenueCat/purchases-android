@@ -4,7 +4,7 @@
 <h3 align="center">😻 In-app Subscriptions Made Easy 😻</h1>
 
 [![Release](https://img.shields.io/github/release/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/releases)
-[![License](https://img.shields.io/github/l/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/blob/master/LICENSE)
+[![License](https://img.shields.io/github/license/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/blob/master/LICENSE)
 
 ## Purchases.framework
 
