@@ -3,8 +3,8 @@
 </p>
 <h3 align="center">😻 In-app Subscriptions Made Easy 😻</h1>
 
-[![Version](https://img.shields.io/cocoapods/v/Purchases.svg?style=flat)](https://cocoapods.org/pods/Purchases)
-[![License](https://img.shields.io/cocoapods/l/Purchases.svg?style=flat)](http://cocoapods.org/pods/Purchases)
+[![Release](https://img.shields.io/github/release/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/releases)
+[![License](https://img.shields.io/github/l/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/blob/master/LICENSE)
 
 ## Purchases.framework
 
