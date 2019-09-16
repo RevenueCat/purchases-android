@@ -1,6 +1,29 @@
-[![RevenueCat](https://s3.amazonaws.com/www.revenuecat.com/assets/images/logo_red200.png)](https://www.revenuecat.com)
-## Purchases
+<p align="center">
+  <img src="https://www.revenuecat.com/assets/images/build.svg" alt="RevenueCat"/>
+</p>
+<h3 align="center">😻 In-app Subscriptions Made Easy 😻</h1>
 
-Purchases is the client SDK for RevenueCat.
+[![Version](https://img.shields.io/cocoapods/v/Purchases.svg?style=flat)](https://cocoapods.org/pods/Purchases)
+[![License](https://img.shields.io/cocoapods/l/Purchases.svg?style=flat)](http://cocoapods.org/pods/Purchases)
 
-[Quickstart Guide](https://docs.revenuecat.com/v2.1/docs/)
+## Purchases.framework
+
+*Purchases* is a client for the [RevenueCat](https://www.revenuecat.com/) subscription and purchase tracking system. It is an open source framework that provides a wrapper around `BillingClient` and the RevenueCat backend to make implementing in-app subscriptions in `Android` easy - receipt validation and status tracking included!
+
+## Features
+|   | RevenueCat |
+| --- | --- |
+✅ | Server-side receipt validation
+➡️ | [Webhooks](https://docs.revenuecat.com/docs/webhooks) - enhanced server-to-server communication with events for purchases, renewals, cancellations, and more  
+🎯 | Subscription status tracking - know whether a user is subscribed whether they're on iOS, Android or web  
+📊 | Analytics - automatic calculation of metrics like conversion, mrr, and churn  
+📝 | [Online documentation](https://docs.revenuecat.com/docs) up to date  
+🔀 | [Integrations](https://www.revenuecat.com/integrations) - over a dozen integrations to easily send purchase data where you need it  
+💯 | Well maintained - [frequent releases](https://github.com/RevenueCat/purchases-ios/releases)  
+📮 | Great support - [Help Center](https://docs.revenuecat.com/discuss)  
+🤩 | Awesome [new features](https://trello.com/b/RZRnWRbI/revenuecat-product-roadmap)  
+
+
+## Installation
+
+Please follow the [Quickstart Guide](https://docs.revenuecat.com/docs/) for more information on how to use the SDK
