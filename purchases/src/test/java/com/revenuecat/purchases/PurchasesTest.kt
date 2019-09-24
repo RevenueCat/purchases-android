@@ -878,6 +878,7 @@ class PurchasesTest {
         }
 
         assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
     }
 
     @Test

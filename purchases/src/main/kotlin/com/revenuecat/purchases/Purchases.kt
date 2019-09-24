@@ -569,7 +569,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 } catch (error: JSONException) {
                     log("Error fetching offerings - $error")
                     dispatch {
-                        completion?.onError(error.toPurchasesError())
+                        completion?.onError(PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError, error.localizedMessage))
                     }
                 }
             },

@@ -37,4 +37,3 @@ data class Offering internal constructor(
         availablePackages.first { it.identifier == identifier }
 
 }
-// TODO: make Parcelable
