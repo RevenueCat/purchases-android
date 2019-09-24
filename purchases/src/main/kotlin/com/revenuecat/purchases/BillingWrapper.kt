@@ -49,6 +49,7 @@ internal class BillingWrapper internal constructor(
         }
 
     private val productTypes = mutableMapOf<String, String>()
+    private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
 
     private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
 
@@ -152,7 +153,8 @@ internal class BillingWrapper internal constructor(
         activity: Activity,
         appUserID: String,
         skuDetails: SkuDetails,
-        oldSku: String?
+        oldSku: String?,
+        presentedOfferingIdentifier: String?
     ) {
         if (oldSku != null) {
             debugLog("Upgrading old sku $oldSku with sku: ${skuDetails.sku}")
@@ -161,6 +163,7 @@ internal class BillingWrapper internal constructor(
         }
         synchronized(this@BillingWrapper) {
             productTypes[skuDetails.sku] = skuDetails.type
+            presentedOfferingsByProductIdentifier[skuDetails.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
@@ -273,10 +276,12 @@ internal class BillingWrapper internal constructor(
             purchases.map { purchase ->
                 debugLog("BillingWrapper purchases updated: ${purchase.toHumanReadableDescription()}")
                 var type: String?
+                var presentedOffering: String?
                 synchronized(this@BillingWrapper) {
                     type = productTypes[purchase.sku]
+                    presentedOffering = presentedOfferingsByProductIdentifier[purchase.sku]
                 }
-                PurchaseWrapper(purchase, type)
+                PurchaseWrapper(purchase, type, presentedOffering)
             }.let { mappedPurchases ->
                 purchasesUpdatedListener?.onPurchasesUpdated(mappedPurchases)
             }

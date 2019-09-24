@@ -22,7 +22,7 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
-import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.util.AdvertisingIdClient
@@ -57,12 +57,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val executorService: ExecutorService
 ) : LifecycleDelegate {
 
+    @get:Synchronized @set:Synchronized
     @Volatile
     var state = PurchasesState()
-        @Synchronized get() = field
-        @Synchronized set(value) {
-            field = value
-        }
 
     /*
     * If it should allow sharing Play Store accounts. False by
@@ -147,7 +144,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
      * for subscriptions anytime a sync is needed, like after a successful purchase.
      *
-     * @warning This function should only be called if you're not calling makePurchase.
+     * @warning This function should only be called if you're not calling any purchase method.
      */
     fun syncPurchases() {
         debugLog("Syncing purchases")
@@ -166,55 +163,38 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }, { errorLog("Error syncing purchases $it") })
     }
 
-    /**
-     * Add attribution data from a supported network
-     * @param [data] JSONObject containing the data to post to the attribution network
-     * @param [network] [AttributionNetwork] to post the data to
-     */
-    @Deprecated("use static addAttributionData", ReplaceWith("Purchases.addAttributionData(data, network)"))
-    fun addAttributionData(
-        data: JSONObject,
-        network: AttributionNetwork
-    ) {
-        postAttributionData(data, network, state.appUserID)
+    @JvmName("-deprecated_getEntitlements")
+    @Deprecated(
+        message = "moved to getOfferings()",
+        replaceWith = ReplaceWith(expression = "getOfferings(listener)"),
+        level = DeprecationLevel.ERROR)
+    fun getEntitlements() {
+
     }
 
     /**
-     * Add attribution data from a supported network
-     * @param [data] Map containing the data to post to the attribution network
-     * @param [network] [AttributionNetwork] to post the data to
-     */
-    @Deprecated("use static addAttributionData", ReplaceWith("Purchases.addAttributionData(data, network)"))
-    fun addAttributionData(
-        data: Map<String, String>,
-        network: AttributionNetwork
-    ) {
-        postAttributionData(data, network, state.appUserID)
-    }
-
-    /**
-     * Fetch the configured entitlements for this user. Entitlements allows you to configure your
-     * in-app products via RevenueCat and greatly simplifies management.
-     * See [the guide](https://docs.revenuecat.com/v1.0/docs/entitlements) for more info.
+     * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
+     * products vis RevenueCat and greatly simplifies management. See
+     * [the guide](https://docs.revenuecat.com/offerings) for more info.
      *
-     * Entitlements will be fetched and cached on instantiation so that, by the time they are needed,
+     * Offerings will be fetched and cached on instantiation so that, by the time they are needed,
      * your prices are loaded for your purchase flow. Time is money.
      *
-     * @param [listener] Called when entitlements are available. Called immediately if entitlements are cached.
+     * @param [listener] Called when offerings are available. Called immediately if offerings are cached.
      */
-    fun getEntitlements(
-        listener: ReceiveEntitlementsListener
+    fun getOfferings(
+        listener: ReceiveOfferingsListener
     ) {
         synchronized(this@Purchases) {
-            state.appUserID to state.cachedEntitlements
-        }.let { (appUserID, cachedEntitlements) ->
-            if (cachedEntitlements.isEmpty()) {
-                debugLog("No cached entitlements, fetching")
-                fetchAndCacheEntitlements(appUserID, listener)
+            state.appUserID to state.cachedOfferings
+        }.let { (appUserID, cachedOfferings) ->
+            if (cachedOfferings == null) {
+                debugLog("No cached offerings, fetching")
+                fetchAndCacheOfferings(appUserID, listener)
             } else {
-                debugLog("Vending entitlements from cache")
+                debugLog("Vending offerings from cache")
                 dispatch {
-                    listener.onReceived(cachedEntitlements)
+                    listener.onReceived(cachedOfferings)
                 }
                 if (isCacheStale()) {
                     debugLog("Cache is stale, updating caches")
@@ -249,19 +229,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * Make a purchase.
+     * Purchase a product.
      * @param [activity] Current activity
      * @param [skuDetails] The skuDetails of the product you wish to purchase
      * @param [oldSku] The sku you wish to upgrade from.
      * @param [listener] The listener that will be called when purchase completes.
      */
-    fun makePurchase(
+    fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
         oldSku: String,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, skuDetails, oldSku, listener)
+        startPurchase(activity, skuDetails, null, oldSku, listener)
     }
 
     /**
@@ -270,12 +250,42 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skuDetails] The skuDetails of the product you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
      */
-    fun makePurchase(
+    fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, skuDetails, null, listener)
+        startPurchase(activity, skuDetails, null, null, listener)
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [oldSku] The sku you wish to upgrade from.
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        oldSku: String,
+        listener: MakePurchaseListener
+    ) {
+        startPurchase(activity, packageToPurchase.product, packageToPurchase.offering, oldSku, listener)
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        listener: MakePurchaseListener
+    ) {
+        startPurchase(activity,  packageToPurchase.product, packageToPurchase.offering, null, listener)
     }
 
     /**
@@ -446,6 +456,34 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         this.updatedPurchaserInfoListener = null
     }
     // endregion
+
+    @JvmName("-deprecated_makePurchase")
+    @Deprecated(
+        message = "moved to purchaseProduct()",
+        replaceWith = ReplaceWith(expression = "purchaseProduct(activity, skuDetails, oldSku, listener)"),
+        level = DeprecationLevel.ERROR)
+    fun makePurchase(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        oldSku: String,
+        listener: MakePurchaseListener
+    ) {
+        purchaseProduct(activity, skuDetails, oldSku, listener)
+    }
+
+    @JvmName("-deprecated_makePurchase")
+    @Deprecated(
+        message = "moved to purchaseProduct()",
+        replaceWith = ReplaceWith(expression = "purchaseProduct(activity, skuDetails, listener)"),
+        level = DeprecationLevel.ERROR)
+    fun makePurchase(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        listener: MakePurchaseListener
+    ) {
+        purchaseProduct(activity, skuDetails, listener)
+    }
+
     // region Internal Methods
 
     private fun postAttributionData(
@@ -497,55 +535,64 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     // endregion
     // region Private Methods
-    private fun fetchAndCacheEntitlements(
+    private fun fetchAndCacheOfferings(
         appUserID: String,
-        completion: ReceiveEntitlementsListener? = null
+        completion: ReceiveOfferingsListener? = null
     ) {
-        backend.getEntitlements(
+        backend.getOfferings(
             appUserID,
-            { entitlements ->
-                getSkuDetails(entitlements, { detailsByID ->
-                    entitlements.values.flatMap { it.offerings.values }.let { offerings ->
-                        val missingProducts = populateSkuDetails(offerings, detailsByID)
-                        if (missingProducts.isNotEmpty()) {
-                            log("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
-                            log("Ensure your products are correctly configured in Play Store Developer Console")
+            { offeringsJSON ->
+                try {
+                    val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
+                    val skus = mutableListOf<String>()
+                    for (i in 0 until jsonArrayOfOfferings.length()) {
+                        val jsonPackagesArray = jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+                        for (j in 0 until jsonPackagesArray.length()) {
+                            skus.add(jsonPackagesArray.getJSONObject(j).getString("platform_product_identifier"))
                         }
+                    }
+                    getSkuDetails(skus, { detailsByID ->
+                        val offerings =
+                            offeringsJSON.createOfferings(detailsByID)
+                        logMissingProducts(offerings, detailsByID)
                         synchronized(this@Purchases) {
-                            state = state.copy(cachedEntitlements = if (offerings.mapNotNull { it.skuDetails }.isNotEmpty()) entitlements else emptyMap())
+                            state = state.copy(cachedOfferings = offerings)
                         }
                         dispatch {
-                            completion?.onReceived(entitlements)
+                            completion?.onReceived(offerings)
                         }
-                    }
-                }, {
+                    }, {
+                        dispatch {
+                            completion?.onError(it)
+                        }
+                    })
+                } catch (error: JSONException) {
+                    log("Error fetching offerings - $error")
                     dispatch {
-                        completion?.onError(it)
+                        completion?.onError(error.toPurchasesError())
                     }
-                })
+                }
             },
             { error ->
-                log("Error fetching entitlements - $error")
+                log("Error fetching offerings - $error")
                 dispatch {
                     completion?.onError(error)
                 }
             })
     }
 
-    private fun populateSkuDetails(
-        offerings: List<Offering>,
+    private fun logMissingProducts(
+        offerings: Offerings,
         detailsByID: HashMap<String, SkuDetails>
-    ) : List<String> {
-        val missingProducts = mutableListOf<String>()
-        offerings.forEach { offering ->
-            if (detailsByID.containsKey(offering.activeProductIdentifier)) {
-                offering.skuDetails = detailsByID[offering.activeProductIdentifier]
-            } else {
-                missingProducts.add(offering.activeProductIdentifier)
+    ) = offerings.availableOfferings.values
+            .flatMap { it.availablePackages }
+            .map { it.product.sku }
+            .filterNot { detailsByID.containsKey(it) }
+            .takeIf { it.isNotEmpty() }
+            ?.let { missingProducts ->
+                log("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
+                log("Ensure your products are correctly configured in Play Store Developer Console")
             }
-        }
-        return missingProducts
-    }
 
     private fun getSkus(
         skus: List<String>,
@@ -574,7 +621,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             state = state.copy(cachesLastUpdated = Date())
         }
         fetchAndCachePurchaserInfo(appUserID, completion)
-        fetchAndCacheEntitlements(appUserID)
+        fetchAndCacheOfferings(appUserID)
     }
 
     private fun fetchAndCachePurchaserInfo(
@@ -604,7 +651,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun clearCaches() {
         deviceCache.clearCachedPurchaserInfo(state.appUserID)
         resetCachesLastUpdated()
-        state = state.copy(cachedEntitlements = emptyMap())
+        state = state.copy(cachedOfferings = null)
     }
 
     @Synchronized
@@ -631,6 +678,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     appUserID,
                     purchase.sku,
                     allowSharingPlayStoreAccount,
+                    purchase.presentedOfferingIdentifier,
                     { info ->
                         consumeAndSave(consumeAllTransactions, purchase)
                         cachePurchaserInfo(info)
@@ -708,13 +756,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun getSkuDetails(
-        entitlements: Map<String, Entitlement>,
+        skus: List<String>,
         onCompleted: (HashMap<String, SkuDetails>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        val skus =
-            entitlements.values.flatMap { it.offerings.values }.map { it.activeProductIdentifier }
-
         billingWrapper.querySkuDetailsAsync(
             BillingClient.SkuType.SUBS,
             skus,
@@ -843,24 +888,27 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun startPurchase(
         activity: Activity,
-        skuDetails: SkuDetails,
+        product: SkuDetails,
+        presentedOfferingIdentifier: String?,
         oldSku: String?,
         listener: MakePurchaseListener
     ) {
-        debugLog("makePurchase - $skuDetails")
+        debugLog("purchase started - product: $product ${ presentedOfferingIdentifier?.let { " - offering: $presentedOfferingIdentifier" }}")
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
             if (!state.finishTransactions) {
-                debugLog("finishTransactions is set to false and makePurchase has been called. Are you sure you want to do this?")
+                debugLog("finishTransactions is set to false and a purchase has been started. Are you sure you want to do this?")
             }
-            if (!state.purchaseCallbacks.containsKey(skuDetails.sku)) {
-                state = state.copy(purchaseCallbacks = state.purchaseCallbacks + mapOf(skuDetails.sku to listener))
+            if (!state.purchaseCallbacks.containsKey(product.sku)) {
+                state = state.copy(
+                    purchaseCallbacks = state.purchaseCallbacks + mapOf(product.sku to listener)
+                )
                 userPurchasing = state.appUserID
             }
         }
 
-        userPurchasing?.let {
-            billingWrapper.makePurchaseAsync(activity, it, skuDetails, oldSku)
+        userPurchasing?.let { appUserID ->
+            billingWrapper.makePurchaseAsync(activity, appUserID, product, oldSku, presentedOfferingIdentifier)
         } ?: dispatch {
             listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
         }
@@ -897,26 +945,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Static
     companion object {
+        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE) @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         internal var postponedAttributionData = mutableListOf<AttributionData>()
-            @VisibleForTesting(otherwise = VisibleForTesting.NONE)
-            get() = field
-            @VisibleForTesting(otherwise = VisibleForTesting.NONE)
-            internal set(value) {
-                field = value
-            }
+
         /**
          * Enable debug logging. Useful for debugging issues with the lovely team @RevenueCat
          */
         @JvmStatic
         var debugLogsEnabled = false
 
+        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE) @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         internal var backingFieldSharedInstance: Purchases? = null
-            @VisibleForTesting(otherwise = VisibleForTesting.NONE)
-            get() = field
-            @VisibleForTesting(otherwise = VisibleForTesting.NONE)
-            internal set(value) {
-                field = value
-            }
+
         /**
          * Singleton instance of Purchases. [configure] will set this
          * @return A previously set singleton Purchases instance or null
@@ -969,14 +1009,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             observerMode: Boolean = false,
             service: ExecutorService = createDefaultExecutor()
         ): Purchases {
-            if (!context.hasPermission(Manifest.permission.INTERNET))
-                throw IllegalArgumentException("Purchases requires INTERNET permission.")
+            require(context.hasPermission(Manifest.permission.INTERNET)) { "Purchases requires INTERNET permission." }
 
-            if (apiKey.isBlank())
-                throw IllegalArgumentException("API key must be set. Get this from the RevenueCat web app")
+            require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
-            if (context.applicationContext !is Application)
-                throw IllegalArgumentException("Needs an application context.")
+            require(context.applicationContext is Application) { "Needs an application context." }
 
             val backend = Backend(
                 apiKey,

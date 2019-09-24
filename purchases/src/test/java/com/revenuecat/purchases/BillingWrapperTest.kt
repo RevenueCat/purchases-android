@@ -238,7 +238,13 @@ class BillingWrapperTest {
         val activity: Activity = mockk()
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponse.OK)
-        wrapper!!.makePurchaseAsync(activity, "jerry", skuDetails, oldSku)
+        wrapper!!.makePurchaseAsync(
+            activity,
+            "jerry",
+            skuDetails,
+            oldSku,
+            "offering_a"
+        )
 
         verify {
             mockClient.launchBillingFlow(
@@ -275,7 +281,13 @@ class BillingWrapperTest {
         }
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponse.OK)
-        wrapper!!.makePurchaseAsync(activity, appUserID, skuDetails, oldSku)
+        wrapper!!.makePurchaseAsync(
+            activity,
+            appUserID,
+            skuDetails,
+            oldSku,
+            null
+        )
     }
 
     @Test
@@ -296,7 +308,13 @@ class BillingWrapperTest {
             every { it.type } returns BillingClient.SkuType.SUBS
         }
 
-        wrapper!!.makePurchaseAsync(activity, appUserID, skuDetails, "product_b")
+        wrapper!!.makePurchaseAsync(
+            activity,
+            appUserID,
+            skuDetails,
+            "product_b",
+            null
+        )
 
         verify(exactly = 0) {
             mockClient.launchBillingFlow(eq(activity), any())
@@ -331,7 +349,13 @@ class BillingWrapperTest {
 
         val activity: Activity = mockk()
 
-        wrapper!!.makePurchaseAsync(activity, appUserID, skuDetails, oldSku)
+        wrapper!!.makePurchaseAsync(
+            activity,
+            appUserID,
+            skuDetails,
+            oldSku,
+            null
+        )
 
         verify(exactly = 2) {
             handler.post(any())
@@ -704,6 +728,42 @@ class BillingWrapperTest {
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
         assertThat(purchaseWrapper.sku).isEqualTo(sku)
+    }
+
+    @Test
+    fun `Presented offering is properly forwarded`() {
+        setup()
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns BillingClient.BillingResponse.OK
+
+        val skuDetails = mockk<SkuDetails>().also {
+            every { it.sku } returns "product_a"
+            every { it.type } returns BillingClient.SkuType.SUBS
+        }
+        val oldSku = "product_b"
+
+        val activity: Activity = mockk()
+
+        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponse.OK)
+        wrapper!!.makePurchaseAsync(
+            activity,
+            "jerry",
+            skuDetails,
+            oldSku,
+            "offering_a"
+        )
+        val purchases = listOf(mockk<Purchase>(relaxed = true).also {
+            every { it.sku } returns "product_a"
+        })
+        val slot = slot<List<PurchaseWrapper>>()
+        every {
+            mockPurchasesListener.onPurchasesUpdated(capture(slot))
+        } just Runs
+        purchasesUpdatedListener!!.onPurchasesUpdated(BillingClient.BillingResponse.OK, purchases)
+
+        assertThat(slot.captured.size).isOne()
+        assertThat(slot.captured[0].presentedOfferingIdentifier).isEqualTo("offering_a")
     }
 
     private fun mockNullSkuDetailsResponse() {

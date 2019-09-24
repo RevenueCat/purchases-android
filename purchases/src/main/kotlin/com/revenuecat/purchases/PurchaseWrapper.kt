@@ -5,7 +5,8 @@ import com.android.billingclient.api.Purchase
 
 data class PurchaseWrapper(
     val containedPurchase: Purchase,
-    @BillingClient.SkuType val type: String?
+    @BillingClient.SkuType val type: String?,
+    val presentedOfferingIdentifier: String? = null
 ) {
     val isConsumable: Boolean = type == BillingClient.SkuType.INAPP
     val purchaseToken: String = containedPurchase.purchaseToken

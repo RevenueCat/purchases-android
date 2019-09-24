@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.util.Iso8601Utils
 import org.json.JSONException
 import org.json.JSONObject
@@ -133,25 +134,45 @@ private fun JSONObject.buildEntitlementInfo(
     )
 }
 
-internal fun JSONObject.buildEntitlementsMap(): Map<String, Entitlement> {
-    return mapKeyAndContent { parseEntitlement() }
-}
+internal fun JSONObject.createOfferings(products: Map<String, SkuDetails>): Offerings {
+    val jsonOfferings = getJSONArray("offerings")
+    val currentOfferingID = getString("current_offering_id")
 
-private fun JSONObject.parseActiveProductIdentifier() =
-    Offering(getString("active_product_identifier"))
-
-private fun JSONObject.parseEntitlement(): Entitlement {
-    return Entitlement(
-        getJSONObject("offerings").mapKeyAndContent { parseActiveProductIdentifier() }
-    )
-}
-
-private fun <T> JSONObject.mapKeyAndContent(transformation: JSONObject.() -> T): Map<String, T> {
-    return keys().asSequence().map { jsonName ->
-        try {
-            jsonName to transformation.invoke(getJSONObject(jsonName))
-        } catch (ignored: JSONException) {
-            null
+    val offerings = mutableMapOf<String, Offering>()
+    for (i in 0 until jsonOfferings.length()) {
+        jsonOfferings.getJSONObject(i).createOffering(products)?.let {
+            offerings[it.identifier] = it
         }
-    }.filterNotNull().toMap()
+    }
+
+    return Offerings(offerings[currentOfferingID], offerings)
+}
+
+internal fun JSONObject.createOffering(products: Map<String, SkuDetails>): Offering? {
+    val offeringIdentifier = getString("identifier")
+    val jsonPackages = getJSONArray("packages")
+
+    val availablePackages = mutableListOf<Package>()
+    for (i in 0 until jsonPackages.length()) {
+        jsonPackages.getJSONObject(i).createPackage(products, offeringIdentifier)?.let {
+            availablePackages.add(it)
+        }
+    }
+
+    return if (availablePackages.isNotEmpty()) {
+        Offering(offeringIdentifier, getString("description"), availablePackages)
+    } else {
+        null
+    }
+}
+
+internal fun JSONObject.createPackage(
+    products: Map<String, SkuDetails>,
+    offeringIdentifier: String
+): Package? {
+    return products[getString("platform_product_identifier")]?.let { product ->
+        val identifier = getString("identifier")
+        val packageType = identifier.toPackageType()
+        return Package(identifier, packageType, product, offeringIdentifier)
+    }
 }

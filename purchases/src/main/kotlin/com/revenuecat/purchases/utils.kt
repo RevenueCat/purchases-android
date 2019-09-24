@@ -12,7 +12,9 @@ import android.os.Parcelable
 import android.util.Base64
 import android.util.Log
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.util.Iso8601Utils
+import kotlinx.android.parcel.Parceler
 import org.json.JSONException
 import org.json.JSONObject
 import java.security.MessageDigest
@@ -187,3 +189,19 @@ internal fun String.sha1() =
         .digest(this.toByteArray()).let {
             String(Base64.encode(it, Base64.NO_WRAP))
         }
+
+internal fun JSONObject.getNullableString(name: String): String? = this.getString(name).takeUnless { this.isNull(name) }
+
+object SkuDetailsParceler : Parceler<SkuDetails> {
+
+    override fun create(parcel: Parcel): SkuDetails {
+        return SkuDetails(parcel.readString())
+    }
+
+    override fun SkuDetails.write(parcel: Parcel, flags: Int) {
+        val field = SkuDetails::class.java.getDeclaredField("mOriginalJson")
+        field.isAccessible = true
+        val value = field.get(this) as String
+        parcel.writeString(value)
+    }
+}

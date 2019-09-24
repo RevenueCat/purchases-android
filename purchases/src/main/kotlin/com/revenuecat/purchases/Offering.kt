@@ -5,79 +5,36 @@
 
 package com.revenuecat.purchases
 
-import android.os.Parcel
 import android.os.Parcelable
-import com.android.billingclient.api.SkuDetails
+import kotlinx.android.parcel.IgnoredOnParcel
+import kotlinx.android.parcel.Parcelize
 
 /**
- * Most well monetized subscription apps provide many different offerings to purchase an
- * entitlement. These are usually associated with different durations i.e. an annual plan and a
- * monthly plan.
- * See [this link](https://docs.revenuecat.com/docs/entitlements) for more info
- * @property activeProductIdentifier The currently active Play Store product for this offering
- * @property skuDetails Object containing an in-app product's or subscription's listing details
+ * An offering is collection of different Packages that lets the user purchase access in different ways.
  */
-data class Offering @JvmOverloads internal constructor(
-    val activeProductIdentifier: String,
-    var skuDetails: SkuDetails? = null
+@Parcelize
+data class Offering internal constructor(
+    val identifier: String,
+    val serverDescription: String,
+    val availablePackages: List<Package>
 ) : Parcelable {
 
-    /**
-     * @hide
-     */
-    constructor(parcel: Parcel) : this(
-        parcel.readString()!!,
-        parcel.readString().takeUnless { it.isNullOrBlank() }?.let { SkuDetails(it) }
-    )
+    @IgnoredOnParcel val lifetime by lazy { findPackage(PackageType.LIFETIME) }
+    @IgnoredOnParcel val annual by lazy { findPackage(PackageType.ANNUAL) }
+    @IgnoredOnParcel val sixMonth by lazy { findPackage(PackageType.SIX_MONTH) }
+    @IgnoredOnParcel val threeMonth by lazy { findPackage(PackageType.THREE_MONTH) }
+    @IgnoredOnParcel val twoMonth by lazy { findPackage(PackageType.TWO_MONTH) }
+    @IgnoredOnParcel val monthly by lazy { findPackage(PackageType.MONTHLY) }
+    @IgnoredOnParcel val weekly by lazy { findPackage(PackageType.WEEKLY) }
 
-    /**
-     * @hide
-     */
-    override fun toString() =
-        "<Offering activeProductIdentifier: $activeProductIdentifier, skuDetails: $skuDetails>"
+    private fun findPackage(packageType: PackageType) =
+        availablePackages.firstOrNull { it.identifier == packageType.identifier }
 
-    /**
-     * @hide
-     */
-    override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeString(activeProductIdentifier)
-        if (skuDetails != null) {
-            try {
-                val field = SkuDetails::class.java.getDeclaredField("mOriginalJson")
-                field.isAccessible = true
-                val value = field.get(skuDetails) as String
-                parcel.writeString(value)
-            } catch (e: NoSuchFieldException) {
-                log("Error converting SkuDetails to Parcelable")
-                parcel.writeString("")
-            }
-        } else {
-            parcel.writeString("")
-        }
-    }
+    operator fun get(s: String) = getPackage(s)
 
-    /**
-     * @hide
-     */
-    override fun describeContents(): Int {
-        return 0
-    }
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun getPackage(identifier: String) =
+        availablePackages.first { it.identifier == identifier }
 
-    /**
-     * @hide
-     */
-    companion object CREATOR : Parcelable.Creator<Offering> {
-        /**
-         * @hide
-         */
-        override fun createFromParcel(parcel: Parcel): Offering {
-            return Offering(parcel)
-        }
-        /**
-         * @hide
-         */
-        override fun newArray(size: Int): Array<Offering?> {
-            return arrayOfNulls(size)
-        }
-    }
 }
+// TODO: make Parcelable

@@ -250,11 +250,11 @@ class DeviceCacheTest {
         every {
             mockPrefs.getStringSet(tokensCacheKey, any())
         } returns setOf("token1", "hash2", "token3")
-        val activeSub = PurchaseWrapper(mockk(relaxed = true), SUBS)
+        val activeSub = PurchaseWrapper(mockk(relaxed = true), SUBS, null)
         val activePurchasesNotInCache =
             cache.getActivePurchasesNotInCache(
                 mapOf("hash1" to activeSub),
-                mapOf("hash2" to PurchaseWrapper(mockk(relaxed = true), INAPP)))
+                mapOf("hash2" to PurchaseWrapper(mockk(relaxed = true), INAPP, null)))
         assertThat(activePurchasesNotInCache).contains(activeSub)
     }
 

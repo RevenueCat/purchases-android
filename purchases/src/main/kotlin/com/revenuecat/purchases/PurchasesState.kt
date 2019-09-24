@@ -9,7 +9,7 @@ data class PurchasesState(
     val finishTransactions: Boolean = true,
     val appUserID: String = "",
     val updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null,
-    val cachedEntitlements: Map<String, Entitlement> = emptyMap(),
+    val cachedOfferings: Offerings? = null,
     val purchaseCallbacks: Map<String, MakePurchaseListener> = emptyMap(),
     val lastSentPurchaserInfo: PurchaserInfo? = null,
     val cachesLastUpdated: Date = Date(0)
