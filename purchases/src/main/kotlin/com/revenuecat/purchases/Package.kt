@@ -15,6 +15,7 @@ data class Package(
 ) : Parcelable
 
 enum class PackageType(val identifier: String?) {
+    UNKNOWN(null),
     CUSTOM(null),
     LIFETIME("\$rc_lifetime"),
     ANNUAL("\$rc_annual"),
@@ -26,4 +27,5 @@ enum class PackageType(val identifier: String?) {
 }
 
 internal fun String.toPackageType(): PackageType =
-    PackageType.values().firstOrNull { it.identifier == this } ?: PackageType.CUSTOM
+    PackageType.values().firstOrNull { it.identifier == this }
+        ?: if (this.startsWith("\$rc_")) PackageType.UNKNOWN else PackageType.CUSTOM

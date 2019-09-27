@@ -120,6 +120,11 @@ class OfferingsTest {
     }
 
     @Test
+    fun `Unknown package`() {
+        testPackageType(PackageType.UNKNOWN)
+    }
+
+    @Test
     fun `No offerings`() {
         val offerings =
             JSONObject("{'offerings': [], 'current_offering_id': null}").createOfferings(emptyMap())
@@ -141,7 +146,11 @@ class OfferingsTest {
     private fun testPackageType(packageType: PackageType) {
         var identifier = packageType.identifier
         if (identifier == null) {
-            identifier = "custom"
+            identifier = if (packageType == PackageType.UNKNOWN) {
+                "\$rc_a_future_package_type"
+            } else {
+                "custom"
+            }
         }
         val productIdentifier = "com.myproduct"
         val products = getProducts("com.myproduct")
