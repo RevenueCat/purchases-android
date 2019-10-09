@@ -15,10 +15,8 @@ import android.os.Looper
 import android.preference.PreferenceManager
 import android.util.Log
 import androidx.annotation.VisibleForTesting
-import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingClientStateListener
-import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.SkuDetails
+import com.android.billingclient.api.*
+import com.revenuecat.purchases.BillingWrapper.PurchasesUpdatedListener
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
@@ -261,7 +259,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         oldSku: String,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, skuDetails, oldSku, listener)
+        startPurchase(activity, skuDetails, UpgradeInfo(oldSku), listener)
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [skuDetails] The skuDetails of the product you wish to purchase
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from containing the oldSku and the optional prorationMode.
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun makePurchase(
+            activity: Activity,
+            skuDetails: SkuDetails,
+            upgradeInfo: UpgradeInfo,
+            listener: MakePurchaseListener
+    ) {
+        startPurchase(activity, skuDetails, upgradeInfo, listener)
     }
 
     /**
@@ -844,7 +858,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun startPurchase(
         activity: Activity,
         skuDetails: SkuDetails,
-        oldSku: String?,
+        upgradeInfo: UpgradeInfo?,
         listener: MakePurchaseListener
     ) {
         debugLog("makePurchase - $skuDetails")
@@ -860,7 +874,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         userPurchasing?.let {
-            billingWrapper.makePurchaseAsync(activity, it, skuDetails, oldSku)
+            billingWrapper.makePurchaseAsync(activity, it, skuDetails, upgradeInfo)
         } ?: dispatch {
             listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
         }
