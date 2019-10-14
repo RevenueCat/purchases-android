@@ -149,10 +149,10 @@ internal class BillingWrapper internal constructor(
     }
 
     fun makePurchaseAsync(
-            activity: Activity,
-            appUserID: String,
-            skuDetails: SkuDetails,
-            upgradeInfo: UpgradeInfo?
+        activity: Activity,
+        appUserID: String,
+        skuDetails: SkuDetails,
+        upgradeInfo: UpgradeInfo?
     ) {
         if (upgradeInfo != null) {
             debugLog("Upgrading old sku ${upgradeInfo.oldSku} with sku: ${skuDetails.sku}")
@@ -164,14 +164,14 @@ internal class BillingWrapper internal constructor(
         }
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
-                    .setSkuDetails(skuDetails)
-                    .setAccountId(appUserID)
-                    .setOldSku(upgradeInfo?.oldSku)
-                    .apply {
-                        upgradeInfo?.prorationMode?.let { prorationMode ->
-                            setReplaceSkusProrationMode(prorationMode)
-                        }
-                    }.build()
+                .setSkuDetails(skuDetails)
+                .setAccountId(appUserID)
+                .setOldSku(upgradeInfo?.oldSku)
+                .apply {
+                    upgradeInfo?.prorationMode?.let { prorationMode ->
+                        setReplaceSkusProrationMode(prorationMode)
+                    }
+                }.build()
 
             launchBillingFlow(activity, params)
         }

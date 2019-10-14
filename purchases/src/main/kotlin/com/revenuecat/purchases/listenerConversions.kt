@@ -92,7 +92,29 @@ fun Purchases.getEntitlementsWith(
  * Make a purchase.
  * @param [activity] Current activity
  * @param [skuDetails] The skuDetails of the product you wish to purchase
- * @param [upgradeInfo] The upgradeInfo you wish to upgrade from containing the oldSku and the optional prorationMode.
+ * @param [oldSku] The sku you wish to upgrade from.
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+@Deprecated(
+    "Use the class upgradeInfo, where you can specify the proration mode",
+    ReplaceWith("makePurchaseWith(activity, skuDetails, UpgradeInfo(oldSku), onError, onSuccess)")
+)
+fun Purchases.makePurchaseWith(
+    activity: Activity,
+    skuDetails: SkuDetails,
+    oldSku: String,
+    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
+    onSuccess: MakePurchaseCompletedSuccessFunction
+) {
+    makePurchase(activity, skuDetails, oldSku, purchaseCompletedListener(onSuccess, onError))
+}
+
+/**
+ * Make a purchase.
+ * @param [activity] Current activity
+ * @param [skuDetails] The skuDetails of the product you wish to purchase
+ * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
