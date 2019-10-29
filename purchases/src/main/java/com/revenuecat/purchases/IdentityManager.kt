@@ -35,6 +35,7 @@ internal class IdentityManager(
                 deviceCache.clearCachesForAppUserID()
                 deviceCache.cacheAppUserID(appUserID)
             }
+            onSuccess()
         }
     }
 
@@ -52,8 +53,8 @@ internal class IdentityManager(
                     debugLog("Alias created")
                     deviceCache.clearCachesForAppUserID()
                     deviceCache.cacheAppUserID(newAppUserID)
-                    onSuccess()
                 }
+                onSuccess()
             },
             onError
         )
@@ -68,7 +69,8 @@ internal class IdentityManager(
     @Synchronized
     fun currentUserIsAnonymous(): Boolean {
         val currentAppUserIDLooksAnonymous =
-            "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex().matches(deviceCache.getCachedAppUserID()?:"")
+            "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
+                .matches(deviceCache.getCachedAppUserID() ?: "")
         val isLegacyAnonymousAppUserID =
             deviceCache.getCachedAppUserID() == deviceCache.getLegacyCachedAppUserID()
         return currentAppUserIDLooksAnonymous || isLegacyAnonymousAppUserID

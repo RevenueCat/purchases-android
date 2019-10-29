@@ -342,7 +342,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     dispatch { listener?.onError(error) }
                 }
             )
-        } ?: retrievePurchaseInfo(appUserID, listener)
+        } ?: retrievePurchaseInfo(identityManager.currentAppUserID, listener)
     }
 
     /**
