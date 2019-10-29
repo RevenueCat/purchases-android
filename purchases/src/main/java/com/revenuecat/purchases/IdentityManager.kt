@@ -9,7 +9,7 @@ internal class IdentityManager(
 ) {
 
     val currentAppUserID: String
-        get() = deviceCache.getCachedAppUserID()!!
+        get() = deviceCache.getCachedAppUserID() ?: ""
 
     @Synchronized
     fun configure(appUserID: String?) {
