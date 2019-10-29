@@ -29,15 +29,11 @@ import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Collections.emptyMap
-import java.util.Date
 import java.util.HashMap
-import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-
-private const val CACHE_REFRESH_PERIOD = 60000 * 5
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -54,7 +50,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
     observerMode: Boolean = false,
-    private val executorService: ExecutorService
+    private val executorService: ExecutorService,
+    private val identityManager: IdentityManager
 ) : LifecycleDelegate {
 
     @get:Synchronized @set:Synchronized
@@ -67,7 +64,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     * Play Store account.
     */
     var allowSharingPlayStoreAccount: Boolean
-        @Synchronized get() = state.allowSharingPlayStoreAccount
+        @Synchronized get() =
+            state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
@@ -84,11 +82,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * The passed in or generated app user ID
      */
-    var appUserID: String
-        @Synchronized get() = state.appUserID
-        @JvmSynthetic @Synchronized set(value) {
-            state = state.copy(appUserID = value)
-        }
+    val appUserID: String
+        @Synchronized get() = identityManager.currentAppUserID
 
     /**
      * The listener is responsible for handling changes to purchaser information.
@@ -109,18 +104,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         debugLog("Debug logging enabled.")
         debugLog("SDK Version - $frameworkVersion")
         debugLog("Initial App User ID - $backingFieldAppUserID")
-        val newAppUserID = backingFieldAppUserID ?: getAnonymousID().also {
-            debugLog("Generated New App User ID - $it")
-            allowSharingPlayStoreAccount = true
-        }
-        debugLog("Identifying App User ID: $newAppUserID")
         synchronized(this@Purchases) {
             state = state.copy(
-                appUserID = newAppUserID,
                 finishTransactions = !observerMode
             )
         }
-        updateCaches(newAppUserID)
+        identityManager.configure(backingFieldAppUserID)
+        updateCaches(identityManager.currentAppUserID)
         applicationContext.getApplication().registerActivityLifecycleCallbacks(lifecycleHandler)
         applicationContext.getApplication().registerComponentCallbacks(lifecycleHandler)
         billingWrapper.stateListener = object : BillingWrapper.StateListener {
@@ -148,13 +138,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     fun syncPurchases() {
         debugLog("Syncing purchases")
-        val allowSharingPlayStoreAccount = synchronized(this@Purchases) { state.allowSharingPlayStoreAccount }
-
         billingWrapper.queryAllPurchases({ allPurchases ->
             if (allPurchases.isNotEmpty()) {
                 postPurchasesSortedByTime(
                     allPurchases,
-                    allowSharingPlayStoreAccount,
+                    this.allowSharingPlayStoreAccount,
                     false,
                     { debugLog("Purchases synced") },
                     { errorLog("Error syncing purchases $it") }
@@ -186,7 +174,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: ReceiveOfferingsListener
     ) {
         synchronized(this@Purchases) {
-            state.appUserID to state.cachedOfferings
+            identityManager.currentAppUserID to deviceCache.cachedOfferings
         }.let { (appUserID, cachedOfferings) ->
             if (cachedOfferings == null) {
                 debugLog("No cached offerings, fetching")
@@ -196,7 +184,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 dispatch {
                     listener.onReceived(cachedOfferings)
                 }
-                if (isCacheStale()) {
+                if (deviceCache.isCacheStale()) {
                     debugLog("Cache is stale, updating caches")
                     updateCaches(appUserID)
                 }
@@ -300,25 +288,28 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: ReceivePurchaserInfoListener
     ) {
         debugLog("Restoring purchases")
-        synchronized(this@Purchases) {
-            state.allowSharingPlayStoreAccount to state.finishTransactions
-        }.let { (allowSharingPlayStoreAccount, finishTransactions) ->
-            if (!allowSharingPlayStoreAccount) {
-                debugLog("allowSharingPlayStoreAccount is set to false and restorePurchases has been called. This will 'alias' any app user id's sharing the same receipt. Are you sure you want to do this?")
-            }
-            billingWrapper.queryAllPurchases({ allPurchases ->
-                if (allPurchases.isEmpty()) {
-                    getPurchaserInfo(listener)
-                } else {
-                    postPurchasesSortedByTime(
-                        allPurchases,
-                        true,
-                        finishTransactions,
-                        { dispatch { listener.onReceived(it) } },
-                        { dispatch { listener.onError(it) } }
-                    )
+        if (!allowSharingPlayStoreAccount) {
+            debugLog("allowSharingPlayStoreAccount is set to false and restorePurchases has been called. This will 'alias' any app user id's sharing the same receipt. Are you sure you want to do this?")
+        }
+        this.finishTransactions.let { finishTransactions->
+            billingWrapper.queryAllPurchases(
+                { allPurchases ->
+                    if (allPurchases.isEmpty()) {
+                        getPurchaserInfo(listener)
+                    } else {
+                        postPurchasesSortedByTime(
+                            allPurchases,
+                            true,
+                            finishTransactions,
+                            { dispatch { listener.onReceived(it) } },
+                            { dispatch { listener.onError(it) } }
+                        )
+                    }
+                },
+                { error ->
+                    dispatch { listener.onError(error) }
                 }
-            }, { dispatch { listener.onError(it) } })
+            )
         }
     }
 
@@ -332,26 +323,20 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         newAppUserID: String,
         listener: ReceivePurchaserInfoListener? = null
     ) {
-        synchronized(this@Purchases) {
-            state.appUserID
-        }.let { appUserID ->
-            if (appUserID != newAppUserID) {
-                debugLog("Creating an alias to $appUserID from $newAppUserID")
-                backend.createAlias(
-                    appUserID,
-                    newAppUserID,
-                    {
-                        debugLog("Alias created")
-                        identify(newAppUserID, listener)
-                    },
-                    { error ->
-                        dispatch { listener?.onError(error) }
+        identityManager.currentAppUserID.takeUnless {  it == newAppUserID }?.let {
+            identityManager.createAlias(
+                newAppUserID,
+                {
+                    synchronized(this@Purchases) {
+                        state = state.copy(purchaseCallbacks = emptyMap())
                     }
-                )
-            } else {
-                retrievePurchaseInfo(appUserID, listener)
-            }
-        }
+                    updateCaches(newAppUserID, listener)
+                },
+                { error ->
+                    dispatch { listener?.onError(error) }
+                }
+            )
+        } ?: retrievePurchaseInfo(appUserID, listener)
     }
 
     /**
@@ -365,20 +350,20 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         newAppUserID: String,
         listener: ReceivePurchaserInfoListener? = null
     ) {
-        synchronized(this@Purchases) { state.appUserID }.let { appUserID ->
-            if (appUserID == newAppUserID) {
-                if (listener != null) {
-                    getPurchaserInfo(listener)
+        identityManager.currentAppUserID.takeUnless {  it == newAppUserID }?.let {
+            identityManager.identify(
+                newAppUserID,
+                {
+                    synchronized(this@Purchases) {
+                        state = state.copy(purchaseCallbacks = emptyMap())
+                    }
+                    updateCaches(newAppUserID, listener)
+                },
+                { error ->
+                    dispatch { listener?.onError(error) }
                 }
-            } else {
-                debugLog("Changing App User ID: $appUserID -> $newAppUserID")
-                clearCaches()
-                synchronized(this@Purchases) {
-                    state = state.copy(appUserID = newAppUserID, purchaseCallbacks = emptyMap())
-                }
-                updateCaches(newAppUserID, listener)
-            }
-        }
+            )
+        } ?: retrievePurchaseInfo(identityManager.currentAppUserID, listener)
     }
 
     /**
@@ -390,17 +375,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun reset(
         listener: ReceivePurchaserInfoListener? = null
     ) {
-        clearCaches()
-        var newAppUserID: String
+        deviceCache.clearLatestAttributionData(identityManager.currentAppUserID)
+        identityManager.reset()
         synchronized(this@Purchases) {
-            deviceCache.clearLatestAttributionData(state.appUserID)
-            newAppUserID = createRandomIDAndCacheIt()
-            state = state.copy(
-                appUserID = newAppUserID,
-                purchaseCallbacks = emptyMap()
-            )
+            state = state.copy(purchaseCallbacks = emptyMap())
         }
-        updateCaches(newAppUserID, listener)
+        updateCaches(identityManager.currentAppUserID, listener)
     }
 
     /**
@@ -425,7 +405,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun getPurchaserInfo(
         listener: ReceivePurchaserInfoListener
     ) {
-        retrievePurchaseInfo(synchronized(this@Purchases) { state.appUserID }, listener)
+        retrievePurchaseInfo(identityManager.currentAppUserID, listener)
     }
 
     private fun retrievePurchaseInfo(
@@ -436,7 +416,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (cachedPurchaserInfo != null) {
             debugLog("Vending purchaserInfo from cache")
             dispatch { listener?.onReceived(cachedPurchaserInfo) }
-            if (isCacheStale()) {
+            if (deviceCache.isCacheStale()) {
                 debugLog("Cache is stale, updating caches")
                 updateCaches(appUserID)
             }
@@ -486,30 +466,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     // region Internal Methods
 
-    private fun postAttributionData(
-        data: Map<String, String>,
-        network: AttributionNetwork,
-        userID: String = appUserID
-    ) {
-        val jsonObject = JSONObject()
-        for (key in data.keys) {
-            try {
-                jsonObject.put(key, data[key])
-            } catch (e: JSONException) {
-                Log.e("Purchases", "Failed to add key $key to attribution map")
-            }
-        }
-
-        postAttributionData(jsonObject, network, userID)
-    }
-
     internal fun postAttributionData(
         jsonObject: JSONObject,
         network: AttributionNetwork,
         networkUserId: String?
     ) {
         AdvertisingIdClient.getAdvertisingIdInfo(applicationContext) { adInfo ->
-            synchronized(this@Purchases) { state.appUserID } .let { appUserID ->
+            identityManager.currentAppUserID.let { appUserID ->
                 val latestAttributionDataId = deviceCache.getCachedAttributionData(network, appUserID)
                 val newCacheValue = adInfo.generateAttributionDataCacheValue(networkUserId)
 
@@ -556,7 +519,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             offeringsJSON.createOfferings(detailsByID)
                         logMissingProducts(offerings, detailsByID)
                         synchronized(this@Purchases) {
-                            state = state.copy(cachedOfferings = offerings)
+                            deviceCache.cacheOfferings(offerings)
                         }
                         dispatch {
                             completion?.onReceived(offerings)
@@ -617,9 +580,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         appUserID: String,
         completion: ReceivePurchaserInfoListener? = null
     ) {
-        synchronized(this@Purchases) {
-            state = state.copy(cachesLastUpdated = Date())
-        }
+        deviceCache.setCachesLastUpdated()
         fetchAndCachePurchaserInfo(appUserID, completion)
         fetchAndCacheOfferings(appUserID)
     }
@@ -637,31 +598,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             { error ->
                 Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
-                resetCachesLastUpdated()
+                deviceCache.invalidateCaches()
                 dispatch { completion?.onError(error) }
             })
     }
 
     @Synchronized
-    private fun isCacheStale(): Boolean {
-        return Date().time - state.cachesLastUpdated.time > CACHE_REFRESH_PERIOD
-    }
-
-    @Synchronized
-    private fun clearCaches() {
-        deviceCache.clearCachedPurchaserInfo(state.appUserID)
-        resetCachesLastUpdated()
-        state = state.copy(cachedOfferings = null)
-    }
-
-    @Synchronized
-    private fun resetCachesLastUpdated() {
-        state = state.copy(cachesLastUpdated = Date(0))
-    }
-
-    @Synchronized
     private fun cachePurchaserInfo(info: PurchaserInfo) {
-        deviceCache.cachePurchaserInfo(state.appUserID, info)
+        deviceCache.cachePurchaserInfo(identityManager.currentAppUserID, info)
     }
 
     private fun postPurchases(
@@ -671,7 +615,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onSuccess: ((PurchaseWrapper, PurchaserInfo) -> Unit)? = null,
         onError: ((PurchaseWrapper, PurchasesError) -> Unit)? = null
     ) {
-        synchronized(this@Purchases) { state.appUserID }.let { appUserID ->
+        identityManager.currentAppUserID.let { appUserID ->
             purchases.forEach { purchase ->
                 backend.postReceiptData(
                     purchase.purchaseToken,
@@ -745,16 +689,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun getAnonymousID(): String {
-        return deviceCache.getCachedAppUserID() ?: createRandomIDAndCacheIt()
-    }
-
-    private fun createRandomIDAndCacheIt(): String {
-        return UUID.randomUUID().toString().also {
-            deviceCache.cacheAppUserID(it)
-        }
-    }
-
     private fun getSkuDetails(
         skus: List<String>,
         onCompleted: (HashMap<String, SkuDetails>) -> Unit,
@@ -793,7 +727,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun afterSetListener(listener: UpdatedPurchaserInfoListener?) {
         if (listener != null) {
             debugLog("Listener set")
-            deviceCache.getCachedPurchaserInfo(state.appUserID)?.let {
+            deviceCache.getCachedPurchaserInfo(identityManager.currentAppUserID)?.let {
                 this.sendUpdatedPurchaserInfoToDelegateIfChanged(it)
             }
         }
@@ -834,32 +768,28 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun getPurchasesUpdatedListener(): BillingWrapper.PurchasesUpdatedListener {
         return object : BillingWrapper.PurchasesUpdatedListener {
             override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards PurchaseWrapper>) {
-                synchronized(this@Purchases) {
-                    state.allowSharingPlayStoreAccount to state.finishTransactions
-                }.let { (allowSharingPlayStoreAccount, finishTransactions) ->
-                    postPurchases(
-                        purchases,
-                        allowSharingPlayStoreAccount,
-                        finishTransactions,
-                        { purchase, info ->
-                            getPurchaseCallback(purchase.sku)?.let { callback ->
-                                dispatch {
-                                    callback.onCompleted(purchase.containedPurchase, info)
-                                }
-                            }
-                        },
-                        { purchase, error ->
-                            getPurchaseCallback(purchase.sku)?.let { callback ->
-                                dispatch {
-                                    callback.onError(
-                                        error,
-                                        error.code == PurchasesErrorCode.PurchaseCancelledError
-                                    )
-                                }
+                postPurchases(
+                    purchases,
+                    allowSharingPlayStoreAccount,
+                    finishTransactions,
+                    { purchase, info ->
+                        getPurchaseCallback(purchase.sku)?.let { callback ->
+                            dispatch {
+                                callback.onCompleted(purchase.containedPurchase, info)
                             }
                         }
-                    )
-                }
+                    },
+                    { purchase, error ->
+                        getPurchaseCallback(purchase.sku)?.let { callback ->
+                            dispatch {
+                                callback.onError(
+                                    error,
+                                    error.code == PurchasesErrorCode.PurchaseCancelledError
+                                )
+                            }
+                        }
+                    }
+                )
             }
 
             override fun onPurchasesFailedToUpdate(
@@ -903,7 +833,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 state = state.copy(
                     purchaseCallbacks = state.purchaseCallbacks + mapOf(product.sku to listener)
                 )
-                userPurchasing = state.appUserID
+                userPurchasing = identityManager.currentAppUserID
             }
         }
 
@@ -1041,7 +971,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 billingWrapper,
                 cache,
                 observerMode,
-                service
+                service,
+                IdentityManager(cache, backend)
             ).also { sharedInstance = it }
         }
 
@@ -1176,6 +1107,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Different compatible attribution networks available
      * @param serverValue Id of this attribution network in the RevenueCat server
      */
+    @Suppress("unused")
     enum class AttributionNetwork(val serverValue: Int) {
         /**
          * [https://www.adjust.com/]

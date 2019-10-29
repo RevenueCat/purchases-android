@@ -9,16 +9,23 @@ import android.content.SharedPreferences
 
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.Date
+
+private const val CACHE_REFRESH_PERIOD = 60000 * 5
 
 internal class DeviceCache(
     private val preferences: SharedPreferences,
     apiKey: String
 ) {
-    private val appUserIDCacheKey = "com.revenuecat.purchases.$apiKey"
+    val legacyAppUserIDCacheKey = "com.revenuecat.purchases.$apiKey"
+    val appUserIDCacheKey = "com.revenuecat.purchases.$apiKey.new"
     private val attributionCacheKey = "com.revenuecat.purchases.attribution"
-    private val tokensCacheKey = "com.revenuecat.purchases.$apiKey.tokens"
+    val tokensCacheKey = "com.revenuecat.purchases.$apiKey.tokens"
 
-    private fun purchaserInfoCacheKey(appUserID: String) = "$appUserIDCacheKey.$appUserID"
+    private var cachesLastUpdated: Date = Date(0)
+    var cachedOfferings: Offerings? = null
+
+    fun purchaserInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
 
     fun getCachedPurchaserInfo(appUserID: String): PurchaserInfo? {
         return preferences.getString(purchaserInfoCacheKey(appUserID), null)
@@ -48,30 +55,40 @@ internal class DeviceCache(
             ).apply()
     }
 
-    fun clearCachedPurchaserInfo(appUserID: String) {
+    @Synchronized
+    fun clearCachesForAppUserID() {
         preferences.edit()
-            .remove(purchaserInfoCacheKey(appUserID))
+            .also { editor ->
+                getCachedAppUserID()?.let {
+                    editor.remove(purchaserInfoCacheKey(it))
+                }
+                getLegacyCachedAppUserID()?.let {
+                    editor.remove(purchaserInfoCacheKey(it))
+                }
+            }
+            .remove(appUserIDCacheKey)
+            .remove(legacyAppUserIDCacheKey)
             .apply()
+        invalidateCaches()
+        cachedOfferings = null
     }
 
-    fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
+    @Synchronized fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
 
-    fun cacheAppUserID(appUserID: String) {
-        preferences.edit()
-            .putString(
-                appUserIDCacheKey,
-                appUserID
-            ).apply()
+    @Synchronized fun getLegacyCachedAppUserID(): String? = preferences.getString(legacyAppUserIDCacheKey, null)
+
+    @Synchronized fun cacheAppUserID(appUserID: String) {
+        preferences.edit().putString(appUserIDCacheKey, appUserID).apply()
     }
 
-    fun getCachedAttributionData(network: Purchases.AttributionNetwork, userId: String): String? =
+    @Synchronized fun getCachedAttributionData(network: Purchases.AttributionNetwork, userId: String): String? =
         preferences.getString(getAttributionDataCacheKey(userId, network), null)
 
-    fun cacheAttributionData(network: Purchases.AttributionNetwork, userId: String, cacheValue: String) {
+    @Synchronized fun cacheAttributionData(network: Purchases.AttributionNetwork, userId: String, cacheValue: String) {
         preferences.edit().putString(getAttributionDataCacheKey(userId, network), cacheValue).apply()
     }
 
-    fun clearLatestAttributionData(userId: String) {
+    @Synchronized fun clearLatestAttributionData(userId: String) {
         val editor = preferences.edit()
         Purchases.AttributionNetwork.values().forEach { network ->
             editor.remove(getAttributionDataCacheKey(userId, network))
@@ -126,9 +143,26 @@ internal class DeviceCache(
             .values.toList()
     }
 
+    @Synchronized
+    fun invalidateCaches() {
+        cachesLastUpdated = Date(0)
+    }
+
     private fun getAttributionDataCacheKey(
         userId: String,
         network: Purchases.AttributionNetwork
     ) = "$attributionCacheKey.$userId.$network"
 
+    @Synchronized fun cacheOfferings(offerings: Offerings) {
+        cachedOfferings = offerings
+    }
+
+    @Synchronized fun setCachesLastUpdated() {
+        cachesLastUpdated = Date()
+    }
+
+    @Synchronized
+    fun isCacheStale(): Boolean {
+        return Date().time - cachesLastUpdated.time > CACHE_REFRESH_PERIOD
+    }
 }
