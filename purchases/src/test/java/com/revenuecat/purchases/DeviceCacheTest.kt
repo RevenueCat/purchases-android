@@ -42,9 +42,7 @@ class DeviceCacheTest {
     private lateinit var mockEditor: SharedPreferences.Editor
     private val apiKey = "api_key"
     private val appUserID = "app_user_id"
-    private val userIDCacheKey = "com.revenuecat.purchases.$apiKey"
-    private val purchaserInfoCacheKey = "$userIDCacheKey.$appUserID"
-    private val tokensCacheKey = "com.revenuecat.purchases.$apiKey.tokens"
+    private val legacyAppUserID = "app_user_id"
 
     @Before
     fun setup() {
@@ -79,30 +77,30 @@ class DeviceCacheTest {
 
     @Test
     fun `given no cached info, cached purchased info is null`() {
-        mockString(purchaserInfoCacheKey, null)
+        mockString(cache.purchaserInfoCacheKey(appUserID), null)
         val info = cache.getCachedPurchaserInfo(appUserID)
         assertThat(info).`as`("info is null").isNull()
     }
 
     @Test
     fun `given a purchaser info, the key in the cache is correct`() {
-        mockString(purchaserInfoCacheKey, Responses.validFullPurchaserResponse)
+        mockString(cache.purchaserInfoCacheKey(appUserID), Responses.validFullPurchaserResponse)
         cache.getCachedPurchaserInfo(appUserID)
         verify {
-            mockPrefs.getString(eq(purchaserInfoCacheKey), isNull())
+            mockPrefs.getString(cache.purchaserInfoCacheKey(appUserID), isNull())
         }
     }
 
     @Test
     fun `given a valid purchaser info, the JSON is parsed correctly`() {
-        mockString(purchaserInfoCacheKey, validCachedPurchaserInfo)
+        mockString(cache.purchaserInfoCacheKey(appUserID), validCachedPurchaserInfo)
         val info = cache.getCachedPurchaserInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
     }
 
     @Test
     fun `given a invalid purchaser info, the information is null`() {
-        mockString(purchaserInfoCacheKey, "not json")
+        mockString(cache.purchaserInfoCacheKey(appUserID), "not json")
         val info = cache.getCachedPurchaserInfo(appUserID)
         assertThat(info).`as`("info is null").isNull()
     }
@@ -115,7 +113,7 @@ class DeviceCacheTest {
 
         cache.cachePurchaserInfo(appUserID, info)
         verifyAll {
-            mockEditor.putString(eq(purchaserInfoCacheKey), any())
+            mockEditor.putString(cache.purchaserInfoCacheKey(appUserID), any())
             mockEditor.apply()
         }
     }
@@ -138,28 +136,28 @@ class DeviceCacheTest {
 
     @Test
     fun `given an older version of purchaser info, nothing is returned`() {
-        mockString(purchaserInfoCacheKey, oldCachedPurchaserInfo)
+        mockString(cache.purchaserInfoCacheKey(appUserID), oldCachedPurchaserInfo)
         val info = cache.getCachedPurchaserInfo(appUserID)
         assertThat(info).`as`("info is null").isNull()
     }
 
     @Test
     fun `given a valid version purchaser info, it is returned`() {
-        mockString(purchaserInfoCacheKey, validCachedPurchaserInfo)
+        mockString(cache.purchaserInfoCacheKey(appUserID), validCachedPurchaserInfo)
         val info = cache.getCachedPurchaserInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull()
     }
 
     @Test
     fun `given a non cached appuserid, the cached appuserid is null`() {
-        mockString(userIDCacheKey, null)
+        mockString(cache.appUserIDCacheKey, null)
         val appUserID = cache.getCachedAppUserID()
         assertThat(appUserID).`as`("appUserID is null").isNull()
     }
 
     @Test
     fun `given a non cached appuserid, the cached appuserid is returned`() {
-        mockString(userIDCacheKey, appUserID)
+        mockString(cache.appUserIDCacheKey, appUserID)
         val returnedAppUserID = cache.getCachedAppUserID()
         assertThat(returnedAppUserID).`as`("appUserID is the same as the cached appUserID").isEqualTo(appUserID)
     }
@@ -171,7 +169,7 @@ class DeviceCacheTest {
         } just runs
         cache.cacheAppUserID(appUserID)
         verify {
-            mockEditor.putString(eq(userIDCacheKey), any())
+            mockEditor.putString(cache.appUserIDCacheKey, any())
             mockEditor.apply()
         }
     }
@@ -180,7 +178,7 @@ class DeviceCacheTest {
     fun `getting sent tokens works`() {
         val tokens = setOf("token1", "token2")
         every {
-            mockPrefs.getStringSet(tokensCacheKey, any())
+            mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns tokens
         val sentTokens = cache.getPreviouslySentHashedTokens()
         assertThat(sentTokens).isEqualTo(tokens)
@@ -189,11 +187,11 @@ class DeviceCacheTest {
     @Test
     fun `token is hashed then added`() {
         every {
-            mockPrefs.getStringSet(tokensCacheKey, any())
+            mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "token2")
         val sha1 = "token3".sha1()
         every {
-            mockEditor.putStringSet(tokensCacheKey, setOf("token1", "token2", sha1))
+            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2", sha1))
         } returns mockEditor
         every {
             mockEditor.apply()
@@ -201,54 +199,54 @@ class DeviceCacheTest {
 
         cache.addSuccessfullyPostedToken("token3")
         verify {
-            mockEditor.putStringSet(tokensCacheKey, setOf("token1", "token2", sha1))
+            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2", sha1))
         }
     }
 
     @Test
     fun `if token is not active anymore, remove it from database`() {
         every {
-            mockEditor.putStringSet(tokensCacheKey, setOf("token3"))
+            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token3"))
         } returns mockEditor
         every {
             mockEditor.apply()
         } just runs
         every {
-            mockPrefs.getStringSet(tokensCacheKey, any())
+            mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "token2", "token3")
         cache.cleanPreviouslySentTokens(
             setOf("token3"),
             setOf("token4")
         )
         verify {
-            mockEditor.putStringSet(tokensCacheKey, setOf("token3"))
+            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token3"))
         }
     }
 
     @Test
     fun `if all tokens are active, do not remove any`() {
         every {
-            mockEditor.putStringSet(tokensCacheKey, setOf("token1", "token2"))
+            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2"))
         } returns mockEditor
         every {
             mockEditor.apply()
         } just runs
         every {
-            mockPrefs.getStringSet(tokensCacheKey, any())
+            mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "token2")
         cache.cleanPreviouslySentTokens(
             setOf("token1"),
             setOf("token2")
         )
         verify {
-            mockEditor.putStringSet(tokensCacheKey, setOf("token1", "token2"))
+            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2"))
         }
     }
 
     @Test
     fun `getting the tokens not in cache returns all the active tokens that have not been sent`() {
         every {
-            mockPrefs.getStringSet(tokensCacheKey, any())
+            mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "hash2", "token3")
         val activeSub = PurchaseWrapper(mockk(relaxed = true), SUBS, null)
         val activePurchasesNotInCache =
@@ -256,6 +254,27 @@ class DeviceCacheTest {
                 mapOf("hash1" to activeSub),
                 mapOf("hash2" to PurchaseWrapper(mockk(relaxed = true), INAPP, null)))
         assertThat(activePurchasesNotInCache).contains(activeSub)
+    }
+
+    @Test
+    fun `invalidating caches`() {
+        assertThat(cache.isCacheStale()).isTrue()
+        cache.setCachesLastUpdated()
+        assertThat(cache.isCacheStale()).isFalse()
+        cache.invalidateCaches()
+        assertThat(cache.isCacheStale()).isTrue()
+    }
+
+    @Test
+    fun `clearing caches clears all user ID data`() {
+        mockString(cache.appUserIDCacheKey, "appUserID")
+        mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
+        mockString(cache.purchaserInfoCacheKey(appUserID), null)
+        cache.clearCachesForAppUserID()
+        verify { mockEditor.remove(cache.appUserIDCacheKey) }
+        verify { mockEditor.remove(cache.legacyAppUserIDCacheKey) }
+        verify { mockEditor.remove(cache.purchaserInfoCacheKey("appUserID")) }
+        verify { mockEditor.remove(cache.purchaserInfoCacheKey("legacyAppUserID")) }
     }
 
     private fun mockString(key: String, value: String?) {
