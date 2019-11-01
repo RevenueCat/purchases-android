@@ -13,6 +13,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.SkuType.INAPP
 import com.android.billingclient.api.BillingClient.SkuType.SUBS
 import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.Callback
@@ -63,7 +64,8 @@ class PurchasesTest {
 
     private var capturedPurchasesUpdatedListener = slot<BillingWrapper.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingWrapper.StateListener>()
-    private var capturedConsumeResponseListener = slot<(Int, String) -> Unit>()
+    private var capturedConsumeResponseListener = slot<(BillingResult, String) -> Unit>()
+    private var captureAcknowledgeResponseListener = slot<(BillingResult, String) -> Unit>()
 
     private val randomAppUserId = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
     private val appUserId = "fakeUserID"
@@ -345,6 +347,12 @@ class PurchasesTest {
             every {
                 p.purchaseTime
             } returns System.currentTimeMillis()
+            every {
+                p.purchaseState
+            } returns Purchase.PurchaseState.PURCHASED
+            every {
+                p.isAcknowledged
+            } returns false
             val wrapper = PurchaseWrapper(p, SUBS, stubOfferingIdentifier)
             purchasesList.add(wrapper)
         }
@@ -944,6 +952,10 @@ class PurchasesTest {
         verify (exactly = 0) {
             mockBillingWrapper.consumePurchase(purchaseTokenSub,  any())
         }
+
+        verify (exactly = 1) {
+            mockBillingWrapper.acknowledge(purchaseTokenSub,  any())
+        }
         assertThat(capturedLambda).isNotNull
     }
 
@@ -1427,13 +1439,14 @@ class PurchasesTest {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases()} returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         val listener = slot<BillingClientStateListener>()
         every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
         Purchases.isBillingSupported(mockContext, Callback {
             receivedIsBillingSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.OK)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isTrue()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1447,6 +1460,7 @@ class PurchasesTest {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases()} returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         val listener = slot<BillingClientStateListener>()
         every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
@@ -1467,13 +1481,14 @@ class PurchasesTest {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases()} returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         val listener = slot<BillingClientStateListener>()
         every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
         Purchases.isBillingSupported(mockContext, Callback {
             receivedIsBillingSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
         AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1483,7 +1498,9 @@ class PurchasesTest {
         setup()
         var featureSupported = false
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        every { mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS) } returns BillingClient.BillingResponse.OK
+        every {
+            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
+        } returns BillingClient.BillingResponseCode.OK.buildResult()
         mockkStatic(BillingClient::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
@@ -1494,7 +1511,7 @@ class PurchasesTest {
         Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
             featureSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.OK)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         AssertionsForClassTypes.assertThat(featureSupported).isTrue()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1527,7 +1544,7 @@ class PurchasesTest {
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         every {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
-        } returns BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED
+        } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
         mockkStatic(BillingClient::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
@@ -1538,7 +1555,7 @@ class PurchasesTest {
         Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
             featureSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
         AssertionsForClassTypes.assertThat(featureSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1550,7 +1567,7 @@ class PurchasesTest {
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         every {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
-        } returns BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED
+        } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
         mockkStatic(BillingClient::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
@@ -1562,7 +1579,7 @@ class PurchasesTest {
         Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
             featureSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
         AssertionsForClassTypes.assertThat(featureSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1577,6 +1594,7 @@ class PurchasesTest {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases()} returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         every { mockLocalBillingClient.endConnection() } throws mockk<IllegalArgumentException>()
         val listener = slot<BillingClientStateListener>()
@@ -1584,7 +1602,7 @@ class PurchasesTest {
         Purchases.isBillingSupported(mockContext, Callback {
             receivedIsBillingSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
         AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -2119,7 +2137,7 @@ class PurchasesTest {
             INAPP,
             null
         ))
-        capturedConsumeResponseListener.captured.invoke(2, purchaseToken)
+        capturedConsumeResponseListener.captured.invoke(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(), purchaseToken)
         verify (exactly = 0) {
             mockCache.addSuccessfullyPostedToken(purchaseToken)
         }
@@ -2157,7 +2175,7 @@ class PurchasesTest {
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
             true
         )
-        capturedConsumeResponseListener.captured.invoke(2, purchaseToken)
+        capturedConsumeResponseListener.captured.invoke(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(), purchaseToken)
         verify (exactly = 0 ) {
             mockCache.addSuccessfullyPostedToken(purchaseToken)
         }
@@ -2176,7 +2194,7 @@ class PurchasesTest {
             INAPP,
             null
         ))
-        capturedConsumeResponseListener.captured.invoke(0, purchaseToken)
+        capturedConsumeResponseListener.captured.invoke(BillingClient.BillingResponseCode.OK.buildResult(), purchaseToken)
         verify (exactly = 1) {
             mockCache.addSuccessfullyPostedToken(purchaseToken)
         }
@@ -2214,7 +2232,7 @@ class PurchasesTest {
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
             true
         )
-        capturedConsumeResponseListener.captured.invoke(0, "crazy_purchase_token")
+        capturedConsumeResponseListener.captured.invoke(BillingClient.BillingResponseCode.OK.buildResult(), "crazy_purchase_token")
         verify (exactly = 1) {
             mockCache.addSuccessfullyPostedToken("crazy_purchase_token")
         }
@@ -2513,6 +2531,9 @@ class PurchasesTest {
                 consumePurchase(any(), capture(capturedConsumeResponseListener))
             } just Runs
             every {
+                acknowledge(any(), capture(capturedConsumeResponseListener))
+            } just Runs
+            every {
                 purchasesUpdatedListener = null
             } just Runs
             every {
@@ -2676,6 +2697,12 @@ class PurchasesTest {
         every {
             p.purchaseTime
         } returns System.currentTimeMillis()
+        every {
+            p.purchaseState
+        } returns Purchase.PurchaseState.PURCHASED
+        every {
+            p.isAcknowledged
+        } returns false
         val purchasesList = ArrayList<PurchaseWrapper>()
         purchasesList.add(PurchaseWrapper(p, skuType, offeringIdentifier))
         return purchasesList
@@ -2722,6 +2749,10 @@ class PurchasesTest {
             identityManager = mockIdentityManager
         )
         Purchases.sharedInstance = purchases
+    }
+
+    private fun Int.buildResult(): BillingResult {
+        return BillingResult.newBuilder().setResponseCode(this).build()
     }
 
     // endregion

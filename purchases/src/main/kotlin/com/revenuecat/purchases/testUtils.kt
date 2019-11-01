@@ -11,7 +11,9 @@ import android.os.Parcel
 import android.os.Parcelable
 import android.util.Base64
 import android.util.Log
+import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.util.Iso8601Utils
 import kotlinx.android.parcel.Parceler
@@ -205,3 +207,9 @@ object SkuDetailsParceler : Parceler<SkuDetails> {
         parcel.writeString(value)
     }
 }
+
+internal fun BillingResult.toHumanReadableDescription() =
+    "DebugMessage: $debugMessage. ErrorCode: ${responseCode.getBillingResponseCodeName()}."
+
+internal fun PurchaseHistoryRecord.toHumanReadableDescription() =
+    "${this.sku} ${this.purchaseTime} ${this.purchaseToken}"

@@ -2,14 +2,33 @@ package com.revenuecat.purchases
 
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchaseHistoryRecord
 
 data class PurchaseWrapper(
-    val containedPurchase: Purchase,
+    val isConsumable: Boolean,
+    val purchaseToken: String,
+    val purchaseTime: Long,
+    val sku: String,
+    val containedPurchase: Purchase?,
     @BillingClient.SkuType val type: String?,
     val presentedOfferingIdentifier: String? = null
 ) {
-    val isConsumable: Boolean = type == BillingClient.SkuType.INAPP
-    val purchaseToken: String = containedPurchase.purchaseToken
-    val purchaseTime: Long = containedPurchase.purchaseTime
-    val sku: String = containedPurchase.sku
+    constructor(purchaseHistoryRecord: PurchaseHistoryRecord, @BillingClient.SkuType type: String?) : this(
+        isConsumable = type == BillingClient.SkuType.INAPP,
+        purchaseToken = purchaseHistoryRecord.purchaseToken,
+        purchaseTime = purchaseHistoryRecord.purchaseTime,
+        sku = purchaseHistoryRecord.sku,
+        containedPurchase = null,
+        type = type
+    )
+
+    constructor(purchase: Purchase, @BillingClient.SkuType type: String?, presentedOfferingIdentifier: String?) : this(
+        isConsumable = type == BillingClient.SkuType.INAPP,
+        purchaseToken = purchase.purchaseToken,
+        purchaseTime = purchase.purchaseTime,
+        sku = purchase.sku,
+        containedPurchase = purchase,
+        type = type,
+        presentedOfferingIdentifier = presentedOfferingIdentifier
+    )
 }
