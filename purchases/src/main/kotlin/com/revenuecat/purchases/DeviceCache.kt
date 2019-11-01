@@ -22,7 +22,7 @@ internal class DeviceCache(
     private val attributionCacheKey = "com.revenuecat.purchases.attribution"
     val tokensCacheKey = "com.revenuecat.purchases.$apiKey.tokens"
 
-    private var cachesLastUpdated: Date = Date(0)
+    private var cachesLastUpdated: Date? = null
     var cachedOfferings: Offerings? = null
 
     fun purchaserInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
@@ -145,7 +145,7 @@ internal class DeviceCache(
 
     @Synchronized
     fun invalidateCaches() {
-        cachesLastUpdated = Date(0)
+        cachesLastUpdated = null
     }
 
     private fun getAttributionDataCacheKey(
@@ -163,6 +163,8 @@ internal class DeviceCache(
 
     @Synchronized
     fun isCacheStale(): Boolean {
-        return Date().time - cachesLastUpdated.time > CACHE_REFRESH_PERIOD
+        return cachesLastUpdated?.let { cachesLastUpdated ->
+            Date().time - cachesLastUpdated.time > CACHE_REFRESH_PERIOD
+        }?: true
     }
 }
