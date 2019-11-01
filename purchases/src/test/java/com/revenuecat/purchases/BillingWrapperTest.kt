@@ -6,8 +6,10 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
+import android.content.Context
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -22,6 +24,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
@@ -766,6 +769,37 @@ class BillingWrapperTest {
 
         assertThat(slot.captured.size).isOne()
         assertThat(slot.captured[0].presentedOfferingIdentifier).isEqualTo("offering_a")
+    }
+
+    @Test
+    fun `When building the BillingClient enabledPendingPurchases is called`() {
+        val context = mockk<Context>()
+        mockkStatic(BillingClient::class)
+        val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
+        every {
+            BillingClient.newBuilder(context)
+        } returns mockBuilder
+        BillingWrapper.ClientFactory(context).buildClient(mockk())
+        verify (exactly = 1) {
+            mockBuilder.enablePendingPurchases()
+        }
+    }
+
+    @Test
+    fun `Acknowledge works`() {
+        setup()
+        val token = "token"
+
+        val capturingSlot = slot<AcknowledgePurchaseParams>()
+        every {
+            mockClient.acknowledgePurchase(capture(capturingSlot), any())
+        } just Runs
+
+        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        wrapper!!.acknowledge(token) { _, _ -> }
+
+        assertThat(capturingSlot.isCaptured).isTrue()
+        assertThat(capturingSlot.captured.purchaseToken).isEqualTo(token)
     }
 
     private fun mockNullSkuDetailsResponse() {

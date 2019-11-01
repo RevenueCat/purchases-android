@@ -256,9 +256,7 @@ internal class BillingWrapper internal constructor(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 billingClient?.acknowledgePurchase(
-                    AcknowledgePurchaseParams.newBuilder().setPurchaseToken(
-                        token
-                    ).build()
+                    AcknowledgePurchaseParams.newBuilder().setPurchaseToken(token).build()
                 ) { billingResult ->
                     onAcknowledged(billingResult, token)
                 }

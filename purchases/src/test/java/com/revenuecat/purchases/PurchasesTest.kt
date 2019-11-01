@@ -65,7 +65,7 @@ class PurchasesTest {
     private var capturedPurchasesUpdatedListener = slot<BillingWrapper.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingWrapper.StateListener>()
     private var capturedConsumeResponseListener = slot<(BillingResult, String) -> Unit>()
-    private var captureAcknowledgeResponseListener = slot<(BillingResult, String) -> Unit>()
+    private var capturedAcknowledgeResponseListener = slot<(BillingResult, String) -> Unit>()
 
     private val randomAppUserId = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
     private val appUserId = "fakeUserID"
@@ -2181,7 +2181,6 @@ class PurchasesTest {
         }
     }
 
-
     @Test
     fun `successfully posted receipts are saved in cache after consumption`() {
         setup()
@@ -2505,6 +2504,228 @@ class PurchasesTest {
         }
     }
 
+    @Test
+    fun `Do not consume pending purchases`() {
+        setup()
+        val sku = "inapp"
+        val purchaseToken = "token_inapp"
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(sku, purchaseToken, INAPP, purchaseState = Purchase.PurchaseState.PENDING) +
+                getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS, "offering_a", purchaseState = Purchase.PurchaseState.PENDING)
+        )
+
+        verify (exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                null,
+                any(),
+                any()
+            )
+        }
+
+        verify (exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                "offering_a",
+                any(),
+                any()
+            )
+        }
+
+        verify (exactly = 0) {
+            mockBillingWrapper.consumePurchase(any(), any())
+        }
+
+        verify (exactly = 0) {
+            mockBillingWrapper.acknowledge(any(), any())
+        }
+
+        verify (exactly = 0) {
+            mockCache.addSuccessfullyPostedToken(any())
+        }
+    }
+
+    @Test
+    fun `Do not acknowledge purchases that are already acknowledged`() {
+        setup()
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS, "offering_a", acknowledged = true)
+        )
+
+        verify (exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                "offering_a",
+                any(),
+                any()
+            )
+        }
+
+        verify (exactly = 0) {
+            mockBillingWrapper.acknowledge(any(), any())
+        }
+
+        verify (exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(any())
+        }
+    }
+
+    @Test
+    fun `Acknowledge subscriptions`() {
+        setup()
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(
+                skuSub,
+                purchaseTokenSub,
+                SUBS,
+                "offering_a",
+                acknowledged = false
+            )
+        )
+
+        capturedAcknowledgeResponseListener.captured.invoke(BillingClient.BillingResponseCode.OK.buildResult(), purchaseTokenSub)
+
+        verify (exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                "offering_a",
+                any(),
+                any()
+            )
+        }
+
+        verify (exactly = 1) {
+            mockBillingWrapper.acknowledge(any(), any())
+        }
+
+        verify (exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(any())
+        }
+    }
+
+    @Test
+    fun `successfully posted receipts are not save in cache if acknowledge fails`() {
+        setup()
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            skuSub,
+            purchaseTokenSub,
+            SUBS,
+            "offering_a"
+        ))
+        capturedAcknowledgeResponseListener.captured.invoke(
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+            purchaseTokenSub
+        )
+        verify (exactly = 0) {
+            mockCache.addSuccessfullyPostedToken(purchaseTokenSub)
+        }
+    }
+
+    @Test
+    fun `when error posting subscription, tokens are not saved in cache if error is finishable and acknowledgement fails`() {
+        setup()
+
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        every {
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                "offering_a",
+                any(),
+                captureLambda()
+            )
+        } answers {
+            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
+        }
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            skuSub,
+            purchaseTokenSub,
+            SUBS,
+            "offering_a"
+        ))
+        capturedLambda!!.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+            true
+        )
+        capturedAcknowledgeResponseListener.captured.invoke(
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+            purchaseTokenSub
+        )
+        verify (exactly = 0 ) {
+            mockCache.addSuccessfullyPostedToken(purchaseTokenSub)
+        }
+    }
+
+    @Test
+    fun `when error posting subscription receipts, tokens are saved in cache if error is finishable`() {
+        setup()
+
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        every {
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                null,
+                any(),
+                captureLambda()
+            )
+        } answers {
+            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
+        }
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            skuSub,
+            purchaseTokenSub,
+            SUBS,
+            null
+        ))
+        capturedLambda!!.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+            true
+        )
+        capturedAcknowledgeResponseListener.captured.invoke(
+            BillingClient.BillingResponseCode.OK.buildResult(),
+            purchaseTokenSub
+        )
+        verify (exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(purchaseTokenSub)
+        }
+    }
+
     // region Private Methods
     private fun mockSkuDetailFetch(details: List<SkuDetails>, skus: List<String>, skuType: String) {
         every {
@@ -2531,7 +2752,7 @@ class PurchasesTest {
                 consumePurchase(any(), capture(capturedConsumeResponseListener))
             } just Runs
             every {
-                acknowledge(any(), capture(capturedConsumeResponseListener))
+                acknowledge(any(), capture(capturedAcknowledgeResponseListener))
             } just Runs
             every {
                 purchasesUpdatedListener = null
@@ -2685,7 +2906,9 @@ class PurchasesTest {
         sku: String,
         purchaseToken: String,
         skuType: String,
-        offeringIdentifier: String? = null
+        offeringIdentifier: String? = null,
+        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
+        acknowledged: Boolean = false
     ): ArrayList<PurchaseWrapper> {
         val p: Purchase = mockk()
         every {
@@ -2699,10 +2922,10 @@ class PurchasesTest {
         } returns System.currentTimeMillis()
         every {
             p.purchaseState
-        } returns Purchase.PurchaseState.PURCHASED
+        } returns purchaseState
         every {
             p.isAcknowledged
-        } returns false
+        } returns acknowledged
         val purchasesList = ArrayList<PurchaseWrapper>()
         purchasesList.add(PurchaseWrapper(p, skuType, offeringIdentifier))
         return purchasesList
