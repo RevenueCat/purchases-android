@@ -17,6 +17,7 @@ import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.Callback
@@ -652,20 +653,28 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             // Could happen if purchase occurred outside of app. Will retry next activity resume
             return
         }
-        if (purchase.isConsumable && shouldTryToConsume) {
-            billingWrapper.consumePurchase(purchase.purchaseToken) { responseCode, purchaseToken ->
-                if (responseCode == BillingClient.BillingResponse.OK) {
-                    synchronized(deviceCache) {
-                        deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                    }
+        if (purchase.containedPurchase?.purchaseState != Purchase.PurchaseState.PURCHASED) {
+            // PENDING purchases should not be acknowledged
+            return
+        }
+        if (shouldTryToConsume && purchase.isConsumable) {
+            billingWrapper.consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
-                    debugLog("ResponseCode from consuming purchase $responseCode. Will retry next queryPurchases.")
+                    debugLog("Error consuming purchase. Will retry next queryPurchases. ${billingResult.toHumanReadableDescription()}")
+                }
+            }
+        } else if (shouldTryToConsume && !purchase.containedPurchase.isAcknowledged) {
+            billingWrapper.acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                } else {
+                    debugLog("Error acknowledging purchase. Will retry next queryPurchases. ${billingResult.toHumanReadableDescription()}")
                 }
             }
         } else {
-            synchronized(deviceCache) {
-                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-            }
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
         }
     }
 
@@ -778,10 +787,24 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     purchases,
                     allowSharingPlayStoreAccount,
                     finishTransactions,
-                    { purchase, info ->
-                        getPurchaseCallback(purchase.sku)?.let { callback ->
-                            dispatch {
-                                callback.onCompleted(purchase.containedPurchase, info)
+                    { purchaseWrapper, info ->
+                        getPurchaseCallback(purchaseWrapper.sku)?.let { callback ->
+                            if (purchaseWrapper.containedPurchase != null) {
+                                dispatch {
+                                    callback.onCompleted(purchaseWrapper.containedPurchase, info)
+                                }
+                            } else {
+                                // This shouldn't happen since unless postPurchases modifies the
+                                // purchases objects, which shouldn't
+                                errorLog("Purchase was successful, but the purchase object is missing.")
+                                dispatch {
+                                    callback.onError(
+                                        PurchasesError(
+                                            PurchasesErrorCode.UnknownError,
+                                            "Purchase object couldn't be found after a successful purchase"
+                                        ), false
+                                    )
+                                }
                             }
                         }
                     },
@@ -800,7 +823,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
             override fun onPurchasesFailedToUpdate(
                 purchases: List<Purchase>?,
-                @BillingClient.BillingResponse responseCode: Int,
+                @BillingClient.BillingResponseCode responseCode: Int,
                 message: String
             ) {
                 synchronized(this@Purchases) {
@@ -992,14 +1015,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmStatic
         fun isBillingSupported(context: Context, callback: Callback<Boolean>) {
-            BillingClient.newBuilder(context).setListener { _, _ ->  }.build().let {
+            BillingClient.newBuilder(context).enablePendingPurchases().setListener { _, _ ->  }.build().let {
                 it.startConnection(
                     object : BillingClientStateListener {
-                        override fun onBillingSetupFinished(responseCode: Int) {
+                        override fun onBillingSetupFinished(billingResult: BillingResult) {
                             // It also means that IN-APP items are supported for purchasing
                             try {
                                 it.endConnection()
-                                callback.onReceived(responseCode == BillingClient.BillingResponse.OK)
+                                callback.onReceived(billingResult.responseCode == BillingClient.BillingResponseCode.OK)
                             } catch (e: IllegalArgumentException) {
                                 // Play Services not available
                                 callback.onReceived(false)
@@ -1027,13 +1050,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmStatic
         fun isFeatureSupported(@BillingClient.FeatureType feature: String, context: Context, callback: Callback<Boolean>) {
-            BillingClient.newBuilder(context).setListener { _, _ ->  }.build().let {
-                it.startConnection(
+            BillingClient.newBuilder(context).setListener { _, _ ->  }.build().let { billingClient ->
+                billingClient.startConnection(
                     object : BillingClientStateListener {
-                        override fun onBillingSetupFinished(responseCode: Int) {
+                        override fun onBillingSetupFinished(billingResult: BillingResult) {
                             try {
-                                it.endConnection()
-                                callback.onReceived(it.isFeatureSupported(feature) == BillingClient.BillingResponse.OK)
+                                billingClient.endConnection()
+                                val featureSupported = billingClient.isFeatureSupported(feature)
+                                callback.onReceived(featureSupported.responseCode == BillingClient.BillingResponseCode.OK)
                             } catch (e: IllegalArgumentException) {
                                 // Play Services not available
                                 callback.onReceived(false)
@@ -1042,7 +1066,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                         override fun onBillingServiceDisconnected() {
                             try {
-                                it.endConnection()
+                                billingClient.endConnection()
                             } catch (e: IllegalArgumentException) {
                             } finally {
                                 callback.onReceived(false)

@@ -104,21 +104,21 @@ internal fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
     }
 }
 
-@BillingClient.BillingResponse
-internal fun @receiver:BillingClient.BillingResponse Int.getBillingResponseCodeName(): String {
+@BillingClient.BillingResponseCode
+internal fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseCodeName(): String {
     return when (this) {
-        BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED -> "FEATURE_NOT_SUPPORTED"
-        BillingClient.BillingResponse.SERVICE_DISCONNECTED -> "SERVICE_DISCONNECTED"
-        BillingClient.BillingResponse.OK -> "OK"
-        BillingClient.BillingResponse.USER_CANCELED -> "USER_CANCELED"
-        BillingClient.BillingResponse.SERVICE_UNAVAILABLE -> "SERVICE_UNAVAILABLE"
-        BillingClient.BillingResponse.BILLING_UNAVAILABLE -> "BILLING_UNAVAILABLE"
-        BillingClient.BillingResponse.ITEM_UNAVAILABLE -> "ITEM_UNAVAILABLE"
-        BillingClient.BillingResponse.DEVELOPER_ERROR -> "DEVELOPER_ERROR"
-        BillingClient.BillingResponse.ERROR -> "ERROR"
-        BillingClient.BillingResponse.ITEM_ALREADY_OWNED -> "ITEM_ALREADY_OWNED"
-        BillingClient.BillingResponse.ITEM_NOT_OWNED -> "ITEM_NOT_OWNED"
-        BillingClient.BillingResponse.SERVICE_TIMEOUT -> "SERVICE_TIMEOUT"
+        BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED -> "FEATURE_NOT_SUPPORTED"
+        BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> "SERVICE_DISCONNECTED"
+        BillingClient.BillingResponseCode.OK -> "OK"
+        BillingClient.BillingResponseCode.USER_CANCELED -> "USER_CANCELED"
+        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE -> "SERVICE_UNAVAILABLE"
+        BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> "BILLING_UNAVAILABLE"
+        BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> "ITEM_UNAVAILABLE"
+        BillingClient.BillingResponseCode.DEVELOPER_ERROR -> "DEVELOPER_ERROR"
+        BillingClient.BillingResponseCode.ERROR -> "ERROR"
+        BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> "ITEM_ALREADY_OWNED"
+        BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> "ITEM_NOT_OWNED"
+        BillingClient.BillingResponseCode.SERVICE_TIMEOUT -> "SERVICE_TIMEOUT"
         else -> "$this"
     }
 }
@@ -126,18 +126,18 @@ internal fun @receiver:BillingClient.BillingResponse Int.getBillingResponseCodeN
 internal fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): PurchasesError {
     log(underlyingErrorMessage)
     val errorCode = when (this) {
-        BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED -> PurchasesErrorCode.PurchaseNotAllowedError
-        BillingClient.BillingResponse.SERVICE_DISCONNECTED -> PurchasesErrorCode.StoreProblemError
-        BillingClient.BillingResponse.OK -> PurchasesErrorCode.UnknownError
-        BillingClient.BillingResponse.USER_CANCELED -> PurchasesErrorCode.PurchaseCancelledError
-        BillingClient.BillingResponse.SERVICE_UNAVAILABLE -> PurchasesErrorCode.StoreProblemError
-        BillingClient.BillingResponse.BILLING_UNAVAILABLE -> PurchasesErrorCode.PurchaseNotAllowedError
-        BillingClient.BillingResponse.ITEM_UNAVAILABLE -> PurchasesErrorCode.ProductNotAvailableForPurchaseError
-        BillingClient.BillingResponse.DEVELOPER_ERROR -> PurchasesErrorCode.PurchaseInvalidError
-        BillingClient.BillingResponse.ERROR -> PurchasesErrorCode.StoreProblemError
-        BillingClient.BillingResponse.ITEM_ALREADY_OWNED -> PurchasesErrorCode.ProductAlreadyPurchasedError
-        BillingClient.BillingResponse.ITEM_NOT_OWNED -> PurchasesErrorCode.PurchaseNotAllowedError
-        BillingClient.BillingResponse.SERVICE_TIMEOUT -> PurchasesErrorCode.StoreProblemError
+        BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED -> PurchasesErrorCode.PurchaseNotAllowedError
+        BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> PurchasesErrorCode.StoreProblemError
+        BillingClient.BillingResponseCode.OK -> PurchasesErrorCode.UnknownError
+        BillingClient.BillingResponseCode.USER_CANCELED -> PurchasesErrorCode.PurchaseCancelledError
+        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE -> PurchasesErrorCode.StoreProblemError
+        BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> PurchasesErrorCode.PurchaseNotAllowedError
+        BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> PurchasesErrorCode.ProductNotAvailableForPurchaseError
+        BillingClient.BillingResponseCode.DEVELOPER_ERROR -> PurchasesErrorCode.PurchaseInvalidError
+        BillingClient.BillingResponseCode.ERROR -> PurchasesErrorCode.StoreProblemError
+        BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> PurchasesErrorCode.ProductAlreadyPurchasedError
+        BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> PurchasesErrorCode.PurchaseNotAllowedError
+        BillingClient.BillingResponseCode.SERVICE_TIMEOUT -> PurchasesErrorCode.StoreProblemError
         else -> PurchasesErrorCode.UnknownError
     }
     return PurchasesError(errorCode, underlyingErrorMessage)
