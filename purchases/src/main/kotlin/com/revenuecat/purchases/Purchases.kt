@@ -624,23 +624,27 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         identityManager.currentAppUserID.let { appUserID ->
             purchases.forEach { purchase ->
-                backend.postReceiptData(
-                    purchase.purchaseToken,
-                    appUserID,
-                    purchase.sku,
-                    allowSharingPlayStoreAccount,
-                    purchase.presentedOfferingIdentifier,
-                    { info ->
-                        consumeAndSave(consumeAllTransactions, purchase)
-                        cachePurchaserInfo(info)
-                        sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                        onSuccess?.let { it(purchase, info) }
-                    }, { error, errorIsFinishable ->
-                        if (errorIsFinishable) {
+                if (purchase.containedPurchase?.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                    backend.postReceiptData(
+                        purchase.purchaseToken,
+                        appUserID,
+                        purchase.sku,
+                        allowSharingPlayStoreAccount,
+                        purchase.presentedOfferingIdentifier,
+                        { info ->
                             consumeAndSave(consumeAllTransactions, purchase)
-                        }
-                        onError?.let { it(purchase, error) }
-                    })
+                            cachePurchaserInfo(info)
+                            sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                            onSuccess?.let { it(purchase, info) }
+                        }, { error, errorIsFinishable ->
+                            if (errorIsFinishable) {
+                                consumeAndSave(consumeAllTransactions, purchase)
+                            }
+                            onError?.let { it(purchase, error) }
+                        })
+                } else {
+                    onError?.let { it(purchase, PurchasesError(PurchasesErrorCode.PaymentPendingError)) }
+                }
             }
         }
     }
@@ -649,12 +653,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         shouldTryToConsume: Boolean,
         purchase: PurchaseWrapper
     ) {
-        if (purchase.type == null) {
-            // Could happen if purchase occurred outside of app. Will retry next activity resume
+        if (purchase.type == PurchaseType.UNKNOWN) {
+            // Would only get here if the purchase was trigger from outside of the app and there was
+            // an issue getting the purchase type
             return
         }
         if (purchase.containedPurchase?.purchaseState != Purchase.PurchaseState.PURCHASED) {
-            // PENDING purchases should not be acknowledged
+            // PENDING purchases should not be acknowledged or consumed
             return
         }
         if (shouldTryToConsume && purchase.isConsumable) {

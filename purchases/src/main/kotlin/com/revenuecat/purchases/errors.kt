@@ -39,7 +39,8 @@ enum class PurchasesErrorCode(val description: String) {
     InvalidAppUserIdError("The app user id is not valid."),
     OperationAlreadyInProgressError("The operation is already in progress."),
     UnknownBackendError("There was an unknown backend error."),
-    InsufficientPermissionsError("App does not have sufficient permissions to make purchases.")
+    InsufficientPermissionsError("App does not have sufficient permissions to make purchases."),
+    PaymentPendingError("The payment is pending.")
 }
 
 internal enum class BackendErrorCode(val value: Int) {

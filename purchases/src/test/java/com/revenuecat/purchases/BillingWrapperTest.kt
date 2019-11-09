@@ -383,6 +383,11 @@ class BillingWrapperTest {
         every {
             mockPurchasesListener.onPurchasesUpdated(capture(slot))
         } just Runs
+
+        every {
+            mockClient.queryPurchases(BillingClient.SkuType.SUBS)
+        } returns Purchase.PurchasesResult(BillingClient.BillingResponseCode.OK.buildResult(), purchases)
+
         purchasesUpdatedListener!!.onPurchasesUpdated(BillingClient.BillingResponseCode.OK.buildResult(), purchases)
 
         assertThat(slot.captured.size).isOne()
@@ -700,7 +705,7 @@ class BillingWrapperTest {
         assertThat(queryPurchasesResult.purchasesByHashedToken.isNotEmpty()).isTrue()
         val purchaseWrapper = queryPurchasesResult.purchasesByHashedToken[token.sha1()]
         assertThat(purchaseWrapper).isNotNull
-        assertThat(purchaseWrapper!!.type).isEqualTo(type)
+        assertThat(purchaseWrapper!!.type).isEqualTo(PurchaseType.fromSKUType(type))
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
         assertThat(purchaseWrapper.sku).isEqualTo(sku)
@@ -729,7 +734,7 @@ class BillingWrapperTest {
         assertThat(queryPurchasesResult.purchasesByHashedToken.isNotEmpty()).isTrue()
         val purchaseWrapper = queryPurchasesResult.purchasesByHashedToken[token.sha1()]
         assertThat(purchaseWrapper).isNotNull
-        assertThat(purchaseWrapper!!.type).isEqualTo(type)
+        assertThat(purchaseWrapper!!.type).isEqualTo(PurchaseType.fromSKUType(type))
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
         assertThat(purchaseWrapper.sku).isEqualTo(sku)

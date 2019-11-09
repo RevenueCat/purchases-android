@@ -7,8 +7,6 @@ package com.revenuecat.purchases
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.BillingClient.SkuType.INAPP
-import com.android.billingclient.api.BillingClient.SkuType.SUBS
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -248,11 +246,11 @@ class DeviceCacheTest {
         every {
             mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "hash2", "token3")
-        val activeSub = PurchaseWrapper(mockk(relaxed = true), SUBS, null)
+        val activeSub = PurchaseWrapper(mockk(relaxed = true), PurchaseType.SUBS, null)
         val activePurchasesNotInCache =
             cache.getActivePurchasesNotInCache(
                 mapOf("hash1" to activeSub),
-                mapOf("hash2" to PurchaseWrapper(mockk(relaxed = true), INAPP, null)))
+                mapOf("hash2" to PurchaseWrapper(mockk(relaxed = true), PurchaseType.INAPP, null)))
         assertThat(activePurchasesNotInCache).contains(activeSub)
     }
 
