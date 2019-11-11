@@ -290,7 +290,7 @@ internal class BillingWrapper internal constructor(
         }
     }
 
-    private fun getPurchaseType(purchaseToken: String): PurchaseType {
+    internal fun getPurchaseType(purchaseToken: String): PurchaseType {
         billingClient?.let { client ->
             val querySubsResult = client.queryPurchases(SkuType.SUBS)
             if (querySubsResult.responseCode == BillingClient.BillingResponseCode.OK && querySubsResult.purchasesList.any { it.purchaseToken == purchaseToken }) {
