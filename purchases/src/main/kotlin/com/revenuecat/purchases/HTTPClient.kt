@@ -130,7 +130,7 @@ internal class HTTPClient(
             addRequestProperty("X-Platform", "android")
             addRequestProperty(
                 "X-Platform-Version",
-                Integer.toString(Build.VERSION.SDK_INT)
+                Build.VERSION.SDK_INT.toString()
             )
             addRequestProperty("X-Version", Purchases.frameworkVersion)
             addRequestProperty("X-Client-Locale", appConfig.languageTag)

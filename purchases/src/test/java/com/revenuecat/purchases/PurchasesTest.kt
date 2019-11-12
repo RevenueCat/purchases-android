@@ -10,11 +10,11 @@ import android.app.Application
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingClient.SkuType.INAPP
-import com.android.billingclient.api.BillingClient.SkuType.SUBS
 import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.PurchaseType
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
@@ -34,6 +34,7 @@ import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.fail
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -51,26 +52,44 @@ class PurchasesTest {
     private val mockBillingWrapper: BillingWrapper = mockk()
     private val mockBackend: Backend = mockk()
     private val mockCache: DeviceCache = mockk()
-    private val listener: UpdatedPurchaserInfoListener = mockk()
+    private val updatedPurchaserInfoListener: UpdatedPurchaserInfoListener = mockk()
     private val mockApplication = mockk<Application>(relaxed = true)
     private val mockContext = mockk<Context>(relaxed = true).apply {
         every {
             applicationContext
         } returns mockApplication
     }
+    private val mockIdentityManager = mockk<IdentityManager>()
 
     private var capturedPurchasesUpdatedListener = slot<BillingWrapper.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingWrapper.StateListener>()
-    private var capturedConsumeResponseListener = slot<(Int, String) -> Unit>()
+    private var capturedConsumeResponseListener = slot<(BillingResult, String) -> Unit>()
+    private var capturedAcknowledgeResponseListener = slot<(BillingResult, String) -> Unit>()
 
+    private val randomAppUserId = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
     private val appUserId = "fakeUserID"
     private val adID = "123"
     private lateinit var purchases: Purchases
     private var receivedSkus: List<SkuDetails>? = null
-    private var receivedEntitlementMap: Map<String, Entitlement>? = null
+    private var receivedOfferings: Offerings? = null
     private var mockExecutorService = mockk<ExecutorService>().apply {
         val capturedRunnable = slot<Runnable>()
         every { execute(capture(capturedRunnable)) } answers { capturedRunnable.captured.run() }
+    }
+
+    private val stubOfferingIdentifier = "offering_a"
+    private val stubProductIdentifier = "monthly_freetrial"
+    private val oneOfferingsResponse = "{'offerings': [" +
+        "{'identifier': '$stubOfferingIdentifier', " +
+        "'description': 'This is the base offering', " +
+        "'packages': [" +
+        "{'identifier': '\$rc_monthly','platform_product_identifier': '$stubProductIdentifier'}" +
+        "]}]," +
+        "'current_offering_id': '$stubOfferingIdentifier'}"
+
+    @Before
+    fun setupStatic() {
+        mockkStatic("com.revenuecat.purchases.FactoriesKt")
     }
 
     @After
@@ -79,47 +98,58 @@ class PurchasesTest {
         Purchases.postponedAttributionData = mutableListOf()
     }
 
-    private fun setup(): PurchaserInfo {
+    private fun setup(
+        errorGettingPurchaserInfo: PurchasesError? = null,
+        anonymous: Boolean = false
+    ): PurchaserInfo {
         val mockInfo = mockk<PurchaserInfo>()
+        val skus = listOf(stubProductIdentifier)
 
         mockCache(mockInfo)
-        mockBackend(mockInfo)
+        mockBackend(mockInfo, errorGettingPurchaserInfo)
         mockBillingWrapper()
-        every {
-            listener.onReceived(any())
-        } just Runs
+        mockSkuDetails(skus, skus, PurchaseType.SUBS)
 
-        purchases = Purchases(
-            mockContext,
-            appUserId,
-            mockBackend,
-            mockBillingWrapper,
-            mockCache,
-            executorService = mockExecutorService
-        )
-        Purchases.sharedInstance = purchases
+        every {
+            updatedPurchaserInfoListener.onReceived(any())
+        } just Runs
+        every {
+            mockIdentityManager.configure(any())
+        } just Runs
+        every {
+            mockIdentityManager.currentAppUserID
+        } returns if (anonymous) randomAppUserId else appUserId
+        every {
+            mockIdentityManager.currentUserIsAnonymous()
+        } returns anonymous
+        buildPurchases(anonymous)
         return mockInfo
     }
 
-    private fun setupAnonymous() {
-        val mockInfo = mockk<PurchaserInfo>()
-
-        mockCache(mockInfo)
-        mockBackend(mockInfo)
-        mockBillingWrapper()
-        every {
-            listener.onReceived(any())
-        } just Runs
-
-        purchases = Purchases(
-            mockContext,
-            null,
-            mockBackend,
-            mockBillingWrapper,
-            mockCache,
-            executorService = mockExecutorService
+    private fun stubOfferings(sku: String): Pair<SkuDetails, Offerings> {
+        val skuDetails = mockk<SkuDetails>().also {
+            every { it.sku } returns sku
+        }
+        val jsonObject = JSONObject(oneOfferingsResponse)
+        val packageObject = Package(
+            "\$rc_monthly",
+            PackageType.MONTHLY,
+            skuDetails,
+            stubOfferingIdentifier
         )
-        Purchases.sharedInstance = purchases
+        val offering = Offering(
+            stubOfferingIdentifier,
+            "This is the base offering",
+            listOf(packageObject)
+        )
+        val offerings = Offerings(
+            offering,
+            mapOf(offering.identifier to offering)
+        )
+        every {
+            jsonObject.createOfferings(any())
+        } returns offerings
+        return Pair(skuDetails, offerings)
     }
 
     @Test
@@ -137,7 +167,7 @@ class PurchasesTest {
 
         val skuDetails = ArrayList<SkuDetails>()
 
-        mockSkuDetailFetch(skuDetails, skus, SUBS)
+        mockSkuDetailFetch(skuDetails, skus, PurchaseType.SUBS)
 
         purchases.getSubscriptionSkus(skus,
             object : GetSkusResponseListener {
@@ -162,7 +192,7 @@ class PurchasesTest {
 
         val skuDetails = ArrayList<SkuDetails>()
 
-        mockSkuDetailFetch(skuDetails, skus, INAPP)
+        mockSkuDetailFetch(skuDetails, skus, PurchaseType.INAPP)
 
         purchases.getNonSubscriptionSkus(skus,
             object : GetSkusResponseListener {
@@ -188,7 +218,7 @@ class PurchasesTest {
             every { it.sku } returns sku
         }
 
-        purchases.makePurchaseWith(
+        purchases.purchaseProductWith(
             activity,
             skuDetails
         ) { _, _ -> }
@@ -198,7 +228,55 @@ class PurchasesTest {
                 eq(activity),
                 eq(appUserId),
                 skuDetails,
+                null,
                 null
+            )
+        }
+    }
+
+    @Test
+    fun canMakePurchaseOfAPackage() {
+        setup()
+
+        val activity: Activity = mockk()
+        val (skuDetails, offerings) = stubOfferings("onemonth_freetrial")
+
+        purchases.purchasePackageWith(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!
+        ) { _, _ -> }
+
+        verify {
+            mockBillingWrapper.makePurchaseAsync(
+                eq(activity),
+                eq(appUserId),
+                skuDetails,
+                null,
+                stubOfferingIdentifier
+            )
+        }
+    }
+
+    @Test
+    fun canMakePurchaseUpgradeOfAPackage() {
+        setup()
+
+        val activity: Activity = mockk()
+        val (skuDetails, offerings) = stubOfferings("onemonth_freetrial")
+
+        purchases.purchasePackageWith(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            "oldSku"
+        ) { _, _ -> }
+
+        verify {
+            mockBillingWrapper.makePurchaseAsync(
+                eq(activity),
+                eq(appUserId),
+                skuDetails,
+                "oldSku",
+                stubOfferingIdentifier
             )
         }
     }
@@ -212,8 +290,8 @@ class PurchasesTest {
         val purchaseTokenSub = "token_sub"
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, INAPP) +
-                getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+                getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS, "offering_a")
         )
 
         verify (exactly = 1) {
@@ -222,6 +300,7 @@ class PurchasesTest {
                 appUserId,
                 sku,
                 false,
+                null,
                 any(),
                 any()
             )
@@ -233,6 +312,7 @@ class PurchasesTest {
                 appUserId,
                 skuSub,
                 false,
+                "offering_a",
                 any(),
                 any()
             )
@@ -266,7 +346,13 @@ class PurchasesTest {
             every {
                 p.purchaseTime
             } returns System.currentTimeMillis()
-            val wrapper = PurchaseWrapper(p, SUBS)
+            every {
+                p.purchaseState
+            } returns Purchase.PurchaseState.PURCHASED
+            every {
+                p.isAcknowledged
+            } returns false
+            val wrapper = PurchaseWrapper(p, PurchaseType.SUBS, stubOfferingIdentifier)
             purchasesList.add(wrapper)
         }
 
@@ -278,6 +364,7 @@ class PurchasesTest {
                 appUserId,
                 sku,
                 false,
+                stubOfferingIdentifier,
                 any(),
                 any()
             )
@@ -296,6 +383,7 @@ class PurchasesTest {
                 any(),
                 any(),
                 false,
+                null,
                 any(),
                 any()
             )
@@ -306,7 +394,7 @@ class PurchasesTest {
     fun passesUpErrors() {
         setup()
         var errorCalled = false
-        purchases.makePurchaseWith(
+        purchases.purchaseProductWith(
             mockk(),
             mockk<SkuDetails>().also {
                 every { it.sku } returns "sku"
@@ -333,92 +421,33 @@ class PurchasesTest {
 
     @Test
     fun canBeSetupWithoutAppUserID() {
-        val mockInfo = mockk<PurchaserInfo>()
-
-        mockCache(mockInfo)
-        mockBackend(mockInfo)
-        mockBillingWrapper()
-
-        val purchases = Purchases(
-            mockContext,
-            null,
-            mockBackend,
-            mockBillingWrapper,
-            mockCache,
-            executorService = mockExecutorService
-        )
-
+        setup(anonymous = true)
         assertThat(purchases).isNotNull
 
-        val appUserID = purchases.appUserID
-        assertThat(appUserID).isNotNull()
-        assertThat(appUserID.length).isEqualTo(36)
-    }
-
-    @Test
-    fun storesGeneratedAppUserID() {
-        val mockInfo = mockk<PurchaserInfo>()
-
-        mockCache(mockInfo)
-        mockBackend(mockInfo)
-        mockBillingWrapper()
-
-        Purchases(
-            mockContext,
-            null,
-            mockBackend,
-            mockBillingWrapper,
-            mockCache,
-            executorService = mockExecutorService
-        )
-
-        verify {
-            mockCache.cacheAppUserID(any())
-        }
-    }
-
-    @Test
-    fun pullsUserIDFromCache() {
-        setup()
-
-        val appUserID = "random_id"
-        every {
-            mockCache.getCachedAppUserID()
-        } returns appUserID
-        val p = Purchases(
-            mockContext,
-            null,
-            mockBackend,
-            mockBillingWrapper,
-            mockCache,
-            executorService = mockExecutorService
-        )
-
-        assertThat(appUserID).isEqualTo(p.appUserID)
+        assertThat(purchases.appUserID).isEqualTo(randomAppUserId)
     }
 
     @Test
     fun isRestoreWhenUsingNullAppUserID() {
-        setup()
-
-        val purchases = Purchases(
-            mockContext,
-            null,
-            mockBackend,
-            mockBillingWrapper,
-            mockCache,
-            executorService = mockExecutorService
-        )
+        setup(anonymous = true)
 
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
         )
 
         verify {
-            mockBackend.postReceiptData(purchaseToken, purchases.appUserID, sku, true, any(), any())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                randomAppUserId,
+                sku,
+                true,
+                null,
+                any(),
+                any()
+            )
         }
     }
 
@@ -426,28 +455,20 @@ class PurchasesTest {
     fun doesntRestoreNormally() {
         setup()
 
-        val purchases = Purchases(
-            mockContext,
-            "a_fixed_id",
-            mockBackend,
-            mockBillingWrapper,
-            mockCache,
-            executorService = mockExecutorService
-        )
-
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
         )
 
         verify {
             mockBackend.postReceiptData(
                 purchaseToken,
-                purchases.appUserID,
+                appUserId,
                 sku,
                 false,
+                null,
                 any(),
                 any()
             )
@@ -458,25 +479,17 @@ class PurchasesTest {
     fun canOverrideAnonMode() {
         setup()
 
-        val purchases = Purchases(
-            mockContext,
-            "a_fixed_id",
-            mockBackend,
-            mockBillingWrapper,
-            mockCache,
-            executorService = mockExecutorService
-        )
         purchases.allowSharingPlayStoreAccount = true
 
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
         )
 
         verify {
-            mockBackend.postReceiptData(purchaseToken, purchases.appUserID, sku, true, any(), any())
+            mockBackend.postReceiptData(purchaseToken, appUserId, sku, true, null, any(), any())
         }
     }
 
@@ -523,8 +536,8 @@ class PurchasesTest {
         } answers {
             capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured
             capturedLambda?.invoke(
-                getMockedPurchaseList(sku, purchaseToken, INAPP) +
-                    getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+                getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+                    getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
             )
         }
 
@@ -540,9 +553,10 @@ class PurchasesTest {
         verify (exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseToken,
-                purchases.appUserID,
+                appUserId,
                 sku,
                 true,
+                null,
                 any(),
                 any()
             )
@@ -551,9 +565,10 @@ class PurchasesTest {
         verify (exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseTokenSub,
-                purchases.appUserID,
+                appUserId,
                 skuSub,
                 true,
+                null,
                 any(),
                 any()
             )
@@ -599,8 +614,8 @@ class PurchasesTest {
         } answers {
             capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseList(sku, purchaseToken, INAPP) +
-                        getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+                    getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+                        getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
                 )
             }
         }
@@ -612,6 +627,7 @@ class PurchasesTest {
                 any(),
                 any(),
                 true,
+                null,
                 captureLambda(),
                 any()
             )
@@ -643,11 +659,11 @@ class PurchasesTest {
         val purchaseToken = "crazy_purchase_token"
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
         )
 
         verify {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, false, any(), any())
+            mockBackend.postReceiptData(purchaseToken, appUserId, sku, false, null, any(), any())
         }
         verify(exactly = 2) {
             mockCache.cachePurchaserInfo(
@@ -658,130 +674,147 @@ class PurchasesTest {
     }
 
     @Test
-    fun getEntitlementsHitsBackend() {
-        mockProducts(listOf())
-        mockSkuDetails(listOf(), listOf(), "subs")
-
+    fun `if no cached offerings, backend is hit when getting offerings`() {
         setup()
 
-        verify {
-            mockBackend.getEntitlements(any(), any(), any())
+        val skus = listOf(stubProductIdentifier)
+        mockProducts()
+        mockSkuDetails(skus, skus, PurchaseType.SUBS)
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+
+        every {
+            mockCache.cachedOfferings
+        } returns null
+        every {
+            mockCache.cacheOfferings(any())
+        } just Runs
+
+        purchases.getOfferingsWith({ fail("should be a success") }) {
+            receivedOfferings = it
+        }
+
+        assertThat(receivedOfferings).isNotNull
+
+        verify (exactly = 2) {
+            mockBackend.getOfferings(any(), any(), any())
+        }
+        verify (exactly = 2) {
+            mockCache.cacheOfferings(any())
         }
     }
 
     @Test
-    fun getEntitlementsPopulatesMissingSkuDetails() {
+    fun `products are populated when getting offerings`() {
         setup()
 
-        val skus = listOf("monthly")
+        val skus = listOf(stubProductIdentifier)
+        mockProducts()
+        mockSkuDetails(skus, skus, PurchaseType.SUBS)
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
 
-        mockProducts(skus)
-        val details = mockSkuDetails(skus, skus, SUBS)
+        every {
+            mockCache.cachedOfferings
+        } returns null
+        every {
+            mockCache.cacheOfferings(any())
+        } just Runs
 
-        purchases.getEntitlementsWith(onSuccess = { entitlementMap ->
-            this@PurchasesTest.receivedEntitlementMap = entitlementMap
-        }, onError = {
-            fail("should be a success")
-        })
-
-        assertThat(receivedEntitlementMap).isNotNull
-
-        verify {
-            mockBillingWrapper.querySkuDetailsAsync(
-                eq(SUBS),
-                eq(skus),
-                any(),
-                any()
-            )
+        purchases.getOfferingsWith({ fail("should be a success") }) {
+            receivedOfferings = it
         }
 
-        val e = receivedEntitlementMap!!["pro"]
-        assertThat(e!!.offerings.size).isEqualTo(1)
-        val o = e.offerings["monthly_offering"]
-        assertThat(o!!.skuDetails).isEqualTo(details[0])
+        assertThat(receivedOfferings).isNotNull
+        assertThat(receivedOfferings!!.availableOfferings.size).isEqualTo(1)
+        assertThat(receivedOfferings!![stubOfferingIdentifier]!!.monthly!!.product).isNotNull
     }
 
     @Test
-    fun getEntitlementsDoesntCheckInappsUnlessThereAreMissingSubs() {
+    fun `if cached offerings are not stale`() {
+        setup()
 
-        val skus = ArrayList<String>()
-        val subsSkus = ArrayList<String>()
-        skus.add("monthly")
-        subsSkus.add("monthly")
+        mockProducts()
+        mockSkuDetails(listOf(), listOf(), PurchaseType.SUBS)
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
 
-        val inappSkus = ArrayList<String>()
-        skus.add("monthly_inapp")
-        inappSkus.add("monthly_inapp")
+        every {
+            mockCache.cachedOfferings
+        } returns offerings
+        every {
+            mockCache.isCacheStale()
+        } returns false
 
-        mockProducts(skus)
-        mockSkuDetails(skus, subsSkus, SUBS)
-        mockSkuDetails(inappSkus, inappSkus, INAPP)
+        purchases.getOfferingsWith({ fail("should be a success") }) {
+            receivedOfferings = it
+        }
 
+        assertThat(receivedOfferings).isEqualTo(offerings)
+
+        verify (exactly = 1) { // Once, from the setup
+            mockBackend.getOfferings(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `if cached offerings are stale, call backend`() {
+
+    }
+
+    @Test
+    fun getOfferingsIsCached() {
         setup()
 
         every {
-            mockBillingWrapper.querySkuDetailsAsync(
-                eq(SUBS),
-                eq<List<String>>(skus),
-                any(),
-                any()
-            )
-        }
+            mockCache.cachedOfferings
+        } returns null
         every {
-            mockBillingWrapper.querySkuDetailsAsync(
-                eq(INAPP),
-                eq<List<String>>(inappSkus),
-                any(),
-                any()
-            )
+            mockCache.cacheOfferings(any())
+        } just Runs
+
+        purchases.getOfferingsWith({ fail("should be a success") }) {
+            receivedOfferings = it
+        }
+
+        assertThat(receivedOfferings).isNotNull
+        verify {
+            mockCache.cacheOfferings(any())
         }
     }
 
     @Test
-    fun getEntitlementsIsCached() {
+    fun getOfferingsErrorIsNotCalledIfSkuDetailsMissing() {
         setup()
-        val skus = ArrayList<String>()
-        skus.add("monthly")
-        mockProducts(skus)
-        mockSkuDetails(skus, skus, SUBS)
+        every {
+            mockCache.cachedOfferings
+        } returns null
 
-        purchases.getEntitlementsWith(onSuccess = { entitlementMap ->
-            receivedEntitlementMap = entitlementMap
-        }, onError = {
-            fail("should be a success")
-        })
-
-        assertThat(receivedEntitlementMap).isNotNull
-        assertThat(purchases.state.cachedEntitlements).isEqualTo(receivedEntitlementMap)
-    }
-
-    @Test
-    fun getEntitlementsErrorIsNotCalledIfSkuDetailsMissing() {
-        setup()
-
-        val skus = listOf("monthly")
-        mockProducts(skus)
-        mockSkuDetails(skus, ArrayList(), SUBS)
-        mockSkuDetails(skus, ArrayList(), INAPP)
+        val skus = listOf(stubProductIdentifier)
+        mockProducts()
+        mockSkuDetails(skus, ArrayList(), PurchaseType.SUBS)
+        mockSkuDetails(skus, ArrayList(), PurchaseType.INAPP)
 
         val errorMessage = emptyArray<PurchasesError>()
 
-        purchases.getEntitlementsWith(onSuccess = { entitlementMap ->
-            receivedEntitlementMap = entitlementMap
-        }, onError = { error ->
-            errorMessage[0] = error
-        })
+        purchases.getOfferingsWith({ errorMessage[0] = it }) {
+            receivedOfferings = it
+        }
 
         assertThat(errorMessage.size).isZero()
-        assertThat(this.receivedEntitlementMap).isNotNull
+        assertThat(this.receivedOfferings).isNotNull
     }
 
     @Test
-    fun getEntitlementsErrorIsCalledIfNoBackendResponse() {
+    fun getOfferingsErrorIsCalledIfNoBackendResponse() {
         setup()
 
         every {
-            mockBackend.getEntitlements(
+            mockCache.cachedOfferings
+        } returns null
+        every {
+            mockCache.cacheOfferings(any())
+        } just Runs
+
+        every {
+            mockBackend.getOfferings(
                 any(),
                 any(),
                 captureLambda()
@@ -794,13 +827,37 @@ class PurchasesTest {
 
         var purchasesError: PurchasesError? = null
 
-        purchases.getEntitlementsWith(onSuccess = {
-            fail("should be an error")
-        }, onError = { error ->
+        purchases.getOfferingsWith({ error ->
             purchasesError = error
-        })
+        }) {
+            fail("should be an error")
+        }
 
         assertThat(purchasesError).isNotNull
+    }
+
+    @Test
+    fun getOfferingsErrorIsCalledIfBadBackendResponse() {
+        setup()
+        every {
+            mockBackend.getOfferings(any(), captureLambda(), any())
+        } answers {
+            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject("{}"))
+        }
+        every {
+            mockCache.cachedOfferings
+        } returns null
+
+        var purchasesError: PurchasesError? = null
+
+        purchases.getOfferingsWith({ error ->
+            purchasesError = error
+        }) {
+            fail("should be an error")
+        }
+
+        assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
     }
 
     @Test
@@ -870,6 +927,7 @@ class PurchasesTest {
                 appUserId,
                 sku,
                 false,
+                null,
                 any(),
                 captureLambda()
             )
@@ -882,8 +940,8 @@ class PurchasesTest {
         }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, INAPP) +
-                getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+                getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
         )
 
         verify (exactly = 1) {
@@ -892,6 +950,10 @@ class PurchasesTest {
 
         verify (exactly = 0) {
             mockBillingWrapper.consumePurchase(purchaseTokenSub,  any())
+        }
+
+        verify (exactly = 1) {
+            mockBillingWrapper.acknowledge(purchaseTokenSub,  any())
         }
         assertThat(capturedLambda).isNotNull
     }
@@ -913,6 +975,7 @@ class PurchasesTest {
                 appUserId,
                 sku,
                 false,
+                null,
                 any(),
                 captureLambda()
             )
@@ -930,6 +993,7 @@ class PurchasesTest {
                 appUserId,
                 skuSub,
                 false,
+                null,
                 any(),
                 captureLambda()
             )
@@ -943,8 +1007,8 @@ class PurchasesTest {
         }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, INAPP) +
-                getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+                getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
         )
 
         assertThat(capturedLambda).isNotNull
@@ -992,8 +1056,7 @@ class PurchasesTest {
     fun `given a successful aliasing, success handler is called`() {
         setup()
         every {
-            mockBackend.createAlias(
-                eq(appUserId),
+            mockIdentityManager.createAlias(
                 eq("new_id"),
                 captureLambda(),
                 any()
@@ -1024,8 +1087,7 @@ class PurchasesTest {
         setup()
         val purchasesError = PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
         every {
-            mockBackend.createAlias(
-                eq(appUserId),
+            mockIdentityManager.createAlias(
                 eq("new_id"),
                 any(),
                 captureLambda()
@@ -1044,69 +1106,44 @@ class PurchasesTest {
     }
 
     @Test
-    fun `given a successful aliasing, appUserID is identified`() {
+    fun `when identifying, user is identified and caches updated`() {
         setup()
+
         every {
-            mockBackend.createAlias(
-                eq(appUserId),
-                eq("new_id"),
-                captureLambda(),
-                any()
-            )
+            mockIdentityManager.identify("new_id", captureLambda(), any())
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
 
-        every {
-            mockBackend.getPurchaserInfo(eq("new_id"), captureLambda(), any())
-        } answers {
-            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockk())
-        }
-
-        purchases.createAlias("new_id")
-
-        verify(exactly = 2) {
-            mockCache.cachePurchaserInfo(any(), any())
-        }
-        assertThat(purchases.allowSharingPlayStoreAccount).isEqualTo(false)
-        assertThat(purchases.appUserID).isEqualTo("new_id")
-    }
-
-    @Test
-    fun `when identifying, appUserID is identified`() {
-        setup()
-
-        every {
-            mockBackend.getPurchaserInfo("new_id", captureLambda(), any())
-        } answers {
-            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockk(relaxed = true))
-        }
-
         purchases.identify("new_id")
 
-        verify(exactly = 2) {
-            mockCache.cachePurchaserInfo(any(), any())
+        verify (exactly = 1) {
+            mockIdentityManager.identify("new_id", any(), any())
         }
-        assertThat(purchases.allowSharingPlayStoreAccount).isEqualTo(false)
-        assertThat(purchases.appUserID).isEqualTo("new_id")
+        verify (exactly = 2) {
+            mockCache.setCachesLastUpdated()
+        }
+        verify (exactly = 1) {
+            mockBackend.getPurchaserInfo("new_id", any(), any())
+        }
+        verify (exactly = 1) {
+            mockBackend.getOfferings("new_id", any(), any())
+        }
     }
 
     @Test
-    fun `when resetting, random app user id is generated and saved`() {
+    fun `when resetting, identity manager is called`() {
         setup()
         every {
             mockCache.clearLatestAttributionData(appUserId)
         } just Runs
+        every {
+            mockIdentityManager.reset()
+        } just Runs
         purchases.reset()
-        val randomID = slot<String>()
         verify {
-            mockCache.cacheAppUserID(capture(randomID))
+            mockIdentityManager.reset()
         }
-        verify {
-            mockCache.clearLatestAttributionData(appUserId)
-        }
-        assertThat(purchases.appUserID).isEqualTo(randomID.captured)
-        assertThat(randomID.captured).isNotNull()
     }
 
     @Test
@@ -1123,10 +1160,10 @@ class PurchasesTest {
     fun `when setting listener, caches are retrieved`() {
         setup()
 
-        purchases.updatedPurchaserInfoListener = listener
+        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
 
         verify {
-            listener.onReceived(any())
+            updatedPurchaserInfoListener.onReceived(any())
         }
     }
 
@@ -1150,20 +1187,20 @@ class PurchasesTest {
     @Test
     fun `when setting listener, listener is called`() {
         setup()
-        purchases.updatedPurchaserInfoListener = listener
+        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
 
         verify(exactly = 1) {
-            listener.onReceived(any())
+            updatedPurchaserInfoListener.onReceived(any())
         }
     }
 
     @Test
     fun `when setting listener for anonymous user, listener is called`() {
-        setupAnonymous()
-        purchases.updatedPurchaserInfoListener = listener
+        setup(anonymous = true)
+        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
 
         verify(exactly = 1) {
-            listener.onReceived(any())
+            updatedPurchaserInfoListener.onReceived(any())
         }
     }
 
@@ -1172,48 +1209,48 @@ class PurchasesTest {
         setup()
         val info = mockk<PurchaserInfo>()
         every {
-            mockBackend.postReceiptData(any(), any(), any(), any(), captureLambda(), any())
+            mockBackend.postReceiptData(any(), any(), any(), any(), any(), captureLambda(), any())
         } answers {
             lambda<(PurchaserInfo) -> Unit>().captured.invoke(info)
         }
-        purchases.updatedPurchaserInfoListener = listener
+        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
         )
 
         verify(exactly = 2) {
-            listener.onReceived(any())
+            updatedPurchaserInfoListener.onReceived(any())
         }
     }
 
     @Test
     fun `given a random purchase update, listener is not called if purchaser info has not changed`() {
         setup()
-        purchases.updatedPurchaserInfoListener = listener
+        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
         )
 
         verify(exactly = 1) {
-            listener.onReceived(any())
+            updatedPurchaserInfoListener.onReceived(any())
         }
     }
 
     @Test
     fun `when making another purchase for a product for a pending product, error is issued`() {
         setup()
-        purchases.updatedPurchaserInfoListener = listener
+        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
 
         val skuDetails = mockk<SkuDetails>().also {
             every { it.sku } returns "sku"
         }
-        purchases.makePurchaseWith(
+        purchases.purchaseProductWith(
             mockk(),
             skuDetails,
             onError = { _, _ -> fail("Should be success") }) { _, _ ->
@@ -1221,7 +1258,7 @@ class PurchasesTest {
         }
 
         var errorCalled: PurchasesError? = null
-        purchases.makePurchaseWith(
+        purchases.purchaseProductWith(
             mockk(),
             skuDetails,
             onError = { error, _  ->
@@ -1247,7 +1284,7 @@ class PurchasesTest {
         }
 
         var callCount = 0
-        purchases.makePurchaseWith(
+        purchases.purchaseProductWith(
             activity,
             skuDetails,
             onSuccess = { _, _ ->
@@ -1255,10 +1292,10 @@ class PurchasesTest {
             }, onError = { _, _ -> fail("should be successful") })
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
         )
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
         )
 
         assertThat(callCount).isEqualTo(1)
@@ -1273,7 +1310,7 @@ class PurchasesTest {
         val sku1 = "onemonth_freetrial_1"
         val purchaseToken1 = "crazy_purchase_token_1"
         var callCount = 0
-        purchases.makePurchaseWith(
+        purchases.purchaseProductWith(
             activity,
             mockk<SkuDetails>().also {
                 every { it.sku } returns sku
@@ -1283,7 +1320,7 @@ class PurchasesTest {
             }, onError = { _, _ -> fail("should be successful") })
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku1, purchaseToken1, SUBS)
+            getMockedPurchaseList(sku1, purchaseToken1, PurchaseType.SUBS)
         )
 
         assertThat(callCount).isEqualTo(0)
@@ -1332,11 +1369,12 @@ class PurchasesTest {
         verify(exactly = 2) { mockBackend.getPurchaserInfo(any(), any(), any()) }
     }
 
-
     @Test
     fun `don't create an alias if the new app user id is the same`() {
         setup()
-
+        every {
+            mockCache.isCacheStale()
+        } returns false
         val lock = CountDownLatch(1)
         purchases.createAliasWith(appUserId) {
             lock.countDown()
@@ -1370,14 +1408,14 @@ class PurchasesTest {
 
         val activity: Activity = mockk()
 
-        purchases.makePurchaseWith(
+        purchases.purchaseProductWith(
             activity,
             mockk<SkuDetails>().also {
                 every { it.sku } returns "sku"
             }
         ) { _, _ -> }
 
-        purchases.makePurchaseWith(
+        purchases.purchaseProductWith(
             activity,
             mockk<SkuDetails>().also {
                 every { it.sku } returns "sku"
@@ -1400,13 +1438,14 @@ class PurchasesTest {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases()} returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         val listener = slot<BillingClientStateListener>()
         every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
         Purchases.isBillingSupported(mockContext, Callback {
             receivedIsBillingSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.OK)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isTrue()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1420,6 +1459,7 @@ class PurchasesTest {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases()} returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         val listener = slot<BillingClientStateListener>()
         every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
@@ -1440,13 +1480,14 @@ class PurchasesTest {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases()} returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         val listener = slot<BillingClientStateListener>()
         every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
         Purchases.isBillingSupported(mockContext, Callback {
             receivedIsBillingSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
         AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1456,7 +1497,9 @@ class PurchasesTest {
         setup()
         var featureSupported = false
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        every { mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS) } returns BillingClient.BillingResponse.OK
+        every {
+            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
+        } returns BillingClient.BillingResponseCode.OK.buildResult()
         mockkStatic(BillingClient::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
@@ -1467,7 +1510,7 @@ class PurchasesTest {
         Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
             featureSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.OK)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         AssertionsForClassTypes.assertThat(featureSupported).isTrue()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1500,7 +1543,7 @@ class PurchasesTest {
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         every {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
-        } returns BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED
+        } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
         mockkStatic(BillingClient::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
@@ -1511,7 +1554,7 @@ class PurchasesTest {
         Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
             featureSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
         AssertionsForClassTypes.assertThat(featureSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1523,7 +1566,7 @@ class PurchasesTest {
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         every {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
-        } returns BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED
+        } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
         mockkStatic(BillingClient::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
@@ -1535,7 +1578,7 @@ class PurchasesTest {
         Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
             featureSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
         AssertionsForClassTypes.assertThat(featureSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1550,6 +1593,7 @@ class PurchasesTest {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases()} returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         every { mockLocalBillingClient.endConnection() } throws mockk<IllegalArgumentException>()
         val listener = slot<BillingClientStateListener>()
@@ -1557,7 +1601,7 @@ class PurchasesTest {
         Purchases.isBillingSupported(mockContext, Callback {
             receivedIsBillingSupported = it
         })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponse.FEATURE_NOT_SUPPORTED)
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
         AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
@@ -1572,8 +1616,8 @@ class PurchasesTest {
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, INAPP) +
-            getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+            getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
         )
         verify(exactly = 1){
             mockBackend.postReceiptData(
@@ -1581,6 +1625,7 @@ class PurchasesTest {
                 appUserId,
                 sku,
                 false,
+                null,
                 any(),
                 any()
             )
@@ -1616,6 +1661,7 @@ class PurchasesTest {
                 appUserId,
                 sku,
                 false,
+                null,
                 any(),
                 captureLambda()
             )
@@ -1633,6 +1679,7 @@ class PurchasesTest {
                 appUserId,
                 skuSub,
                 false,
+                null,
                 any(),
                 captureLambda()
             )
@@ -1648,8 +1695,8 @@ class PurchasesTest {
         purchases.finishTransactions = false
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, INAPP) +
-                getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+                getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
         )
 
         assertThat(capturedLambda).isNotNull
@@ -1684,6 +1731,7 @@ class PurchasesTest {
                 appUserId,
                 sku,
                 false,
+                null,
                 any(),
                 captureLambda()
             )
@@ -1696,8 +1744,8 @@ class PurchasesTest {
         purchases.finishTransactions = false
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, INAPP) +
-            getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+            getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
         )
 
         assertThat(captured).isNotNull
@@ -1733,8 +1781,8 @@ class PurchasesTest {
         } answers {
             capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseList(sku, purchaseToken, INAPP) +
-                    getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+                    getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+                    getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
                 )
             }
         }
@@ -1745,9 +1793,10 @@ class PurchasesTest {
         verify (exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseToken,
-                purchases.appUserID,
+                appUserId,
                 sku,
                 false,
+                null,
                 any(),
                 any()
             )
@@ -1755,9 +1804,10 @@ class PurchasesTest {
         verify (exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseTokenSub,
-                purchases.appUserID,
+                appUserId,
                 skuSub,
                 false,
+                null,
                 any(),
                 any()
             )
@@ -1783,8 +1833,8 @@ class PurchasesTest {
         } answers {
             capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseList(sku, purchaseToken, INAPP) +
-                        getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+                    getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+                        getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
                 )
             }
         }
@@ -1793,14 +1843,23 @@ class PurchasesTest {
 
         assertThat(capturedLambda).isNotNull
         verify (exactly = 1) {
-            mockBackend.postReceiptData(purchaseToken, purchases.appUserID, sku, true, any(), any())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                true,
+                null,
+                any(),
+                any()
+            )
         }
         verify (exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseTokenSub,
-                purchases.appUserID,
+                appUserId,
                 skuSub,
                 true,
+                null,
                 any(),
                 any()
             )
@@ -1823,7 +1882,7 @@ class PurchasesTest {
             )
         } answers {
             capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
-                it.invoke(getMockedPurchaseList(sku, purchaseToken, INAPP))
+                it.invoke(getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP))
             }
         }
 
@@ -1831,10 +1890,11 @@ class PurchasesTest {
 
         verify {
             mockBackend.postReceiptData(
-                eq(purchaseToken),
-                eq(purchases.appUserID),
-                eq(sku),
-                eq(true),
+                purchaseToken,
+                appUserId,
+                sku,
+                true,
+                null,
                 any(),
                 any()
             )
@@ -1844,8 +1904,6 @@ class PurchasesTest {
         }
         assertThat(capturedLambda).isNotNull
     }
-
-    // TODO: syncing subscriptions never consumes them
 
     @Test
     fun `Data is successfully postponed if no instance is set`() {
@@ -2062,50 +2120,8 @@ class PurchasesTest {
 
     @Test
     fun `caches are not cleared if update purchaser info fails`() {
-        val mockInfo = mockk<PurchaserInfo>()
-
-        mockCache(mockInfo)
-        with(mockBackend) {
-            val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
-            every {
-                getPurchaserInfo(any(), any(), captureLambda())
-            } answers {
-                lambda<(PurchasesError) -> Unit>().captured.invoke(purchasesError)
-            }
-            every {
-                getEntitlements(any(), captureLambda(), any())
-            } answers {
-                lambda<(Map<String, Entitlement>) -> Unit>().captured.invoke(
-                    mapOf(
-                        "entitlement" to Entitlement(mapOf("sku" to Offering("sku")))
-                    )
-                )
-            }
-            every {
-                postReceiptData(any(), any(), any(), any(), captureLambda(), any())
-            } answers {
-                lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
-            }
-            every {
-                close()
-            } just Runs
-        }
-        mockBillingWrapper()
-        every {
-            listener.onReceived(any())
-        } just Runs
-
-        purchases = Purchases(
-            mockContext,
-            appUserId,
-            mockBackend,
-            mockBillingWrapper,
-            mockCache,
-            executorService = mockExecutorService
-        )
-        Purchases.sharedInstance = purchases
-
-        verify (exactly = 0) { mockCache.clearCachedPurchaserInfo(any()) }
+        setup(PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"))
+        verify (exactly = 0) { mockCache.clearCachesForAppUserID() }
     }
 
     @Test
@@ -2114,8 +2130,13 @@ class PurchasesTest {
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(sku, purchaseToken, INAPP))
-        capturedConsumeResponseListener.captured.invoke(2, purchaseToken)
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            sku,
+            purchaseToken,
+            PurchaseType.INAPP,
+            null
+        ))
+        capturedConsumeResponseListener.captured.invoke(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(), purchaseToken)
         verify (exactly = 0) {
             mockCache.addSuccessfullyPostedToken(purchaseToken)
         }
@@ -2131,10 +2152,11 @@ class PurchasesTest {
         var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
         every {
             mockBackend.postReceiptData(
-                eq(purchaseToken),
-                eq(appUserId),
-                eq(sku),
-                eq(false),
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                null,
                 any(),
                 captureLambda()
             )
@@ -2142,17 +2164,21 @@ class PurchasesTest {
             capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
         }
 
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(sku, purchaseToken, INAPP))
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            sku,
+            purchaseToken,
+            PurchaseType.INAPP,
+            null
+        ))
         capturedLambda!!.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
             true
         )
-        capturedConsumeResponseListener.captured.invoke(2, purchaseToken)
+        capturedConsumeResponseListener.captured.invoke(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(), purchaseToken)
         verify (exactly = 0 ) {
             mockCache.addSuccessfullyPostedToken(purchaseToken)
         }
     }
-
 
     @Test
     fun `successfully posted receipts are saved in cache after consumption`() {
@@ -2160,8 +2186,13 @@ class PurchasesTest {
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(sku, purchaseToken, INAPP))
-        capturedConsumeResponseListener.captured.invoke(0, purchaseToken)
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            sku,
+            purchaseToken,
+            PurchaseType.INAPP,
+            null
+        ))
+        capturedConsumeResponseListener.captured.invoke(BillingClient.BillingResponseCode.OK.buildResult(), purchaseToken)
         verify (exactly = 1) {
             mockCache.addSuccessfullyPostedToken(purchaseToken)
         }
@@ -2181,6 +2212,7 @@ class PurchasesTest {
                 appUserId,
                 sku,
                 false,
+                null,
                 any(),
                 captureLambda()
             )
@@ -2188,14 +2220,22 @@ class PurchasesTest {
             capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
         }
 
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(sku, purchaseToken, INAPP))
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            sku,
+            purchaseToken,
+            PurchaseType.INAPP,
+            null
+        ))
         capturedLambda!!.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
             true
         )
-        capturedConsumeResponseListener.captured.invoke(0, "crazy_purchase_token")
+        capturedConsumeResponseListener.captured.invoke(BillingClient.BillingResponseCode.OK.buildResult(), "crazy_purchase_token")
         verify (exactly = 1) {
             mockCache.addSuccessfullyPostedToken("crazy_purchase_token")
+        }
+        verify (exactly = 1) {
+            mockBillingWrapper.consumePurchase("crazy_purchase_token", any())
         }
     }
 
@@ -2216,6 +2256,7 @@ class PurchasesTest {
                 appUserId,
                 sku,
                 false,
+                null,
                 any(),
                 captureLambda()
             )
@@ -2230,6 +2271,7 @@ class PurchasesTest {
                 appUserId,
                 skuSub,
                 false,
+                null,
                 any(),
                 captureLambda()
             )
@@ -2240,8 +2282,8 @@ class PurchasesTest {
         }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(sku, purchaseToken, INAPP) +
-                getMockedPurchaseList(skuSub, purchaseTokenSub, SUBS)
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
+                getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
         )
 
         assertThat(capturedLambda).isNotNull
@@ -2262,8 +2304,9 @@ class PurchasesTest {
         val purchase = mockk<Purchase>(relaxed = true).apply {
             every { purchaseToken } returns "token"
             every { sku } returns "product"
+            every { purchaseState } returns Purchase.PurchaseState.PURCHASED
         }
-        val activePurchase = PurchaseWrapper(purchase, SUBS)
+        val activePurchase = PurchaseWrapper(purchase, PurchaseType.SUBS, null)
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(purchase.purchaseToken.sha1() to activePurchase),
             queriedINAPP = emptyMap(),
@@ -2276,6 +2319,7 @@ class PurchasesTest {
                 appUserId,
                 "product",
                 true,
+                null,
                 any(),
                 any()
             )
@@ -2301,10 +2345,10 @@ class PurchasesTest {
         )
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 1) {
-            mockBillingWrapper.queryPurchases(SUBS)
+            mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)
         }
         verify (exactly = 1) {
-            mockBillingWrapper.queryPurchases(INAPP)
+            mockBillingWrapper.queryPurchases(PurchaseType.INAPP.toSKUType()!!)
         }
     }
 
@@ -2314,8 +2358,9 @@ class PurchasesTest {
         val purchase = mockk<Purchase>(relaxed = true).apply {
             every { purchaseToken } returns "token"
             every { sku } returns "product"
+            every { purchaseState } returns Purchase.PurchaseState.PURCHASED
         }
-        val newPurchase = PurchaseWrapper(purchase, SUBS)
+        val newPurchase = PurchaseWrapper(purchase, PurchaseType.SUBS, null)
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(purchase.purchaseToken.sha1() to newPurchase),
             queriedINAPP = emptyMap(),
@@ -2328,6 +2373,7 @@ class PurchasesTest {
                 appUserId,
                 "product",
                 false,
+                null,
                 any(),
                 any()
             )
@@ -2343,7 +2389,11 @@ class PurchasesTest {
             every { sku } returns "product"
         }
         mockSuccessfulQueryPurchases(
-            queriedSUBS = mapOf(purchase.purchaseToken.sha1() to PurchaseWrapper(purchase, SUBS)),
+            queriedSUBS = mapOf(purchase.purchaseToken.sha1() to PurchaseWrapper(
+                purchase,
+                PurchaseType.SUBS,
+                null
+            )),
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
@@ -2354,6 +2404,7 @@ class PurchasesTest {
                 appUserId,
                 "product",
                 false,
+                null,
                 any(),
                 any()
             )
@@ -2367,10 +2418,10 @@ class PurchasesTest {
             mockExecutorService.isShutdown
         } returns false
         every {
-            mockBillingWrapper.queryPurchases(SUBS)
+            mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)
         } returns BillingWrapper.QueryPurchasesResult(-1, emptyMap())
         every {
-            mockBillingWrapper.queryPurchases(INAPP)
+            mockBillingWrapper.queryPurchases(PurchaseType.INAPP.toSKUType()!!)
         } returns BillingWrapper.QueryPurchasesResult(0, emptyMap())
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 0) {
@@ -2385,10 +2436,10 @@ class PurchasesTest {
             mockExecutorService.isShutdown
         } returns false
         every {
-            mockBillingWrapper.queryPurchases(SUBS)
+            mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)
         } returns BillingWrapper.QueryPurchasesResult(0, emptyMap())
         every {
-            mockBillingWrapper.queryPurchases(INAPP)
+            mockBillingWrapper.queryPurchases(PurchaseType.INAPP.toSKUType()!!)
         } returns BillingWrapper.QueryPurchasesResult(-1, emptyMap())
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 0) {
@@ -2406,10 +2457,10 @@ class PurchasesTest {
         )
         capturedBillingWrapperStateListener.captured.onConnected()
         verify (exactly = 1) {
-            mockBillingWrapper.queryPurchases(SUBS)
+            mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)
         }
         verify (exactly = 1) {
-            mockBillingWrapper.queryPurchases(INAPP)
+            mockBillingWrapper.queryPurchases(PurchaseType.INAPP.toSKUType()!!)
         }
     }
 
@@ -2423,10 +2474,10 @@ class PurchasesTest {
         )
         purchases.onAppForegrounded()
         verify (exactly = 1) {
-            mockBillingWrapper.queryPurchases(SUBS)
+            mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)
         }
         verify (exactly = 1) {
-            mockBillingWrapper.queryPurchases(INAPP)
+            mockBillingWrapper.queryPurchases(PurchaseType.INAPP.toSKUType()!!)
         }
     }
 
@@ -2438,10 +2489,10 @@ class PurchasesTest {
         } returns false
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 0) {
-            mockBillingWrapper.queryPurchases(SUBS)
+            mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)
         }
         verify (exactly = 0) {
-            mockBillingWrapper.queryPurchases(INAPP)
+            mockBillingWrapper.queryPurchases(PurchaseType.INAPP.toSKUType()!!)
         }
     }
 
@@ -2457,12 +2508,234 @@ class PurchasesTest {
         }
     }
 
+    @Test
+    fun `Do not post or consume pending purchases`() {
+        setup()
+        val sku = "inapp"
+        val purchaseToken = "token_inapp"
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP, purchaseState = Purchase.PurchaseState.PENDING) +
+                getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS, "offering_a", purchaseState = Purchase.PurchaseState.PENDING)
+        )
+
+        verify (exactly = 0) {
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                null,
+                any(),
+                any()
+            )
+        }
+
+        verify (exactly = 0) {
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                "offering_a",
+                any(),
+                any()
+            )
+        }
+
+        verify (exactly = 0) {
+            mockBillingWrapper.consumePurchase(any(), any())
+        }
+
+        verify (exactly = 0) {
+            mockBillingWrapper.acknowledge(any(), any())
+        }
+
+        verify (exactly = 0) {
+            mockCache.addSuccessfullyPostedToken(any())
+        }
+    }
+
+    @Test
+    fun `Do not acknowledge purchases that are already acknowledged`() {
+        setup()
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS, "offering_a", acknowledged = true)
+        )
+
+        verify (exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                "offering_a",
+                any(),
+                any()
+            )
+        }
+
+        verify (exactly = 0) {
+            mockBillingWrapper.acknowledge(any(), any())
+        }
+
+        verify (exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(any())
+        }
+    }
+
+    @Test
+    fun `Acknowledge subscriptions`() {
+        setup()
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(
+                skuSub,
+                purchaseTokenSub,
+                PurchaseType.SUBS,
+                "offering_a",
+                acknowledged = false
+            )
+        )
+
+        capturedAcknowledgeResponseListener.captured.invoke(BillingClient.BillingResponseCode.OK.buildResult(), purchaseTokenSub)
+
+        verify (exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                "offering_a",
+                any(),
+                any()
+            )
+        }
+
+        verify (exactly = 1) {
+            mockBillingWrapper.acknowledge(any(), any())
+        }
+
+        verify (exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(any())
+        }
+    }
+
+    @Test
+    fun `successfully posted receipts are not save in cache if acknowledge fails`() {
+        setup()
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            skuSub,
+            purchaseTokenSub,
+            PurchaseType.SUBS,
+            "offering_a"
+        ))
+        capturedAcknowledgeResponseListener.captured.invoke(
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+            purchaseTokenSub
+        )
+        verify (exactly = 0) {
+            mockCache.addSuccessfullyPostedToken(purchaseTokenSub)
+        }
+    }
+
+    @Test
+    fun `when error posting subscription, tokens are not saved in cache if error is finishable and acknowledgement fails`() {
+        setup()
+
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        every {
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                "offering_a",
+                any(),
+                captureLambda()
+            )
+        } answers {
+            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
+        }
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            skuSub,
+            purchaseTokenSub,
+            PurchaseType.SUBS,
+            "offering_a"
+        ))
+        capturedLambda!!.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+            true
+        )
+        capturedAcknowledgeResponseListener.captured.invoke(
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+            purchaseTokenSub
+        )
+        verify (exactly = 0 ) {
+            mockCache.addSuccessfullyPostedToken(purchaseTokenSub)
+        }
+    }
+
+    @Test
+    fun `when error posting subscription receipts, tokens are saved in cache if error is finishable`() {
+        setup()
+
+        val skuSub = "sub"
+        val purchaseTokenSub = "token_sub"
+
+        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        every {
+            mockBackend.postReceiptData(
+                purchaseTokenSub,
+                appUserId,
+                skuSub,
+                false,
+                null,
+                any(),
+                captureLambda()
+            )
+        } answers {
+            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
+        }
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            skuSub,
+            purchaseTokenSub,
+            PurchaseType.SUBS,
+            null
+        ))
+        capturedLambda!!.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+            true
+        )
+        capturedAcknowledgeResponseListener.captured.invoke(
+            BillingClient.BillingResponseCode.OK.buildResult(),
+            purchaseTokenSub
+        )
+        verify (exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(purchaseTokenSub)
+        }
+    }
+
     // region Private Methods
-    private fun mockSkuDetailFetch(details: List<SkuDetails>, skus: List<String>, skuType: String) {
+    private fun mockSkuDetailFetch(details: List<SkuDetails>, skus: List<String>, purchaseType: PurchaseType) {
         every {
             mockBillingWrapper.querySkuDetailsAsync(
-                eq(skuType),
-                eq(skus),
+                purchaseType.toSKUType()!!,
+                skus,
                 captureLambda(),
                 any()
             )
@@ -2474,16 +2747,19 @@ class PurchasesTest {
     private fun mockBillingWrapper() {
         with(mockBillingWrapper) {
             every {
-                querySkuDetailsAsync(any(), any(), any(), any())
-            } just Runs
-            every {
-                makePurchaseAsync(any(), any(), any(), any())
+                makePurchaseAsync(any(), any(), any(), any(), any())
             } just Runs
             every {
                 purchasesUpdatedListener = capture(capturedPurchasesUpdatedListener)
             } just Runs
             every {
                 consumePurchase(any(), capture(capturedConsumeResponseListener))
+            } just Runs
+            every {
+                acknowledge(any(), capture(capturedAcknowledgeResponseListener))
+            } just Runs
+            every {
+                acknowledge(any(), capture(capturedAcknowledgeResponseListener))
             } just Runs
             every {
                 purchasesUpdatedListener = null
@@ -2497,30 +2773,30 @@ class PurchasesTest {
         }
     }
 
-    private fun mockBackend(mockInfo: PurchaserInfo) {
+    private fun mockBackend(
+        mockInfo: PurchaserInfo,
+        errorGettingPurchaserInfo: PurchasesError? = null
+    ) {
         with(mockBackend) {
+            if (errorGettingPurchaserInfo != null) {
+                every {
+                    getPurchaserInfo(any(), any(), captureLambda())
+                } answers {
+                    lambda<(PurchasesError) -> Unit>().captured.invoke(errorGettingPurchaserInfo)
+                }
+            } else {
+                every {
+                    getPurchaserInfo(any(), captureLambda(), any())
+                } answers {
+                    lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+                }
+            }
+            mockProducts()
             every {
-                getPurchaserInfo(any(), captureLambda(), any())
+                postReceiptData(any(), any(), any(), any(), any(), captureLambda(), any())
             } answers {
                 lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
             }
-            every {
-                getEntitlements(any(), captureLambda(), any())
-            } answers {
-                lambda<(Map<String, Entitlement>) -> Unit>().captured.invoke(
-                    mapOf(
-                        "entitlement" to Entitlement(mapOf("sku" to Offering("sku")))
-                    )
-                )
-            }
-            every {
-                postReceiptData(any(), any(), any(), any(), captureLambda(), any())
-            } answers {
-                lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
-            }
-            every {
-                mockCache.addSuccessfullyPostedToken(any())
-            } just Runs
             every {
                 close()
             } just Runs
@@ -2542,33 +2818,38 @@ class PurchasesTest {
                 cacheAppUserID(any())
             } just Runs
             every {
-                clearCachedPurchaserInfo(any())
+                getCachedAttributionData(Purchases.AttributionNetwork.APPSFLYER, appUserId)
+            } returns null
+            every {
+                setCachesLastUpdated()
             } just Runs
             every {
-                mockCache.getCachedAttributionData(Purchases.AttributionNetwork.APPSFLYER, appUserId)
-            } returns null
+                invalidateCaches()
+            } just Runs
+            every {
+                isCacheStale()
+            } returns false
+            every {
+                addSuccessfullyPostedToken(any())
+            } just Runs
+            every {
+                mockCache.cacheOfferings(any())
+            } just Runs
         }
     }
 
-    private fun mockProducts(skus: List<String>) {
+    private fun mockProducts() {
         every {
-            mockBackend.getEntitlements(any(), captureLambda(), any())
+            mockBackend.getOfferings(any(), captureLambda(), any())
         } answers {
-            val offeringMap = skus.map { sku -> sku + "_offering" to Offering(sku) }.toMap()
-            lambda<(Map<String, Entitlement>) -> Unit>().captured.invoke(
-                mapOf(
-                    "pro" to Entitlement(
-                        offeringMap
-                    )
-                )
-            )
+            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(oneOfferingsResponse))
         }
     }
 
     private fun mockSkuDetails(
         skus: List<String>,
         returnSkus: List<String>,
-        type: String
+        type: PurchaseType
     ): List<SkuDetails> {
         val skuDetailsList = returnSkus.map { sku ->
             mockk<SkuDetails>().also {
@@ -2631,7 +2912,10 @@ class PurchasesTest {
     private fun getMockedPurchaseList(
         sku: String,
         purchaseToken: String,
-        skuType: String
+        purchaseType: PurchaseType,
+        offeringIdentifier: String? = null,
+        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
+        acknowledged: Boolean = false
     ): ArrayList<PurchaseWrapper> {
         val p: Purchase = mockk()
         every {
@@ -2643,8 +2927,14 @@ class PurchasesTest {
         every {
             p.purchaseTime
         } returns System.currentTimeMillis()
+        every {
+            p.purchaseState
+        } returns purchaseState
+        every {
+            p.isAcknowledged
+        } returns acknowledged
         val purchasesList = ArrayList<PurchaseWrapper>()
-        purchasesList.add(PurchaseWrapper(p, skuType))
+        purchasesList.add(PurchaseWrapper(p, purchaseType, offeringIdentifier))
         return purchasesList
     }
 
@@ -2671,11 +2961,28 @@ class PurchasesTest {
             )
         } returns notInCache
         every {
-            mockBillingWrapper.queryPurchases(SUBS)
+            mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)
         } returns queryPurchasesResultSUBS
         every {
-            mockBillingWrapper.queryPurchases(INAPP)
+            mockBillingWrapper.queryPurchases(PurchaseType.INAPP.toSKUType()!!)
         } returns queryPurchasesResultINAPP
+    }
+
+    private fun buildPurchases(anonymous: Boolean = false) {
+        purchases = Purchases(
+            mockContext,
+            if (anonymous) null else appUserId,
+            mockBackend,
+            mockBillingWrapper,
+            mockCache,
+            executorService = mockExecutorService,
+            identityManager = mockIdentityManager
+        )
+        Purchases.sharedInstance = purchases
+    }
+
+    private fun Int.buildResult(): BillingResult {
+        return BillingResult.newBuilder().setResponseCode(this).build()
     }
 
     // endregion

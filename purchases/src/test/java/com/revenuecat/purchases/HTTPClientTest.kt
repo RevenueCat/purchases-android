@@ -32,7 +32,7 @@ class HTTPClientTest {
         @JvmStatic
         fun setup() {
             server = MockWebServer()
-            baseURL = server.url("/v1").url()
+            baseURL = server.url("/v1").toUrl()
         }
 
         @AfterClass
@@ -154,6 +154,6 @@ class HTTPClientTest {
         val request = server.takeRequest()
         assertThat(request.method).`as`("method is POST").isEqualTo("POST")
         assertThat(request.body).`as`("body is not null").isNotNull
-        assertThat(request.body.size()).isGreaterThan(0)
+        assertThat(request.body.size).isGreaterThan(0)
     }
 }
