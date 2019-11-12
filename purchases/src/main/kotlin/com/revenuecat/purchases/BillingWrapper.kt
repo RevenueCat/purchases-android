@@ -156,11 +156,11 @@ internal class BillingWrapper internal constructor(
         activity: Activity,
         appUserID: String,
         skuDetails: SkuDetails,
-        oldSku: String?,
+        upgradeInfo: UpgradeInfo?,
         presentedOfferingIdentifier: String?
     ) {
-        if (oldSku != null) {
-            debugLog("Upgrading old sku $oldSku with sku: ${skuDetails.sku}")
+        if (upgradeInfo != null) {
+            debugLog("Upgrading old sku ${upgradeInfo.oldSku} with sku: ${skuDetails.sku}")
         } else {
             debugLog("Making purchase for sku: ${skuDetails.sku}")
         }
@@ -172,7 +172,12 @@ internal class BillingWrapper internal constructor(
             val params = BillingFlowParams.newBuilder()
                 .setSkuDetails(skuDetails)
                 .setAccountId(appUserID)
-                .setOldSku(oldSku).build()
+                .setOldSku(upgradeInfo?.oldSku)
+                .apply {
+                    upgradeInfo?.prorationMode?.let { prorationMode ->
+                        setReplaceSkusProrationMode(prorationMode)
+                    }
+                }.build()
 
             launchBillingFlow(activity, params)
         }

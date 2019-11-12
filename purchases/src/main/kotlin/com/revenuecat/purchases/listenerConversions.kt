@@ -105,38 +105,39 @@ fun Purchases.purchaseProductWith(
 }
 
 /**
- * Purchase product.
+ * Make a purchase.
  * @param [activity] Current activity
  * @param [skuDetails] The skuDetails of the product you wish to purchase
+ * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
 fun Purchases.purchaseProductWith(
     activity: Activity,
     skuDetails: SkuDetails,
-    oldSku: String,
+    upgradeInfo: UpgradeInfo,
     onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
     onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
-    purchaseProduct(activity, skuDetails, oldSku, purchaseCompletedListener(onSuccess, onError))
+    purchaseProduct(activity, skuDetails, upgradeInfo, purchaseCompletedListener(onSuccess, onError))
 }
 
 /**
  * Make a purchase.
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
- * @param [oldSku] The sku you wish to upgrade from.
+ * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
-    oldSku: String,
+    upgradeInfo: UpgradeInfo,
     onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
     onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
-    purchasePackage(activity, packageToPurchase, oldSku, purchaseCompletedListener(onSuccess, onError))
+    purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseCompletedListener(onSuccess, onError))
 }
 
 /**

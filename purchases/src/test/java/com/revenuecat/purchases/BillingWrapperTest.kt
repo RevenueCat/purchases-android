@@ -238,7 +238,7 @@ class BillingWrapperTest {
             every { it.sku } returns "product_a"
             every { it.type } returns BillingClient.SkuType.SUBS
         }
-        val oldSku = "product_b"
+        val upgradeInfo = UpgradeInfo("product_b")
 
         val activity: Activity = mockk()
 
@@ -247,7 +247,7 @@ class BillingWrapperTest {
             activity,
             "jerry",
             skuDetails,
-            oldSku,
+            upgradeInfo,
             "offering_a"
         )
 
@@ -266,7 +266,7 @@ class BillingWrapperTest {
         val sku = "product_a"
         @BillingClient.SkuType val skuType = BillingClient.SkuType.SUBS
 
-        val oldSku = "product_b"
+        val upgradeInfo = UpgradeInfo("product_b", BillingFlowParams.ProrationMode.DEFERRED)
         val activity: Activity = mockk()
         val skuDetails = mockk<SkuDetails>().also {
             every { it.sku } returns sku
@@ -280,7 +280,8 @@ class BillingWrapperTest {
             val params = slot.captured
             assertThat(sku).isEqualTo(params.sku)
             assertThat(skuType).isEqualTo(params.skuType)
-            assertThat(oldSku).isEqualTo(params.oldSku)
+            assertThat(upgradeInfo.oldSku).isEqualTo(params.oldSku)
+            assertThat(upgradeInfo.prorationMode).isEqualTo(params.replaceSkusProrationMode)
             assertThat(appUserID).isEqualTo(params.accountId)
             BillingClient.BillingResponseCode.OK.buildResult()
         }
@@ -290,7 +291,7 @@ class BillingWrapperTest {
             activity,
             appUserID,
             skuDetails,
-            oldSku,
+            upgradeInfo,
             null
         )
     }
@@ -317,7 +318,7 @@ class BillingWrapperTest {
             activity,
             appUserID,
             skuDetails,
-            "product_b",
+            UpgradeInfo("product_b"),
             null
         )
 
@@ -350,7 +351,7 @@ class BillingWrapperTest {
         }
         val appUserID = "jerry"
 
-        val oldSku = "product_b"
+        val upgradeInfo = UpgradeInfo("product_b")
 
         val activity: Activity = mockk()
 
@@ -358,7 +359,7 @@ class BillingWrapperTest {
             activity,
             appUserID,
             skuDetails,
-            oldSku,
+            upgradeInfo,
             null
         )
 

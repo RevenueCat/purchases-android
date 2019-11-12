@@ -29,8 +29,8 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.*
 import java.util.Collections.emptyMap
-import java.util.HashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -227,16 +227,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Purchase a product.
      * @param [activity] Current activity
      * @param [skuDetails] The skuDetails of the product you wish to purchase
-     * @param [oldSku] The sku you wish to upgrade from.
+     * @param [upgradeInfo] The UpgradeInfo you wish to upgrade from containing the oldSku and the optional prorationMode.
      * @param [listener] The listener that will be called when purchase completes.
      */
     fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
-        oldSku: String,
+        upgradeInfo: UpgradeInfo,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, skuDetails, null, oldSku, listener)
+        startPurchase(activity, skuDetails, null, upgradeInfo, listener)
     }
 
     /**
@@ -257,16 +257,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Make a purchase.
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
-     * @param [oldSku] The sku you wish to upgrade from.
+     * @param [upgradeInfo] The UpgradeInfo you wish to upgrade from containing the oldSku and the optional prorationMode.
      * @param [listener] The listener that will be called when purchase completes.
      */
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
-        oldSku: String,
+        upgradeInfo: UpgradeInfo,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, packageToPurchase.product, packageToPurchase.offering, oldSku, listener)
+        startPurchase(activity, packageToPurchase.product, packageToPurchase.offering, upgradeInfo, listener)
     }
 
     /**
@@ -854,7 +854,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         activity: Activity,
         product: SkuDetails,
         presentedOfferingIdentifier: String?,
-        oldSku: String?,
+        upgradeInfo: UpgradeInfo?,
         listener: MakePurchaseListener
     ) {
         debugLog("purchase started - product: $product ${ presentedOfferingIdentifier?.let { " - offering: $presentedOfferingIdentifier" }}")
@@ -870,9 +870,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 userPurchasing = identityManager.currentAppUserID
             }
         }
-
         userPurchasing?.let { appUserID ->
-            billingWrapper.makePurchaseAsync(activity, appUserID, product, oldSku, presentedOfferingIdentifier)
+            billingWrapper.makePurchaseAsync(activity, appUserID, product, upgradeInfo, presentedOfferingIdentifier)
         } ?: dispatch {
             listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
         }
