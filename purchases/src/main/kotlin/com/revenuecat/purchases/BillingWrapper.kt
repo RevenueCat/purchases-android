@@ -47,7 +47,7 @@ internal class BillingWrapper internal constructor(
             }
         }
 
-    private val productTypes = mutableMapOf<String, String>()
+    private val productTypes = mutableMapOf<String, PurchaseType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
 
     private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
@@ -165,7 +165,7 @@ internal class BillingWrapper internal constructor(
             debugLog("Making purchase for sku: ${skuDetails.sku}")
         }
         synchronized(this@BillingWrapper) {
-            productTypes[skuDetails.sku] = skuDetails.type
+            productTypes[skuDetails.sku] = PurchaseType.fromSKUType(skuDetails.type)
             presentedOfferingsByProductIdentifier[skuDetails.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
@@ -225,8 +225,8 @@ internal class BillingWrapper internal constructor(
                     SkuType.INAPP,
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
-                            subsPurchasesList.map { PurchaseWrapper(it, SkuType.SUBS) } +
-                                inAppPurchasesList.map { PurchaseWrapper(it, SkuType.INAPP) }
+                            subsPurchasesList.map { PurchaseWrapper(it, PurchaseType.SUBS) } +
+                                inAppPurchasesList.map { PurchaseWrapper(it, PurchaseType.INAPP) }
                         )
                     },
                     onReceivePurchaseHistoryError
@@ -284,10 +284,24 @@ internal class BillingWrapper internal constructor(
                 purchasesList.map { purchase ->
                     val hash = purchase.purchaseToken.sha1()
                     debugLog("[QueryPurchases] Purchase of type $skuType with hash $hash")
-                    hash to PurchaseWrapper(purchase, skuType, null)
+                    hash to PurchaseWrapper(purchase, PurchaseType.fromSKUType(skuType), null)
                 }.toMap()
             )
         }
+    }
+
+    internal fun getPurchaseType(purchaseToken: String): PurchaseType {
+        billingClient?.let { client ->
+            val querySubsResult = client.queryPurchases(SkuType.SUBS)
+            if (querySubsResult.responseCode == BillingClient.BillingResponseCode.OK && querySubsResult.purchasesList.any { it.purchaseToken == purchaseToken }) {
+                return PurchaseType.SUBS
+            }
+            val queryINAPPsResult = client.queryPurchases(SkuType.INAPP)
+            if (queryINAPPsResult.responseCode == BillingClient.BillingResponseCode.OK && queryINAPPsResult.purchasesList.any { it.purchaseToken == purchaseToken }) {
+                return PurchaseType.INAPP
+            }
+        }
+        return PurchaseType.UNKNOWN
     }
 
     override fun onPurchasesUpdated(
@@ -297,13 +311,17 @@ internal class BillingWrapper internal constructor(
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
             purchases.map { purchase ->
                 debugLog("BillingWrapper purchases updated. ${purchase.toHumanReadableDescription()}")
-                var type: String?
+                var type: PurchaseType?
                 var presentedOffering: String?
                 synchronized(this@BillingWrapper) {
                     type = productTypes[purchase.sku]
                     presentedOffering = presentedOfferingsByProductIdentifier[purchase.sku]
                 }
-                PurchaseWrapper(purchase, type, presentedOffering)
+                PurchaseWrapper(
+                    purchase,
+                    type ?: getPurchaseType(purchase.purchaseToken),
+                    presentedOffering
+                )
             }.let { mappedPurchases ->
                 purchasesUpdatedListener?.onPurchasesUpdated(mappedPurchases)
             }
