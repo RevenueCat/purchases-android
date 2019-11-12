@@ -267,7 +267,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             activity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            "oldSku"
+            UpgradeInfo("oldSku")
         ) { _, _ -> }
 
         verify {
@@ -275,7 +275,7 @@ class PurchasesTest {
                 eq(activity),
                 eq(appUserId),
                 skuDetails,
-                "oldSku",
+                UpgradeInfo("oldSku"),
                 stubOfferingIdentifier
             )
         }

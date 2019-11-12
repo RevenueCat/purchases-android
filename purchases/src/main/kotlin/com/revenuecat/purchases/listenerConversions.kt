@@ -259,7 +259,7 @@ fun Purchases.getNonSubscriptionSkusWith(
     getNonSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus, onError))
 }
 
-
+@Suppress("unused")
 @Deprecated(
     message = "moved to getOfferingsWith()",
     replaceWith = ReplaceWith(expression = "getOfferingsWith(onError, onSuccess)"),
@@ -282,7 +282,7 @@ fun Purchases.makePurchaseWith(
     onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
     onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
-    purchaseProductWith(activity, skuDetails, oldSku, onError, onSuccess)
+    purchaseProductWith(activity, skuDetails, UpgradeInfo(oldSku), onError, onSuccess)
 }
 
 @Deprecated(

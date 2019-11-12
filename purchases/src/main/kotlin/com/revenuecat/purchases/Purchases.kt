@@ -29,8 +29,8 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
-import java.util.*
 import java.util.Collections.emptyMap
+import java.util.HashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -447,7 +447,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmName("-deprecated_makePurchase")
     @Deprecated(
         message = "moved to purchaseProduct()",
-        replaceWith = ReplaceWith(expression = "purchaseProduct(activity, skuDetails, oldSku, listener)"),
+        replaceWith = ReplaceWith(expression = "purchaseProduct(activity, skuDetails, upgradeInfo, listener)"),
         level = DeprecationLevel.ERROR)
     fun makePurchase(
         activity: Activity,
@@ -455,7 +455,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         oldSku: String,
         listener: MakePurchaseListener
     ) {
-        purchaseProduct(activity, skuDetails, oldSku, listener)
+        purchaseProduct(activity, skuDetails, UpgradeInfo(oldSku), listener)
     }
 
     @JvmName("-deprecated_makePurchase")

@@ -761,7 +761,7 @@ class BillingWrapperTest {
             activity,
             "jerry",
             skuDetails,
-            oldSku,
+            UpgradeInfo(oldSku),
             "offering_a"
         )
         val purchases = listOf(mockk<Purchase>(relaxed = true).also {
