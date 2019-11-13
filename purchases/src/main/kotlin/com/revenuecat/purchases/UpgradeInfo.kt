@@ -1,6 +1,8 @@
 package com.revenuecat.purchases
 
+import com.android.billingclient.api.BillingFlowParams
+
 data class UpgradeInfo(
     val oldSku: String,
-    val prorationMode: Int? = null
+    @BillingFlowParams.ProrationMode val prorationMode: Int? = null
 )
