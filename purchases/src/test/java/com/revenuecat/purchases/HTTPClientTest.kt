@@ -42,7 +42,7 @@ class HTTPClientTest {
         }
     }
 
-    private val appConfig = AppConfig("en-US", "1.0")
+    private val appConfig = AppConfig("en-US", "1.0", "native")
 
     @Test
     fun canBeCreated() {
@@ -135,6 +135,7 @@ class HTTPClientTest {
         assertThat(request.getHeader("Content-Type")).isEqualTo("application/json")
         assertThat(request.getHeader("X-Platform")).isEqualTo("android")
         assertThat(request.getHeader("X-Platform-Version")).isEqualTo(Integer.toString(android.os.Build.VERSION.SDK_INT))
+        assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo("native")
         assertThat(request.getHeader("X-Version")).isEqualTo(Purchases.frameworkVersion)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)

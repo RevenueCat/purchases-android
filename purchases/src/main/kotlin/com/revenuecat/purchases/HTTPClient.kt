@@ -128,6 +128,7 @@ internal class HTTPClient(
             }
             addRequestProperty("Content-Type", "application/json")
             addRequestProperty("X-Platform", "android")
+            addRequestProperty("X-Platform-Flavor", appConfig.platformFlavor)
             addRequestProperty(
                 "X-Platform-Version",
                 Build.VERSION.SDK_INT.toString()

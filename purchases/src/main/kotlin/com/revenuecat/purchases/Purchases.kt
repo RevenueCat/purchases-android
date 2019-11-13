@@ -984,7 +984,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 HTTPClient(
                     appConfig = AppConfig(
                         context.getLocale()?.toBCP47() ?: "",
-                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
+                        context.getApplication().getString(R.string.revenuecat_cross_platform_sdk) ?: "N/A"
                     )
                 )
             )

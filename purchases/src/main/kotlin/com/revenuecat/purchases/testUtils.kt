@@ -183,7 +183,8 @@ internal fun Locale.toBCP47(): String {
 
 internal data class AppConfig(
     val languageTag: String,
-    val versionName: String
+    val versionName: String,
+    val platformFlavor: String
 )
 
 internal fun String.sha1() =
