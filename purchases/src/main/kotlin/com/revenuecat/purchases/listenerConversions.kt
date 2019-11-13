@@ -5,11 +5,11 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
-import com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 
 private typealias MakePurchaseCompletedSuccessFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
-private typealias ReceiveEntitlementsSuccessFunction = (entitlementMap: Map<String, Entitlement>) -> Unit
+private typealias ReceiveOfferingsSuccessFunction = (offerings: Offerings) -> Unit
 private typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: PurchaserInfo) -> Unit
 private typealias ErrorFunction = (error: PurchasesError) -> Unit
 private typealias MakePurchaseErrorFunction = (error: PurchasesError, userCancelled: Boolean) -> Unit
@@ -43,12 +43,12 @@ internal fun getSkusResponseListener(
     }
 }
 
-internal fun receiveEntitlementsListener(
-    onSuccess: ReceiveEntitlementsSuccessFunction,
+internal fun receiveOfferingsListener(
+    onSuccess: ReceiveOfferingsSuccessFunction,
     onError: ErrorFunction
-) = object : ReceiveEntitlementsListener {
-    override fun onReceived(entitlementMap: MutableMap<String, Entitlement>) {
-        onSuccess(entitlementMap)
+) = object : ReceiveOfferingsListener {
+    override fun onReceived(offerings: Offerings) {
+        onSuccess(offerings)
     }
 
     override fun onError(error: PurchasesError) {
@@ -70,55 +70,90 @@ internal fun receivePurchaserInfoListener(
 }
 
 /**
- * Fetch the configured entitlements for this user. Entitlements allows you to configure your
- * in-app products via RevenueCat and greatly simplifies management.
- * See [the guide](https://docs.revenuecat.com/v1.0/docs/entitlements) for more info.
+ * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
+ * products vis RevenueCat and greatly simplifies management. See
+ * [the guide](https://docs.revenuecat.com/offerings) for more info.
  *
- * Entitlements will be fetched and cached on instantiation so that, by the time they are needed,
+ * Offerings will be fetched and cached on instantiation so that, by the time they are needed,
  * your prices are loaded for your purchase flow. Time is money.
  *
- * @param [onSuccess] Will be called after a successful fetch of entitlements
- * @param [onError] Will be called after an error fetching entitlements
+ * @param [onSuccess] Called when offerings are available. Called immediately if offerings are cached.
+ * @param [onError] Will be called after an error fetching offerings.
  */
 @Suppress("unused")
-fun Purchases.getEntitlementsWith(
+fun Purchases.getOfferingsWith(
     onError: ErrorFunction = onErrorStub,
-    onSuccess: ReceiveEntitlementsSuccessFunction
+    onSuccess: ReceiveOfferingsSuccessFunction
 ) {
-    getEntitlements(receiveEntitlementsListener(onSuccess, onError))
+    getOfferings(receiveOfferingsListener(onSuccess, onError))
+}
+
+/**
+ * Purchase product.
+ * @param [activity] Current activity
+ * @param [skuDetails] The skuDetails of the product you wish to purchase
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+fun Purchases.purchaseProductWith(
+    activity: Activity,
+    skuDetails: SkuDetails,
+    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
+    onSuccess: MakePurchaseCompletedSuccessFunction
+) {
+    purchaseProduct(activity, skuDetails, purchaseCompletedListener(onSuccess, onError))
 }
 
 /**
  * Make a purchase.
  * @param [activity] Current activity
  * @param [skuDetails] The skuDetails of the product you wish to purchase
+ * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
-fun Purchases.makePurchaseWith(
+fun Purchases.purchaseProductWith(
     activity: Activity,
     skuDetails: SkuDetails,
-    oldSku: String,
+    upgradeInfo: UpgradeInfo,
     onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
     onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
-    makePurchase(activity, skuDetails, oldSku, purchaseCompletedListener(onSuccess, onError))
+    purchaseProduct(activity, skuDetails, upgradeInfo, purchaseCompletedListener(onSuccess, onError))
 }
 
 /**
  * Make a purchase.
  * @param [activity] Current activity
- * @param [skuDetails] The skuDetails of the product you wish to purchase
+ * @param [packageToPurchase] The Package you wish to purchase
+ * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
-fun Purchases.makePurchaseWith(
+fun Purchases.purchasePackageWith(
     activity: Activity,
-    skuDetails: SkuDetails,
+    packageToPurchase: Package,
+    upgradeInfo: UpgradeInfo,
     onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
     onSuccess: MakePurchaseCompletedSuccessFunction
 ) {
-    makePurchase(activity, skuDetails, purchaseCompletedListener(onSuccess, onError))
+    purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseCompletedListener(onSuccess, onError))
+}
+
+/**
+ * Make a purchase.
+ * @param [activity] Current activity
+ * @param [packageToPurchase] The Package you wish to purchase
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+fun Purchases.purchasePackageWith(
+    activity: Activity,
+    packageToPurchase: Package,
+    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
+    onSuccess: MakePurchaseCompletedSuccessFunction
+) {
+    purchasePackage(activity, packageToPurchase, purchaseCompletedListener(onSuccess, onError))
 }
 
 /**
@@ -222,4 +257,43 @@ fun Purchases.getNonSubscriptionSkusWith(
     onReceiveSkus: (skus: List<SkuDetails>) -> Unit
 ) {
     getNonSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus, onError))
+}
+
+@Suppress("unused")
+@Deprecated(
+    message = "moved to getOfferingsWith()",
+    replaceWith = ReplaceWith(expression = "getOfferingsWith(onError, onSuccess)"),
+    level = DeprecationLevel.ERROR)
+fun Purchases.getEntitlementsWith(
+    onError: ErrorFunction = onErrorStub,
+    onSuccess: (entitlementMap: Map<String, Any>) -> Unit
+) {
+
+}
+
+@Deprecated(
+    message = "moved to purchaseProductWith()",
+    replaceWith = ReplaceWith(expression = "purchaseProductWith(activity, skuDetails, oldSku, onError, onSuccess)"),
+    level = DeprecationLevel.ERROR)
+fun Purchases.makePurchaseWith(
+    activity: Activity,
+    skuDetails: SkuDetails,
+    oldSku: String,
+    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
+    onSuccess: MakePurchaseCompletedSuccessFunction
+) {
+    purchaseProductWith(activity, skuDetails, UpgradeInfo(oldSku), onError, onSuccess)
+}
+
+@Deprecated(
+    message = "moved to purchaseProductWith()",
+    replaceWith = ReplaceWith(expression = "purchaseProductWith(activity, skuDetails, onError, onSuccess)"),
+    level = DeprecationLevel.ERROR)
+fun Purchases.makePurchaseWith(
+    activity: Activity,
+    skuDetails: SkuDetails,
+    onError: MakePurchaseErrorFunction = onMakePurchaseErrorStub,
+    onSuccess: MakePurchaseCompletedSuccessFunction
+) {
+    purchaseProductWith(activity, skuDetails, onError, onSuccess)
 }

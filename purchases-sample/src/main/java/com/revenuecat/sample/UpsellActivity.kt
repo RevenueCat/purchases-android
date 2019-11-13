@@ -3,13 +3,13 @@ package com.revenuecat.sample
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
-import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.Entitlement
+import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.getEntitlementsWith
+import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
-import com.revenuecat.purchases.makePurchaseWith
+import com.revenuecat.purchases.purchasePackageWith
 import kotlinx.android.synthetic.main.activity_upsell.*
 
 class UpsellActivity : AppCompatActivity() {
@@ -20,89 +20,87 @@ class UpsellActivity : AppCompatActivity() {
 
         showScreen()
         skip.setOnClickListener { startCatsActivity() }
-        Purchases.sharedInstance.updatedPurchaserInfoListener = UpdatedPurchaserInfoListener { purchaserInfo -> checkForProEntitlement(purchaserInfo) }
+        Purchases.sharedInstance.updatedPurchaserInfoListener =
+            UpdatedPurchaserInfoListener(::checkForProEntitlement)
     }
 
     override fun onResume() {
         super.onResume()
-        Purchases.sharedInstance.getEntitlementsWith(::showError) { entitlementMap ->
-            showScreen(entitlementMap)
-        }
+        Purchases.sharedInstance.getOfferingsWith(::showError, ::showScreen)
     }
 
     private fun showScreen(
-        entitlementMap: Map<String, Entitlement>? = null
+        offerings: Offerings? = null
     ) {
-        if (entitlementMap == null) {
+        if (offerings == null) {
             monthly_purchase.text = "Loading..."
             monthly_purchase.isEnabled = false
             annual_purchase.text = "Loading..."
             annual_purchase.isEnabled = false
         } else {
-            entitlementMap["pro_cat"]?.let { proEntitlement ->
-                setupMonthlyOfferingButton(proEntitlement)
-                setupAnnualOfferingButton(proEntitlement)
-                setupUnlimitedOfferingButton(proEntitlement)
-            } ?: showError("Error finding pro entitlement")
+            offerings.current?.let { currentOffering ->
+                setupMonthlyButton(currentOffering.monthly)
+                setupAnnualButton(currentOffering.annual)
+                setupUnlimitedButton(currentOffering.lifetime)
+            } ?: showError("Error loading current offering")
         }
     }
 
-    private fun setupUnlimitedOfferingButton(proEntitlement: Entitlement) {
-        proEntitlement.offerings["one_time"]?.let { unlimited ->
-            unlimited.skuDetails?.let { unlimitedProduct ->
-                with(unlimited_purchase) {
-                    loadedText = "Buy Unlimited - ${unlimitedProduct.priceCurrencyCode} ${unlimitedProduct.price}"
-                    showLoading(false)
-                    setOnClickListener {
-                        makePurchase(unlimitedProduct, this)
-                    }
+    private fun setupUnlimitedButton(lifetimePackage: Package?) {
+        lifetimePackage?.product?.let { unlimitedProduct ->
+            with(unlimited_purchase) {
+                loadedText =
+                    "Buy Unlimited - ${unlimitedProduct.priceCurrencyCode} ${unlimitedProduct.price}"
+                showLoading(false)
+                setOnClickListener {
+                    makePurchase(lifetimePackage, this)
                 }
-            } ?: showError("Error finding unlimited active product")
-        } ?: showError("Error finding unlimited offering")
-
+            }
+        } ?: showError("Error loading lifetime package")
     }
 
-    private fun setupMonthlyOfferingButton(proEntitlement: Entitlement) {
-        proEntitlement.offerings["monthly_cats"]?.let { monthly ->
-            monthly.skuDetails?.let { monthlyProduct ->
-                with(monthly_purchase) {
-                    loadedText = "Buy Monthly - ${monthlyProduct.priceCurrencyCode} ${monthlyProduct.price}"
-                    showLoading(false)
-                    setOnClickListener {
-                        makePurchase(monthlyProduct, this)
-                    }
+    private fun setupMonthlyButton(monthlyPackage: Package?) {
+        monthlyPackage?.product?.let { monthlyProduct ->
+            with(monthly_purchase) {
+                loadedText =
+                    "Buy Monthly - ${monthlyProduct.priceCurrencyCode} ${monthlyProduct.price}"
+                showLoading(false)
+                setOnClickListener {
+                    makePurchase(monthlyPackage, this)
                 }
-            } ?: showError("Error finding monthly active product")
-        } ?: showError("Error finding monthly offering")
+            }
+        } ?: showError("Error loading monthly package")
     }
 
-    private fun setupAnnualOfferingButton(proEntitlement: Entitlement) {
-        proEntitlement.offerings["annual_cats"]?.let { annual ->
-            annual.skuDetails?.let { annualProduct ->
-                with(annual_purchase) {
-                    loadedText = "Buy Annual - ${annualProduct.priceCurrencyCode} ${annualProduct.price}"
-                    showLoading(false)
-                    setOnClickListener {
-                        makePurchase(annualProduct, this)
-                    }
+    private fun setupAnnualButton(annualPackage: Package?) {
+        annualPackage?.product?.let { annualProduct ->
+            with(annual_purchase) {
+                loadedText =
+                    "Buy Annual - ${annualProduct.priceCurrencyCode} ${annualProduct.price}"
+                showLoading(false)
+                setOnClickListener {
+                    makePurchase(annualPackage, this)
                 }
-            } ?: showError("Error finding annual active product")
-        } ?: showError("Error finding annual offering")
+            }
+        } ?: showError("Error finding annual package")
     }
 
-    private fun makePurchase(product: SkuDetails, button: Button) {
+    private fun makePurchase(
+        packageToPurchase: Package,
+        button: Button
+    ) {
         button.showLoading(true)
-        Purchases.sharedInstance.makePurchaseWith(
+        Purchases.sharedInstance.purchasePackageWith(
             this,
-            product,
+            packageToPurchase,
             { error, userCancelled ->
                 if (!userCancelled) {
                     showError(error)
                 }
             }) { _, purchaserInfo ->
-                button.showLoading(false)
-                checkForProEntitlement(purchaserInfo)
-            }
+            button.showLoading(false)
+            checkForProEntitlement(purchaserInfo)
+        }
     }
 
     private fun checkForProEntitlement(purchaserInfo: PurchaserInfo) {

@@ -15,7 +15,7 @@ private const val HTTP_SERVER_ERROR_CODE = 500
 typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
 typealias PostReceiptCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError, shouldConsumePurchase: Boolean) -> Unit>
 typealias CallbackCacheKey = List<String>
-typealias EntitlementMapCallback = Pair<(Map<String, Entitlement>) -> Unit, (PurchasesError) -> Unit>
+typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
 
 internal class Backend(
     private val apiKey: String,
@@ -25,21 +25,14 @@ internal class Backend(
 
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
+    @get:Synchronized @set:Synchronized
     @Volatile var callbacks = mutableMapOf<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
-        @Synchronized get() = field
-        @Synchronized set(value) {
-            field = value
-        }
+
+    @get:Synchronized @set:Synchronized
     @Volatile var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
-        @Synchronized get() = field
-        @Synchronized set(value) {
-            field = value
-        }
-    @Volatile var entitlementsCallbacks = mutableMapOf<String, MutableList<EntitlementMapCallback>>()
-        @Synchronized get() = field
-        @Synchronized set(value) {
-            field = value
-        }
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var offeringsCallbacks = mutableMapOf<String, MutableList<OfferingsCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -102,16 +95,18 @@ internal class Backend(
         appUserID: String,
         productID: String,
         isRestore: Boolean,
+        offeringIdentifier: String?,
         onSuccess: (PurchaserInfo) -> Unit,
         onError: (PurchasesError, errorIsFinishable: Boolean) -> Unit
     ) {
-        val cacheKey = listOf(purchaseToken, productID, appUserID, isRestore.toString())
+        val cacheKey = listOfNotNull(purchaseToken, productID, appUserID, isRestore.toString(), offeringIdentifier)
 
         val body = mapOf(
             "fetch_token" to purchaseToken,
             "product_id" to productID,
             "app_user_id" to appUserID,
-            "is_restore" to isRestore
+            "is_restore" to isRestore,
+            "presented_offering_identifier" to offeringIdentifier
         )
 
         val call = object : Dispatcher.AsyncCall() {
@@ -149,12 +144,12 @@ internal class Backend(
         }
     }
 
-    fun getEntitlements(
+    fun getOfferings(
         appUserID: String,
-        onSuccess: (Map<String, Entitlement>) -> Unit,
+        onSuccess: (JSONObject) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        val path = "/subscribers/" + encode(appUserID) + "/products"
+        val path = "/subscribers/" + encode(appUserID) + "/offerings"
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest(
@@ -166,7 +161,7 @@ internal class Backend(
 
             override fun onError(error: PurchasesError) {
                 synchronized(this@Backend) {
-                    entitlementsCallbacks.remove(path)
+                    offeringsCallbacks.remove(path)
                 }?.forEach { (_, onError) ->
                     onError(error)
                 }
@@ -174,11 +169,11 @@ internal class Backend(
 
             override fun onCompletion(result: HTTPClient.Result) {
                 synchronized(this@Backend) {
-                    entitlementsCallbacks.remove(path)
+                    offeringsCallbacks.remove(path)
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(result.body!!.getJSONObject("entitlements").buildEntitlementsMap())
+                            onSuccess(result.body!!)
                         } catch (e: JSONException) {
                             onError(e.toPurchasesError())
                         }
@@ -189,7 +184,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            entitlementsCallbacks.addCallback(call, path, onSuccess to onError)
+            offeringsCallbacks.addCallback(call, path, onSuccess to onError)
         }
     }
 

@@ -9,7 +9,7 @@
 
 ## 2.3.1
 
-- Fix NullPointerException in BilingWrapper ([#79](https://github.com/RevenueCat/purchases-android/pull/79))
+- Fix NullPointerException in BillingWrapper ([#79](https://github.com/RevenueCat/purchases-android/pull/79))
 - Handle missing INTERNET permissions when making network requests ([#78](https://github.com/RevenueCat/purchases-android/pull/78))
 
 ## 2.3.0
