@@ -1,0 +1,60 @@
+<HTML>
+<HEAD>
+<meta charset="UTF-8">
+<title>Package - purchases</title>
+<link rel="stylesheet" href="../../../style.css">
+</HEAD>
+<BODY>
+<a href="../../index.html">purchases</a>&nbsp;/&nbsp;<a href="../index.html">com.revenuecat.purchases</a>&nbsp;/&nbsp;<a href="./index.html">Package</a><br/>
+<br/>
+<h1>Package</h1>
+<code><span class="keyword">data</span> <span class="keyword">class </span><span class="identifier">Package</span>&nbsp;<span class="symbol">:</span>&nbsp;<span class="identifier">Parcelable</span></code>
+<p>Contains information about the product available for the user to purchase. For more info see https://docs.revenuecat.com/docs/entitlements</p>
+<h3>Constructors</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-init-.html">&lt;init&gt;</a></p>
+</td>
+<td>
+<code><span class="identifier">Package</span><span class="symbol">(</span><span class="identifier" id="com.revenuecat.purchases.Package$<init>(kotlin.String, com.revenuecat.purchases.PackageType, com.android.billingclient.api.SkuDetails, kotlin.String)/identifier">identifier</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Package$<init>(kotlin.String, com.revenuecat.purchases.PackageType, com.android.billingclient.api.SkuDetails, kotlin.String)/packageType">packageType</span><span class="symbol">:</span>&nbsp;<a href="../-package-type/index.html"><span class="identifier">PackageType</span></a><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Package$<init>(kotlin.String, com.revenuecat.purchases.PackageType, com.android.billingclient.api.SkuDetails, kotlin.String)/product">product</span><span class="symbol">:</span>&nbsp;<span class="identifier">SkuDetails</span><span class="symbol">, </span><span class="identifier" id="com.revenuecat.purchases.Package$<init>(kotlin.String, com.revenuecat.purchases.PackageType, com.android.billingclient.api.SkuDetails, kotlin.String)/offering">offering</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">)</span></code>
+<p>Contains information about the product available for the user to purchase. For more info see https://docs.revenuecat.com/docs/entitlements</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3>Properties</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="identifier.html">identifier</a></p>
+</td>
+<td>
+<code><span class="keyword">val </span><span class="identifier">identifier</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a></code>
+<p>Unique identifier for this package. Can be one a predefined package type or a custom one.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="package-type.html">packageType</a></p>
+</td>
+<td>
+<code><span class="keyword">val </span><span class="identifier">packageType</span><span class="symbol">: </span><a href="../-package-type/index.html"><span class="identifier">PackageType</span></a></code>
+<p>Package type for the product. Will be one of <a href="../-package-type/index.html">PackageType</a>.</p>
+</td>
+</tr>
+<tr>
+<td>
+<p><a href="product.html">product</a></p>
+</td>
+<td>
+<code><span class="keyword">val </span><span class="identifier">product</span><span class="symbol">: </span><span class="identifier">SkuDetails</span></code>
+<p><a href="#">SkuDetails</a> assigned to this package.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</BODY>
+</HTML>

@@ -12,9 +12,13 @@ import org.json.JSONObject
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 private const val HTTP_SERVER_ERROR_CODE = 500
 
+/** @suppress */
 typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
+/** @suppress */
 typealias PostReceiptCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError, shouldConsumePurchase: Boolean) -> Unit>
+/** @suppress */
 typealias CallbackCacheKey = List<String>
+/** @suppress */
 typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
 
 internal class Backend(

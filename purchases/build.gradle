@@ -78,11 +78,6 @@ afterEvaluate { p ->
             // will match kotlin.internal and all sub-packages of it
             suppress = false
         }
-
-        externalDocumentationLink {
-            url = new URL("https://developer.android.com/reference/")
-            packageListUrl = new URL("https://developer.android.com/reference/android/billingclient/api/package-list")
-        }
     }
 }
 

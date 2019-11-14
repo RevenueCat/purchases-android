@@ -11,33 +11,34 @@
 <tbody>
 <tr>
 <td>
+<a href="../com.revenuecat.purchases/-build-config/index.html">com.revenuecat.purchases.BuildConfig</a></td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
+<a href="../com.revenuecat.purchases/-build-config/index.html">com.revenuecat.purchases.BuildConfig</a></td>
+<td>
+</td>
+</tr>
+<tr>
+<td>
 <a href="../com.revenuecat.purchases.interfaces/-callback/index.html">com.revenuecat.purchases.interfaces.Callback</a></td>
 <td>
 </td>
 </tr>
 <tr>
 <td>
-<a href="../com.revenuecat.purchases/-callback-cache-key.html">com.revenuecat.purchases.CallbackCacheKey</a></td>
+<a href="../com.revenuecat.purchases/-entitlement-info/index.html">com.revenuecat.purchases.EntitlementInfo</a></td>
 <td>
+<p>This object gives you access to all of the information about the status of a user's entitlements.</p>
 </td>
 </tr>
 <tr>
 <td>
-<a href="../com.revenuecat.purchases/-entitlement/index.html">com.revenuecat.purchases.Entitlement</a></td>
+<a href="../com.revenuecat.purchases/-entitlement-infos/index.html">com.revenuecat.purchases.EntitlementInfos</a></td>
 <td>
-<p>An entitlement represents features or content that a user is "entitled" to.
-Entitlements are unlocked by having an active subscription or making a one-time purchase.
-Many different products can unlock. Most subscription apps only have one entitlement,
-unlocking all premium features. However, if you had two tiers of content such as premium and
-premium_plus, you would have 2 entitlements. A common and simple setup example is one entitlement
-with identifier pro, one offering monthly, with one product.
-See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for more info</p>
-</td>
-</tr>
-<tr>
-<td>
-<a href="../com.revenuecat.purchases/-entitlement-map-callback.html">com.revenuecat.purchases.EntitlementMapCallback</a></td>
-<td>
+<p>This class contains all the entitlements associated to the user.</p>
 </td>
 </tr>
 <tr>
@@ -58,23 +59,37 @@ See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for mo
 <td>
 <a href="../com.revenuecat.purchases/-offering/index.html">com.revenuecat.purchases.Offering</a></td>
 <td>
-<p>Most well monetized subscription apps provide many different offerings to purchase an
-entitlement. These are usually associated with different durations i.e. an annual plan and a
-monthly plan.
-See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for more info</p>
+<p>An offering is a collection of <a href="../com.revenuecat.purchases/-package/index.html">Package</a> available for the user to purchase.
+For more info see https://docs.revenuecat.com/docs/entitlements</p>
 </td>
 </tr>
 <tr>
 <td>
-<a href="../com.revenuecat.purchases/-post-receipt-callback.html">com.revenuecat.purchases.PostReceiptCallback</a></td>
+<a href="../com.revenuecat.purchases/-offerings/index.html">com.revenuecat.purchases.Offerings</a></td>
 <td>
+<p>This class contains all the offerings configured in RevenueCat dashboard.
+For more info see https://docs.revenuecat.com/docs/entitlements</p>
 </td>
 </tr>
 <tr>
 <td>
-<a href="../com.revenuecat.purchases.interfaces/-purchase-completed-listener/index.html">com.revenuecat.purchases.interfaces.PurchaseCompletedListener</a></td>
+<a href="../com.revenuecat.purchases/-package/index.html">com.revenuecat.purchases.Package</a></td>
 <td>
-<p>Interface to be implemented when making purchases.</p>
+<p>Contains information about the product available for the user to purchase. For more info see https://docs.revenuecat.com/docs/entitlements</p>
+</td>
+</tr>
+<tr>
+<td>
+<a href="../com.revenuecat.purchases/-package-type/index.html">com.revenuecat.purchases.PackageType</a></td>
+<td>
+<p>Enumeration of all possible Package types.</p>
+</td>
+</tr>
+<tr>
+<td>
+<a href="../com.revenuecat.purchases/-period-type/index.html">com.revenuecat.purchases.PeriodType</a></td>
+<td>
+<p>Enum of supported period types for an entitlement.</p>
 </td>
 </tr>
 <tr>
@@ -82,12 +97,6 @@ See <a href="https://docs.revenuecat.com/docs/entitlements">this link</a> for mo
 <a href="../com.revenuecat.purchases/-purchaser-info/index.html">com.revenuecat.purchases.PurchaserInfo</a></td>
 <td>
 <p>Class containing all information regarding the purchaser</p>
-</td>
-</tr>
-<tr>
-<td>
-<a href="../com.revenuecat.purchases/-purchaser-info-callback.html">com.revenuecat.purchases.PurchaserInfoCallback</a></td>
-<td>
 </td>
 </tr>
 <tr>
@@ -116,9 +125,9 @@ guide to setup your RevenueCat account.</p>
 </tr>
 <tr>
 <td>
-<a href="../com.revenuecat.purchases.interfaces/-receive-entitlements-listener/index.html">com.revenuecat.purchases.interfaces.ReceiveEntitlementsListener</a></td>
+<a href="../com.revenuecat.purchases.interfaces/-receive-offerings-listener/index.html">com.revenuecat.purchases.interfaces.ReceiveOfferingsListener</a></td>
 <td>
-<p>Interface to be implemented when making calls to fetch [Entitlement]</p>
+<p>Interface to be implemented when making calls to fetch [Offering].</p>
 </td>
 </tr>
 <tr>
@@ -130,9 +139,23 @@ guide to setup your RevenueCat account.</p>
 </tr>
 <tr>
 <td>
+<a href="../com.revenuecat.purchases/-store/index.html">com.revenuecat.purchases.Store</a></td>
+<td>
+<p>Enum of supported stores</p>
+</td>
+</tr>
+<tr>
+<td>
 <a href="../com.revenuecat.purchases.interfaces/-updated-purchaser-info-listener/index.html">com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener</a></td>
 <td>
 <p>Used to handle async updates from [Purchases]. This interface should be implemented to receive updates when the [PurchaserInfo] changes.</p>
+</td>
+</tr>
+<tr>
+<td>
+<a href="../com.revenuecat.purchases/-upgrade-info/index.html">com.revenuecat.purchases.UpgradeInfo</a></td>
+<td>
+<p>This object holds the information used when upgrading from another sku.</p>
 </td>
 </tr>
 </tbody>

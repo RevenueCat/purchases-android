@@ -194,6 +194,7 @@ internal fun String.sha1() =
 
 internal fun JSONObject.getNullableString(name: String): String? = this.getString(name).takeUnless { this.isNull(name) }
 
+/** @suppress */
 object SkuDetailsParceler : Parceler<SkuDetails> {
 
     override fun create(parcel: Parcel): SkuDetails {

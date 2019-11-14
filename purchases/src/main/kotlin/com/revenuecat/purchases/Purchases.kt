@@ -55,9 +55,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val identityManager: IdentityManager
 ) : LifecycleDelegate {
 
-    @get:Synchronized @set:Synchronized
+    /** @suppress */
+    @get:Synchronized @get:JvmSynthetic @set:Synchronized @set:JvmSynthetic
     @Volatile
-    var state = PurchasesState()
+    @JvmSynthetic internal var state = PurchasesState()
 
     /*
     * If it should allow sharing Play Store accounts. False by
@@ -71,8 +72,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
 
-    /*
-    * Default to TRUE, set this to FALSE if you are consuming transactions outside of the Purchases SDK.
+    /**
+     * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions outside of the Purchases SDK.
     */
     var finishTransactions: Boolean
         @Synchronized get() = state.finishTransactions
@@ -128,9 +129,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         billingWrapper.purchasesUpdatedListener = getPurchasesUpdatedListener()
     }
 
+    /** @suppress */
     override fun onAppBackgrounded() {
     }
 
+    /** @suppress */
     override fun onAppForegrounded() {
         updatePendingPurchaseQueue()
     }
@@ -958,8 +961,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * If `null` `[Purchases] will generate a unique identifier for the current device and persist
          * it the SharedPreferences. This also affects the behavior of [restorePurchases].
          * @param observerMode Optional boolean set to FALSE by default. Set to TRUE if you are using your own
-         * subscription system and you want to use RevenueCat's backend only. If set to TRUE, you should be consuming
-         * transactions outside of the Purchases SDK.
+         * subscription system and you want to use RevenueCat's backend only. If set to TRUE, you should
+         * be consuming and acknowledging transactions outside of the Purchases SDK.
          * @param service Optional [ExecutorService] to use for the backend calls.
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
