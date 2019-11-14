@@ -1,3 +1,7 @@
+## 3.0.1
+
+- Fixes some documentation
+
 ## 3.0.0
 
 - Support for new Offerings system, currently invite only. Email support@revenuecat.com if interested in access.
