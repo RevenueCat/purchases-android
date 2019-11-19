@@ -7,13 +7,12 @@ import kotlinx.android.parcel.Parcelize
  * This class contains all the offerings configured in RevenueCat dashboard.
  * For more info see https://docs.revenuecat.com/docs/entitlements
  * @property current Current offering configured in the RevenueCat dashboard.
- * @property availableOfferings Dictionary of all Offerings [Offering] objects keyed by their
- * identifier.
+ * @property all Dictionary of all Offerings [Offering] objects keyed by their identifier.
  */
 @Parcelize
 data class Offerings(
     val current: Offering?,
-    @JvmSynthetic internal val availableOfferings: Map<String, Offering>
+    val all: Map<String, Offering>
 ) : Parcelable {
 
     /**
@@ -21,7 +20,7 @@ data class Offerings(
      * @param identifier Offering identifier
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    fun getOffering(identifier: String) = availableOfferings[identifier]
+    fun getOffering(identifier: String) = all[identifier]
 
     /**
      * Retrieves an specific offering by its identifier. It's equivalent to

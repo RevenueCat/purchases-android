@@ -557,7 +557,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun logMissingProducts(
         offerings: Offerings,
         detailsByID: HashMap<String, SkuDetails>
-    ) = offerings.availableOfferings.values
+    ) = offerings.all.values
             .flatMap { it.availablePackages }
             .map { it.product.sku }
             .filterNot { detailsByID.containsKey(it) }
@@ -951,7 +951,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "3.1.0-SNAPSHOT"
+        val frameworkVersion = "3.0.2"
 
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will

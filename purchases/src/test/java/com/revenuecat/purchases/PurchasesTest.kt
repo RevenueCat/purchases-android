@@ -724,7 +724,7 @@ class PurchasesTest {
         }
 
         assertThat(receivedOfferings).isNotNull
-        assertThat(receivedOfferings!!.availableOfferings.size).isEqualTo(1)
+        assertThat(receivedOfferings!!.all.size).isEqualTo(1)
         assertThat(receivedOfferings!![stubOfferingIdentifier]!!.monthly!!.product).isNotNull
     }
 

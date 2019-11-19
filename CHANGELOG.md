@@ -1,3 +1,7 @@
+## 3.0.2
+
+- Exposes `all`, property of `Offerings` to access all the Offerings.
+
 ## 3.0.1
 
 - Fixes some documentation
