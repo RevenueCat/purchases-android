@@ -150,13 +150,27 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         debugLog("Syncing purchases")
         billingWrapper.queryAllPurchases({ allPurchases ->
             if (allPurchases.isNotEmpty()) {
-                postPurchasesSortedByTime(
-                    allPurchases,
-                    this.allowSharingPlayStoreAccount,
-                    false,
-                    { debugLog("Purchases synced") },
-                    { errorLog("Error syncing purchases $it") }
-                )
+                identityManager.currentAppUserID.let { appUserID ->
+                    allPurchases.forEach { purchase ->
+                        backend.postReceiptData(
+                            purchase.purchaseToken,
+                            appUserID,
+                            purchase.sku,
+                            this.allowSharingPlayStoreAccount,
+                            null,
+                            { info ->
+                                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+                                cachePurchaserInfo(info)
+                                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                                debugLog("Purchase $purchase synced")
+                            }, { error, errorIsFinishable ->
+                                if (errorIsFinishable) {
+                                    deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+                                }
+                                errorLog("Error syncing purchase: $purchase; Error: $error")
+                            })
+                    }
+                }
             }
         }, { errorLog("Error syncing purchases $it") })
     }
@@ -307,13 +321,35 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     if (allPurchases.isEmpty()) {
                         getPurchaserInfo(listener)
                     } else {
-                        postPurchasesSortedByTime(
-                            allPurchases,
-                            true,
-                            finishTransactions,
-                            { dispatch { listener.onReceived(it) } },
-                            { dispatch { listener.onError(it) } }
-                        )
+                        allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
+                            identityManager.currentAppUserID.let { appUserID ->
+                                sortedByTime.forEach { purchase ->
+                                    backend.postReceiptData(
+                                        purchase.purchaseToken,
+                                        appUserID,
+                                        purchase.sku,
+                                        true,
+                                        null,
+                                        { info ->
+                                            consumeAndSave(finishTransactions, purchase)
+                                            cachePurchaserInfo(info)
+                                            sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                                            debugLog("Purchase $purchase restored")
+                                            if (sortedByTime.last() == purchase) {
+                                                dispatch { listener.onReceived(info) }
+                                            }
+                                        }, { error, errorIsFinishable ->
+                                            if (errorIsFinishable) {
+                                                consumeAndSave(finishTransactions, purchase)
+                                            }
+                                            errorLog("Error restoring purchase: $purchase; Error: $error")
+                                            if (sortedByTime.last() == purchase) {
+                                                dispatch { listener.onError(error) }
+                                            }
+                                        })
+                                }
+                            }
+                        }
                     }
                 },
                 { error ->
@@ -627,7 +663,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         identityManager.currentAppUserID.let { appUserID ->
             purchases.forEach { purchase ->
-                if (purchase.containedPurchase?.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                     backend.postReceiptData(
                         purchase.purchaseToken,
                         appUserID,
@@ -661,7 +697,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             // an issue getting the purchase type
             return
         }
-        if (purchase.containedPurchase?.purchaseState != Purchase.PurchaseState.PURCHASED) {
+        if (purchase.containedPurchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
             // PENDING purchases should not be acknowledged or consumed
             return
         }
@@ -686,29 +722,33 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun postPurchasesSortedByTime(
-        purchases: List<PurchaseWrapper>,
-        allowSharingPlayStoreAccount: Boolean,
-        consumeAllTransactions: Boolean,
-        onSuccess: (PurchaserInfo) -> Unit,
-        onError: (PurchasesError) -> Unit
+    private fun consumeAndSave(
+        shouldTryToConsume: Boolean,
+        purchase: PurchaseHistoryRecordWrapper
     ) {
-        purchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
-            postPurchases(
-                sortedByTime,
-                allowSharingPlayStoreAccount,
-                consumeAllTransactions,
-                { purchase, info ->
-                    if (sortedByTime.last() == purchase) {
-                        onSuccess(info)
-                    }
-                },
-                { purchase, error ->
-                    if (sortedByTime.last() == purchase) {
-                        onError(error)
-                    }
+        if (purchase.type == PurchaseType.UNKNOWN) {
+            // Would only get here if the purchase was trigger from outside of the app and there was
+            // an issue getting the purchase type
+            return
+        }
+        if (shouldTryToConsume && purchase.isConsumable) {
+            billingWrapper.consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                } else {
+                    debugLog("Error consuming purchase. Will retry next queryPurchases. ${billingResult.toHumanReadableDescription()}")
                 }
-            )
+            }
+        } else if (shouldTryToConsume) {
+            billingWrapper.acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                } else {
+                    debugLog("Error acknowledging purchase. Will retry next queryPurchases. ${billingResult.toHumanReadableDescription()}")
+                }
+            }
+        } else {
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
         }
     }
 
@@ -797,22 +837,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     finishTransactions,
                     { purchaseWrapper, info ->
                         getPurchaseCallback(purchaseWrapper.sku)?.let { callback ->
-                            if (purchaseWrapper.containedPurchase != null) {
-                                dispatch {
-                                    callback.onCompleted(purchaseWrapper.containedPurchase, info)
-                                }
-                            } else {
-                                // This shouldn't happen since unless postPurchases modifies the
-                                // purchases objects, which shouldn't
-                                errorLog("Purchase was successful, but the purchase object is missing.")
-                                dispatch {
-                                    callback.onError(
-                                        PurchasesError(
-                                            PurchasesErrorCode.UnknownError,
-                                            "Purchase object couldn't be found after a successful purchase"
-                                        ), false
-                                    )
-                                }
+                            dispatch {
+                                callback.onCompleted(purchaseWrapper.containedPurchase, info)
                             }
                         }
                     },
@@ -888,9 +914,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     val queryActiveSubscriptionsResult = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
                     val queryUnconsumedInAppsRequest = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
                     if (queryActiveSubscriptionsResult?.isSuccessful() == true && queryUnconsumedInAppsRequest?.isSuccessful() == true) {
-                        deviceCache.cleanPreviouslySentTokens(
-                            queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
-                            queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
+                            deviceCache.cleanPreviouslySentTokens(
+                                queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
+                                queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
                         )
                         postPurchases(
                             deviceCache.getActivePurchasesNotInCache(

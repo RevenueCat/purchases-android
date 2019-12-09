@@ -13,6 +13,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.PurchaseType
 import com.revenuecat.purchases.interfaces.Callback
@@ -496,14 +497,14 @@ class PurchasesTest {
     @Test
     fun restoringPurchasesGetsHistory() {
         setup()
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
             }
         }
@@ -527,17 +528,17 @@ class PurchasesTest {
         val skuSub = "sub"
         val purchaseTokenSub = "token_sub"
 
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured
             capturedLambda?.invoke(
-                getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
-                    getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
+                getMockedPurchaseHistoryList(sku, purchaseToken, PurchaseType.INAPP) +
+                    getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
             )
         }
 
@@ -605,17 +606,17 @@ class PurchasesTest {
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
-                        getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
+                    getMockedPurchaseHistoryList(sku, purchaseToken, PurchaseType.INAPP) +
+                        getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
                 )
             }
         }
@@ -1772,17 +1773,17 @@ class PurchasesTest {
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
-                    getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
+                    getMockedPurchaseHistoryList(sku, purchaseToken, PurchaseType.INAPP) +
+                    getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
                 )
             }
         }
@@ -1824,17 +1825,17 @@ class PurchasesTest {
         val purchaseTokenSub = "crazy_purchase_token_sub"
         purchases.allowSharingPlayStoreAccount = true
 
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
-                        getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
+                    getMockedPurchaseHistoryList(sku, purchaseToken, PurchaseType.INAPP) +
+                        getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
                 )
             }
         }
@@ -1874,15 +1875,15 @@ class PurchasesTest {
         val purchaseToken = "crazy_purchase_token"
         purchases.allowSharingPlayStoreAccount = true
 
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
-                it.invoke(getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP))
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
+                it.invoke(getMockedPurchaseHistoryList(sku, purchaseToken, PurchaseType.INAPP))
             }
         }
 
@@ -2906,6 +2907,26 @@ class PurchasesTest {
         verifyOrder {
             mockBillingWrapper.purchasesUpdatedListener = capturedPurchasesUpdatedListener.captured
             mockBillingWrapper.purchasesUpdatedListener = null
+        }
+    }
+
+    private fun getMockedPurchaseHistoryList(
+        sku: String,
+        purchaseToken: String,
+        purchaseType: PurchaseType
+    ): ArrayList<PurchaseHistoryRecordWrapper> {
+        val p: PurchaseHistoryRecord = mockk()
+        every {
+            p.sku
+        } returns sku
+        every {
+            p.purchaseToken
+        } returns purchaseToken
+        every {
+            p.purchaseTime
+        } returns System.currentTimeMillis()
+        return ArrayList<PurchaseHistoryRecordWrapper>().also {
+            it.add(PurchaseHistoryRecordWrapper(p, purchaseType))
         }
     }
 

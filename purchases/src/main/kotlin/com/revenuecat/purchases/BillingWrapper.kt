@@ -220,7 +220,7 @@ internal class BillingWrapper internal constructor(
     }
 
     fun queryAllPurchases(
-        onReceivePurchaseHistory: (List<PurchaseWrapper>) -> Unit,
+        onReceivePurchaseHistory: (List<PurchaseHistoryRecordWrapper>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
         queryPurchaseHistoryAsync(
@@ -230,8 +230,8 @@ internal class BillingWrapper internal constructor(
                     SkuType.INAPP,
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
-                            subsPurchasesList.map { PurchaseWrapper(it, PurchaseType.SUBS) } +
-                                inAppPurchasesList.map { PurchaseWrapper(it, PurchaseType.INAPP) }
+                            subsPurchasesList.map { PurchaseHistoryRecordWrapper(it, PurchaseType.SUBS) } +
+                                inAppPurchasesList.map { PurchaseHistoryRecordWrapper(it, PurchaseType.INAPP) }
                         )
                     },
                     onReceivePurchaseHistoryError
