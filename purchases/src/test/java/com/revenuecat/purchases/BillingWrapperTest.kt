@@ -635,7 +635,7 @@ class BillingWrapperTest {
             )
         }
 
-        var receivedPurchases = listOf<PurchaseWrapper>()
+        var receivedPurchases = listOf<PurchaseHistoryRecordWrapper>()
         wrapper.queryAllPurchases({
             receivedPurchases = it
         }, { fail("Shouldn't be error") })
