@@ -1,3 +1,8 @@
+## 3.0.3
+
+- Fixes `syncPurchases` and `restorePurchases`.
+- Adds `observer_mode` to the backend post receipt call.
+
 ## 3.0.2
 
 - Exposes `all`, property of `Offerings` to access all the Offerings.
