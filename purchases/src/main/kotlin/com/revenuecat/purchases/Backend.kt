@@ -100,17 +100,26 @@ internal class Backend(
         productID: String,
         isRestore: Boolean,
         offeringIdentifier: String?,
+        observerMode: Boolean,
         onSuccess: (PurchaserInfo) -> Unit,
         onError: (PurchasesError, errorIsFinishable: Boolean) -> Unit
     ) {
-        val cacheKey = listOfNotNull(purchaseToken, productID, appUserID, isRestore.toString(), offeringIdentifier)
+        val cacheKey = listOfNotNull(
+            purchaseToken,
+            productID,
+            appUserID,
+            isRestore.toString(),
+            offeringIdentifier,
+            observerMode.toString()
+        )
 
         val body = mapOf(
             "fetch_token" to purchaseToken,
             "product_id" to productID,
             "app_user_id" to appUserID,
             "is_restore" to isRestore,
-            "presented_offering_identifier" to offeringIdentifier
+            "presented_offering_identifier" to offeringIdentifier,
+            "observer_mode" to observerMode
         )
 
         val call = object : Dispatcher.AsyncCall() {

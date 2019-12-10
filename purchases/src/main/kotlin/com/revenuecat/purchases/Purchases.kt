@@ -158,6 +158,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             purchase.sku,
                             this.allowSharingPlayStoreAccount,
                             null,
+                            !this.finishTransactions,
                             { info ->
                                 deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 cachePurchaserInfo(info)
@@ -330,6 +331,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         purchase.sku,
                                         true,
                                         null,
+                                        !finishTransactions,
                                         { info ->
                                             consumeAndSave(finishTransactions, purchase)
                                             cachePurchaserInfo(info)
@@ -670,6 +672,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         purchase.sku,
                         allowSharingPlayStoreAccount,
                         purchase.presentedOfferingIdentifier,
+                        !consumeAllTransactions,
                         { info ->
                             consumeAndSave(consumeAllTransactions, purchase)
                             cachePurchaserInfo(info)
