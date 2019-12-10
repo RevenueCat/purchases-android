@@ -302,6 +302,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -314,6 +315,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 "offering_a",
+                false,
                 any(),
                 any()
             )
@@ -366,6 +368,7 @@ class PurchasesTest {
                 sku,
                 false,
                 stubOfferingIdentifier,
+                false,
                 any(),
                 any()
             )
@@ -385,6 +388,7 @@ class PurchasesTest {
                 any(),
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -446,6 +450,7 @@ class PurchasesTest {
                 sku,
                 true,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -470,6 +475,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -490,7 +496,16 @@ class PurchasesTest {
         )
 
         verify {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, true, null, any(), any())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                true,
+                null,
+                false,
+                any(),
+                any()
+            )
         }
     }
 
@@ -558,6 +573,7 @@ class PurchasesTest {
                 sku,
                 true,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -570,6 +586,7 @@ class PurchasesTest {
                 skuSub,
                 true,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -629,6 +646,7 @@ class PurchasesTest {
                 any(),
                 true,
                 null,
+                false,
                 captureLambda(),
                 any()
             )
@@ -664,7 +682,16 @@ class PurchasesTest {
         )
 
         verify {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, false, null, any(), any())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                null,
+                false,
+                any(),
+                any()
+            )
         }
         verify(exactly = 2) {
             mockCache.cachePurchaserInfo(
@@ -929,6 +956,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -977,6 +1005,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -995,6 +1024,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -1210,7 +1240,16 @@ class PurchasesTest {
         setup()
         val info = mockk<PurchaserInfo>()
         every {
-            mockBackend.postReceiptData(any(), any(), any(), any(), any(), captureLambda(), any())
+            mockBackend.postReceiptData(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                captureLambda(),
+                any()
+            )
         } answers {
             lambda<(PurchaserInfo) -> Unit>().captured.invoke(info)
         }
@@ -1627,6 +1666,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -1663,6 +1703,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                true,
                 any(),
                 captureLambda()
             )
@@ -1681,6 +1722,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 null,
+                true,
                 any(),
                 captureLambda()
             )
@@ -1733,6 +1775,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                true,
                 any(),
                 captureLambda()
             )
@@ -1767,6 +1810,7 @@ class PurchasesTest {
     @Test
     fun `syncing transactions gets whole history and posts it to backend`() {
         setup()
+        purchases.finishTransactions = false
 
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
@@ -1798,6 +1842,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -1809,6 +1854,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -1818,6 +1864,7 @@ class PurchasesTest {
     @Test
     fun `syncing transactions respects allow sharing account settings`() {
         setup()
+        purchases.finishTransactions = false
 
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
@@ -1850,6 +1897,7 @@ class PurchasesTest {
                 sku,
                 true,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -1861,6 +1909,7 @@ class PurchasesTest {
                 skuSub,
                 true,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -1870,7 +1919,7 @@ class PurchasesTest {
     @Test
     fun `syncing transactions never consumes transactions`() {
         setup()
-
+        purchases.finishTransactions = false
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
         purchases.allowSharingPlayStoreAccount = true
@@ -1896,6 +1945,7 @@ class PurchasesTest {
                 sku,
                 true,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -2158,6 +2208,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2214,6 +2265,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2258,6 +2310,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2273,6 +2326,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2321,6 +2375,7 @@ class PurchasesTest {
                 "product",
                 true,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -2375,6 +2430,7 @@ class PurchasesTest {
                 "product",
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -2406,6 +2462,7 @@ class PurchasesTest {
                 "product",
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -2529,6 +2586,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -2541,6 +2599,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 "offering_a",
+                false,
                 any(),
                 any()
             )
@@ -2576,6 +2635,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 "offering_a",
+                false,
                 any(),
                 any()
             )
@@ -2615,6 +2675,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 "offering_a",
+                false,
                 any(),
                 any()
             )
@@ -2665,6 +2726,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 "offering_a",
+                false,
                 any(),
                 captureLambda()
             )
@@ -2706,6 +2768,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2794,7 +2857,7 @@ class PurchasesTest {
             }
             mockProducts()
             every {
-                postReceiptData(any(), any(), any(), any(), any(), captureLambda(), any())
+                postReceiptData(any(), any(), any(), any(), any(), any(), captureLambda(), any())
             } answers {
                 lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
             }
