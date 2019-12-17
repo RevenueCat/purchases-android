@@ -1,3 +1,8 @@
+## 3.0.4
+
+- Defers fetching updated PurchaserInfo and Offerings to whenever the app is foregrounded.
+- Adds Lifecycle components to better detect the lifecycle of the app.
+
 ## 3.0.3
 
 - Fixes `syncPurchases` and `restorePurchases`.
