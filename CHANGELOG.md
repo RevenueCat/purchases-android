@@ -1,3 +1,8 @@
+## 2.4.2
+
+- Defers fetching updated PurchaserInfo and Entitlements to whenever the app is foregrounded.
+- Adds Lifecycle components to better detect the lifecycle of the app.
+
 ## 2.4.1
 
 - Adds missing close call on inputStream.

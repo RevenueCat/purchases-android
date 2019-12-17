@@ -15,6 +15,7 @@ import android.os.Looper
 import android.preference.PreferenceManager
 import android.util.Log
 import androidx.annotation.VisibleForTesting
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.Purchase
@@ -106,7 +107,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             afterSetListener(value)
         }
 
-    private val lifecycleHandler = AppLifecycleHandler(this)
+    private val lifecycleHandler: AppLifecycleHandler by lazy {
+        AppLifecycleHandler(this)
+    }
 
     init {
         debugLog("Debug logging enabled.")
@@ -123,9 +126,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 finishTransactions = !observerMode
             )
         }
-        updateCaches(newAppUserID)
-        applicationContext.getApplication().registerActivityLifecycleCallbacks(lifecycleHandler)
-        applicationContext.getApplication().registerComponentCallbacks(lifecycleHandler)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
         billingWrapper.stateListener = object : BillingWrapper.StateListener {
             override fun onConnected() {
                 updatePendingPurchaseQueue()
@@ -135,9 +136,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     override fun onAppBackgrounded() {
+        debugLog("App backgrounded")
     }
 
     override fun onAppForegrounded() {
+        debugLog("App foregrounded")
+        if (isCacheStale()) {
+            debugLog("Cache stale")
+            updateCaches(appUserID)
+        }
         updatePendingPurchaseQueue()
     }
 
@@ -403,8 +410,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         this.backend.close()
         billingWrapper.purchasesUpdatedListener = null
         updatedPurchaserInfoListener = null // Do not call on state since the setter does more stuff
-        applicationContext.getApplication().unregisterActivityLifecycleCallbacks(lifecycleHandler)
-        applicationContext.getApplication().unregisterComponentCallbacks(lifecycleHandler)
+        ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleHandler)
     }
 
     /**
@@ -945,7 +951,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "2.5.0-SNAPSHOT"
+        val frameworkVersion = "2.4.2"
 
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will

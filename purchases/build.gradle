@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 28
@@ -8,7 +9,7 @@ android {
         minSdkVersion 14
         targetSdkVersion 28
         versionCode 1
-        versionName "2.5.0-SNAPSHOT"
+        versionName "2.4.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'consumer-proguard-rules.pro'
@@ -26,6 +27,9 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'androidx.annotation:annotation:1.1.0'
     api 'com.android.billingclient:billing:1.2.2'
+    implementation "androidx.lifecycle:lifecycle-runtime:2.1.0"
+    implementation "androidx.lifecycle:lifecycle-extensions:2.1.0"
+    kapt "androidx.lifecycle:lifecycle-compiler:2.1.0"
     testImplementation 'androidx.test:core:1.2.0'
     testImplementation 'androidx.test:runner:1.2.0'
     testImplementation 'androidx.test:rules:1.2.0'
@@ -38,45 +42,45 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.12.2'
 }
 
-apply plugin: 'org.jetbrains.dokka-android'
 apply plugin: 'com.vanniktech.maven.publish'
 
-dokka {
-    moduleName = 'purchases'
-    includes = ['README.md']
-    reportUndocumented = true
-    includeNonPublic = false
-    skipDeprecated = true
-    outputFormat = 'html'
-    outputDirectory = "$rootDir/docs"
-    sourceDirs = files('src/main/kotlin')
 
-    // Specifies the location of the project source code on the Web.
-    // If provided, Dokka generates "source" links for each declaration.
-    // Repeat for multiple mappings
-    linkMapping {
-        // Source directory
-        dir = "src/main/kotlin"
+// We have to set the dokka configuration after evaluation since the com.vanniktech.maven.publish
+// plugin overwrites our dokka configuration on projects where it's applied.
+afterEvaluate { p ->
+    p.tasks.dokka {
+        moduleName = 'purchases'
+        includes = ['README.md']
+        reportUndocumented = true
+        includeNonPublic = false
+        skipDeprecated = true
+        outputFormat = 'html'
+        outputDirectory = "$rootDir/docs"
+        sourceDirs = files('src/main/kotlin')
 
-        // URL showing where the source code can be accessed through the web browser
-        url = "https://github.com/revenuecat/purchases-android/blob/master/src/main/kotlin"
+        // Specifies the location of the project source code on the Web.
+        // If provided, Dokka generates "source" links for each declaration.
+        // Repeat for multiple mappings
+        linkMapping {
+            // Source directory
+            dir = "src/main/kotlin"
 
-        // Suffix which is used to append the line number to the URL. Use #L for GitHub
-        suffix = "#L"
+            // URL showing where the source code can be accessed through the web browser
+            url = "https://github.com/revenuecat/purchases-android/blob/master/src/main/kotlin"
+
+            // Suffix which is used to append the line number to the URL. Use #L for GitHub
+            suffix = "#L"
+        }
+        // Suppress a package
+        packageOptions {
+            prefix = "com.revenuecat.purchases.util"
+            // will match kotlin.internal and all sub-packages of it
+            suppress = true
+        }
+        packageOptions {
+            prefix = "com.revenuecat.purchases"
+            // will match kotlin.internal and all sub-packages of it
+            suppress = false
+        }
     }
-    // Suppress a package
-    packageOptions {
-        prefix = "com.revenuecat.purchases.util" // will match kotlin.internal and all sub-packages of it
-        suppress = true
-    }
-    packageOptions {
-        prefix = "com.revenuecat.purchases" // will match kotlin.internal and all sub-packages of it
-        suppress = false
-    }
-
-    externalDocumentationLink {
-        url = new URL("https://developer.android.com/reference/")
-        packageListUrl = new URL("https://developer.android.com/reference/android/billingclient/api/package-list")
-    }
-
 }
