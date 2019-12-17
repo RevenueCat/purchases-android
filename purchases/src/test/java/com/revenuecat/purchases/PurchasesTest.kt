@@ -8,6 +8,9 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
@@ -88,9 +91,13 @@ class PurchasesTest {
         "]}]," +
         "'current_offering_id': '$stubOfferingIdentifier'}"
 
+    private val mockLifecycle= mockk<Lifecycle>()
+    private val mockLifecycleOwner = mockk<LifecycleOwner>()
+
     @Before
     fun setupStatic() {
         mockkStatic("com.revenuecat.purchases.FactoriesKt")
+        mockkStatic(ProcessLifecycleOwner::class)
     }
 
     @After
@@ -416,10 +423,44 @@ class PurchasesTest {
     }
 
     @Test
-    fun getsSubscriberInfoOnCreated() {
+    fun doesNotGetSubscriberInfoOnCreated() {
         setup()
 
-        verify {
+        verify (exactly = 0){
+            mockBackend.getPurchaserInfo(eq(appUserId), any(), any())
+        }
+    }
+
+    @Test
+    fun `fetch purchaser info on foregrounded if it's stale`() {
+        setup()
+        every {
+            mockCache.isCacheStale()
+        } returns true
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = emptyMap(),
+            queriedINAPP = emptyMap(),
+            notInCache = emptyList()
+        )
+        Purchases.sharedInstance.onAppForegrounded()
+        verify (exactly = 1) {
+            mockBackend.getPurchaserInfo(eq(appUserId), any(), any())
+        }
+    }
+
+    @Test
+    fun `does not fetch purchaser info on foregrounded if it's not stale`() {
+        setup()
+        every {
+            mockCache.isCacheStale()
+        } returns false
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = emptyMap(),
+            queriedINAPP = emptyMap(),
+            notInCache = emptyList()
+        )
+        Purchases.sharedInstance.onAppForegrounded()
+        verify (exactly = 0){
             mockBackend.getPurchaserInfo(eq(appUserId), any(), any())
         }
     }
@@ -693,7 +734,7 @@ class PurchasesTest {
                 any()
             )
         }
-        verify(exactly = 2) {
+        verify(exactly = 1) {
             mockCache.cachePurchaserInfo(
                 any(),
                 any()
@@ -723,10 +764,10 @@ class PurchasesTest {
 
         assertThat(receivedOfferings).isNotNull
 
-        verify (exactly = 2) {
+        verify (exactly = 1) {
             mockBackend.getOfferings(any(), any(), any())
         }
-        verify (exactly = 2) {
+        verify (exactly = 1) {
             mockCache.cacheOfferings(any())
         }
     }
@@ -776,15 +817,31 @@ class PurchasesTest {
         }
 
         assertThat(receivedOfferings).isEqualTo(offerings)
-
-        verify (exactly = 1) { // Once, from the setup
-            mockBackend.getOfferings(any(), any(), any())
-        }
     }
 
     @Test
     fun `if cached offerings are stale, call backend`() {
+        setup()
 
+        mockProducts()
+        mockSkuDetails(listOf(), listOf(), PurchaseType.SUBS)
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+
+        every {
+            mockCache.cachedOfferings
+        } returns offerings
+        every {
+            mockCache.isCacheStale()
+        } returns true
+
+        purchases.getOfferingsWith({ fail("should be a success") }) {
+            receivedOfferings = it
+        }
+
+        assertThat(receivedOfferings).isEqualTo(offerings)
+        verify (exactly = 1) {
+            mockBackend.getOfferings(any(), any(), any())
+        }
     }
 
     @Test
@@ -1151,7 +1208,7 @@ class PurchasesTest {
         verify (exactly = 1) {
             mockIdentityManager.identify("new_id", any(), any())
         }
-        verify (exactly = 2) {
+        verify (exactly = 1) {
             mockCache.setCachesLastUpdated()
         }
         verify (exactly = 1) {
@@ -1180,9 +1237,6 @@ class PurchasesTest {
     @Test
     fun `when setting up, and passing a appUserID, user is identified`() {
         setup()
-        verify(exactly = 1) {
-            mockCache.cachePurchaserInfo(any(), any())
-        }
         assertThat(purchases.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases.appUserID).isEqualTo(appUserId)
     }
@@ -1210,7 +1264,6 @@ class PurchasesTest {
     fun `when setting shared instance and there's already an instance, instance is closed`() {
         setup()
         mockCloseActions()
-        Purchases.sharedInstance = purchases
         Purchases.sharedInstance = purchases
         verifyClose()
     }
@@ -1406,7 +1459,7 @@ class PurchasesTest {
         })
 
         assertThat(receivedInfo).isEqualTo(null)
-        verify(exactly = 2) { mockBackend.getPurchaserInfo(any(), any(), any()) }
+        verify(exactly = 1) { mockBackend.getPurchaserInfo(any(), any(), any()) }
     }
 
     @Test
@@ -2385,9 +2438,19 @@ class PurchasesTest {
     @Test
     fun `when closing instance, activity lifecycle callbacks are unregistered`() {
         setup()
+
+        every {
+            ProcessLifecycleOwner.get()
+        } returns mockLifecycleOwner
+        every {
+            mockLifecycleOwner.lifecycle
+        } returns mockLifecycle
+        every {
+            mockLifecycle.removeObserver(any())
+        } just Runs
         purchases.close()
         verify (exactly = 1) {
-            mockApplication.unregisterActivityLifecycleCallbacks(any())
+            mockLifecycle.removeObserver(any())
         }
     }
 
@@ -2927,6 +2990,15 @@ class PurchasesTest {
 
     private fun mockCloseActions() {
         every {
+            ProcessLifecycleOwner.get()
+        } returns mockLifecycleOwner
+        every {
+            mockLifecycleOwner.lifecycle
+        } returns mockLifecycle
+        every {
+            mockLifecycle.removeObserver(any())
+        } just Runs
+        every {
             mockBackend.close()
         } just Runs
         every {
@@ -2961,11 +3033,8 @@ class PurchasesTest {
             mockBackend.close()
         }
         assertThat(purchases.updatedPurchaserInfoListener).isNull()
-        verify {
-            mockApplication.unregisterActivityLifecycleCallbacks(any())
-        }
-        verify {
-            mockApplication.unregisterComponentCallbacks(any())
+        verify (exactly = 1) {
+            mockLifecycle.removeObserver(any())
         }
         verifyOrder {
             mockBillingWrapper.purchasesUpdatedListener = capturedPurchasesUpdatedListener.captured
