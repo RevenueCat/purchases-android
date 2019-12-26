@@ -267,6 +267,36 @@ internal class Backend(
         })
     }
 
+    fun getManageSubscriptionURL(
+        productID: String,
+        appUserID: String,
+        onSuccessHandler: (Uri) -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit
+    ) {
+        enqueue(object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPClient.Result {
+                return httpClient.performRequest(
+                    "/subscribers/${encode(appUserID)}/subscriptions/$productID/manage",
+                    null as Map<*, *>?,
+                    authenticationHeaders
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                onErrorHandler(error)
+            }
+
+            override fun onCompletion(result: HTTPClient.Result) {
+                if (result.isSuccessful()) {
+                    onSuccessHandler(Uri.parse(result.body!!["url"] as String))
+                } else {
+                    onErrorHandler(result.toPurchasesError())
+                }
+            }
+        })
+
+    }
+
     private fun HTTPClient.Result.isSuccessful(): Boolean {
         return responseCode < UNSUCCESSFUL_HTTP_STATUS_CODE
     }

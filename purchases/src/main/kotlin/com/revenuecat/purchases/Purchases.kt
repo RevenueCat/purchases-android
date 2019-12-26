@@ -10,6 +10,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.preference.PreferenceManager
@@ -489,6 +490,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         // Don't set on state directly since setter does more things
         this.updatedPurchaserInfoListener = null
     }
+
+    fun getManageSubscriptionURL(
+        product: SkuDetails,
+        callback: Callback<Uri>
+    ) {
+        backend.getManageSubscriptionURL(
+            product.sku,
+            this.appUserID,
+            onSuccessHandler = callback::onReceived,
+            onErrorHandler = {
+                callback.onReceived(Uri.parse("https://play.google.com/store/account/subscriptions?sku=${product.sku}&package=${applicationContext.packageName}"))
+            }
+        )
+    }
+
     // endregion
 
     @JvmName("-deprecated_makePurchase")
