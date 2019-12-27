@@ -10,7 +10,11 @@ import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
 
 /**
- * An offering is collection of different Packages that lets the user purchase access in different ways.
+ * An offering is a collection of [Package] available for the user to purchase.
+ * For more info see https://docs.revenuecat.com/docs/entitlements
+ * @property identifier Unique identifier defined in RevenueCat dashboard.
+ * @property serverDescription Offering description defined in RevenueCat dashboard.
+ * @property availablePackages Array of [Package] objects available for purchase.
  */
 @Parcelize
 data class Offering internal constructor(
@@ -19,19 +23,54 @@ data class Offering internal constructor(
     val availablePackages: List<Package>
 ) : Parcelable {
 
+    /**
+     * Lifetime package type configured in the RevenueCat dashboard, if available.
+     */
     @IgnoredOnParcel val lifetime by lazy { findPackage(PackageType.LIFETIME) }
+
+    /**
+     * Annual package type configured in the RevenueCat dashboard, if available.
+     */
     @IgnoredOnParcel val annual by lazy { findPackage(PackageType.ANNUAL) }
+
+    /**
+     * Six month package type configured in the RevenueCat dashboard, if available.
+     */
     @IgnoredOnParcel val sixMonth by lazy { findPackage(PackageType.SIX_MONTH) }
+
+    /**
+     * Three month package type configured in the RevenueCat dashboard, if available.
+     */
     @IgnoredOnParcel val threeMonth by lazy { findPackage(PackageType.THREE_MONTH) }
+
+    /**
+     * Two month package type configured in the RevenueCat dashboard, if available.
+     */
     @IgnoredOnParcel val twoMonth by lazy { findPackage(PackageType.TWO_MONTH) }
+
+    /**
+     * Monthly package type configured in the RevenueCat dashboard, if available.
+     */
     @IgnoredOnParcel val monthly by lazy { findPackage(PackageType.MONTHLY) }
+
+    /**
+     * Weekly package type configured in the RevenueCat dashboard, if available.
+     */
     @IgnoredOnParcel val weekly by lazy { findPackage(PackageType.WEEKLY) }
 
     private fun findPackage(packageType: PackageType) =
         availablePackages.firstOrNull { it.identifier == packageType.identifier }
 
+    /**
+     * Retrieves a specific package by identifier, use this to access custom package types configured
+     * in the RevenueCat dashboard. Equivalent to calling `getPackage`.
+     */
     operator fun get(s: String) = getPackage(s)
 
+    /**
+     * Retrieves a specific package by identifier, use this to access custom package types configured
+     * in the RevenueCat dashboard.
+     */
     @Suppress("MemberVisibilityCanBePrivate")
     fun getPackage(identifier: String) =
         availablePackages.first { it.identifier == identifier }

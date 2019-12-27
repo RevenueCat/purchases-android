@@ -12,9 +12,13 @@ import org.json.JSONObject
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 private const val HTTP_SERVER_ERROR_CODE = 500
 
+/** @suppress */
 typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
+/** @suppress */
 typealias PostReceiptCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError, shouldConsumePurchase: Boolean) -> Unit>
+/** @suppress */
 typealias CallbackCacheKey = List<String>
+/** @suppress */
 typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
 
 internal class Backend(
@@ -96,17 +100,26 @@ internal class Backend(
         productID: String,
         isRestore: Boolean,
         offeringIdentifier: String?,
+        observerMode: Boolean,
         onSuccess: (PurchaserInfo) -> Unit,
         onError: (PurchasesError, errorIsFinishable: Boolean) -> Unit
     ) {
-        val cacheKey = listOfNotNull(purchaseToken, productID, appUserID, isRestore.toString(), offeringIdentifier)
+        val cacheKey = listOfNotNull(
+            purchaseToken,
+            productID,
+            appUserID,
+            isRestore.toString(),
+            offeringIdentifier,
+            observerMode.toString()
+        )
 
         val body = mapOf(
             "fetch_token" to purchaseToken,
             "product_id" to productID,
             "app_user_id" to appUserID,
             "is_restore" to isRestore,
-            "presented_offering_identifier" to offeringIdentifier
+            "presented_offering_identifier" to offeringIdentifier,
+            "observer_mode" to observerMode
         )
 
         val call = object : Dispatcher.AsyncCall() {

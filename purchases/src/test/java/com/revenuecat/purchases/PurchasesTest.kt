@@ -8,11 +8,15 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.PurchaseType
 import com.revenuecat.purchases.interfaces.Callback
@@ -87,9 +91,13 @@ class PurchasesTest {
         "]}]," +
         "'current_offering_id': '$stubOfferingIdentifier'}"
 
+    private val mockLifecycle= mockk<Lifecycle>()
+    private val mockLifecycleOwner = mockk<LifecycleOwner>()
+
     @Before
     fun setupStatic() {
         mockkStatic("com.revenuecat.purchases.FactoriesKt")
+        mockkStatic(ProcessLifecycleOwner::class)
     }
 
     @After
@@ -301,6 +309,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -313,6 +322,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 "offering_a",
+                false,
                 any(),
                 any()
             )
@@ -365,6 +375,7 @@ class PurchasesTest {
                 sku,
                 false,
                 stubOfferingIdentifier,
+                false,
                 any(),
                 any()
             )
@@ -384,6 +395,7 @@ class PurchasesTest {
                 any(),
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -411,10 +423,44 @@ class PurchasesTest {
     }
 
     @Test
-    fun getsSubscriberInfoOnCreated() {
+    fun doesNotGetSubscriberInfoOnCreated() {
         setup()
 
-        verify {
+        verify (exactly = 0){
+            mockBackend.getPurchaserInfo(eq(appUserId), any(), any())
+        }
+    }
+
+    @Test
+    fun `fetch purchaser info on foregrounded if it's stale`() {
+        setup()
+        every {
+            mockCache.isCacheStale()
+        } returns true
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = emptyMap(),
+            queriedINAPP = emptyMap(),
+            notInCache = emptyList()
+        )
+        Purchases.sharedInstance.onAppForegrounded()
+        verify (exactly = 1) {
+            mockBackend.getPurchaserInfo(eq(appUserId), any(), any())
+        }
+    }
+
+    @Test
+    fun `does not fetch purchaser info on foregrounded if it's not stale`() {
+        setup()
+        every {
+            mockCache.isCacheStale()
+        } returns false
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = emptyMap(),
+            queriedINAPP = emptyMap(),
+            notInCache = emptyList()
+        )
+        Purchases.sharedInstance.onAppForegrounded()
+        verify (exactly = 0){
             mockBackend.getPurchaserInfo(eq(appUserId), any(), any())
         }
     }
@@ -445,6 +491,7 @@ class PurchasesTest {
                 sku,
                 true,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -469,6 +516,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -489,21 +537,30 @@ class PurchasesTest {
         )
 
         verify {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, true, null, any(), any())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                true,
+                null,
+                false,
+                any(),
+                any()
+            )
         }
     }
 
     @Test
     fun restoringPurchasesGetsHistory() {
         setup()
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
             }
         }
@@ -527,17 +584,17 @@ class PurchasesTest {
         val skuSub = "sub"
         val purchaseTokenSub = "token_sub"
 
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured
             capturedLambda?.invoke(
-                getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
-                    getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
+                getMockedPurchaseHistoryList(sku, purchaseToken, PurchaseType.INAPP) +
+                    getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
             )
         }
 
@@ -557,6 +614,7 @@ class PurchasesTest {
                 sku,
                 true,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -569,6 +627,7 @@ class PurchasesTest {
                 skuSub,
                 true,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -605,17 +664,17 @@ class PurchasesTest {
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
-                        getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
+                    getMockedPurchaseHistoryList(sku, purchaseToken, PurchaseType.INAPP) +
+                        getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
                 )
             }
         }
@@ -628,6 +687,7 @@ class PurchasesTest {
                 any(),
                 true,
                 null,
+                false,
                 captureLambda(),
                 any()
             )
@@ -663,9 +723,18 @@ class PurchasesTest {
         )
 
         verify {
-            mockBackend.postReceiptData(purchaseToken, appUserId, sku, false, null, any(), any())
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                null,
+                false,
+                any(),
+                any()
+            )
         }
-        verify(exactly = 2) {
+        verify(exactly = 1) {
             mockCache.cachePurchaserInfo(
                 any(),
                 any()
@@ -695,10 +764,10 @@ class PurchasesTest {
 
         assertThat(receivedOfferings).isNotNull
 
-        verify (exactly = 2) {
+        verify (exactly = 1) {
             mockBackend.getOfferings(any(), any(), any())
         }
-        verify (exactly = 2) {
+        verify (exactly = 1) {
             mockCache.cacheOfferings(any())
         }
     }
@@ -724,7 +793,7 @@ class PurchasesTest {
         }
 
         assertThat(receivedOfferings).isNotNull
-        assertThat(receivedOfferings!!.availableOfferings.size).isEqualTo(1)
+        assertThat(receivedOfferings!!.all.size).isEqualTo(1)
         assertThat(receivedOfferings!![stubOfferingIdentifier]!!.monthly!!.product).isNotNull
     }
 
@@ -748,15 +817,31 @@ class PurchasesTest {
         }
 
         assertThat(receivedOfferings).isEqualTo(offerings)
-
-        verify (exactly = 1) { // Once, from the setup
-            mockBackend.getOfferings(any(), any(), any())
-        }
     }
 
     @Test
     fun `if cached offerings are stale, call backend`() {
+        setup()
 
+        mockProducts()
+        mockSkuDetails(listOf(), listOf(), PurchaseType.SUBS)
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+
+        every {
+            mockCache.cachedOfferings
+        } returns offerings
+        every {
+            mockCache.isCacheStale()
+        } returns true
+
+        purchases.getOfferingsWith({ fail("should be a success") }) {
+            receivedOfferings = it
+        }
+
+        assertThat(receivedOfferings).isEqualTo(offerings)
+        verify (exactly = 1) {
+            mockBackend.getOfferings(any(), any(), any())
+        }
     }
 
     @Test
@@ -928,6 +1013,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -976,6 +1062,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -994,6 +1081,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -1120,7 +1208,7 @@ class PurchasesTest {
         verify (exactly = 1) {
             mockIdentityManager.identify("new_id", any(), any())
         }
-        verify (exactly = 2) {
+        verify (exactly = 1) {
             mockCache.setCachesLastUpdated()
         }
         verify (exactly = 1) {
@@ -1149,9 +1237,6 @@ class PurchasesTest {
     @Test
     fun `when setting up, and passing a appUserID, user is identified`() {
         setup()
-        verify(exactly = 1) {
-            mockCache.cachePurchaserInfo(any(), any())
-        }
         assertThat(purchases.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases.appUserID).isEqualTo(appUserId)
     }
@@ -1179,7 +1264,6 @@ class PurchasesTest {
     fun `when setting shared instance and there's already an instance, instance is closed`() {
         setup()
         mockCloseActions()
-        Purchases.sharedInstance = purchases
         Purchases.sharedInstance = purchases
         verifyClose()
     }
@@ -1209,7 +1293,16 @@ class PurchasesTest {
         setup()
         val info = mockk<PurchaserInfo>()
         every {
-            mockBackend.postReceiptData(any(), any(), any(), any(), any(), captureLambda(), any())
+            mockBackend.postReceiptData(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                captureLambda(),
+                any()
+            )
         } answers {
             lambda<(PurchaserInfo) -> Unit>().captured.invoke(info)
         }
@@ -1366,7 +1459,7 @@ class PurchasesTest {
         })
 
         assertThat(receivedInfo).isEqualTo(null)
-        verify(exactly = 2) { mockBackend.getPurchaserInfo(any(), any(), any()) }
+        verify(exactly = 1) { mockBackend.getPurchaserInfo(any(), any(), any()) }
     }
 
     @Test
@@ -1626,6 +1719,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -1662,6 +1756,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                true,
                 any(),
                 captureLambda()
             )
@@ -1680,6 +1775,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 null,
+                true,
                 any(),
                 captureLambda()
             )
@@ -1732,6 +1828,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                true,
                 any(),
                 captureLambda()
             )
@@ -1766,23 +1863,24 @@ class PurchasesTest {
     @Test
     fun `syncing transactions gets whole history and posts it to backend`() {
         setup()
+        purchases.finishTransactions = false
 
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
-                    getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
+                    getMockedPurchaseHistoryList(sku, purchaseToken, PurchaseType.INAPP) +
+                    getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
                 )
             }
         }
@@ -1797,6 +1895,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -1808,6 +1907,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -1817,6 +1917,7 @@ class PurchasesTest {
     @Test
     fun `syncing transactions respects allow sharing account settings`() {
         setup()
+        purchases.finishTransactions = false
 
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
@@ -1824,17 +1925,17 @@ class PurchasesTest {
         val purchaseTokenSub = "crazy_purchase_token_sub"
         purchases.allowSharingPlayStoreAccount = true
 
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
-                        getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
+                    getMockedPurchaseHistoryList(sku, purchaseToken, PurchaseType.INAPP) +
+                        getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
                 )
             }
         }
@@ -1849,6 +1950,7 @@ class PurchasesTest {
                 sku,
                 true,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -1860,6 +1962,7 @@ class PurchasesTest {
                 skuSub,
                 true,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -1869,20 +1972,20 @@ class PurchasesTest {
     @Test
     fun `syncing transactions never consumes transactions`() {
         setup()
-
+        purchases.finishTransactions = false
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
         purchases.allowSharingPlayStoreAccount = true
 
-        var capturedLambda: ((List<PurchaseWrapper>) -> Unit)? = null
+        var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingWrapper.queryAllPurchases(
                 captureLambda(),
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PurchaseWrapper>) -> Unit>().captured.also {
-                it.invoke(getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP))
+            capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
+                it.invoke(getMockedPurchaseHistoryList(sku, purchaseToken, PurchaseType.INAPP))
             }
         }
 
@@ -1895,6 +1998,7 @@ class PurchasesTest {
                 sku,
                 true,
                 null,
+                true,
                 any(),
                 any()
             )
@@ -2157,6 +2261,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2213,6 +2318,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2257,6 +2363,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2272,6 +2379,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2320,6 +2428,7 @@ class PurchasesTest {
                 "product",
                 true,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -2329,9 +2438,19 @@ class PurchasesTest {
     @Test
     fun `when closing instance, activity lifecycle callbacks are unregistered`() {
         setup()
+
+        every {
+            ProcessLifecycleOwner.get()
+        } returns mockLifecycleOwner
+        every {
+            mockLifecycleOwner.lifecycle
+        } returns mockLifecycle
+        every {
+            mockLifecycle.removeObserver(any())
+        } just Runs
         purchases.close()
         verify (exactly = 1) {
-            mockApplication.unregisterActivityLifecycleCallbacks(any())
+            mockLifecycle.removeObserver(any())
         }
     }
 
@@ -2374,6 +2493,7 @@ class PurchasesTest {
                 "product",
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -2405,6 +2525,7 @@ class PurchasesTest {
                 "product",
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -2528,6 +2649,7 @@ class PurchasesTest {
                 sku,
                 false,
                 null,
+                false,
                 any(),
                 any()
             )
@@ -2540,6 +2662,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 "offering_a",
+                false,
                 any(),
                 any()
             )
@@ -2575,6 +2698,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 "offering_a",
+                false,
                 any(),
                 any()
             )
@@ -2614,6 +2738,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 "offering_a",
+                false,
                 any(),
                 any()
             )
@@ -2664,6 +2789,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 "offering_a",
+                false,
                 any(),
                 captureLambda()
             )
@@ -2705,6 +2831,7 @@ class PurchasesTest {
                 skuSub,
                 false,
                 null,
+                false,
                 any(),
                 captureLambda()
             )
@@ -2793,7 +2920,7 @@ class PurchasesTest {
             }
             mockProducts()
             every {
-                postReceiptData(any(), any(), any(), any(), any(), captureLambda(), any())
+                postReceiptData(any(), any(), any(), any(), any(), any(), captureLambda(), any())
             } answers {
                 lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
             }
@@ -2863,6 +2990,15 @@ class PurchasesTest {
 
     private fun mockCloseActions() {
         every {
+            ProcessLifecycleOwner.get()
+        } returns mockLifecycleOwner
+        every {
+            mockLifecycleOwner.lifecycle
+        } returns mockLifecycle
+        every {
+            mockLifecycle.removeObserver(any())
+        } just Runs
+        every {
             mockBackend.close()
         } just Runs
         every {
@@ -2897,15 +3033,32 @@ class PurchasesTest {
             mockBackend.close()
         }
         assertThat(purchases.updatedPurchaserInfoListener).isNull()
-        verify {
-            mockApplication.unregisterActivityLifecycleCallbacks(any())
-        }
-        verify {
-            mockApplication.unregisterComponentCallbacks(any())
+        verify (exactly = 1) {
+            mockLifecycle.removeObserver(any())
         }
         verifyOrder {
             mockBillingWrapper.purchasesUpdatedListener = capturedPurchasesUpdatedListener.captured
             mockBillingWrapper.purchasesUpdatedListener = null
+        }
+    }
+
+    private fun getMockedPurchaseHistoryList(
+        sku: String,
+        purchaseToken: String,
+        purchaseType: PurchaseType
+    ): ArrayList<PurchaseHistoryRecordWrapper> {
+        val p: PurchaseHistoryRecord = mockk()
+        every {
+            p.sku
+        } returns sku
+        every {
+            p.purchaseToken
+        } returns purchaseToken
+        every {
+            p.purchaseTime
+        } returns System.currentTimeMillis()
+        return ArrayList<PurchaseHistoryRecordWrapper>().also {
+            it.add(PurchaseHistoryRecordWrapper(p, purchaseType))
         }
     }
 

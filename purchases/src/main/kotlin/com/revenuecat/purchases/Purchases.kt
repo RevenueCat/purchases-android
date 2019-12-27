@@ -15,6 +15,7 @@ import android.os.Looper
 import android.preference.PreferenceManager
 import android.util.Log
 import androidx.annotation.VisibleForTesting
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
@@ -55,9 +56,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val identityManager: IdentityManager
 ) : LifecycleDelegate {
 
-    @get:Synchronized @set:Synchronized
+    /** @suppress */
+    @get:Synchronized @get:JvmSynthetic @set:Synchronized @set:JvmSynthetic
     @Volatile
-    var state = PurchasesState()
+    @JvmSynthetic internal var state = PurchasesState()
 
     /*
     * If it should allow sharing Play Store accounts. False by
@@ -71,8 +73,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
 
-    /*
-    * Default to TRUE, set this to FALSE if you are consuming transactions outside of the Purchases SDK.
+    /**
+     * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions outside of the Purchases SDK.
     */
     var finishTransactions: Boolean
         @Synchronized get() = state.finishTransactions
@@ -105,7 +107,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
 
-    private val lifecycleHandler = AppLifecycleHandler(this)
+    private val lifecycleHandler: AppLifecycleHandler by lazy {
+        AppLifecycleHandler(this)
+    }
 
     init {
         debugLog("Debug logging enabled.")
@@ -117,9 +121,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             )
         }
         identityManager.configure(backingFieldAppUserID)
-        updateCaches(identityManager.currentAppUserID)
-        applicationContext.getApplication().registerActivityLifecycleCallbacks(lifecycleHandler)
-        applicationContext.getApplication().registerComponentCallbacks(lifecycleHandler)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
         billingWrapper.stateListener = object : BillingWrapper.StateListener {
             override fun onConnected() {
                 updatePendingPurchaseQueue()
@@ -128,10 +130,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         billingWrapper.purchasesUpdatedListener = getPurchasesUpdatedListener()
     }
 
+    /** @suppress */
     override fun onAppBackgrounded() {
+        debugLog("App backgrounded")
     }
 
+    /** @suppress */
     override fun onAppForegrounded() {
+        debugLog("App foregrounded")
+        if (deviceCache.isCacheStale()) {
+            debugLog("Cache stale")
+            updateCaches(identityManager.currentAppUserID)
+        }
         updatePendingPurchaseQueue()
     }
 
@@ -147,13 +157,28 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         debugLog("Syncing purchases")
         billingWrapper.queryAllPurchases({ allPurchases ->
             if (allPurchases.isNotEmpty()) {
-                postPurchasesSortedByTime(
-                    allPurchases,
-                    this.allowSharingPlayStoreAccount,
-                    false,
-                    { debugLog("Purchases synced") },
-                    { errorLog("Error syncing purchases $it") }
-                )
+                identityManager.currentAppUserID.let { appUserID ->
+                    allPurchases.forEach { purchase ->
+                        backend.postReceiptData(
+                            purchase.purchaseToken,
+                            appUserID,
+                            purchase.sku,
+                            this.allowSharingPlayStoreAccount,
+                            null,
+                            !this.finishTransactions,
+                            { info ->
+                                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+                                cachePurchaserInfo(info)
+                                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                                debugLog("Purchase $purchase synced")
+                            }, { error, errorIsFinishable ->
+                                if (errorIsFinishable) {
+                                    deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+                                }
+                                errorLog("Error syncing purchase: $purchase; Error: $error")
+                            })
+                    }
+                }
             }
         }, { errorLog("Error syncing purchases $it") })
     }
@@ -304,13 +329,36 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     if (allPurchases.isEmpty()) {
                         getPurchaserInfo(listener)
                     } else {
-                        postPurchasesSortedByTime(
-                            allPurchases,
-                            true,
-                            finishTransactions,
-                            { dispatch { listener.onReceived(it) } },
-                            { dispatch { listener.onError(it) } }
-                        )
+                        allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
+                            identityManager.currentAppUserID.let { appUserID ->
+                                sortedByTime.forEach { purchase ->
+                                    backend.postReceiptData(
+                                        purchase.purchaseToken,
+                                        appUserID,
+                                        purchase.sku,
+                                        true,
+                                        null,
+                                        !finishTransactions,
+                                        { info ->
+                                            consumeAndSave(finishTransactions, purchase)
+                                            cachePurchaserInfo(info)
+                                            sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                                            debugLog("Purchase $purchase restored")
+                                            if (sortedByTime.last() == purchase) {
+                                                dispatch { listener.onReceived(info) }
+                                            }
+                                        }, { error, errorIsFinishable ->
+                                            if (errorIsFinishable) {
+                                                consumeAndSave(finishTransactions, purchase)
+                                            }
+                                            errorLog("Error restoring purchase: $purchase; Error: $error")
+                                            if (sortedByTime.last() == purchase) {
+                                                dispatch { listener.onError(error) }
+                                            }
+                                        })
+                                }
+                            }
+                        }
                     }
                 },
                 { error ->
@@ -400,8 +448,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         this.backend.close()
         billingWrapper.purchasesUpdatedListener = null
         updatedPurchaserInfoListener = null // Do not call on state since the setter does more stuff
-        applicationContext.getApplication().unregisterActivityLifecycleCallbacks(lifecycleHandler)
-        applicationContext.getApplication().unregisterComponentCallbacks(lifecycleHandler)
+        ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleHandler)
     }
 
     /**
@@ -554,7 +601,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun logMissingProducts(
         offerings: Offerings,
         detailsByID: HashMap<String, SkuDetails>
-    ) = offerings.availableOfferings.values
+    ) = offerings.all.values
             .flatMap { it.availablePackages }
             .map { it.product.sku }
             .filterNot { detailsByID.containsKey(it) }
@@ -624,13 +671,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         identityManager.currentAppUserID.let { appUserID ->
             purchases.forEach { purchase ->
-                if (purchase.containedPurchase?.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                     backend.postReceiptData(
                         purchase.purchaseToken,
                         appUserID,
                         purchase.sku,
                         allowSharingPlayStoreAccount,
                         purchase.presentedOfferingIdentifier,
+                        !consumeAllTransactions,
                         { info ->
                             consumeAndSave(consumeAllTransactions, purchase)
                             cachePurchaserInfo(info)
@@ -658,7 +706,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             // an issue getting the purchase type
             return
         }
-        if (purchase.containedPurchase?.purchaseState != Purchase.PurchaseState.PURCHASED) {
+        if (purchase.containedPurchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
             // PENDING purchases should not be acknowledged or consumed
             return
         }
@@ -683,29 +731,33 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun postPurchasesSortedByTime(
-        purchases: List<PurchaseWrapper>,
-        allowSharingPlayStoreAccount: Boolean,
-        consumeAllTransactions: Boolean,
-        onSuccess: (PurchaserInfo) -> Unit,
-        onError: (PurchasesError) -> Unit
+    private fun consumeAndSave(
+        shouldTryToConsume: Boolean,
+        purchase: PurchaseHistoryRecordWrapper
     ) {
-        purchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
-            postPurchases(
-                sortedByTime,
-                allowSharingPlayStoreAccount,
-                consumeAllTransactions,
-                { purchase, info ->
-                    if (sortedByTime.last() == purchase) {
-                        onSuccess(info)
-                    }
-                },
-                { purchase, error ->
-                    if (sortedByTime.last() == purchase) {
-                        onError(error)
-                    }
+        if (purchase.type == PurchaseType.UNKNOWN) {
+            // Would only get here if the purchase was trigger from outside of the app and there was
+            // an issue getting the purchase type
+            return
+        }
+        if (shouldTryToConsume && purchase.isConsumable) {
+            billingWrapper.consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                } else {
+                    debugLog("Error consuming purchase. Will retry next queryPurchases. ${billingResult.toHumanReadableDescription()}")
                 }
-            )
+            }
+        } else if (shouldTryToConsume) {
+            billingWrapper.acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                } else {
+                    debugLog("Error acknowledging purchase. Will retry next queryPurchases. ${billingResult.toHumanReadableDescription()}")
+                }
+            }
+        } else {
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
         }
     }
 
@@ -794,22 +846,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     finishTransactions,
                     { purchaseWrapper, info ->
                         getPurchaseCallback(purchaseWrapper.sku)?.let { callback ->
-                            if (purchaseWrapper.containedPurchase != null) {
-                                dispatch {
-                                    callback.onCompleted(purchaseWrapper.containedPurchase, info)
-                                }
-                            } else {
-                                // This shouldn't happen since unless postPurchases modifies the
-                                // purchases objects, which shouldn't
-                                errorLog("Purchase was successful, but the purchase object is missing.")
-                                dispatch {
-                                    callback.onError(
-                                        PurchasesError(
-                                            PurchasesErrorCode.UnknownError,
-                                            "Purchase object couldn't be found after a successful purchase"
-                                        ), false
-                                    )
-                                }
+                            dispatch {
+                                callback.onCompleted(purchaseWrapper.containedPurchase, info)
                             }
                         }
                     },
@@ -885,9 +923,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     val queryActiveSubscriptionsResult = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
                     val queryUnconsumedInAppsRequest = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
                     if (queryActiveSubscriptionsResult?.isSuccessful() == true && queryUnconsumedInAppsRequest?.isSuccessful() == true) {
-                        deviceCache.cleanPreviouslySentTokens(
-                            queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
-                            queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
+                            deviceCache.cleanPreviouslySentTokens(
+                                queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
+                                queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
                         )
                         postPurchases(
                             deviceCache.getActivePurchasesNotInCache(
@@ -954,7 +992,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "2.5.0-SNAPSHOT"
+        val frameworkVersion = "3.1.0-SNAPSHOT"
 
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
@@ -964,8 +1002,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * If `null` `[Purchases] will generate a unique identifier for the current device and persist
          * it the SharedPreferences. This also affects the behavior of [restorePurchases].
          * @param observerMode Optional boolean set to FALSE by default. Set to TRUE if you are using your own
-         * subscription system and you want to use RevenueCat's backend only. If set to TRUE, you should be consuming
-         * transactions outside of the Purchases SDK.
+         * subscription system and you want to use RevenueCat's backend only. If set to TRUE, you should
+         * be consuming and acknowledging transactions outside of the Purchases SDK.
          * @param service Optional [ExecutorService] to use for the backend calls.
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */

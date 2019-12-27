@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 
-data class PurchasesState(
+internal data class PurchasesState(
     val allowSharingPlayStoreAccount: Boolean? = null,
     val finishTransactions: Boolean = true,
     val updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null,

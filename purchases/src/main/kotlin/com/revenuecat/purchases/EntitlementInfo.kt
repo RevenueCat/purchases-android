@@ -40,6 +40,7 @@ class EntitlementInfo internal constructor(
     val billingIssueDetectedAt: Date?
 ) : Parcelable {
 
+    /** @suppress */
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
         parcel.readByte() != 0.toByte(),
@@ -55,6 +56,7 @@ class EntitlementInfo internal constructor(
         parcel.readLong().let { date -> if (date == -1L) null else Date(date) }
     )
 
+    /** @suppress */
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(identifier)
         parcel.writeByte(if (isActive) 1 else 0)
@@ -70,10 +72,12 @@ class EntitlementInfo internal constructor(
         parcel.writeLong(billingIssueDetectedAt?.time ?: -1)
     }
 
+    /** @suppress */
     override fun describeContents(): Int {
         return 0
     }
 
+    /** @suppress */
     override fun toString(): String {
         return "EntitlementInfo(" +
             "identifier='$identifier', " +
@@ -90,6 +94,7 @@ class EntitlementInfo internal constructor(
             "billingIssueDetectedAt=$billingIssueDetectedAt)"
     }
 
+    /** @suppress */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -113,6 +118,7 @@ class EntitlementInfo internal constructor(
     }
 
     companion object {
+        /** @suppress */
         @JvmField
         val CREATOR = object : Parcelable.Creator<EntitlementInfo> {
             override fun createFromParcel(parcel: Parcel): EntitlementInfo {

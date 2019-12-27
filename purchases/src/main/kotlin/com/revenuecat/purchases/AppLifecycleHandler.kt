@@ -1,49 +1,20 @@
 package com.revenuecat.purchases
 
-import android.app.Activity
-import android.app.Application
-import android.content.ComponentCallbacks2
-import android.content.res.Configuration
-import android.os.Bundle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
 
 internal class AppLifecycleHandler(private val lifecycleDelegate: LifecycleDelegate) :
-    Application.ActivityLifecycleCallbacks, ComponentCallbacks2 {
+    LifecycleObserver {
 
-    private var appInForeground = false
-
-    override fun onActivityPaused(p0: Activity?) {}
-
-    override fun onActivityResumed(p0: Activity?) {
-        if (!appInForeground) {
-            appInForeground = true
-            lifecycleDelegate.onAppForegrounded()
-        }
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    fun onMoveToForeground() {
+        lifecycleDelegate.onAppForegrounded()
     }
 
-    override fun onActivityStarted(p0: Activity?) {
-    }
-
-    override fun onActivityDestroyed(p0: Activity?) {
-    }
-
-    override fun onActivitySaveInstanceState(p0: Activity?, p1: Bundle?) {
-    }
-
-    override fun onActivityStopped(p0: Activity?) {
-    }
-
-    override fun onActivityCreated(p0: Activity?, p1: Bundle?) {
-    }
-
-    override fun onLowMemory() {}
-
-    override fun onConfigurationChanged(p0: Configuration?) {}
-
-    override fun onTrimMemory(level: Int) {
-        if (level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
-            appInForeground = false
-            lifecycleDelegate.onAppBackgrounded()
-        }
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    fun onMoveToBackground() {
+        lifecycleDelegate.onAppBackgrounded()
     }
 }
 
