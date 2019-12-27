@@ -13,7 +13,6 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'consumer-proguard-rules.pro'
-        resValue "string", "revenuecat_cross_platform_sdk", "native"
     }
 
     sourceSets {
