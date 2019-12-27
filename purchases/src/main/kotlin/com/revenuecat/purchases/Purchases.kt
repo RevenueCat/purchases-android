@@ -908,7 +908,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Static
     companion object {
-        internal var platformFlavor = "native"
+        /**
+         * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is
+         * being used
+         */
+        @JvmStatic var platformFlavor = "native"
 
         @get:VisibleForTesting(otherwise = VisibleForTesting.NONE) @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         internal var postponedAttributionData = mutableListOf<AttributionData>()
