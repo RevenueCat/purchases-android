@@ -908,6 +908,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Static
     companion object {
+        internal var platformFlavor = "native"
+
         @get:VisibleForTesting(otherwise = VisibleForTesting.NONE) @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         internal var postponedAttributionData = mutableListOf<AttributionData>()
 
@@ -985,7 +987,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     appConfig = AppConfig(
                         context.getLocale()?.toBCP47() ?: "",
                         context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
-                        context.getApplication().getString(R.string.revenuecat_cross_platform_sdk) ?: "N/A"
+                        platformFlavor
                     )
                 )
             )
