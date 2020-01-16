@@ -156,7 +156,9 @@ class BackendTest {
         clientException: Exception?,
         resultBody: String?,
         offeringIdentifier: String?,
-        observerMode: Boolean
+        observerMode: Boolean,
+        price: Double?,
+        currency: String?
     ): PurchaserInfo {
 
         val (fetchToken, productID, info) = mockPostReceiptResponse(
@@ -165,7 +167,9 @@ class BackendTest {
             clientException,
             resultBody,
             offeringIdentifier = offeringIdentifier,
-            observerMode = observerMode
+            observerMode = observerMode,
+            price = price,
+            currency = currency
         )
 
         backend.postReceiptData(
@@ -175,6 +179,8 @@ class BackendTest {
             isRestore,
             offeringIdentifier,
             observerMode,
+            price,
+            currency,
             onReceivePurchaserInfoSuccessHandler,
             postReceiptErrorCallback
         )
@@ -189,7 +195,9 @@ class BackendTest {
         resultBody: String?,
         delayed: Boolean = false,
         offeringIdentifier: String?,
-        observerMode: Boolean
+        observerMode: Boolean,
+        price: Double?,
+        currency: String?
     ): Triple<String, String, PurchaserInfo> {
         val fetchToken = "fetch_token"
         val productID = "product_id"
@@ -199,8 +207,13 @@ class BackendTest {
             "product_id" to productID,
             "is_restore" to isRestore,
             "presented_offering_identifier" to offeringIdentifier,
-            "observer_mode" to observerMode
-        )
+            "observer_mode" to observerMode,
+            "price" to price,
+            "currency" to currency
+        ).mapNotNull { entry: Map.Entry<String, Any?> ->
+            entry.value?.let { entry.key to it }
+        }.toMap()
+
         val info = mockResponse(
             "/receipts",
             body,
@@ -273,7 +286,16 @@ class BackendTest {
 
     @Test
     fun postReceiptCallsProperURL() {
-        val info = postReceipt(200, false, null, null, null, observerMode = false)
+        val info = postReceipt(
+            200,
+            false,
+            null,
+            null,
+            null,
+            false,
+            null,
+            null
+        )
 
         assertThat(receivedPurchaserInfo).`as`("Received info is not null").isNotNull
         assertThat(info).isEqualTo(receivedPurchaserInfo)
@@ -281,7 +303,16 @@ class BackendTest {
 
     @Test
     fun postReceiptCallsFailsFor40X() {
-        postReceipt(401, false, null, null, null, observerMode = false)
+        postReceipt(
+            401,
+            false,
+            null,
+            null,
+            null,
+            false,
+            null,
+            null
+        )
 
         assertThat(receivedPurchaserInfo).`as`("Received info is null").isNull()
         assertThat(receivedError).`as`("Received error is not null").isNotNull
@@ -441,7 +472,9 @@ class BackendTest {
             null,
             true,
             "offering_a",
-            false
+            false,
+            null,
+            null
         )
         val lock = CountDownLatch(2)
         asyncBackend.postReceiptData(
@@ -451,6 +484,8 @@ class BackendTest {
             false,
             "offering_a",
             false,
+            null,
+            null,
             {
                 lock.countDown()
             },
@@ -463,6 +498,8 @@ class BackendTest {
             false,
             "offering_a",
             false,
+            null,
+            null,
             {
                 lock.countDown()
             },
@@ -551,7 +588,9 @@ class BackendTest {
             null,
             true,
             "offering_a",
-            false
+            false,
+            null,
+            null
         )
         val lock = CountDownLatch(2)
         asyncBackend.postReceiptData(
@@ -561,6 +600,8 @@ class BackendTest {
             false,
             "offering_a",
             false,
+            null,
+            null,
             {
                 lock.countDown()
             },
@@ -573,7 +614,9 @@ class BackendTest {
             null,
             true,
             "offering_b",
-            false
+            false,
+            null,
+            null
         )
         asyncBackend.postReceiptData(
             fetchToken1,
@@ -582,6 +625,8 @@ class BackendTest {
             false,
             "offering_b",
             false,
+            null,
+            null,
             {
                 lock.countDown()
             },
@@ -606,7 +651,60 @@ class BackendTest {
             null,
             null,
             null,
-            true
+            true,
+            null,
+            null
+        )
+
+        assertThat(receivedPurchaserInfo).`as`("Received info is not null").isNotNull
+        assertThat(info).isEqualTo(receivedPurchaserInfo)
+    }
+
+    @Test
+    fun `postReceipt passes price and currency`() {
+        val info = postReceipt(
+            200,
+            false,
+            null,
+            null,
+            null,
+            true,
+            2.5,
+            "USD"
+        )
+
+        assertThat(receivedPurchaserInfo).`as`("Received info is not null").isNotNull
+        assertThat(info).isEqualTo(receivedPurchaserInfo)
+    }
+
+    @Test
+    fun `postReceipt passes null price and currency`() {
+        val info = postReceipt(
+            200,
+            false,
+            null,
+            null,
+            null,
+            true,
+            null,
+            null
+        )
+
+        assertThat(receivedPurchaserInfo).`as`("Received info is not null").isNotNull
+        assertThat(info).isEqualTo(receivedPurchaserInfo)
+    }
+
+    @Test
+    fun `given multiple post calls for same subscriber different price, both are triggered`() {
+        val info = postReceipt(
+            200,
+            false,
+            null,
+            null,
+            null,
+            true,
+            null,
+            null
         )
 
         assertThat(receivedPurchaserInfo).`as`("Received info is not null").isNotNull

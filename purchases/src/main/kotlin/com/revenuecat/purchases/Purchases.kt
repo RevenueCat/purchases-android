@@ -57,9 +57,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 ) : LifecycleDelegate {
 
     /** @suppress */
-    @get:Synchronized @get:JvmSynthetic @set:Synchronized @set:JvmSynthetic
+    @get:Synchronized
+    @get:JvmSynthetic
+    @set:Synchronized
+    @set:JvmSynthetic
     @Volatile
-    @JvmSynthetic internal var state = PurchasesState()
+    @JvmSynthetic
+    internal var state = PurchasesState()
 
     /*
     * If it should allow sharing Play Store accounts. False by
@@ -75,7 +79,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions outside of the Purchases SDK.
-    */
+     */
     var finishTransactions: Boolean
         @Synchronized get() = state.finishTransactions
         @Synchronized set(value) {
@@ -166,6 +170,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             this.allowSharingPlayStoreAccount,
                             null,
                             !this.finishTransactions,
+                            null,
+                            null,
                             { info ->
                                 deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 cachePurchaserInfo(info)
@@ -187,9 +193,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @Deprecated(
         message = "moved to getOfferings()",
         replaceWith = ReplaceWith(expression = "getOfferings(listener)"),
-        level = DeprecationLevel.ERROR)
+        level = DeprecationLevel.ERROR
+    )
     fun getEntitlements() {
-
     }
 
     /**
@@ -233,7 +239,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.SUBS, listener)
+        billingWrapper.querySkuDetailsAsync(
+            BillingClient.SkuType.SUBS,
+            skus,
+            { skuDetails ->
+                dispatch {
+                    listener.onReceived(skuDetails)
+                }
+            }, {
+                dispatch {
+                    listener.onError(it)
+                }
+            })
     }
 
     /**
@@ -245,7 +262,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.INAPP, listener)
+        billingWrapper.querySkuDetailsAsync(
+            BillingClient.SkuType.INAPP,
+            skus,
+            { skuDetails ->
+                dispatch {
+                    listener.onReceived(skuDetails)
+                }
+            }, {
+                dispatch {
+                    listener.onError(it)
+                }
+            })
     }
 
     /**
@@ -291,7 +319,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         upgradeInfo: UpgradeInfo,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, packageToPurchase.product, packageToPurchase.offering, upgradeInfo, listener)
+        startPurchase(
+            activity,
+            packageToPurchase.product,
+            packageToPurchase.offering,
+            upgradeInfo,
+            listener
+        )
     }
 
     /**
@@ -305,7 +339,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         packageToPurchase: Package,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity,  packageToPurchase.product, packageToPurchase.offering, null, listener)
+        startPurchase(
+            activity,
+            packageToPurchase.product,
+            packageToPurchase.offering,
+            null,
+            listener
+        )
     }
 
     /**
@@ -323,7 +363,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (!allowSharingPlayStoreAccount) {
             debugLog("allowSharingPlayStoreAccount is set to false and restorePurchases has been called. This will 'alias' any app user id's sharing the same receipt. Are you sure you want to do this?")
         }
-        this.finishTransactions.let { finishTransactions->
+        this.finishTransactions.let { finishTransactions ->
             billingWrapper.queryAllPurchases(
                 { allPurchases ->
                     if (allPurchases.isEmpty()) {
@@ -339,6 +379,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         true,
                                         null,
                                         !finishTransactions,
+                                        null,
+                                        null,
                                         { info ->
                                             consumeAndSave(finishTransactions, purchase)
                                             cachePurchaserInfo(info)
@@ -378,7 +420,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         newAppUserID: String,
         listener: ReceivePurchaserInfoListener? = null
     ) {
-        identityManager.currentAppUserID.takeUnless {  it == newAppUserID }?.let {
+        identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
             identityManager.createAlias(
                 newAppUserID,
                 {
@@ -405,7 +447,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         newAppUserID: String,
         listener: ReceivePurchaserInfoListener? = null
     ) {
-        identityManager.currentAppUserID.takeUnless {  it == newAppUserID }?.let {
+        identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
             identityManager.identify(
                 newAppUserID,
                 {
@@ -495,7 +537,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @Deprecated(
         message = "moved to purchaseProduct()",
         replaceWith = ReplaceWith(expression = "purchaseProduct(activity, skuDetails, upgradeInfo, listener)"),
-        level = DeprecationLevel.ERROR)
+        level = DeprecationLevel.ERROR
+    )
     fun makePurchase(
         activity: Activity,
         skuDetails: SkuDetails,
@@ -509,7 +552,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @Deprecated(
         message = "moved to purchaseProduct()",
         replaceWith = ReplaceWith(expression = "purchaseProduct(activity, skuDetails, listener)"),
-        level = DeprecationLevel.ERROR)
+        level = DeprecationLevel.ERROR
+    )
     fun makePurchase(
         activity: Activity,
         skuDetails: SkuDetails,
@@ -527,7 +571,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         AdvertisingIdClient.getAdvertisingIdInfo(applicationContext) { adInfo ->
             identityManager.currentAppUserID.let { appUserID ->
-                val latestAttributionDataId = deviceCache.getCachedAttributionData(network, appUserID)
+                val latestAttributionDataId =
+                    deviceCache.getCachedAttributionData(network, appUserID)
                 val newCacheValue = adInfo.generateAttributionDataCacheValue(networkUserId)
 
                 if (latestAttributionDataId != null && latestAttributionDataId == newCacheValue) {
@@ -548,7 +593,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun AdvertisingIdClient.AdInfo?.generateAttributionDataCacheValue(networkUserId: String?) =
-        listOfNotNull(this?.takeIf { !it.isLimitAdTrackingEnabled }?.id, networkUserId).joinToString("_")
+        listOfNotNull(
+            this?.takeIf { !it.isLimitAdTrackingEnabled }?.id,
+            networkUserId
+        ).joinToString("_")
 
     // endregion
     // region Private Methods
@@ -563,7 +611,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
                     val skus = mutableListOf<String>()
                     for (i in 0 until jsonArrayOfOfferings.length()) {
-                        val jsonPackagesArray = jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+                        val jsonPackagesArray =
+                            jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
                         for (j in 0 until jsonPackagesArray.length()) {
                             skus.add(jsonPackagesArray.getJSONObject(j).getString("platform_product_identifier"))
                         }
@@ -586,7 +635,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 } catch (error: JSONException) {
                     log("Error fetching offerings - $error")
                     dispatch {
-                        completion?.onError(PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError, error.localizedMessage))
+                        completion?.onError(
+                            PurchasesError(
+                                PurchasesErrorCode.UnexpectedBackendResponseError,
+                                error.localizedMessage
+                            )
+                        )
                     }
                 }
             },
@@ -602,33 +656,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         offerings: Offerings,
         detailsByID: HashMap<String, SkuDetails>
     ) = offerings.all.values
-            .flatMap { it.availablePackages }
-            .map { it.product.sku }
-            .filterNot { detailsByID.containsKey(it) }
-            .takeIf { it.isNotEmpty() }
-            ?.let { missingProducts ->
-                log("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
-                log("Ensure your products are correctly configured in Play Store Developer Console")
-            }
-
-    private fun getSkus(
-        skus: List<String>,
-        @BillingClient.SkuType skuType: String,
-        completion: GetSkusResponseListener
-    ) {
-        billingWrapper.querySkuDetailsAsync(
-            skuType,
-            skus,
-            { skuDetails ->
-                dispatch {
-                    completion.onReceived(skuDetails)
-                }
-            }, {
-                dispatch {
-                    completion.onError(it)
-                }
-            })
-    }
+        .flatMap { it.availablePackages }
+        .map { it.product.sku }
+        .filterNot { detailsByID.containsKey(it) }
+        .takeIf { it.isNotEmpty() }
+        ?.let { missingProducts ->
+            log("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
+            log("Ensure your products are correctly configured in Play Store Developer Console")
+        }
 
     private fun updateCaches(
         appUserID: String,
@@ -672,26 +707,44 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         identityManager.currentAppUserID.let { appUserID ->
             purchases.forEach { purchase ->
                 if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                    backend.postReceiptData(
-                        purchase.purchaseToken,
-                        appUserID,
-                        purchase.sku,
-                        allowSharingPlayStoreAccount,
-                        purchase.presentedOfferingIdentifier,
-                        !consumeAllTransactions,
-                        { info ->
-                            consumeAndSave(consumeAllTransactions, purchase)
-                            cachePurchaserInfo(info)
-                            sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                            onSuccess?.let { it(purchase, info) }
-                        }, { error, errorIsFinishable ->
-                            if (errorIsFinishable) {
+                    val postToBackend: (SkuDetails?) -> Unit = { skuDetails ->
+                        backend.postReceiptData(
+                            purchase.purchaseToken,
+                            appUserID,
+                            purchase.sku,
+                            allowSharingPlayStoreAccount,
+                            purchase.presentedOfferingIdentifier,
+                            !consumeAllTransactions,
+                            skuDetails?.priceAmountMicros?.div(1000000.0),
+                            skuDetails?.priceCurrencyCode,
+                            { info ->
                                 consumeAndSave(consumeAllTransactions, purchase)
-                            }
-                            onError?.let { it(purchase, error) }
-                        })
+                                cachePurchaserInfo(info)
+                                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                                onSuccess?.let { it(purchase, info) }
+                            }, { error, errorIsFinishable ->
+                                if (errorIsFinishable) {
+                                    consumeAndSave(consumeAllTransactions, purchase)
+                                }
+                                onError?.let { it(purchase, error) }
+                            })
+                    }
+                    if (purchase.type == PurchaseType.INAPP) {
+                        billingWrapper.querySkuDetailsAsync(
+                            BillingClient.SkuType.INAPP,
+                            listOf(purchase.sku),
+                            { skuDetailsList ->
+                                postToBackend(skuDetailsList.first { it.sku == purchase.sku })
+                            },
+                            { postToBackend(null) }
+                        )
+                    } else {
+                        postToBackend(null)
+                    }
                 } else {
-                    onError?.let { it(purchase, PurchasesError(PurchasesErrorCode.PaymentPendingError)) }
+                    onError?.let { onError ->
+                        onError(purchase, PurchasesError(PurchasesErrorCode.PaymentPendingError))
+                    }
                 }
             }
         }
@@ -822,7 +875,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
     }
 
-    private val handler : Handler? = Handler(Looper.getMainLooper())
+    private val handler: Handler? = Handler(Looper.getMainLooper())
     private fun dispatch(action: () -> Unit) {
         if (Thread.currentThread() != Looper.getMainLooper().thread) {
             handler?.post(action) ?: Handler(Looper.getMainLooper()).post(action)
@@ -831,9 +884,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    @Synchronized private fun getPurchaseCallback(sku: String): MakePurchaseListener? {
+    @Synchronized
+    private fun getPurchaseCallback(sku: String): MakePurchaseListener? {
         return state.purchaseCallbacks[sku].also {
-            state = state.copy(purchaseCallbacks = state.purchaseCallbacks.filterNot { it.key == sku })
+            state =
+                state.copy(purchaseCallbacks = state.purchaseCallbacks.filterNot { it.key == sku })
         }
     }
 
@@ -895,8 +950,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         upgradeInfo: UpgradeInfo?,
         listener: MakePurchaseListener
     ) {
-        debugLog("purchase started - product: $product ${ presentedOfferingIdentifier?.let { " - offering: $presentedOfferingIdentifier" }}")
-        var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
+        debugLog("purchase started - product: $product ${presentedOfferingIdentifier?.let { " - offering: $presentedOfferingIdentifier" }}")
+        var userPurchasing: String? =
+            null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
             if (!state.finishTransactions) {
                 debugLog("finishTransactions is set to false and a purchase has been started. Are you sure you want to do this?")
@@ -909,23 +965,35 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         }
         userPurchasing?.let { appUserID ->
-            billingWrapper.makePurchaseAsync(activity, appUserID, product, upgradeInfo, presentedOfferingIdentifier)
+            billingWrapper.makePurchaseAsync(
+                activity,
+                appUserID,
+                product,
+                upgradeInfo,
+                presentedOfferingIdentifier
+            )
         } ?: dispatch {
-            listener.onError(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError), false)
+            listener.onError(
+                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError),
+                false
+            )
         }
     }
 
-    @JvmSynthetic internal fun updatePendingPurchaseQueue() {
+    @JvmSynthetic
+    internal fun updatePendingPurchaseQueue() {
         if (billingWrapper.isConnected()) {
             debugLog("[QueryPurchases] Updating pending purchase queue")
             if (!executorService.isShutdown) {
                 executorService.execute {
-                    val queryActiveSubscriptionsResult = billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
-                    val queryUnconsumedInAppsRequest = billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
+                    val queryActiveSubscriptionsResult =
+                        billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
+                    val queryUnconsumedInAppsRequest =
+                        billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
                     if (queryActiveSubscriptionsResult?.isSuccessful() == true && queryUnconsumedInAppsRequest?.isSuccessful() == true) {
-                            deviceCache.cleanPreviouslySentTokens(
-                                queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
-                                queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
+                        deviceCache.cleanPreviouslySentTokens(
+                            queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
+                            queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
                         )
                         postPurchases(
                             deviceCache.getActivePurchasesNotInCache(
@@ -946,7 +1014,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Static
     companion object {
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE) @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         internal var postponedAttributionData = mutableListOf<AttributionData>()
 
         /**
@@ -955,7 +1024,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @JvmStatic
         var debugLogsEnabled = false
 
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE) @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         internal var backingFieldSharedInstance: Purchases? = null
 
         /**
@@ -1022,7 +1092,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 HTTPClient(
                     appConfig = AppConfig(
                         context.getLocale()?.toBCP47() ?: "",
-                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                            ?: ""
                     )
                 )
             )
@@ -1057,30 +1128,31 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmStatic
         fun isBillingSupported(context: Context, callback: Callback<Boolean>) {
-            BillingClient.newBuilder(context).enablePendingPurchases().setListener { _, _ ->  }.build().let {
-                it.startConnection(
-                    object : BillingClientStateListener {
-                        override fun onBillingSetupFinished(billingResult: BillingResult) {
-                            // It also means that IN-APP items are supported for purchasing
-                            try {
-                                it.endConnection()
-                                callback.onReceived(billingResult.responseCode == BillingClient.BillingResponseCode.OK)
-                            } catch (e: IllegalArgumentException) {
-                                // Play Services not available
-                                callback.onReceived(false)
+            BillingClient.newBuilder(context).enablePendingPurchases().setListener { _, _ -> }
+                .build().let {
+                    it.startConnection(
+                        object : BillingClientStateListener {
+                            override fun onBillingSetupFinished(billingResult: BillingResult) {
+                                // It also means that IN-APP items are supported for purchasing
+                                try {
+                                    it.endConnection()
+                                    callback.onReceived(billingResult.responseCode == BillingClient.BillingResponseCode.OK)
+                                } catch (e: IllegalArgumentException) {
+                                    // Play Services not available
+                                    callback.onReceived(false)
+                                }
                             }
-                        }
 
-                        override fun onBillingServiceDisconnected() {
-                            try {
-                                it.endConnection()
-                            } catch (e: IllegalArgumentException) {
-                            } finally {
-                                callback.onReceived(false)
+                            override fun onBillingServiceDisconnected() {
+                                try {
+                                    it.endConnection()
+                                } catch (e: IllegalArgumentException) {
+                                } finally {
+                                    callback.onReceived(false)
+                                }
                             }
-                        }
-                    })
-            }
+                        })
+                }
         }
 
         /**
@@ -1091,8 +1163,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param callback Callback that will be notified when the check is complete.
          */
         @JvmStatic
-        fun isFeatureSupported(@BillingClient.FeatureType feature: String, context: Context, callback: Callback<Boolean>) {
-            BillingClient.newBuilder(context).setListener { _, _ ->  }.build().let { billingClient ->
+        fun isFeatureSupported(
+            @BillingClient.FeatureType feature: String, context: Context,
+            callback: Callback<Boolean>
+        ) {
+            BillingClient.newBuilder(context).setListener { _, _ -> }.build().let { billingClient ->
                 billingClient.startConnection(
                     object : BillingClientStateListener {
                         override fun onBillingSetupFinished(billingResult: BillingResult) {

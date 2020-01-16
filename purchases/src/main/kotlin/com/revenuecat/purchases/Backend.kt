@@ -101,6 +101,8 @@ internal class Backend(
         isRestore: Boolean,
         offeringIdentifier: String?,
         observerMode: Boolean,
+        price: Double?,
+        currency: String?,
         onSuccess: (PurchaserInfo) -> Unit,
         onError: (PurchasesError, errorIsFinishable: Boolean) -> Unit
     ) {
@@ -110,7 +112,9 @@ internal class Backend(
             appUserID,
             isRestore.toString(),
             offeringIdentifier,
-            observerMode.toString()
+            observerMode.toString(),
+            price?.toString(),
+            currency
         )
 
         val body = mapOf(
@@ -119,8 +123,12 @@ internal class Backend(
             "app_user_id" to appUserID,
             "is_restore" to isRestore,
             "presented_offering_identifier" to offeringIdentifier,
-            "observer_mode" to observerMode
-        )
+            "observer_mode" to observerMode,
+            "price" to price,
+            "currency" to currency
+        ).mapNotNull { entry: Map.Entry<String, Any?> ->
+            entry.value?.let { entry.key to it }
+        }.toMap()
 
         val call = object : Dispatcher.AsyncCall() {
 
