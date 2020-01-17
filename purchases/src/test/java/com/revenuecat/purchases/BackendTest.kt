@@ -678,36 +678,66 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt passes null price and currency`() {
-        val info = postReceipt(
-            200,
-            false,
-            null,
-            null,
-            null,
-            true,
-            null,
-            null
-        )
-
-        assertThat(receivedPurchaserInfo).`as`("Received info is not null").isNotNull
-        assertThat(info).isEqualTo(receivedPurchaserInfo)
-    }
-
-    @Test
     fun `given multiple post calls for same subscriber different price, both are triggered`() {
-        val info = postReceipt(
-            200,
+        val (fetchToken, productID, _) = mockPostReceiptResponse(
             false,
-            null,
+            200,
             null,
             null,
             true,
+            "offering_a",
+            false,
             null,
             null
         )
-
-        assertThat(receivedPurchaserInfo).`as`("Received info is not null").isNotNull
-        assertThat(info).isEqualTo(receivedPurchaserInfo)
+        val (fetchToken1, productID1, _) = mockPostReceiptResponse(
+            false,
+            200,
+            null,
+            null,
+            true,
+            "offering_a",
+            false,
+            2.5,
+            "USD"
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.postReceiptData(
+            fetchToken,
+            appUserID,
+            productID,
+            false,
+            "offering_a",
+            false,
+            null,
+            null,
+            {
+                lock.countDown()
+            },
+            postReceiptErrorCallback
+        )
+        asyncBackend.postReceiptData(
+            fetchToken,
+            appUserID,
+            productID,
+            false,
+            "offering_a",
+            false,
+            2.5,
+            "USD",
+            {
+                lock.countDown()
+            },
+            postReceiptErrorCallback
+        )
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 2) {
+            mockClient.performRequest(
+                "/receipts",
+                any() as Map<*, *>?,
+                any()
+            )
+        }
     }
 }

@@ -239,18 +239,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        billingWrapper.querySkuDetailsAsync(
-            BillingClient.SkuType.SUBS,
-            skus,
-            { skuDetails ->
-                dispatch {
-                    listener.onReceived(skuDetails)
-                }
-            }, {
-                dispatch {
-                    listener.onError(it)
-                }
-            })
+        getSkus(skus, BillingClient.SkuType.SUBS, listener)
     }
 
     /**
@@ -262,18 +251,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        billingWrapper.querySkuDetailsAsync(
-            BillingClient.SkuType.INAPP,
-            skus,
-            { skuDetails ->
-                dispatch {
-                    listener.onReceived(skuDetails)
-                }
-            }, {
-                dispatch {
-                    listener.onError(it)
-                }
-            })
+        getSkus(skus, BillingClient.SkuType.INAPP, listener)
     }
 
     /**
@@ -665,6 +643,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             log("Ensure your products are correctly configured in Play Store Developer Console")
         }
 
+    private fun getSkus(
+        skus: List<String>,
+        @BillingClient.SkuType skuType: String,
+        completion: GetSkusResponseListener
+    ) {
+        billingWrapper.querySkuDetailsAsync(
+            skuType,
+            skus,
+            { skuDetails ->
+                dispatch {
+                    completion.onReceived(skuDetails)
+                }
+            }, {
+                dispatch {
+                    completion.onError(it)
+                }
+            })
+    }
+
     private fun updateCaches(
         appUserID: String,
         completion: ReceivePurchaserInfoListener? = null
@@ -707,39 +704,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         identityManager.currentAppUserID.let { appUserID ->
             purchases.forEach { purchase ->
                 if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                    val postToBackend: (SkuDetails?) -> Unit = { skuDetails ->
-                        backend.postReceiptData(
-                            purchase.purchaseToken,
-                            appUserID,
-                            purchase.sku,
-                            allowSharingPlayStoreAccount,
-                            purchase.presentedOfferingIdentifier,
-                            !consumeAllTransactions,
-                            skuDetails?.priceAmountMicros?.div(1000000.0),
-                            skuDetails?.priceCurrencyCode,
-                            { info ->
-                                consumeAndSave(consumeAllTransactions, purchase)
-                                cachePurchaserInfo(info)
-                                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                                onSuccess?.let { it(purchase, info) }
-                            }, { error, errorIsFinishable ->
-                                if (errorIsFinishable) {
-                                    consumeAndSave(consumeAllTransactions, purchase)
-                                }
-                                onError?.let { it(purchase, error) }
-                            })
-                    }
                     if (purchase.type == PurchaseType.INAPP) {
                         billingWrapper.querySkuDetailsAsync(
                             BillingClient.SkuType.INAPP,
                             listOf(purchase.sku),
                             { skuDetailsList ->
-                                postToBackend(skuDetailsList.first { it.sku == purchase.sku })
+                                postToBackend(purchase, skuDetailsList.first { it.sku == purchase.sku }, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError)
                             },
-                            { postToBackend(null) }
+                            { postToBackend(purchase, null, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError) }
                         )
                     } else {
-                        postToBackend(null)
+                        postToBackend(purchase,null, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError)
                     }
                 } else {
                     onError?.let { onError ->
@@ -748,6 +723,36 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 }
             }
         }
+    }
+
+    private fun postToBackend(
+        purchase: PurchaseWrapper,
+        skuDetails: SkuDetails?,
+        allowSharingPlayStoreAccount: Boolean,
+        consumeAllTransactions: Boolean,
+        onSuccess: ((PurchaseWrapper, PurchaserInfo) -> Unit)? = null,
+        onError: ((PurchaseWrapper, PurchasesError) -> Unit)? = null
+    ) {
+        backend.postReceiptData(
+            purchase.purchaseToken,
+            appUserID,
+            purchase.sku,
+            allowSharingPlayStoreAccount,
+            purchase.presentedOfferingIdentifier,
+            !consumeAllTransactions,
+            skuDetails?.priceAmount,
+            skuDetails?.priceCurrencyCode,
+            { info ->
+                consumeAndSave(consumeAllTransactions, purchase)
+                cachePurchaserInfo(info)
+                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                onSuccess?.let { it(purchase, info) }
+            }, { error, errorIsFinishable ->
+                if (errorIsFinishable) {
+                    consumeAndSave(consumeAllTransactions, purchase)
+                }
+                onError?.let { it(purchase, error) }
+            })
     }
 
     private fun consumeAndSave(
