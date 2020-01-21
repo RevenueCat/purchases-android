@@ -1223,14 +1223,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmStatic
         fun addAttributionData(
-            data: Map<String, String>,
+            data: Map<String, Any?>,
             network: AttributionNetwork,
             networkUserId: String? = null
         ) {
             val jsonObject = JSONObject()
             for (key in data.keys) {
                 try {
-                    jsonObject.put(key, data[key])
+                    data[key]?.let {
+                        jsonObject.put(key, it)
+                    } ?: jsonObject.put(key, JSONObject.NULL)
                 } catch (e: JSONException) {
                     Log.e("Purchases", "Failed to add key $key to attribution map")
                 }
