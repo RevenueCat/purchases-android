@@ -701,25 +701,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onSuccess: ((PurchaseWrapper, PurchaserInfo) -> Unit)? = null,
         onError: ((PurchaseWrapper, PurchasesError) -> Unit)? = null
     ) {
-        identityManager.currentAppUserID.let { appUserID ->
-            purchases.forEach { purchase ->
-                if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                    if (purchase.type == PurchaseType.INAPP) {
-                        billingWrapper.querySkuDetailsAsync(
-                            BillingClient.SkuType.INAPP,
-                            listOf(purchase.sku),
-                            { skuDetailsList ->
-                                postToBackend(purchase, skuDetailsList.first { it.sku == purchase.sku }, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError)
-                            },
-                            { postToBackend(purchase, null, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError) }
-                        )
-                    } else {
-                        postToBackend(purchase,null, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError)
-                    }
+        purchases.forEach { purchase ->
+            if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                if (purchase.type == PurchaseType.INAPP) {
+                    billingWrapper.querySkuDetailsAsync(
+                        BillingClient.SkuType.INAPP,
+                        listOf(purchase.sku),
+                        { skuDetailsList ->
+                            postToBackend(purchase, skuDetailsList.first { it.sku == purchase.sku }, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError)
+                        },
+                        { postToBackend(purchase, null, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError) }
+                    )
                 } else {
-                    onError?.let { onError ->
-                        onError(purchase, PurchasesError(PurchasesErrorCode.PaymentPendingError))
-                    }
+                    postToBackend(purchase,null, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError)
+                }
+            } else {
+                onError?.let { onError ->
+                    onError(purchase, PurchasesError(PurchasesErrorCode.PaymentPendingError))
                 }
             }
         }
@@ -1223,14 +1221,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmStatic
         fun addAttributionData(
-            data: Map<String, String>,
+            data: Map<String, Any?>,
             network: AttributionNetwork,
             networkUserId: String? = null
         ) {
             val jsonObject = JSONObject()
             for (key in data.keys) {
                 try {
-                    jsonObject.put(key, data[key])
+                    data[key]?.let {
+                        jsonObject.put(key, it)
+                    } ?: jsonObject.put(key, JSONObject.NULL)
                 } catch (e: JSONException) {
                     Log.e("Purchases", "Failed to add key $key to attribution map")
                 }
