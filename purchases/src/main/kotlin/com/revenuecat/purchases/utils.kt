@@ -215,3 +215,6 @@ internal fun BillingResult.toHumanReadableDescription() =
 
 internal fun PurchaseHistoryRecord.toHumanReadableDescription() =
     "${this.sku} ${this.purchaseTime} ${this.purchaseToken}"
+
+val SkuDetails.priceAmount: Double
+    get() = this.priceAmountMicros.div(1000000.0)

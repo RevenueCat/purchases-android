@@ -1,0 +1,87 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:android)
+
+platform :android do
+  desc "Runs all the tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Increment build number"
+  lane :bump do |options|
+    new_version = options[:version]
+    fail ArgumentError, "missing version" unless new_version
+    gradle_file_path = "purchases/build.gradle"
+    previous_version = android_get_version_name(gradle_file: gradle_file_path)
+    android_set_version_name(version_name: new_version, gradle_file: gradle_file_path)
+    increment_version_in(previous_version, new_version, '../purchases/src/main/kotlin/com/revenuecat/purchases/Purchases.kt')
+    increment_version_in(previous_version, new_version, '../purchases/gradle.properties')
+  end
+
+  desc "Increment build number and update changelog"
+  lane :bump_and_update_changelog do |options|
+    bump(options)
+    attach_changelog_to_master
+  end
+end
+
+def increment_version_in(previous_version, new_version, path)
+  sed_regex = 's|' + previous_version + '|' + new_version + '|'
+  backup_extension = '.bck'
+  sh("sed", '-i', backup_extension, sed_regex, path)
+end
+
+def attach_changelog_to_master
+  current_changelog = File.open("../CHANGELOG.latest.md", 'r')
+  master_changelog = File.open("../CHANGELOG.md", 'r')
+
+  current_changelog_data = current_changelog.read
+  master_changelog_data = master_changelog.read
+
+  current_changelog.close  
+  master_changelog.close
+
+  File.open("../CHANGELOG.md", 'w') { |master_changelog_write_mode|
+    whole_file_data = "#{current_changelog_data}\n#{master_changelog_data}"
+    puts "going to save. Contents - #{whole_file_data}"
+    
+    master_changelog_write_mode.write(whole_file_data)
+  }
+end
+
+desc "Make github release"
+  lane :github_release do |options|
+    release_version = options[:version]
+    fail ArgumentError, "missing version" unless release_version
+
+    begin
+      changelog = File.read("../CHANGELOG.latest.md")
+    rescue
+      fail "please add a CHANGELOG.latest.md file before calling this lane"
+    end
+
+    set_github_release(
+      repository_name: "revenuecat/purchases-android",
+      api_token: ENV["GITHUB_TOKEN"],
+      name: release_version,
+      tag_name: "#{release_version}",
+      description: changelog,
+      commitish: "master",
+      upload_assets: [],
+      is_draft: true
+  )
+  end
