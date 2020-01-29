@@ -1017,8 +1017,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Static
     companion object {
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
-        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        /**
+         * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is
+         * being used
+         */
+        @JvmStatic var platformFlavor = "native"
+
+        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE) @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         internal var postponedAttributionData = mutableListOf<AttributionData>()
 
         /**
@@ -1095,8 +1100,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 HTTPClient(
                     appConfig = AppConfig(
                         context.getLocale()?.toBCP47() ?: "",
-                        context.packageManager.getPackageInfo(context.packageName, 0).versionName
-                            ?: ""
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
+                        platformFlavor
                     )
                 )
             )
