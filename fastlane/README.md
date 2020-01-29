@@ -15,6 +15,14 @@ Install _fastlane_ using
 or alternatively using `brew cask install fastlane`
 
 # Available Actions
+### github_release
+```
+fastlane github_release
+```
+Make github release
+
+----
+
 ## Android
 ### android test
 ```
