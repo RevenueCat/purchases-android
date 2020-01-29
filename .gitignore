@@ -110,3 +110,7 @@ annotations/
 .project
 purchases/.classpath
 purchases-sample/.classpath
+
+*.bck
+CHANGELOG.latest.md
+fastlane/report.xml
