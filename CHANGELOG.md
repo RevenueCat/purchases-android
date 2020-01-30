@@ -1,3 +1,10 @@
+## 3.0.5
+
+- Fixes compatibility with AppsFlyer SDK https://github.com/RevenueCat/purchases-android/pull/97
+- Adds Fastlane to improve releases https://github.com/RevenueCat/purchases-android/pull/99
+- Posts price and currency code for managed products https://github.com/RevenueCat/purchases-android/pull/96
+- Adds platform flavor static variable https://github.com/RevenueCat/purchases-android/pull/91
+
 ## 3.0.4
 
 - Defers fetching updated PurchaserInfo and Offerings to whenever the app is foregrounded.
