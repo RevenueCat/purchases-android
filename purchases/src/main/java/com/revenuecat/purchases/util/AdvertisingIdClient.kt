@@ -9,6 +9,7 @@ import android.os.IInterface
 import android.os.Looper
 import android.os.Parcel
 import android.os.RemoteException
+import android.util.Log
 import java.util.concurrent.LinkedBlockingQueue
 
 object AdvertisingIdClient {
@@ -24,6 +25,7 @@ object AdvertisingIdClient {
             try {
                 context.packageManager.getPackageInfo("com.android.vending", 0)
             } catch (e: Exception) {
+                Log.e("Purchases", "Error getting AdvertisingIdInfo", e)
                 completion(null)
                 return@Runnable
             }
@@ -32,20 +34,19 @@ object AdvertisingIdClient {
             val intent = Intent("com.google.android.gms.ads.identifier.service.START").apply {
                 setPackage("com.google.android.gms")
             }
-            try {
-                if (context.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
+            if (context.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
+                try {
                     with(AdvertisingInterface(connection.binder)) {
                         id?.let { id ->
                             completion(AdInfo(id, isLimitAdTrackingEnabled()))
                             return@Runnable
                         }
                     }
+                } catch(e: Exception) {
+                    Log.e("Purchases", "Error getting AdvertisingIdInfo", e)
+                } finally {
+                    context.unbindService(connection)
                 }
-            } catch(e: Exception) {
-                completion(null)
-                return@Runnable
-            } finally {
-                context.unbindService(connection)
             }
             completion(null)
         }).start()
