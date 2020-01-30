@@ -29,7 +29,7 @@ platform :android do
     previous_version = android_get_version_name(gradle_file: gradle_file_path)
     android_set_version_name(version_name: new_version, gradle_file: gradle_file_path)
     increment_version_in(previous_version, new_version, '../purchases/src/main/kotlin/com/revenuecat/purchases/Purchases.kt')
-    increment_version_in(previous_version, new_version, '../purchases/gradle.properties')
+    increment_version_in(previous_version, new_version, '../gradle.properties')
   end
 
   desc "Increment build number and update changelog"
