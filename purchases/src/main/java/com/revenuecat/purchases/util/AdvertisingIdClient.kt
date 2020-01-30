@@ -9,6 +9,7 @@ import android.os.IInterface
 import android.os.Looper
 import android.os.Parcel
 import android.os.RemoteException
+import android.util.Log
 import java.util.concurrent.LinkedBlockingQueue
 
 object AdvertisingIdClient {
@@ -24,6 +25,7 @@ object AdvertisingIdClient {
             try {
                 context.packageManager.getPackageInfo("com.android.vending", 0)
             } catch (e: Exception) {
+                Log.e("Purchases", "Error getting AdvertisingIdInfo", e)
                 completion(null)
                 return@Runnable
             }
@@ -41,7 +43,7 @@ object AdvertisingIdClient {
                         }
                     }
                 } catch(e: Exception) {
-
+                    Log.e("Purchases", "Error getting AdvertisingIdInfo", e)
                 } finally {
                     context.unbindService(connection)
                 }
