@@ -32,20 +32,19 @@ object AdvertisingIdClient {
             val intent = Intent("com.google.android.gms.ads.identifier.service.START").apply {
                 setPackage("com.google.android.gms")
             }
-            try {
-                if (context.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
+            if (context.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
+                try {
                     with(AdvertisingInterface(connection.binder)) {
                         id?.let { id ->
                             completion(AdInfo(id, isLimitAdTrackingEnabled()))
                             return@Runnable
                         }
                     }
+                } catch(e: Exception) {
+
+                } finally {
+                    context.unbindService(connection)
                 }
-            } catch(e: Exception) {
-                completion(null)
-                return@Runnable
-            } finally {
-                context.unbindService(connection)
             }
             completion(null)
         }).start()
