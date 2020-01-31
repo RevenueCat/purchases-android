@@ -256,11 +256,11 @@ class DeviceCacheTest {
 
     @Test
     fun `invalidating caches`() {
-        assertThat(cache.isCacheStale()).isTrue()
-        cache.setCachesLastUpdated()
-        assertThat(cache.isCacheStale()).isFalse()
-        cache.invalidateCaches()
-        assertThat(cache.isCacheStale()).isTrue()
+        assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
+        cache.setPurchaserInfoCachesLastUpdated()
+        assertThat(cache.isPurchaserInfoCacheStale()).isFalse()
+        cache.invalidatePurchaserInfoCaches()
+        assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
     }
 
     @Test

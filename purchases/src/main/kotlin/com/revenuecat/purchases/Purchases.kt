@@ -142,9 +142,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /** @suppress */
     override fun onAppForegrounded() {
         debugLog("App foregrounded")
-        if (deviceCache.isCacheStale()) {
-            debugLog("Cache stale")
-            updateCaches(identityManager.currentAppUserID)
+        if (deviceCache.isPurchaserInfoCacheStale()) {
+            debugLog("PurchaserInfo cache stale")
+            updatePurchaserInfoCaches(identityManager.currentAppUserID)
+        }
+        if (deviceCache.isOfferingsCacheStale()) {
+            debugLog("Offerings cache stale")
+            updateOfferingsCaches(identityManager.currentAppUserID)
         }
         updatePendingPurchaseQueue()
     }
@@ -216,15 +220,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }.let { (appUserID, cachedOfferings) ->
             if (cachedOfferings == null) {
                 debugLog("No cached offerings, fetching")
+                // TODO: set caches last updated
                 fetchAndCacheOfferings(appUserID, listener)
             } else {
                 debugLog("Vending offerings from cache")
                 dispatch {
                     listener.onReceived(cachedOfferings)
                 }
-                if (deviceCache.isCacheStale()) {
+                if (deviceCache.isOfferingsCacheStale()) {
                     debugLog("Cache is stale, updating caches")
-                    updateCaches(appUserID)
+                    updateOfferingsCaches(appUserID)
                 }
             }
         }
@@ -490,13 +495,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (cachedPurchaserInfo != null) {
             debugLog("Vending purchaserInfo from cache")
             dispatch { listener?.onReceived(cachedPurchaserInfo) }
-            if (deviceCache.isCacheStale()) {
+            if (deviceCache.isPurchaserInfoCacheStale()) {
                 debugLog("Cache is stale, updating caches")
-                updateCaches(appUserID)
+                updatePurchaserInfoCaches(appUserID)
             }
         } else {
             debugLog("No cached purchaser info, fetching")
-            updateCaches(appUserID, listener)
+            updatePurchaserInfoCaches(appUserID, listener)
         }
     }
 
@@ -508,6 +513,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun removeUpdatedPurchaserInfoListener() {
         // Don't set on state directly since setter does more things
         this.updatedPurchaserInfoListener = null
+    }
+
+    fun invalidatePurchaserInfoCache() {
+        deviceCache.invalidatePurchaserInfoCaches()
     }
     // endregion
 
@@ -612,6 +621,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     })
                 } catch (error: JSONException) {
                     log("Error fetching offerings - $error")
+                    deviceCache.invalidateOfferingsCaches()
                     dispatch {
                         completion?.onError(
                             PurchasesError(
@@ -666,8 +676,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         appUserID: String,
         completion: ReceivePurchaserInfoListener? = null
     ) {
-        deviceCache.setCachesLastUpdated()
+        updatePurchaserInfoCaches(appUserID, completion)
+        updateOfferingsCaches(appUserID, completion)
+    }
+
+    private fun updatePurchaserInfoCaches(
+        appUserID: String,
+        completion: ReceivePurchaserInfoListener? = null
+    ) {
+        deviceCache.setPurchaserInfoCachesLastUpdated()
         fetchAndCachePurchaserInfo(appUserID, completion)
+    }
+
+    private fun updateOfferingsCaches(
+        appUserID: String,
+        completion: ReceivePurchaserInfoListener? = null
+    ) {
+        deviceCache.setOfferingsCachesLastUpdated()
         fetchAndCacheOfferings(appUserID)
     }
 
@@ -684,7 +709,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             { error ->
                 Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
-                deviceCache.invalidateCaches()
+                deviceCache.invalidatePurchaserInfoCaches()
                 dispatch { completion?.onError(error) }
             })
     }

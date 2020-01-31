@@ -440,7 +440,7 @@ class PurchasesTest {
     fun `fetch purchaser info on foregrounded if it's stale`() {
         setup()
         every {
-            mockCache.isCacheStale()
+            mockCache.isPurchaserInfoCacheStale()
         } returns true
         mockSuccessfulQueryPurchases(
             queriedSUBS = emptyMap(),
@@ -457,7 +457,7 @@ class PurchasesTest {
     fun `does not fetch purchaser info on foregrounded if it's not stale`() {
         setup()
         every {
-            mockCache.isCacheStale()
+            mockCache.isPurchaserInfoCacheStale()
         } returns false
         mockSuccessfulQueryPurchases(
             queriedSUBS = emptyMap(),
@@ -828,7 +828,7 @@ class PurchasesTest {
             mockCache.cachedOfferings
         } returns offerings
         every {
-            mockCache.isCacheStale()
+            mockCache.isPurchaserInfoCacheStale()
         } returns false
 
         purchases.getOfferingsWith({ fail("should be a success") }) {
@@ -850,7 +850,7 @@ class PurchasesTest {
             mockCache.cachedOfferings
         } returns offerings
         every {
-            mockCache.isCacheStale()
+            mockCache.isPurchaserInfoCacheStale()
         } returns true
 
         purchases.getOfferingsWith({ fail("should be a success") }) {
@@ -1227,7 +1227,7 @@ class PurchasesTest {
             mockIdentityManager.identify("new_id", any(), any())
         }
         verify (exactly = 1) {
-            mockCache.setCachesLastUpdated()
+            mockCache.setPurchaserInfoCachesLastUpdated()
         }
         verify (exactly = 1) {
             mockBackend.getPurchaserInfo("new_id", any(), any())
@@ -1486,7 +1486,7 @@ class PurchasesTest {
     fun `don't create an alias if the new app user id is the same`() {
         setup()
         every {
-            mockCache.isCacheStale()
+            mockCache.isPurchaserInfoCacheStale()
         } returns false
         val lock = CountDownLatch(1)
         purchases.createAliasWith(appUserId) {
@@ -3016,13 +3016,13 @@ class PurchasesTest {
                 getCachedAttributionData(Purchases.AttributionNetwork.APPSFLYER, appUserId)
             } returns null
             every {
-                setCachesLastUpdated()
+                setPurchaserInfoCachesLastUpdated()
             } just Runs
             every {
-                invalidateCaches()
+                invalidatePurchaserInfoCaches()
             } just Runs
             every {
-                isCacheStale()
+                isPurchaserInfoCacheStale()
             } returns false
             every {
                 addSuccessfullyPostedToken(any())

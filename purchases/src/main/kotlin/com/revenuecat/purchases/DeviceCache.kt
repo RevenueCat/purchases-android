@@ -22,7 +22,9 @@ internal class DeviceCache(
     private val attributionCacheKey = "com.revenuecat.purchases.attribution"
     val tokensCacheKey = "com.revenuecat.purchases.$apiKey.tokens"
 
-    private var cachesLastUpdated: Date? = null
+    private var purchaserInfoCachesLastUpdated: Date? = null
+    private var offeringsCachesLastUpdated: Date? = null
+
     var cachedOfferings: Offerings? = null
 
     fun purchaserInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
@@ -69,7 +71,8 @@ internal class DeviceCache(
             .remove(appUserIDCacheKey)
             .remove(legacyAppUserIDCacheKey)
             .apply()
-        invalidateCaches()
+        invalidatePurchaserInfoCaches()
+        invalidateOfferingsCaches()
         cachedOfferings = null
     }
 
@@ -144,8 +147,13 @@ internal class DeviceCache(
     }
 
     @Synchronized
-    fun invalidateCaches() {
-        cachesLastUpdated = null
+    fun invalidatePurchaserInfoCaches() {
+        purchaserInfoCachesLastUpdated = null
+    }
+
+    @Synchronized
+    fun invalidateOfferingsCaches() {
+        offeringsCachesLastUpdated = null
     }
 
     private fun getAttributionDataCacheKey(
@@ -157,13 +165,26 @@ internal class DeviceCache(
         cachedOfferings = offerings
     }
 
-    @Synchronized fun setCachesLastUpdated() {
-        cachesLastUpdated = Date()
+    @Synchronized fun setPurchaserInfoCachesLastUpdated() {
+        purchaserInfoCachesLastUpdated = Date()
+    }
+
+    @Synchronized fun setOfferingsCachesLastUpdated() {
+        offeringsCachesLastUpdated = Date()
     }
 
     @Synchronized
-    fun isCacheStale(): Boolean {
-        return cachesLastUpdated?.let { cachesLastUpdated ->
+    fun isPurchaserInfoCacheStale(): Boolean {
+        return purchaserInfoCachesLastUpdated.isStale()
+    }
+
+    @Synchronized
+    fun isOfferingsCacheStale(): Boolean {
+        return offeringsCachesLastUpdated.isStale()
+    }
+
+    private fun Date?.isStale(): Boolean {
+        return this?.let { cachesLastUpdated ->
             Date().time - cachesLastUpdated.time > CACHE_REFRESH_PERIOD
         }?: true
     }
