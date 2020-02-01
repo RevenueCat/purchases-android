@@ -7,6 +7,7 @@ package com.revenuecat.purchases
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.caching.DeviceCache
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -257,9 +258,9 @@ class DeviceCacheTest {
     @Test
     fun `invalidating caches`() {
         assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
-        cache.setPurchaserInfoCachesLastUpdated()
+        cache.setPurchaserInfoCacheTimestampToNow()
         assertThat(cache.isPurchaserInfoCacheStale()).isFalse()
-        cache.invalidatePurchaserInfoCaches()
+        cache.clearPurchaserInfoCacheTimestamp()
         assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
     }
 

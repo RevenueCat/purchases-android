@@ -18,6 +18,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.caching.DeviceCache
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
@@ -1227,7 +1228,7 @@ class PurchasesTest {
             mockIdentityManager.identify("new_id", any(), any())
         }
         verify (exactly = 1) {
-            mockCache.setPurchaserInfoCachesLastUpdated()
+            mockCache.setPurchaserInfoCacheTimestampToNow()
         }
         verify (exactly = 1) {
             mockBackend.getPurchaserInfo("new_id", any(), any())
@@ -3016,10 +3017,10 @@ class PurchasesTest {
                 getCachedAttributionData(Purchases.AttributionNetwork.APPSFLYER, appUserId)
             } returns null
             every {
-                setPurchaserInfoCachesLastUpdated()
+                setPurchaserInfoCacheTimestampToNow()
             } just Runs
             every {
-                invalidatePurchaserInfoCaches()
+                clearPurchaserInfoCacheTimestamp()
             } just Runs
             every {
                 isPurchaserInfoCacheStale()

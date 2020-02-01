@@ -21,6 +21,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.caching.DeviceCache
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
@@ -516,7 +517,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     fun invalidatePurchaserInfoCache() {
-        deviceCache.invalidatePurchaserInfoCaches()
+        deviceCache.clearPurchaserInfoCacheTimestamp()
     }
     // endregion
 
@@ -621,7 +622,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     })
                 } catch (error: JSONException) {
                     log("Error fetching offerings - $error")
-                    deviceCache.invalidateOfferingsCaches()
+                    deviceCache.clearOfferingsCacheTimestamp()
                     dispatch {
                         completion?.onError(
                             PurchasesError(
@@ -684,7 +685,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         appUserID: String,
         completion: ReceivePurchaserInfoListener? = null
     ) {
-        deviceCache.setPurchaserInfoCachesLastUpdated()
+        deviceCache.setPurchaserInfoCacheTimestampToNow()
         fetchAndCachePurchaserInfo(appUserID, completion)
     }
 
@@ -692,7 +693,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         appUserID: String,
         completion: ReceivePurchaserInfoListener? = null
     ) {
-        deviceCache.setOfferingsCachesLastUpdated()
+        deviceCache.setOfferingsCacheTimestampToNow()
         fetchAndCacheOfferings(appUserID)
     }
 
@@ -709,7 +710,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             { error ->
                 Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
-                deviceCache.invalidatePurchaserInfoCaches()
+                deviceCache.clearPurchaserInfoCacheTimestamp()
                 dispatch { completion?.onError(error) }
             })
     }
@@ -1137,7 +1138,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             )
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(context.getApplication())
-            val cache = DeviceCache(prefs, apiKey)
+            val cache =
+                DeviceCache(prefs, apiKey)
 
             return Purchases(
                 context,
