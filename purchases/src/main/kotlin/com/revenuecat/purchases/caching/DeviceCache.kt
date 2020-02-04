@@ -32,6 +32,7 @@ internal class DeviceCache(
     private var purchaserInfoCachesLastUpdated: Date? = null
 
     private var offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(CACHE_REFRESH_PERIOD)
+    val cachedOfferings = offeringsCachedObject.cachedInstance
 
     fun purchaserInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
 
