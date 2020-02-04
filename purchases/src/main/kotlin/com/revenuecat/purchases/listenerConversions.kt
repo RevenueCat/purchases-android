@@ -158,10 +158,14 @@ fun Purchases.purchasePackageWith(
 
 /**
  * Restores purchases made with the current Play Store account for the current user.
- * If you initialized Purchases with an `appUserID` any receipt tokens currently being used by
- * other users of your app will not be restored. If you used an anonymous id, i.e. you
- * initialized Purchases without an appUserID, any other anonymous users using the same
- * purchases will be merged.
+ * This method will post all purchases associated with the current Play Store account to
+ * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
+ * used by an existing user, the current `appUserID` will be aliased together with the
+ * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
+ * the same user.
+ *
+ * You shouldn't use this method if you have your own account system. In that case
+ * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
  * @param [onSuccess] Will be called after the call has completed.
  * @param [onError] Will be called after the call has completed with an error.
  */
