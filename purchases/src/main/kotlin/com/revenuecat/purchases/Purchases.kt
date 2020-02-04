@@ -517,6 +517,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     fun invalidatePurchaserInfoCache() {
+        debugLog("Invalidating Purchaser info cache")
         deviceCache.clearPurchaserInfoCacheTimestamp()
     }
     // endregion
