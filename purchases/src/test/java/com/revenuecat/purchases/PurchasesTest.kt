@@ -440,9 +440,7 @@ class PurchasesTest {
     @Test
     fun `fetch purchaser info on foregrounded if it's stale`() {
         setup()
-        every {
-            mockCache.isPurchaserInfoCacheStale()
-        } returns true
+        mockCacheStale(true)
         mockSuccessfulQueryPurchases(
             queriedSUBS = emptyMap(),
             queriedINAPP = emptyMap(),
@@ -455,11 +453,24 @@ class PurchasesTest {
     }
 
     @Test
+    fun `fetch offerings on foregrounded if it's stale`() {
+        setup()
+        mockCacheStale(offeringsStale = true)
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = emptyMap(),
+            queriedINAPP = emptyMap(),
+            notInCache = emptyList()
+        )
+        Purchases.sharedInstance.onAppForegrounded()
+        verify (exactly = 1) {
+            mockBackend.getOfferings(eq(appUserId), any(), any())
+        }
+    }
+
+    @Test
     fun `does not fetch purchaser info on foregrounded if it's not stale`() {
         setup()
-        every {
-            mockCache.isPurchaserInfoCacheStale()
-        } returns false
+        mockCacheStale()
         mockSuccessfulQueryPurchases(
             queriedSUBS = emptyMap(),
             queriedINAPP = emptyMap(),
@@ -828,9 +839,7 @@ class PurchasesTest {
         every {
             mockCache.cachedOfferings
         } returns offerings
-        every {
-            mockCache.isPurchaserInfoCacheStale()
-        } returns false
+        mockCacheStale(offeringsStale = true)
 
         purchases.getOfferingsWith({ fail("should be a success") }) {
             receivedOfferings = it
@@ -850,9 +859,7 @@ class PurchasesTest {
         every {
             mockCache.cachedOfferings
         } returns offerings
-        every {
-            mockCache.isPurchaserInfoCacheStale()
-        } returns true
+        mockCacheStale(offeringsStale = true)
 
         purchases.getOfferingsWith({ fail("should be a success") }) {
             receivedOfferings = it
@@ -1486,9 +1493,6 @@ class PurchasesTest {
     @Test
     fun `don't create an alias if the new app user id is the same`() {
         setup()
-        every {
-            mockCache.isPurchaserInfoCacheStale()
-        } returns false
         val lock = CountDownLatch(1)
         purchases.createAliasWith(appUserId) {
             lock.countDown()
@@ -2939,6 +2943,15 @@ class PurchasesTest {
         }
     }
 
+    @Test
+    fun `invalidate purchaser info caches`() {
+        setup()
+        Purchases.sharedInstance.invalidatePurchaserInfoCache()
+        verify (exactly = 1) {
+            mockCache.clearPurchaserInfoCacheTimestamp()
+        }
+    }
+
     // region Private Methods
     private fun mockBillingWrapper() {
         with(mockBillingWrapper) {
@@ -3020,10 +3033,19 @@ class PurchasesTest {
                 setPurchaserInfoCacheTimestampToNow()
             } just Runs
             every {
+                setOfferingsCacheTimestampToNow()
+            } just Runs
+            every {
                 clearPurchaserInfoCacheTimestamp()
             } just Runs
             every {
+                clearOfferingsCacheTimestamp()
+            } just Runs
+            every {
                 isPurchaserInfoCacheStale()
+            } returns false
+            every {
+                isOfferingsCacheStale()
             } returns false
             every {
                 addSuccessfullyPostedToken(any())
@@ -3106,6 +3128,7 @@ class PurchasesTest {
             )
         } just Runs
     }
+
     private fun verifyClose() {
         verify {
             mockBackend.close()
@@ -3276,6 +3299,15 @@ class PurchasesTest {
         } answers {
             lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
         }
+    }
+
+    private fun mockCacheStale(purchaserInfoStale: Boolean = false, offeringsStale: Boolean = false) {
+        every {
+            mockCache.isPurchaserInfoCacheStale()
+        } returns purchaserInfoStale
+        every {
+            mockCache.isOfferingsCacheStale()
+        } returns offeringsStale
     }
 
     // endregion
