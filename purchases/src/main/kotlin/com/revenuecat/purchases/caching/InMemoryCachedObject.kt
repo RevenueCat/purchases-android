@@ -5,7 +5,7 @@ import java.util.Date
 internal class InMemoryCachedObject<T> {
 
     var lastUpdatedAt: Date?
-    val cacheDurationInSeconds: Int
+    private val cacheDurationInSeconds: Int
     var cachedInstance: T? = null
 
     constructor(cacheDurationInSeconds: Int) : this(null, cacheDurationInSeconds)
