@@ -26,7 +26,7 @@ jobs:
             - ~/.gradle
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}     
 
-  docs:
+  docs-deploy:
     executor: android-executor
     steps:
       - checkout
@@ -91,3 +91,11 @@ workflows:
           filters:
             branches:
               only: master
+      - docs-approval:
+          type: approval
+          filters:
+            branches:
+              only: master
+      - docs-deploy:
+          requires:
+            - docs-approval
