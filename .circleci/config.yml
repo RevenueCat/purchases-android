@@ -93,10 +93,9 @@ workflows:
               only: master
       - docs-approval:
           type: approval
-          # TODO: remove after testing
-          # filters:
-          #   branches:
-          #     only: master
+          filters:
+            branches:
+              only: master
       - docs-deploy:
           requires:
             - docs-approval
