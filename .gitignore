@@ -114,3 +114,5 @@ purchases-sample/.classpath
 *.bck
 CHANGELOG.latest.md
 fastlane/report.xml
+/docs/*
+!/docs/index.html
