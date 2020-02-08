@@ -7,7 +7,9 @@ package com.revenuecat.purchases
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.caching.DeviceCache
+import com.revenuecat.purchases.caching.InMemoryCachedObject
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -16,12 +18,12 @@ import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONException
 import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -105,7 +107,6 @@ class DeviceCacheTest {
     }
 
     @Test
-    @Throws(JSONException::class)
     fun `given a purchaser info, the information is cached`() {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
         val info = jsonObject.buildPurchaserInfo()
@@ -256,7 +257,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `invalidating caches`() {
+    fun `invalidating purchaser info caches`() {
         assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
         cache.setPurchaserInfoCacheTimestampToNow()
         assertThat(cache.isPurchaserInfoCacheStale()).isFalse()
@@ -274,6 +275,89 @@ class DeviceCacheTest {
         verify { mockEditor.remove(cache.legacyAppUserIDCacheKey) }
         verify { mockEditor.remove(cache.purchaserInfoCacheKey("appUserID")) }
         verify { mockEditor.remove(cache.purchaserInfoCacheKey("legacyAppUserID")) }
+    }
+
+    @Test
+    fun `clearing caches clears timestamps`() {
+        cache.setPurchaserInfoCacheTimestampToNow()
+        cache.setOfferingsCacheTimestampToNow()
+        mockString(cache.appUserIDCacheKey, "appUserID")
+        mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
+        mockString(cache.purchaserInfoCacheKey(appUserID), null)
+        cache.clearCachesForAppUserID()
+        assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
+        assertThat(cache.isOfferingsCacheStale()).isTrue()
+    }
+
+    @Test
+    fun `invalidating offerings caches`() {
+        assertThat(cache.isOfferingsCacheStale()).isTrue()
+        cache.setOfferingsCacheTimestampToNow()
+        assertThat(cache.isOfferingsCacheStale()).isFalse()
+        cache.clearOfferingsCacheTimestamp()
+        assertThat(cache.isOfferingsCacheStale()).isTrue()
+    }
+
+    @Test
+    fun `stale if no caches`() {
+        assertThat(cache.isOfferingsCacheStale()).isTrue()
+        assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
+    }
+
+    @Test
+    fun `purchaser info stale if longer than 5 minutes`() {
+        cache.cachePurchaserInfo("waldo", mockk(relaxed = true))
+        cache.purchaserInfoCachesLastUpdated = Date(0)
+        assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
+        cache.purchaserInfoCachesLastUpdated = Date()
+        assertThat(cache.isPurchaserInfoCacheStale()).isFalse()
+    }
+
+    @Test
+    fun `offerings stale if longer than 5 minutes`() {
+        val offeringsCachedObject = mockk<InMemoryCachedObject<Offerings>>(relaxed = true)
+        cache = DeviceCache(mockPrefs, apiKey, offeringsCachedObject)
+        cache.cacheOfferings(mockk())
+        every {
+            offeringsCachedObject.isCacheStale()
+        } returns false
+        assertThat(cache.isOfferingsCacheStale()).isFalse()
+        every {
+            offeringsCachedObject.isCacheStale()
+        } returns true
+        assertThat(cache.isOfferingsCacheStale()).isTrue()
+    }
+
+    @Test
+    fun `caching offerings works`() {
+        val skuDetails = mockk<SkuDetails>().also {
+            every { it.sku } returns "onemonth_freetrial"
+        }
+        val packageObject = Package(
+            "custom",
+            PackageType.CUSTOM,
+            skuDetails,
+            "offering_a"
+        )
+        val offering = Offering(
+            "offering_a",
+            "This is the base offering",
+            listOf(packageObject)
+        )
+        val offerings = Offerings(
+            offering,
+            mapOf(offering.identifier to offering)
+        )
+
+        cache.cacheOfferings(offerings)
+        assertThat(cache.cachedOfferings).isEqualTo(offerings)
+    }
+
+    @Test
+    fun `timestamp is set when caching purchaser info`() {
+        assertThat(cache.purchaserInfoCachesLastUpdated).isNull()
+        cache.cachePurchaserInfo("waldo", mockk(relaxed = true))
+        assertThat(cache.purchaserInfoCachesLastUpdated).isNotNull()
     }
 
     private fun mockString(key: String, value: String?) {
