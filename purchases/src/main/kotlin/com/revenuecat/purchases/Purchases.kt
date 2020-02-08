@@ -1129,8 +1129,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             )
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(context.getApplication())
-            val cache =
-                DeviceCache(prefs, apiKey)
+            val cache = DeviceCache(prefs, apiKey)
 
             return Purchases(
                 context,
