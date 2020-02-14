@@ -19,34 +19,19 @@ import org.json.JSONObject
 import java.util.Date
 
 private const val CACHE_REFRESH_PERIOD = 60000 * 5
+private const val PREFERENCES_PREFIX = "com.revenuecat.purchases."
 
-internal class DeviceCache {
-    private val preferences: SharedPreferences
-    private val offeringsCachedObject: InMemoryCachedObject<Offerings>
-
-    val legacyAppUserIDCacheKey: String
-    val appUserIDCacheKey: String
-    private val attributionCacheKey = "com.revenuecat.purchases.attribution"
-    val tokensCacheKey: String
+internal class DeviceCache(
+    private val preferences: SharedPreferences,
+    private val apiKey: String,
+    private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(CACHE_REFRESH_PERIOD)
+) {
+    val legacyAppUserIDCacheKey: String by lazy { "$PREFERENCES_PREFIX$apiKey" }
+    val appUserIDCacheKey: String by lazy { "$PREFERENCES_PREFIX$apiKey.new" }
+    private val attributionCacheKey = "$PREFERENCES_PREFIX.attribution"
+    val tokensCacheKey: String by lazy {"$PREFERENCES_PREFIX$apiKey.tokens"}
 
     var purchaserInfoCachesLastUpdated: Date? = null
-
-    constructor(
-        preferences: SharedPreferences,
-        apiKey: String,
-        offeringsCachedObject: InMemoryCachedObject<Offerings>
-    ) {
-        this.preferences = preferences
-        this.offeringsCachedObject = offeringsCachedObject
-        this.legacyAppUserIDCacheKey = "com.revenuecat.purchases.$apiKey"
-        this.appUserIDCacheKey = "com.revenuecat.purchases.$apiKey.new"
-        this.tokensCacheKey = "com.revenuecat.purchases.$apiKey.tokens"
-    }
-
-    constructor(
-        preferences: SharedPreferences,
-        apiKey: String
-    ): this(preferences, apiKey, InMemoryCachedObject(CACHE_REFRESH_PERIOD))
 
     // region app user id
 
