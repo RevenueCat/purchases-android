@@ -1,23 +1,20 @@
 package com.revenuecat.purchases.caching
 
+import com.revenuecat.purchases.utils.DateTimeProvider
+import com.revenuecat.purchases.utils.DefaultDateTimeProvider
 import java.util.Date
 
-internal class InMemoryCachedObject<T> {
+internal class InMemoryCachedObject<T>(
+    private val cacheDurationInSeconds: Int,
+    internal var lastUpdatedAt: Date? = null,
+    private val dateTimeProvider: DateTimeProvider = DefaultDateTimeProvider()
+) {
 
-    var lastUpdatedAt: Date?
-    private val cacheDurationInSeconds: Int
     var cachedInstance: T? = null
-
-    constructor(cacheDurationInSeconds: Int) : this(null, cacheDurationInSeconds)
-
-    constructor(lastUpdatedAt: Date?, cacheDurationInSeconds: Int) {
-        this.lastUpdatedAt = lastUpdatedAt
-        this.cacheDurationInSeconds = cacheDurationInSeconds
-    }
 
     fun isCacheStale(): Boolean {
         return lastUpdatedAt?.let { cachesLastUpdated ->
-            Date().time - cachesLastUpdated.time >= cacheDurationInSeconds
+            dateTimeProvider.now.time - cachesLastUpdated.time >= cacheDurationInSeconds
         }?: true
     }
 
@@ -30,9 +27,9 @@ internal class InMemoryCachedObject<T> {
         cachedInstance = null
     }
 
-    fun cacheInstance(instance: T, date: Date) {
+    fun cacheInstance(instance: T) {
         this.cachedInstance = instance
-        this.lastUpdatedAt = date
+        this.lastUpdatedAt = dateTimeProvider.now
     }
 
     fun updateCacheTimestamp(date: Date) {

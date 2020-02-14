@@ -305,7 +305,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `purchaser info stale if longer than 5 minutes`() {
+    fun `isPurchaserInfoCacheStale returns true if the cached object is stale`() {
         cache.cachePurchaserInfo("waldo", mockk(relaxed = true))
         cache.purchaserInfoCachesLastUpdated = Date(0)
         assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
@@ -314,7 +314,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `offerings stale if longer than 5 minutes`() {
+    fun `isOfferingsCacheStale returns true if the cached object is stale`() {
         val offeringsCachedObject = mockk<InMemoryCachedObject<Offerings>>(relaxed = true)
         cache = DeviceCache(mockPrefs, apiKey, offeringsCachedObject)
         cache.cacheOfferings(mockk())

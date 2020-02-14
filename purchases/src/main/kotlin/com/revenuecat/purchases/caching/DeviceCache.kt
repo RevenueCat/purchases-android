@@ -190,7 +190,7 @@ internal class DeviceCache(
         get() = offeringsCachedObject.cachedInstance
 
     @Synchronized fun cacheOfferings(offerings: Offerings) {
-        offeringsCachedObject.cacheInstance(offerings, Date())
+        offeringsCachedObject.cacheInstance(offerings)
     }
 
     @Synchronized
