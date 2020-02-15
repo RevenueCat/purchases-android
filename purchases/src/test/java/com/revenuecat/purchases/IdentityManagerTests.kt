@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.caching.DeviceCache
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every

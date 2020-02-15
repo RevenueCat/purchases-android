@@ -21,6 +21,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.caching.DeviceCache
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
@@ -142,9 +143,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /** @suppress */
     override fun onAppForegrounded() {
         debugLog("App foregrounded")
-        if (deviceCache.isCacheStale()) {
-            debugLog("Cache stale")
-            updateCaches(identityManager.currentAppUserID)
+        if (deviceCache.isPurchaserInfoCacheStale()) {
+            debugLog("PurchaserInfo cache is stale, updating caches")
+            fetchAndCachePurchaserInfo(identityManager.currentAppUserID)
+        }
+        if (deviceCache.isOfferingsCacheStale()) {
+            debugLog("Offerings cache is stale, updating caches")
+            fetchAndCacheOfferings(identityManager.currentAppUserID)
         }
         updatePendingPurchaseQueue()
     }
@@ -222,9 +227,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 dispatch {
                     listener.onReceived(cachedOfferings)
                 }
-                if (deviceCache.isCacheStale()) {
-                    debugLog("Cache is stale, updating caches")
-                    updateCaches(appUserID)
+                if (deviceCache.isOfferingsCacheStale()) {
+                    debugLog("Offerings cache is stale, updating cache")
+                    fetchAndCacheOfferings(appUserID)
                 }
             }
         }
@@ -409,7 +414,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     synchronized(this@Purchases) {
                         state = state.copy(purchaseCallbacks = emptyMap())
                     }
-                    updateCaches(newAppUserID, listener)
+                    updateAllCaches(newAppUserID, listener)
                 },
                 { error ->
                     dispatch { listener?.onError(error) }
@@ -436,7 +441,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     synchronized(this@Purchases) {
                         state = state.copy(purchaseCallbacks = emptyMap())
                     }
-                    updateCaches(newAppUserID, listener)
+                    updateAllCaches(newAppUserID, listener)
                 },
                 { error ->
                     dispatch { listener?.onError(error) }
@@ -459,7 +464,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         synchronized(this@Purchases) {
             state = state.copy(purchaseCallbacks = emptyMap())
         }
-        updateCaches(identityManager.currentAppUserID, listener)
+        updateAllCaches(identityManager.currentAppUserID, listener)
     }
 
     /**
@@ -494,13 +499,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (cachedPurchaserInfo != null) {
             debugLog("Vending purchaserInfo from cache")
             dispatch { listener?.onReceived(cachedPurchaserInfo) }
-            if (deviceCache.isCacheStale()) {
+            if (deviceCache.isPurchaserInfoCacheStale()) {
                 debugLog("Cache is stale, updating caches")
-                updateCaches(appUserID)
+                fetchAndCachePurchaserInfo(appUserID)
             }
         } else {
             debugLog("No cached purchaser info, fetching")
-            updateCaches(appUserID, listener)
+            fetchAndCachePurchaserInfo(appUserID, listener)
         }
     }
 
@@ -512,6 +517,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun removeUpdatedPurchaserInfoListener() {
         // Don't set on state directly since setter does more things
         this.updatedPurchaserInfoListener = null
+    }
+
+    fun invalidatePurchaserInfoCache() {
+        debugLog("Invalidating Purchaser info cache")
+        deviceCache.clearPurchaserInfoCacheTimestamp()
     }
     // endregion
 
@@ -586,6 +596,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         appUserID: String,
         completion: ReceiveOfferingsListener? = null
     ) {
+        deviceCache.setOfferingsCacheTimestampToNow()
         backend.getOfferings(
             appUserID,
             { offeringsJSON ->
@@ -616,6 +627,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     })
                 } catch (error: JSONException) {
                     log("Error fetching offerings - $error")
+                    deviceCache.clearOfferingsCacheTimestamp()
                     dispatch {
                         completion?.onError(
                             PurchasesError(
@@ -628,6 +640,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             { error ->
                 log("Error fetching offerings - $error")
+                deviceCache.clearOfferingsCacheTimestamp()
                 dispatch {
                     completion?.onError(error)
                 }
@@ -666,19 +679,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             })
     }
 
-    private fun updateCaches(
+    private fun updateAllCaches(
         appUserID: String,
         completion: ReceivePurchaserInfoListener? = null
     ) {
-        deviceCache.setCachesLastUpdated()
         fetchAndCachePurchaserInfo(appUserID, completion)
         fetchAndCacheOfferings(appUserID)
     }
 
     private fun fetchAndCachePurchaserInfo(
         appUserID: String,
-        completion: ReceivePurchaserInfoListener?
+        completion: ReceivePurchaserInfoListener? = null
     ) {
+        deviceCache.setPurchaserInfoCacheTimestampToNow()
         backend.getPurchaserInfo(
             appUserID,
             { info ->
@@ -688,7 +701,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             { error ->
                 Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
-                deviceCache.invalidateCaches()
+                deviceCache.clearPurchaserInfoCacheTimestamp()
                 dispatch { completion?.onError(error) }
             })
     }
