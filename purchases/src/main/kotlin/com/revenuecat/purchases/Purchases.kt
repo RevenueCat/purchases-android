@@ -519,6 +519,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         this.updatedPurchaserInfoListener = null
     }
 
+    /**
+     * Invalidates the cache for purchaser information.
+     * This is useful for cases where purchaser information might have been updated outside of the
+     * app, like if a promotional subscription is granted through the RevenueCat dashboard.
+     */
     fun invalidatePurchaserInfoCache() {
         debugLog("Invalidating Purchaser info cache")
         deviceCache.clearPurchaserInfoCacheTimestamp()
