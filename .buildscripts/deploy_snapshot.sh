@@ -20,6 +20,6 @@ elif [ "$CIRCLE_JDK_VERSION" != "$JDK" ]; then
 else
   echo "Deploying snapshot..."
   ./gradlew androidSourcesJar androidJavadocsJar uploadArchives -P signing.keyId=$GPG_SIGNING_KEY_ID -Psigning.password=$GPG_SIGNING_KEY_PW -Psigning.secretKeyRingFile=./secring.gpg \
-                           -PSONATYPE_NEXUS_USERNAME=$SONATYPE_NEXUS_USERNAME -PSONATYPE_NEXUS_PASSWORD=$SONATYPE_NEXUS_PASSWORD
+                           -PSONATYPE_NEXUS_USERNAME=$SONATYPE_NEXUS_USERNAME -PSONATYPE_NEXUS_PASSWORD=$SONATYPE_NEXUS_PASSWORD -PRELEASE_SIGNING_ENABLED=true
   echo "Snapshot deployed!"
 fi
