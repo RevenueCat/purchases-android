@@ -620,31 +620,32 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         dispatch {
                             completion?.onReceived(offerings)
                         }
-                    }, {
-                        dispatch {
-                            completion?.onError(it)
-                        }
+                    }, { error ->
+                        handleErrorFetchingOfferings(error, completion)
                     })
                 } catch (error: JSONException) {
-                    log("Error fetching offerings - $error")
-                    deviceCache.clearOfferingsCacheTimestamp()
-                    dispatch {
-                        completion?.onError(
-                            PurchasesError(
-                                PurchasesErrorCode.UnexpectedBackendResponseError,
-                                error.localizedMessage
-                            )
-                        )
-                    }
+                    handleErrorFetchingOfferings(
+                        PurchasesError(
+                            PurchasesErrorCode.UnexpectedBackendResponseError,
+                            error.localizedMessage
+                        ),
+                        completion
+                    )
                 }
-            },
-            { error ->
-                log("Error fetching offerings - $error")
-                deviceCache.clearOfferingsCacheTimestamp()
-                dispatch {
-                    completion?.onError(error)
-                }
+            }, { error ->
+                handleErrorFetchingOfferings(error, completion)
             })
+    }
+
+    private fun handleErrorFetchingOfferings(
+        error: PurchasesError,
+        completion: ReceiveOfferingsListener?
+    ) {
+        log("Error fetching offerings - $error")
+        deviceCache.clearOfferingsCacheTimestamp()
+        dispatch {
+            completion?.onError(error)
+        }
     }
 
     private fun logMissingProducts(
