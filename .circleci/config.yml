@@ -91,11 +91,9 @@ workflows:
           filters:
             branches:
               only: master
-      - docs-approval:
-          type: approval
-          filters:
-            branches:
-              only: master
       - docs-deploy:
-          requires:
-            - docs-approval
+          filters:
+            tags:
+              only: /^(\d+\.)(\d+\.)(\d+)$/
+            branches:
+              ignore: /.*/

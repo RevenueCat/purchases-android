@@ -1,3 +1,7 @@
+## 3.0.6
+
+- Added new method to invalidate the purchaser info cache, useful when promotional purchases are granted from outside the app. #109
+
 ## 3.0.5
 
 - Fixes compatibility with AppsFlyer SDK https://github.com/RevenueCat/purchases-android/pull/97
