@@ -3,28 +3,67 @@
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.
 //
 
-package com.revenuecat.purchases
+package com.revenuecat.purchases.caching
 
 import android.content.SharedPreferences
+import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.PurchaseWrapper
+import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.buildPurchaserInfo
+import com.revenuecat.purchases.debugLog
+import com.revenuecat.purchases.sha1
 
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
 
 private const val CACHE_REFRESH_PERIOD = 60000 * 5
+private const val PREFERENCES_PREFIX = "com.revenuecat.purchases."
 
 internal class DeviceCache(
     private val preferences: SharedPreferences,
-    apiKey: String
+    private val apiKey: String,
+    private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(CACHE_REFRESH_PERIOD)
 ) {
-    val legacyAppUserIDCacheKey = "com.revenuecat.purchases.$apiKey"
-    val appUserIDCacheKey = "com.revenuecat.purchases.$apiKey.new"
-    private val attributionCacheKey = "com.revenuecat.purchases.attribution"
-    val tokensCacheKey = "com.revenuecat.purchases.$apiKey.tokens"
+    val legacyAppUserIDCacheKey: String by lazy { "$PREFERENCES_PREFIX$apiKey" }
+    val appUserIDCacheKey: String by lazy { "$PREFERENCES_PREFIX$apiKey.new" }
+    private val attributionCacheKey = "$PREFERENCES_PREFIX.attribution"
+    val tokensCacheKey: String by lazy {"$PREFERENCES_PREFIX$apiKey.tokens"}
 
-    private var cachesLastUpdated: Date? = null
-    var cachedOfferings: Offerings? = null
+    var purchaserInfoCachesLastUpdated: Date? = null
 
+    // region app user id
+
+    @Synchronized fun getLegacyCachedAppUserID(): String? = preferences.getString(legacyAppUserIDCacheKey, null)
+
+    @Synchronized fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
+
+    @Synchronized fun cacheAppUserID(appUserID: String) {
+        preferences.edit().putString(appUserIDCacheKey, appUserID).apply()
+    }
+
+    @Synchronized
+    fun clearCachesForAppUserID() {
+        preferences.edit()
+            .also { editor ->
+                getCachedAppUserID()?.let {
+                    editor.remove(purchaserInfoCacheKey(it))
+                }
+                getLegacyCachedAppUserID()?.let {
+                    editor.remove(purchaserInfoCacheKey(it))
+                }
+            }
+            .remove(appUserIDCacheKey)
+            .remove(legacyAppUserIDCacheKey)
+            .apply()
+        clearPurchaserInfoCacheTimestamp()
+        clearOfferingsCache()
+    }
+
+    // endregion
+
+    // region purchaser info
     fun purchaserInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
 
     fun getCachedPurchaserInfo(appUserID: String): PurchaserInfo? {
@@ -44,7 +83,7 @@ internal class DeviceCache(
             }
     }
 
-    fun cachePurchaserInfo(appUserID: String, info: PurchaserInfo) {
+    @Synchronized fun cachePurchaserInfo(appUserID: String, info: PurchaserInfo) {
         val jsonObject = info.jsonObject.also {
             it.put("schema_version", PurchaserInfo.SCHEMA_VERSION)
         }
@@ -53,33 +92,29 @@ internal class DeviceCache(
                 purchaserInfoCacheKey(appUserID),
                 jsonObject.toString()
             ).apply()
+
+        setPurchaserInfoCacheTimestampToNow()
     }
 
     @Synchronized
-    fun clearCachesForAppUserID() {
-        preferences.edit()
-            .also { editor ->
-                getCachedAppUserID()?.let {
-                    editor.remove(purchaserInfoCacheKey(it))
-                }
-                getLegacyCachedAppUserID()?.let {
-                    editor.remove(purchaserInfoCacheKey(it))
-                }
-            }
-            .remove(appUserIDCacheKey)
-            .remove(legacyAppUserIDCacheKey)
-            .apply()
-        invalidateCaches()
-        cachedOfferings = null
+    fun isPurchaserInfoCacheStale(): Boolean {
+        return purchaserInfoCachesLastUpdated?.let { cachesLastUpdated ->
+            Date().time - cachesLastUpdated.time >= CACHE_REFRESH_PERIOD
+        }?: true
     }
 
-    @Synchronized fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
-
-    @Synchronized fun getLegacyCachedAppUserID(): String? = preferences.getString(legacyAppUserIDCacheKey, null)
-
-    @Synchronized fun cacheAppUserID(appUserID: String) {
-        preferences.edit().putString(appUserIDCacheKey, appUserID).apply()
+    @Synchronized
+    fun clearPurchaserInfoCacheTimestamp() {
+        purchaserInfoCachesLastUpdated = null
     }
+
+    @Synchronized fun setPurchaserInfoCacheTimestampToNow() {
+        purchaserInfoCachesLastUpdated = Date()
+    }
+
+    // endregion
+
+    // region attribution data
 
     @Synchronized fun getCachedAttributionData(network: Purchases.AttributionNetwork, userId: String): String? =
         preferences.getString(getAttributionDataCacheKey(userId, network), null)
@@ -95,6 +130,10 @@ internal class DeviceCache(
         }
         editor.apply()
     }
+
+    // endregion
+
+    // region purchase tokens
 
     @Synchronized internal fun getPreviouslySentHashedTokens(): Set<String> {
         return (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
@@ -143,9 +182,33 @@ internal class DeviceCache(
             .values.toList()
     }
 
+    // endregion
+
+    // region offerings
+
+    val cachedOfferings: Offerings?
+        get() = offeringsCachedObject.cachedInstance
+
+    @Synchronized fun cacheOfferings(offerings: Offerings) {
+        offeringsCachedObject.cacheInstance(offerings)
+    }
+
     @Synchronized
-    fun invalidateCaches() {
-        cachesLastUpdated = null
+    fun isOfferingsCacheStale(): Boolean = offeringsCachedObject.isCacheStale()
+
+    @Synchronized
+    fun clearOfferingsCacheTimestamp() {
+        offeringsCachedObject.clearCacheTimestamp()
+    }
+
+    @Synchronized fun setOfferingsCacheTimestampToNow() {
+        offeringsCachedObject.updateCacheTimestamp(Date())
+    }
+
+    // endregion
+
+    private fun clearOfferingsCache() {
+        offeringsCachedObject.clearCache()
     }
 
     private fun getAttributionDataCacheKey(
@@ -153,18 +216,4 @@ internal class DeviceCache(
         network: Purchases.AttributionNetwork
     ) = "$attributionCacheKey.$userId.$network"
 
-    @Synchronized fun cacheOfferings(offerings: Offerings) {
-        cachedOfferings = offerings
-    }
-
-    @Synchronized fun setCachesLastUpdated() {
-        cachesLastUpdated = Date()
-    }
-
-    @Synchronized
-    fun isCacheStale(): Boolean {
-        return cachesLastUpdated?.let { cachesLastUpdated ->
-            Date().time - cachesLastUpdated.time > CACHE_REFRESH_PERIOD
-        }?: true
-    }
 }

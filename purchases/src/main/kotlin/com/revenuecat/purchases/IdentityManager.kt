@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.caching.DeviceCache
 import java.util.Locale
 import java.util.UUID
 
