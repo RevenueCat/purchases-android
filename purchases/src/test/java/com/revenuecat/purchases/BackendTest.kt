@@ -84,26 +84,6 @@ class BackendTest {
         this@BackendTest.receivedError = it
     }
 
-    private inner class SyncDispatcher : Dispatcher(mockk()) {
-
-        private var closed = false
-
-        override fun enqueue(call: AsyncCall) {
-            if (closed) {
-                throw RejectedExecutionException()
-            }
-            call.run()
-        }
-
-        override fun close() {
-            closed = true
-        }
-
-        override fun isClosed(): Boolean {
-            return closed
-        }
-    }
-
     @Test
     fun canBeCreated() {
         assertThat(backend).isNotNull
