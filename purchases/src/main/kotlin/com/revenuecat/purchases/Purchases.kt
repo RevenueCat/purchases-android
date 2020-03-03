@@ -731,7 +731,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         BillingClient.SkuType.INAPP,
                         listOf(purchase.sku),
                         { skuDetailsList ->
-                            postToBackend(purchase, skuDetailsList.first { it.sku == purchase.sku }, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError)
+                            postToBackend(purchase, skuDetailsList.firstOrNull { it.sku == purchase.sku }, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError)
                         },
                         { postToBackend(purchase, null, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError) }
                     )
