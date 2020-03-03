@@ -54,9 +54,6 @@ class DeviceCacheTest {
             mockEditor.putString(any(), any())
         } returns mockEditor
         every {
-            mockEditor.putString(any(), any())
-        } returns mockEditor
-        every {
             mockEditor.remove(any())
         } returns mockEditor
 
