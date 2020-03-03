@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.attributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.timeInSeconds
 import com.revenuecat.purchases.utils.DateProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
@@ -105,6 +106,18 @@ class SubscriberAttributeTests {
         assertThat(subscriberAttribute.key).isEqualTo(SubscriberAttributeKey.Custom(emailKey))
         assertThat(subscriberAttribute.value).isEqualTo(value)
         assertThat(subscriberAttribute.setTime).isEqualTo(now)
+    }
+
+    @Test
+    fun `backend map looks as expected`() {
+        val now = Date()
+        val emailKey = "email"
+        val value = "un@email.com"
+        val subscriberAttribute = SubscriberAttribute(emailKey, value, setTime = now)
+        val backendMap = subscriberAttribute.toBackendMap()
+
+        assertThat(backendMap[BACKEND_NAME_VALUE]).isEqualTo(value)
+        assertThat(backendMap[BACKEND_NAME_TIMESTAMP]).isEqualTo(now.timeInSeconds)
     }
 
 }

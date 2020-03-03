@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.attributes
 
 import com.revenuecat.purchases.getNullableString
+import com.revenuecat.purchases.timeInSeconds
 import com.revenuecat.purchases.utils.DateProvider
 import com.revenuecat.purchases.utils.DefaultDateProvider
 import org.json.JSONException
@@ -46,6 +47,10 @@ internal data class SubscriberAttribute(
         put(JSON_NAME_IS_SYNCED, isSynced)
     }
 
-    fun toBackendMap() = mapOf(BACKEND_NAME_VALUE to value, BACKEND_NAME_TIMESTAMP to setTime)
+    fun toBackendMap() =
+        mapOf(
+            BACKEND_NAME_VALUE to value,
+            BACKEND_NAME_TIMESTAMP to setTime.timeInSeconds
+        )
 }
 
