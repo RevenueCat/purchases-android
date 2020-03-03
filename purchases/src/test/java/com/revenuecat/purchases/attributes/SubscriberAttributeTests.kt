@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.attributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.timeInSeconds
 import com.revenuecat.purchases.utils.DateProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType

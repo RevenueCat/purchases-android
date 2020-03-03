@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.attributes
 
 import com.revenuecat.purchases.getNullableString
+import com.revenuecat.purchases.timeInSeconds
 import com.revenuecat.purchases.utils.DateProvider
 import com.revenuecat.purchases.utils.DefaultDateProvider
 import org.json.JSONException
