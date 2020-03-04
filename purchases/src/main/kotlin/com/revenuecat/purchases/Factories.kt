@@ -180,9 +180,8 @@ internal fun JSONObject.createPackage(
 
 internal fun JSONObject.buildSubscriberAttributes(): Map<String, SubscriberAttribute> {
     val attributesJSONObject = getJSONObject("attributes")
-    return attributesJSONObject.keys().asSequence().mapNotNull { attributeKey ->
-        val attributeJSONObject = attributesJSONObject[attributeKey]
-        if (attributeJSONObject is JSONObject) attributeKey to SubscriberAttribute(attributeJSONObject)
-        else null
+    return attributesJSONObject.keys().asSequence().map { attributeKey ->
+        val attributeJSONObject = attributesJSONObject[attributeKey] as JSONObject
+        attributeKey to SubscriberAttribute(attributeJSONObject)
     }.toMap()
 }

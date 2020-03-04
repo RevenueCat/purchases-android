@@ -40,7 +40,7 @@ internal data class SubscriberAttribute(
     )
 
     fun toJSONObject() = JSONObject().apply {
-        put(JSON_NAME_KEY, key.serverValue)
+        put(JSON_NAME_KEY, key.backendKey)
         value?.let { put(JSON_NAME_VALUE, value) } ?: put(JSON_NAME_VALUE, JSONObject.NULL)
         put(JSON_NAME_SET_TIME, setTime.time)
         put(JSON_NAME_IS_SYNCED, isSynced)
