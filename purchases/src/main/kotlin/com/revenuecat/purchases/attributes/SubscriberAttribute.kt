@@ -52,5 +52,27 @@ internal data class SubscriberAttribute(
             BACKEND_NAME_VALUE to value,
             BACKEND_NAME_TIMESTAMP to setTime.timeInSeconds
         )
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as SubscriberAttribute
+
+        if (key != other.key) return false
+        if (value != other.value) return false
+        if (setTime != other.setTime) return false
+        if (isSynced != other.isSynced) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = key.hashCode()
+        result = 31 * result + (value?.hashCode() ?: 0)
+        result = 31 * result + setTime.hashCode()
+        result = 31 * result + isSynced.hashCode()
+        return result
+    }
 }
 

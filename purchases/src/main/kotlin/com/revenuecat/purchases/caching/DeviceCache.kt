@@ -12,6 +12,7 @@ import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.attributes.SubscriberAttribute
 import com.revenuecat.purchases.buildPurchaserInfo
+import com.revenuecat.purchases.buildSubscriberAttributes
 import com.revenuecat.purchases.debugLog
 import com.revenuecat.purchases.sha1
 import org.json.JSONException
@@ -270,14 +271,6 @@ internal class DeviceCache(
             }
         })
 
-    private fun JSONObject.buildSubscriberAttributes(): Map<String, SubscriberAttribute> {
-        val attributesJSONObject = getJSONObject("attributes")
-        return attributesJSONObject.keys().asSequence().mapNotNull { attributeKey ->
-            val attributeJSONObject = attributesJSONObject[attributeKey]
-            if (attributeJSONObject is JSONObject) attributeKey to SubscriberAttribute(attributeJSONObject)
-            else null
-        }.toMap()
-    }
     // endregion
 
     private fun clearOfferingsCache() {

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.attributes.SubscriberAttribute
 import com.revenuecat.purchases.util.Iso8601Utils
 import org.json.JSONException
 import org.json.JSONObject
@@ -175,4 +176,13 @@ internal fun JSONObject.createPackage(
         val packageType = identifier.toPackageType()
         return Package(identifier, packageType, product, offeringIdentifier)
     }
+}
+
+internal fun JSONObject.buildSubscriberAttributes(): Map<String, SubscriberAttribute> {
+    val attributesJSONObject = getJSONObject("attributes")
+    return attributesJSONObject.keys().asSequence().mapNotNull { attributeKey ->
+        val attributeJSONObject = attributesJSONObject[attributeKey]
+        if (attributeJSONObject is JSONObject) attributeKey to SubscriberAttribute(attributeJSONObject)
+        else null
+    }.toMap()
 }
