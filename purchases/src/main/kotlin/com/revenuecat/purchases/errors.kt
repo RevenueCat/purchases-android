@@ -105,7 +105,6 @@ internal fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
     }
 }
 
-@BillingClient.BillingResponseCode
 internal fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseCodeName(): String {
     return when (this) {
         BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED -> "FEATURE_NOT_SUPPORTED"
