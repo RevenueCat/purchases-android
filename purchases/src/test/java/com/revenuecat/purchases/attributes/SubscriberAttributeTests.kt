@@ -4,6 +4,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.timeInSeconds
 import com.revenuecat.purchases.utils.DateProvider
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.assertj.core.api.Assertions.assertThatIOException
 import org.json.JSONException
 import org.json.JSONObject
 import org.junit.Assert.fail
@@ -62,14 +64,7 @@ class SubscriberAttributeTests {
             put(JSON_NAME_KEY, emailKey)
             put(JSON_NAME_VALUE, emailValue)
         }
-        try {
-            SubscriberAttribute(jsonObject)
-            fail("Should give exception")
-        } catch (e: JSONException) {
-            assert(true)
-        } catch (e: Exception) {
-            fail("Should give JSONException")
-        }
+        assertThatExceptionOfType(JSONException::class.java).isThrownBy { SubscriberAttribute(jsonObject) }
     }
 
     @Test
