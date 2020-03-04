@@ -218,6 +218,3 @@ internal fun PurchaseHistoryRecord.toHumanReadableDescription() =
 
 val SkuDetails.priceAmount: Double
     get() = this.priceAmountMicros.div(1000000.0)
-
-val Date.timeInSeconds: Long
-    get() = this.time / 1000
