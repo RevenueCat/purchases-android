@@ -27,22 +27,23 @@ class SubscriberAttributesDeviceCacheTests {
 
     @Before
     fun setup() {
-        mockPrefs = mockk()
-        mockEditor = mockk()
-        every {
-            mockEditor.putString(any(), capture(putStringSlot))
-        } returns mockEditor
-        every {
-            mockEditor.remove(any())
-        } returns mockEditor
+        mockEditor = mockk<SharedPreferences.Editor>().apply {
+            every {
+                putString(any(), capture(putStringSlot))
+            } returns this
+            every {
+                remove(any())
+            } returns this
+            every {
+                apply()
+            } just runs
+        }
 
-        every {
-            mockPrefs.edit()
-        } returns mockEditor
-
-        every {
-            mockEditor.apply()
-        } just runs
+        mockPrefs = mockk<SharedPreferences>().apply {
+            every {
+                edit()
+            } returns mockEditor
+        }
 
         underTest = DeviceCache(mockPrefs, apiKey)
     }
