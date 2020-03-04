@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.attributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.timeInSeconds
 import com.revenuecat.purchases.utils.DateProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -112,7 +111,7 @@ class SubscriberAttributeTests {
         val backendMap = subscriberAttribute.toBackendMap()
 
         assertThat(backendMap[BACKEND_NAME_VALUE]).isEqualTo(value)
-        assertThat(backendMap[BACKEND_NAME_TIMESTAMP]).isEqualTo(now.timeInSeconds)
+        assertThat(backendMap[BACKEND_NAME_TIMESTAMP]).isEqualTo(now)
     }
 
 }

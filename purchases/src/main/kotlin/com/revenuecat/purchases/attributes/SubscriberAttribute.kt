@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.attributes
 
 import com.revenuecat.purchases.getNullableString
-import com.revenuecat.purchases.timeInSeconds
 import com.revenuecat.purchases.utils.DateProvider
 import com.revenuecat.purchases.utils.DefaultDateProvider
 import org.json.JSONException
@@ -14,7 +13,7 @@ internal const val JSON_NAME_SET_TIME = "set_time"
 internal const val JSON_NAME_IS_SYNCED = "is_synced"
 
 internal const val BACKEND_NAME_VALUE = "value"
-internal const val BACKEND_NAME_TIMESTAMP = "updated_at"
+internal const val BACKEND_NAME_TIMESTAMP = "updated_at_ms"
 
 internal data class SubscriberAttribute(
     val key: SubscriberAttributeKey,
@@ -47,11 +46,7 @@ internal data class SubscriberAttribute(
         put(JSON_NAME_IS_SYNCED, isSynced)
     }
 
-    fun toBackendMap() =
-        mapOf(
-            BACKEND_NAME_VALUE to value,
-            BACKEND_NAME_TIMESTAMP to setTime.timeInSeconds
-        )
+    fun toBackendMap() = mapOf(BACKEND_NAME_VALUE to value, BACKEND_NAME_TIMESTAMP to setTime)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
