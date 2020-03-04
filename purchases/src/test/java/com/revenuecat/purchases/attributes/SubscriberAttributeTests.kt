@@ -4,10 +4,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.utils.DateProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.assertj.core.api.Assertions.assertThatIOException
 import org.json.JSONException
 import org.json.JSONObject
-import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Date
@@ -50,7 +48,7 @@ class SubscriberAttributeTests {
             put(JSON_NAME_IS_SYNCED, false)
         }
         val subscriberAttribute = SubscriberAttribute(jsonObject)
-        assertThat(subscriberAttribute.key.serverValue).isEqualTo(emailKey)
+        assertThat(subscriberAttribute.key.backendKey).isEqualTo(emailKey)
         assertThat(subscriberAttribute.value).isEqualTo(emailValue)
         assertThat(subscriberAttribute.setTime).isEqualTo(now)
     }
@@ -85,7 +83,7 @@ class SubscriberAttributeTests {
             put(JSON_NAME_IS_SYNCED, true)
         }
         val subscriberAttribute = SubscriberAttribute(jsonObject)
-        assertThat(subscriberAttribute.key.serverValue).isEqualTo(emailKey)
+        assertThat(subscriberAttribute.key.backendKey).isEqualTo(emailKey)
         assertThat(subscriberAttribute.value).isEqualTo(null)
         assertThat(subscriberAttribute.setTime).isEqualTo(now)
         assertThat(subscriberAttribute.isSynced).isTrue()

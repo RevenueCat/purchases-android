@@ -5,7 +5,7 @@ internal const val SPECIAL_KEY_DISPLAY_NAME = "\$displayName"
 internal const val SPECIAL_KEY_PHONE_NUMBER = "\$phoneNumber"
 internal const val SPECIAL_KEY_FCM_TOKENS = "\$fcmTokens"
 
-internal sealed class SubscriberAttributeKey(val serverValue: String) {
+internal sealed class SubscriberAttributeKey(val backendKey: String) {
 
     object Email : SubscriberAttributeKey(SPECIAL_KEY_EMAIL)
     object DisplayName : SubscriberAttributeKey(SPECIAL_KEY_DISPLAY_NAME)
@@ -19,13 +19,13 @@ internal sealed class SubscriberAttributeKey(val serverValue: String) {
 
         other as SubscriberAttributeKey
 
-        if (serverValue != other.serverValue) return false
+        if (backendKey != other.backendKey) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return serverValue.hashCode()
+        return backendKey.hashCode()
     }
 }
 

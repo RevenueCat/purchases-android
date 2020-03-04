@@ -68,7 +68,7 @@ class SubscriberAttributesDeviceCacheTests {
         val receivedAttributes = underTest.getAllStoredSubscriberAttributes(appUserID)
 
         assertThat(receivedAttributes.size).isEqualTo(expectedAttributes.size)
-        expectedAttributes.values.map { it to receivedAttributes[it.key.serverValue] }.forEach { (expected, received) ->
+        expectedAttributes.values.map { it to receivedAttributes[it.key.backendKey] }.forEach { (expected, received) ->
             assertThat(received).isNotNull
             assertThat(expected).isEqualTo(received)
         }
@@ -185,7 +185,7 @@ class SubscriberAttributesDeviceCacheTests {
         val receivedAttributes = JSONObject(putStringSlot.captured).buildSubscriberAttributes()
         assertThat(receivedAttributes).isNotNull
         assertThat(receivedAttributes.size).isEqualTo(expectedAttributes.size)
-        expectedAttributes.values.map { it to receivedAttributes[it.key.serverValue] }
+        expectedAttributes.values.map { it to receivedAttributes[it.key.backendKey] }
             .forEach { (expected, received) ->
                 assertThat(received).isNotNull
                 assertThat(expected).isEqualTo(received)
