@@ -3,6 +3,7 @@ package com.revenuecat.purchases.attributes
 import com.revenuecat.purchases.Backend
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.caching.DeviceCache
+import com.revenuecat.purchases.debugLog
 
 internal class SubscriberAttributesManager(
     val deviceCache: DeviceCache,
@@ -20,26 +21,39 @@ internal class SubscriberAttributesManager(
 
     @Synchronized
     fun setAttribute(key: SubscriberAttributeKey, value: String?, appUserID: String) {
-        setAttributes(mapOf(key.serverValue to value), appUserID)
+        setAttributes(mapOf(key.backendKey to value), appUserID)
     }
 
-    fun syncronizeSusbcriberAttributes(
+    fun synchronizeSubscriberAttributes(
         appUserID: String,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (PurchasesError) -> Unit
     ) {
-        val unsyncedStoredAttributes =
+        val unsyncedStoredAttributes = synchronized(this) {
             deviceCache.getAllStoredSubscriberAttributes(appUserID)
                 .filter { (_, attribute) -> !attribute.isSynced }
-        backend.postSubscriberAttributes(unsyncedStoredAttributes, appUserID, {
-            markAsSynced(appUserID, unsyncedStoredAttributes)
+        }
+
+        if (unsyncedStoredAttributes.isNotEmpty()) {
+            debugLog("Synchronizing subscriber attributes: $unsyncedStoredAttributes")
+            backend.postSubscriberAttributes(
+                unsyncedStoredAttributes,
+                appUserID,
+                {
+                    markAsSynced(appUserID, unsyncedStoredAttributes)
+                    onSuccessHandler()
+                },
+                { error, errorIsFinishable ->
+                    if (errorIsFinishable) {
+                        markAsSynced(appUserID, unsyncedStoredAttributes)
+                    }
+                    onErrorHandler(error)
+                }
+            )
+        } else {
+            debugLog("No subscriber attributes to synchronize.")
             onSuccessHandler()
-        }, { error, errorIsFinishable ->
-            if (errorIsFinishable) {
-                markAsSynced(appUserID, unsyncedStoredAttributes)
-            }
-            onErrorHandler(error)
-        })
+        }
     }
 
     @Synchronized fun markAsSynced(
@@ -54,8 +68,10 @@ internal class SubscriberAttributesManager(
         attributesToMarkAsSynced.forEach { (key, subscriberAttribute) ->
             currentlyStoredAttributes[key]
                 ?.takeUnless { it.isSynced }
-                ?.takeUnless { it.value == subscriberAttribute.value }
-                ?.let { attributesToBeSet[key] = subscriberAttribute.copy(isSynced = true) }
+                ?.takeIf { it.value == subscriberAttribute.value }
+                ?.let {
+                    attributesToBeSet[key] = subscriberAttribute.copy(isSynced = true)
+                }
         }
 
         deviceCache.setAttributes(appUserID, attributesToBeSet)
