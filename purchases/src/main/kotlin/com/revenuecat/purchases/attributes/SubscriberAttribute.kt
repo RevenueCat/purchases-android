@@ -46,7 +46,7 @@ internal data class SubscriberAttribute(
         put(JSON_NAME_IS_SYNCED, isSynced)
     }
 
-    fun toBackendMap() = mapOf(BACKEND_NAME_VALUE to value, BACKEND_NAME_TIMESTAMP to setTime)
+    fun toBackendMap() = mapOf(BACKEND_NAME_VALUE to value, BACKEND_NAME_TIMESTAMP to setTime.time)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -68,6 +68,10 @@ internal data class SubscriberAttribute(
         result = 31 * result + setTime.hashCode()
         result = 31 * result + isSynced.hashCode()
         return result
+    }
+
+    override fun toString(): String {
+        return "SubscriberAttribute(key=$key, value=$value, setTime=$setTime, isSynced=$isSynced)"
     }
 }
 
