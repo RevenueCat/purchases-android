@@ -67,7 +67,7 @@ class SubscriberAttributesManagerTests {
         } returns emptyMap()
 
         var successCalled = false
-        underTest.synchronizeSubscriberAttributes(appUserID, {
+        underTest.synchronizeSubscriberAttributesIfNeeded(appUserID, {
             successCalled = true
         }, {
             fail("should be success")
@@ -86,7 +86,7 @@ class SubscriberAttributesManagerTests {
         } returns mapOf("key" to SubscriberAttribute("key", null, isSynced = true))
 
         var successCalled = false
-        underTest.synchronizeSubscriberAttributes(appUserID, {
+        underTest.synchronizeSubscriberAttributesIfNeeded(appUserID, {
             successCalled = true
         }, {
             fail("should be success")
@@ -122,7 +122,7 @@ class SubscriberAttributesManagerTests {
         }
 
         var successCalled = false
-        underTest.synchronizeSubscriberAttributes(
+        underTest.synchronizeSubscriberAttributesIfNeeded(
             appUserID,
             {
                 successCalled = true

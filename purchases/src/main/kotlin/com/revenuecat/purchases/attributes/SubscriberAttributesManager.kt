@@ -11,12 +11,12 @@ internal class SubscriberAttributesManager(
 ) {
 
     @Synchronized
-    fun setAttributes(attributes: Map<String, String?>, appUserID: String) {
-        val mappedAttributes = attributes.map { (key, value) ->
+    fun setAttributes(attributesToSet: Map<String, String?>, appUserID: String) {
+        val attributesAsObjects = attributesToSet.map { (key, value) ->
             key to SubscriberAttribute(key, value)
         }.toMap()
 
-        deviceCache.setAttributes(appUserID, mappedAttributes)
+        deviceCache.setAttributes(appUserID, attributesAsObjects)
     }
 
     @Synchronized
@@ -24,7 +24,7 @@ internal class SubscriberAttributesManager(
         setAttributes(mapOf(key.backendKey to value), appUserID)
     }
 
-    fun synchronizeSubscriberAttributes(
+    fun synchronizeSubscriberAttributesIfNeeded(
         appUserID: String,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (PurchasesError) -> Unit
