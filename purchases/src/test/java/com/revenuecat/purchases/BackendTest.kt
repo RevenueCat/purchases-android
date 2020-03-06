@@ -7,6 +7,7 @@ package com.revenuecat.purchases
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.attributes.SubscriberAttribute
 import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk
@@ -25,7 +26,6 @@ import java.lang.Thread.sleep
 import java.util.HashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -161,6 +161,7 @@ class BackendTest {
             observerMode,
             price,
             currency,
+            emptyMap(),
             onReceivePurchaserInfoSuccessHandler,
             postReceiptErrorCallback
         )
@@ -466,6 +467,7 @@ class BackendTest {
             false,
             null,
             null,
+            emptyMap(),
             {
                 lock.countDown()
             },
@@ -480,6 +482,7 @@ class BackendTest {
             false,
             null,
             null,
+            emptyMap(),
             {
                 lock.countDown()
             },
@@ -582,6 +585,7 @@ class BackendTest {
             false,
             null,
             null,
+            emptyMap(),
             {
                 lock.countDown()
             },
@@ -607,6 +611,7 @@ class BackendTest {
             false,
             null,
             null,
+            emptyMap(),
             {
                 lock.countDown()
             },
@@ -691,6 +696,7 @@ class BackendTest {
             false,
             null,
             null,
+            emptyMap(),
             {
                 lock.countDown()
             },
@@ -705,6 +711,7 @@ class BackendTest {
             false,
             2.5,
             "USD",
+            emptyMap(),
             {
                 lock.countDown()
             },

@@ -29,10 +29,7 @@ internal class SubscriberAttributesManager(
         onSuccessHandler: () -> Unit,
         onErrorHandler: (PurchasesError) -> Unit
     ) {
-        val unsyncedStoredAttributes = synchronized(this) {
-            deviceCache.getAllStoredSubscriberAttributes(appUserID)
-                .filter { (_, attribute) -> !attribute.isSynced }
-        }
+        val unsyncedStoredAttributes = getUnsyncedSubscriberAttributes(appUserID)
 
         if (unsyncedStoredAttributes.isNotEmpty()) {
             debugLog("Synchronizing subscriber attributes: $unsyncedStoredAttributes")
@@ -55,6 +52,11 @@ internal class SubscriberAttributesManager(
             onSuccessHandler()
         }
     }
+
+    @Synchronized
+    fun getUnsyncedSubscriberAttributes(appUserID: String) =
+        deviceCache.getAllStoredSubscriberAttributes(appUserID)
+            .filter { (_, attribute) -> !attribute.isSynced }
 
     @Synchronized
     fun markAsSynced(

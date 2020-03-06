@@ -33,6 +33,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
@@ -116,6 +117,7 @@ class PurchasesTest {
     ): PurchaserInfo {
         val mockInfo = mockk<PurchaserInfo>()
         val skus = listOf(stubProductIdentifier)
+        val userIdToUse = if (anonymous) randomAppUserId else appUserId
 
         mockCache(mockInfo)
         mockBackend(mockInfo, errorGettingPurchaserInfo)
@@ -130,12 +132,13 @@ class PurchasesTest {
         } just Runs
         every {
             mockIdentityManager.currentAppUserID
-        } returns if (anonymous) randomAppUserId else appUserId
+        } returns userIdToUse
         every {
             mockIdentityManager.currentUserIsAnonymous()
         } returns anonymous
         buildPurchases(anonymous)
-        mockSubscriberAttributesManager()
+        mockSubscriberAttributesManager(userIdToUse)
+
         return mockInfo
     }
 
@@ -313,6 +316,7 @@ class PurchasesTest {
                 false,
                 2.0,
                 "USD",
+                emptyMap(),
                 any(),
                 any()
             )
@@ -328,6 +332,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -383,6 +388,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -405,6 +411,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -529,6 +536,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -556,6 +564,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -585,6 +594,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -658,6 +668,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -673,6 +684,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -735,6 +747,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 captureLambda(),
                 any()
             )
@@ -779,6 +792,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -1132,6 +1146,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 captureLambda()
             )
@@ -1411,6 +1426,7 @@ class PurchasesTest {
         val info = mockk<PurchaserInfo>()
         every {
             mockBackend.postReceiptData(
+                any(),
                 any(),
                 any(),
                 any(),
@@ -1840,6 +1856,7 @@ class PurchasesTest {
                 true,
                 2.0,
                 "USD",
+                emptyMap(),
                 any(),
                 any()
             )
@@ -1888,6 +1905,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 captureLambda()
             )
@@ -1999,6 +2017,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2013,6 +2032,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2058,6 +2078,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2072,6 +2093,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2110,6 +2132,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2470,6 +2493,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 captureLambda()
             )
@@ -2521,6 +2545,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2588,6 +2613,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2622,6 +2648,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2748,6 +2775,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2763,6 +2791,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2801,6 +2830,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2843,6 +2873,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2896,6 +2927,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 captureLambda()
             )
@@ -2940,6 +2972,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 captureLambda()
             )
@@ -2998,6 +3031,7 @@ class PurchasesTest {
                 false,
                 2.0,
                 "USD",
+                emptyMap(),
                 any(),
                 any()
             )
@@ -3027,6 +3061,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -3118,7 +3153,19 @@ class PurchasesTest {
             }
             mockProducts()
             every {
-                postReceiptData(any(), any(), any(), any(), any(), any(), any(), any(), captureLambda(), any())
+                postReceiptData(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    captureLambda(),
+                    any()
+                )
             } answers {
                 lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
             }
@@ -3380,6 +3427,7 @@ class PurchasesTest {
                 observerMode,
                 2.0,
                 "USD",
+                emptyMap(),
                 any(),
                 captureLambda()
             )
@@ -3410,6 +3458,7 @@ class PurchasesTest {
                 observerMode,
                 2.0,
                 "USD",
+                emptyMap(),
                 captureLambda(),
                 any()
             )
@@ -3427,10 +3476,16 @@ class PurchasesTest {
         } returns offeringsStale
     }
 
-    private fun mockSubscriberAttributesManager() {
+    private fun mockSubscriberAttributesManager(userIdToUse: String) {
         every {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesIfNeeded(appUserId, any(), any())
         } just Runs
+        every {
+            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(userIdToUse)
+        } returns emptyMap()
+        every {
+            mockSubscriberAttributesManager.markAsSynced(userIdToUse, any())
+        } just runs
     }
 
     // endregion

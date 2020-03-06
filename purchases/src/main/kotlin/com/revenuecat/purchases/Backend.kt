@@ -104,6 +104,7 @@ internal class Backend(
         observerMode: Boolean,
         price: Double?,
         currency: String?,
+        subscriberAttributes: Map<String, SubscriberAttribute>,
         onSuccess: (PurchaserInfo) -> Unit,
         onError: (PurchasesError, errorIsFinishable: Boolean) -> Unit
     ) {
@@ -115,7 +116,8 @@ internal class Backend(
             offeringIdentifier,
             observerMode.toString(),
             price?.toString(),
-            currency
+            currency,
+            subscriberAttributes.toString()
         )
 
         val body = mapOf(
@@ -126,9 +128,10 @@ internal class Backend(
             "presented_offering_identifier" to offeringIdentifier,
             "observer_mode" to observerMode,
             "price" to price,
-            "currency" to currency
-        ).mapNotNull { entry: Map.Entry<String, Any?> ->
-            entry.value?.let { entry.key to it }
+            "currency" to currency,
+            "attributes" to subscriberAttributes.takeUnless { it.isEmpty() }?.toBackendMap()
+        ).mapNotNull { (key, value) ->
+            value?.let { key to it }
         }.toMap()
 
         val call = object : Dispatcher.AsyncCall() {
@@ -284,12 +287,9 @@ internal class Backend(
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
-                val attributesMap = attributes.map { (key, subscriberAttribute) ->
-                    key to subscriberAttribute.toBackendMap()
-                }.toMap()
                 return httpClient.performRequest(
                     "/subscribers/" + encode(appUserID) + "/attributes",
-                    mapOf("attributes" to attributesMap),
+                    mapOf("attributes" to attributes.toBackendMap()),
                     authenticationHeaders
                 )
             }
@@ -321,4 +321,10 @@ internal class Backend(
         }
     }
 
+}
+
+internal fun Map<String, SubscriberAttribute>.toBackendMap(): Map<String, Map<String, Any?>> {
+    return map { (key, subscriberAttribute) ->
+        key to subscriberAttribute.toBackendMap()
+    }.toMap()
 }
