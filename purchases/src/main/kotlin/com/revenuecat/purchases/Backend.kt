@@ -280,7 +280,7 @@ internal class Backend(
         attributes: Map<String, SubscriberAttribute>,
         appUserID: String,
         onSuccessHandler: () -> Unit,
-        onErrorHandler: (PurchasesError, errorIsFinishable: Boolean) -> Unit
+        onErrorHandler: (PurchasesError, syncedSuccessfully: Boolean) -> Unit
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
