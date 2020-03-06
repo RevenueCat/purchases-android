@@ -23,11 +23,11 @@ class SubscriberAttributesPurchasesTests {
     @Before
     fun setup() {
         underTest = Purchases(
-            mockk(relaxed = true),
-            appUserId,
-            mockk(relaxed = true),
-            mockk(relaxed = true),
-            mockk(relaxed = true),
+            applicationContext = mockk(relaxed = true),
+            backingFieldAppUserID = appUserId,
+            backend = mockk(relaxed = true),
+            billingWrapper = mockk(relaxed = true),
+            deviceCache = mockk(relaxed = true),
             executorService = mockk<ExecutorService>().apply {
                 val capturedRunnable = slot<Runnable>()
                 every { execute(capture(capturedRunnable)) } answers { capturedRunnable.captured.run() }

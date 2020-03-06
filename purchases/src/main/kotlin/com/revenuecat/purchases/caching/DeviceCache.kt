@@ -53,27 +53,35 @@ internal class DeviceCache(
     @Synchronized
     fun clearCachesForAppUserID() {
         preferences.edit()
-            // Purchaser info
-            .also { editor ->
-                getCachedAppUserID()?.let {
-                    editor.remove(purchaserInfoCacheKey(it))
-                }
-                getLegacyCachedAppUserID()?.let {
-                    editor.remove(purchaserInfoCacheKey(it))
-                }
-            }
-            // Subscriber attributes
-            .also { editor ->
-                getCachedAppUserID()?.let {
-                    editor.remove(subscriberAttributesCacheKey(it))
-                }
-            }
-            // App user id
-            .remove(appUserIDCacheKey)
-            .remove(legacyAppUserIDCacheKey)
+            .clearPurchaserInfo()
+            .clearSubscriberAttributes()
+            .clearAppUserID()
             .apply()
         clearPurchaserInfoCacheTimestamp()
         clearOfferingsCache()
+    }
+
+    private fun SharedPreferences.Editor.clearPurchaserInfo(): SharedPreferences.Editor {
+        getCachedAppUserID()?.let {
+            remove(purchaserInfoCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(purchaserInfoCacheKey(it))
+        }
+        return this
+    }
+
+    private fun SharedPreferences.Editor.clearSubscriberAttributes(): SharedPreferences.Editor {
+        getCachedAppUserID()?.let {
+            remove(subscriberAttributesCacheKey(it))
+        }
+        return this
+    }
+
+    private fun SharedPreferences.Editor.clearAppUserID(): SharedPreferences.Editor {
+        remove(appUserIDCacheKey)
+        remove(legacyAppUserIDCacheKey)
+        return this
     }
 
     // endregion

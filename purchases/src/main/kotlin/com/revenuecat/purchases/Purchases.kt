@@ -139,7 +139,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /** @suppress */
     override fun onAppBackgrounded() {
         debugLog("App backgrounded")
-        synchronizeSubscriberAttributes()
+        synchronizeSubscriberAttributesIfNeeded()
     }
 
     /** @suppress */
@@ -154,7 +154,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             fetchAndCacheOfferings(identityManager.currentAppUserID)
         }
         updatePendingPurchaseQueue()
-        synchronizeSubscriberAttributes()
+        synchronizeSubscriberAttributesIfNeeded()
     }
 
     // region Public Methods
@@ -1071,7 +1071,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun synchronizeSubscriberAttributes() {
+    private fun synchronizeSubscriberAttributesIfNeeded() {
         subscriberAttributesManager.synchronizeSubscriberAttributesIfNeeded(
             appUserID,
             {
