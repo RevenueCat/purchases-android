@@ -12,7 +12,7 @@ internal class SubscriberAttributesManager(
 
     @Synchronized
     fun setAttributes(attributes: Map<String, String?>, appUserID: String) {
-        val mappedAttributes= attributes.map { (key, value) ->
+        val mappedAttributes = attributes.map { (key, value) ->
             key to SubscriberAttribute(key, value)
         }.toMap()
 
@@ -56,7 +56,8 @@ internal class SubscriberAttributesManager(
         }
     }
 
-    @Synchronized fun markAsSynced(
+    @Synchronized
+    fun markAsSynced(
         appUserID: String,
         attributesToMarkAsSynced: Map<String, SubscriberAttribute>
     ) {
