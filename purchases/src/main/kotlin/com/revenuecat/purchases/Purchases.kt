@@ -21,6 +21,8 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.attributes.SubscriberAttributeKey
+import com.revenuecat.purchases.attributes.SubscriberAttributesManager
 import com.revenuecat.purchases.caching.DeviceCache
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
@@ -54,14 +56,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val deviceCache: DeviceCache,
     observerMode: Boolean = false,
     private val executorService: ExecutorService,
-    private val identityManager: IdentityManager
+    private val identityManager: IdentityManager,
+    private val subscriberAttributesManager: SubscriberAttributesManager
 ) : LifecycleDelegate {
 
     /** @suppress */
     @get:Synchronized
-    @get:JvmSynthetic
     @set:Synchronized
-    @set:JvmSynthetic
     @Volatile
     @JvmSynthetic
     internal var state = PurchasesState()
@@ -138,6 +139,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /** @suppress */
     override fun onAppBackgrounded() {
         debugLog("App backgrounded")
+        synchronizeSubscriberAttributes()
     }
 
     /** @suppress */
@@ -152,6 +154,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             fetchAndCacheOfferings(identityManager.currentAppUserID)
         }
         updatePendingPurchaseQueue()
+        synchronizeSubscriberAttributes()
     }
 
     // region Public Methods
@@ -528,6 +531,36 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         debugLog("Invalidating Purchaser info cache")
         deviceCache.clearPurchaserInfoCacheTimestamp()
     }
+
+    // region Subscriber Attributes
+
+    fun setAttributes(attributes: Map<String, String?>) {
+        debugLog("setAttributes called")
+        subscriberAttributesManager.setAttributes(attributes, appUserID)
+    }
+
+    fun setEmail(email: String?) {
+        debugLog("setEmail called")
+        subscriberAttributesManager.setAttribute(SubscriberAttributeKey.Email, email, appUserID)
+    }
+
+    fun setPhoneNumber(phoneNumber: String?) {
+        debugLog("setPhoneNumber called")
+        subscriberAttributesManager.setAttribute(SubscriberAttributeKey.PhoneNumber, phoneNumber, appUserID)
+    }
+
+    fun setDisplayName(displayName: String?) {
+        debugLog("setDisplayName called")
+        subscriberAttributesManager.setAttribute(SubscriberAttributeKey.DisplayName, displayName, appUserID)
+    }
+
+    fun setPushToken(fcmToken: String?) {
+        debugLog("setPushToken called")
+        subscriberAttributesManager.setAttribute(SubscriberAttributeKey.FCMTokens, fcmToken, appUserID)
+    }
+
+    // endregion
+
     // endregion
 
     @JvmName("-deprecated_makePurchase")
@@ -588,6 +621,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         }
     }
+    // endregion
+
+    // region Private Methods
 
     private fun AdvertisingIdClient.AdInfo?.generateAttributionDataCacheValue(networkUserId: String?) =
         listOfNotNull(
@@ -595,8 +631,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             networkUserId
         ).joinToString("_")
 
-    // endregion
-    // region Private Methods
     private fun fetchAndCacheOfferings(
         appUserID: String,
         completion: ReceiveOfferingsListener? = null
@@ -1037,6 +1071,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
+    private fun synchronizeSubscriberAttributes() {
+        subscriberAttributesManager.synchronizeSubscriberAttributesIfNeeded(
+            appUserID,
+            {
+                debugLog("Subscriber attributes synced successfully.")
+            },
+            { error ->
+                errorLog("There was an error syncing subscriber attributes. Error: $error")
+            }
+        )
+    }
+
     // endregion
     // region Static
     companion object {
@@ -1145,7 +1191,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 cache,
                 observerMode,
                 service,
-                IdentityManager(cache, backend)
+                IdentityManager(cache, backend),
+                SubscriberAttributesManager(cache, backend)
             ).also { sharedInstance = it }
         }
 

@@ -18,6 +18,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.attributes.SubscriberAttributesManager
 import com.revenuecat.purchases.caching.DeviceCache
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
@@ -66,6 +67,7 @@ class PurchasesTest {
         } returns mockApplication
     }
     private val mockIdentityManager = mockk<IdentityManager>()
+    private val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
 
     private var capturedPurchasesUpdatedListener = slot<BillingWrapper.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingWrapper.StateListener>()
@@ -446,6 +448,7 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockSubscriberAttributesManager()
         Purchases.sharedInstance.onAppForegrounded()
         verify (exactly = 1) {
             mockBackend.getPurchaserInfo(eq(appUserId), any(), any())
@@ -461,6 +464,7 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockSubscriberAttributesManager()
         Purchases.sharedInstance.onAppForegrounded()
         verify (exactly = 1) {
             mockBackend.getOfferings(eq(appUserId), any(), any())
@@ -476,6 +480,7 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockSubscriberAttributesManager()
         Purchases.sharedInstance.onAppForegrounded()
         verify (exactly = 0){
             mockBackend.getPurchaserInfo(eq(appUserId), any(), any())
@@ -491,6 +496,7 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockSubscriberAttributesManager()
         Purchases.sharedInstance.onAppForegrounded()
         verify (exactly = 0){
             mockBackend.getOfferings(eq(appUserId), any(), any())
@@ -2686,6 +2692,7 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockSubscriberAttributesManager()
         purchases.onAppForegrounded()
         verify (exactly = 1) {
             mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)
@@ -3343,7 +3350,8 @@ class PurchasesTest {
             mockBillingWrapper,
             mockCache,
             executorService = mockExecutorService,
-            identityManager = mockIdentityManager
+            identityManager = mockIdentityManager,
+            subscriberAttributesManager = mockSubscriberAttributesManager
         )
         Purchases.sharedInstance = purchases
     }
@@ -3421,6 +3429,12 @@ class PurchasesTest {
         every {
             mockCache.isOfferingsCacheStale()
         } returns offeringsStale
+    }
+
+    private fun mockSubscriberAttributesManager() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesIfNeeded(appUserId, any(), any())
+        } just Runs
     }
 
     // endregion
