@@ -53,6 +53,7 @@ internal class DeviceCache(
     @Synchronized
     fun clearCachesForAppUserID() {
         preferences.edit()
+            // Purchaser info
             .also { editor ->
                 getCachedAppUserID()?.let {
                     editor.remove(purchaserInfoCacheKey(it))
@@ -61,6 +62,13 @@ internal class DeviceCache(
                     editor.remove(purchaserInfoCacheKey(it))
                 }
             }
+            // Subscriber attributes
+            .also { editor ->
+                getCachedAppUserID()?.let {
+                    editor.remove(subscriberAttributesCacheKey(it))
+                }
+            }
+            // App user id
             .remove(appUserIDCacheKey)
             .remove(legacyAppUserIDCacheKey)
             .apply()
@@ -246,13 +254,13 @@ internal class DeviceCache(
         }
 
         preferences.edit()
-            .putString(getSubscriberAttributesCacheKey(appUserID), attributesToBeSet.toJSONObject().toString())
+            .putString(subscriberAttributesCacheKey(appUserID), attributesToBeSet.toJSONObject().toString())
             .apply()
     }
 
     @Synchronized
     fun getAllStoredSubscriberAttributes(appUserID: String): Map<String, SubscriberAttribute> =
-        preferences.getString(getSubscriberAttributesCacheKey(appUserID), null)
+        preferences.getString(subscriberAttributesCacheKey(appUserID), null)
             ?.let { json ->
                 try {
                     JSONObject(json)
@@ -261,7 +269,7 @@ internal class DeviceCache(
                 }
             }?.buildSubscriberAttributes() ?: emptyMap()
 
-    private fun getSubscriberAttributesCacheKey(appUserID: String) =
+    internal fun subscriberAttributesCacheKey(appUserID: String) =
         "$subscriberAttributesCacheKey.$appUserID"
 
     private fun Map<String, SubscriberAttribute>.toJSONObject() =
