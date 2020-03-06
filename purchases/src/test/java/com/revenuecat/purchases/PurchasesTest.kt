@@ -18,6 +18,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.attributes.SubscriberAttributesManager
 import com.revenuecat.purchases.caching.DeviceCache
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
@@ -66,6 +67,7 @@ class PurchasesTest {
         } returns mockApplication
     }
     private val mockIdentityManager = mockk<IdentityManager>()
+    private val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
 
     private var capturedPurchasesUpdatedListener = slot<BillingWrapper.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingWrapper.StateListener>()
@@ -133,6 +135,7 @@ class PurchasesTest {
             mockIdentityManager.currentUserIsAnonymous()
         } returns anonymous
         buildPurchases(anonymous)
+        mockSubscriberAttributesManager()
         return mockInfo
     }
 
@@ -3343,7 +3346,8 @@ class PurchasesTest {
             mockBillingWrapper,
             mockCache,
             executorService = mockExecutorService,
-            identityManager = mockIdentityManager
+            identityManager = mockIdentityManager,
+            subscriberAttributesManager = mockSubscriberAttributesManager
         )
         Purchases.sharedInstance = purchases
     }
@@ -3421,6 +3425,12 @@ class PurchasesTest {
         every {
             mockCache.isOfferingsCacheStale()
         } returns offeringsStale
+    }
+
+    private fun mockSubscriberAttributesManager() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesIfNeeded(appUserId, any(), any())
+        } just Runs
     }
 
     // endregion

@@ -9,6 +9,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Before
@@ -47,6 +48,13 @@ class SubscriberAttributesDeviceCacheTests {
         }
 
         underTest = DeviceCache(mockPrefs, apiKey)
+
+        every {
+            mockPrefs.getString(underTest.appUserIDCacheKey, isNull())
+        } returns "appUserID"
+        every {
+            mockPrefs.getString(underTest.legacyAppUserIDCacheKey, isNull())
+        } returns "legacyAppUserID"
     }
 
     @Test
@@ -156,6 +164,12 @@ class SubscriberAttributesDeviceCacheTests {
         underTest.setAttributes(appUserID, mapOf(expectedAttributes.keys.toList()[1] to expectedAttributes.values.toList()[1]))
 
         assertCapturedEqualsExpected(expectedAttributes)
+    }
+
+    @Test
+    fun `clearing caches also clears the subscriber attributes`() {
+        underTest.clearCachesForAppUserID()
+        verify { mockEditor.remove(underTest.subscriberAttributesCacheKey("appUserID")) }
     }
 
     private fun mockEmptyCache() {

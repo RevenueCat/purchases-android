@@ -53,19 +53,35 @@ internal class DeviceCache(
     @Synchronized
     fun clearCachesForAppUserID() {
         preferences.edit()
-            .also { editor ->
-                getCachedAppUserID()?.let {
-                    editor.remove(purchaserInfoCacheKey(it))
-                }
-                getLegacyCachedAppUserID()?.let {
-                    editor.remove(purchaserInfoCacheKey(it))
-                }
-            }
-            .remove(appUserIDCacheKey)
-            .remove(legacyAppUserIDCacheKey)
+            .clearPurchaserInfo()
+            .clearSubscriberAttributes()
+            .clearAppUserID()
             .apply()
         clearPurchaserInfoCacheTimestamp()
         clearOfferingsCache()
+    }
+
+    private fun SharedPreferences.Editor.clearPurchaserInfo(): SharedPreferences.Editor {
+        getCachedAppUserID()?.let {
+            remove(purchaserInfoCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(purchaserInfoCacheKey(it))
+        }
+        return this
+    }
+
+    private fun SharedPreferences.Editor.clearSubscriberAttributes(): SharedPreferences.Editor {
+        getCachedAppUserID()?.let {
+            remove(subscriberAttributesCacheKey(it))
+        }
+        return this
+    }
+
+    private fun SharedPreferences.Editor.clearAppUserID(): SharedPreferences.Editor {
+        remove(appUserIDCacheKey)
+        remove(legacyAppUserIDCacheKey)
+        return this
     }
 
     // endregion
@@ -246,13 +262,13 @@ internal class DeviceCache(
         }
 
         preferences.edit()
-            .putString(getSubscriberAttributesCacheKey(appUserID), attributesToBeSet.toJSONObject().toString())
+            .putString(subscriberAttributesCacheKey(appUserID), attributesToBeSet.toJSONObject().toString())
             .apply()
     }
 
     @Synchronized
     fun getAllStoredSubscriberAttributes(appUserID: String): Map<String, SubscriberAttribute> =
-        preferences.getString(getSubscriberAttributesCacheKey(appUserID), null)
+        preferences.getString(subscriberAttributesCacheKey(appUserID), null)
             ?.let { json ->
                 try {
                     JSONObject(json)
@@ -261,7 +277,7 @@ internal class DeviceCache(
                 }
             }?.buildSubscriberAttributes() ?: emptyMap()
 
-    private fun getSubscriberAttributesCacheKey(appUserID: String) =
+    internal fun subscriberAttributesCacheKey(appUserID: String) =
         "$subscriberAttributesCacheKey.$appUserID"
 
     private fun Map<String, SubscriberAttribute>.toJSONObject() =
