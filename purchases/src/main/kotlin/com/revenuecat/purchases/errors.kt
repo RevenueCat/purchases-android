@@ -85,8 +85,12 @@ internal fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
     PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
 
 internal fun HTTPClient.Result.toPurchasesError(): PurchasesError {
-    val errorCode = body?.get("code") as? Int
-    val errorMessage = (body?.get("message") as? String) ?: ""
+    var errorCode: Int? = null
+    var errorMessage = ""
+    body?.let { body ->
+        errorCode = if (body.has("code")) body.get("code") as Int else null
+        errorMessage = if (body.has("message")) body.get("message") as String else ""
+    }
 
     return errorCode?.let { BackendErrorCode.valueOf(it) }?.toPurchasesError(errorMessage)
         ?: PurchasesError(PurchasesErrorCode.UnknownBackendError, "Backend Code: ${errorCode ?: "N/A"} - $errorMessage")
