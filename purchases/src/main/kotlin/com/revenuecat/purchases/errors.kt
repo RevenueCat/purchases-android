@@ -39,8 +39,11 @@ enum class PurchasesErrorCode(val description: String) {
     InvalidAppUserIdError("The app user id is not valid."),
     OperationAlreadyInProgressError("The operation is already in progress."),
     UnknownBackendError("There was an unknown backend error."),
+    InvalidAppleSubscriptionKeyError("Apple Subscription Key is invalid or not present. In order to provide subscription offers, you must first generate a subscription key. Please see https://docs.revenuecat.com/docs/ios-subscription-offers for more info."),
+    IneligibleError("The User is ineligible for that action."),
     InsufficientPermissionsError("App does not have sufficient permissions to make purchases."),
-    PaymentPendingError("The payment is pending.")
+    PaymentPendingError("The payment is pending."),
+    InvalidSubscriberAttributesError("One or more of the attributes sent could not be saved.")
 }
 
 internal enum class BackendErrorCode(val value: Int) {
@@ -57,7 +60,10 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidAPIKey(7225),
     BackendPlayStoreQuotaExceeded(7229),
     BackendPlayStoreInvalidPackageName(7230),
-    BackendPlayStoreGenericError(7231);
+    BackendPlayStoreGenericError(7231),
+    BackendUserIneligibleForPromoOffer(7232),
+    BackendInvalidAppleSubscriptionKey(7234),
+    BackendInvalidSubscriberAttributes(7262);
 
     companion object {
         fun valueOf(backendErrorCode: Int) : BackendErrorCode? {
@@ -102,6 +108,9 @@ internal fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendPlayStoreQuotaExceeded -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendPlayStoreInvalidPackageName -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendPlayStoreGenericError -> PurchasesErrorCode.StoreProblemError
+        BackendErrorCode.BackendUserIneligibleForPromoOffer -> PurchasesErrorCode.IneligibleError
+        BackendErrorCode.BackendInvalidAppleSubscriptionKey -> PurchasesErrorCode.InvalidAppleSubscriptionKeyError
+        BackendErrorCode.BackendInvalidSubscriberAttributes -> PurchasesErrorCode.InvalidSubscriberAttributesError
     }
 }
 

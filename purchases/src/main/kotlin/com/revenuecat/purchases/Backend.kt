@@ -6,6 +6,7 @@
 package com.revenuecat.purchases
 
 import android.net.Uri
+import com.revenuecat.purchases.attributes.SubscriberAttribute
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -270,6 +271,38 @@ internal class Backend(
                     onSuccessHandler()
                 } else {
                     onErrorHandler(result.toPurchasesError())
+                }
+            }
+        })
+    }
+
+    fun postSubscriberAttributes(
+        attributes: Map<String, SubscriberAttribute>,
+        appUserID: String,
+        onSuccessHandler: () -> Unit,
+        onErrorHandler: (PurchasesError, syncedSuccessfully: Boolean) -> Unit
+    ) {
+        enqueue(object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPClient.Result {
+                val attributesMap = attributes.map { (key, subscriberAttribute) ->
+                    key to subscriberAttribute.toBackendMap()
+                }.toMap()
+                return httpClient.performRequest(
+                    "/subscribers/" + encode(appUserID) + "/attributes",
+                    mapOf("attributes" to attributesMap),
+                    authenticationHeaders
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                onErrorHandler(error, false)
+            }
+
+            override fun onCompletion(result: HTTPClient.Result) {
+                if (result.isSuccessful()) {
+                    onSuccessHandler()
+                } else {
+                    onErrorHandler(result.toPurchasesError(), result.responseCode < HTTP_SERVER_ERROR_CODE)
                 }
             }
         })

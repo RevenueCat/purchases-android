@@ -109,7 +109,7 @@ class SubscriberAttributeTests {
         val backendMap = subscriberAttribute.toBackendMap()
 
         assertThat(backendMap[BACKEND_NAME_VALUE]).isEqualTo(value)
-        assertThat(backendMap[BACKEND_NAME_TIMESTAMP]).isEqualTo(now)
+        assertThat(backendMap[BACKEND_NAME_TIMESTAMP]).isEqualTo(now.time)
     }
 
 }
