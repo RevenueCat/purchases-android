@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import com.android.billingclient.api.BillingClient
 import org.json.JSONException
+import org.json.JSONObject
 import java.io.IOException
 
 /**
@@ -155,3 +156,8 @@ internal fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String)
     }
     return PurchasesError(errorCode, underlyingErrorMessage)
 }
+
+internal data class SubscriberAttributeError(
+    val keyName: String,
+    val message: String
+)

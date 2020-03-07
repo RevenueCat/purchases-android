@@ -183,15 +183,24 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             null,
                             null,
                             unsyncedSubscriberAttributesByKey,
-                            { info ->
-                                subscriberAttributesManager.markAsSynced(appUserID, unsyncedSubscriberAttributesByKey)
+                            { info, _ ->
+                                subscriberAttributesManager.markAsSynced(
+                                    appUserID,
+                                    unsyncedSubscriberAttributesByKey,
+                                    emptyList()
+                                )
                                 deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 cachePurchaserInfo(info)
                                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                                 debugLog("Purchase $purchase synced")
                             },
-                            { error, errorIsFinishable ->
+                            { error, errorIsFinishable, attributeErrors ->
                                 if (errorIsFinishable) {
+                                    subscriberAttributesManager.markAsSynced(
+                                        appUserID,
+                                        unsyncedSubscriberAttributesByKey,
+                                        attributeErrors
+                                    )
                                     deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 }
                                 errorLog("Error syncing purchase: $purchase; Error: $error")
@@ -382,8 +391,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         null,
                                         null,
                                         unsyncedSubscriberAttributesByKey,
-                                        { info ->
-                                            subscriberAttributesManager.markAsSynced(appUserID, unsyncedSubscriberAttributesByKey)
+                                        { info, attributeErrors ->
+                                            subscriberAttributesManager.markAsSynced(
+                                                appUserID,
+                                                unsyncedSubscriberAttributesByKey,
+                                                attributeErrors
+                                            )
                                             consumeAndSave(finishTransactions, purchase)
                                             cachePurchaserInfo(info)
                                             sendUpdatedPurchaserInfoToDelegateIfChanged(info)
@@ -392,8 +405,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                                 dispatch { listener.onReceived(info) }
                                             }
                                         },
-                                        { error, errorIsFinishable ->
+                                        { error, errorIsFinishable, attributeErrors ->
                                             if (errorIsFinishable) {
+                                                subscriberAttributesManager.markAsSynced(
+                                                    appUserID,
+                                                    unsyncedSubscriberAttributesByKey,
+                                                    attributeErrors
+                                                )
                                                 consumeAndSave(finishTransactions, purchase)
                                             }
                                             errorLog("Error restoring purchase: $purchase; Error: $error")
@@ -816,15 +834,24 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             skuDetails?.priceAmount,
             skuDetails?.priceCurrencyCode,
             unsyncedSubscriberAttributesByKey,
-            { info ->
-                subscriberAttributesManager.markAsSynced(appUserID, unsyncedSubscriberAttributesByKey)
+            { info, attributeErrors ->
+                subscriberAttributesManager.markAsSynced(
+                    appUserID,
+                    unsyncedSubscriberAttributesByKey,
+                    attributeErrors
+                )
                 consumeAndSave(consumeAllTransactions, purchase)
                 cachePurchaserInfo(info)
                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
             },
-            { error, errorIsFinishable ->
+            { error, errorIsFinishable, attributeErrors ->
                 if (errorIsFinishable) {
+                    subscriberAttributesManager.markAsSynced(
+                        appUserID,
+                        unsyncedSubscriberAttributesByKey,
+                        attributeErrors
+                    )
                     consumeAndSave(consumeAllTransactions, purchase)
                 }
                 onError?.let { it(purchase, error) }

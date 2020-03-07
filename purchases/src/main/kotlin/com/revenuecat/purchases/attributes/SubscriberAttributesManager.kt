@@ -2,8 +2,10 @@ package com.revenuecat.purchases.attributes
 
 import com.revenuecat.purchases.Backend
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.SubscriberAttributeError
 import com.revenuecat.purchases.caching.DeviceCache
 import com.revenuecat.purchases.debugLog
+import com.revenuecat.purchases.errorLog
 
 internal class SubscriberAttributesManager(
     val deviceCache: DeviceCache,
@@ -37,12 +39,12 @@ internal class SubscriberAttributesManager(
                 unsyncedStoredAttributes,
                 appUserID,
                 {
-                    markAsSynced(appUserID, unsyncedStoredAttributes)
+                    markAsSynced(appUserID, unsyncedStoredAttributes, emptyList())
                     onSuccessHandler()
                 },
-                { error, errorIsFinishable ->
-                    if (errorIsFinishable) {
-                        markAsSynced(appUserID, unsyncedStoredAttributes)
+                { error, didBackendGetAttributes, attributeErrors ->
+                    if (didBackendGetAttributes) {
+                        markAsSynced(appUserID, unsyncedStoredAttributes, attributeErrors)
                     }
                     onErrorHandler(error)
                 }
@@ -61,8 +63,12 @@ internal class SubscriberAttributesManager(
     @Synchronized
     fun markAsSynced(
         appUserID: String,
-        attributesToMarkAsSynced: Map<String, SubscriberAttribute>
+        attributesToMarkAsSynced: Map<String, SubscriberAttribute>,
+        attributeErrors: List<SubscriberAttributeError>
     ) {
+        if (attributeErrors.isNotEmpty()) {
+            errorLog("There were some subscriber attributes errors: $attributeErrors")
+        }
         if (attributesToMarkAsSynced.isEmpty()) {
             return
         }
