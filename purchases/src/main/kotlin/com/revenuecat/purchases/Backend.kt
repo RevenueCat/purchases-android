@@ -13,14 +13,23 @@ import org.json.JSONObject
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 private const val HTTP_SERVER_ERROR_CODE = 500
 
+private const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
+private const val ATTRIBUTE_ERRORS = "attribute_errors"
+
+
 /** @suppress */
 internal typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
+
 /** @suppress */
-internal typealias PostReceiptCallback = Pair<(PurchaserInfo, List<SubscriberAttributeError>) -> Unit, (PurchasesError, shouldConsumePurchase: Boolean, List<SubscriberAttributeError>) -> Unit>
+internal typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, PostReceiptDataErrorCallback>
 /** @suppress */
 internal typealias CallbackCacheKey = List<String>
 /** @suppress */
 internal typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
+/** @suppress */
+internal typealias PostReceiptDataSuccessCallback = (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit
+/** @suppress */
+internal typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, List<SubscriberAttributeError>) -> Unit
 
 internal class Backend(
     private val apiKey: String,
@@ -105,8 +114,8 @@ internal class Backend(
         price: Double?,
         currency: String?,
         subscriberAttributes: Map<String, SubscriberAttribute>,
-        onSuccess: (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit,
-        onError: (PurchasesError, errorIsFinishable: Boolean, attributeErrors: List<SubscriberAttributeError>) -> Unit
+        onSuccess: PostReceiptDataSuccessCallback,
+        onError: PostReceiptDataErrorCallback
     ) {
         val cacheKey = listOfNotNull(
             purchaseToken,
@@ -145,10 +154,14 @@ internal class Backend(
                     postReceiptCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccess, onError) ->
                     try {
+                        val attributeErrors =
+                            result.body?.takeIf { it.has(ATTRIBUTES_ERROR_RESPONSE_KEY) }
+                                ?.getJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY)?.getAttributeErrors()
+                                ?: emptyList()
                         if (result.isSuccessful()) {
-                            onSuccess(result.body!!.buildPurchaserInfo(), result.body!!.getAttributeErrors())
+                            onSuccess(result.body!!.buildPurchaserInfo(), attributeErrors)
                         } else {
-                            onError(result.toPurchasesError(), result.responseCode < HTTP_SERVER_ERROR_CODE, result.body?.getAttributeErrors() ?: emptyList())
+                            onError(result.toPurchasesError(), result.responseCode < HTTP_SERVER_ERROR_CODE, attributeErrors)
                         }
                     } catch (e: JSONException) {
                         onError(e.toPurchasesError(), false, emptyList())
@@ -315,15 +328,21 @@ internal class Backend(
 
     private fun JSONObject.getAttributeErrors(): List<SubscriberAttributeError> {
         val attributesErrorsList = mutableListOf<SubscriberAttributeError>()
-        if (has("attribute_errors")) {
-            val jsonArray = getJSONArray("attribute_errors")
-            for (i in 0 until jsonArray.length()) {
-                val jsonObject = jsonArray.getJSONObject(i)
-                if (jsonObject.has("key_name") and jsonObject.has("message")) {
-                    attributesErrorsList.add(SubscriberAttributeError(
-                        jsonObject.getString("key_name"),
-                        jsonObject.getString("message")
-                    ))
+        val attributeErrorsJSONObject =
+            if (has(ATTRIBUTES_ERROR_RESPONSE_KEY)) getJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY) else this
+        if (attributeErrorsJSONObject.has(ATTRIBUTE_ERRORS)) {
+            getJSONArray(ATTRIBUTE_ERRORS).let { jsonArray ->
+                for (i in 0 until jsonArray.length()) {
+                    with(jsonArray.getJSONObject(i)) {
+                        if (has("key_name") && has("message")) {
+                            attributesErrorsList.add(
+                                SubscriberAttributeError(
+                                    getString("key_name"),
+                                    getString("message")
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }

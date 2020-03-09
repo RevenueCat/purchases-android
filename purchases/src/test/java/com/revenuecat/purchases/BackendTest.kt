@@ -7,7 +7,6 @@ package com.revenuecat.purchases
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.attributes.SubscriberAttribute
 import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk
@@ -68,7 +67,13 @@ class BackendTest {
             this@BackendTest.receivedPurchaserInfo = info
         }
 
-    private val postReceiptErrorCallback: (PurchasesError, Boolean) -> Unit = { error, _ ->
+    private val onReceivePostReceiptSuccessHandler: (PurchaserInfo, List<SubscriberAttributeError>) -> Unit =
+        { info, _ ->
+            this@BackendTest.receivedPurchaserInfo = info
+        }
+
+    private val postReceiptErrorCallback: (PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit =
+        { error, _, _ ->
         this@BackendTest.receivedError = error
     }
 
@@ -162,7 +167,7 @@ class BackendTest {
             price,
             currency,
             emptyMap(),
-            onReceivePurchaserInfoSuccessHandler,
+            onReceivePostReceiptSuccessHandler,
             postReceiptErrorCallback
         )
 
@@ -468,7 +473,7 @@ class BackendTest {
             null,
             null,
             emptyMap(),
-            {
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback
@@ -483,7 +488,7 @@ class BackendTest {
             null,
             null,
             emptyMap(),
-            {
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback
@@ -586,7 +591,7 @@ class BackendTest {
             null,
             null,
             emptyMap(),
-            {
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback
@@ -612,7 +617,7 @@ class BackendTest {
             null,
             null,
             emptyMap(),
-            {
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback
@@ -697,7 +702,7 @@ class BackendTest {
             null,
             null,
             emptyMap(),
-            {
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback
@@ -712,7 +717,7 @@ class BackendTest {
             2.5,
             "USD",
             emptyMap(),
-            {
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback

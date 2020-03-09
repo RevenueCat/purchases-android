@@ -6,6 +6,7 @@ import com.revenuecat.purchases.HTTPClient
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.SubscriberAttributeError
 import com.revenuecat.purchases.SyncDispatcher
 import com.revenuecat.purchases.buildPurchaserInfo
 import com.revenuecat.purchases.toBackendMap
@@ -33,8 +34,54 @@ class SubscriberAttributesBackendTests {
         mockClient
     )
 
+    private var receivedError: PurchasesError? = null
+    private var receivedSyncedSuccessfully: Boolean? = null
+    private var receivedAttributeErrors: List<SubscriberAttributeError>? = null
+    private var receivedPurchaserInfo: PurchaserInfo? = null
+    private var receivedOnSuccess = false
+
+    private val expectedOnError: (PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit =
+        { error, syncedSuccessfully, attributeErrors ->
+            receivedError = error
+            receivedSyncedSuccessfully = syncedSuccessfully
+            receivedAttributeErrors = attributeErrors
+        }
+
+    private val expectedOnSuccessPurchaserInfo: (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit =
+        { info, attributeErrors ->
+            receivedPurchaserInfo = info
+            receivedAttributeErrors = attributeErrors
+        }
+
+    private val expectedOnSuccess: () -> Unit =
+        {
+            receivedOnSuccess = true
+        }
+
+    private val unexpectedOnError: (PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit =
+        { _, _, _ ->
+            fail("Shouldn't be error.")
+        }
+
+    private val unexpectedOnSuccessPurchaserInfo: (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit =
+        { _, _ ->
+            fail("Shouldn't be success.")
+        }
+
+    private val unexpectedOnSuccess: () -> Unit =
+        {
+            fail("Shouldn't be success.")
+        }
+
     @Before
-    fun setup() = mockkStatic("com.revenuecat.purchases.FactoriesKt")
+    fun setup() {
+        mockkStatic("com.revenuecat.purchases.FactoriesKt")
+        receivedError = null
+        receivedSyncedSuccessfully = null
+        receivedAttributeErrors = null
+        receivedPurchaserInfo = null
+        receivedOnSuccess = false
+    }
 
     // region posting attributes
 
@@ -42,108 +89,84 @@ class SubscriberAttributesBackendTests {
     fun `posting subscriber attributes works`() {
         mockResponse("/subscribers/$appUserID/attributes", 200)
 
-        var received = false
         underTest.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", "un@email.com")),
             appUserID,
-            {
-                received = true
-            },
-            { _, _ ->
-                fail("should be success")
-            }
+            expectedOnSuccess,
+            unexpectedOnError
         )
-        assertThat(received).isTrue()
+        assertThat(receivedOnSuccess).isTrue()
     }
 
     @Test
     fun `posting null subscriber attributes works`() {
         mockResponse("/subscribers/$appUserID/attributes", 200)
 
-        var received = false
         underTest.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)),
             appUserID,
-            {
-                received = true
-            },
-            { _, _ ->
-                fail("should be success")
-            }
+            expectedOnSuccess,
+            unexpectedOnError
         )
-        assertThat(received).isTrue()
+        assertThat(receivedOnSuccess).isTrue()
     }
 
     @Test
     fun `error when posting attributes`() {
         mockResponse("/subscribers/$appUserID/attributes", 0, clientException = IOException())
 
-        var receivedError: PurchasesError? = null
-        var receivedSyncedSuccessfully: Boolean? = null
         underTest.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)),
             appUserID,
-            {
-                fail("should be failure")
-            },
-            { error, syncedSuccessfully ->
-                receivedError = error
-                receivedSyncedSuccessfully = syncedSuccessfully
-            }
+            unexpectedOnSuccess,
+            expectedOnError
         )
+
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
         assertThat(receivedSyncedSuccessfully).isFalse()
+        assertThat(receivedAttributeErrors).isEmpty()
     }
 
     @Test
     fun `attributes validation error when posting attributes`() {
-        mockResponse("/subscribers/$appUserID/attributes", 400, expectedResultBody = "{\n" +
-            "  \"code\": 7262,\n" +
-            "  \"message\": \"Some subscriber attributes keys were unable to saved.\",\n" +
-            "  \"attribute_erors\": [\n" +
-            "    {\n" +
-            "      \"key_name\": \"email\",\n" +
-            "      \"message\": \"Value is not a valid email address.\"\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}")
+        mockResponse(
+            "/subscribers/$appUserID/attributes",
+            400,
+            expectedResultBody = "{" +
+                "'code': 7262," +
+                "'message': 'Some subscriber attributes keys were unable to saved.'," +
+                "'attribute_errors':" +
+                "[{'key_name': 'email', 'message': 'Value is not a valid email address.'}]}"
+        )
 
-        var receivedError: PurchasesError? = null
-        var receivedSyncedSuccessfully: Boolean? = null
         underTest.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)),
             appUserID,
-            {
-                fail("should be failure")
-            },
-            { error,  syncedSuccessfully ->
-                receivedError = error
-                receivedSyncedSuccessfully = syncedSuccessfully
-            }
+            unexpectedOnSuccess,
+            expectedOnError
         )
+
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.InvalidSubscriberAttributesError)
         assertThat(receivedSyncedSuccessfully).isTrue()
+        assertThat(receivedAttributeErrors!!.size).isEqualTo(1)
+        assertThat(receivedAttributeErrors!![0].keyName).isEqualTo("email")
+        assertThat(receivedAttributeErrors!![0].message).isEqualTo("Value is not a valid email address.")
     }
 
     @Test
     fun `backend error when posting attributes`() {
         mockResponse("/subscribers/$appUserID/attributes", 503)
 
-        var receivedError: PurchasesError? = null
-        var receivedSyncedSuccessfully: Boolean? = null
         underTest.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)),
             appUserID,
-            {
-                fail("should be failure")
-            },
-            { error, syncedSuccessfully ->
-                receivedError = error
-                receivedSyncedSuccessfully = syncedSuccessfully
-            }
+            unexpectedOnSuccess,
+            expectedOnError
         )
+
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
         assertThat(receivedSyncedSuccessfully).isFalse()
+        assertThat(receivedAttributeErrors).isEmpty()
     }
 
     // endregion
@@ -152,7 +175,7 @@ class SubscriberAttributesBackendTests {
 
     private val subscriberAttribute1 = SubscriberAttribute("key", "value")
     private val subscriberAttribute2 = SubscriberAttribute("key1", null)
-    private val mapOfSubscriberAttributes = mapOf<String, SubscriberAttribute>(
+    private val mapOfSubscriberAttributes = mapOf(
         "key" to subscriberAttribute1,
         "key1" to subscriberAttribute2
     )
@@ -163,7 +186,7 @@ class SubscriberAttributesBackendTests {
     fun `posting receipt with attributes works`() {
         mockPostReceiptResponse(mapOfSubscriberAttributes)
 
-        var receivedPurchaserInfo: PurchaserInfo? = null
+
         underTest.postReceiptData(
             fetchToken,
             appUserID,
@@ -174,12 +197,8 @@ class SubscriberAttributesBackendTests {
             null,
             null,
             mapOfSubscriberAttributes,
-            {
-                receivedPurchaserInfo = it
-            },
-            { _ , _ ->
-
-            }
+            expectedOnSuccessPurchaserInfo,
+            unexpectedOnError
         )
 
         assertThat(receivedPurchaserInfo).isNotNull
@@ -192,7 +211,6 @@ class SubscriberAttributesBackendTests {
     fun `posting receipt without attributes skips them`() {
         mockPostReceiptResponse(mapOfSubscriberAttributes)
 
-        var receivedPurchaserInfo: PurchaserInfo? = null
         underTest.postReceiptData(
             fetchToken,
             appUserID,
@@ -203,15 +221,12 @@ class SubscriberAttributesBackendTests {
             null,
             null,
             emptyMap(),
-            {
-                receivedPurchaserInfo = it
-            },
-            { _ , _ ->
-
-            }
+            expectedOnSuccessPurchaserInfo,
+            unexpectedOnError
         )
 
         assertThat(receivedPurchaserInfo).isNotNull
+        assertThat(receivedAttributeErrors).isEmpty()
         val actualPostReceiptBody = actualPostReceiptBodySlot.captured
         assertThat(actualPostReceiptBody).isNotNull()
         assertThat(actualPostReceiptBody["attributes"]).isNull()
@@ -270,7 +285,7 @@ class SubscriberAttributesBackendTests {
         } answers {
             HTTPClient.Result().also {
                 it.responseCode = 200
-                it.body = JSONObject( "{}")
+                it.body = JSONObject("{}")
                 every {
                     it.body!!.buildPurchaserInfo()
                 } returns mockk()
