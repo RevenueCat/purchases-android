@@ -1,0 +1,67 @@
+{
+  "request_date": "2019-08-16T10:30:42Z",
+  "request_date_ms": 1565951442879,
+  "attributes_error_response": {
+    "attribute_errors": [{
+      "key_name": "invalid_name",
+      "message": "Attribute key name is not valid."
+    }],
+    "code": 7262,
+    "message": "Some subscriber attributes keys were unable to saved."
+  },
+  "subscriber": {
+    "original_app_user_id": "app_user_id",
+    "original_application_version": "2083",
+    "first_seen": "2019-06-17T16:05:33Z",
+    "non_subscriptions": {
+      "onetime_purchase": [
+        {
+          "id": "72c26cc69c",
+          "is_sandbox": true,
+          "original_purchase_date": "1990-08-30T02:40:36Z",
+          "purchase_date": "1990-08-30T02:40:36Z",
+          "store": "app_store"
+        }
+      ]
+    },
+    "subscriptions": {
+      "onemonth_freetrial": {
+        "billing_issues_detected_at": null,
+        "is_sandbox": true,
+        "original_purchase_date": "2019-07-26T23:30:41Z",
+        "purchase_date": "2019-07-26T23:45:40Z",
+        "store": "app_store",
+        "unsubscribe_detected_at": null,
+        "expires_date": "2100-04-06T20:54:45.975000Z",
+        "period_type": "normal"
+      },
+      "threemonth_freetrial": {
+        "billing_issues_detected_at": null,
+        "is_sandbox": true,
+        "original_purchase_date": "2019-07-26T23:30:41Z",
+        "purchase_date": "2019-07-26T23:45:40Z",
+        "store": "app_store",
+        "unsubscribe_detected_at": null,
+        "period_type": "normal",
+        "expires_date": "1990-08-30T02:40:36Z"
+      }
+    },
+    "entitlements": {
+      "pro": {
+        "expires_date": "2100-04-06T20:54:45.975000Z",
+        "product_identifier": "onemonth_freetrial",
+        "purchase_date": "2018-10-26T23:17:53Z"
+      },
+      "old_pro": {
+        "expires_date": "1990-08-30T02:40:36Z",
+        "product_identifier": "threemonth_freetrial",
+        "purchase_date": "1990-06-30T02:40:36Z"
+      },
+      "forever_pro": {
+        "expires_date": null,
+        "product_identifier": "onetime_purchase",
+        "purchase_date": "1990-08-30T02:40:36Z"
+      }
+    }
+  }
+}

@@ -61,11 +61,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 ) : LifecycleDelegate {
 
     /** @suppress */
-    @get:Synchronized
-    @set:Synchronized
+    @Suppress("RedundantGetter", "RedundantSetter")
     @Volatile
     @JvmSynthetic
     internal var state = PurchasesState()
+        @JvmSynthetic @Synchronized get() = field
+        @JvmSynthetic @Synchronized set(value) {
+            field = value
+        }
 
     /*
     * If it should allow sharing Play Store accounts. False by
@@ -183,11 +186,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             null,
                             null,
                             unsyncedSubscriberAttributesByKey,
-                            { info, _ ->
+                            { info, attributeErrors ->
                                 subscriberAttributesManager.markAsSynced(
                                     appUserID,
                                     unsyncedSubscriberAttributesByKey,
-                                    emptyList()
+                                    attributeErrors
                                 )
                                 deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 cachePurchaserInfo(info)
@@ -626,6 +629,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     // region Internal Methods
 
+    @JvmSynthetic
     internal fun postAttributionData(
         jsonObject: JSONObject,
         network: AttributionNetwork,
@@ -813,7 +817,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun postToBackend(
+    @JvmSynthetic
+    internal fun postToBackend(
         purchase: PurchaseWrapper,
         skuDetails: SkuDetails?,
         allowSharingPlayStoreAccount: Boolean,

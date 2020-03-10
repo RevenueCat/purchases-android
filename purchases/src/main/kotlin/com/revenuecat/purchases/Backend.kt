@@ -14,7 +14,7 @@ private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 private const val HTTP_SERVER_ERROR_CODE = 500
 
 private const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
-private const val ATTRIBUTE_ERRORS = "attribute_errors"
+private const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
 
 
 /** @suppress */
@@ -29,7 +29,7 @@ internal typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesErro
 /** @suppress */
 internal typealias PostReceiptDataSuccessCallback = (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit
 /** @suppress */
-internal typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, List<SubscriberAttributeError>) -> Unit
+internal typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, attributeErrors: List<SubscriberAttributeError>) -> Unit
 
 internal class Backend(
     private val apiKey: String,
@@ -155,9 +155,7 @@ internal class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     try {
                         val attributeErrors =
-                            result.body?.takeIf { it.has(ATTRIBUTES_ERROR_RESPONSE_KEY) }
-                                ?.getJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY)?.getAttributeErrors()
-                                ?: emptyList()
+                            result.body?.getAttributeErrors() ?: emptyList()
                         if (result.isSuccessful()) {
                             onSuccess(result.body!!.buildPurchaserInfo(), attributeErrors)
                         } else {
@@ -326,12 +324,17 @@ internal class Backend(
         })
     }
 
+    // Returns list of attribute errors found in the JSON object. The errors can be under
+    // ATTRIBUTES_ERROR_RESPONSE_KEY (for post receipt calls) or under
+    // ATTRIBUTE_ERRORS_KEY (for post subscriber attributes calls). If no attribute errors,
+    // returns an empty list
     private fun JSONObject.getAttributeErrors(): List<SubscriberAttributeError> {
         val attributesErrorsList = mutableListOf<SubscriberAttributeError>()
         val attributeErrorsJSONObject =
-            if (has(ATTRIBUTES_ERROR_RESPONSE_KEY)) getJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY) else this
-        if (attributeErrorsJSONObject.has(ATTRIBUTE_ERRORS)) {
-            getJSONArray(ATTRIBUTE_ERRORS).let { jsonArray ->
+            if (has(ATTRIBUTES_ERROR_RESPONSE_KEY)) getJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY)
+            else this
+        if (attributeErrorsJSONObject.has(ATTRIBUTE_ERRORS_KEY)) {
+            attributeErrorsJSONObject.getJSONArray(ATTRIBUTE_ERRORS_KEY).let { jsonArray ->
                 for (i in 0 until jsonArray.length()) {
                     with(jsonArray.getJSONObject(i)) {
                         if (has("key_name") && has("message")) {

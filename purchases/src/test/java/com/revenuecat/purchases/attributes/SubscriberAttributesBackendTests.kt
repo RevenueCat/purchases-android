@@ -6,6 +6,7 @@ import com.revenuecat.purchases.HTTPClient
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.Responses
 import com.revenuecat.purchases.SubscriberAttributeError
 import com.revenuecat.purchases.SyncDispatcher
 import com.revenuecat.purchases.buildPurchaserInfo
@@ -47,7 +48,7 @@ class SubscriberAttributesBackendTests {
             receivedAttributeErrors = attributeErrors
         }
 
-    private val expectedOnSuccessPurchaserInfo: (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit =
+    private val expectedOnSuccessPostReceipt: (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit =
         { info, attributeErrors ->
             receivedPurchaserInfo = info
             receivedAttributeErrors = attributeErrors
@@ -63,7 +64,7 @@ class SubscriberAttributesBackendTests {
             fail("Shouldn't be error.")
         }
 
-    private val unexpectedOnSuccessPurchaserInfo: (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit =
+    private val unexpectedOnSuccessPostReceipt: (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit =
         { _, _ ->
             fail("Shouldn't be success.")
         }
@@ -188,17 +189,17 @@ class SubscriberAttributesBackendTests {
 
 
         underTest.postReceiptData(
-            fetchToken,
-            appUserID,
-            productID,
-            false,
-            null,
-            false,
-            null,
-            null,
-            mapOfSubscriberAttributes,
-            expectedOnSuccessPurchaserInfo,
-            unexpectedOnError
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            productID = productID,
+            isRestore = false,
+            offeringIdentifier = null,
+            observerMode = false,
+            price = null,
+            currency = null,
+            subscriberAttributes = mapOfSubscriberAttributes,
+            onSuccess = expectedOnSuccessPostReceipt,
+            onError = unexpectedOnError
         )
 
         assertThat(receivedPurchaserInfo).isNotNull
@@ -212,17 +213,17 @@ class SubscriberAttributesBackendTests {
         mockPostReceiptResponse(mapOfSubscriberAttributes)
 
         underTest.postReceiptData(
-            fetchToken,
-            appUserID,
-            productID,
-            false,
-            null,
-            false,
-            null,
-            null,
-            emptyMap(),
-            expectedOnSuccessPurchaserInfo,
-            unexpectedOnError
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            productID = productID,
+            isRestore = false,
+            offeringIdentifier = null,
+            observerMode = false,
+            price = null,
+            currency = null,
+            subscriberAttributes = emptyMap(),
+            onSuccess = expectedOnSuccessPostReceipt,
+            onError = unexpectedOnError
         )
 
         assertThat(receivedPurchaserInfo).isNotNull
@@ -232,6 +233,89 @@ class SubscriberAttributesBackendTests {
         assertThat(actualPostReceiptBody["attributes"]).isNull()
     }
 
+    @Test
+    fun `200 but subscriber attribute errors when posting receipt`() {
+        mockPostReceiptResponse(
+            mapOfSubscriberAttributes,
+            responseCode = 200,
+            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
+        )
+
+        underTest.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            productID = productID,
+            isRestore = false,
+            offeringIdentifier = null,
+            observerMode = false,
+            price = null,
+            currency = null,
+            subscriberAttributes = emptyMap(),
+            onSuccess = expectedOnSuccessPostReceipt,
+            onError = unexpectedOnError
+        )
+
+        assertThat(receivedPurchaserInfo).isNotNull
+        assertThat(receivedAttributeErrors).isNotEmpty
+        assertThat(receivedAttributeErrors?.get(0)?.keyName).isEqualTo("invalid_name")
+        assertThat(receivedAttributeErrors?.get(0)?.message).isEqualTo("Attribute key name is not valid.")
+    }
+
+    @Test
+    fun `505 and subscriber attribute errors when posting receipt`() {
+        mockPostReceiptResponse(
+            mapOfSubscriberAttributes,
+            responseCode = 505,
+            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
+        )
+
+        underTest.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            productID = productID,
+            isRestore = false,
+            offeringIdentifier = null,
+            observerMode = false,
+            price = null,
+            currency = null,
+            subscriberAttributes = emptyMap(),
+            onSuccess = unexpectedOnSuccessPostReceipt,
+            onError = expectedOnError
+        )
+
+        assertThat(receivedPurchaserInfo).isNull()
+        assertThat(receivedAttributeErrors).isNotEmpty
+        assertThat(receivedAttributeErrors?.get(0)?.keyName).isEqualTo("invalid_name")
+        assertThat(receivedAttributeErrors?.get(0)?.message).isEqualTo("Attribute key name is not valid.")
+    }
+
+    @Test
+    fun `304 and subscriber attribute errors when posting receipt`() {
+        mockPostReceiptResponse(
+            mapOfSubscriberAttributes,
+            responseCode = 304,
+            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
+        )
+
+        underTest.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            productID = productID,
+            isRestore = false,
+            offeringIdentifier = null,
+            observerMode = false,
+            price = null,
+            currency = null,
+            subscriberAttributes = emptyMap(),
+            onSuccess = unexpectedOnSuccessPostReceipt,
+            onError = expectedOnError
+        )
+
+        assertThat(receivedPurchaserInfo).isNull()
+        assertThat(receivedAttributeErrors).isNotEmpty
+        assertThat(receivedAttributeErrors?.get(0)?.keyName).isEqualTo("invalid_name")
+        assertThat(receivedAttributeErrors?.get(0)?.message).isEqualTo("Attribute key name is not valid.")
+    }
     // endregion
 
     private fun mockResponse(
@@ -263,7 +347,9 @@ class SubscriberAttributesBackendTests {
 
     private val actualPostReceiptBodySlot = slot<Map<*, *>>()
     private fun mockPostReceiptResponse(
-        attributes: Map<String, SubscriberAttribute>?
+        attributes: Map<String, SubscriberAttribute>?,
+        responseCode: Int = 200,
+        responseBody: String = "{}"
     ) {
         val expectedBody = mapOf(
             "fetch_token" to fetchToken,
@@ -284,8 +370,8 @@ class SubscriberAttributesBackendTests {
             )
         } answers {
             HTTPClient.Result().also {
-                it.responseCode = 200
-                it.body = JSONObject("{}")
+                it.responseCode = responseCode
+                it.body = JSONObject(responseBody)
                 every {
                     it.body!!.buildPurchaserInfo()
                 } returns mockk()
