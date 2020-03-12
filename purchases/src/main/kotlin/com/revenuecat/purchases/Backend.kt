@@ -139,9 +139,7 @@ internal class Backend(
             "price" to price,
             "currency" to currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() }?.toBackendMap()
-        ).mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }.toMap()
+        ).filterValues { value -> value != null }
 
         val call = object : Dispatcher.AsyncCall() {
 
@@ -171,7 +169,11 @@ internal class Backend(
                 synchronized(this@Backend) {
                     postReceiptCallbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
-                    onError(error, false, emptyList())
+                    onError(
+                        error,
+                        false,
+                        emptyList()
+                    )
                 }
             }
         }
@@ -315,9 +317,10 @@ internal class Backend(
                 } else {
                     val error = result.toPurchasesError()
                     var attributeErrors: List<SubscriberAttributeError> = emptyList()
-                    if (error.code == PurchasesErrorCode.InvalidSubscriberAttributesError) {
-                        attributeErrors = result.body!!.getAttributeErrors()
-                    }
+                    result.body?.takeIf { error.code == PurchasesErrorCode.InvalidSubscriberAttributesError }
+                        ?.let { body ->
+                            attributeErrors = body.getAttributeErrors()
+                        }
                     onErrorHandler(error, result.responseCode < HTTP_SERVER_ERROR_CODE, attributeErrors)
                 }
             }
@@ -329,27 +332,29 @@ internal class Backend(
     // ATTRIBUTE_ERRORS_KEY (for post subscriber attributes calls). If no attribute errors,
     // returns an empty list
     private fun JSONObject.getAttributeErrors(): List<SubscriberAttributeError> {
-        val attributesErrorsList = mutableListOf<SubscriberAttributeError>()
         val attributeErrorsJSONObject =
-            if (has(ATTRIBUTES_ERROR_RESPONSE_KEY)) getJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY)
-            else this
-        if (attributeErrorsJSONObject.has(ATTRIBUTE_ERRORS_KEY)) {
-            attributeErrorsJSONObject.getJSONArray(ATTRIBUTE_ERRORS_KEY).let { jsonArray ->
-                for (i in 0 until jsonArray.length()) {
-                    with(jsonArray.getJSONObject(i)) {
-                        if (has("key_name") && has("message")) {
-                            attributesErrorsList.add(
-                                SubscriberAttributeError(
-                                    getString("key_name"),
-                                    getString("message")
-                                )
+            if (has(ATTRIBUTES_ERROR_RESPONSE_KEY))
+                getJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY)
+            else
+                this
+
+        return if (attributeErrorsJSONObject.has(ATTRIBUTE_ERRORS_KEY)) {
+            attributeErrorsJSONObject.getJSONArray(ATTRIBUTE_ERRORS_KEY)
+                .let { jsonArray ->
+                    (0 until jsonArray.length())
+                        .map { index -> jsonArray.getJSONObject(index) }
+                        .filter { it.has("key_name") && it.has("message") }
+                        .map {
+                            SubscriberAttributeError(
+                                it.getString("key_name"),
+                                it.getString("message")
                             )
                         }
-                    }
+                        .toList()
                 }
-            }
+        } else {
+            emptyList()
         }
-        return attributesErrorsList.toList()
     }
 
     private fun HTTPClient.Result.isSuccessful(): Boolean {

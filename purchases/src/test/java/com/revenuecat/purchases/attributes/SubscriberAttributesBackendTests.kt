@@ -10,7 +10,6 @@ import com.revenuecat.purchases.Responses
 import com.revenuecat.purchases.SubscriberAttributeError
 import com.revenuecat.purchases.SyncDispatcher
 import com.revenuecat.purchases.buildPurchaserInfo
-import com.revenuecat.purchases.toBackendMap
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -155,6 +154,29 @@ class SubscriberAttributesBackendTests {
     }
 
     @Test
+    fun `empty attributes validation errors when posting attributes`() {
+        mockResponse(
+            "/subscribers/$appUserID/attributes",
+            400,
+            expectedResultBody = "{" +
+                "'code': 7262," +
+                "'message': 'Some subscriber attributes keys were unable to saved.'," +
+                "'attribute_errors':[]}"
+        )
+
+        underTest.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", null)),
+            appUserID,
+            unexpectedOnSuccess,
+            expectedOnError
+        )
+
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        assertThat(receivedSyncedSuccessfully).isTrue()
+        assertThat(receivedAttributeErrors).isEmpty()
+    }
+
+    @Test
     fun `backend error when posting attributes`() {
         mockResponse("/subscribers/$appUserID/attributes", 503)
 
@@ -185,7 +207,7 @@ class SubscriberAttributesBackendTests {
 
     @Test
     fun `posting receipt with attributes works`() {
-        mockPostReceiptResponse(mapOfSubscriberAttributes)
+        mockPostReceiptResponse()
 
 
         underTest.postReceiptData(
@@ -210,7 +232,7 @@ class SubscriberAttributesBackendTests {
 
     @Test
     fun `posting receipt without attributes skips them`() {
-        mockPostReceiptResponse(mapOfSubscriberAttributes)
+        mockPostReceiptResponse()
 
         underTest.postReceiptData(
             purchaseToken = fetchToken,
@@ -236,7 +258,6 @@ class SubscriberAttributesBackendTests {
     @Test
     fun `200 but subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
-            mapOfSubscriberAttributes,
             responseCode = 200,
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
@@ -264,7 +285,6 @@ class SubscriberAttributesBackendTests {
     @Test
     fun `505 and subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
-            mapOfSubscriberAttributes,
             responseCode = 505,
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
@@ -292,7 +312,6 @@ class SubscriberAttributesBackendTests {
     @Test
     fun `304 and subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
-            mapOfSubscriberAttributes,
             responseCode = 304,
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
@@ -347,21 +366,9 @@ class SubscriberAttributesBackendTests {
 
     private val actualPostReceiptBodySlot = slot<Map<*, *>>()
     private fun mockPostReceiptResponse(
-        attributes: Map<String, SubscriberAttribute>?,
         responseCode: Int = 200,
         responseBody: String = "{}"
     ) {
-        val expectedBody = mapOf(
-            "fetch_token" to fetchToken,
-            "app_user_id" to appUserID,
-            "product_id" to productID,
-            "is_restore" to false,
-            "observer_mode" to false,
-            "attributes" to attributes?.toBackendMap()
-        ).mapNotNull { (key, value) ->
-            value?.let { key to it }
-        }.toMap()
-
         every {
             mockClient.performRequest(
                 "/receipts",
