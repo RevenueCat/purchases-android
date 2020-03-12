@@ -61,11 +61,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 ) : LifecycleDelegate {
 
     /** @suppress */
-    @get:Synchronized
-    @set:Synchronized
+    @Suppress("RedundantGetter", "RedundantSetter")
     @Volatile
     @JvmSynthetic
     internal var state = PurchasesState()
+        @JvmSynthetic @Synchronized get() = field
+        @JvmSynthetic @Synchronized set(value) {
+            field = value
+        }
 
     /*
     * If it should allow sharing Play Store accounts. False by
@@ -171,6 +174,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (allPurchases.isNotEmpty()) {
                 identityManager.currentAppUserID.let { appUserID ->
                     allPurchases.forEach { purchase ->
+                        val unsyncedSubscriberAttributesByKey =
+                            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
                         backend.postReceiptData(
                             purchase.purchaseToken,
                             appUserID,
@@ -180,17 +185,30 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             !this.finishTransactions,
                             null,
                             null,
-                            { info ->
+                            unsyncedSubscriberAttributesByKey,
+                            { info, attributeErrors ->
+                                subscriberAttributesManager.markAsSynced(
+                                    appUserID,
+                                    unsyncedSubscriberAttributesByKey,
+                                    attributeErrors
+                                )
                                 deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 cachePurchaserInfo(info)
                                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                                 debugLog("Purchase $purchase synced")
-                            }, { error, errorIsFinishable ->
+                            },
+                            { error, errorIsFinishable, attributeErrors ->
                                 if (errorIsFinishable) {
+                                    subscriberAttributesManager.markAsSynced(
+                                        appUserID,
+                                        unsyncedSubscriberAttributesByKey,
+                                        attributeErrors
+                                    )
                                     deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 }
                                 errorLog("Error syncing purchase: $purchase; Error: $error")
-                            })
+                            }
+                        )
                     }
                 }
             }
@@ -362,6 +380,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                             identityManager.currentAppUserID.let { appUserID ->
                                 sortedByTime.forEach { purchase ->
+                                    val unsyncedSubscriberAttributesByKey =
+                                        subscriberAttributesManager.getUnsyncedSubscriberAttributes(
+                                            appUserID
+                                        )
                                     backend.postReceiptData(
                                         purchase.purchaseToken,
                                         appUserID,
@@ -371,7 +393,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         !finishTransactions,
                                         null,
                                         null,
-                                        { info ->
+                                        unsyncedSubscriberAttributesByKey,
+                                        { info, attributeErrors ->
+                                            subscriberAttributesManager.markAsSynced(
+                                                appUserID,
+                                                unsyncedSubscriberAttributesByKey,
+                                                attributeErrors
+                                            )
                                             consumeAndSave(finishTransactions, purchase)
                                             cachePurchaserInfo(info)
                                             sendUpdatedPurchaserInfoToDelegateIfChanged(info)
@@ -379,15 +407,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                             if (sortedByTime.last() == purchase) {
                                                 dispatch { listener.onReceived(info) }
                                             }
-                                        }, { error, errorIsFinishable ->
+                                        },
+                                        { error, errorIsFinishable, attributeErrors ->
                                             if (errorIsFinishable) {
+                                                subscriberAttributesManager.markAsSynced(
+                                                    appUserID,
+                                                    unsyncedSubscriberAttributesByKey,
+                                                    attributeErrors
+                                                )
                                                 consumeAndSave(finishTransactions, purchase)
                                             }
                                             errorLog("Error restoring purchase: $purchase; Error: $error")
                                             if (sortedByTime.last() == purchase) {
                                                 dispatch { listener.onError(error) }
                                             }
-                                        })
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -594,6 +629,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     // region Internal Methods
 
+    @JvmSynthetic
     internal fun postAttributionData(
         jsonObject: JSONObject,
         network: AttributionNetwork,
@@ -755,6 +791,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         purchases: List<PurchaseWrapper>,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
+        appUserID: String,
         onSuccess: ((PurchaseWrapper, PurchaserInfo) -> Unit)? = null,
         onError: ((PurchaseWrapper, PurchasesError) -> Unit)? = null
     ) {
@@ -765,12 +802,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         BillingClient.SkuType.INAPP,
                         listOf(purchase.sku),
                         { skuDetailsList ->
-                            postToBackend(purchase, skuDetailsList.first { it.sku == purchase.sku }, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError)
+                            postToBackend(purchase, skuDetailsList.first { it.sku == purchase.sku }, allowSharingPlayStoreAccount, consumeAllTransactions, appUserID, onSuccess, onError)
                         },
-                        { postToBackend(purchase, null, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError) }
+                        { postToBackend(purchase, null, allowSharingPlayStoreAccount, consumeAllTransactions, appUserID, onSuccess, onError) }
                     )
                 } else {
-                    postToBackend(purchase,null, allowSharingPlayStoreAccount, consumeAllTransactions, onSuccess, onError)
+                    postToBackend(purchase,null, allowSharingPlayStoreAccount, consumeAllTransactions, appUserID, onSuccess, onError)
                 }
             } else {
                 onError?.let { onError ->
@@ -780,14 +817,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun postToBackend(
+    @JvmSynthetic
+    internal fun postToBackend(
         purchase: PurchaseWrapper,
         skuDetails: SkuDetails?,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
+        appUserID: String,
         onSuccess: ((PurchaseWrapper, PurchaserInfo) -> Unit)? = null,
         onError: ((PurchaseWrapper, PurchasesError) -> Unit)? = null
     ) {
+        val unsyncedSubscriberAttributesByKey =
+            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
         backend.postReceiptData(
             purchase.purchaseToken,
             appUserID,
@@ -797,17 +838,30 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             !consumeAllTransactions,
             skuDetails?.priceAmount,
             skuDetails?.priceCurrencyCode,
-            { info ->
+            unsyncedSubscriberAttributesByKey,
+            { info, attributeErrors ->
+                subscriberAttributesManager.markAsSynced(
+                    appUserID,
+                    unsyncedSubscriberAttributesByKey,
+                    attributeErrors
+                )
                 consumeAndSave(consumeAllTransactions, purchase)
                 cachePurchaserInfo(info)
                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
-            }, { error, errorIsFinishable ->
+            },
+            { error, errorIsFinishable, attributeErrors ->
                 if (errorIsFinishable) {
+                    subscriberAttributesManager.markAsSynced(
+                        appUserID,
+                        unsyncedSubscriberAttributesByKey,
+                        attributeErrors
+                    )
                     consumeAndSave(consumeAllTransactions, purchase)
                 }
                 onError?.let { it(purchase, error) }
-            })
+            }
+        )
     }
 
     private fun consumeAndSave(
@@ -959,6 +1013,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     purchases,
                     allowSharingPlayStoreAccount,
                     finishTransactions,
+                    appUserID,
                     { purchaseWrapper, info ->
                         getPurchaseCallback(purchaseWrapper.sku)?.let { callback ->
                             dispatch {
@@ -1061,7 +1116,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                 queryUnconsumedInAppsRequest.purchasesByHashedToken
                             ),
                             allowSharingPlayStoreAccount,
-                            finishTransactions
+                            finishTransactions,
+                            appUserID
                         )
                     }
                 }

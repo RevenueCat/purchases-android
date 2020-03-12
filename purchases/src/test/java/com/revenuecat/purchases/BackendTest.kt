@@ -25,7 +25,6 @@ import java.lang.Thread.sleep
 import java.util.HashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -68,7 +67,13 @@ class BackendTest {
             this@BackendTest.receivedPurchaserInfo = info
         }
 
-    private val postReceiptErrorCallback: (PurchasesError, Boolean) -> Unit = { error, _ ->
+    private val onReceivePostReceiptSuccessHandler: (PurchaserInfo, List<SubscriberAttributeError>) -> Unit =
+        { info, _ ->
+            this@BackendTest.receivedPurchaserInfo = info
+        }
+
+    private val postReceiptErrorCallback: (PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit =
+        { error, _, _ ->
         this@BackendTest.receivedError = error
     }
 
@@ -161,7 +166,8 @@ class BackendTest {
             observerMode,
             price,
             currency,
-            onReceivePurchaserInfoSuccessHandler,
+            emptyMap(),
+            onReceivePostReceiptSuccessHandler,
             postReceiptErrorCallback
         )
 
@@ -466,7 +472,8 @@ class BackendTest {
             false,
             null,
             null,
-            {
+            emptyMap(),
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback
@@ -480,7 +487,8 @@ class BackendTest {
             false,
             null,
             null,
-            {
+            emptyMap(),
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback
@@ -582,7 +590,8 @@ class BackendTest {
             false,
             null,
             null,
-            {
+            emptyMap(),
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback
@@ -607,7 +616,8 @@ class BackendTest {
             false,
             null,
             null,
-            {
+            emptyMap(),
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback
@@ -691,7 +701,8 @@ class BackendTest {
             false,
             null,
             null,
-            {
+            emptyMap(),
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback
@@ -705,7 +716,8 @@ class BackendTest {
             false,
             2.5,
             "USD",
-            {
+            emptyMap(),
+            { _, _ ->
                 lock.countDown()
             },
             postReceiptErrorCallback

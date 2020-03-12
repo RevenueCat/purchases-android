@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.attributes
 
 import com.revenuecat.purchases.Backend
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.SubscriberAttributeError
 import com.revenuecat.purchases.caching.DeviceCache
 import io.mockk.Runs
 import io.mockk.every
@@ -74,7 +77,7 @@ class SubscriberAttributesManagerTests {
         })
 
         assertThat(successCalled).isTrue()
-        verify (exactly = 0) {
+        verify(exactly = 0) {
             mockBackend.postSubscriberAttributes(any(), any(), any(), any())
         }
     }
@@ -93,7 +96,7 @@ class SubscriberAttributesManagerTests {
         })
 
         assertThat(successCalled).isTrue()
-        verify (exactly = 0) {
+        verify(exactly = 0) {
             mockBackend.postSubscriberAttributes(any(), any(), any(), any())
         }
     }
@@ -116,7 +119,12 @@ class SubscriberAttributesManagerTests {
 
         val slotOfPostedAttributes = slot<Map<String, SubscriberAttribute>>()
         every {
-            mockBackend.postSubscriberAttributes(capture(slotOfPostedAttributes), appUserID, captureLambda(), any())
+            mockBackend.postSubscriberAttributes(
+                capture(slotOfPostedAttributes),
+                appUserID,
+                captureLambda(),
+                any()
+            )
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -133,7 +141,7 @@ class SubscriberAttributesManagerTests {
         )
 
         assertThat(successCalled).isTrue()
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockBackend.postSubscriberAttributes(any(), any(), any(), any())
         }
         val capturedPosted = slotOfPostedAttributes.captured
@@ -161,4 +169,139 @@ class SubscriberAttributesManagerTests {
         assertThat(capturedSetSubscriberAttribute2.isSynced).isTrue()
     }
 
+    @Test
+    fun `getting unsynchronized attributes`() {
+        val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
+        val subscriberAttribute2 = SubscriberAttribute("key2", "value2", isSynced = true)
+
+        val expected = mapOf(
+            "key" to subscriberAttribute
+        )
+        every {
+            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
+        } returns (expected.toMutableMap() + mapOf("key2" to subscriberAttribute2))
+
+        val actual = underTest.getUnsyncedSubscriberAttributes(appUserID)
+
+        assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `attribute errors when synchronizing with backend and backend got them`() {
+        val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
+
+        val slotOfSetAttributes = slot<Map<String, SubscriberAttribute>>()
+        every {
+            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
+        } returns mapOf(
+            "key" to subscriberAttribute
+        )
+        every {
+            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
+        } returns mapOf("key" to subscriberAttribute)
+        every {
+            mockDeviceCache.setAttributes(appUserID, capture(slotOfSetAttributes))
+        } just Runs
+
+        val slotOfPostedAttributes = slot<Map<String, SubscriberAttribute>>()
+        every {
+            mockBackend.postSubscriberAttributes(
+                capture(slotOfPostedAttributes),
+                appUserID,
+                any(),
+                captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit>().captured.invoke(
+                PurchasesError(
+                    PurchasesErrorCode.InvalidSubscriberAttributesError,
+                    "Error syncing"
+                ),
+                true,
+                emptyList()
+            )
+        }
+
+        var failureCalled = false
+        underTest.synchronizeSubscriberAttributesIfNeeded(
+            appUserID,
+            {
+                fail("should be failure")
+            },
+            {
+                failureCalled = true
+            }
+        )
+
+        assertThat(failureCalled).isTrue()
+        verify(exactly = 1) {
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+        }
+
+        val capturedSet = slotOfSetAttributes.captured
+        assertThat(capturedSet).isNotNull
+        assertThat(capturedSet.size).isEqualTo(1)
+
+        val capturedSetSubscriberAttribute = capturedSet["key"]
+        assertThat(capturedSetSubscriberAttribute).isNotNull
+        assertThat(capturedSetSubscriberAttribute!!.value).isEqualTo(null)
+        assertThat(capturedSetSubscriberAttribute.setTime).isEqualTo(subscriberAttribute.setTime)
+        assertThat(capturedSetSubscriberAttribute.isSynced).isTrue()
+    }
+
+    @Test
+    fun `attribute errors when synchronizing with backend and backend did not get them`() {
+        val subscriberAttribute = SubscriberAttribute("key", null)
+
+        val slotOfSetAttributes = slot<Map<String, SubscriberAttribute>>()
+        every {
+            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
+        } returns mapOf(
+            "key" to subscriberAttribute
+        )
+        every {
+            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
+        } returns mapOf("key" to subscriberAttribute)
+        every {
+            mockDeviceCache.setAttributes(appUserID, capture(slotOfSetAttributes))
+        } just Runs
+
+        val slotOfPostedAttributes = slot<Map<String, SubscriberAttribute>>()
+        every {
+            mockBackend.postSubscriberAttributes(
+                capture(slotOfPostedAttributes),
+                appUserID,
+                any(),
+                captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit>().captured.invoke(
+                PurchasesError(
+                    PurchasesErrorCode.InvalidSubscriberAttributesError,
+                    "Error syncing"
+                ),
+                false,
+                emptyList()
+            )
+        }
+
+        var failureCalled = false
+        underTest.synchronizeSubscriberAttributesIfNeeded(
+            appUserID,
+            {
+                fail("should be failure")
+            },
+            {
+                failureCalled = true
+            }
+        )
+
+        assertThat(failureCalled).isTrue()
+        verify(exactly = 1) {
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+        }
+        verify(exactly = 0) {
+            mockDeviceCache.setAttributes(appUserID, any())
+        }
+    }
 }

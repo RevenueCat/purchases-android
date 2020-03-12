@@ -33,6 +33,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
@@ -116,6 +117,7 @@ class PurchasesTest {
     ): PurchaserInfo {
         val mockInfo = mockk<PurchaserInfo>()
         val skus = listOf(stubProductIdentifier)
+        val userIdToUse = if (anonymous) randomAppUserId else appUserId
 
         mockCache(mockInfo)
         mockBackend(mockInfo, errorGettingPurchaserInfo)
@@ -130,12 +132,13 @@ class PurchasesTest {
         } just Runs
         every {
             mockIdentityManager.currentAppUserID
-        } returns if (anonymous) randomAppUserId else appUserId
+        } returns userIdToUse
         every {
             mockIdentityManager.currentUserIsAnonymous()
         } returns anonymous
         buildPurchases(anonymous)
-        mockSubscriberAttributesManager()
+        mockSubscriberAttributesManager(userIdToUse)
+
         return mockInfo
     }
 
@@ -313,6 +316,7 @@ class PurchasesTest {
                 false,
                 2.0,
                 "USD",
+                emptyMap(),
                 any(),
                 any()
             )
@@ -328,6 +332,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -383,6 +388,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -405,6 +411,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -529,6 +536,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -556,6 +564,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -585,6 +594,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -658,6 +668,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -673,6 +684,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -727,19 +739,20 @@ class PurchasesTest {
         val mockInfo = mockk<PurchaserInfo>()
         every {
             mockBackend.postReceiptData(
-                any(),
-                any(),
-                any(),
-                true,
-                null,
-                false,
-                null,
-                null,
-                captureLambda(),
-                any()
+                purchaseToken = any(),
+                appUserID = any(),
+                productID = any(),
+                isRestore = true,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = captureLambda(),
+                onError = any()
             )
         } answers {
-            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, emptyList())
         }
 
         var callbackCalled = false
@@ -779,6 +792,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -1075,12 +1089,13 @@ class PurchasesTest {
 
         setup()
 
-        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda: (PostReceiptDataErrorCallback)? = null
         mockInAppPostReceiptError(sku, purchaseToken, false) {
-            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
+            capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
             capturedLambda?.invoke(
                 PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                true
+                true,
+                emptyList()
             )
         }
 
@@ -1112,16 +1127,17 @@ class PurchasesTest {
         val skuSub = "sub"
         val purchaseTokenSub = "token_sub"
 
-        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda: (PostReceiptDataErrorCallback)? = null
         mockInAppPostReceiptError(sku, purchaseToken, false) {
-            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
+            capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
                 it.invoke(
                     PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                    true
+                    true,
+                    emptyList()
                 )
             }
         }
-        var capturedLambda1: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda1: (PostReceiptDataErrorCallback)? = null
         every {
             mockBackend.postReceiptData(
                 purchaseTokenSub,
@@ -1132,14 +1148,16 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 captureLambda()
             )
         } answers {
-            capturedLambda1 = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
+            capturedLambda1 = lambda<PostReceiptDataErrorCallback>().captured.also {
                 it.invoke(
                     PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                    true
+                    true,
+                    emptyList()
                 )
             }
         }
@@ -1411,19 +1429,20 @@ class PurchasesTest {
         val info = mockk<PurchaserInfo>()
         every {
             mockBackend.postReceiptData(
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                any(),
-                captureLambda(),
-                any()
+                purchaseToken = any(),
+                appUserID = any(),
+                productID = any(),
+                isRestore = any(),
+                offeringIdentifier = any(),
+                observerMode = any(),
+                price = any(),
+                currency = any(),
+                subscriberAttributes = any(),
+                onSuccess = captureLambda(),
+                onError = any()
             )
         } answers {
-            lambda<(PurchaserInfo) -> Unit>().captured.invoke(info)
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(info, emptyList())
         }
         purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
         val sku = "onemonth_freetrial"
@@ -1840,6 +1859,7 @@ class PurchasesTest {
                 true,
                 2.0,
                 "USD",
+                emptyMap(),
                 any(),
                 any()
             )
@@ -1867,17 +1887,18 @@ class PurchasesTest {
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
-        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda: (PostReceiptDataErrorCallback)? = null
         mockInAppPostReceiptError(sku, purchaseToken, true) {
-            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
+            capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
                 it.invoke(
                     PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                    true
+                    true,
+                    emptyList()
                 )
             }
         }
 
-        var capturedLambda1: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda1: (PostReceiptDataErrorCallback)? = null
         every {
             mockBackend.postReceiptData(
                 purchaseTokenSub,
@@ -1888,14 +1909,16 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 captureLambda()
             )
         } answers {
-            capturedLambda1 = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
+            capturedLambda1 = lambda<PostReceiptDataErrorCallback>().captured.also {
                 it.invoke(
                     PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                    true
+                    true,
+                    emptyList()
                 )
             }
         }
@@ -1932,10 +1955,10 @@ class PurchasesTest {
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
-        var captured: ((PurchasesError, Boolean) -> Unit)? = null
+        var captured: (PostReceiptDataErrorCallback)? = null
         mockInAppPostReceiptError(sku, purchaseToken, true) {
-            captured = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
-                it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), true)
+            captured = lambda<PostReceiptDataErrorCallback>().captured.also {
+                it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), true, emptyList())
             }
         }
 
@@ -1999,6 +2022,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2013,6 +2037,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2058,6 +2083,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2072,6 +2098,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2110,6 +2137,7 @@ class PurchasesTest {
                 true,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2373,9 +2401,9 @@ class PurchasesTest {
 
         setup()
 
-        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda: (PostReceiptDataErrorCallback)? = null
         mockInAppPostReceiptError(sku, purchaseToken, false) {
-            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
+            capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
         }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
@@ -2386,7 +2414,8 @@ class PurchasesTest {
         ))
         capturedLambda!!.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-            true
+            true,
+            emptyList()
         )
         capturedConsumeResponseListener.captured.invoke(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(), purchaseToken)
         verify (exactly = 0 ) {
@@ -2419,9 +2448,9 @@ class PurchasesTest {
 
         setup()
 
-        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda: (PostReceiptDataErrorCallback)? = null
         mockInAppPostReceiptError(sku, purchaseToken, false) {
-            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
+            capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
         }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
@@ -2432,7 +2461,8 @@ class PurchasesTest {
         ))
         capturedLambda!!.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-            true
+            true,
+            emptyList()
         )
         capturedConsumeResponseListener.captured.invoke(BillingClient.BillingResponseCode.OK.buildResult(), "crazy_purchase_token")
         verify (exactly = 1) {
@@ -2452,14 +2482,14 @@ class PurchasesTest {
 
         setup()
 
-        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda: (PostReceiptDataErrorCallback)? = null
         mockInAppPostReceiptError(sku, purchaseToken, observerMode = false) {
-            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
-                it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), false)
+            capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
+                it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), false, emptyList())
             }
         }
 
-        var capturedLambda1: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda1: (PostReceiptDataErrorCallback)? = null
         every {
             mockBackend.postReceiptData(
                 purchaseTokenSub,
@@ -2470,12 +2500,13 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 captureLambda()
             )
         } answers {
-            capturedLambda1 = lambda<(PurchasesError, Boolean) -> Unit>().captured.also {
-                it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), false)
+            capturedLambda1 = lambda<PostReceiptDataErrorCallback>().captured.also {
+                it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), false, emptyList())
             }
         }
 
@@ -2521,6 +2552,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2588,6 +2620,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2622,6 +2655,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2748,6 +2782,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2763,6 +2798,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2801,6 +2837,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2843,6 +2880,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -2885,7 +2923,7 @@ class PurchasesTest {
         val skuSub = "sub"
         val purchaseTokenSub = "token_sub"
 
-        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda: (PostReceiptDataErrorCallback)? = null
         every {
             mockBackend.postReceiptData(
                 purchaseTokenSub,
@@ -2896,11 +2934,12 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 captureLambda()
             )
         } answers {
-            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
+            capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
         }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
@@ -2911,7 +2950,8 @@ class PurchasesTest {
         ))
         capturedLambda!!.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-            true
+            true,
+            emptyList()
         )
         capturedAcknowledgeResponseListener.captured.invoke(
             BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -2929,7 +2969,7 @@ class PurchasesTest {
         val skuSub = "sub"
         val purchaseTokenSub = "token_sub"
 
-        var capturedLambda: ((PurchasesError, Boolean) -> Unit)? = null
+        var capturedLambda: (PostReceiptDataErrorCallback)? = null
         every {
             mockBackend.postReceiptData(
                 purchaseTokenSub,
@@ -2940,11 +2980,12 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 captureLambda()
             )
         } answers {
-            capturedLambda = lambda<(PurchasesError, Boolean) -> Unit>().captured
+            capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
         }
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
             skuSub,
@@ -2954,7 +2995,8 @@ class PurchasesTest {
         ))
         capturedLambda!!.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-            true
+            true,
+            emptyList()
         )
         capturedAcknowledgeResponseListener.captured.invoke(
             BillingClient.BillingResponseCode.OK.buildResult(),
@@ -2998,6 +3040,7 @@ class PurchasesTest {
                 false,
                 2.0,
                 "USD",
+                emptyMap(),
                 any(),
                 any()
             )
@@ -3027,6 +3070,7 @@ class PurchasesTest {
                 false,
                 null,
                 null,
+                emptyMap(),
                 any(),
                 any()
             )
@@ -3118,9 +3162,21 @@ class PurchasesTest {
             }
             mockProducts()
             every {
-                postReceiptData(any(), any(), any(), any(), any(), any(), any(), any(), captureLambda(), any())
+                postReceiptData(
+                    purchaseToken = any(),
+                    appUserID = any(),
+                    productID = any(),
+                    isRestore = any(),
+                    offeringIdentifier = any(),
+                    observerMode = any(),
+                    price = any(),
+                    currency = any(),
+                    subscriberAttributes = any(),
+                    onSuccess = captureLambda(),
+                    onError = any()
+                )
             } answers {
-                lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+                lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, emptyList())
             }
             every {
                 close()
@@ -3380,6 +3436,7 @@ class PurchasesTest {
                 observerMode,
                 2.0,
                 "USD",
+                emptyMap(),
                 any(),
                 captureLambda()
             )
@@ -3402,19 +3459,20 @@ class PurchasesTest {
         } returns "USD"
         every {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                false,
-                null,
-                observerMode,
-                2.0,
-                "USD",
-                captureLambda(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = observerMode,
+                price = 2.0,
+                currency = "USD",
+                subscriberAttributes = emptyMap(),
+                onSuccess = captureLambda(),
+                onError = any()
             )
         } answers {
-            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, emptyList())
         }
     }
 
@@ -3427,10 +3485,16 @@ class PurchasesTest {
         } returns offeringsStale
     }
 
-    private fun mockSubscriberAttributesManager() {
+    private fun mockSubscriberAttributesManager(userIdToUse: String) {
         every {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesIfNeeded(appUserId, any(), any())
         } just Runs
+        every {
+            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(userIdToUse)
+        } returns emptyMap()
+        every {
+            mockSubscriberAttributesManager.markAsSynced(userIdToUse, any(), any())
+        } just runs
     }
 
     // endregion
