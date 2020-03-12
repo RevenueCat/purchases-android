@@ -333,28 +333,21 @@ internal class Backend(
     // returns an empty list
     private fun JSONObject.getAttributeErrors(): List<SubscriberAttributeError> {
         val attributeErrorsJSONObject =
-            if (has(ATTRIBUTES_ERROR_RESPONSE_KEY))
-                getJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY)
-            else
-                this
+            this.optJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY) ?: this
 
-        return if (attributeErrorsJSONObject.has(ATTRIBUTE_ERRORS_KEY)) {
-            attributeErrorsJSONObject.getJSONArray(ATTRIBUTE_ERRORS_KEY)
-                .let { jsonArray ->
-                    (0 until jsonArray.length())
-                        .map { index -> jsonArray.getJSONObject(index) }
-                        .filter { it.has("key_name") && it.has("message") }
-                        .map {
-                            SubscriberAttributeError(
-                                it.getString("key_name"),
-                                it.getString("message")
-                            )
-                        }
-                        .toList()
-                }
-        } else {
-            emptyList()
-        }
+        return attributeErrorsJSONObject.optJSONArray(ATTRIBUTE_ERRORS_KEY)
+            ?.let { jsonArray ->
+                (0 until jsonArray.length())
+                    .map { index -> jsonArray.getJSONObject(index) }
+                    .filter { it.has("key_name") && it.has("message") }
+                    .map {
+                        SubscriberAttributeError(
+                            it.getString("key_name"),
+                            it.getString("message")
+                        )
+                    }
+                    .toList()
+            } ?: emptyList()
     }
 
     private fun HTTPClient.Result.isSuccessful(): Boolean {
