@@ -569,26 +569,56 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     // region Subscriber Attributes
 
+    /**
+     * Subscriber attributes are useful for storing additional, structured information on a user.
+     * Since attributes are writable using a public key they should not be used for
+     * managing secure or sensitive information such as subscription status, coins, etc.
+     *
+     * Key names starting with "$" are reserved names used by RevenueCat. For a full list of key
+     * restrictions refer to our guide: https://docs.revenuecat.com/docs/subscriber-attributes
+     *
+     * @param attributes Map of attributes by key. Set the value as null to delete an attribute.
+     */
     fun setAttributes(attributes: Map<String, String?>) {
         debugLog("setAttributes called")
         subscriberAttributesManager.setAttributes(attributes, appUserID)
     }
 
+    /**
+     * Subscriber attribute associated with the Email address for the user
+     *
+     * @param email Null or empty will delete the subscriber attribute.
+     */
     fun setEmail(email: String?) {
         debugLog("setEmail called")
         subscriberAttributesManager.setAttribute(SubscriberAttributeKey.Email, email, appUserID)
     }
 
+    /**
+     * Subscriber attribute associated with the phone number for the user
+     *
+     * @param phoneNumber Null or empty will delete the subscriber attribute.
+     */
     fun setPhoneNumber(phoneNumber: String?) {
         debugLog("setPhoneNumber called")
         subscriberAttributesManager.setAttribute(SubscriberAttributeKey.PhoneNumber, phoneNumber, appUserID)
     }
 
+    /**
+     * Subscriber attribute associated with the display name for the user
+     *
+     * @param displayName Null or empty will delete the subscriber attribute.
+     */
     fun setDisplayName(displayName: String?) {
         debugLog("setDisplayName called")
         subscriberAttributesManager.setAttribute(SubscriberAttributeKey.DisplayName, displayName, appUserID)
     }
 
+    /**
+     * Subscriber attribute associated with the push token for the user
+     *
+     * @param fcmToken Null or empty will delete the subscriber attribute.
+     */
     fun setPushToken(fcmToken: String?) {
         debugLog("setPushToken called")
         subscriberAttributesManager.setAttribute(SubscriberAttributeKey.FCMTokens, fcmToken, appUserID)
