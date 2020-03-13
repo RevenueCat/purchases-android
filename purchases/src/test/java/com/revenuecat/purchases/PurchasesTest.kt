@@ -3112,6 +3112,37 @@ class PurchasesTest {
         verify (exactly = 1) { mockCache.clearPurchaserInfoCacheTimestamp() }
     }
 
+    @Test
+    fun `product not found when querying sku details while purchasing`() {
+        setup()
+        val sku = "sku"
+        val purchaseToken = "token"
+
+        mockSkuDetails(listOf(sku), emptyList(), PurchaseType.INAPP)
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            sku,
+            purchaseToken,
+            PurchaseType.INAPP,
+            "offering_a"
+        ))
+
+        verify (exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken,
+                appUserId,
+                sku,
+                false,
+                "offering_a",
+                false,
+                null,
+                null,
+                any(),
+                any()
+            )
+        }
+    }
+
     // region Private Methods
     private fun mockBillingWrapper() {
         with(mockBillingWrapper) {
