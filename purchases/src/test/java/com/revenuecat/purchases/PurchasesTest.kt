@@ -308,33 +308,33 @@ class PurchasesTest {
 
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                false,
-                null,
-                false,
-                2.0,
-                "USD",
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = 2.0,
+                currency = "USD",
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
 
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                "offering_a",
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = "offering_a",
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
 
@@ -380,17 +380,17 @@ class PurchasesTest {
 
         verify(exactly = 2) {
             mockBackend.postReceiptData(
-                any(),
-                appUserId,
-                sku,
-                false,
-                stubOfferingIdentifier,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = any(),
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = stubOfferingIdentifier,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -403,17 +403,17 @@ class PurchasesTest {
 
         verify(exactly = 0) {
             mockBackend.postReceiptData(
-                any(),
-                any(),
-                any(),
-                false,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = any(),
+                appUserID = any(),
+                productID = any(),
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -528,17 +528,17 @@ class PurchasesTest {
 
         verify {
             mockBackend.postReceiptData(
-                purchaseToken,
-                randomAppUserId,
-                sku,
-                true,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = randomAppUserId,
+                productID = sku,
+                isRestore = true,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -556,17 +556,17 @@ class PurchasesTest {
 
         verify {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                false,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -586,17 +586,17 @@ class PurchasesTest {
 
         verify {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                true,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = true,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -660,33 +660,33 @@ class PurchasesTest {
 
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                true,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = true,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
 
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                true,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = true,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -784,17 +784,17 @@ class PurchasesTest {
 
         verify {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                false,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
         verify(exactly = 1) {
@@ -1140,17 +1140,17 @@ class PurchasesTest {
         var capturedLambda1: (PostReceiptDataErrorCallback)? = null
         every {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                captureLambda()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = captureLambda()
             )
         } answers {
             capturedLambda1 = lambda<PostReceiptDataErrorCallback>().captured.also {
@@ -1851,17 +1851,17 @@ class PurchasesTest {
         )
         verify(exactly = 1){
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                false,
-                null,
-                true,
-                2.0,
-                "USD",
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = true,
+                price = 2.0,
+                currency = "USD",
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
         verify(exactly = 0) {
@@ -1901,17 +1901,17 @@ class PurchasesTest {
         var capturedLambda1: (PostReceiptDataErrorCallback)? = null
         every {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                null,
-                true,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                captureLambda()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = true,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = captureLambda()
             )
         } answers {
             capturedLambda1 = lambda<PostReceiptDataErrorCallback>().captured.also {
@@ -2014,32 +2014,32 @@ class PurchasesTest {
         assertThat(capturedLambda).isNotNull
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                false,
-                null,
-                true,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = true,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                null,
-                true,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = true,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -2075,32 +2075,32 @@ class PurchasesTest {
         assertThat(capturedLambda).isNotNull
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                true,
-                null,
-                true,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = true,
+                offeringIdentifier = null,
+                observerMode = true,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                true,
-                null,
-                true,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = true,
+                offeringIdentifier = null,
+                observerMode = true,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -2129,17 +2129,17 @@ class PurchasesTest {
 
         verify {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                true,
-                null,
-                true,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = true,
+                offeringIdentifier = null,
+                observerMode = true,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
         verify (exactly = 0){
@@ -2492,17 +2492,17 @@ class PurchasesTest {
         var capturedLambda1: (PostReceiptDataErrorCallback)? = null
         every {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                captureLambda()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = captureLambda()
             )
         } answers {
             capturedLambda1 = lambda<PostReceiptDataErrorCallback>().captured.also {
@@ -2544,17 +2544,17 @@ class PurchasesTest {
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                "token",
-                appUserId,
-                "product",
-                true,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = "token",
+                appUserID = appUserId,
+                productID = "product",
+                isRestore = true,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -2612,17 +2612,17 @@ class PurchasesTest {
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                "token",
-                appUserId,
-                "product",
-                false,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = "token",
+                appUserID = appUserId,
+                productID = "product",
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -2647,17 +2647,17 @@ class PurchasesTest {
         purchases.updatePendingPurchaseQueue()
         verify (exactly = 0) {
             mockBackend.postReceiptData(
-                token,
-                appUserId,
-                "product",
-                false,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = token,
+                appUserID = appUserId,
+                productID = "product",
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -2774,33 +2774,33 @@ class PurchasesTest {
 
         verify (exactly = 0) {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                false,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
 
         verify (exactly = 0) {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                "offering_a",
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = "offering_a",
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
 
@@ -2829,17 +2829,17 @@ class PurchasesTest {
 
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                "offering_a",
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = "offering_a",
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
 
@@ -2872,17 +2872,17 @@ class PurchasesTest {
 
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                "offering_a",
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = "offering_a",
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
 
@@ -2926,17 +2926,17 @@ class PurchasesTest {
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
         every {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                "offering_a",
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                captureLambda()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = "offering_a",
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = captureLambda()
             )
         } answers {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
@@ -2972,17 +2972,17 @@ class PurchasesTest {
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
         every {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                null,
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                captureLambda()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = captureLambda()
             )
         } answers {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
@@ -3032,17 +3032,17 @@ class PurchasesTest {
 
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                false,
-                "offering_a",
-                false,
-                2.0,
-                "USD",
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = "offering_a",
+                observerMode = false,
+                price = 2.0,
+                currency = "USD",
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -3062,17 +3062,17 @@ class PurchasesTest {
 
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseTokenSub,
-                appUserId,
-                skuSub,
-                false,
-                "offering_a",
-                false,
-                null,
-                null,
-                emptyMap(),
-                any(),
-                any()
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                productID = skuSub,
+                isRestore = false,
+                offeringIdentifier = "offering_a",
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
 
@@ -3129,16 +3129,17 @@ class PurchasesTest {
 
         verify (exactly = 1) {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                false,
-                "offering_a",
-                false,
-                null,
-                null,
-                any(),
-                any()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = "offering_a",
+                observerMode = false,
+                price = null,
+                currency = null,
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -3459,17 +3460,17 @@ class PurchasesTest {
         } returns "USD"
         every {
             mockBackend.postReceiptData(
-                purchaseToken,
-                appUserId,
-                sku,
-                false,
-                null,
-                observerMode,
-                2.0,
-                "USD",
-                emptyMap(),
-                any(),
-                captureLambda()
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                productID = sku,
+                isRestore = false,
+                offeringIdentifier = null,
+                observerMode = observerMode,
+                price = 2.0,
+                currency = "USD",
+                subscriberAttributes = emptyMap(),
+                onSuccess = any(),
+                onError = captureLambda()
             )
         } answers answer
     }
