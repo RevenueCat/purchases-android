@@ -20,6 +20,10 @@ class PurchasesError(
     init {
         errorLog("${code.description}${underlyingErrorMessage?.let { " | $it" }}")
     }
+
+    override fun toString(): String {
+        return "PurchasesError(code=$code, underlyingErrorMessage=$underlyingErrorMessage, message='$message')"
+    }
 }
 
 enum class PurchasesErrorCode(val description: String) {
@@ -64,7 +68,7 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendPlayStoreGenericError(7231),
     BackendUserIneligibleForPromoOffer(7232),
     BackendInvalidAppleSubscriptionKey(7234),
-    BackendInvalidSubscriberAttributes(7262);
+    BackendInvalidSubscriberAttributes(7263);
 
     companion object {
         fun valueOf(backendErrorCode: Int) : BackendErrorCode? {
