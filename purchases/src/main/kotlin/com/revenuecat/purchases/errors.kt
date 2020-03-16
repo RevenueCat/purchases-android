@@ -68,7 +68,8 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendPlayStoreGenericError(7231),
     BackendUserIneligibleForPromoOffer(7232),
     BackendInvalidAppleSubscriptionKey(7234),
-    BackendInvalidSubscriberAttributes(7263);
+    BackendInvalidSubscriberAttributes(7263),
+    BackendInvalidSubscriberAttributesBody(7264);
 
     companion object {
         fun valueOf(backendErrorCode: Int) : BackendErrorCode? {
@@ -119,7 +120,8 @@ internal fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendPlayStoreGenericError -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendUserIneligibleForPromoOffer -> PurchasesErrorCode.IneligibleError
         BackendErrorCode.BackendInvalidAppleSubscriptionKey -> PurchasesErrorCode.InvalidAppleSubscriptionKeyError
-        BackendErrorCode.BackendInvalidSubscriberAttributes -> PurchasesErrorCode.InvalidSubscriberAttributesError
+        BackendErrorCode.BackendInvalidSubscriberAttributes,
+        BackendErrorCode.BackendInvalidSubscriberAttributesBody -> PurchasesErrorCode.InvalidSubscriberAttributesError
     }
 }
 
