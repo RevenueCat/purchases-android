@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import com.android.billingclient.api.BillingClient
 import org.json.JSONException
+import org.json.JSONObject
 import java.io.IOException
 
 /**
@@ -18,6 +19,10 @@ class PurchasesError(
 
     init {
         errorLog("${code.description}${underlyingErrorMessage?.let { " | $it" }}")
+    }
+
+    override fun toString(): String {
+        return "PurchasesError(code=$code, underlyingErrorMessage=$underlyingErrorMessage, message='$message')"
     }
 }
 
@@ -39,8 +44,11 @@ enum class PurchasesErrorCode(val description: String) {
     InvalidAppUserIdError("The app user id is not valid."),
     OperationAlreadyInProgressError("The operation is already in progress."),
     UnknownBackendError("There was an unknown backend error."),
+    InvalidAppleSubscriptionKeyError("Apple Subscription Key is invalid or not present. In order to provide subscription offers, you must first generate a subscription key. Please see https://docs.revenuecat.com/docs/ios-subscription-offers for more info."),
+    IneligibleError("The User is ineligible for that action."),
     InsufficientPermissionsError("App does not have sufficient permissions to make purchases."),
-    PaymentPendingError("The payment is pending.")
+    PaymentPendingError("The payment is pending."),
+    InvalidSubscriberAttributesError("One or more of the attributes sent could not be saved.")
 }
 
 internal enum class BackendErrorCode(val value: Int) {
@@ -57,7 +65,11 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidAPIKey(7225),
     BackendPlayStoreQuotaExceeded(7229),
     BackendPlayStoreInvalidPackageName(7230),
-    BackendPlayStoreGenericError(7231);
+    BackendPlayStoreGenericError(7231),
+    BackendUserIneligibleForPromoOffer(7232),
+    BackendInvalidAppleSubscriptionKey(7234),
+    BackendInvalidSubscriberAttributes(7263),
+    BackendInvalidSubscriberAttributesBody(7264);
 
     companion object {
         fun valueOf(backendErrorCode: Int) : BackendErrorCode? {
@@ -79,8 +91,12 @@ internal fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
     PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
 
 internal fun HTTPClient.Result.toPurchasesError(): PurchasesError {
-    val errorCode = body?.get("code") as? Int
-    val errorMessage = (body?.get("message") as? String) ?: ""
+    var errorCode: Int? = null
+    var errorMessage = ""
+    body?.let { body ->
+        errorCode = if (body.has("code")) body.get("code") as Int else null
+        errorMessage = if (body.has("message")) body.get("message") as String else ""
+    }
 
     return errorCode?.let { BackendErrorCode.valueOf(it) }?.toPurchasesError(errorMessage)
         ?: PurchasesError(PurchasesErrorCode.UnknownBackendError, "Backend Code: ${errorCode ?: "N/A"} - $errorMessage")
@@ -102,10 +118,13 @@ internal fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendPlayStoreQuotaExceeded -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendPlayStoreInvalidPackageName -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendPlayStoreGenericError -> PurchasesErrorCode.StoreProblemError
+        BackendErrorCode.BackendUserIneligibleForPromoOffer -> PurchasesErrorCode.IneligibleError
+        BackendErrorCode.BackendInvalidAppleSubscriptionKey -> PurchasesErrorCode.InvalidAppleSubscriptionKeyError
+        BackendErrorCode.BackendInvalidSubscriberAttributes,
+        BackendErrorCode.BackendInvalidSubscriberAttributesBody -> PurchasesErrorCode.InvalidSubscriberAttributesError
     }
 }
 
-@BillingClient.BillingResponseCode
 internal fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseCodeName(): String {
     return when (this) {
         BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED -> "FEATURE_NOT_SUPPORTED"
@@ -143,3 +162,8 @@ internal fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String)
     }
     return PurchasesError(errorCode, underlyingErrorMessage)
 }
+
+internal data class SubscriberAttributeError(
+    val keyName: String,
+    val message: String
+)

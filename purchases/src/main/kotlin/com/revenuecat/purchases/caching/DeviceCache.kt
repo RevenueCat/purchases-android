@@ -10,55 +10,78 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseWrapper
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.attributes.SubscriberAttribute
 import com.revenuecat.purchases.buildPurchaserInfo
+import com.revenuecat.purchases.buildSubscriberAttributes
 import com.revenuecat.purchases.debugLog
 import com.revenuecat.purchases.sha1
-
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
 
 private const val CACHE_REFRESH_PERIOD = 60000 * 5
-private const val PREFERENCES_PREFIX = "com.revenuecat.purchases."
+private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 
 internal class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
-    private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(CACHE_REFRESH_PERIOD)
+    private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(
+        CACHE_REFRESH_PERIOD
+    )
 ) {
-    val legacyAppUserIDCacheKey: String by lazy { "$PREFERENCES_PREFIX$apiKey" }
-    val appUserIDCacheKey: String by lazy { "$PREFERENCES_PREFIX$apiKey.new" }
-    private val attributionCacheKey = "$PREFERENCES_PREFIX.attribution"
-    val tokensCacheKey: String by lazy {"$PREFERENCES_PREFIX$apiKey.tokens"}
+    val legacyAppUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
+    val appUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.new" }
+    val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
+    val tokensCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.tokens" }
+    val subscriberAttributesCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.subscriberAttributes" }
 
     var purchaserInfoCachesLastUpdated: Date? = null
 
     // region app user id
 
-    @Synchronized fun getLegacyCachedAppUserID(): String? = preferences.getString(legacyAppUserIDCacheKey, null)
+    @Synchronized
+    fun getLegacyCachedAppUserID(): String? = preferences.getString(legacyAppUserIDCacheKey, null)
 
-    @Synchronized fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
+    @Synchronized
+    fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
 
-    @Synchronized fun cacheAppUserID(appUserID: String) {
+    @Synchronized
+    fun cacheAppUserID(appUserID: String) {
         preferences.edit().putString(appUserIDCacheKey, appUserID).apply()
     }
 
     @Synchronized
     fun clearCachesForAppUserID() {
         preferences.edit()
-            .also { editor ->
-                getCachedAppUserID()?.let {
-                    editor.remove(purchaserInfoCacheKey(it))
-                }
-                getLegacyCachedAppUserID()?.let {
-                    editor.remove(purchaserInfoCacheKey(it))
-                }
-            }
-            .remove(appUserIDCacheKey)
-            .remove(legacyAppUserIDCacheKey)
+            .clearPurchaserInfo()
+            .clearSubscriberAttributes()
+            .clearAppUserID()
             .apply()
         clearPurchaserInfoCacheTimestamp()
         clearOfferingsCache()
+    }
+
+    private fun SharedPreferences.Editor.clearPurchaserInfo(): SharedPreferences.Editor {
+        getCachedAppUserID()?.let {
+            remove(purchaserInfoCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(purchaserInfoCacheKey(it))
+        }
+        return this
+    }
+
+    private fun SharedPreferences.Editor.clearSubscriberAttributes(): SharedPreferences.Editor {
+        getCachedAppUserID()?.let {
+            remove(subscriberAttributesCacheKey(it))
+        }
+        return this
+    }
+
+    private fun SharedPreferences.Editor.clearAppUserID(): SharedPreferences.Editor {
+        remove(appUserIDCacheKey)
+        remove(legacyAppUserIDCacheKey)
+        return this
     }
 
     // endregion
@@ -83,7 +106,8 @@ internal class DeviceCache(
             }
     }
 
-    @Synchronized fun cachePurchaserInfo(appUserID: String, info: PurchaserInfo) {
+    @Synchronized
+    fun cachePurchaserInfo(appUserID: String, info: PurchaserInfo) {
         val jsonObject = info.jsonObject.also {
             it.put("schema_version", PurchaserInfo.SCHEMA_VERSION)
         }
@@ -100,7 +124,7 @@ internal class DeviceCache(
     fun isPurchaserInfoCacheStale(): Boolean {
         return purchaserInfoCachesLastUpdated?.let { cachesLastUpdated ->
             Date().time - cachesLastUpdated.time >= CACHE_REFRESH_PERIOD
-        }?: true
+        } ?: true
     }
 
     @Synchronized
@@ -108,7 +132,8 @@ internal class DeviceCache(
         purchaserInfoCachesLastUpdated = null
     }
 
-    @Synchronized fun setPurchaserInfoCacheTimestampToNow() {
+    @Synchronized
+    fun setPurchaserInfoCacheTimestampToNow() {
         purchaserInfoCachesLastUpdated = Date()
     }
 
@@ -116,14 +141,22 @@ internal class DeviceCache(
 
     // region attribution data
 
-    @Synchronized fun getCachedAttributionData(network: Purchases.AttributionNetwork, userId: String): String? =
+    @Synchronized
+    fun getCachedAttributionData(network: Purchases.AttributionNetwork, userId: String): String? =
         preferences.getString(getAttributionDataCacheKey(userId, network), null)
 
-    @Synchronized fun cacheAttributionData(network: Purchases.AttributionNetwork, userId: String, cacheValue: String) {
-        preferences.edit().putString(getAttributionDataCacheKey(userId, network), cacheValue).apply()
+    @Synchronized
+    fun cacheAttributionData(
+        network: Purchases.AttributionNetwork,
+        userId: String,
+        cacheValue: String
+    ) {
+        preferences.edit().putString(getAttributionDataCacheKey(userId, network), cacheValue)
+            .apply()
     }
 
-    @Synchronized fun clearLatestAttributionData(userId: String) {
+    @Synchronized
+    fun clearLatestAttributionData(userId: String) {
         val editor = preferences.edit()
         Purchases.AttributionNetwork.values().forEach { network ->
             editor.remove(getAttributionDataCacheKey(userId, network))
@@ -135,13 +168,15 @@ internal class DeviceCache(
 
     // region purchase tokens
 
-    @Synchronized internal fun getPreviouslySentHashedTokens(): Set<String> {
+    @Synchronized
+    internal fun getPreviouslySentHashedTokens(): Set<String> {
         return (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
             debugLog("[QueryPurchases] Tokens already posted: $it")
         }
     }
 
-    @Synchronized fun addSuccessfullyPostedToken(token: String) {
+    @Synchronized
+    fun addSuccessfullyPostedToken(token: String) {
         debugLog("[QueryPurchases] Saving token $token with hash ${token.sha1()}")
         getPreviouslySentHashedTokens().let {
             debugLog("[QueryPurchases] Tokens in cache before saving $it")
@@ -149,7 +184,8 @@ internal class DeviceCache(
         }
     }
 
-    @Synchronized private fun setSavedTokenHashes(newSet: Set<String>) {
+    @Synchronized
+    private fun setSavedTokenHashes(newSet: Set<String>) {
         debugLog("[QueryPurchases] Saving tokens $newSet")
         preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
     }
@@ -158,12 +194,17 @@ internal class DeviceCache(
      * Removes from the database all hashed tokens that are not considered active anymore, i.e. all
      * consumed in-apps or inactive subscriptions hashed tokens that are still in the local cache.
      */
-    @Synchronized fun cleanPreviouslySentTokens(
+    @Synchronized
+    fun cleanPreviouslySentTokens(
         activeSubsHashedTokens: Set<String>,
         unconsumedInAppsHashedTokens: Set<String>
     ) {
         debugLog("[QueryPurchases] Cleaning previously sent tokens")
-        setSavedTokenHashes((activeSubsHashedTokens + unconsumedInAppsHashedTokens).intersect(getPreviouslySentHashedTokens()))
+        setSavedTokenHashes(
+            (activeSubsHashedTokens + unconsumedInAppsHashedTokens).intersect(
+                getPreviouslySentHashedTokens()
+            )
+        )
     }
 
     /**
@@ -172,7 +213,8 @@ internal class DeviceCache(
      * In other words, returns all hashed tokens that are active and have not
      * been posted to our backend yet.
      */
-    @Synchronized fun getActivePurchasesNotInCache(
+    @Synchronized
+    fun getActivePurchasesNotInCache(
         activeSubsByTheirHashedToken: Map<String, PurchaseWrapper>,
         activeInAppsByTheirHashedToken: Map<String, PurchaseWrapper>
     ): List<PurchaseWrapper> {
@@ -189,7 +231,8 @@ internal class DeviceCache(
     val cachedOfferings: Offerings?
         get() = offeringsCachedObject.cachedInstance
 
-    @Synchronized fun cacheOfferings(offerings: Offerings) {
+    @Synchronized
+    fun cacheOfferings(offerings: Offerings) {
         offeringsCachedObject.cacheInstance(offerings)
     }
 
@@ -201,9 +244,48 @@ internal class DeviceCache(
         offeringsCachedObject.clearCacheTimestamp()
     }
 
-    @Synchronized fun setOfferingsCacheTimestampToNow() {
+    @Synchronized
+    fun setOfferingsCacheTimestampToNow() {
         offeringsCachedObject.updateCacheTimestamp(Date())
     }
+
+    // endregion
+
+    // region subscriber attributes
+
+    @Synchronized
+    fun setAttributes(appUserID: String, attributes: Map<String, SubscriberAttribute>) {
+        val currentlyStoredAttributes = getAllStoredSubscriberAttributes(appUserID)
+        val attributesToBeSet = currentlyStoredAttributes.toMutableMap()
+        attributes.forEach { (key, attribute) ->
+            attributesToBeSet[key] = attribute
+        }
+
+        preferences.edit()
+            .putString(subscriberAttributesCacheKey(appUserID), attributesToBeSet.toJSONObject().toString())
+            .apply()
+    }
+
+    @Synchronized
+    fun getAllStoredSubscriberAttributes(appUserID: String): Map<String, SubscriberAttribute> =
+        preferences.getString(subscriberAttributesCacheKey(appUserID), null)
+            ?.let { json ->
+                try {
+                    JSONObject(json)
+                } catch (e: JSONException) {
+                    null
+                }
+            }?.buildSubscriberAttributes() ?: emptyMap()
+
+    internal fun subscriberAttributesCacheKey(appUserID: String) =
+        "$subscriberAttributesCacheKey.$appUserID"
+
+    private fun Map<String, SubscriberAttribute>.toJSONObject() =
+        JSONObject().put("attributes", JSONObject().also {
+            this.forEach { (key, subscriberAttribute) ->
+                it.put(key, subscriberAttribute.toJSONObject())
+            }
+        })
 
     // endregion
 
@@ -215,5 +297,5 @@ internal class DeviceCache(
         userId: String,
         network: Purchases.AttributionNetwork
     ) = "$attributionCacheKey.$userId.$network"
-
 }
+
