@@ -133,7 +133,7 @@ class SubscriberAttributesBackendTests {
             "/subscribers/$appUserID/attributes",
             400,
             expectedResultBody = "{" +
-                "'code': 7262," +
+                "'code': 7263," +
                 "'message': 'Some subscriber attributes keys were unable to saved.'," +
                 "'attribute_errors':" +
                 "[{'key_name': 'email', 'message': 'Value is not a valid email address.'}]}"
@@ -159,7 +159,7 @@ class SubscriberAttributesBackendTests {
             "/subscribers/$appUserID/attributes",
             400,
             expectedResultBody = "{" +
-                "'code': 7262," +
+                "'code': 7263," +
                 "'message': 'Some subscriber attributes keys were unable to saved.'," +
                 "'attribute_errors':[]}"
         )
