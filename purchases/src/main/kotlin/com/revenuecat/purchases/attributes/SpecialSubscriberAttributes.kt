@@ -27,6 +27,10 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
     override fun hashCode(): Int {
         return backendKey.hashCode()
     }
+
+    override fun toString(): String {
+        return "SubscriberAttributeKey('$backendKey')"
+    }
 }
 
 internal fun String.getSubscriberAttributeKey(): SubscriberAttributeKey = when (this) {
