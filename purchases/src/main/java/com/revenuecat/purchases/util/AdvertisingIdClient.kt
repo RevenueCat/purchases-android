@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Handler
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Looper
@@ -45,7 +46,9 @@ object AdvertisingIdClient {
                 } catch(e: Exception) {
                     Log.e("Purchases", "Error getting AdvertisingIdInfo", e)
                 } finally {
-                    context.unbindService(connection)
+                    Handler(Looper.getMainLooper()).post {
+                        context.unbindService(connection)
+                    }
                 }
             }
             completion(null)
