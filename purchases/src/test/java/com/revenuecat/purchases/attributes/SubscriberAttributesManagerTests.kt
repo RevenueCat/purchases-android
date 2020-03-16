@@ -64,6 +64,28 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
+    fun `setting dictionary of already set attributes`() {
+        every {
+            mockDeviceCache.setAttributes(appUserID, any())
+        } just Runs
+        every {
+            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
+        } returns mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L"),
+            "removeThis" to SubscriberAttribute("tshirtsize", null)
+        )
+
+        underTest.setAttributes(mapOf(
+            "tshirtsize" to "L",
+            "removeThis" to null
+        ), appUserID)
+
+        verify (exactly = 0) {
+            mockDeviceCache.setAttributes(appUserID, any())
+        }
+    }
+
+    @Test
     fun `do not synchronize with backend if cache is empty`() {
         every {
             mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)

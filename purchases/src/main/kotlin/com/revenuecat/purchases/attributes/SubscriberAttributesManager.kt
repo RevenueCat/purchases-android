@@ -18,7 +18,21 @@ internal class SubscriberAttributesManager(
             key to SubscriberAttribute(key, value)
         }.toMap()
 
-        deviceCache.setAttributes(appUserID, attributesAsObjects)
+        storeAttributesIfNeeded(attributesAsObjects, appUserID)
+    }
+
+    private fun storeAttributesIfNeeded(
+        attributesAsObjects: Map<String, SubscriberAttribute>,
+        appUserID: String
+    ) {
+        val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)
+        val attributesToUpdate = attributesAsObjects.filter { (key, attribute) ->
+            !currentlyStoredAttributes.containsKey(key) || currentlyStoredAttributes[key]?.value != attribute.value
+        }
+
+        if (attributesToUpdate.isNotEmpty()) {
+            deviceCache.setAttributes(appUserID, attributesToUpdate)
+        }
     }
 
     @Synchronized
