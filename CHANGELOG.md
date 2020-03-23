@@ -1,3 +1,7 @@
+## 2.4.3
+
+- Fixes compatibility with AppsFlyer SDK https://github.com/RevenueCat/purchases-android/pull/127
+
 ## 2.4.2
 
 - Defers fetching updated PurchaserInfo and Entitlements to whenever the app is foregrounded.
