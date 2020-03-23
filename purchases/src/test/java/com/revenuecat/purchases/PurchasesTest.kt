@@ -870,9 +870,14 @@ class PurchasesTest {
         setup()
 
         val network = Purchases.AttributionNetwork.APPSFLYER
-
+        val capturedJSONObject = slot<JSONObject>()
         every {
-            mockBackend.postAttributionData(appUserId, network, any(), captureLambda())
+            mockBackend.postAttributionData(
+                appUserId,
+                network,
+                capture(capturedJSONObject),
+                captureLambda()
+            )
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -880,7 +885,16 @@ class PurchasesTest {
         val networkUserID = "networkUserID"
         mockAdInfo(false, networkUserID)
 
-        Purchases.addAttributionData(mapOf("key" to "value"), network, networkUserID)
+        Purchases.addAttributionData(
+            mapOf(
+                "adgroup" to null,
+                "campaign" to "awesome_campaign",
+                "campaign_id" to 1234,
+                "iscache" to true
+            ),
+            network,
+            networkUserID
+        )
 
         verify {
             mockBackend.postAttributionData(
@@ -890,6 +904,11 @@ class PurchasesTest {
                 any()
             )
         }
+        assertThat(capturedJSONObject.isCaptured).isTrue()
+        assertThat(capturedJSONObject.captured.get("adgroup")).isEqualTo(null)
+        assertThat(capturedJSONObject.captured.get("campaign")).isEqualTo("awesome_campaign")
+        assertThat(capturedJSONObject.captured.get("campaign_id")).isEqualTo(1234)
+        assertThat(capturedJSONObject.captured.get("iscache")).isEqualTo(true)
     }
 
     @Test

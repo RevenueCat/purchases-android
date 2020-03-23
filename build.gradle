@@ -9,19 +9,11 @@ buildscript {
         }
     }
     dependencies {
-        classpath 'com.vanniktech:gradle-maven-publish-plugin:0.9.0-SNAPSHOT'
+        classpath 'com.vanniktech:gradle-maven-publish-plugin:0.9.0'
         classpath 'com.android.tools.build:gradle:3.4.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.jetbrains.dokka:dokka-android-gradle-plugin:$dokka_version"
     }
-}
-
-plugins {
-    id "io.gitlab.arturbosch.detekt" version "1.0.0-RC12"
-}
-
-allprojects {
-    apply from: "$rootDir/detekt.gradle"
 }
 
 subprojects {
