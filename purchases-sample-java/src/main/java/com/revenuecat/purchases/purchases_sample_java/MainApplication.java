@@ -7,6 +7,8 @@ import com.revenuecat.purchases.Purchases;
 
 public class MainApplication extends Application {
 
+    public static final String PREMIUM_ENTITLEMENT_ID = "pro_cat";
+
     @Override
     public void onCreate() {
         super.onCreate();

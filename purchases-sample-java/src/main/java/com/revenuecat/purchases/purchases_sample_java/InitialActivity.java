@@ -13,6 +13,8 @@ import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener;
 import com.revenuecat.sample.R;
 
+import static com.revenuecat.purchases.purchases_sample_java.MainApplication.PREMIUM_ENTITLEMENT_ID;
+
 public class InitialActivity extends AppCompatActivity {
 
     @Override
@@ -28,7 +30,7 @@ public class InitialActivity extends AppCompatActivity {
         Purchases.getSharedInstance().getPurchaserInfo(new ReceivePurchaserInfoListener() {
             @Override
             public void onReceived(@NonNull PurchaserInfo purchaserInfo) {
-                EntitlementInfo proEntitlement = purchaserInfo.getEntitlements().get("pro_cat");
+                EntitlementInfo proEntitlement = purchaserInfo.getEntitlements().get(PREMIUM_ENTITLEMENT_ID);
                 if (proEntitlement != null && proEntitlement.isActive()) {
                     Navigator.startCatsActivity(InitialActivity.this, true);
                 } else {

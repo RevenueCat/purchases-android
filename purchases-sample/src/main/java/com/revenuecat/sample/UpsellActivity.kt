@@ -39,50 +39,24 @@ class UpsellActivity : AppCompatActivity() {
             annual_purchase.isEnabled = false
         } else {
             offerings.current?.let { currentOffering ->
-                setupMonthlyButton(currentOffering.monthly)
-                setupAnnualButton(currentOffering.annual)
-                setupUnlimitedButton(currentOffering.lifetime)
+                setupPackageButton(currentOffering.monthly, monthly_purchase)
+                setupPackageButton(currentOffering.annual, monthly_purchase)
+                setupPackageButton(currentOffering.lifetime, monthly_purchase)
             } ?: showError("Error loading current offering")
         }
     }
 
-    private fun setupUnlimitedButton(lifetimePackage: Package?) {
-        lifetimePackage?.product?.let { unlimitedProduct ->
-            with(unlimited_purchase) {
+     private fun setupPackageButton(aPackage: Package?, button: Button) {
+        aPackage?.product?.let { product ->
+            with(button) {
                 loadedText =
-                    "Buy Unlimited - ${unlimitedProduct.priceCurrencyCode} ${unlimitedProduct.price}"
+                    "Buy ${aPackage.packageType} - ${product.priceCurrencyCode} ${product.price}"
                 showLoading(false)
                 setOnClickListener {
-                    makePurchase(lifetimePackage, this)
+                    makePurchase(aPackage, this)
                 }
             }
-        } ?: showError("Error loading lifetime package")
-    }
-
-    private fun setupMonthlyButton(monthlyPackage: Package?) {
-        monthlyPackage?.product?.let { monthlyProduct ->
-            with(monthly_purchase) {
-                loadedText =
-                    "Buy Monthly - ${monthlyProduct.priceCurrencyCode} ${monthlyProduct.price}"
-                showLoading(false)
-                setOnClickListener {
-                    makePurchase(monthlyPackage, this)
-                }
-            }
-        } ?: showError("Error loading monthly package")
-    }
-
-    private fun setupAnnualButton(annualPackage: Package?) {
-        annualPackage?.product?.let { annualProduct ->
-            with(annual_purchase) {
-                loadedText =
-                    "Buy Annual - ${annualProduct.priceCurrencyCode} ${annualProduct.price}"
-                showLoading(false)
-                setOnClickListener {
-                    makePurchase(annualPackage, this)
-                }
-            }
-        } ?: showError("Error finding annual package")
+        } ?: showError("Error finding package")
     }
 
     private fun makePurchase(
@@ -104,7 +78,7 @@ class UpsellActivity : AppCompatActivity() {
     }
 
     private fun checkForProEntitlement(purchaserInfo: PurchaserInfo) {
-        if (purchaserInfo.entitlements["pro_cat"]?.isActive == true) {
+        if (purchaserInfo.entitlements[PREMIUM_ENTITLEMENT_ID]?.isActive == true) {
             startCatsActivity()
         }
     }

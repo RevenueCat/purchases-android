@@ -19,6 +19,8 @@ import com.revenuecat.sample.R;
 import java.text.DateFormat;
 import java.util.Date;
 
+import static com.revenuecat.purchases.purchases_sample_java.MainApplication.PREMIUM_ENTITLEMENT_ID;
+
 public class CatsActivity extends AppCompatActivity {
     Button restoreView;
 
@@ -61,7 +63,7 @@ public class CatsActivity extends AppCompatActivity {
         TextView catIconView = findViewById(R.id.cat_content_label);
         View goPremiumView = findViewById(R.id.go_premium);
 
-        EntitlementInfo proEntitlement = purchaserInfo.getEntitlements().get("pro_cat");
+        EntitlementInfo proEntitlement = purchaserInfo.getEntitlements().get(PREMIUM_ENTITLEMENT_ID);
         if (proEntitlement != null && proEntitlement.isActive()) {
             Log.i("Purchases Sample", "Hey there premium, you're a happy cat 😻");
             catIconView.setText("😻");
@@ -70,11 +72,11 @@ public class CatsActivity extends AppCompatActivity {
 
             DateFormat dateFormat = android.text.format.DateFormat.getDateFormat(getApplicationContext());
 
-            Date purchaseDate = purchaserInfo.getPurchaseDateForEntitlement("pro_cat");
+            Date purchaseDate = purchaserInfo.getPurchaseDateForEntitlement(PREMIUM_ENTITLEMENT_ID);
             purchaseDateView.setText("Purchase Date: " + dateFormat.format(purchaseDate));
             purchaseDateView.setVisibility(View.VISIBLE);
 
-            Date expirationDate = purchaserInfo.getExpirationDateForEntitlement("pro_cat");
+            Date expirationDate = purchaserInfo.getExpirationDateForEntitlement(PREMIUM_ENTITLEMENT_ID);
             expirationDateView.setText("Expiration Date: " + dateFormat.format(expirationDate));
             expirationDateView.setVisibility(View.VISIBLE);
         } else {

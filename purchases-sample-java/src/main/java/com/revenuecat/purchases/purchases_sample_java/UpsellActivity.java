@@ -23,7 +23,10 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener;
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener;
 import com.revenuecat.sample.R;
 
+import static com.revenuecat.purchases.purchases_sample_java.MainApplication.PREMIUM_ENTITLEMENT_ID;
+
 public class UpsellActivity extends AppCompatActivity {
+
     Button monthlyPurchaseView;
     Button annualPurchaseView;
     Button unlimitedPurchaseView;
@@ -77,63 +80,29 @@ public class UpsellActivity extends AppCompatActivity {
         } else {
             Offering currentOffering = offerings.getCurrent();
             if (currentOffering != null) {
-                setupMonthlyButton(currentOffering.getMonthly());
-                setupAnnualButton(currentOffering.getAnnual());
-                setupUnlimitedButton(currentOffering.getLifetime());
+                setupPackageButton(currentOffering.getMonthly(), monthlyPurchaseView);
+                setupPackageButton(currentOffering.getAnnual(), annualPurchaseView);
+                setupPackageButton(currentOffering.getLifetime(), unlimitedPurchaseView);
             } else {
                 Log.e("Purchases Sample", "Error loading current offering");
             }
         }
     }
 
-    private void setupUnlimitedButton(@Nullable final Package lifetimePackage) {
-        if (lifetimePackage != null) {
-            SkuDetails unlimitedProduct = lifetimePackage.getProduct();
-            String loadedText = "Buy Unlimited - " + unlimitedProduct.getPriceCurrencyCode() + " " + unlimitedProduct.getPrice();
-            unlimitedPurchaseView.setTag(loadedText);
-            showLoading(unlimitedPurchaseView, false);
-            unlimitedPurchaseView.setOnClickListener(new View.OnClickListener() {
+    private void setupPackageButton(@Nullable final Package aPackage, final Button button) {
+        if (aPackage != null) {
+            SkuDetails product = aPackage.getProduct();
+            String loadedText = "Buy " + aPackage.getPackageType() + " - " + product.getPriceCurrencyCode() + " " + product.getPrice();
+            button.setTag(loadedText);
+            showLoading(button, false);
+            button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    makePurchase(lifetimePackage, unlimitedPurchaseView);
+                    makePurchase(aPackage, button);
                 }
             });
         } else {
-            Log.e("Purchases Sample", "Error loading lifetime package");
-        }
-    }
-
-    private void setupMonthlyButton(@Nullable final Package monthlyPackage) {
-        if (monthlyPackage != null) {
-            SkuDetails monthlyProduct = monthlyPackage.getProduct();
-            String loadedText = "Buy Monthly - " + monthlyProduct.getPriceCurrencyCode() + " " + monthlyProduct.getPrice();
-            monthlyPurchaseView.setTag(loadedText);
-            showLoading(monthlyPurchaseView, false);
-            monthlyPurchaseView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    makePurchase(monthlyPackage, monthlyPurchaseView);
-                }
-            });
-        } else {
-            Log.e("Purchases Sample", "Error loading monthly package");
-        }
-    }
-
-    private void setupAnnualButton(@Nullable final Package annualPackage) {
-        if (annualPackage != null) {
-            SkuDetails annualProduct = annualPackage.getProduct();
-            String loadedText = "Buy Annual - " + annualProduct.getPriceCurrencyCode() + " " + annualProduct.getPrice();
-            annualPurchaseView.setTag(loadedText);
-            showLoading(annualPurchaseView, false);
-            annualPurchaseView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    makePurchase(annualPackage, annualPurchaseView);
-                }
-            });
-        } else {
-            Log.e("Purchases Sample", "Error loading annual package");
+            Log.e("Purchases Sample", "Error loading package");
         }
     }
 
@@ -156,7 +125,7 @@ public class UpsellActivity extends AppCompatActivity {
     }
 
     private void checkForProEntitlement(PurchaserInfo purchaserInfo) {
-        EntitlementInfo proEntitlement = purchaserInfo.getEntitlements().get("pro_cat");
+        EntitlementInfo proEntitlement = purchaserInfo.getEntitlements().get(PREMIUM_ENTITLEMENT_ID);
         if (proEntitlement != null && proEntitlement.isActive()) {
             Navigator.startCatsActivity(UpsellActivity.this, false);
         }
