@@ -7,7 +7,7 @@ import android.util.Log
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 
-
+const val PREMIUM_ENTITLEMENT_ID = "pro_cat"
 
 class MainApplication : Application() {
 
@@ -21,7 +21,7 @@ class MainApplication : Application() {
                 .build()
         )
         Purchases.debugLogsEnabled = true
-        Purchases.configure(this, "my_api_key")
+        Purchases.configure(this, "VtDdmbdWBySmqJeeQUTyrNxETUVkhuaJ")
         // set attributes to store additional, structured information for a user in RevenueCat.
         // More info: https://docs.revenuecat.com/docs/user-attributes
         Purchases.sharedInstance.setAttributes(mapOf("favorite_cat" to "garfield"))

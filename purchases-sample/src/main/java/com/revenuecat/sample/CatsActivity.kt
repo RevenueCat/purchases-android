@@ -35,19 +35,19 @@ class CatsActivity : AppCompatActivity() {
     }
 
     private fun configureContent(purchaserInfo: PurchaserInfo) {
-        if (purchaserInfo.entitlements["pro_cat"]?.isActive == true) {
+        if (purchaserInfo.entitlements[PREMIUM_ENTITLEMENT_ID]?.isActive == true) {
             Log.i("Purchases Sample", "Hey there premium, you're a happy cat 😻")
             cat_content_label.text = "😻"
             go_premium.visibility = GONE
             purchase_restore.visibility = GONE
             val dateFormat = android.text.format.DateFormat.getDateFormat(applicationContext)
 
-            purchaserInfo.getPurchaseDateForEntitlement("pro_cat")?.let {
+            purchaserInfo.getPurchaseDateForEntitlement(PREMIUM_ENTITLEMENT_ID)?.let {
                 purchase_date_label.text = "Purchase Date: ${dateFormat.format(it)}"
                 purchase_date_label.visibility = VISIBLE
             }
 
-            purchaserInfo.getExpirationDateForEntitlement("pro_cat")?.let {
+            purchaserInfo.getExpirationDateForEntitlement(PREMIUM_ENTITLEMENT_ID)?.let {
                 expiration_date_label.text = "Expiration Date: ${dateFormat.format(it)}"
                 expiration_date_label.visibility = VISIBLE
             }
