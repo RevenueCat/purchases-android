@@ -36,6 +36,7 @@ tasks.register("clean", Delete::class) {
 
 val detektAll by tasks.registering(io.gitlab.arturbosch.detekt.Detekt::class) {
     description = "Runs over whole code base without the starting overhead for each module."
+    buildUponDefaultConfig = true
     autoCorrect = true
     parallel = true
     setSource(files(rootDir))
