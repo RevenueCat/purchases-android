@@ -2,6 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: "kotlin-android-extensions"
 apply plugin: 'kotlin-kapt'
+apply from: '../.buildscripts/jacoco.gradle'
 
 android {
     compileSdkVersion 28
@@ -21,6 +22,13 @@ android {
         main.java.srcDirs += 'src/main/java'
         test.java.srcDirs += 'src/test/java'
     }
+
+    buildTypes {
+        debug {
+            testCoverageEnabled true
+        }
+    }
+    
     testOptions {
         unitTests.includeAndroidResources = true
     }
