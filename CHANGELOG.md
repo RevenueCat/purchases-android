@@ -1,3 +1,13 @@
+## 3.1.0
+
+- Another fix for NoSuchElementException when retrieving Advertising ID #124
+- Added Subscriber Attributes, which allow developers to store additional, structured information 
+for a user in RevenueCat. More info: https://docs.revenuecat.com/docs/user-attributes
+
+## 3.0.7
+
+- Fixes NoSuchElementException #115
+
 ## 3.0.6
 
 - Added new method to invalidate the purchaser info cache, useful when promotional purchases are granted from outside the app. #109

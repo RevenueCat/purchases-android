@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.caching
 
 import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.utils.DateTimeProvider
+import com.revenuecat.purchases.utils.DateProvider
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -75,7 +75,7 @@ class InMemoryCachedObjectTest {
     @Test
     fun `timestamp is set correctly when setting instance`() {
         val now = Date()
-        val inMemoryCachedObject = InMemoryCachedObject<Offerings>(100, dateTimeProvider = object : DateTimeProvider {
+        val inMemoryCachedObject = InMemoryCachedObject<Offerings>(100, dateProvider = object : DateProvider {
             override val now: Date
                 get() {
                     return now

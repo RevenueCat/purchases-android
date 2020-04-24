@@ -2,11 +2,11 @@ package com.revenuecat.purchases.utils
 
 import java.util.Date
 
-internal interface DateTimeProvider {
+internal interface DateProvider {
     val now: Date
 }
 
-internal class DefaultDateTimeProvider : DateTimeProvider {
+internal class DefaultDateProvider : DateProvider {
     override val now: Date
         get() = Date()
 }
