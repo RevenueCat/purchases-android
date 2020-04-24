@@ -23,16 +23,10 @@ dependencies {
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.8.0")
 }
 
-subprojects {
-    repositories {
-        jcenter()
-        google()
-    }
-}
-
 allprojects {
     repositories {
         jcenter()
+        google()
     }
 }
 
