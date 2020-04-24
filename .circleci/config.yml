@@ -1,4 +1,6 @@
 version: 2.1
+orbs:
+  android: circleci/android@0.2.1
 executors:
   android-executor:
     docker:
@@ -13,18 +15,32 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - android/accept-licenses
+  test:
+    executor: android-executor
+    steps:
+      - checkout
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
       - run:
-          name: Accept licenses
-          command: yes | sdkmanager --licenses || true
-      - run:
-          name: Build
-          command: ./gradlew build
+          name: Download Dependencies
+          command: ./gradlew androidDependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}     
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+      - android/restore-build-cache
+      - run:
+          name: Run Tests
+          command: ./gradlew lint test
+      - run:
+          name: Test coverage report
+          command: ./gradlew testDebugUnitTestCoverage coveralls
+      - android/save-build-cache
+      - store_artifacts:
+          path: purchases/build/reports
+      - store_test_results:
+          path: purchases/build/test-results
 
   docs-deploy:
     executor: android-executor
@@ -32,9 +48,7 @@ jobs:
       - checkout
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
-      - run:
-          name: Accept licenses
-          command: yes | sdkmanager --licenses || true
+      - android/restore-build-cache
       - run:
           name: Install awscli
           command: sudo pip install awscli
@@ -47,7 +61,7 @@ jobs:
       - run:
           name: Invalidate CloudFront caches
           command: aws cloudfront create-invalidation --distribution-id EPTW7F3CB566V --paths "/*"
-  
+
   deploy:
     executor: android-executor
     steps:
@@ -55,39 +69,40 @@ jobs:
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
       - run:
-          name: Accept licenses
-          command: yes | sdkmanager --licenses || true
-      - run:
           name: Deployment
           command: |
             .buildscripts/deploy_snapshot.sh
 
-  release-builds:
+  assemble:
     executor: android-executor
     steps:
       - checkout
       - restore_cache:
           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+      - android/restore-build-cache
       - run:
-          name: Accept licenses
-          command: yes | sdkmanager --licenses || true
-      - run:
-          name: Build
-          command: ./gradlew assembleRelease
+          name: Assemble
+          command: ./gradlew assemble
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}  
+          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+      - android/save-build-cache
 
 workflows:
   version: 2
-  build-deploy-docs:
+  test-assemble-deploy-docs:
     jobs:
       - build
-      - release-builds
-      - deploy:
+      - test:
           requires:
             - build
+      - assemble:
+          requires:
+            - build
+      - deploy:
+          requires:
+            - assemble
           filters:
             branches:
               only: master
