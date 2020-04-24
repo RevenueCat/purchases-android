@@ -44,12 +44,11 @@ val detektAll by tasks.registering(io.gitlab.arturbosch.detekt.Detekt::class) {
     description = "Runs over whole code base without the starting overhead for each module."
     autoCorrect = true
     parallel = true
-    setSource(files(projectDir))
+    setSource(files(rootDir))
     include("**/*.kt")
     include("**/*.kts")
     exclude("**/build/**")
     exclude("**/test/**/*.kt")
-    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     reports {
         xml.enabled = false
@@ -59,11 +58,12 @@ val detektAll by tasks.registering(io.gitlab.arturbosch.detekt.Detekt::class) {
 }
 
 val detektAllBaseline by tasks.registering(io.gitlab.arturbosch.detekt.DetektCreateBaselineTask::class) {
-    description = "Overrides current baseline."
+    description = "Overrides current top level baseline with issues found on this run." +
+            "Issues found on the baseline will be ignored on detekt runs."
+    buildUponDefaultConfig.set(true)
     ignoreFailures.set(true)
     parallel.set(true)
     setSource(files(rootDir))
-    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     include("**/*.kt")
     include("**/*.kts")
