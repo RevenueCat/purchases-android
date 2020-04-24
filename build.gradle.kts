@@ -10,16 +10,17 @@ buildscript {
         classpath("com.android.tools.build:gradle:3.6.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
+        classpath("org.jacoco:org.jacoco.core:0.8.5")
     }
 }
 
 plugins {
     id("io.gitlab.arturbosch.detekt").version("1.7.2")
-    id("com.github.ben-manes.versions").version("0.28.0")
+    id("com.github.kt3k.coveralls").version("2.10.0")
 }
 
 dependencies {
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.7.2")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.8.0")
 }
 
 subprojects {
@@ -47,7 +48,6 @@ val detektAll by tasks.registering(io.gitlab.arturbosch.detekt.Detekt::class) {
     include("**/*.kt")
     include("**/*.kts")
     exclude("**/build/**")
-    exclude("**/buildSrc/**")
     exclude("**/test/**/*.kt")
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
@@ -68,6 +68,5 @@ val detektAllBaseline by tasks.registering(io.gitlab.arturbosch.detekt.DetektCre
     include("**/*.kt")
     include("**/*.kts")
     exclude("**/build/**")
-    exclude("**/buildSrc/**")
     exclude("**/test/**/*.kt")
 }
