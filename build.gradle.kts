@@ -46,7 +46,8 @@ val detektAll by tasks.registering(io.gitlab.arturbosch.detekt.Detekt::class) {
     exclude("**/test/**/*.kt")
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     reports {
-        xml.enabled = false
+        xml.enabled = true
+        xml.destination = file("build/reports/detekt/detekt.xml")
         html.enabled = false
         txt.enabled = false
     }
