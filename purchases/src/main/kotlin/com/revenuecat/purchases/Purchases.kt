@@ -559,11 +559,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /**
      * Invalidates the cache for purchaser information.
-     * 
+     *
      * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
      * Refer to https://docs.revenuecat.com/docs/purchaserinfo#section-get-user-information for more information on
      * using the cache properly.
-     * 
+     *
      * This is useful for cases where purchaser information might have been updated outside of the
      * app, like if a promotional subscription is granted through the RevenueCat dashboard.
      */
@@ -842,7 +842,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         { postToBackend(purchase, null, allowSharingPlayStoreAccount, consumeAllTransactions, appUserID, onSuccess, onError) }
                     )
                 } else {
-                    postToBackend(purchase,null, allowSharingPlayStoreAccount, consumeAllTransactions, appUserID, onSuccess, onError)
+                    postToBackend(purchase, null, allowSharingPlayStoreAccount, consumeAllTransactions, appUserID, onSuccess, onError)
                 }
             } else {
                 onError?.let { onError ->
@@ -1333,7 +1333,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmStatic
         fun isFeatureSupported(
-            @BillingClient.FeatureType feature: String, context: Context,
+            @BillingClient.FeatureType feature: String,
+            context: Context,
             callback: Callback<Boolean>
         ) {
             BillingClient.newBuilder(context).setListener { _, _ -> }.build().let { billingClient ->
@@ -1455,5 +1456,4 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val networkUserId: String?
     )
     // endregion
-
 }

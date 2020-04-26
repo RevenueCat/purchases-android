@@ -74,4 +74,3 @@ internal data class SubscriberAttribute(
         return "SubscriberAttribute(key=$key, value=$value, setTime=$setTime, isSynced=$isSynced)"
     }
 }
-

@@ -121,7 +121,7 @@ internal class BillingWrapper internal constructor(
         @BillingClient.SkuType itemType: String,
         skuList: List<String>,
         onReceiveSkuDetails: (List<SkuDetails>) -> Unit,
-        onError: (PurchasesError) ->  Unit
+        onError: (PurchasesError) -> Unit
     ) {
         debugLog("Requesting products with identifiers: ${skuList.joinToString()}")
         executeRequestOnUIThread { connectionError ->
@@ -349,11 +349,10 @@ internal class BillingWrapper internal constructor(
                 "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
             )
         }
-
     }
 
     override fun onBillingSetupFinished(billingResult: BillingResult) {
-        when(billingResult.responseCode) {
+        when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
                 debugLog("Billing Service Setup finished for ${billingClient?.toString()}.")
                 stateListener?.onConnected()

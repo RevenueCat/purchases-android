@@ -2,7 +2,6 @@ package com.revenuecat.purchases
 
 import com.android.billingclient.api.BillingClient
 import org.json.JSONException
-import org.json.JSONObject
 import java.io.IOException
 
 /**
@@ -72,7 +71,7 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidSubscriberAttributesBody(7264);
 
     companion object {
-        fun valueOf(backendErrorCode: Int) : BackendErrorCode? {
+        fun valueOf(backendErrorCode: Int): BackendErrorCode? {
             return values().firstOrNull { it.value == backendErrorCode }
         }
     }
@@ -103,7 +102,7 @@ internal fun HTTPClient.Result.toPurchasesError(): PurchasesError {
 }
 
 internal fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
-    return when(this) {
+    return when (this) {
         BackendErrorCode.BackendInvalidPlatform -> PurchasesErrorCode.UnknownError
         BackendErrorCode.BackendStoreProblem -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendCannotTransferPurchase -> PurchasesErrorCode.ReceiptInUseByOtherSubscriberError
@@ -114,7 +113,7 @@ internal fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendInvalidAPIKey -> PurchasesErrorCode.InvalidCredentialsError
         BackendErrorCode.BackendInvalidPaymentModeOrIntroPriceNotProvided,
         BackendErrorCode.BackendProductIdForGoogleReceiptNotProvided -> PurchasesErrorCode.PurchaseInvalidError
-        BackendErrorCode.BackendEmptyAppUserId ->  PurchasesErrorCode.InvalidAppUserIdError
+        BackendErrorCode.BackendEmptyAppUserId -> PurchasesErrorCode.InvalidAppUserIdError
         BackendErrorCode.BackendPlayStoreQuotaExceeded -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendPlayStoreInvalidPackageName -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendPlayStoreGenericError -> PurchasesErrorCode.StoreProblemError

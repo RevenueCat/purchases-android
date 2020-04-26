@@ -36,7 +36,7 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     val expirationDatesByEntitlement = entitlements.parseExpirations()
     val purchaseDatesByEntitlement = entitlements.parsePurchaseDates()
 
-    val requestDate= Iso8601Utils.parse(getString("request_date"))
+    val requestDate = Iso8601Utils.parse(getString("request_date"))
 
     val firstSeen = Iso8601Utils.parse(subscriber.getString("first_seen"))
 
@@ -95,7 +95,7 @@ private fun JSONObject.optDate(name: String) =
 
 private fun JSONObject.getDate(name: String) = Iso8601Utils.parse(getString(name))
 
-private fun JSONObject.getStore(name: String) = when(getString(name)) {
+private fun JSONObject.getStore(name: String) = when (getString(name)) {
     "app_store" -> Store.APP_STORE
     "mac_app_store" -> Store.MAC_APP_STORE
     "play_store" -> Store.PLAY_STORE
@@ -104,7 +104,7 @@ private fun JSONObject.getStore(name: String) = when(getString(name)) {
     else -> Store.UNKNOWN_STORE
 }
 
-private fun JSONObject.optPeriodType(name: String) = when(optString(name)) {
+private fun JSONObject.optPeriodType(name: String) = when (optString(name)) {
     "normal" -> PeriodType.NORMAL
     "intro" -> PeriodType.INTRO
     "trial" -> PeriodType.TRIAL

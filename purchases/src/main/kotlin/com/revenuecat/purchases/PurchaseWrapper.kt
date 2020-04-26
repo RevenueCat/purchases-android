@@ -24,5 +24,4 @@ internal data class PurchaseWrapper(
         type = type,
         presentedOfferingIdentifier = presentedOfferingIdentifier
     )
-
 }

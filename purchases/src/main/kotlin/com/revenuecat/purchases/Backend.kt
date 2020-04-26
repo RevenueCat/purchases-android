@@ -16,7 +16,6 @@ private const val HTTP_SERVER_ERROR_CODE = 500
 private const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 private const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
 
-
 /** @suppress */
 internal typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
 
@@ -29,7 +28,11 @@ internal typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesErro
 /** @suppress */
 internal typealias PostReceiptDataSuccessCallback = (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit
 /** @suppress */
-internal typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, attributeErrors: List<SubscriberAttributeError>) -> Unit
+internal typealias PostReceiptDataErrorCallback = (
+    PurchasesError,
+    shouldConsumePurchase: Boolean,
+    attributeErrors: List<SubscriberAttributeError>
+) -> Unit
 
 internal class Backend(
     private val apiKey: String,
@@ -296,7 +299,11 @@ internal class Backend(
         attributes: Map<String, SubscriberAttribute>,
         appUserID: String,
         onSuccessHandler: () -> Unit,
-        onErrorHandler: (PurchasesError, didBackendGetAttributes: Boolean, attributeErrors: List<SubscriberAttributeError>) -> Unit
+        onErrorHandler: (
+            PurchasesError,
+            didBackendGetAttributes: Boolean,
+            attributeErrors: List<SubscriberAttributeError>
+        ) -> Unit
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
@@ -354,7 +361,11 @@ internal class Backend(
         return responseCode < UNSUCCESSFUL_HTTP_STATUS_CODE
     }
 
-    private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(call: Dispatcher.AsyncCall, cacheKey: K, functions: Pair<S, E>) {
+    private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
+        call: Dispatcher.AsyncCall,
+        cacheKey: K,
+        functions: Pair<S, E>
+    ) {
         if (!containsKey(cacheKey)) {
             this[cacheKey] = mutableListOf(functions)
             enqueue(call)
@@ -362,7 +373,6 @@ internal class Backend(
             this[cacheKey]!!.add(functions)
         }
     }
-
 }
 
 internal fun Map<String, SubscriberAttribute>.toBackendMap(): Map<String, Map<String, Any?>> {

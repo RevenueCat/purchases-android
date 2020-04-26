@@ -43,7 +43,7 @@ object AdvertisingIdClient {
                             return@Runnable
                         }
                     }
-                } catch(e: Exception) {
+                } catch (e: Exception) {
                     Log.e("Purchases", "Error getting AdvertisingIdInfo", e)
                 } finally {
                     Handler(Looper.getMainLooper()).post {

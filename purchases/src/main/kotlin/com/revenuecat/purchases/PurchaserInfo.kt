@@ -37,7 +37,7 @@ class PurchaserInfo internal constructor(
     /**
      * @hide
      */
-    constructor(parcel: Parcel): this(
+    constructor(parcel: Parcel) : this(
         entitlements =
             parcel.readParcelable<EntitlementInfos>(EntitlementInfos::class.java.classLoader)
                 ?: EntitlementInfos(emptyMap()),
@@ -207,7 +207,5 @@ class PurchaserInfo internal constructor(
                 override fun createFromParcel(source: Parcel): PurchaserInfo = PurchaserInfo(source)
                 override fun newArray(size: Int): Array<PurchaserInfo?> = arrayOfNulls(size)
             }
-
     }
-
 }
