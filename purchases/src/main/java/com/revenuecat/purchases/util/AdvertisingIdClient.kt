@@ -20,8 +20,9 @@ object AdvertisingIdClient {
     @Throws(IllegalStateException::class)
     fun getAdvertisingIdInfo(context: Context, completion: (AdInfo?) -> Unit) {
         Thread(Runnable {
-            if (Looper.myLooper() == Looper.getMainLooper())
+            if (Looper.myLooper() == Looper.getMainLooper()) {
                 throw IllegalStateException("Cannot be called from the main thread")
+            }
 
             try {
                 context.packageManager.getPackageInfo("com.android.vending", 0)

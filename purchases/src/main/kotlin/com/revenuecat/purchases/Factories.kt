@@ -21,13 +21,17 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     nonSubscriptions.keys().forEach { productId ->
         val arrayOfPurchases = nonSubscriptions.getJSONArray(productId)
         if (arrayOfPurchases.length() > 0) {
-            nonSubscriptionsLatestPurchases.put(productId, arrayOfPurchases.getJSONObject(arrayOfPurchases.length() - 1))
+            nonSubscriptionsLatestPurchases.put(
+                productId,
+                arrayOfPurchases.getJSONObject(arrayOfPurchases.length() - 1)
+            )
         }
     }
 
     val subscriptions = subscriber.getJSONObject("subscriptions")
     val expirationDatesByProduct = subscriptions.parseExpirations()
-    val purchaseDatesByProduct = subscriptions.parsePurchaseDates() + nonSubscriptionsLatestPurchases.parsePurchaseDates()
+    val purchaseDatesByProduct =
+        subscriptions.parsePurchaseDates() + nonSubscriptionsLatestPurchases.parsePurchaseDates()
 
     var entitlements = JSONObject()
     if (subscriber.has("entitlements")) {
@@ -41,7 +45,8 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     val firstSeen = Iso8601Utils.parse(subscriber.getString("first_seen"))
 
     val entitlementInfos = if (subscriber.has("entitlements")) {
-        subscriber.getJSONObject("entitlements").buildEntitlementInfos(subscriptions, nonSubscriptionsLatestPurchases, requestDate)
+        subscriber.getJSONObject("entitlements")
+            .buildEntitlementInfos(subscriptions, nonSubscriptionsLatestPurchases, requestDate)
     } else {
         EntitlementInfos(emptyMap())
     }
@@ -69,21 +74,22 @@ private fun JSONObject.buildEntitlementInfos(
     val all = mutableMapOf<String, EntitlementInfo>()
     keys().forEach { entitlementId ->
         val entitlement = getJSONObject(entitlementId)
-        entitlement.optString("product_identifier").takeIf { it.isNotEmpty() }?.let { productIdentifier ->
-            if (subscriptions.has(productIdentifier)) {
-                all[entitlementId] = entitlement.buildEntitlementInfo(
-                    entitlementId,
-                    subscriptions.getJSONObject(productIdentifier),
-                    requestDate
-                )
-            } else if (nonSubscriptionsLatestPurchases.has(productIdentifier)) {
-                all[entitlementId] = entitlement.buildEntitlementInfo(
-                    entitlementId,
-                    nonSubscriptionsLatestPurchases.getJSONObject(productIdentifier),
-                    requestDate
-                )
+        entitlement.optString("product_identifier").takeIf { it.isNotEmpty() }
+            ?.let { productIdentifier ->
+                if (subscriptions.has(productIdentifier)) {
+                    all[entitlementId] = entitlement.buildEntitlementInfo(
+                        entitlementId,
+                        subscriptions.getJSONObject(productIdentifier),
+                        requestDate
+                    )
+                } else if (nonSubscriptionsLatestPurchases.has(productIdentifier)) {
+                    all[entitlementId] = entitlement.buildEntitlementInfo(
+                        entitlementId,
+                        nonSubscriptionsLatestPurchases.getJSONObject(productIdentifier),
+                        requestDate
+                    )
+                }
             }
-        }
     }
     return EntitlementInfos(all)
 }

@@ -28,14 +28,19 @@ internal class BillingWrapper internal constructor(
     private val mainHandler: Handler
 ) : PurchasesUpdatedListener, BillingClientStateListener {
 
-    @get:Synchronized @set:Synchronized
-    @Volatile internal var stateListener: StateListener? = null
-
-    @get:Synchronized @set:Synchronized
-    @Volatile internal var billingClient: BillingClient? = null
+    @get:Synchronized
+    @set:Synchronized
+    @Volatile
+    internal var stateListener: StateListener? = null
 
     @get:Synchronized
-    @Volatile internal var purchasesUpdatedListener: PurchasesUpdatedListener? = null
+    @set:Synchronized
+    @Volatile
+    internal var billingClient: BillingClient? = null
+
+    @get:Synchronized
+    @Volatile
+    internal var purchasesUpdatedListener: PurchasesUpdatedListener? = null
         set(value) {
             synchronized(this@BillingWrapper) {
                 field = value
@@ -50,12 +55,14 @@ internal class BillingWrapper internal constructor(
     private val productTypes = mutableMapOf<String, PurchaseType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
 
-    private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
+    private val serviceRequests =
+        ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
 
     internal class ClientFactory(private val context: Context) {
         @UiThread
         fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
-            return BillingClient.newBuilder(context).enablePendingPurchases().setListener(listener).build()
+            return BillingClient.newBuilder(context).enablePendingPurchases().setListener(listener)
+                .build()
         }
     }
 
@@ -106,7 +113,8 @@ internal class BillingWrapper internal constructor(
         }
     }
 
-    @Synchronized private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
+    @Synchronized
+    private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
             if (billingClient?.isReady == false) {
@@ -190,7 +198,9 @@ internal class BillingWrapper internal constructor(
     ) {
         billingClient?.launchBillingFlow(activity, params)
             .takeIf { billingResult -> billingResult?.responseCode != BillingClient.BillingResponseCode.OK }
-            ?.let { billingResult -> log("Failed to launch billing intent. ${billingResult.toHumanReadableDescription()}") }
+            ?.let { billingResult ->
+                log("Failed to launch billing intent. ${billingResult.toHumanReadableDescription()}")
+            }
     }
 
     fun queryPurchaseHistoryAsync(
@@ -208,9 +218,11 @@ internal class BillingWrapper internal constructor(
                         } ?: debugLog("Purchase history is empty.")
                         onReceivePurchaseHistory(purchaseHistoryRecordList)
                     } else {
-                        onReceivePurchaseHistoryError(billingResult.responseCode.billingResponseToPurchasesError(
-                            "Error receiving purchase history. ${billingResult.toHumanReadableDescription()}"
-                        ))
+                        onReceivePurchaseHistoryError(
+                            billingResult.responseCode.billingResponseToPurchasesError(
+                                "Error receiving purchase history. ${billingResult.toHumanReadableDescription()}"
+                            )
+                        )
                     }
                 }
             } else {
@@ -230,8 +242,18 @@ internal class BillingWrapper internal constructor(
                     SkuType.INAPP,
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
-                            subsPurchasesList.map { PurchaseHistoryRecordWrapper(it, PurchaseType.SUBS) } +
-                                inAppPurchasesList.map { PurchaseHistoryRecordWrapper(it, PurchaseType.INAPP) }
+                            subsPurchasesList.map {
+                                PurchaseHistoryRecordWrapper(
+                                    it,
+                                    PurchaseType.SUBS
+                                )
+                            } +
+                                inAppPurchasesList.map {
+                                    PurchaseHistoryRecordWrapper(
+                                        it,
+                                        PurchaseType.INAPP
+                                    )
+                                }
                         )
                     },
                     onReceivePurchaseHistoryError
@@ -248,7 +270,9 @@ internal class BillingWrapper internal constructor(
         debugLog("Consuming purchase with token $token")
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                billingClient?.consumeAsync(ConsumeParams.newBuilder().setPurchaseToken(token).build(), onConsumed)
+                billingClient?.consumeAsync(
+                    ConsumeParams.newBuilder().setPurchaseToken(token).build(), onConsumed
+                )
             }
         }
     }
@@ -298,12 +322,16 @@ internal class BillingWrapper internal constructor(
     internal fun getPurchaseType(purchaseToken: String): PurchaseType {
         billingClient?.let { client ->
             val querySubsResult = client.queryPurchases(SkuType.SUBS)
-            if (querySubsResult.responseCode == BillingClient.BillingResponseCode.OK && querySubsResult.purchasesList.any { it.purchaseToken == purchaseToken }) {
-                return PurchaseType.SUBS
+            val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
+            val subFound = querySubsResult.purchasesList.any { it.purchaseToken == purchaseToken }
+            if (subsResponseOK && subFound) {
+                return@getPurchaseType PurchaseType.SUBS
             }
-            val queryINAPPsResult = client.queryPurchases(SkuType.INAPP)
-            if (queryINAPPsResult.responseCode == BillingClient.BillingResponseCode.OK && queryINAPPsResult.purchasesList.any { it.purchaseToken == purchaseToken }) {
-                return PurchaseType.INAPP
+            val queryInAppsResult = client.queryPurchases(SkuType.INAPP)
+            val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
+            val inAppFound = queryInAppsResult.purchasesList.any { it.purchaseToken == purchaseToken }
+            if (inAppsResponseIsOK && inAppFound) {
+                return@getPurchaseType PurchaseType.INAPP
             }
         }
         return PurchaseType.UNKNOWN
@@ -342,10 +370,11 @@ internal class BillingWrapper internal constructor(
 
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(
                 purchases,
-                if (purchases == null && billingResult.responseCode == BillingClient.BillingResponseCode.OK)
+                if (purchases == null && billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     BillingClient.BillingResponseCode.ERROR
-                else
-                    billingResult.responseCode,
+                } else {
+                    billingResult.responseCode
+                },
                 "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
             )
         }
@@ -369,7 +398,11 @@ internal class BillingWrapper internal constructor(
                     while (!serviceRequests.isEmpty()) {
                         serviceRequests.remove().let { serviceRequest ->
                             mainHandler.post {
-                                serviceRequest(billingResult.responseCode.billingResponseToPurchasesError(message))
+                                serviceRequest(
+                                    billingResult.responseCode.billingResponseToPurchasesError(
+                                        message
+                                    )
+                                )
                             }
                         }
                     }

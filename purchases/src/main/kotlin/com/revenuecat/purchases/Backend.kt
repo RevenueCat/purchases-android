@@ -26,7 +26,8 @@ internal typealias CallbackCacheKey = List<String>
 /** @suppress */
 internal typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
 /** @suppress */
-internal typealias PostReceiptDataSuccessCallback = (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit
+internal typealias PostReceiptDataSuccessCallback =
+        (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit
 /** @suppress */
 internal typealias PostReceiptDataErrorCallback = (
     PurchasesError,
@@ -160,7 +161,11 @@ internal class Backend(
                         if (result.isSuccessful()) {
                             onSuccess(result.body!!.buildPurchaserInfo(), attributeErrors)
                         } else {
-                            onError(result.toPurchasesError(), result.responseCode < HTTP_SERVER_ERROR_CODE, attributeErrors)
+                            onError(
+                                result.toPurchasesError(),
+                                result.responseCode < HTTP_SERVER_ERROR_CODE,
+                                attributeErrors
+                            )
                         }
                     } catch (e: JSONException) {
                         onError(e.toPurchasesError(), false, emptyList())

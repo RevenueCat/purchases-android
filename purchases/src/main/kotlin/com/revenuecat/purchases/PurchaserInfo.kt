@@ -41,7 +41,9 @@ class PurchaserInfo internal constructor(
         entitlements =
             parcel.readParcelable<EntitlementInfos>(EntitlementInfos::class.java.classLoader)
                 ?: EntitlementInfos(emptyMap()),
-        purchasedNonSubscriptionSkus = parcel.readInt().let { size -> (0 until size).map { parcel.readString() }.toSet() },
+        purchasedNonSubscriptionSkus = parcel.readInt().let { size ->
+            (0 until size).map { parcel.readString() }.toSet()
+        },
         allExpirationDatesByProduct = parcel.readStringDateMap(),
         allPurchaseDatesByProduct = parcel.readStringDateMap(),
         allExpirationDatesByEntitlement = parcel.readStringDateMap(),

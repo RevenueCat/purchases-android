@@ -117,6 +117,22 @@ class EntitlementInfo internal constructor(
         return true
     }
 
+    override fun hashCode(): Int {
+        var result = identifier.hashCode()
+        result = 31 * result + isActive.hashCode()
+        result = 31 * result + willRenew.hashCode()
+        result = 31 * result + periodType.hashCode()
+        result = 31 * result + latestPurchaseDate.hashCode()
+        result = 31 * result + originalPurchaseDate.hashCode()
+        result = 31 * result + (expirationDate?.hashCode() ?: 0)
+        result = 31 * result + store.hashCode()
+        result = 31 * result + productIdentifier.hashCode()
+        result = 31 * result + isSandbox.hashCode()
+        result = 31 * result + (unsubscribeDetectedAt?.hashCode() ?: 0)
+        result = 31 * result + (billingIssueDetectedAt?.hashCode() ?: 0)
+        return result
+    }
+
     companion object {
         /** @suppress */
         @JvmField
