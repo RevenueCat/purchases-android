@@ -23,6 +23,6 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Danger
-      uses: danger/kotlin@0.5.0
+      uses: danger/danger
       env:
         GITHUB_TOKEN: ${{ secrets.ONLY_PUBLIC_REPO_TOKEN }}
