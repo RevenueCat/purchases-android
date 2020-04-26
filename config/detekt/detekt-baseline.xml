@@ -1,5 +1,53 @@
 <?xml version="1.0" ?>
 <SmellBaseline>
   <Blacklist></Blacklist>
-  <Whitelist></Whitelist>
+  <Whitelist>
+    <ID>ComplexMethod:EntitlementInfo.kt$EntitlementInfo$equals</ID>
+    <ID>EmptyCatchBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${ }</ID>
+    <ID>EmptyCatchBlock:Purchases.kt$Purchases.Companion.&lt;no name provided&gt;${ }</ID>
+    <ID>EmptyFunctionBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${}</ID>
+    <ID>EmptyFunctionBlock:Purchases.kt$Purchases${ }</ID>
+    <ID>EmptyFunctionBlock:listenerConversions.kt${ }</ID>
+    <ID>LargeClass:Purchases.kt$Purchases$Purchases</ID>
+    <ID>LongMethod:Purchases.kt$Purchases$restorePurchases</ID>
+    <ID>LongParameterList:Backend.kt$Backend$( purchaseToken: String, appUserID: String, productID: String, isRestore: Boolean, offeringIdentifier: String?, observerMode: Boolean, price: Double?, currency: String?, subscriberAttributes: Map&lt;String, SubscriberAttribute&gt;, onSuccess: PostReceiptDataSuccessCallback, onError: PostReceiptDataErrorCallback )</ID>
+    <ID>LongParameterList:EntitlementInfo.kt$EntitlementInfo$( val identifier: String, val isActive: Boolean, val willRenew: Boolean, val periodType: PeriodType, val latestPurchaseDate: Date, val originalPurchaseDate: Date, val expirationDate: Date?, val store: Store, val productIdentifier: String, val isSandbox: Boolean, val unsubscribeDetectedAt: Date?, val billingIssueDetectedAt: Date? )</ID>
+    <ID>LongParameterList:PurchaserInfo.kt$PurchaserInfo$( val entitlements: EntitlementInfos, val purchasedNonSubscriptionSkus: Set&lt;String&gt;, val allExpirationDatesByProduct: Map&lt;String, Date?&gt;, val allPurchaseDatesByProduct: Map&lt;String, Date?&gt;, @Deprecated("Use getExpirationDateForEntitlement instead") val allExpirationDatesByEntitlement: Map&lt;String, Date?&gt;, @Deprecated("Use getPurchaseDateForEntitlement instead") val allPurchaseDatesByEntitlement: Map&lt;String, Date?&gt;, val requestDate: Date, internal val jsonObject: JSONObject, internal val schemaVersion: Int, val firstSeen: Date, val originalAppUserId: String )</ID>
+    <ID>LongParameterList:Purchases.kt$Purchases$( private val applicationContext: Context, backingFieldAppUserID: String?, private val backend: Backend, private val billingWrapper: BillingWrapper, private val deviceCache: DeviceCache, observerMode: Boolean = false, private val executorService: ExecutorService, private val identityManager: IdentityManager, private val subscriberAttributesManager: SubscriberAttributesManager )</ID>
+    <ID>LongParameterList:Purchases.kt$Purchases$( purchase: PurchaseWrapper, skuDetails: SkuDetails?, allowSharingPlayStoreAccount: Boolean, consumeAllTransactions: Boolean, appUserID: String, onSuccess: ((PurchaseWrapper, PurchaserInfo) -&gt; Unit)? = null, onError: ((PurchaseWrapper, PurchasesError) -&gt; Unit)? = null )</ID>
+    <ID>LongParameterList:Purchases.kt$Purchases$( purchases: List&lt;PurchaseWrapper&gt;, allowSharingPlayStoreAccount: Boolean, consumeAllTransactions: Boolean, appUserID: String, onSuccess: ((PurchaseWrapper, PurchaserInfo) -&gt; Unit)? = null, onError: ((PurchaseWrapper, PurchasesError) -&gt; Unit)? = null )</ID>
+    <ID>MagicNumber:Purchases.kt$Purchases.AttributionNetwork.BRANCH$3</ID>
+    <ID>MagicNumber:Purchases.kt$Purchases.AttributionNetwork.FACEBOOK$5</ID>
+    <ID>MagicNumber:Purchases.kt$Purchases.AttributionNetwork.TENJIN$4</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendCannotTransferPurchase$7102</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendEmptyAppUserId$7220</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendInvalidAPIKey$7225</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendInvalidAppStoreSharedSecret$7104</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendInvalidAppleSubscriptionKey$7234</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendInvalidAuthToken$7224</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendInvalidPaymentModeOrIntroPriceNotProvided$7105</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendInvalidPlatform$7000</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendInvalidPlayStoreCredentials$7107</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendInvalidReceiptToken$7103</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendInvalidSubscriberAttributes$7263</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendInvalidSubscriberAttributesBody$7264</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendPlayStoreGenericError$7231</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendPlayStoreInvalidPackageName$7230</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendPlayStoreQuotaExceeded$7229</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendProductIdForGoogleReceiptNotProvided$7106</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendStoreProblem$7101</ID>
+    <ID>MagicNumber:errors.kt$BackendErrorCode.BackendUserIneligibleForPromoOffer$7232</ID>
+    <ID>MagicNumber:utils.kt$1000000.0</ID>
+    <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): PurchaseType</ID>
+    <ID>TooGenericExceptionCaught:AdvertisingIdClient.kt$AdvertisingIdClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:utils.kt$e: RuntimeException</ID>
+    <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
+    <ID>TooManyFunctions:Backend.kt$Backend$Backend</ID>
+    <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper$BillingWrapper</ID>
+    <ID>TooManyFunctions:DeviceCache.kt$DeviceCache$DeviceCache</ID>
+    <ID>TooManyFunctions:Factories.kt$com.revenuecat.purchases.Factories.kt</ID>
+    <ID>TooManyFunctions:Purchases.kt$Purchases$Purchases</ID>
+    <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
+    <ID>TooManyFunctions:utils.kt$com.revenuecat.purchases.utils.kt</ID>
+  </Whitelist>
 </SmellBaseline>
