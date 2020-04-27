@@ -13,9 +13,27 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: set up JDK 1.8
+    - name: set up JDK
       uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
     - name: Build with Gradle
       run: ./gradlew build
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: set up JDK
+      uses: actions/setup-java@v1
+    - name: Run tests
+      run: ./gradlew lint test
+    - name: Upload build reports
+      uses: actions/upload-artifact@v1
+      with:
+        name: reports
+        path: purchases/build/reports
+    - name: Upload test results
+      uses: actions/upload-artifact@v1
+      with:
+        name: test-results
+        path: purchases/build/test-results
