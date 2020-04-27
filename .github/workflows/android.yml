@@ -13,8 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: set up JDK
-      uses: actions/setup-java@v1
+#     - name: set up JDK
+#       uses: actions/setup-java@v1
     - name: Build with Gradle
       run: ./gradlew build
 
@@ -23,8 +23,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: set up JDK
-      uses: actions/setup-java@v1
+#     - name: set up JDK
+#       uses: actions/setup-java@v1
     - name: Run tests
       run: ./gradlew lint test
     - name: Upload build reports
