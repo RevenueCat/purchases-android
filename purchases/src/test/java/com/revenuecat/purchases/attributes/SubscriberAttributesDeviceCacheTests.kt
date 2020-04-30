@@ -2,8 +2,10 @@ package com.revenuecat.purchases.attributes
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.buildSubscriberAttributes
+import com.revenuecat.purchases.buildSubscriberAttributesMapPerUser
 import com.revenuecat.purchases.caching.DeviceCache
+import com.revenuecat.purchases.caching.SubscriberAttributeMap
+import com.revenuecat.purchases.caching.SubscriberAttributesPerAppUserIDMap
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -31,10 +33,22 @@ class SubscriberAttributesDeviceCacheTests {
     fun setup() {
         mockEditor = mockk<SharedPreferences.Editor>().apply {
             every {
-                putString(any(), capture(putStringSlot))
+                putString("com.revenuecat.purchases.$apiKey.subscriberAttributes", capture(putStringSlot))
             } returns this
             every {
-                remove(any())
+                remove("com.revenuecat.purchases.$apiKey.subscriberAttributes")
+            } returns this
+            every {
+                remove("com.revenuecat.purchases.$apiKey.appUserID")
+            } returns this
+            every {
+                remove("com.revenuecat.purchases.$apiKey.legacyAppUserID")
+            } returns this
+            every {
+                remove("com.revenuecat.purchases.$apiKey.new")
+            } returns this
+            every {
+                remove("com.revenuecat.purchases.$apiKey")
             } returns this
             every {
                 apply()
@@ -168,35 +182,56 @@ class SubscriberAttributesDeviceCacheTests {
 
     @Test
     fun `clearing caches also clears the subscriber attributes`() {
-        underTest.clearCachesForAppUserID()
-        verify { mockEditor.remove(underTest.subscriberAttributesCacheKey("appUserID")) }
+        val expectedAttributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true)
+        )
+        mockNotEmptyCache(expectedAttributes)
+        underTest.clearCachesForAppUserID(appUserID)
+        verify {
+            mockEditor.putString(
+                "com.revenuecat.purchases.$apiKey.subscriberAttributes",
+                JSONObject().also {
+                    it.put("attributes", JSONObject())
+                }.toString()
+            )
+        }
     }
 
     private fun mockEmptyCache() {
         every {
             mockPrefs.getString(
-                "com.revenuecat.purchases.$apiKey.subscriberAttributes.$appUserID",
+                "com.revenuecat.purchases.$apiKey.subscriberAttributes",
                 any()
             )
         } returns null
     }
 
-    private fun mockNotEmptyCache(cacheContents: Map<String, SubscriberAttribute>) {
+    private fun mockNotEmptyCache(cacheContents: SubscriberAttributeMap) {
+        mockNotEmptyCacheMultipleUsers(mapOf(appUserID to cacheContents))
+    }
+
+    private fun mockNotEmptyCacheMultipleUsers(cacheContents: SubscriberAttributesPerAppUserIDMap) {
         every {
             mockPrefs.getString(
-                "com.revenuecat.purchases.$apiKey.subscriberAttributes.$appUserID",
+                "com.revenuecat.purchases.$apiKey.subscriberAttributes",
                 any()
             )
-        } returns JSONObject().put("attributes", JSONObject().also {
-            cacheContents.forEach { (key, subscriberAttribute) ->
-                it.put(key, subscriberAttribute.toJSONObject())
+        } returns JSONObject().put("attributes", JSONObject().also { attributesJSONObject ->
+            cacheContents.forEach { (appUserID, subscriberAttributeMap) ->
+                attributesJSONObject.put(appUserID, JSONObject().also { appUserIDJSONObject ->
+                    subscriberAttributeMap.forEach { (key, subscriberAttribute) ->
+                        appUserIDJSONObject.put(key, subscriberAttribute.toJSONObject())
+                    }
+                })
             }
         }).toString()
     }
 
     private fun assertCapturedEqualsExpected(expectedAttributes: Map<String, SubscriberAttribute>) {
         assertThat(putStringSlot.isCaptured)
-        val receivedAttributes = JSONObject(putStringSlot.captured).buildSubscriberAttributes()
+        val receivedAttributes =
+            JSONObject(putStringSlot.captured).buildSubscriberAttributesMapPerUser()
+                .getValue(appUserID)
         assertThat(receivedAttributes).isNotNull
         assertThat(receivedAttributes.size).isEqualTo(expectedAttributes.size)
         expectedAttributes.values.map { it to receivedAttributes[it.key.backendKey] }

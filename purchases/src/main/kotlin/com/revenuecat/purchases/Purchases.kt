@@ -1163,15 +1163,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun synchronizeSubscriberAttributesIfNeeded() {
-        subscriberAttributesManager.synchronizeSubscriberAttributesIfNeeded(
-            appUserID,
-            {
-                debugLog("Subscriber attributes synced successfully.")
-            },
-            { error ->
-                errorLog("There was an error syncing subscriber attributes. Error: $error")
-            }
-        )
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
     }
 
     // endregion

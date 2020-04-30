@@ -2,6 +2,8 @@ package com.revenuecat.purchases
 
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.attributes.SubscriberAttribute
+import com.revenuecat.purchases.caching.SubscriberAttributeMap
+import com.revenuecat.purchases.caching.SubscriberAttributesPerAppUserIDMap
 import com.revenuecat.purchases.util.Iso8601Utils
 import org.json.JSONException
 import org.json.JSONObject
@@ -178,10 +180,22 @@ internal fun JSONObject.createPackage(
     }
 }
 
-internal fun JSONObject.buildSubscriberAttributes(): Map<String, SubscriberAttribute> {
+internal fun JSONObject.buildLegacySubscriberAttributes(): Map<String, SubscriberAttribute> {
     val attributesJSONObject = getJSONObject("attributes")
-    return attributesJSONObject.keys().asSequence().map { attributeKey ->
-        val attributeJSONObject = attributesJSONObject[attributeKey] as JSONObject
+    return attributesJSONObject.buildLegacySubscriberAttributes()
+}
+
+internal fun JSONObject.buildSubscriberAttributesMapPerUser(): SubscriberAttributesPerAppUserIDMap {
+    val attributesJSONObject = getJSONObject("attributes")
+    return attributesJSONObject.keys().asSequence().map { userId ->
+        val attributesForUser = attributesJSONObject[userId] as JSONObject
+        userId to attributesForUser.buildSubscriberAttributesMap()
+    }.toMap()
+}
+
+internal fun JSONObject.buildSubscriberAttributesMap(): SubscriberAttributeMap {
+    return this.keys().asSequence().map { attributeKey ->
+        val attributeJSONObject = this[attributeKey] as JSONObject
         attributeKey to SubscriberAttribute(attributeJSONObject)
     }.toMap()
 }

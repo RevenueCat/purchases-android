@@ -456,6 +456,7 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockSynchronizeSubscriberAttributesForAllUsers()
         Purchases.sharedInstance.onAppForegrounded()
         verify (exactly = 1) {
             mockBackend.getPurchaserInfo(eq(appUserId), any(), any())
@@ -471,10 +472,17 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockSynchronizeSubscriberAttributesForAllUsers()
         Purchases.sharedInstance.onAppForegrounded()
         verify (exactly = 1) {
             mockBackend.getOfferings(eq(appUserId), any(), any())
         }
+    }
+
+    private fun mockSynchronizeSubscriberAttributesForAllUsers() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
+        } just Runs
     }
 
     @Test
@@ -486,6 +494,7 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockSynchronizeSubscriberAttributesForAllUsers()
         Purchases.sharedInstance.onAppForegrounded()
         verify (exactly = 0){
             mockBackend.getPurchaserInfo(eq(appUserId), any(), any())
@@ -501,6 +510,7 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockSynchronizeSubscriberAttributesForAllUsers()
         Purchases.sharedInstance.onAppForegrounded()
         verify (exactly = 0){
             mockBackend.getOfferings(eq(appUserId), any(), any())
@@ -2372,7 +2382,7 @@ class PurchasesTest {
         })
         lock.await(200, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isZero()
-        verify (exactly = 0) { mockCache.clearCachesForAppUserID() }
+        verify (exactly = 0) { mockCache.clearCachesForAppUserID(appUserId) }
     }
 
     @Test
@@ -2723,6 +2733,7 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockSynchronizeSubscriberAttributesForAllUsers()
         purchases.onAppForegrounded()
         verify (exactly = 1) {
             mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)

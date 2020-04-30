@@ -267,7 +267,8 @@ class DeviceCacheTest {
         mockString(cache.appUserIDCacheKey, "appUserID")
         mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
         mockString(cache.purchaserInfoCacheKey(appUserID), null)
-        cache.clearCachesForAppUserID()
+        mockString(cache.subscriberAttributesCacheKey, null)
+        cache.clearCachesForAppUserID(appUserID)
         verify { mockEditor.remove(cache.appUserIDCacheKey) }
         verify { mockEditor.remove(cache.legacyAppUserIDCacheKey) }
         verify { mockEditor.remove(cache.purchaserInfoCacheKey("appUserID")) }
@@ -281,7 +282,8 @@ class DeviceCacheTest {
         mockString(cache.appUserIDCacheKey, "appUserID")
         mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
         mockString(cache.purchaserInfoCacheKey(appUserID), null)
-        cache.clearCachesForAppUserID()
+        mockString(cache.subscriberAttributesCacheKey, null)
+        cache.clearCachesForAppUserID(appUserID)
         assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
         assertThat(cache.isOfferingsCacheStale()).isTrue()
     }

@@ -88,7 +88,7 @@ class SubscriberAttributesManagerTests {
     @Test
     fun `do not synchronize with backend if cache is empty`() {
         every {
-            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
         } returns emptyMap()
 
         var successCalled = false
@@ -107,8 +107,8 @@ class SubscriberAttributesManagerTests {
     @Test
     fun `do not synchronize with backend if cache does not have unsynchronized attributes`() {
         every {
-            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
-        } returns mapOf("key" to SubscriberAttribute("key", null, isSynced = true))
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
+        } returns emptyMap()
 
         var successCalled = false
         underTest.synchronizeSubscriberAttributesIfNeeded(appUserID, {
@@ -134,6 +134,11 @@ class SubscriberAttributesManagerTests {
         } returns mapOf(
             "key" to subscriberAttribute,
             "key2" to subscriberAttribute2
+        )
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
+        } returns mapOf(
+            "key" to subscriberAttribute
         )
         every {
             mockDeviceCache.setAttributes(appUserID, capture(slotOfSetAttributes))
@@ -194,14 +199,12 @@ class SubscriberAttributesManagerTests {
     @Test
     fun `getting unsynchronized attributes`() {
         val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
-        val subscriberAttribute2 = SubscriberAttribute("key2", "value2", isSynced = true)
-
         val expected = mapOf(
             "key" to subscriberAttribute
         )
         every {
-            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
-        } returns (expected.toMutableMap() + mapOf("key2" to subscriberAttribute2))
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
+        } returns expected
 
         val actual = underTest.getUnsyncedSubscriberAttributes(appUserID)
 
@@ -219,8 +222,10 @@ class SubscriberAttributesManagerTests {
             "key" to subscriberAttribute
         )
         every {
-            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
-        } returns mapOf("key" to subscriberAttribute)
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
+        } returns mapOf(
+            "key" to subscriberAttribute
+        )
         every {
             mockDeviceCache.setAttributes(appUserID, capture(slotOfSetAttributes))
         } just Runs
@@ -277,13 +282,10 @@ class SubscriberAttributesManagerTests {
 
         val slotOfSetAttributes = slot<Map<String, SubscriberAttribute>>()
         every {
-            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
         } returns mapOf(
             "key" to subscriberAttribute
         )
-        every {
-            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
-        } returns mapOf("key" to subscriberAttribute)
         every {
             mockDeviceCache.setAttributes(appUserID, capture(slotOfSetAttributes))
         } just Runs
