@@ -58,7 +58,7 @@ class IdentityManagerTests {
     fun testConfigureSavesTheIDInTheCache() {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
-        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded("cesar") } just Runs
+        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded() } just Runs
         identityManager.configure("cesar")
         assertCorrectlyIdentified("cesar")
     }
@@ -165,7 +165,7 @@ class IdentityManagerTests {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns "an_old_random"
         every { mockDeviceCache.clearCachesForAppUserID("an_old_random") } just Runs
-        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded("an_old_random") } just Runs
+        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded() } just Runs
         identityManager.configure(null)
         assertCorrectlyIdentifiedWithAnonymous(oldID = "an_old_random")
     }
@@ -175,7 +175,7 @@ class IdentityManagerTests {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns "an_old_random"
         every { mockDeviceCache.clearCachesForAppUserID("an_old_random") } just Runs
-        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded("cesar") } just Runs
+        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded() } just Runs
         identityManager.configure("cesar")
         assertCorrectlyIdentified("cesar")
     }
@@ -192,7 +192,7 @@ class IdentityManagerTests {
         mockCleanCaches()
         identityManager.configure("cesar")
         verify {
-            mockDeviceCache.migrateSubscriberAttributesIfNeeded("cesar")
+            mockDeviceCache.migrateSubscriberAttributesIfNeeded()
         }
     }
 
@@ -202,7 +202,7 @@ class IdentityManagerTests {
         identityManager.configure(null)
         assertThat(cachedAppUserIDSlot.captured).isNotNull()
         verify {
-            mockDeviceCache.migrateSubscriberAttributesIfNeeded(cachedAppUserIDSlot.captured)
+            mockDeviceCache.migrateSubscriberAttributesIfNeeded()
         }
     }
 
@@ -210,7 +210,7 @@ class IdentityManagerTests {
         every { mockDeviceCache.getCachedAppUserID() } returns "cesar"
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
         every { mockDeviceCache.clearCachesForAppUserID("cesar") } just Runs
-        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded("cesar") } just Runs
+        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded() } just Runs
     }
 
     private fun assertCorrectlyIdentified(expectedAppUserID: String) {
@@ -235,13 +235,13 @@ class IdentityManagerTests {
         every { mockDeviceCache.getCachedAppUserID() } returns stubAnonymousID
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
         every { mockDeviceCache.clearCachesForAppUserID(stubAnonymousID) } just Runs
-        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded(any()) } just Runs
+        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded() } just Runs
     }
 
 
     private fun mockCleanCaches() {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
-        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded(any()) } just Runs
+        every { mockDeviceCache.migrateSubscriberAttributesIfNeeded() } just Runs
     }
 }
