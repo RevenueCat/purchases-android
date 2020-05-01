@@ -286,7 +286,7 @@ internal class DeviceCache(
             .also { unsyncedAttributesByKey ->
                 debugLog("Found ${unsyncedAttributesByKey.count()} unsynced attributes for appUserID: $appUserID \n" +
                     if (unsyncedAttributesByKey.isNotEmpty()) {
-                        "\t ${unsyncedAttributesByKey.map { "${it.value}" }} \n"
+                        unsyncedAttributesByKey.values.joinToString("\n")
                     } else {
                         ""
                     }
@@ -351,19 +351,17 @@ internal class DeviceCache(
         legacySubscriberAttributesForAppUserID: SubscriberAttributesPerAppUserIDMap
     ) {
         val editor = preferences.edit()
-
         val storedSubscriberAttributesForAll: SubscriberAttributesPerAppUserIDMap =
             getAllStoredSubscriberAttributes()
 
         val updatedStoredSubscriberAttributesForAll: MutableMap<String, SubscriberAttributeMap> =
             storedSubscriberAttributesForAll.toMutableMap()
 
-        legacySubscriberAttributesForAppUserID.forEach { (appUserID: AppUserID, attributesMap: SubscriberAttributeMap) ->
-            val currentSubscriberAttributesForAppUserID: SubscriberAttributeMap =
+        legacySubscriberAttributesForAppUserID.forEach { (appUserID: AppUserID, legacy: SubscriberAttributeMap) ->
+            val current: SubscriberAttributeMap =
                 storedSubscriberAttributesForAll[appUserID] ?: emptyMap()
-            val updatedAttributesForAppUserIDMap: SubscriberAttributeMap =
-                attributesMap + currentSubscriberAttributesForAppUserID
-            updatedStoredSubscriberAttributesForAll[appUserID] = updatedAttributesForAppUserIDMap
+            val updated: SubscriberAttributeMap = legacy + current
+            updatedStoredSubscriberAttributesForAll[appUserID] = updated
             editor.remove(legacySubscriberAttributesCacheKey(appUserID))
         }
 

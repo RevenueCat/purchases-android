@@ -85,8 +85,9 @@ internal class SubscriberAttributesManager(
             return
         }
 
-        debugLog("Synchronizing subscriber attributes: \n" +
-            "\t${ unsyncedStoredAttributes.forEach{ it.value } }\n")
+        debugLog("Synchronizing subscriber attributes for $appUserID \n " +
+            unsyncedStoredAttributes.values.joinToString("\n")
+        )
         backend.postSubscriberAttributes(
             unsyncedStoredAttributes,
             appUserID,
@@ -120,7 +121,7 @@ internal class SubscriberAttributesManager(
             return
         }
         debugLog("Marking the following attributes as synced for appUserID: $appUserID: \n" +
-            "\t ${ attributesToMarkAsSynced.forEach { it.value } } \n")
+            attributesToMarkAsSynced.values.joinToString("\n"))
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)
         val attributesToBeSet = currentlyStoredAttributes.toMutableMap()
         attributesToMarkAsSynced.forEach { (key, subscriberAttribute) ->
