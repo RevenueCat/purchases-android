@@ -21,6 +21,7 @@ class MainApplication : Application() {
                 .build()
         )
         Purchases.debugLogsEnabled = true
+        // TODO: remove
         Purchases.configure(this, "VtDdmbdWBySmqJeeQUTyrNxETUVkhuaJ")
         // set attributes to store additional, structured information for a user in RevenueCat.
         // More info: https://docs.revenuecat.com/docs/user-attributes
