@@ -60,6 +60,8 @@ internal class SubscriberAttributesManager(
                     debugLog("Subscriber attributes synced successfully for appUserID: $appUserID.")
                     if (currentAppUserID != appUserID) {
                         deviceCache.clearSubscriberAttributesIfSynced(appUserID)
+                    } else {
+                        deviceCache.clearSyncedForOtherAppUserIDs(currentAppUserID)
                     }
                 },
                 { error, didBackendGetAttributes, attributeErrors ->
