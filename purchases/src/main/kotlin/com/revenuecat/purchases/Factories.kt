@@ -182,7 +182,7 @@ internal fun JSONObject.createPackage(
 
 internal fun JSONObject.buildLegacySubscriberAttributes(): Map<String, SubscriberAttribute> {
     val attributesJSONObject = getJSONObject("attributes")
-    return attributesJSONObject.buildLegacySubscriberAttributes()
+    return attributesJSONObject.buildSubscriberAttributesMap()
 }
 
 internal fun JSONObject.buildSubscriberAttributesMapPerUser(): SubscriberAttributesPerAppUserIDMap {
