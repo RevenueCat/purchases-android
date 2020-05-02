@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.attributes
 
 import com.revenuecat.purchases.Backend
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.SubscriberAttributeError
 import com.revenuecat.purchases.caching.AppUserID
 import com.revenuecat.purchases.caching.DeviceCache
@@ -59,9 +58,11 @@ internal class SubscriberAttributesManager(
                     markAsSynced(appUserID, unsyncedAttributesForUser, emptyList())
                     debugLog("Subscriber attributes synced successfully for appUserID: $appUserID.")
                     if (currentAppUserID != appUserID) {
-                        deviceCache.clearSubscriberAttributesIfSynced(appUserID)
+                        deviceCache.clearSyncedSubscriberAttributesForSubscriber(appUserID)
                     } else {
-                        deviceCache.clearSyncedForOtherAppUserIDs(currentAppUserID)
+                        deviceCache.clearSyncedSubscriberAttributesForOtherAppUserIDs(
+                            currentAppUserID
+                        )
                     }
                 },
                 { error, didBackendGetAttributes, attributeErrors ->
@@ -73,37 +74,6 @@ internal class SubscriberAttributesManager(
                 }
             )
         }
-    }
-
-    fun synchronizeSubscriberAttributesIfNeeded(
-        appUserID: String,
-        onSuccessHandler: () -> Unit,
-        onErrorHandler: (PurchasesError) -> Unit
-    ) {
-        val unsyncedStoredAttributes = deviceCache.getUnsyncedSubscriberAttributes(appUserID)
-        if (unsyncedStoredAttributes.isEmpty()) {
-            debugLog("No subscriber attributes to synchronize.")
-            onSuccessHandler()
-            return
-        }
-
-        debugLog("Synchronizing subscriber attributes for $appUserID \n " +
-            unsyncedStoredAttributes.values.joinToString("\n")
-        )
-        backend.postSubscriberAttributes(
-            unsyncedStoredAttributes,
-            appUserID,
-            {
-                markAsSynced(appUserID, unsyncedStoredAttributes, emptyList())
-                onSuccessHandler()
-            },
-            { error, didBackendGetAttributes, attributeErrors ->
-                if (didBackendGetAttributes) {
-                    markAsSynced(appUserID, unsyncedStoredAttributes, attributeErrors)
-                }
-                onErrorHandler(error)
-            }
-        )
     }
 
     @Synchronized

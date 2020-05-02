@@ -63,7 +63,7 @@ internal class DeviceCache(
             .apply()
         clearPurchaserInfoCacheTimestamp()
         clearOfferingsCache()
-        clearSubscriberAttributesIfSynced(currentAppUserID)
+        clearSyncedSubscriberAttributesForSubscriber(currentAppUserID)
     }
 
     private fun SharedPreferences.Editor.clearPurchaserInfo(): SharedPreferences.Editor {
@@ -295,7 +295,7 @@ internal class DeviceCache(
             }
 
     @Synchronized
-    fun clearSubscriberAttributesIfSynced(appUserID: String) {
+    fun clearSyncedSubscriberAttributesForSubscriber(appUserID: String) {
         debugLog("Deleting subscriber attributes for $appUserID from cache.")
         val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes(appUserID)
         if (unsyncedSubscriberAttributes.isNotEmpty()) {
@@ -311,7 +311,7 @@ internal class DeviceCache(
     }
 
     @Synchronized
-    fun clearSyncedForOtherAppUserIDs(currentAppUserID: String) {
+    fun clearSyncedSubscriberAttributesForOtherAppUserIDs(currentAppUserID: String) {
         debugLog("Deleting synced subscriber attributes that don't belong to $currentAppUserID from cache.")
         val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes()
         if (unsyncedSubscriberAttributes.isNotEmpty()) {
