@@ -435,7 +435,7 @@ class PurchasesTest {
         val purchase = mockk<Purchase>(relaxed = true)
         every { purchase.sku } returns "sku"
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(listOf(purchase), 2, "")
-        assertThat(errorCalled).isTrue
+        assertThat(errorCalled).isTrue()
     }
 
     @Test
@@ -666,7 +666,7 @@ class PurchasesTest {
             fail("Should not be an error")
         })
         assertThat(capturedLambda).isNotNull
-        assertThat(restoreCalled).isTrue
+        assertThat(restoreCalled).isTrue()
 
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -719,7 +719,7 @@ class PurchasesTest {
             assertThat(error).isEqualTo(purchasesError)
         })
 
-        assertThat(onErrorCalled).isTrue
+        assertThat(onErrorCalled).isTrue()
     }
 
     @Test
@@ -778,7 +778,7 @@ class PurchasesTest {
             mockBillingWrapper.queryAllPurchases(any(), any())
         }
 
-        assertThat(callbackCalled).isTrue
+        assertThat(callbackCalled).isTrue()
     }
 
     @Test
@@ -952,7 +952,7 @@ class PurchasesTest {
             receivedOfferings = it
         }
 
-        assertThat(errorMessage.size).isZero
+        assertThat(errorMessage.size).isZero()
         assertThat(this.receivedOfferings).isNotNull
     }
 
@@ -1083,7 +1083,7 @@ class PurchasesTest {
                 any()
             )
         }
-        assertThat(capturedJSONObject.isCaptured).isTrue
+        assertThat(capturedJSONObject.isCaptured).isTrue()
         assertThat(capturedJSONObject.captured.get("adgroup")).isEqualTo(null)
         assertThat(capturedJSONObject.captured.get("campaign")).isEqualTo("awesome_campaign")
         assertThat(capturedJSONObject.captured.get("campaign_id")).isEqualTo(1234)
@@ -1619,7 +1619,7 @@ class PurchasesTest {
         }
 
         lock.await(200, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isZero
+        assertThat(lock.count).isZero()
         verify (exactly = 0) {
             mockBackend.createAlias(appUserId, appUserId, any(), any())
         }
@@ -1684,7 +1684,7 @@ class PurchasesTest {
             receivedIsBillingSupported = it
         })
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
-        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isTrue
+        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isTrue()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1705,7 +1705,7 @@ class PurchasesTest {
             receivedIsBillingSupported = it
         })
         listener.captured.onBillingServiceDisconnected()
-        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse
+        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1726,7 +1726,7 @@ class PurchasesTest {
             receivedIsBillingSupported = it
         })
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse
+        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1749,7 +1749,7 @@ class PurchasesTest {
             featureSupported = it
         })
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
-        AssertionsForClassTypes.assertThat(featureSupported).isTrue
+        AssertionsForClassTypes.assertThat(featureSupported).isTrue()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1770,7 +1770,7 @@ class PurchasesTest {
             featureSupported = it
         })
         listener.captured.onBillingServiceDisconnected()
-        AssertionsForClassTypes.assertThat(featureSupported).isFalse
+        AssertionsForClassTypes.assertThat(featureSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1793,7 +1793,7 @@ class PurchasesTest {
             featureSupported = it
         })
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(featureSupported).isFalse
+        AssertionsForClassTypes.assertThat(featureSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1817,7 +1817,7 @@ class PurchasesTest {
             featureSupported = it
         })
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(featureSupported).isFalse
+        AssertionsForClassTypes.assertThat(featureSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1840,7 +1840,7 @@ class PurchasesTest {
             receivedIsBillingSupported = it
         })
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse
+        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
         verify (exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -2254,7 +2254,7 @@ class PurchasesTest {
             mockBackend.postAttributionData(eq(appUserId), eq(network), any(), any())
         }
         assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
-        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isFalse
+        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isFalse()
     }
 
     @Test
@@ -2284,7 +2284,7 @@ class PurchasesTest {
             )
         }
         assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
-        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isFalse
+        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isFalse()
     }
 
     @Test
@@ -2368,7 +2368,7 @@ class PurchasesTest {
         }
         assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
         assertThat(capturedJSONObject.captured.get("rc_attribution_network_id")).isEqualTo(networkUserID)
-        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isTrue
+        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isTrue()
     }
 
     @Test
@@ -2381,7 +2381,7 @@ class PurchasesTest {
             fail("supposed to be successful")
         })
         lock.await(200, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isZero
+        assertThat(lock.count).isZero()
         verify (exactly = 0) { mockCache.clearCachesForAppUserID(appUserId) }
     }
 
@@ -3119,7 +3119,7 @@ class PurchasesTest {
             lock.countDown()
         })
         lock.await(200, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isZero
+        assertThat(lock.count).isZero()
         verify (exactly = 1) { mockCache.clearPurchaserInfoCacheTimestamp() }
     }
 

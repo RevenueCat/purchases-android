@@ -156,13 +156,13 @@ class SubscriberAttributesManagerTests {
         assertThat(capturedSetSubscriberAttribute).isNotNull
         assertThat(capturedSetSubscriberAttribute!!.value).isEqualTo(null)
         assertThat(capturedSetSubscriberAttribute.setTime).isEqualTo(subscriberAttribute.setTime)
-        assertThat(capturedSetSubscriberAttribute.isSynced).isTrue
+        assertThat(capturedSetSubscriberAttribute.isSynced).isTrue()
 
         val capturedSetSubscriberAttribute2 = capturedSet["key2"]
         assertThat(capturedSetSubscriberAttribute2).isNotNull
         assertThat(capturedSetSubscriberAttribute2!!.value).isEqualTo("value2")
         assertThat(capturedSetSubscriberAttribute2.setTime).isEqualTo(subscriberAttribute2.setTime)
-        assertThat(capturedSetSubscriberAttribute2.isSynced).isTrue
+        assertThat(capturedSetSubscriberAttribute2.isSynced).isTrue()
     }
 
     @Test
@@ -235,7 +235,7 @@ class SubscriberAttributesManagerTests {
         assertThat(capturedSetSubscriberAttribute).isNotNull
         assertThat(capturedSetSubscriberAttribute!!.value).isEqualTo(null)
         assertThat(capturedSetSubscriberAttribute.setTime).isEqualTo(subscriberAttribute.setTime)
-        assertThat(capturedSetSubscriberAttribute.isSynced).isTrue
+        assertThat(capturedSetSubscriberAttribute.isSynced).isTrue()
     }
 
     @Test
