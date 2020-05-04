@@ -197,6 +197,59 @@ class SubscriberAttributesDeviceCacheTests {
         }
     }
 
+    @Test
+    fun `Given there are some unsynced attributes for multiple users`() {
+        val attributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L"),
+            "age" to SubscriberAttribute("age", "L", isSynced = true)
+        )
+        mockNotEmptyCacheMultipleUsers(mapOf(
+            appUserID to attributes,
+            "user2" to attributes
+        ))
+        val unsyncedSubscriberAttributes = underTest.getUnsyncedSubscriberAttributes()
+        assertThat(unsyncedSubscriberAttributes.size).isEqualTo(2)
+        unsyncedSubscriberAttributes.forEach { (_, subscriberAttributesForUser) ->
+            assertThat(subscriberAttributesForUser.size).isEqualTo(1)
+            assertThat(subscriberAttributesForUser["tshirtsize"]).isEqualTo(attributes["tshirtsize"])
+        }
+    }
+
+    @Test
+    fun `Given there are some unsynced attributes for one of multiple users`() {
+        val expectedAttribute = SubscriberAttribute("tshirtsize", "L")
+        mockNotEmptyCacheMultipleUsers(mapOf(
+            appUserID to  mapOf(
+                "tshirtsize" to expectedAttribute,
+                "age" to SubscriberAttribute("age", "L", isSynced = true)
+            ),
+            "user2" to  mapOf(
+                "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
+                "age" to SubscriberAttribute("age", "L", isSynced = true)
+            )
+        ))
+        val unsyncedSubscriberAttributes = underTest.getUnsyncedSubscriberAttributes()
+        assertThat(unsyncedSubscriberAttributes.size).isEqualTo(1)
+        unsyncedSubscriberAttributes.forEach { (_, subscriberAttributesForUser) ->
+            assertThat(subscriberAttributesForUser.size).isEqualTo(1)
+            assertThat(subscriberAttributesForUser["tshirtsize"]).isEqualTo(expectedAttribute)
+        }
+    }
+
+    @Test
+    fun `Given there are no unsynced attributes for multiple users, getting them does't return them`() {
+        val attributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
+            "age" to SubscriberAttribute("age", "L", isSynced = true)
+        )
+        mockNotEmptyCacheMultipleUsers(mapOf(
+            appUserID to attributes,
+            "user2" to attributes
+        ))
+        val unsyncedSubscriberAttributes = underTest.getUnsyncedSubscriberAttributes()
+        assertThat(unsyncedSubscriberAttributes.size).isEqualTo(0)
+    }
+
     private fun mockEmptyCache() {
         every {
             mockPrefs.getString(
