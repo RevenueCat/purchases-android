@@ -7,6 +7,7 @@ import com.revenuecat.purchases.caching.AppUserID
 import com.revenuecat.purchases.caching.DeviceCache
 import com.revenuecat.purchases.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.caching.SubscriberAttributesPerAppUserIDMap
+import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -290,7 +291,7 @@ class SubscriberAttributesDeviceCacheTests {
             "cesar" to expectedAttributes,
             "pedro" to expectedAttributes
         )
-        mockLegacyNotEmptyCacheMultipleUsers(cacheContents)
+        mockLegacyCacheMultipleUsers(cacheContents)
 
         val allLegacyStoredSubscriberAttributes = underTest.getAllLegacyStoredSubscriberAttributes()
 
@@ -306,16 +307,60 @@ class SubscriberAttributesDeviceCacheTests {
 
     @Test
     fun `Given there are no legacy subscriber attributes`() {
-        val expectedAttributes = mapOf(
-            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
-            "age" to SubscriberAttribute("age", "L", isSynced = true)
-        )
         val cacheContents = emptyMap<AppUserID, SubscriberAttributeMap>()
-        mockLegacyNotEmptyCacheMultipleUsers(cacheContents)
+        mockLegacyCacheMultipleUsers(cacheContents)
 
         val allLegacyStoredSubscriberAttributes = underTest.getAllLegacyStoredSubscriberAttributes()
 
         assertThat(allLegacyStoredSubscriberAttributes.size).isEqualTo(cacheContents.size)
+    }
+
+    @Test
+    fun `Given there are no legacy subscriber attributes, migration does't do anything`() {
+        mockLegacyCacheMultipleUsers(emptyMap())
+
+        underTest.migrateSubscriberAttributesIfNeeded()
+
+        verify (exactly = 0) { mockEditor.remove(any()) }
+        verify (exactly = 0) { mockEditor.putString(any(), any()) }
+    }
+
+    @Test
+    fun `Given there are legacy subscriber attributes, migration happens`() {
+        val expectedAttributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
+            "age" to SubscriberAttribute("age", "L", isSynced = true)
+        )
+        val legacyCacheContents = mapOf(
+            "cesar" to expectedAttributes,
+            "pedro" to expectedAttributes
+        )
+        legacyCacheContents.keys.forEach {
+            every {
+                mockEditor.remove("com.revenuecat.purchases.$apiKey.subscriberAttributes.$it")
+            } returns mockEditor
+        }
+        mockLegacyCacheMultipleUsers(legacyCacheContents)
+        val cacheContents = mapOf(
+            appUserID to expectedAttributes,
+            "user2" to expectedAttributes
+        )
+        mockNotEmptyCacheMultipleUsers(cacheContents)
+
+        underTest.migrateSubscriberAttributesIfNeeded()
+
+        verify (exactly = 1) {
+            mockEditor.remove("com.revenuecat.purchases.$apiKey.subscriberAttributes.pedro")
+        }
+        verify (exactly = 1) {
+            mockEditor.remove("com.revenuecat.purchases.$apiKey.subscriberAttributes.cesar")
+        }
+        assertCapturedEqualsExpected(mapOf(
+            "cesar" to expectedAttributes,
+            "pedro" to expectedAttributes,
+            appUserID to expectedAttributes,
+            "user2" to expectedAttributes
+        ))
     }
 
     private fun mockEmptyCache() {
@@ -348,7 +393,7 @@ class SubscriberAttributesDeviceCacheTests {
         }).toString()
     }
 
-    private fun mockLegacyNotEmptyCacheMultipleUsers(cacheContents: SubscriberAttributesPerAppUserIDMap) {
+    private fun mockLegacyCacheMultipleUsers(cacheContents: SubscriberAttributesPerAppUserIDMap) {
         val preferencesContent = cacheContents.map { (userID, subscriberAttributeMap) ->
             val json = JSONObject().put("attributes", JSONObject().also {
                 subscriberAttributeMap.forEach { (key, subscriberAttribute) ->
