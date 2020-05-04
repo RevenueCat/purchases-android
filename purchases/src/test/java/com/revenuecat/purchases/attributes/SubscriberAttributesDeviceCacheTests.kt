@@ -3,6 +3,7 @@ package com.revenuecat.purchases.attributes
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.buildSubscriberAttributesMapPerUser
+import com.revenuecat.purchases.caching.AppUserID
 import com.revenuecat.purchases.caching.DeviceCache
 import com.revenuecat.purchases.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.caching.SubscriberAttributesPerAppUserIDMap
@@ -279,6 +280,44 @@ class SubscriberAttributesDeviceCacheTests {
         assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
     }
 
+    @Test
+    fun `Given there are legacy subscriber attributes, they are successfully returned`() {
+        val expectedAttributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
+            "age" to SubscriberAttribute("age", "L", isSynced = true)
+        )
+        val cacheContents = mapOf(
+            "cesar" to expectedAttributes,
+            "pedro" to expectedAttributes
+        )
+        mockLegacyNotEmptyCacheMultipleUsers(cacheContents)
+
+        val allLegacyStoredSubscriberAttributes = underTest.getAllLegacyStoredSubscriberAttributes()
+
+        assertThat(allLegacyStoredSubscriberAttributes.size).isEqualTo(cacheContents.size)
+        allLegacyStoredSubscriberAttributes.forEach { (userID, receivedAttributes) ->
+            expectedAttributes.values.map { it to receivedAttributes[it.key.backendKey] }
+                .forEach { (expected, received) ->
+                    assertThat(received).isNotNull
+                    assertThat(expected).isEqualTo(received)
+                }
+        }
+    }
+
+    @Test
+    fun `Given there are no legacy subscriber attributes`() {
+        val expectedAttributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
+            "age" to SubscriberAttribute("age", "L", isSynced = true)
+        )
+        val cacheContents = emptyMap<AppUserID, SubscriberAttributeMap>()
+        mockLegacyNotEmptyCacheMultipleUsers(cacheContents)
+
+        val allLegacyStoredSubscriberAttributes = underTest.getAllLegacyStoredSubscriberAttributes()
+
+        assertThat(allLegacyStoredSubscriberAttributes.size).isEqualTo(cacheContents.size)
+    }
+
     private fun mockEmptyCache() {
         every {
             mockPrefs.getString(
@@ -307,6 +346,30 @@ class SubscriberAttributesDeviceCacheTests {
                 })
             }
         }).toString()
+    }
+
+    private fun mockLegacyNotEmptyCacheMultipleUsers(cacheContents: SubscriberAttributesPerAppUserIDMap) {
+        val preferencesContent = cacheContents.map { (userID, subscriberAttributeMap) ->
+            val json = JSONObject().put("attributes", JSONObject().also {
+                subscriberAttributeMap.forEach { (key, subscriberAttribute) ->
+                    it.put(key, subscriberAttribute.toJSONObject())
+                }
+            }).toString()
+            "com.revenuecat.purchases.$apiKey.subscriberAttributes.$userID" to json
+        }.toMap()
+
+        preferencesContent.forEach { (key, contents) ->
+            every {
+                mockPrefs.getString(
+                    key,
+                    any()
+                )
+            } returns contents
+        }
+
+        every {
+            mockPrefs.all
+        } returns preferencesContent.toMutableMap()
     }
 
     private fun assertCapturedEqualsExpected(
