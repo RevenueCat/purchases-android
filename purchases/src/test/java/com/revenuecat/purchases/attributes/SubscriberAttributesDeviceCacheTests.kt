@@ -13,6 +13,7 @@ import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
@@ -108,7 +109,7 @@ class SubscriberAttributesDeviceCacheTests {
 
         underTest.setAttributes(appUserID, expectedAttributes)
 
-        assertCapturedEqualsExpected(expectedAttributes)
+        assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
     }
 
     @Test
@@ -122,7 +123,7 @@ class SubscriberAttributesDeviceCacheTests {
 
         underTest.setAttributes(appUserID, expectedAttributes)
 
-        assertCapturedEqualsExpected(expectedAttributes)
+        assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
     }
 
     @Test
@@ -136,7 +137,7 @@ class SubscriberAttributesDeviceCacheTests {
         )
         underTest.setAttributes(appUserID, expectedAttributes)
 
-        assertCapturedEqualsExpected(expectedAttributes)
+        assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
     }
 
     @Test
@@ -150,7 +151,7 @@ class SubscriberAttributesDeviceCacheTests {
         )
         underTest.setAttributes(appUserID, expectedAttributes)
 
-        assertCapturedEqualsExpected(expectedAttributes)
+        assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
     }
 
     @Test
@@ -164,7 +165,7 @@ class SubscriberAttributesDeviceCacheTests {
         )
         underTest.setAttributes(appUserID, expectedAttributes)
 
-        assertCapturedEqualsExpected(expectedAttributes)
+        assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
     }
 
     @Test
@@ -177,7 +178,7 @@ class SubscriberAttributesDeviceCacheTests {
 
         underTest.setAttributes(appUserID, mapOf(expectedAttributes.keys.toList()[1] to expectedAttributes.values.toList()[1]))
 
-        assertCapturedEqualsExpected(expectedAttributes)
+        assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
     }
 
     @Test
@@ -250,6 +251,34 @@ class SubscriberAttributesDeviceCacheTests {
         assertThat(unsyncedSubscriberAttributes.size).isEqualTo(0)
     }
 
+    @Test
+    fun `Given there are some unsynced attributes, clearing synced attributes for other users doesn't do anything`() {
+        val attributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L"),
+            "age" to SubscriberAttribute("age", "L", isSynced = true)
+        )
+        mockNotEmptyCacheMultipleUsers(mapOf(
+            appUserID to attributes,
+            "user2" to attributes
+        ))
+        underTest.clearSyncedSubscriberAttributesForOtherAppUserIDs(appUserID)
+        verify (exactly = 0) { mockEditor.putString(any(), any()) }
+    }
+
+    @Test
+    fun `Given there are no unsynced attributes, clearing synced attributes for other users removes them from the cache`() {
+        val expectedAttributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
+            "age" to SubscriberAttribute("age", "L", isSynced = true)
+        )
+        mockNotEmptyCacheMultipleUsers(mapOf(
+            appUserID to expectedAttributes,
+            "user2" to expectedAttributes
+        ))
+        underTest.clearSyncedSubscriberAttributesForOtherAppUserIDs(appUserID)
+        assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
+    }
+
     private fun mockEmptyCache() {
         every {
             mockPrefs.getString(
@@ -280,17 +309,23 @@ class SubscriberAttributesDeviceCacheTests {
         }).toString()
     }
 
-    private fun assertCapturedEqualsExpected(expectedAttributes: Map<String, SubscriberAttribute>) {
+    private fun assertCapturedEqualsExpected(
+        expectedAttributes: SubscriberAttributesPerAppUserIDMap
+    ) {
         assertThat(putStringSlot.isCaptured)
         val receivedAttributes =
             JSONObject(putStringSlot.captured).buildSubscriberAttributesMapPerUser()
-                .getValue(appUserID)
         assertThat(receivedAttributes).isNotNull
         assertThat(receivedAttributes.size).isEqualTo(expectedAttributes.size)
-        expectedAttributes.values.map { it to receivedAttributes[it.key.backendKey] }
-            .forEach { (expected, received) ->
+        expectedAttributes.forEach { userID, expectedAttributesForUser ->
+            expectedAttributesForUser.values.map {
+                val receivedAttributesForUser = receivedAttributes[userID] ?: fail("Didn't match")
+                it to receivedAttributesForUser[it.key.backendKey]
+            }.forEach { (expected, received) ->
                 assertThat(received).isNotNull
                 assertThat(expected).isEqualTo(received)
             }
+        }
+
     }
 }
