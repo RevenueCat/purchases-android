@@ -254,34 +254,6 @@ class SubscriberAttributesDeviceCacheTests {
     }
 
     @Test
-    fun `Given there are some unsynced attributes, clearing synced attributes for other users doesn't do anything`() {
-        val attributes = mapOf(
-            "tshirtsize" to SubscriberAttribute("tshirtsize", "L"),
-            "age" to SubscriberAttribute("age", "L", isSynced = true)
-        )
-        mockNotEmptyCacheMultipleUsers(mapOf(
-            appUserID to attributes,
-            "user2" to attributes
-        ))
-        underTest.clearSyncedSubscriberAttributesForOtherAppUserIDs(appUserID)
-        verify (exactly = 0) { mockEditor.putString(any(), any()) }
-    }
-
-    @Test
-    fun `Given there are no unsynced attributes, clearing synced attributes for other users removes them from the cache`() {
-        val expectedAttributes = mapOf(
-            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
-            "age" to SubscriberAttribute("age", "L", isSynced = true)
-        )
-        mockNotEmptyCacheMultipleUsers(mapOf(
-            appUserID to expectedAttributes,
-            "user2" to expectedAttributes
-        ))
-        underTest.clearSyncedSubscriberAttributesForOtherAppUserIDs(appUserID)
-        assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
-    }
-
-    @Test
     fun `Given there are legacy subscriber attributes, they are successfully returned`() {
         val expectedAttributes = mapOf(
             "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
@@ -360,6 +332,23 @@ class SubscriberAttributesDeviceCacheTests {
             "pedro" to expectedAttributes,
             appUserID to expectedAttributes,
             "user2" to expectedAttributes
+        ))
+    }
+
+    @Test
+    fun `Given there are old synced attributes, they get cleaned`() {
+        val expectedAttributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
+            "age" to SubscriberAttribute("age", "L", isSynced = true)
+        )
+        val cacheContents = mapOf(
+            appUserID to expectedAttributes,
+            "pedro" to expectedAttributes
+        )
+        mockNotEmptyCacheMultipleUsers(cacheContents)
+        underTest.cleanUpCache(appUserID)
+        assertCapturedEqualsExpected(mapOf(
+            appUserID to expectedAttributes
         ))
     }
 

@@ -50,27 +50,23 @@ internal class SubscriberAttributesManager(
             return
         }
 
-        unsyncedStoredAttributesForAllUsers.forEach { (appUserID, unsyncedAttributesForUser) ->
+        unsyncedStoredAttributesForAllUsers.forEach { (syncingAppUserID, unsyncedAttributesForUser) ->
             backend.postSubscriberAttributes(
                 unsyncedAttributesForUser,
-                appUserID,
+                syncingAppUserID,
                 {
-                    markAsSynced(appUserID, unsyncedAttributesForUser, emptyList())
-                    debugLog("Subscriber attributes synced successfully for appUserID: $appUserID.")
-                    if (currentAppUserID != appUserID) {
-                        deviceCache.clearSyncedSubscriberAttributesForSubscriber(appUserID)
-                    } else {
-                        deviceCache.clearSyncedSubscriberAttributesForOtherAppUserIDs(
-                            currentAppUserID
-                        )
+                    markAsSynced(syncingAppUserID, unsyncedAttributesForUser, emptyList())
+                    debugLog("Subscriber attributes synced successfully for appUserID: $syncingAppUserID.")
+                    if (currentAppUserID != syncingAppUserID) {
+                        deviceCache.clearSyncedSubscriberAttributesForSubscriber(syncingAppUserID)
                     }
                 },
                 { error, didBackendGetAttributes, attributeErrors ->
                     if (didBackendGetAttributes) {
-                        markAsSynced(appUserID, unsyncedAttributesForUser, attributeErrors)
+                        markAsSynced(syncingAppUserID, unsyncedAttributesForUser, attributeErrors)
                     }
                     errorLog("There was an error syncing subscriber attributes for " +
-                        "appUserID: $appUserID. Error: $error")
+                        "appUserID: $syncingAppUserID. Error: $error")
                 }
             )
         }

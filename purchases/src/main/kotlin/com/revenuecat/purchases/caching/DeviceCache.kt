@@ -311,19 +311,20 @@ internal class DeviceCache(
     }
 
     @Synchronized
-    fun clearSyncedSubscriberAttributesForOtherAppUserIDs(currentAppUserID: String) {
-        debugLog("Deleting synced subscriber attributes that don't belong to $currentAppUserID from cache.")
-        val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes()
-        if (unsyncedSubscriberAttributes.isNotEmpty()) {
-            return
-        }
-
+    fun cleanUpCache(currentAppUserID: String) {
+        debugLog("Deleting old synced subscriber attributes that don't belong to $currentAppUserID.")
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
 
-        val updatedStoredSubscriberAttributes =
-            allStoredSubscriberAttributes.filterKeys { it == currentAppUserID }
+        val filteredMap =
+            allStoredSubscriberAttributes.map { (appUserID, attributesMap) ->
+                if (currentAppUserID != appUserID) {
+                    appUserID to attributesMap.filterValues { !it.isSynced }
+                } else {
+                    appUserID to attributesMap
+                }
+            }.toMap().filterValues { it.isNotEmpty() }
 
-        preferences.edit().putAttributes(updatedStoredSubscriberAttributes).apply()
+        preferences.edit().putAttributes(filteredMap).apply()
     }
 
     private fun SharedPreferences.Editor.putAttributes(

@@ -131,10 +131,6 @@ class SubscriberAttributesManagerTests {
             lambda<() -> Unit>().captured.invoke()
         }
 
-        every {
-            mockDeviceCache.clearSyncedSubscriberAttributesForOtherAppUserIDs(appUserID)
-        } just Runs
-
         underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
 
         verify(exactly = 1) {
@@ -321,9 +317,6 @@ class SubscriberAttributesManagerTests {
         mockSettingUpdatedSyncedAttributes(allStoredAttributes)
 
         every {
-            mockDeviceCache.clearSyncedSubscriberAttributesForOtherAppUserIDs(appUserID)
-        } just Runs
-        every {
             mockDeviceCache.clearSyncedSubscriberAttributesForSubscriber("user2")
         } just Runs
 
@@ -334,12 +327,6 @@ class SubscriberAttributesManagerTests {
         }
         verify(exactly = 0) {
             mockDeviceCache.clearSyncedSubscriberAttributesForSubscriber(appUserID)
-        }
-        verify(exactly = 0) {
-            mockDeviceCache.clearSyncedSubscriberAttributesForOtherAppUserIDs("user2")
-        }
-        verify(exactly = 1) {
-            mockDeviceCache.clearSyncedSubscriberAttributesForOtherAppUserIDs(appUserID)
         }
     }
 

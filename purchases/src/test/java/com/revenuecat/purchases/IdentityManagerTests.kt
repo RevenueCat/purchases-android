@@ -31,6 +31,7 @@ class IdentityManagerTests {
         mockDeviceCache = mockk<DeviceCache>().apply {
             every { cacheAppUserID(capture(cachedAppUserIDSlot)) } answers {
                 every { mockDeviceCache.getCachedAppUserID() } returns cachedAppUserIDSlot.captured
+                every { mockDeviceCache.cleanUpCache(cachedAppUserIDSlot.captured) } just Runs
             }
         }
         mockBackend = mockk()
@@ -203,6 +204,15 @@ class IdentityManagerTests {
         assertThat(cachedAppUserIDSlot.captured).isNotNull()
         verify {
             mockDeviceCache.migrateSubscriberAttributesIfNeeded()
+        }
+    }
+
+    @Test
+    fun `when configuring, cache is cleaned up`() {
+        mockCleanCaches()
+        identityManager.configure("cesar")
+        verify {
+            mockDeviceCache.cleanUpCache("cesar")
         }
     }
 
