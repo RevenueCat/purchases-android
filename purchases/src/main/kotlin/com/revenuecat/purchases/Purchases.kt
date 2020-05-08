@@ -54,10 +54,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
-    observerMode: Boolean = false,
     private val executorService: ExecutorService,
     private val identityManager: IdentityManager,
-    private val subscriberAttributesManager: SubscriberAttributesManager
+    private val subscriberAttributesManager: SubscriberAttributesManager,
+    private var appConfig: AppConfig
 ) : LifecycleDelegate {
 
     /** @suppress */
@@ -86,9 +86,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions outside of the Purchases SDK.
      */
     var finishTransactions: Boolean
-        @Synchronized get() = state.finishTransactions
+        @Synchronized get() = appConfig.finishTransactions
         @Synchronized set(value) {
-            state = state.copy(finishTransactions = value)
+            appConfig.finishTransactions = value
         }
 
     /**
@@ -124,11 +124,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         debugLog("Debug logging enabled.")
         debugLog("SDK Version - $frameworkVersion")
         debugLog("Initial App User ID - $backingFieldAppUserID")
-        synchronized(this@Purchases) {
-            state = state.copy(
-                finishTransactions = !observerMode
-            )
-        }
         identityManager.configure(backingFieldAppUserID)
         ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
         billingWrapper.stateListener = object : BillingWrapper.StateListener {
@@ -1104,7 +1099,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         var userPurchasing: String? =
             null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
-            if (!state.finishTransactions) {
+            if (!appConfig.finishTransactions) {
                 debugLog("finishTransactions is set to false and a purchase has been started. Are you sure you want to do this?")
             }
             if (!state.purchaseCallbacks.containsKey(product.sku)) {
@@ -1258,18 +1253,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
             require(context.applicationContext is Application) { "Needs an application context." }
-
+            val appConfig = AppConfig(
+                context.getLocale()?.toBCP47() ?: "",
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
+                platformFlavor,
+                platformFlavorSDKVersion ?: frameworkVersion,
+                !observerMode
+            )
             val backend = Backend(
                 apiKey,
                 Dispatcher(service),
-                HTTPClient(
-                    appConfig = AppConfig(
-                        context.getLocale()?.toBCP47() ?: "",
-                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
-                        platformFlavor,
-                        platformFlavorSDKVersion ?: frameworkVersion
-                    )
-                )
+                HTTPClient(appConfig)
             )
 
             val billingWrapper = BillingWrapper(
@@ -1286,10 +1280,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 backend,
                 billingWrapper,
                 cache,
-                observerMode,
                 service,
                 IdentityManager(cache, backend),
-                SubscriberAttributesManager(cache, backend)
+                SubscriberAttributesManager(cache, backend),
+                appConfig
             ).also { sharedInstance = it }
         }
 

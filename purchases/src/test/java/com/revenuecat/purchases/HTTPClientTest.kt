@@ -24,16 +24,20 @@ import java.util.HashMap
 class HTTPClientTest {
 
     companion object {
+
         @JvmStatic
         private lateinit var server: MockWebServer
         @JvmStatic
         private lateinit var baseURL: URL
+        @JvmStatic
+        private lateinit var appConfig: AppConfig
 
         @BeforeClass
         @JvmStatic
         fun setup() {
             server = MockWebServer()
             baseURL = server.url("/v1").toUrl()
+            appConfig = AppConfig("en-US", "1.0", "native", "3.2.0", true)
         }
 
         @AfterClass
@@ -43,11 +47,10 @@ class HTTPClientTest {
         }
     }
 
-    private val appConfig = AppConfig("en-US", "1.0", "native", "3.2.0")
 
     @Test
     fun canBeCreated() {
-        HTTPClient(baseURL, appConfig)
+        HTTPClient(appConfig, baseURL)
     }
 
     @Test
@@ -55,7 +58,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
 
-        HTTPClient(baseURL, appConfig)
+        HTTPClient(appConfig, baseURL)
             .apply {
                 performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
             }
@@ -70,7 +73,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}").setResponseCode(223)
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         val result = client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
 
         server.takeRequest()
@@ -83,7 +86,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{'response': 'OK'}").setResponseCode(223)
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         val result = client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
 
         server.takeRequest()
@@ -98,7 +101,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("not uh jason")
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         try {
             client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
         } finally {
@@ -115,7 +118,7 @@ class HTTPClientTest {
         val headers = HashMap<String, String>()
         headers["Authentication"] = "Bearer todd"
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         client.performRequest("/resource", null as Map<*, *>?, headers)
 
         val request = server.takeRequest()
@@ -128,7 +131,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
 
         val request = server.takeRequest()
@@ -141,6 +144,7 @@ class HTTPClientTest {
         assertThat(request.getHeader("X-Version")).isEqualTo(Purchases.frameworkVersion)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
+        assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
     }
 
     @Test
@@ -151,7 +155,7 @@ class HTTPClientTest {
         val body = HashMap<String, String>()
         body["user_id"] = "jerry"
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         client.performRequest("/resource", body, mapOf("" to ""))
 
         val request = server.takeRequest()
@@ -159,4 +163,19 @@ class HTTPClientTest {
         assertThat(request.body).`as`("body is not null").isNotNull
         assertThat(request.body.size).isGreaterThan(0)
     }
+
+    @Test
+    fun `given observer mode is enabled, observer mode header is sent`() {
+        appConfig.finishTransactions = false
+        val response = MockResponse().setBody("{}")
+        server.enqueue(response)
+
+        val client = HTTPClient(appConfig, baseURL)
+        client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("true")
+    }
+
 }

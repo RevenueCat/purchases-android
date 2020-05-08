@@ -20,8 +20,8 @@ import java.net.MalformedURLException
 import java.net.URL
 
 internal class HTTPClient(
-    private val baseURL: URL = URL("https://api.revenuecat.com/"),
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
+    private val baseURL: URL = URL("https://api.revenuecat.com/")
 ) {
 
     private fun buffer(inputStream: InputStream): BufferedReader {
@@ -131,7 +131,8 @@ internal class HTTPClient(
                 "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
                 "X-Version" to Purchases.frameworkVersion,
                 "X-Client-Locale" to appConfig.languageTag,
-                "X-Client-Version" to appConfig.versionName
+                "X-Client-Version" to appConfig.versionName,
+                "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true"
             ).plus(headers ?: emptyMap()).forEach { (key, value) ->
                 addRequestProperty(key, value)
             }

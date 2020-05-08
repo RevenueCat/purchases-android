@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.attributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.AppConfig
 import com.revenuecat.purchases.Backend
 import com.revenuecat.purchases.BillingWrapper
 import com.revenuecat.purchases.IdentityManager
@@ -116,7 +117,8 @@ class SubscriberAttributesPurchasesTests {
             identityManager = mockk<IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId
             },
-            subscriberAttributesManager = subscriberAttributesManagerMock
+            subscriberAttributesManager = subscriberAttributesManagerMock,
+            appConfig = AppConfig("en-US", "1.0", "native", "3.2.0", true)
         )
     }
 

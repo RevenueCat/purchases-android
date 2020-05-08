@@ -185,7 +185,8 @@ internal data class AppConfig(
     val languageTag: String,
     val versionName: String,
     val platformFlavor: String,
-    val platformFlavorSDKVersion: String
+    val platformFlavorSDKVersion: String,
+    var finishTransactions: Boolean
 )
 
 internal fun String.sha1() =

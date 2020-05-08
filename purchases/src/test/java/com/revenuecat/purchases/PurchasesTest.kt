@@ -3435,7 +3435,8 @@ class PurchasesTest {
             mockCache,
             executorService = mockExecutorService,
             identityManager = mockIdentityManager,
-            subscriberAttributesManager = mockSubscriberAttributesManager
+            subscriberAttributesManager = mockSubscriberAttributesManager,
+            appConfig = AppConfig("en-US", "1.0", "native", "3.2.0", true)
         )
         Purchases.sharedInstance = purchases
     }
