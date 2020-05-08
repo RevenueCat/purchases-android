@@ -317,16 +317,16 @@ class SubscriberAttributesManagerTests {
         mockSettingUpdatedSyncedAttributes(allStoredAttributes)
 
         every {
-            mockDeviceCache.clearSyncedSubscriberAttributesForSubscriber("user2")
+            mockDeviceCache.clearSubscriberAttributesIfSyncedForSubscriber("user2")
         } just Runs
 
         underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
 
         verify(exactly = 1) {
-            mockDeviceCache.clearSyncedSubscriberAttributesForSubscriber("user2")
+            mockDeviceCache.clearSubscriberAttributesIfSyncedForSubscriber("user2")
         }
         verify(exactly = 0) {
-            mockDeviceCache.clearSyncedSubscriberAttributesForSubscriber(appUserID)
+            mockDeviceCache.clearSubscriberAttributesIfSyncedForSubscriber(appUserID)
         }
     }
 

@@ -20,8 +20,7 @@ internal class IdentityManager(
             ?: generateRandomID()
         debugLog("Identifying App User ID: $appUserIDToUse")
         deviceCache.cacheAppUserID(appUserIDToUse)
-        deviceCache.migrateSubscriberAttributesIfNeeded()
-        deviceCache.cleanUpCache(appUserIDToUse)
+        deviceCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
     }
 
     fun identify(

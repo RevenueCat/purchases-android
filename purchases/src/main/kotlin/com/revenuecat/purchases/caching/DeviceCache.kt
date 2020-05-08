@@ -63,7 +63,7 @@ internal class DeviceCache(
             .apply()
         clearPurchaserInfoCacheTimestamp()
         clearOfferingsCache()
-        clearSyncedSubscriberAttributesForSubscriber(currentAppUserID)
+        clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
     }
 
     private fun SharedPreferences.Editor.clearPurchaserInfo(): SharedPreferences.Editor {
@@ -295,12 +295,12 @@ internal class DeviceCache(
             }
 
     @Synchronized
-    fun clearSyncedSubscriberAttributesForSubscriber(appUserID: String) {
-        debugLog("Deleting subscriber attributes for $appUserID from cache.")
+    fun clearSubscriberAttributesIfSyncedForSubscriber(appUserID: String) {
         val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes(appUserID)
         if (unsyncedSubscriberAttributes.isNotEmpty()) {
             return
         }
+        debugLog("Deleting subscriber attributes for $appUserID from cache.")
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
         val updatedStoredSubscriberAttributes =
             allStoredSubscriberAttributes.toMutableMap().also {
@@ -311,8 +311,15 @@ internal class DeviceCache(
     }
 
     @Synchronized
-    fun cleanUpCache(currentAppUserID: String) {
+    fun cleanUpSubscriberAttributeCache(currentAppUserID: String) {
+        migrateSubscriberAttributesIfNeeded()
+        deleteSyncedSubscriberAttributesForOtherUsers(currentAppUserID)
+    }
+
+    @Synchronized
+    private fun deleteSyncedSubscriberAttributesForOtherUsers(currentAppUserID: String) {
         debugLog("Deleting old synced subscriber attributes that don't belong to $currentAppUserID.")
+
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
 
         val filteredMap =
@@ -355,7 +362,7 @@ internal class DeviceCache(
     // region migrate subscriber attributes
 
     @Synchronized
-    fun migrateSubscriberAttributesIfNeeded() {
+    private fun migrateSubscriberAttributesIfNeeded() {
         getAllLegacyStoredSubscriberAttributes()
             .takeIf { it.isNotEmpty() }
             ?.let { legacySubscriberAttributes ->
@@ -375,8 +382,7 @@ internal class DeviceCache(
             storedSubscriberAttributesForAll.toMutableMap()
 
         legacySubscriberAttributesForAppUserID.forEach { (appUserID: AppUserID, legacy: SubscriberAttributeMap) ->
-            val current: SubscriberAttributeMap =
-                storedSubscriberAttributesForAll[appUserID] ?: emptyMap()
+            val current: SubscriberAttributeMap = storedSubscriberAttributesForAll[appUserID] ?: emptyMap()
             val updated: SubscriberAttributeMap = legacy + current
             updatedStoredSubscriberAttributesForAll[appUserID] = updated
             editor.remove(legacySubscriberAttributesCacheKey(appUserID))
@@ -394,13 +400,14 @@ internal class DeviceCache(
 
     @Synchronized
     fun getAllLegacyStoredSubscriberAttributes(): SubscriberAttributesPerAppUserIDMap {
+        val legacySubscriberAttributesCacheKeyPrefix = legacySubscriberAttributesCacheKey("")
         val allSubscriberAttributesKeys = preferences.all
-            ?.filterKeys { it.startsWith("$SHARED_PREFERENCES_PREFIX$apiKey.subscriberAttributes.") }
+            ?.filterKeys { it.startsWith(legacySubscriberAttributesCacheKeyPrefix) }
             ?.keys ?: emptySet()
 
         return allSubscriberAttributesKeys.map { preferencesKey ->
             val appUserIDFromKey: AppUserID =
-                preferencesKey.split("$SHARED_PREFERENCES_PREFIX$apiKey.subscriberAttributes.")[1]
+                preferencesKey.split(legacySubscriberAttributesCacheKeyPrefix)[1]
             val subscriberAttributeMap: SubscriberAttributeMap =
                 preferences.getJSONObjectOrNull(preferencesKey)
                     ?.buildLegacySubscriberAttributes() ?: emptyMap()

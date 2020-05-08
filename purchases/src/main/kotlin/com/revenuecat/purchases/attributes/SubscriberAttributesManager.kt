@@ -58,7 +58,7 @@ internal class SubscriberAttributesManager(
                     markAsSynced(syncingAppUserID, unsyncedAttributesForUser, emptyList())
                     debugLog("Subscriber attributes synced successfully for appUserID: $syncingAppUserID.")
                     if (currentAppUserID != syncingAppUserID) {
-                        deviceCache.clearSyncedSubscriberAttributesForSubscriber(syncingAppUserID)
+                        deviceCache.clearSubscriberAttributesIfSyncedForSubscriber(syncingAppUserID)
                     }
                 },
                 { error, didBackendGetAttributes, attributeErrors ->
