@@ -1182,6 +1182,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * being used
          */
         @JvmStatic var platformFlavor = "native"
+        /**
+         * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform version
+         * is being used
+         */
+        @JvmStatic var platformFlavorSDKVersion: String? = null
 
         @get:VisibleForTesting(otherwise = VisibleForTesting.NONE) @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         internal var postponedAttributionData = mutableListOf<AttributionData>()
@@ -1261,7 +1266,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     appConfig = AppConfig(
                         context.getLocale()?.toBCP47() ?: "",
                         context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
-                        platformFlavor
+                        platformFlavor,
+                        platformFlavorSDKVersion ?: frameworkVersion
                     )
                 )
             )

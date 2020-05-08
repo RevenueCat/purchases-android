@@ -123,19 +123,18 @@ internal class HTTPClient(
         body: JSONObject?
     ): HttpURLConnection {
         return (fullURL.openConnection() as HttpURLConnection).apply {
-            headers?.forEach { (key, value) ->
+            mapOf(
+                "Content-Type" to "application/json",
+                "X-Platform" to "android",
+                "X-Platform-Flavor" to appConfig.platformFlavor,
+                "X-Platform-Flavor-Version" to appConfig.platformFlavorSDKVersion,
+                "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
+                "X-Version" to Purchases.frameworkVersion,
+                "X-Client-Locale" to appConfig.languageTag,
+                "X-Client-Version" to appConfig.versionName
+            ).plus(headers ?: emptyMap()).forEach { (key, value) ->
                 addRequestProperty(key, value)
             }
-            addRequestProperty("Content-Type", "application/json")
-            addRequestProperty("X-Platform", "android")
-            addRequestProperty("X-Platform-Flavor", appConfig.platformFlavor)
-            addRequestProperty(
-                "X-Platform-Version",
-                Build.VERSION.SDK_INT.toString()
-            )
-            addRequestProperty("X-Version", Purchases.frameworkVersion)
-            addRequestProperty("X-Client-Locale", appConfig.languageTag)
-            addRequestProperty("X-Client-Version", appConfig.versionName)
 
             if (body != null) {
                 doOutput = true

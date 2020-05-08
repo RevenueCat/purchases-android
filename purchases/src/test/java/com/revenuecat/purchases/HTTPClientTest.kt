@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases
 
+import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -42,7 +43,7 @@ class HTTPClientTest {
         }
     }
 
-    private val appConfig = AppConfig("en-US", "1.0", "native")
+    private val appConfig = AppConfig("en-US", "1.0", "native", "3.2.0")
 
     @Test
     fun canBeCreated() {
@@ -134,8 +135,9 @@ class HTTPClientTest {
 
         assertThat(request.getHeader("Content-Type")).isEqualTo("application/json")
         assertThat(request.getHeader("X-Platform")).isEqualTo("android")
-        assertThat(request.getHeader("X-Platform-Version")).isEqualTo(Integer.toString(android.os.Build.VERSION.SDK_INT))
+        assertThat(request.getHeader("X-Platform-Version")).isEqualTo("${Build.VERSION.SDK_INT}")
         assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo("native")
+        assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo("3.2.0")
         assertThat(request.getHeader("X-Version")).isEqualTo(Purchases.frameworkVersion)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
