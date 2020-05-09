@@ -1298,13 +1298,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @JvmStatic
         fun isBillingSupported(context: Context, callback: Callback<Boolean>) {
             BillingClient.newBuilder(context).enablePendingPurchases().setListener { _, _ -> }
-                .build().let {
-                    it.startConnection(
+                .build().let { billingClient ->
+                    billingClient.startConnection(
                         object : BillingClientStateListener {
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
                                 // It also means that IN-APP items are supported for purchasing
                                 try {
-                                    it.endConnection()
+                                    billingClient.endConnection()
                                     callback.onReceived(billingResult.responseCode == BillingClient.BillingResponseCode.OK)
                                 } catch (e: IllegalArgumentException) {
                                     // Play Services not available
@@ -1314,7 +1314,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                             override fun onBillingServiceDisconnected() {
                                 try {
-                                    it.endConnection()
+                                    billingClient.endConnection()
                                 } catch (e: IllegalArgumentException) {
                                 } finally {
                                     callback.onReceived(false)
@@ -1336,30 +1336,32 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             @BillingClient.FeatureType feature: String, context: Context,
             callback: Callback<Boolean>
         ) {
-            BillingClient.newBuilder(context).setListener { _, _ -> }.build().let { billingClient ->
-                billingClient.startConnection(
-                    object : BillingClientStateListener {
-                        override fun onBillingSetupFinished(billingResult: BillingResult) {
-                            try {
-                                billingClient.endConnection()
-                                val featureSupported = billingClient.isFeatureSupported(feature)
-                                callback.onReceived(featureSupported.responseCode == BillingClient.BillingResponseCode.OK)
-                            } catch (e: IllegalArgumentException) {
-                                // Play Services not available
-                                callback.onReceived(false)
+            BillingClient.newBuilder(context).enablePendingPurchases().setListener { _, _ -> }
+                .build()
+                .let { billingClient ->
+                    billingClient.startConnection(
+                        object : BillingClientStateListener {
+                            override fun onBillingSetupFinished(billingResult: BillingResult) {
+                                try {
+                                    val featureSupported = billingClient.isFeatureSupported(feature)
+                                    billingClient.endConnection()
+                                    callback.onReceived(featureSupported.responseCode == BillingClient.BillingResponseCode.OK)
+                                } catch (e: IllegalArgumentException) {
+                                    // Play Services not available
+                                    callback.onReceived(false)
+                                }
                             }
-                        }
 
-                        override fun onBillingServiceDisconnected() {
-                            try {
-                                billingClient.endConnection()
-                            } catch (e: IllegalArgumentException) {
-                            } finally {
-                                callback.onReceived(false)
+                            override fun onBillingServiceDisconnected() {
+                                try {
+                                    billingClient.endConnection()
+                                } catch (e: IllegalArgumentException) {
+                                } finally {
+                                    callback.onReceived(false)
+                                }
                             }
-                        }
-                    })
-            }
+                        })
+                }
         }
 
         /**
