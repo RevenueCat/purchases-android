@@ -37,11 +37,13 @@ class PurchaserInfo internal constructor(
     /**
      * @hide
      */
-    constructor(parcel: Parcel): this(
+    constructor(parcel: Parcel) : this(
         entitlements =
             parcel.readParcelable<EntitlementInfos>(EntitlementInfos::class.java.classLoader)
                 ?: EntitlementInfos(emptyMap()),
-        purchasedNonSubscriptionSkus = parcel.readInt().let { size -> (0 until size).map { parcel.readString() }.toSet() },
+        purchasedNonSubscriptionSkus = parcel.readInt().let { size ->
+            (0 until size).map { parcel.readString() }.toSet()
+        },
         allExpirationDatesByProduct = parcel.readStringDateMap(),
         allPurchaseDatesByProduct = parcel.readStringDateMap(),
         allExpirationDatesByEntitlement = parcel.readStringDateMap(),
@@ -207,7 +209,5 @@ class PurchaserInfo internal constructor(
                 override fun createFromParcel(source: Parcel): PurchaserInfo = PurchaserInfo(source)
                 override fun newArray(size: Int): Array<PurchaserInfo?> = arrayOfNulls(size)
             }
-
     }
-
 }

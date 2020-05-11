@@ -74,5 +74,4 @@ data class Offering internal constructor(
     @Suppress("MemberVisibilityCanBePrivate")
     fun getPackage(identifier: String) =
         availablePackages.first { it.identifier == identifier }
-
 }

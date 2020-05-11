@@ -83,7 +83,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
     /**
-     * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions outside of the Purchases SDK.
+     * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
+     * outside of the Purchases SDK.
      */
     var finishTransactions: Boolean
         @Synchronized get() = state.finishTransactions
@@ -284,7 +285,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Purchase a product.
      * @param [activity] Current activity
      * @param [skuDetails] The skuDetails of the product you wish to purchase
-     * @param [upgradeInfo] The UpgradeInfo you wish to upgrade from containing the oldSku and the optional prorationMode.
+     * @param [upgradeInfo] The UpgradeInfo you wish to upgrade from containing the
+     * oldSku and the optional prorationMode.
      * @param [listener] The listener that will be called when purchase completes.
      */
     fun purchaseProduct(
@@ -314,7 +316,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Make a purchase.
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
-     * @param [upgradeInfo] The UpgradeInfo you wish to upgrade from containing the oldSku and the optional prorationMode.
+     * @param [upgradeInfo] The UpgradeInfo you wish to upgrade from containing the oldSku
+     * and the optional prorationMode.
      * @param [listener] The listener that will be called when purchase completes.
      */
     fun purchasePackage(
@@ -369,7 +372,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         debugLog("Restoring purchases")
         if (!allowSharingPlayStoreAccount) {
-            debugLog("allowSharingPlayStoreAccount is set to false and restorePurchases has been called. This will 'alias' any app user id's sharing the same receipt. Are you sure you want to do this?")
+            debugLog("allowSharingPlayStoreAccount is set to false and restorePurchases" +
+                " has been called. This will 'alias' any app user id's sharing the same receipt. " +
+                "Are you sure you want to do this?")
         }
         this.finishTransactions.let { finishTransactions ->
             billingWrapper.queryAllPurchases(
@@ -559,11 +564,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /**
      * Invalidates the cache for purchaser information.
-     * 
+     *
      * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
      * Refer to https://docs.revenuecat.com/docs/purchaserinfo#section-get-user-information for more information on
      * using the cache properly.
-     * 
+     *
      * This is useful for cases where purchaser information might have been updated outside of the
      * app, like if a promotional subscription is granted through the RevenueCat dashboard.
      */
@@ -606,7 +611,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     fun setPhoneNumber(phoneNumber: String?) {
         debugLog("setPhoneNumber called")
-        subscriberAttributesManager.setAttribute(SubscriberAttributeKey.PhoneNumber, phoneNumber, appUserID)
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.PhoneNumber,
+            phoneNumber,
+            appUserID
+        )
     }
 
     /**
@@ -616,7 +625,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     fun setDisplayName(displayName: String?) {
         debugLog("setDisplayName called")
-        subscriberAttributesManager.setAttribute(SubscriberAttributeKey.DisplayName, displayName, appUserID)
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.DisplayName,
+            displayName,
+            appUserID
+        )
     }
 
     /**
@@ -626,7 +639,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     fun setPushToken(fcmToken: String?) {
         debugLog("setPushToken called")
-        subscriberAttributesManager.setAttribute(SubscriberAttributeKey.FCMTokens, fcmToken, appUserID)
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.FCMTokens,
+            fcmToken,
+            appUserID
+        )
     }
 
     // endregion
@@ -717,7 +734,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         val jsonPackagesArray =
                             jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
                         for (j in 0 until jsonPackagesArray.length()) {
-                            skus.add(jsonPackagesArray.getJSONObject(j).getString("platform_product_identifier"))
+                            skus.add(
+                                jsonPackagesArray.getJSONObject(j)
+                                    .getString("platform_product_identifier")
+                            )
                         }
                     }
                     getSkuDetails(skus, { detailsByID ->
@@ -837,12 +857,38 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         BillingClient.SkuType.INAPP,
                         listOf(purchase.sku),
                         { skuDetailsList ->
-                            postToBackend(purchase, skuDetailsList.firstOrNull { it.sku == purchase.sku }, allowSharingPlayStoreAccount, consumeAllTransactions, appUserID, onSuccess, onError)
+                            postToBackend(
+                                purchase,
+                                skuDetailsList.firstOrNull { it.sku == purchase.sku },
+                                allowSharingPlayStoreAccount,
+                                consumeAllTransactions,
+                                appUserID,
+                                onSuccess,
+                                onError
+                            )
                         },
-                        { postToBackend(purchase, null, allowSharingPlayStoreAccount, consumeAllTransactions, appUserID, onSuccess, onError) }
+                        {
+                            postToBackend(
+                                purchase,
+                                null,
+                                allowSharingPlayStoreAccount,
+                                consumeAllTransactions,
+                                appUserID,
+                                onSuccess,
+                                onError
+                            )
+                        }
                     )
                 } else {
-                    postToBackend(purchase,null, allowSharingPlayStoreAccount, consumeAllTransactions, appUserID, onSuccess, onError)
+                    postToBackend(
+                        purchase,
+                        null,
+                        allowSharingPlayStoreAccount,
+                        consumeAllTransactions,
+                        appUserID,
+                        onSuccess,
+                        onError
+                    )
                 }
             } else {
                 onError?.let { onError ->
@@ -917,7 +963,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
-                    debugLog("Error consuming purchase. Will retry next queryPurchases. ${billingResult.toHumanReadableDescription()}")
+                    debugLog("Error consuming purchase. Will retry next queryPurchases. " +
+                        "${billingResult.toHumanReadableDescription()}")
                 }
             }
         } else if (shouldTryToConsume && !purchase.containedPurchase.isAcknowledged) {
@@ -925,7 +972,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
-                    debugLog("Error acknowledging purchase. Will retry next queryPurchases. ${billingResult.toHumanReadableDescription()}")
+                    debugLog("Error acknowledging purchase. Will retry next queryPurchases. " +
+                        "${billingResult.toHumanReadableDescription()}")
                 }
             }
         } else {
@@ -947,7 +995,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
-                    debugLog("Error consuming purchase. Will retry next queryPurchases. ${billingResult.toHumanReadableDescription()}")
+                    debugLog("Error consuming purchase. Will retry next queryPurchases. " +
+                        "${billingResult.toHumanReadableDescription()}")
                 }
             }
         } else if (shouldTryToConsume) {
@@ -955,7 +1004,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
-                    debugLog("Error acknowledging purchase. Will retry next queryPurchases. ${billingResult.toHumanReadableDescription()}")
+                    debugLog("Error acknowledging purchase. Will retry next queryPurchases. " +
+                        "${billingResult.toHumanReadableDescription()}")
                 }
             }
         } else {
@@ -1100,12 +1150,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         upgradeInfo: UpgradeInfo?,
         listener: MakePurchaseListener
     ) {
-        debugLog("purchase started - product: $product ${presentedOfferingIdentifier?.let { " - offering: $presentedOfferingIdentifier" }}")
+        debugLog("purchase started - product:" +
+            " $product ${presentedOfferingIdentifier?.let {
+                " - offering: $presentedOfferingIdentifier"
+            }}"
+        )
         var userPurchasing: String? =
             null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
             if (!state.finishTransactions) {
-                debugLog("finishTransactions is set to false and a purchase has been started. Are you sure you want to do this?")
+                debugLog("finishTransactions is set to false and a purchase has been started. " +
+                    "Are you sure you want to do this?")
             }
             if (!state.purchaseCallbacks.containsKey(product.sku)) {
                 state = state.copy(
@@ -1140,7 +1195,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
                     val queryUnconsumedInAppsRequest =
                         billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
-                    if (queryActiveSubscriptionsResult?.isSuccessful() == true && queryUnconsumedInAppsRequest?.isSuccessful() == true) {
+                    if (queryActiveSubscriptionsResult?.isSuccessful() == true &&
+                        queryUnconsumedInAppsRequest?.isSuccessful() == true
+                    ) {
                         deviceCache.cleanPreviouslySentTokens(
                             queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
                             queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
@@ -1158,7 +1215,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 }
             }
         } else {
-            debugLog("[QueryPurchases] Skipping updating pending purchase queue since BillingClient is not connected yet")
+            debugLog("[QueryPurchases] Skipping updating pending purchase queue " +
+                "since BillingClient is not connected yet")
         }
     }
 
@@ -1181,9 +1239,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is
          * being used
          */
-        @JvmStatic var platformFlavor = "native"
+        @JvmStatic
+        var platformFlavor = "native"
 
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE) @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         internal var postponedAttributionData = mutableListOf<AttributionData>()
 
         /**
@@ -1260,7 +1320,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 HTTPClient(
                     appConfig = AppConfig(
                         context.getLocale()?.toBCP47() ?: "",
-                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                            ?: "",
                         platformFlavor
                     )
                 )
@@ -1288,8 +1349,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
-         * Check if billing is supported in the device. This method is asynchronous since it tries to connect the billing
-         * client and checks for the result of the connection. If billing is supported, IN-APP purchases are supported.
+         * Check if billing is supported in the device. This method is asynchronous since it tries
+         * to connect the billing client and checks for the result of the connection.
+         * If billing is supported, IN-APP purchases are supported.
          * If you want to check if SUBSCRIPTIONS or other type defined in [BillingClient.FeatureType],
          * call [isFeatureSupported].
          * @param context A context object that will be used to connect to the billing client
@@ -1305,7 +1367,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                 // It also means that IN-APP items are supported for purchasing
                                 try {
                                     it.endConnection()
-                                    callback.onReceived(billingResult.responseCode == BillingClient.BillingResponseCode.OK)
+                                    val resultIsOK =
+                                        billingResult.responseCode == BillingClient.BillingResponseCode.OK
+                                    callback.onReceived(resultIsOK)
                                 } catch (e: IllegalArgumentException) {
                                     // Play Services not available
                                     callback.onReceived(false)
@@ -1325,7 +1389,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
-         * Use this method if you want to check if Subscriptions or other type defined in [BillingClient.FeatureType] is supported.\
+         * Use this method if you want to check if Subscriptions or other type defined in
+         * [BillingClient.FeatureType] is supported.
          * This method is asynchronous since it requires a connected billing client.
          * @param feature A feature type to check for support. Must be one of [BillingClient.FeatureType]
          * @param context A context object that will be used to connect to the billing client
@@ -1333,7 +1398,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmStatic
         fun isFeatureSupported(
-            @BillingClient.FeatureType feature: String, context: Context,
+            @BillingClient.FeatureType feature: String,
+            context: Context,
             callback: Callback<Boolean>
         ) {
             BillingClient.newBuilder(context).setListener { _, _ -> }.build().let { billingClient ->
@@ -1342,8 +1408,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         override fun onBillingSetupFinished(billingResult: BillingResult) {
                             try {
                                 billingClient.endConnection()
-                                val featureSupported = billingClient.isFeatureSupported(feature)
-                                callback.onReceived(featureSupported.responseCode == BillingClient.BillingResponseCode.OK)
+                                val featureSupportedResult =
+                                    billingClient.isFeatureSupported(feature)
+                                val responseIsOK =
+                                    featureSupportedResult.responseCode == BillingClient.BillingResponseCode.OK
+                                callback.onReceived(responseIsOK)
                             } catch (e: IllegalArgumentException) {
                                 // Play Services not available
                                 callback.onReceived(false)
@@ -1431,18 +1500,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * [https://www.adjust.com/]
          */
         ADJUST(1),
+
         /**
          * [https://www.appsflyer.com/]
          */
         APPSFLYER(2),
+
         /**
          * [http://branch.io/]
          */
         BRANCH(3),
+
         /**
          * [http://tenjin.io/]
          */
         TENJIN(4),
+
         /**
          * [https://developers.facebook.com/]
          */
@@ -1455,5 +1528,4 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val networkUserId: String?
     )
     // endregion
-
 }

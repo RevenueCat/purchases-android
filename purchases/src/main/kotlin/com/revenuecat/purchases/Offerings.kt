@@ -28,5 +28,4 @@ data class Offerings(
      * @param identifier Offering identifier
      */
     operator fun get(identifier: String) = getOffering(identifier)
-
 }

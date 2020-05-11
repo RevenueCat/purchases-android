@@ -51,6 +51,12 @@ class EntitlementInfos internal constructor(
         return true
     }
 
+    override fun hashCode(): Int {
+        var result = all.hashCode()
+        result = 31 * result + active.hashCode()
+        return result
+    }
+
     /** @suppress */
     companion object {
         /** @suppress */
