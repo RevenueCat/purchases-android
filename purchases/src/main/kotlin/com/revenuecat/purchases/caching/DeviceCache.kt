@@ -254,9 +254,11 @@ internal class DeviceCache(
     @Synchronized
     fun setAttributes(appUserID: AppUserID, attributesToBeSet: SubscriberAttributeMap) {
         val currentlyStoredAttributesForAllUsers = getAllStoredSubscriberAttributes()
-        val currentlyStoredAttributesForAppUserID = currentlyStoredAttributesForAllUsers[appUserID] ?: emptyMap()
+        val currentlyStoredAttributesForAppUserID =
+            currentlyStoredAttributesForAllUsers[appUserID] ?: emptyMap()
         val updatedAttributesForUser = currentlyStoredAttributesForAppUserID + attributesToBeSet
-        val updatedAttributesForAllUsers = currentlyStoredAttributesForAllUsers + mapOf(appUserID to updatedAttributesForUser)
+        val updatedAttributesForAllUsers =
+            currentlyStoredAttributesForAllUsers + mapOf(appUserID to updatedAttributesForUser)
 
         preferences.edit().putAttributes(updatedAttributesForAllUsers).apply()
     }
@@ -291,7 +293,6 @@ internal class DeviceCache(
                         ""
                     }
                 )
-
             }
 
     @Synchronized
@@ -439,7 +440,4 @@ internal class DeviceCache(
     }
 
     // endregion
-
 }
-
-
