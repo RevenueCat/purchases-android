@@ -79,7 +79,7 @@ internal class IdentityManager(
     }
 
     private fun generateRandomID(): String {
-        return "\$RCAnonymousID:"+ UUID.randomUUID().toString().toLowerCase(Locale.ROOT).replace("-", "")
+        return "\$RCAnonymousID:" + UUID.randomUUID().toString().toLowerCase(Locale.ROOT).replace("-", "")
             .also {
                 debugLog("Generated New App User ID - $it")
             }
