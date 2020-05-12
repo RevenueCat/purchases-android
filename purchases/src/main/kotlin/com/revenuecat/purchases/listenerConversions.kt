@@ -272,7 +272,6 @@ fun Purchases.getEntitlementsWith(
     onError: ErrorFunction = onErrorStub,
     onSuccess: (entitlementMap: Map<String, Any>) -> Unit
 ) {
-
 }
 
 @Deprecated(

@@ -963,6 +963,26 @@ class EntitlementInfosTests {
         verifyPeriodType(PeriodType.NORMAL)
     }
 
+    @Test
+    fun `Given two same entitlementInfos, their hashcodes are the same`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val x = jsonObject.buildPurchaserInfo().entitlements
+        val y = jsonObject.buildPurchaserInfo().entitlements
+        assertThat(x.hashCode() == y.hashCode())
+    }
+
+    @Test
+    fun `Given two same entitlementInfo, their hashcodes are the same`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+
+        val all = jsonObject.buildPurchaserInfo().entitlements.all
+
+        val x = all.values.toTypedArray()[0]
+        val y = all.values.toTypedArray()[0]
+
+        assertThat(x.hashCode() == y.hashCode())
+    }
+
     private fun verifySubscriberInfo() {
         val subscriberInfo = response.buildPurchaserInfo()
 

@@ -21,14 +21,14 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
       - run:
           name: Download Dependencies
           command: ./gradlew androidDependencies
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
       - android/restore-build-cache
       - run:
           name: Run Tests
@@ -36,6 +36,9 @@ jobs:
       - run:
           name: Test coverage report
           command: ./gradlew testDebugUnitTestCoverage coveralls
+      - run:
+          name: Detekt
+          command: ./gradlew detektAll
       - android/save-build-cache
       - store_artifacts:
           path: purchases/build/reports
@@ -47,7 +50,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
       - android/restore-build-cache
       - run:
           name: Install awscli
@@ -67,7 +70,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
       - run:
           name: Deployment
           command: |
@@ -78,7 +81,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
       - android/restore-build-cache
       - run:
           name: Assemble
@@ -86,7 +89,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
       - android/save-build-cache
 
 workflows:

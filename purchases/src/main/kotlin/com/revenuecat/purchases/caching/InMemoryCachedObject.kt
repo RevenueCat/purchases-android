@@ -15,7 +15,7 @@ internal class InMemoryCachedObject<T>(
     fun isCacheStale(): Boolean {
         return lastUpdatedAt?.let { cachesLastUpdated ->
             dateProvider.now.time - cachesLastUpdated.time >= cacheDurationInSeconds
-        }?: true
+        } ?: true
     }
 
     fun clearCacheTimestamp() {
