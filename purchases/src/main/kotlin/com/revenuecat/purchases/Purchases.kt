@@ -1297,8 +1297,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmStatic
         fun isBillingSupported(context: Context, callback: Callback<Boolean>) {
-            BillingClient.newBuilder(context).enablePendingPurchases().setListener { _, _ -> }
-                .build().let { billingClient ->
+            BillingClient.newBuilder(context)
+                .enablePendingPurchases()
+                .setListener { _, _ -> }
+                .build()
+                .let { billingClient ->
                     billingClient.startConnection(
                         object : BillingClientStateListener {
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
@@ -1336,7 +1339,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             @BillingClient.FeatureType feature: String, context: Context,
             callback: Callback<Boolean>
         ) {
-            BillingClient.newBuilder(context).enablePendingPurchases().setListener { _, _ -> }
+            BillingClient.newBuilder(context)
+                .enablePendingPurchases()
+                .setListener { _, _ -> }
                 .build()
                 .let { billingClient ->
                     billingClient.startConnection(
