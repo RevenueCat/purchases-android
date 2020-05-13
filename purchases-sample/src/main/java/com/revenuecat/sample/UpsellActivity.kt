@@ -40,8 +40,8 @@ class UpsellActivity : AppCompatActivity() {
         } else {
             offerings.current?.let { currentOffering ->
                 setupPackageButton(currentOffering.monthly, monthly_purchase)
-                setupPackageButton(currentOffering.annual, monthly_purchase)
-                setupPackageButton(currentOffering.lifetime, monthly_purchase)
+                setupPackageButton(currentOffering.annual, annual_purchase)
+                setupPackageButton(currentOffering.lifetime, unlimited_purchase)
             } ?: showError("Error loading current offering")
         }
     }
