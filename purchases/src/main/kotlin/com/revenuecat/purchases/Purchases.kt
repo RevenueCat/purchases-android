@@ -57,8 +57,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val executorService: ExecutorService,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    private var appConfig: AppConfig
+    appConfig: AppConfig
 ) : LifecycleDelegate {
+
+    internal var appConfig = appConfig
 
     /** @suppress */
     @Suppress("RedundantGetter", "RedundantSetter")

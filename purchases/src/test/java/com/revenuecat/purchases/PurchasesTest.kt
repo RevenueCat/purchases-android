@@ -3194,6 +3194,13 @@ class PurchasesTest {
         }
     }
 
+    @Test
+    fun `Setting platformFlavorSDKVersion sets it in the AppConfig when configuring the SDK`() {
+        Purchases.platformFlavorSDKVersion = "version"
+        Purchases.configure(mockContext, "api")
+        assertThat(Purchases.sharedInstance.appConfig.platformFlavorSDKVersion).isEqualTo("version")
+    }
+
     // region Private Methods
     private fun mockBillingWrapper() {
         with(mockBillingWrapper) {
