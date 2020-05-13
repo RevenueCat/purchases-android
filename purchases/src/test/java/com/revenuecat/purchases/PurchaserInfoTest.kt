@@ -176,4 +176,12 @@ class PurchaserInfoTest {
 
         assertThat(info).isNotEqualTo(info1)
     }
+
+    @Test
+    fun `Given two same purchaser infos, their hashcodes are the same`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val x = jsonObject.buildPurchaserInfo()
+        val y = jsonObject.buildPurchaserInfo()
+        assertThat(x.hashCode() == y.hashCode())
+    }
 }
