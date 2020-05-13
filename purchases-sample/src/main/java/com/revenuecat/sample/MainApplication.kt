@@ -21,7 +21,7 @@ class MainApplication : Application() {
                 .build()
         )
         Purchases.debugLogsEnabled = true
-        Purchases.configure(this, "VtDdmbdWBySmqJeeQUTyrNxETUVkhuaJ")
+        Purchases.configure(this, "api_key")
         // set attributes to store additional, structured information for a user in RevenueCat.
         // More info: https://docs.revenuecat.com/docs/user-attributes
         Purchases.sharedInstance.setAttributes(mapOf("favorite_cat" to "garfield"))
