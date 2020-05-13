@@ -11,7 +11,9 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
+import org.junit.After
 import org.junit.AfterClass
+import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,15 +31,12 @@ class HTTPClientTest {
         private lateinit var server: MockWebServer
         @JvmStatic
         private lateinit var baseURL: URL
-        @JvmStatic
-        private lateinit var appConfig: AppConfig
 
         @BeforeClass
         @JvmStatic
         fun setup() {
             server = MockWebServer()
             baseURL = server.url("/v1").toUrl()
-            appConfig = AppConfig("en-US", "1.0", "native", "3.2.0", true)
         }
 
         @AfterClass
@@ -47,6 +46,12 @@ class HTTPClientTest {
         }
     }
 
+    private lateinit var appConfig: AppConfig
+
+    @Before
+    fun setupBefore() {
+        appConfig = AppConfig("en-US", "1.0", "native", "3.2.0", true)
+    }
 
     @Test
     fun canBeCreated() {
@@ -145,6 +150,26 @@ class HTTPClientTest {
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
+    }
+
+    @Test
+    fun `Given there is no flavor version, flavor version header is not set`() {
+        appConfig = AppConfig(
+            languageTag = "en-US",
+            versionName = "1.0",
+            platformFlavor = "native",
+            platformFlavorSDKVersion = null,
+            finishTransactions = true
+        )
+        val response = MockResponse().setBody("{}")
+        server.enqueue(response)
+
+        val client = HTTPClient(appConfig, baseURL)
+        client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader("X-Platform-Flavor-Version")).isNull()
     }
 
     @Test

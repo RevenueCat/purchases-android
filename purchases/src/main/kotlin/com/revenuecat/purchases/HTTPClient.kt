@@ -133,9 +133,11 @@ internal class HTTPClient(
                 "X-Client-Locale" to appConfig.languageTag,
                 "X-Client-Version" to appConfig.versionName,
                 "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true"
-            ).plus(headers ?: emptyMap()).forEach { (key, value) ->
-                addRequestProperty(key, value)
-            }
+            ).filterValues { it != null }
+                .plus(headers ?: emptyMap())
+                .forEach { (key, value) ->
+                    addRequestProperty(key, value)
+                }
 
             if (body != null) {
                 doOutput = true

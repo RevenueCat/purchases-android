@@ -1319,7 +1319,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 context.getLocale()?.toBCP47() ?: "",
                 context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
                 platformFlavor,
-                platformFlavorSDKVersion ?: frameworkVersion,
+                platformFlavorSDKVersion,
                 !observerMode
             )
             val backend = Backend(
