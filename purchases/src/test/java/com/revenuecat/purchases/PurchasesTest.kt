@@ -3194,6 +3194,14 @@ class PurchasesTest {
         }
     }
 
+    @Test
+    fun `Setting platform info sets it in the AppConfig when configuring the SDK`() {
+        val expected = PlatformInfo("flavor", "version")
+        Purchases.platformInfo = expected
+        Purchases.configure(mockContext, "api")
+        assertThat(Purchases.sharedInstance.appConfig.platformInfo).isEqualTo(expected)
+    }
+
     // region Private Methods
     private fun mockBillingWrapper() {
         with(mockBillingWrapper) {
@@ -3485,7 +3493,8 @@ class PurchasesTest {
             mockCache,
             executorService = mockExecutorService,
             identityManager = mockIdentityManager,
-            subscriberAttributesManager = mockSubscriberAttributesManager
+            subscriberAttributesManager = mockSubscriberAttributesManager,
+            appConfig = AppConfig("en-US", "1.0", PlatformInfo("native", "3.2.0"), true)
         )
         Purchases.sharedInstance = purchases
     }

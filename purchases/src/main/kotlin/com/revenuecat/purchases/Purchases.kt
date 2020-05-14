@@ -54,11 +54,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
-    observerMode: Boolean = false,
     private val executorService: ExecutorService,
     private val identityManager: IdentityManager,
-    private val subscriberAttributesManager: SubscriberAttributesManager
+    private val subscriberAttributesManager: SubscriberAttributesManager,
+    appConfig: AppConfig
 ) : LifecycleDelegate {
+
+    internal var appConfig = appConfig
 
     /** @suppress */
     @Suppress("RedundantGetter", "RedundantSetter")
@@ -87,9 +89,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * outside of the Purchases SDK.
      */
     var finishTransactions: Boolean
-        @Synchronized get() = state.finishTransactions
+        @Synchronized get() = appConfig.finishTransactions
         @Synchronized set(value) {
-            state = state.copy(finishTransactions = value)
+            appConfig.finishTransactions = value
         }
 
     /**
@@ -125,11 +127,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         debugLog("Debug logging enabled.")
         debugLog("SDK Version - $frameworkVersion")
         debugLog("Initial App User ID - $backingFieldAppUserID")
-        synchronized(this@Purchases) {
-            state = state.copy(
-                finishTransactions = !observerMode
-            )
-        }
         identityManager.configure(backingFieldAppUserID)
         ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
         billingWrapper.stateListener = object : BillingWrapper.StateListener {
@@ -1158,7 +1155,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         var userPurchasing: String? =
             null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
-            if (!state.finishTransactions) {
+            if (!appConfig.finishTransactions) {
                 debugLog("finishTransactions is set to false and a purchase has been started. " +
                     "Are you sure you want to do this?")
             }
@@ -1235,12 +1232,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Static
     companion object {
+
         /**
          * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is
          * being used
          */
         @JvmStatic
-        var platformFlavor = "native"
+        var platformInfo: PlatformInfo = PlatformInfo(
+            flavor = "native",
+            version = null
+        )
 
         @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
@@ -1313,18 +1314,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
             require(context.applicationContext is Application) { "Needs an application context." }
-
+            val appConfig = AppConfig(
+                context.getLocale()?.toBCP47() ?: "",
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
+                platformInfo,
+                !observerMode
+            )
             val backend = Backend(
                 apiKey,
                 Dispatcher(service),
-                HTTPClient(
-                    appConfig = AppConfig(
-                        context.getLocale()?.toBCP47() ?: "",
-                        context.packageManager.getPackageInfo(context.packageName, 0).versionName
-                            ?: "",
-                        platformFlavor
-                    )
-                )
+                HTTPClient(appConfig)
             )
 
             val billingWrapper = BillingWrapper(
@@ -1341,10 +1340,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 backend,
                 billingWrapper,
                 cache,
-                observerMode,
                 service,
                 IdentityManager(cache, backend),
-                SubscriberAttributesManager(cache, backend)
+                SubscriberAttributesManager(cache, backend),
+                appConfig
             ).also { sharedInstance = it }
         }
 
