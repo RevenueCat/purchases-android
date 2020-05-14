@@ -5,6 +5,7 @@ import com.revenuecat.purchases.AppConfig
 import com.revenuecat.purchases.Backend
 import com.revenuecat.purchases.BillingWrapper
 import com.revenuecat.purchases.IdentityManager
+import com.revenuecat.purchases.PlatformInfo
 import com.revenuecat.purchases.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.PurchaseHistoryRecordWrapper
@@ -118,7 +119,7 @@ class SubscriberAttributesPurchasesTests {
                 every { currentAppUserID } returns appUserId
             },
             subscriberAttributesManager = subscriberAttributesManagerMock,
-            appConfig = AppConfig("en-US", "1.0", "native", "3.2.0", true)
+            appConfig = AppConfig("en-US", "1.0", PlatformInfo("native", "3.2.0"), true)
         )
     }
 

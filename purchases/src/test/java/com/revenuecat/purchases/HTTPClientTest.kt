@@ -48,9 +48,11 @@ class HTTPClientTest {
 
     private lateinit var appConfig: AppConfig
 
+    private val expectedPlatformInfo = PlatformInfo("flutter", "2.1.0")
+    
     @Before
     fun setupBefore() {
-        appConfig = AppConfig("en-US", "1.0", "native", "3.2.0", true)
+        appConfig = AppConfig("en-US", "1.0", expectedPlatformInfo, true)
     }
 
     @Test
@@ -144,8 +146,8 @@ class HTTPClientTest {
         assertThat(request.getHeader("Content-Type")).isEqualTo("application/json")
         assertThat(request.getHeader("X-Platform")).isEqualTo("android")
         assertThat(request.getHeader("X-Platform-Version")).isEqualTo("${Build.VERSION.SDK_INT}")
-        assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo("native")
-        assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo("3.2.0")
+        assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo(expectedPlatformInfo.flavor)
+        assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo(expectedPlatformInfo.version)
         assertThat(request.getHeader("X-Version")).isEqualTo(Purchases.frameworkVersion)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
@@ -157,8 +159,7 @@ class HTTPClientTest {
         appConfig = AppConfig(
             languageTag = "en-US",
             versionName = "1.0",
-            platformFlavor = "native",
-            platformFlavorSDKVersion = null,
+            platformInfo = PlatformInfo("native", null),
             finishTransactions = true
         )
         val response = MockResponse().setBody("{}")

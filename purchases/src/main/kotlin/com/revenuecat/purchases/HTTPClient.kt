@@ -126,8 +126,8 @@ internal class HTTPClient(
             mapOf(
                 "Content-Type" to "application/json",
                 "X-Platform" to "android",
-                "X-Platform-Flavor" to appConfig.platformFlavor,
-                "X-Platform-Flavor-Version" to appConfig.platformFlavorSDKVersion,
+                "X-Platform-Flavor" to appConfig.platformInfo.flavor,
+                "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
                 "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
                 "X-Version" to Purchases.frameworkVersion,
                 "X-Client-Locale" to appConfig.languageTag,

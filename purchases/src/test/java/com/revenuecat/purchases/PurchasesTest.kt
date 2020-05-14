@@ -3195,10 +3195,11 @@ class PurchasesTest {
     }
 
     @Test
-    fun `Setting platformFlavorSDKVersion sets it in the AppConfig when configuring the SDK`() {
-        Purchases.platformFlavorSDKVersion = "version"
+    fun `Setting platform info sets it in the AppConfig when configuring the SDK`() {
+        val expected = PlatformInfo("flavor", "version")
+        Purchases.platformInfo = expected
         Purchases.configure(mockContext, "api")
-        assertThat(Purchases.sharedInstance.appConfig.platformFlavorSDKVersion).isEqualTo("version")
+        assertThat(Purchases.sharedInstance.appConfig.platformInfo).isEqualTo(expected)
     }
 
     // region Private Methods
@@ -3493,7 +3494,7 @@ class PurchasesTest {
             executorService = mockExecutorService,
             identityManager = mockIdentityManager,
             subscriberAttributesManager = mockSubscriberAttributesManager,
-            appConfig = AppConfig("en-US", "1.0", "native", "3.2.0", true)
+            appConfig = AppConfig("en-US", "1.0", PlatformInfo("native", "3.2.0"), true)
         )
         Purchases.sharedInstance = purchases
     }

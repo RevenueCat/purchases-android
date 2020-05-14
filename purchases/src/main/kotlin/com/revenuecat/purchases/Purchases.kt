@@ -1232,19 +1232,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Static
     companion object {
+
         /**
          * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is
          * being used
          */
         @JvmStatic
-        var platformFlavor = "native"
-
-        /**
-         * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform version
-         * is being used
-         */
-        @JvmStatic
-        var platformFlavorSDKVersion: String? = null
+        var platformInfo: PlatformInfo = PlatformInfo(
+            flavor = "native",
+            version = null
+        )
 
         @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
         @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
@@ -1320,8 +1317,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             val appConfig = AppConfig(
                 context.getLocale()?.toBCP47() ?: "",
                 context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
-                platformFlavor,
-                platformFlavorSDKVersion,
+                platformInfo,
                 !observerMode
             )
             val backend = Backend(
