@@ -20,8 +20,8 @@ import java.net.MalformedURLException
 import java.net.URL
 
 internal class HTTPClient(
-    private val baseURL: URL = URL("https://api.revenuecat.com/"),
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
+    private val baseURL: URL = URL("https://api.revenuecat.com/")
 ) {
 
     private fun buffer(inputStream: InputStream): BufferedReader {
@@ -123,19 +123,21 @@ internal class HTTPClient(
         body: JSONObject?
     ): HttpURLConnection {
         return (fullURL.openConnection() as HttpURLConnection).apply {
-            headers?.forEach { (key, value) ->
-                addRequestProperty(key, value)
-            }
-            addRequestProperty("Content-Type", "application/json")
-            addRequestProperty("X-Platform", "android")
-            addRequestProperty("X-Platform-Flavor", appConfig.platformFlavor)
-            addRequestProperty(
-                "X-Platform-Version",
-                Build.VERSION.SDK_INT.toString()
-            )
-            addRequestProperty("X-Version", Purchases.frameworkVersion)
-            addRequestProperty("X-Client-Locale", appConfig.languageTag)
-            addRequestProperty("X-Client-Version", appConfig.versionName)
+            mapOf(
+                "Content-Type" to "application/json",
+                "X-Platform" to "android",
+                "X-Platform-Flavor" to appConfig.platformInfo.flavor,
+                "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
+                "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
+                "X-Version" to Purchases.frameworkVersion,
+                "X-Client-Locale" to appConfig.languageTag,
+                "X-Client-Version" to appConfig.versionName,
+                "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true"
+            ).filterValues { it != null }
+                .plus(headers ?: emptyMap())
+                .forEach { (key, value) ->
+                    addRequestProperty(key, value)
+                }
 
             if (body != null) {
                 doOutput = true

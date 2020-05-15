@@ -5,12 +5,15 @@
 
 package com.revenuecat.purchases
 
+import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
+import org.junit.After
 import org.junit.AfterClass
+import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,6 +26,7 @@ import java.util.HashMap
 class HTTPClientTest {
 
     companion object {
+
         @JvmStatic
         private lateinit var server: MockWebServer
         @JvmStatic
@@ -42,11 +46,18 @@ class HTTPClientTest {
         }
     }
 
-    private val appConfig = AppConfig("en-US", "1.0", "native")
+    private lateinit var appConfig: AppConfig
+
+    private val expectedPlatformInfo = PlatformInfo("flutter", "2.1.0")
+    
+    @Before
+    fun setupBefore() {
+        appConfig = AppConfig("en-US", "1.0", expectedPlatformInfo, true)
+    }
 
     @Test
     fun canBeCreated() {
-        HTTPClient(baseURL, appConfig)
+        HTTPClient(appConfig, baseURL)
     }
 
     @Test
@@ -54,7 +65,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
 
-        HTTPClient(baseURL, appConfig)
+        HTTPClient(appConfig, baseURL)
             .apply {
                 performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
             }
@@ -69,7 +80,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}").setResponseCode(223)
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         val result = client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
 
         server.takeRequest()
@@ -82,7 +93,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{'response': 'OK'}").setResponseCode(223)
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         val result = client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
 
         server.takeRequest()
@@ -97,7 +108,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("not uh jason")
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         try {
             client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
         } finally {
@@ -114,7 +125,7 @@ class HTTPClientTest {
         val headers = HashMap<String, String>()
         headers["Authentication"] = "Bearer todd"
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         client.performRequest("/resource", null as Map<*, *>?, headers)
 
         val request = server.takeRequest()
@@ -127,18 +138,39 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
 
         val request = server.takeRequest()
 
         assertThat(request.getHeader("Content-Type")).isEqualTo("application/json")
         assertThat(request.getHeader("X-Platform")).isEqualTo("android")
-        assertThat(request.getHeader("X-Platform-Version")).isEqualTo(Integer.toString(android.os.Build.VERSION.SDK_INT))
-        assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo("native")
+        assertThat(request.getHeader("X-Platform-Version")).isEqualTo("${Build.VERSION.SDK_INT}")
+        assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo(expectedPlatformInfo.flavor)
+        assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo(expectedPlatformInfo.version)
         assertThat(request.getHeader("X-Version")).isEqualTo(Purchases.frameworkVersion)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
+        assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
+    }
+
+    @Test
+    fun `Given there is no flavor version, flavor version header is not set`() {
+        appConfig = AppConfig(
+            languageTag = "en-US",
+            versionName = "1.0",
+            platformInfo = PlatformInfo("native", null),
+            finishTransactions = true
+        )
+        val response = MockResponse().setBody("{}")
+        server.enqueue(response)
+
+        val client = HTTPClient(appConfig, baseURL)
+        client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader("X-Platform-Flavor-Version")).isNull()
     }
 
     @Test
@@ -149,7 +181,7 @@ class HTTPClientTest {
         val body = HashMap<String, String>()
         body["user_id"] = "jerry"
 
-        val client = HTTPClient(baseURL, appConfig)
+        val client = HTTPClient(appConfig, baseURL)
         client.performRequest("/resource", body, mapOf("" to ""))
 
         val request = server.takeRequest()
@@ -157,4 +189,19 @@ class HTTPClientTest {
         assertThat(request.body).`as`("body is not null").isNotNull
         assertThat(request.body.size).isGreaterThan(0)
     }
+
+    @Test
+    fun `given observer mode is enabled, observer mode header is sent`() {
+        appConfig.finishTransactions = false
+        val response = MockResponse().setBody("{}")
+        server.enqueue(response)
+
+        val client = HTTPClient(appConfig, baseURL)
+        client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("true")
+    }
+
 }
