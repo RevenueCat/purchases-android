@@ -400,7 +400,7 @@ internal class DeviceCache(
         "$subscriberAttributesCacheKey.$appUserID"
 
     @Synchronized
-    fun getAllLegacyStoredSubscriberAttributes(): SubscriberAttributesPerAppUserIDMap {
+    private fun getAllLegacyStoredSubscriberAttributes(): SubscriberAttributesPerAppUserIDMap {
         val legacySubscriberAttributesCacheKeyPrefix = legacySubscriberAttributesCacheKey("")
         val allSubscriberAttributesKeys = preferences.all
             ?.filterKeys { it.startsWith(legacySubscriberAttributesCacheKeyPrefix) }

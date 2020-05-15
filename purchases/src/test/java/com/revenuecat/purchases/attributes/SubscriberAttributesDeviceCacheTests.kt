@@ -189,7 +189,7 @@ class SubscriberAttributesDeviceCacheTests {
     }
 
     @Test
-    fun `clearing caches also clears the subscriber attributes`() {
+    fun `clearing caches also clears the synced subscriber attributes`() {
         val expectedAttributes = mapOf(
             "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true)
         )
@@ -206,21 +206,36 @@ class SubscriberAttributesDeviceCacheTests {
     }
 
     @Test
+    fun `clearing caches doesn't clear the unsynced subscriber attributes`() {
+        val expectedAttributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = false)
+        )
+        mockNotEmptyCache(expectedAttributes)
+        underTest.clearCachesForAppUserID(appUserID)
+        verify (exactly = 0) {
+            mockEditor.putString("com.revenuecat.purchases.$apiKey.subscriberAttributes", any())
+        }
+    }
+
+    @Test
     fun `Given there are two user IDs with unsynced attributes, getUnsyncedSubscriberAttributes returns a map with two users and only the attributes that are not found`() {
         val attributes = mapOf(
             "tshirtsize" to SubscriberAttribute("tshirtsize", "L"),
             "age" to SubscriberAttribute("age", "L", isSynced = true)
         )
-        mockNotEmptyCacheMultipleUsers(mapOf(
+        val cacheContents = mapOf(
             appUserID to attributes,
             "user2" to attributes
-        ))
+        )
+        mockNotEmptyCacheMultipleUsers(cacheContents)
         val unsyncedSubscriberAttributes = underTest.getUnsyncedSubscriberAttributes()
-        assertThat(unsyncedSubscriberAttributes.size).isEqualTo(2)
         unsyncedSubscriberAttributes.forEach { (_, subscriberAttributesForUser) ->
             assertThat(subscriberAttributesForUser.size).isEqualTo(1)
             assertThat(subscriberAttributesForUser["tshirtsize"]).isEqualTo(attributes["tshirtsize"])
         }
+
+        assertThat(unsyncedSubscriberAttributes.size).isEqualTo(cacheContents.size)
+        unsyncedSubscriberAttributes.keys.containsAll(cacheContents.keys)
     }
 
     @Test
@@ -256,40 +271,6 @@ class SubscriberAttributesDeviceCacheTests {
         ))
         val unsyncedSubscriberAttributes = underTest.getUnsyncedSubscriberAttributes()
         assertThat(unsyncedSubscriberAttributes.size).isEqualTo(0)
-    }
-
-    @Test
-    fun `Given there are legacy subscriber attributes, getAllLegacyStoredSubscriberAttributes returns them`() {
-        val expectedAttributes = mapOf(
-            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
-            "age" to SubscriberAttribute("age", "L", isSynced = true)
-        )
-        val cacheContents = mapOf(
-            "cesar" to expectedAttributes,
-            "pedro" to expectedAttributes
-        )
-        mockLegacyCacheMultipleUsers(cacheContents)
-
-        val allLegacyStoredSubscriberAttributes = underTest.getAllLegacyStoredSubscriberAttributes()
-
-        assertThat(allLegacyStoredSubscriberAttributes.size).isEqualTo(cacheContents.size)
-        allLegacyStoredSubscriberAttributes.forEach { (userID, receivedAttributes) ->
-            expectedAttributes.values.map { it to receivedAttributes[it.key.backendKey] }
-                .forEach { (expected, received) ->
-                    assertThat(received).isNotNull
-                    assertThat(expected).isEqualTo(received)
-                }
-        }
-    }
-
-    @Test
-    fun `Given there are no legacy subscriber attributes, getAllLegacyStoredSubscriberAttributes returns an empty map`() {
-        val cacheContents = emptyMap<AppUserID, SubscriberAttributeMap>()
-        mockLegacyCacheMultipleUsers(cacheContents)
-
-        val allLegacyStoredSubscriberAttributes = underTest.getAllLegacyStoredSubscriberAttributes()
-
-        assertThat(allLegacyStoredSubscriberAttributes.size).isEqualTo(cacheContents.size)
     }
 
     @Test
