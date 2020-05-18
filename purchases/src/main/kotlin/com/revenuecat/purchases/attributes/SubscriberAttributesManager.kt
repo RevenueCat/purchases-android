@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.attributes
 
 import com.revenuecat.purchases.Backend
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.SubscriberAttributeError
+import com.revenuecat.purchases.caching.AppUserID
 import com.revenuecat.purchases.caching.DeviceCache
 import com.revenuecat.purchases.debugLog
 import com.revenuecat.purchases.errorLog
@@ -40,39 +40,41 @@ internal class SubscriberAttributesManager(
         setAttributes(mapOf(key.backendKey to value), appUserID)
     }
 
-    fun synchronizeSubscriberAttributesIfNeeded(
-        appUserID: String,
-        onSuccessHandler: () -> Unit,
-        onErrorHandler: (PurchasesError) -> Unit
+    fun synchronizeSubscriberAttributesForAllUsers(
+        currentAppUserID: AppUserID
     ) {
-        val unsyncedStoredAttributes = getUnsyncedSubscriberAttributes(appUserID)
+        val unsyncedStoredAttributesForAllUsers =
+            deviceCache.getUnsyncedSubscriberAttributes()
+        if (unsyncedStoredAttributesForAllUsers.isEmpty()) {
+            debugLog("No subscriber attributes to synchronize.")
+            return
+        }
 
-        if (unsyncedStoredAttributes.isNotEmpty()) {
-            debugLog("Synchronizing subscriber attributes: $unsyncedStoredAttributes")
+        unsyncedStoredAttributesForAllUsers.forEach { (syncingAppUserID, unsyncedAttributesForUser) ->
             backend.postSubscriberAttributes(
-                unsyncedStoredAttributes,
-                appUserID,
+                unsyncedAttributesForUser,
+                syncingAppUserID,
                 {
-                    markAsSynced(appUserID, unsyncedStoredAttributes, emptyList())
-                    onSuccessHandler()
+                    markAsSynced(syncingAppUserID, unsyncedAttributesForUser, emptyList())
+                    debugLog("Subscriber attributes synced successfully for appUserID: $syncingAppUserID.")
+                    if (currentAppUserID != syncingAppUserID) {
+                        deviceCache.clearSubscriberAttributesIfSyncedForSubscriber(syncingAppUserID)
+                    }
                 },
                 { error, didBackendGetAttributes, attributeErrors ->
                     if (didBackendGetAttributes) {
-                        markAsSynced(appUserID, unsyncedStoredAttributes, attributeErrors)
+                        markAsSynced(syncingAppUserID, unsyncedAttributesForUser, attributeErrors)
                     }
-                    onErrorHandler(error)
+                    errorLog("There was an error syncing subscriber attributes for " +
+                        "appUserID: $syncingAppUserID. Error: $error")
                 }
             )
-        } else {
-            debugLog("No subscriber attributes to synchronize.")
-            onSuccessHandler()
         }
     }
 
     @Synchronized
     fun getUnsyncedSubscriberAttributes(appUserID: String) =
-        deviceCache.getAllStoredSubscriberAttributes(appUserID)
-            .filter { (_, attribute) -> !attribute.isSynced }
+        deviceCache.getUnsyncedSubscriberAttributes(appUserID)
 
     @Synchronized
     fun markAsSynced(
@@ -86,6 +88,8 @@ internal class SubscriberAttributesManager(
         if (attributesToMarkAsSynced.isEmpty()) {
             return
         }
+        debugLog("Marking the following attributes as synced for appUserID: $appUserID: \n" +
+            attributesToMarkAsSynced.values.joinToString("\n"))
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)
         val attributesToBeSet = currentlyStoredAttributes.toMutableMap()
         attributesToMarkAsSynced.forEach { (key, subscriberAttribute) ->

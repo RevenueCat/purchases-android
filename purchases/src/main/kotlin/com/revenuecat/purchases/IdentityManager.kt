@@ -20,6 +20,7 @@ internal class IdentityManager(
             ?: generateRandomID()
         debugLog("Identifying App User ID: $appUserIDToUse")
         deviceCache.cacheAppUserID(appUserIDToUse)
+        deviceCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
     }
 
     fun identify(
@@ -33,7 +34,7 @@ internal class IdentityManager(
         } else {
             synchronized(this@IdentityManager) {
                 debugLog("Changing App User ID: $currentAppUserID -> $appUserID")
-                deviceCache.clearCachesForAppUserID()
+                deviceCache.clearCachesForAppUserID(currentAppUserID)
                 deviceCache.cacheAppUserID(appUserID)
             }
             onSuccess()
@@ -52,7 +53,7 @@ internal class IdentityManager(
             {
                 synchronized(this@IdentityManager) {
                     debugLog("Alias created")
-                    deviceCache.clearCachesForAppUserID()
+                    deviceCache.clearCachesForAppUserID(currentAppUserID)
                     deviceCache.cacheAppUserID(newAppUserID)
                 }
                 onSuccess()
@@ -63,7 +64,7 @@ internal class IdentityManager(
 
     @Synchronized
     fun reset() {
-        deviceCache.clearCachesForAppUserID()
+        deviceCache.clearCachesForAppUserID(currentAppUserID)
         deviceCache.cacheAppUserID(generateRandomID())
     }
 
