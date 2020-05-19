@@ -78,37 +78,11 @@ internal class HTTPClient(
     ): Result {
         val jsonBody = body?.convert()
 
-        return performRequest(path, jsonBody, headers)
-    }
-
-    private fun Map<String, Any?>.convert(): JSONObject {
-        val mapWithoutInnerMaps = mapValues { (_, value) ->
-            value.tryCast<Map<String, Any?>>(ifSuccess = { convert() })
-        }
-        return JSONObject(mapWithoutInnerMaps)
-    }
-
-    private inline fun <reified T> Any?.tryCast(
-        ifSuccess: T.() -> Any?
-    ): Any? {
-        return if (this is T) {
-            this.ifSuccess()
-        } else {
-            this
-        }
-    }
-
-    @Throws(JSONException::class, IOException::class)
-    private fun performRequest(
-        path: String,
-        body: JSONObject?,
-        headers: Map<String, String>?
-    ): Result {
         val fullURL: URL
         val connection: HttpURLConnection
         try {
             fullURL = URL(baseURL, "/v1$path")
-            connection = getConnection(fullURL, headers, body)
+            connection = getConnection(fullURL, headers, jsonBody)
         } catch (e: MalformedURLException) {
             throw RuntimeException(e)
         }
@@ -129,6 +103,23 @@ internal class HTTPClient(
         result.body = payload?.let { JSONObject(it) } ?: throw IOException("Network call payload is null.")
         debugLog("${connection.requestMethod} $path ${result.responseCode}")
         return result
+    }
+
+    private fun Map<String, Any?>.convert(): JSONObject {
+        val mapWithoutInnerMaps = mapValues { (_, value) ->
+            value.tryCast<Map<String, Any?>>(ifSuccess = { convert() })
+        }
+        return JSONObject(mapWithoutInnerMaps)
+    }
+
+    private inline fun <reified T> Any?.tryCast(
+        ifSuccess: T.() -> Any?
+    ): Any? {
+        return if (this is T) {
+            this.ifSuccess()
+        } else {
+            this
+        }
     }
 
     private fun getConnection(
