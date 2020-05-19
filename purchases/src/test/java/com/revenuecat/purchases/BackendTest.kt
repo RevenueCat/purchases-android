@@ -118,7 +118,7 @@ class BackendTest {
         val everyMockedCall = every {
             mockClient.performRequest(
                 eq(path),
-                (if (body == null) any() else eq(body)) as Map<*, *>,
+                (if (body == null) any() else eq(body)),
                 eq<Map<String, String>>(headers)
             )
         }
@@ -334,7 +334,7 @@ class BackendTest {
 
         val headers = HashMap<String, String>()
         headers["Authorization"] = "Bearer $API_KEY"
-        val slot = slot<JSONObject>()
+        val slot = slot<Map<String, Any?>>()
         verify {
             mockClient.performRequest(
                 eq(path),
@@ -343,8 +343,8 @@ class BackendTest {
             )
         }
         val captured = slot.captured
-        assertThat(captured.has("network") && captured.has("data") &&
-                captured.getInt("network") == Purchases.AttributionNetwork.APPSFLYER.serverValue).isTrue()
+        assertThat(captured.containsKey("network") && captured.containsKey("data") &&
+                captured["network"] == Purchases.AttributionNetwork.APPSFLYER.serverValue).isTrue()
     }
 
     @Test
@@ -378,7 +378,7 @@ class BackendTest {
         verify {
             mockClient.performRequest(
                 eq(path),
-                any() as JSONObject,
+                any(),
                 any()
             )
         }
@@ -443,7 +443,7 @@ class BackendTest {
         verify(exactly = 1) {
             mockClient.performRequest(
                 "/subscribers/" + Uri.encode(appUserID),
-                null as Map<*, *>?,
+                null,
                 any()
             )
         }
@@ -498,7 +498,7 @@ class BackendTest {
         verify(exactly = 1) {
             mockClient.performRequest(
                 "/receipts",
-                any() as Map<*, *>?,
+                any(),
                 any()
             )
         }
@@ -526,7 +526,7 @@ class BackendTest {
         verify(exactly = 1) {
             mockClient.performRequest(
                 "/subscribers/$appUserID/offerings",
-                null as Map<*, *>?,
+                null,
                 any()
             )
         }
@@ -554,14 +554,14 @@ class BackendTest {
         verify(exactly = 1) {
             mockClient.performRequest(
                 "/subscribers/$appUserID/offerings",
-                null as Map<*, *>?,
+                null,
                 any()
             )
         }
         verify(exactly = 1) {
             mockClient.performRequest(
                 "/subscribers/anotherUser/offerings",
-                null as Map<*, *>?,
+                null,
                 any()
             )
         }
@@ -627,7 +627,7 @@ class BackendTest {
         verify(exactly = 2) {
             mockClient.performRequest(
                 "/receipts",
-                any() as Map<*, *>?,
+                any(),
                 any()
             )
         }
@@ -727,7 +727,7 @@ class BackendTest {
         verify(exactly = 2) {
             mockClient.performRequest(
                 "/receipts",
-                any() as Map<*, *>?,
+                any() as Map<String, Any?>,
                 any()
             )
         }

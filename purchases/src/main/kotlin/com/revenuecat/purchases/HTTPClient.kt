@@ -73,19 +73,33 @@ internal class HTTPClient(
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
         path: String,
-        body: Map<*, *>?,
+        body: Map<String, Any?>?,
         headers: Map<String, String>
     ): Result {
-        val jsonBody =
-            body?.let {
-                JSONObject(body)
-            }
+        val jsonBody = body?.convert()
 
         return performRequest(path, jsonBody, headers)
     }
 
+    private fun Map<String, Any?>.convert(): JSONObject {
+        val mapWithoutInnerMaps = mapValues { (_, value) ->
+            value.tryCast<Map<String, Any?>>(ifSuccess = { convert() })
+        }
+        return JSONObject(mapWithoutInnerMaps)
+    }
+
+    private inline fun <reified T> Any?.tryCast(
+        ifSuccess: T.() -> Any?
+    ): Any? {
+        return if (this is T) {
+            this.ifSuccess()
+        } else {
+            this
+        }
+    }
+
     @Throws(JSONException::class, IOException::class)
-    fun performRequest(
+    private fun performRequest(
         path: String,
         body: JSONObject?,
         headers: Map<String, String>?
