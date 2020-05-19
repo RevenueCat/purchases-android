@@ -108,7 +108,9 @@ workflows:
             - assemble
           filters:
             branches:
-              only: master
+              only: 
+               - master
+               - develop
       - docs-deploy:
           filters:
             tags:
