@@ -6,6 +6,7 @@
 - Fixed enablePendingPurchases not being called when calling isFeatureSupported https://github.com/RevenueCat/purchases-android/pull/138
 - Adds a Java sample https://github.com/RevenueCat/purchases-android/pull/129
 - Updates invalidatePurchaserInfoCache https://github.com/RevenueCat/purchases-android/pull/131
+- Fixed Subscriber Attributes JSON in Android < 19 https://github.com/RevenueCat/purchases-android/pull/144
 
 ## 3.1.0
 
