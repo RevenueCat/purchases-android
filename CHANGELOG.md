@@ -1,3 +1,12 @@
+## 3.1.1
+
+- Fix a subscriber attributes bug where the attributes are deleted when an alias is created. https://github.com/RevenueCat/purchases-android/pull/135
+- New headers for observer mode and platform version https://github.com/RevenueCat/purchases-android/pull/136
+- Fixed purchase buttons in Sample App https://github.com/RevenueCat/purchases-android/pull/141
+- Fixed enablePendingPurchases not being called when calling isFeatureSupported https://github.com/RevenueCat/purchases-android/pull/138
+- Adds a Java sample https://github.com/RevenueCat/purchases-android/pull/129
+- Updates invalidatePurchaserInfoCache https://github.com/RevenueCat/purchases-android/pull/131
+
 ## 3.1.0
 
 - Another fix for NoSuchElementException when retrieving Advertising ID #124
