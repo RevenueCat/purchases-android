@@ -347,7 +347,7 @@ class SubscriberAttributesBackendTests {
         val everyMockedCall = every {
             mockClient.performRequest(
                 path,
-                (expectedBody ?: any()) as Map<*, *>,
+                (expectedBody ?: any()),
                 mapOf("Authorization" to "Bearer $API_KEY")
             )
         }
@@ -364,7 +364,7 @@ class SubscriberAttributesBackendTests {
         }
     }
 
-    private val actualPostReceiptBodySlot = slot<Map<*, *>>()
+    private val actualPostReceiptBodySlot = slot<Map<String, Any?>>()
     private fun mockPostReceiptResponse(
         responseCode: Int = 200,
         responseBody: String = "{}"

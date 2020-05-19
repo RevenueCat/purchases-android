@@ -74,7 +74,7 @@ internal class Backend(
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest(
                     "/subscribers/" + encode(appUserID),
-                    null as Map<*, *>?,
+                    null,
                     authenticationHeaders
                 )
             }
@@ -148,7 +148,11 @@ internal class Backend(
         val call = object : Dispatcher.AsyncCall() {
 
             override fun call(): HTTPClient.Result {
-                return httpClient.performRequest("/receipts", body, authenticationHeaders)
+                return httpClient.performRequest(
+                    "/receipts",
+                    body,
+                    authenticationHeaders
+                )
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
@@ -200,7 +204,7 @@ internal class Backend(
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest(
                     path,
-                    null as Map<*, *>?,
+                    null,
                     authenticationHeaders
                 )
             }
@@ -246,13 +250,10 @@ internal class Backend(
     ) {
         if (data.length() == 0) return
 
-        val body = JSONObject()
-        try {
-            body.put("network", network.serverValue)
-            body.put("data", data)
-        } catch (e: JSONException) {
-            return
-        }
+        val body = mapOf(
+            "network" to network.serverValue,
+            "data" to data
+        )
 
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
