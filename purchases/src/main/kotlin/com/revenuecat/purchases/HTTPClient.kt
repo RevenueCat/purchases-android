@@ -112,6 +112,13 @@ internal class HTTPClient(
         return JSONObject(mapWithoutInnerMaps)
     }
 
+    // To avoid Java type erasure, we use a Kotlin inline function with a reified parameter
+    // so that we can check the type on runtime.
+    //
+    // Doing something like:
+    // if (value is Map<*, *>) (value as Map<String, Any?>).convert()
+    //
+    // Would give an unchecked cast warning due to Java type erasure
     private inline fun <reified T> Any?.tryCast(
         ifSuccess: T.() -> Any?
     ): Any? {
