@@ -73,28 +73,16 @@ internal class HTTPClient(
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
         path: String,
-        body: Map<*, *>?,
+        body: Map<String, Any?>?,
         headers: Map<String, String>
     ): Result {
-        val jsonBody =
-            body?.let {
-                JSONObject(body)
-            }
+        val jsonBody = body?.convert()
 
-        return performRequest(path, jsonBody, headers)
-    }
-
-    @Throws(JSONException::class, IOException::class)
-    fun performRequest(
-        path: String,
-        body: JSONObject?,
-        headers: Map<String, String>?
-    ): Result {
         val fullURL: URL
         val connection: HttpURLConnection
         try {
             fullURL = URL(baseURL, "/v1$path")
-            connection = getConnection(fullURL, headers, body)
+            connection = getConnection(fullURL, headers, jsonBody)
         } catch (e: MalformedURLException) {
             throw RuntimeException(e)
         }
@@ -115,6 +103,30 @@ internal class HTTPClient(
         result.body = payload?.let { JSONObject(it) } ?: throw IOException("Network call payload is null.")
         debugLog("${connection.requestMethod} $path ${result.responseCode}")
         return result
+    }
+
+    private fun Map<String, Any?>.convert(): JSONObject {
+        val mapWithoutInnerMaps = mapValues { (_, value) ->
+            value.tryCast<Map<String, Any?>>(ifSuccess = { convert() })
+        }
+        return JSONObject(mapWithoutInnerMaps)
+    }
+
+    // To avoid Java type erasure, we use a Kotlin inline function with a reified parameter
+    // so that we can check the type on runtime.
+    //
+    // Doing something like:
+    // if (value is Map<*, *>) (value as Map<String, Any?>).convert()
+    //
+    // Would give an unchecked cast warning due to Java type erasure
+    private inline fun <reified T> Any?.tryCast(
+        ifSuccess: T.() -> Any?
+    ): Any? {
+        return if (this is T) {
+            this.ifSuccess()
+        } else {
+            this
+        }
     }
 
     private fun getConnection(

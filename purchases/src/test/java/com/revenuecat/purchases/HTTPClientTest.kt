@@ -11,7 +11,6 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
-import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
 import org.junit.BeforeClass
@@ -67,7 +66,7 @@ class HTTPClientTest {
 
         HTTPClient(appConfig, baseURL)
             .apply {
-                performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+                this.performRequest("/resource", null, mapOf("" to ""))
             }
 
         val request = server.takeRequest()
@@ -81,7 +80,7 @@ class HTTPClientTest {
         server.enqueue(response)
 
         val client = HTTPClient(appConfig, baseURL)
-        val result = client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+        val result = client.performRequest("/resource", null, mapOf("" to ""))
 
         server.takeRequest()
 
@@ -94,7 +93,7 @@ class HTTPClientTest {
         server.enqueue(response)
 
         val client = HTTPClient(appConfig, baseURL)
-        val result = client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+        val result = client.performRequest("/resource", null, mapOf("" to ""))
 
         server.takeRequest()
 
@@ -110,7 +109,7 @@ class HTTPClientTest {
 
         val client = HTTPClient(appConfig, baseURL)
         try {
-            client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+            client.performRequest("/resource", null, mapOf("" to ""))
         } finally {
             server.takeRequest()
         }
@@ -126,7 +125,7 @@ class HTTPClientTest {
         headers["Authentication"] = "Bearer todd"
 
         val client = HTTPClient(appConfig, baseURL)
-        client.performRequest("/resource", null as Map<*, *>?, headers)
+        client.performRequest("/resource", null, headers)
 
         val request = server.takeRequest()
 
@@ -139,7 +138,7 @@ class HTTPClientTest {
         server.enqueue(response)
 
         val client = HTTPClient(appConfig, baseURL)
-        client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+        client.performRequest("/resource", null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
@@ -166,7 +165,7 @@ class HTTPClientTest {
         server.enqueue(response)
 
         val client = HTTPClient(appConfig, baseURL)
-        client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+        client.performRequest("/resource", null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
@@ -197,7 +196,7 @@ class HTTPClientTest {
         server.enqueue(response)
 
         val client = HTTPClient(appConfig, baseURL)
-        client.performRequest("/resource", null as Map<*, *>?, mapOf("" to ""))
+        client.performRequest("/resource", null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
