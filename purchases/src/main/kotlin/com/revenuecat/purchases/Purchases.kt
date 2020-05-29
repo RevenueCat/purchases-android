@@ -1327,7 +1327,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             val cache = DeviceCache(prefs, apiKey)
 
             return Purchases(
-                context,
+                context.getApplication(),
                 appUserID,
                 backend,
                 billingWrapper,
