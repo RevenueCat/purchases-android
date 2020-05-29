@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
 class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
-    private val applicationContext: Context,
+    private val application: Application,
     backingFieldAppUserID: String?,
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
@@ -684,7 +684,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         network: AttributionNetwork,
         networkUserId: String?
     ) {
-        AdvertisingIdClient.getAdvertisingIdInfo(applicationContext) { adInfo ->
+        AdvertisingIdClient.getAdvertisingIdInfo(application) { adInfo ->
             identityManager.currentAppUserID.let { appUserID ->
                 val latestAttributionDataId =
                     deviceCache.getCachedAttributionData(network, appUserID)
@@ -1306,6 +1306,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
             require(context.applicationContext is Application) { "Needs an application context." }
+            val application = context.getApplication()
             val appConfig = AppConfig(
                 context.getLocale()?.toBCP47() ?: "",
                 context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
@@ -1319,15 +1320,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             )
 
             val billingWrapper = BillingWrapper(
-                BillingWrapper.ClientFactory((context.getApplication()).applicationContext),
-                Handler((context.getApplication()).mainLooper)
+                BillingWrapper.ClientFactory(application),
+                Handler(application.mainLooper)
             )
 
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context.getApplication())
+            val prefs = PreferenceManager.getDefaultSharedPreferences(application)
             val cache = DeviceCache(prefs, apiKey)
 
             return Purchases(
-                context,
+                application,
                 appUserID,
                 backend,
                 billingWrapper,
