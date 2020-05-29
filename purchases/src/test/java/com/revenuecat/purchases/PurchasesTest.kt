@@ -3497,7 +3497,7 @@ class PurchasesTest {
 
     private fun buildPurchases(anonymous: Boolean = false) {
         purchases = Purchases(
-            mockContext,
+            mockApplication,
             if (anonymous) null else appUserId,
             mockBackend,
             mockBillingWrapper,

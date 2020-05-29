@@ -106,7 +106,7 @@ class SubscriberAttributesPurchasesTests {
         } just runs
 
         underTest = Purchases(
-            applicationContext = mockk(relaxed = true),
+            application = mockk(relaxed = true),
             backingFieldAppUserID = appUserId,
             backend = backendMock,
             billingWrapper = billingWrapperMock,
