@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.util
 
+import android.app.Application
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -18,14 +19,14 @@ object AdvertisingIdClient {
     data class AdInfo internal constructor(val id: String, val isLimitAdTrackingEnabled: Boolean)
 
     @Throws(IllegalStateException::class)
-    fun getAdvertisingIdInfo(context: Context, completion: (AdInfo?) -> Unit) {
+    fun getAdvertisingIdInfo(application: Application, completion: (AdInfo?) -> Unit) {
         Thread(Runnable {
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 throw IllegalStateException("Cannot be called from the main thread")
             }
 
             try {
-                context.packageManager.getPackageInfo("com.android.vending", 0)
+                application.packageManager.getPackageInfo("com.android.vending", 0)
             } catch (e: Exception) {
                 Log.e("Purchases", "Error getting AdvertisingIdInfo", e)
                 completion(null)
@@ -36,7 +37,7 @@ object AdvertisingIdClient {
             val intent = Intent("com.google.android.gms.ads.identifier.service.START").apply {
                 setPackage("com.google.android.gms")
             }
-            if (context.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
+            if (application.bindService(intent, connection, Context.BIND_AUTO_CREATE)) {
                 try {
                     with(AdvertisingInterface(connection.binder)) {
                         id?.let { id ->
@@ -48,7 +49,7 @@ object AdvertisingIdClient {
                     Log.e("Purchases", "Error getting AdvertisingIdInfo", e)
                 } finally {
                     Handler(Looper.getMainLooper()).post {
-                        context.unbindService(connection)
+                        application.unbindService(connection)
                     }
                 }
             }
