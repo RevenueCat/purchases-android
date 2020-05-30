@@ -174,17 +174,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     allPurchases.forEach { purchase ->
                         val unsyncedSubscriberAttributesByKey =
                             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
+                        val productInfo = ProductInfo(
+                            productID = purchase.sku,
+                            offeringIdentifier = null,
+                            price = null,
+                            currency = null,
+                            duration = null,
+                            introDuration = null,
+                            trialDuration = null
+                        )
                         backend.postReceiptData(
-                            purchase.purchaseToken,
-                            appUserID,
-                            purchase.sku,
-                            this.allowSharingPlayStoreAccount,
-                            null,
-                            !this.finishTransactions,
-                            null,
-                            null,
-                            unsyncedSubscriberAttributesByKey,
-                            { info, attributeErrors ->
+                            purchaseToken = purchase.purchaseToken,
+                            appUserID = appUserID,
+                            isRestore = this.allowSharingPlayStoreAccount,
+                            observerMode = !this.finishTransactions,
+                            subscriberAttributes = unsyncedSubscriberAttributesByKey,
+                            productInfo = productInfo,
+                            onSuccess = { info, attributeErrors ->
                                 subscriberAttributesManager.markAsSynced(
                                     appUserID,
                                     unsyncedSubscriberAttributesByKey,
@@ -195,7 +201,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                                 debugLog("Purchase $purchase synced")
                             },
-                            { error, errorIsFinishable, attributeErrors ->
+                            onError = { error, errorIsFinishable, attributeErrors ->
                                 if (errorIsFinishable) {
                                     subscriberAttributesManager.markAsSynced(
                                         appUserID,
@@ -386,17 +392,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         subscriberAttributesManager.getUnsyncedSubscriberAttributes(
                                             appUserID
                                         )
+                                    val productInfo = ProductInfo(
+                                        productID = purchase.sku,
+                                        offeringIdentifier = null,
+                                        price = null,
+                                        currency = null,
+                                        duration = null,
+                                        introDuration = null,
+                                        trialDuration = null
+                                    )
                                     backend.postReceiptData(
-                                        purchase.purchaseToken,
-                                        appUserID,
-                                        purchase.sku,
-                                        true,
-                                        null,
-                                        !finishTransactions,
-                                        null,
-                                        null,
-                                        unsyncedSubscriberAttributesByKey,
-                                        { info, attributeErrors ->
+                                        purchaseToken = purchase.purchaseToken,
+                                        appUserID = appUserID,
+                                        isRestore = true,
+                                        observerMode = !finishTransactions,
+                                        subscriberAttributes = unsyncedSubscriberAttributesByKey,
+                                        productInfo = productInfo,
+                                        onSuccess = { info, attributeErrors ->
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
                                                 unsyncedSubscriberAttributesByKey,
@@ -410,7 +422,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                                 dispatch { listener.onReceived(info) }
                                             }
                                         },
-                                        { error, errorIsFinishable, attributeErrors ->
+                                        onError = { error, errorIsFinishable, attributeErrors ->
                                             if (errorIsFinishable) {
                                                 subscriberAttributesManager.markAsSynced(
                                                     appUserID,
@@ -907,17 +919,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         val unsyncedSubscriberAttributesByKey =
             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
+        val productInfo = ProductInfo(
+            productID = purchase.sku,
+            offeringIdentifier = purchase.presentedOfferingIdentifier,
+            price = skuDetails?.priceAmount,
+            currency = skuDetails?.priceCurrencyCode,
+            duration = skuDetails?.subscriptionPeriod, // TODO: test for managed products
+            introDuration = skuDetails?.introductoryPricePeriod,
+            trialDuration = skuDetails?.freeTrialPeriod
+        )
         backend.postReceiptData(
-            purchase.purchaseToken,
-            appUserID,
-            purchase.sku,
-            allowSharingPlayStoreAccount,
-            purchase.presentedOfferingIdentifier,
-            !consumeAllTransactions,
-            skuDetails?.priceAmount,
-            skuDetails?.priceCurrencyCode,
-            unsyncedSubscriberAttributesByKey,
-            { info, attributeErrors ->
+            purchaseToken = purchase.purchaseToken,
+            appUserID = appUserID,
+            isRestore = allowSharingPlayStoreAccount,
+            observerMode = !consumeAllTransactions,
+            subscriberAttributes = unsyncedSubscriberAttributesByKey,
+            productInfo = productInfo,
+            onSuccess = { info, attributeErrors ->
                 subscriberAttributesManager.markAsSynced(
                     appUserID,
                     unsyncedSubscriberAttributesByKey,
@@ -928,7 +946,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
             },
-            { error, errorIsFinishable, attributeErrors ->
+            onError = { error, errorIsFinishable, attributeErrors ->
                 if (errorIsFinishable) {
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
