@@ -160,10 +160,7 @@ class BackendTest {
             productID = productID,
             offeringIdentifier = offeringIdentifier,
             price = price,
-            currency = currency,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            currency = currency
         )
         backend.postReceiptData(
             purchaseToken = fetchToken,
@@ -470,12 +467,7 @@ class BackendTest {
         val lock = CountDownLatch(2)
         val productInfo = ProductInfo(
             productID = productID,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
@@ -491,12 +483,7 @@ class BackendTest {
         )
         val productInfo1 = ProductInfo(
             productID = productID,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
@@ -600,12 +587,7 @@ class BackendTest {
         val lock = CountDownLatch(2)
         val productInfo = ProductInfo(
             productID = productID,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
@@ -632,12 +614,7 @@ class BackendTest {
         )
         val productInfo1 = ProductInfo(
             productID = productID1,
-            offeringIdentifier = "offering_b",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_b"
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken1,
@@ -723,12 +700,7 @@ class BackendTest {
         val lock = CountDownLatch(2)
         val productInfo = ProductInfo(
             productID = productID,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
@@ -746,10 +718,7 @@ class BackendTest {
             productID = productID,
             offeringIdentifier = "offering_a",
             price = 2.5,
-            currency = "USD",
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            currency = "USD"
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,

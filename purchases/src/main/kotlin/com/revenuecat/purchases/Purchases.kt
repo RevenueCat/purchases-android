@@ -174,15 +174,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     allPurchases.forEach { purchase ->
                         val unsyncedSubscriberAttributesByKey =
                             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-                        val productInfo = ProductInfo(
-                            productID = purchase.sku,
-                            offeringIdentifier = null,
-                            price = null,
-                            currency = null,
-                            duration = null,
-                            introDuration = null,
-                            trialDuration = null
-                        )
+                        val productInfo = ProductInfo(productID = purchase.sku)
                         backend.postReceiptData(
                             purchaseToken = purchase.purchaseToken,
                             appUserID = appUserID,
@@ -392,15 +384,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         subscriberAttributesManager.getUnsyncedSubscriberAttributes(
                                             appUserID
                                         )
-                                    val productInfo = ProductInfo(
-                                        productID = purchase.sku,
-                                        offeringIdentifier = null,
-                                        price = null,
-                                        currency = null,
-                                        duration = null,
-                                        introDuration = null,
-                                        trialDuration = null
-                                    )
+                                    val productInfo = ProductInfo(productID = purchase.sku)
                                     backend.postReceiptData(
                                         purchaseToken = purchase.purchaseToken,
                                         appUserID = appUserID,

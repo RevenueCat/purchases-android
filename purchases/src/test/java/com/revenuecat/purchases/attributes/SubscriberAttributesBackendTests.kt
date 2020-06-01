@@ -211,13 +211,7 @@ class SubscriberAttributesBackendTests {
         mockPostReceiptResponse()
 
         val productInfo = ProductInfo(
-            productID = productID,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = productID
         )
         underTest.postReceiptData(
             purchaseToken = fetchToken,
@@ -241,13 +235,7 @@ class SubscriberAttributesBackendTests {
         mockPostReceiptResponse()
 
         val productInfo = ProductInfo(
-            productID = productID,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = productID
         )
         underTest.postReceiptData(
             purchaseToken = fetchToken,
@@ -274,13 +262,7 @@ class SubscriberAttributesBackendTests {
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ProductInfo(
-            productID = productID,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = productID
         )
         underTest.postReceiptData(
             purchaseToken = fetchToken,
@@ -306,13 +288,7 @@ class SubscriberAttributesBackendTests {
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ProductInfo(
-            productID = productID,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = productID
         )
         underTest.postReceiptData(
             purchaseToken = fetchToken,
@@ -338,13 +314,7 @@ class SubscriberAttributesBackendTests {
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ProductInfo(
-            productID = productID,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = productID
         )
         underTest.postReceiptData(
             purchaseToken = fetchToken,

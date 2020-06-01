@@ -307,12 +307,8 @@ class PurchasesTest {
         )
         val productInfo = ProductInfo(
             productID = sku,
-            offeringIdentifier = null,
             price = 2.0,
-            currency = "USD",
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            currency = "USD"
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -329,12 +325,7 @@ class PurchasesTest {
 
         val productInfo1 = ProductInfo(
             productID = skuSub,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -390,12 +381,7 @@ class PurchasesTest {
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(purchasesList)
         val productInfo = ProductInfo(
             productID = sku,
-            offeringIdentifier = stubOfferingIdentifier,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = stubOfferingIdentifier
         )
         verify(exactly = 2) {
             mockBackend.postReceiptData(
@@ -548,13 +534,7 @@ class PurchasesTest {
             getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
         )
         val productInfo = ProductInfo(
-            productID = sku,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = sku
         )
         verify {
             mockBackend.postReceiptData(
@@ -582,13 +562,7 @@ class PurchasesTest {
         )
 
         val productInfo = ProductInfo(
-            productID = sku,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = sku
         )
         verify {
             mockBackend.postReceiptData(
@@ -618,13 +592,7 @@ class PurchasesTest {
         )
 
         val productInfo = ProductInfo(
-            productID = sku,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = sku
         )
         verify {
             mockBackend.postReceiptData(
@@ -698,13 +666,7 @@ class PurchasesTest {
         assertThat(restoreCalled).isTrue()
 
         val productInfo = ProductInfo(
-            productID = sku,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = sku
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -720,13 +682,7 @@ class PurchasesTest {
         }
 
         val productInfo1 = ProductInfo(
-            productID = skuSub,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = skuSub
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -831,13 +787,7 @@ class PurchasesTest {
         )
 
         val productInfo = ProductInfo(
-            productID = sku,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = sku
         )
         verify {
             mockBackend.postReceiptData(
@@ -1193,13 +1143,7 @@ class PurchasesTest {
         }
 
         val productInfo = ProductInfo(
-            productID = skuSub,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = skuSub
         )
         var capturedLambda1: (PostReceiptDataErrorCallback)? = null
         every {
@@ -1961,12 +1905,8 @@ class PurchasesTest {
 
         val productInfo = ProductInfo(
             productID = sku,
-            offeringIdentifier = null,
             price = 2.0,
-            currency = "USD",
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            currency = "USD"
         )
         verify(exactly = 1){
             mockBackend.postReceiptData(
@@ -2015,13 +1955,7 @@ class PurchasesTest {
         }
 
         val productInfo = ProductInfo(
-            productID = skuSub,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = skuSub
         )
         var capturedLambda1: (PostReceiptDataErrorCallback)? = null
         every {
@@ -2134,13 +2068,7 @@ class PurchasesTest {
         purchases.syncPurchases()
 
         val productInfo = ProductInfo(
-            productID = sku,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = sku
         )
         assertThat(capturedLambda).isNotNull
         verify (exactly = 1) {
@@ -2156,13 +2084,7 @@ class PurchasesTest {
             )
         }
         val productInfo1 = ProductInfo(
-            productID = skuSub,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = skuSub
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -2207,13 +2129,7 @@ class PurchasesTest {
         purchases.syncPurchases()
 
         val productInfo = ProductInfo(
-            productID = sku,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = sku
         )
         assertThat(capturedLambda).isNotNull
         verify (exactly = 1) {
@@ -2230,13 +2146,7 @@ class PurchasesTest {
         }
 
         val productInfo1 = ProductInfo(
-            productID = skuSub,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = skuSub
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -2275,13 +2185,7 @@ class PurchasesTest {
         purchases.syncPurchases()
 
         val productInfo = ProductInfo(
-            productID = sku,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = sku
         )
         verify {
             mockBackend.postReceiptData(
@@ -2643,13 +2547,7 @@ class PurchasesTest {
         }
 
         val productInfo = ProductInfo(
-            productID = skuSub,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = skuSub
         )
 
         var capturedLambda1: (PostReceiptDataErrorCallback)? = null
@@ -2704,13 +2602,7 @@ class PurchasesTest {
         purchases.updatePendingPurchaseQueue()
 
         val productInfo = ProductInfo(
-            productID = "product",
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = "product"
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -2779,13 +2671,7 @@ class PurchasesTest {
         purchases.updatePendingPurchaseQueue()
 
         val productInfo = ProductInfo(
-            productID = "product",
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = "product"
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -2821,13 +2707,7 @@ class PurchasesTest {
         purchases.updatePendingPurchaseQueue()
 
         val productInfo = ProductInfo(
-            productID = "product",
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = "product"
         )
         verify (exactly = 0) {
             mockBackend.postReceiptData(
@@ -2955,13 +2835,7 @@ class PurchasesTest {
         )
 
         val productInfo = ProductInfo(
-            productID = sku,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = sku
         )
         verify (exactly = 0) {
             mockBackend.postReceiptData(
@@ -2978,12 +2852,7 @@ class PurchasesTest {
 
         val productInfo1 = ProductInfo(
             productID = skuSub,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         verify (exactly = 0) {
             mockBackend.postReceiptData(
@@ -3023,12 +2892,7 @@ class PurchasesTest {
 
         val productInfo = ProductInfo(
             productID = skuSub,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -3072,12 +2936,7 @@ class PurchasesTest {
 
         val productInfo = ProductInfo(
             productID = skuSub,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -3133,12 +2992,7 @@ class PurchasesTest {
 
         val productInfo = ProductInfo(
             productID = skuSub,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         every {
             mockBackend.postReceiptData(
@@ -3184,13 +3038,7 @@ class PurchasesTest {
 
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
         val productInfo = ProductInfo(
-            productID = skuSub,
-            offeringIdentifier = null,
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            productID = skuSub
         )
         every {
             mockBackend.postReceiptData(
@@ -3252,10 +3100,7 @@ class PurchasesTest {
             productID = sku,
             offeringIdentifier = "offering_a",
             price = 2.0,
-            currency = "USD",
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            currency = "USD"
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -3285,12 +3130,7 @@ class PurchasesTest {
         ))
         val productInfo = ProductInfo(
             productID = skuSub,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -3357,12 +3197,7 @@ class PurchasesTest {
         ))
         val productInfo = ProductInfo(
             productID = sku,
-            offeringIdentifier = "offering_a",
-            price = null,
-            currency = null,
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            offeringIdentifier = "offering_a"
         )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
@@ -3700,12 +3535,8 @@ class PurchasesTest {
         } returns "USD"
         val productInfo = ProductInfo(
             productID = sku,
-            offeringIdentifier = null,
             price = 2.0,
-            currency = "USD",
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            currency = "USD"
         )
         every {
             mockBackend.postReceiptData(
@@ -3737,12 +3568,8 @@ class PurchasesTest {
         } returns "USD"
         val productInfo = ProductInfo(
             productID = sku,
-            offeringIdentifier = null,
             price = 2.0,
-            currency = "USD",
-            duration = null,
-            introDuration = null,
-            trialDuration = null
+            currency = "USD"
         )
         every {
             mockBackend.postReceiptData(
