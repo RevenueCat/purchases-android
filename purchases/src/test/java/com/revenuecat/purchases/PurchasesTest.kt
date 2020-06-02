@@ -2469,6 +2469,7 @@ class PurchasesTest {
             PurchaseType.INAPP,
             null
         ))
+        assertThat(capturedLambda).isNotNull
         capturedLambda!!.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
             true,
@@ -2516,6 +2517,7 @@ class PurchasesTest {
             PurchaseType.INAPP,
             null
         ))
+        assertThat(capturedLambda).isNotNull
         capturedLambda!!.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
             true,
@@ -3080,15 +3082,7 @@ class PurchasesTest {
         val sku = "sku"
         val purchaseToken = "token"
 
-        val mockSkuDetails = mockSkuDetails(listOf(sku), listOf(sku), PurchaseType.INAPP)[0]
-
-        every {
-            mockSkuDetails.priceAmountMicros
-        } returns 2*1000000
-
-        every {
-            mockSkuDetails.priceCurrencyCode
-        } returns "USD"
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.INAPP)
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
             sku,
@@ -3096,12 +3090,7 @@ class PurchasesTest {
             PurchaseType.INAPP,
             "offering_a"
         ))
-        val productInfo = ProductInfo(
-            productID = sku,
-            offeringIdentifier = "offering_a",
-            price = 2.0,
-            currency = "USD"
-        )
+
         verify (exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseToken,
@@ -3525,19 +3514,8 @@ class PurchasesTest {
         observerMode: Boolean,
         answer: MockKAnswerScope<Unit, Unit>.(Call) -> Unit
     ) {
-        val mockSkuDetails = mockSkuDetails(listOf(sku), listOf(sku), PurchaseType.INAPP)[0]
-        every {
-            mockSkuDetails.priceAmountMicros
-        } returns 2*1000000
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.INAPP)
 
-        every {
-            mockSkuDetails.priceCurrencyCode
-        } returns "USD"
-        val productInfo = ProductInfo(
-            productID = sku,
-            price = 2.0,
-            currency = "USD"
-        )
         every {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseToken,
@@ -3558,19 +3536,8 @@ class PurchasesTest {
         observerMode: Boolean,
         mockInfo: PurchaserInfo
     ) {
-        val mockSkuDetails = mockSkuDetails(listOf(sku), listOf(sku), PurchaseType.INAPP)[0]
-        every {
-            mockSkuDetails.priceAmountMicros
-        } returns 2*1000000
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.INAPP)
 
-        every {
-            mockSkuDetails.priceCurrencyCode
-        } returns "USD"
-        val productInfo = ProductInfo(
-            productID = sku,
-            price = 2.0,
-            currency = "USD"
-        )
         every {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseToken,
@@ -3585,6 +3552,43 @@ class PurchasesTest {
         } answers {
             lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, emptyList())
         }
+    }
+
+    private fun mockQueryingSkuDetails(
+        sku: String,
+        type: PurchaseType
+    ): ProductInfo {
+        val productInfo = ProductInfo(
+            productID = sku,
+            price = 2.0,
+            offeringIdentifier = "offering_a",
+            currency = "USD",
+            duration = if (type == PurchaseType.SUBS) "P1M" else null,
+            introDuration = if (type == PurchaseType.SUBS) "P7D" else null,
+            trialDuration = if (type == PurchaseType.SUBS) "P7D" else null
+        )
+
+        val mockSkuDetails = mockk<SkuDetails>().also {
+            every { it.sku } returns productInfo.productID
+            every { it.priceAmountMicros } returns productInfo.price!!.toLong() * 1000000
+            every { it.priceCurrencyCode } returns productInfo.currency
+            every { it.subscriptionPeriod } returns productInfo.duration
+            every { it.introductoryPricePeriod } returns productInfo.introDuration
+            every { it.freeTrialPeriod } returns productInfo.trialDuration
+        }
+
+        every {
+            mockBillingWrapper.querySkuDetailsAsync(
+                type.toSKUType()!!,
+                listOf(sku),
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(List<SkuDetails>) -> Unit>().captured.invoke(listOf(mockSkuDetails))
+        }
+
+        return productInfo
     }
 
     private fun mockCacheStale(purchaserInfoStale: Boolean = false, offeringsStale: Boolean = false) {
