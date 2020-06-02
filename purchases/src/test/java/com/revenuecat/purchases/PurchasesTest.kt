@@ -1094,7 +1094,7 @@ class PurchasesTest {
         setup()
 
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
-        mockInAppPostReceiptError(sku, purchaseToken, false) {
+        mockInAppPostReceiptError(sku, purchaseToken, observerMode = false, offeringIdentifier = null) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
             capturedLambda?.invoke(
                 PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
@@ -1132,7 +1132,7 @@ class PurchasesTest {
         val purchaseTokenSub = "token_sub"
 
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
-        mockInAppPostReceiptError(sku, purchaseToken, false) {
+        mockInAppPostReceiptError(sku, purchaseToken, observerMode = false, offeringIdentifier = null) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
                 it.invoke(
                     PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
@@ -1944,7 +1944,7 @@ class PurchasesTest {
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
-        mockInAppPostReceiptError(sku, purchaseToken, true) {
+        mockInAppPostReceiptError(sku, purchaseToken, observerMode = true, offeringIdentifier = null) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
                 it.invoke(
                     PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
@@ -2012,7 +2012,7 @@ class PurchasesTest {
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
         var captured: (PostReceiptDataErrorCallback)? = null
-        mockInAppPostReceiptError(sku, purchaseToken, true) {
+        mockInAppPostReceiptError(sku, purchaseToken, observerMode = true, offeringIdentifier = null) {
             captured = lambda<PostReceiptDataErrorCallback>().captured.also {
                 it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), true, emptyList())
             }
@@ -2459,7 +2459,7 @@ class PurchasesTest {
         setup()
 
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
-        mockInAppPostReceiptError(sku, purchaseToken, false) {
+        mockInAppPostReceiptError(sku, purchaseToken, observerMode = false, offeringIdentifier = null) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
         }
 
@@ -2507,7 +2507,7 @@ class PurchasesTest {
         setup()
 
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
-        mockInAppPostReceiptError(sku, purchaseToken, false) {
+        mockInAppPostReceiptError(sku, purchaseToken, observerMode = false, offeringIdentifier = null) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
         }
 
@@ -2542,7 +2542,7 @@ class PurchasesTest {
         setup()
 
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
-        mockInAppPostReceiptError(sku, purchaseToken, observerMode = false) {
+        mockInAppPostReceiptError(sku, purchaseToken, observerMode = false, offeringIdentifier = null) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
                 it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), false, emptyList())
             }
@@ -3082,7 +3082,7 @@ class PurchasesTest {
         val sku = "sku"
         val purchaseToken = "token"
 
-        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.INAPP)
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.INAPP, offeringIdentifier = "offering_a")
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
             sku,
@@ -3512,9 +3512,10 @@ class PurchasesTest {
         sku: String,
         purchaseToken: String,
         observerMode: Boolean,
+        offeringIdentifier: String?,
         answer: MockKAnswerScope<Unit, Unit>.(Call) -> Unit
     ) {
-        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.INAPP)
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.INAPP, offeringIdentifier)
 
         every {
             mockBackend.postReceiptData(
@@ -3536,7 +3537,7 @@ class PurchasesTest {
         observerMode: Boolean,
         mockInfo: PurchaserInfo
     ) {
-        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.INAPP)
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.INAPP, offeringIdentifier = null)
 
         every {
             mockBackend.postReceiptData(
@@ -3556,12 +3557,13 @@ class PurchasesTest {
 
     private fun mockQueryingSkuDetails(
         sku: String,
-        type: PurchaseType
+        type: PurchaseType,
+        offeringIdentifier: String?
     ): ProductInfo {
         val productInfo = ProductInfo(
             productID = sku,
             price = 2.0,
-            offeringIdentifier = "offering_a",
+            offeringIdentifier = offeringIdentifier,
             currency = "USD",
             duration = if (type == PurchaseType.SUBS) "P1M" else null,
             introDuration = if (type == PurchaseType.SUBS) "P7D" else null,
