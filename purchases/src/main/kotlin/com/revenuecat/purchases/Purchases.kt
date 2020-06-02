@@ -845,44 +845,32 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         purchases.forEach { purchase ->
             if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                if (purchase.type == PurchaseType.INAPP) {
-                    billingWrapper.querySkuDetailsAsync(
-                        BillingClient.SkuType.INAPP,
-                        listOf(purchase.sku),
-                        { skuDetailsList ->
-                            postToBackend(
-                                purchase,
-                                skuDetailsList.firstOrNull { it.sku == purchase.sku },
-                                allowSharingPlayStoreAccount,
-                                consumeAllTransactions,
-                                appUserID,
-                                onSuccess,
-                                onError
-                            )
-                        },
-                        {
-                            postToBackend(
-                                purchase,
-                                null,
-                                allowSharingPlayStoreAccount,
-                                consumeAllTransactions,
-                                appUserID,
-                                onSuccess,
-                                onError
-                            )
-                        }
-                    )
-                } else {
-                    postToBackend(
-                        purchase,
-                        null,
-                        allowSharingPlayStoreAccount,
-                        consumeAllTransactions,
-                        appUserID,
-                        onSuccess,
-                        onError
-                    )
-                }
+                billingWrapper.querySkuDetailsAsync(
+                    purchase.type.toSKUType() ?: BillingClient.SkuType.INAPP,
+                    listOf(purchase.sku),
+                    { skuDetailsList ->
+                        postToBackend(
+                            purchase,
+                            skuDetailsList.firstOrNull { it.sku == purchase.sku },
+                            allowSharingPlayStoreAccount,
+                            consumeAllTransactions,
+                            appUserID,
+                            onSuccess,
+                            onError
+                        )
+                    },
+                    {
+                        postToBackend(
+                            purchase,
+                            null,
+                            allowSharingPlayStoreAccount,
+                            consumeAllTransactions,
+                            appUserID,
+                            onSuccess,
+                            onError
+                        )
+                    }
+                )
             } else {
                 onError?.let { onError ->
                     onError(purchase, PurchasesError(PurchasesErrorCode.PaymentPendingError))

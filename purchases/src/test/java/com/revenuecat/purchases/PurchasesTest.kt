@@ -299,17 +299,27 @@ class PurchasesTest {
         val skuSub = "sub"
         val purchaseTokenSub = "token_sub"
 
-        mockInAppPostReceipt(sku, purchaseToken, observerMode = false, mockInfo = mockInfo)
-
+        val productInfo = mockPostReceipt(
+            sku,
+            purchaseToken,
+            observerMode = false,
+            mockInfo = mockInfo,
+            offeringIdentifier = null,
+            type = PurchaseType.INAPP
+        )
+        val productInfo1 = mockPostReceipt(
+            skuSub,
+            purchaseTokenSub,
+            observerMode = false,
+            mockInfo = mockInfo,
+            offeringIdentifier = "offering_a",
+            type = PurchaseType.SUBS
+        )
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
                 getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS, "offering_a")
         )
-        val productInfo = ProductInfo(
-            productID = sku,
-            price = 2.0,
-            currency = "USD"
-        )
+
         verify (exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseToken,
@@ -323,10 +333,6 @@ class PurchasesTest {
             )
         }
 
-        val productInfo1 = ProductInfo(
-            productID = skuSub,
-            offeringIdentifier = "offering_a"
-        )
         verify (exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseTokenSub,
@@ -1896,18 +1902,29 @@ class PurchasesTest {
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
-        mockInAppPostReceipt(sku, purchaseToken, observerMode = false, mockInfo = mockInfo)
+        val productInfo = mockPostReceipt(
+            sku,
+            purchaseToken,
+            observerMode = true,
+            mockInfo = mockInfo,
+            offeringIdentifier = null,
+            type = PurchaseType.INAPP
+        )
+
+        val productInfo1 = mockPostReceipt(
+            skuSub,
+            purchaseTokenSub,
+            observerMode = true,
+            mockInfo = mockInfo,
+            offeringIdentifier = null,
+            type = PurchaseType.SUBS
+        )
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(sku, purchaseToken, PurchaseType.INAPP) +
             getMockedPurchaseList(skuSub, purchaseTokenSub, PurchaseType.SUBS)
         )
 
-        val productInfo = ProductInfo(
-            productID = sku,
-            price = 2.0,
-            currency = "USD"
-        )
         verify(exactly = 1){
             mockBackend.postReceiptData(
                 purchaseToken = purchaseToken,
@@ -1916,6 +1933,19 @@ class PurchasesTest {
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
                 productInfo = productInfo,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        verify(exactly = 1){
+            mockBackend.postReceiptData(
+                purchaseToken = purchaseTokenSub,
+                appUserID = appUserId,
+                isRestore = false,
+                observerMode = true,
+                subscriberAttributes = emptyMap(),
+                productInfo = productInfo1,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2438,7 +2468,14 @@ class PurchasesTest {
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
-        mockInAppPostReceipt(sku, purchaseToken, false, mockInfo)
+        mockPostReceipt(
+            sku,
+            purchaseToken,
+            observerMode = false,
+            mockInfo = mockInfo,
+            offeringIdentifier = null,
+            type = PurchaseType.INAPP
+        )
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
             sku,
             purchaseToken,
@@ -2486,7 +2523,14 @@ class PurchasesTest {
         val mockInfo = setup()
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
-        mockInAppPostReceipt(sku, purchaseToken, false, mockInfo)
+        mockPostReceipt(
+            sku,
+            purchaseToken,
+            observerMode = false,
+            mockInfo = mockInfo,
+            offeringIdentifier = null,
+            type = PurchaseType.INAPP
+        )
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
             sku,
             purchaseToken,
@@ -3531,13 +3575,15 @@ class PurchasesTest {
         } answers answer
     }
 
-    private fun mockInAppPostReceipt(
+    private fun mockPostReceipt(
         sku: String,
         purchaseToken: String,
         observerMode: Boolean,
-        mockInfo: PurchaserInfo
-    ) {
-        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.INAPP, offeringIdentifier = null)
+        mockInfo: PurchaserInfo,
+        offeringIdentifier: String?,
+        type: PurchaseType
+    ): ProductInfo {
+        val productInfo = mockQueryingSkuDetails(sku, type, offeringIdentifier)
 
         every {
             mockBackend.postReceiptData(
@@ -3553,6 +3599,8 @@ class PurchasesTest {
         } answers {
             lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, emptyList())
         }
+
+        return productInfo
     }
 
     private fun mockQueryingSkuDetails(
