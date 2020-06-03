@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.os.Parcel
 import android.os.Parcelable
+import kotlinx.android.parcel.Parcelize
 import java.util.Date
 
 /**
@@ -25,6 +26,7 @@ import java.util.Date
  * no billing issue or an issue has been resolved. Note: Entitlement may still be active even if
  * there is a billing issue. Check the `isActive` property.
  */
+@Parcelize
 class EntitlementInfo internal constructor(
     val identifier: String,
     val isActive: Boolean,
@@ -39,43 +41,6 @@ class EntitlementInfo internal constructor(
     val unsubscribeDetectedAt: Date?,
     val billingIssueDetectedAt: Date?
 ) : Parcelable {
-
-    /** @suppress */
-    constructor(parcel: Parcel) : this(
-        parcel.readString() ?: "",
-        parcel.readByte() != 0.toByte(),
-        parcel.readByte() != 0.toByte(),
-        PeriodType.values()[parcel.readInt()],
-        Date(parcel.readLong()),
-        Date(parcel.readLong()),
-        parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
-        Store.values()[parcel.readInt()],
-        parcel.readString() ?: "",
-        parcel.readByte() != 0.toByte(),
-        parcel.readLong().let { date -> if (date == -1L) null else Date(date) },
-        parcel.readLong().let { date -> if (date == -1L) null else Date(date) }
-    )
-
-    /** @suppress */
-    override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeString(identifier)
-        parcel.writeByte(if (isActive) 1 else 0)
-        parcel.writeByte(if (willRenew) 1 else 0)
-        parcel.writeInt(periodType.ordinal)
-        parcel.writeLong(latestPurchaseDate.time)
-        parcel.writeLong(originalPurchaseDate.time)
-        parcel.writeLong(expirationDate?.time ?: -1)
-        parcel.writeInt(store.ordinal)
-        parcel.writeString(productIdentifier)
-        parcel.writeByte(if (isSandbox) 1 else 0)
-        parcel.writeLong(unsubscribeDetectedAt?.time ?: -1)
-        parcel.writeLong(billingIssueDetectedAt?.time ?: -1)
-    }
-
-    /** @suppress */
-    override fun describeContents(): Int {
-        return 0
-    }
 
     /** @suppress */
     override fun toString(): String {
@@ -133,19 +98,6 @@ class EntitlementInfo internal constructor(
         return result
     }
 
-    companion object {
-        /** @suppress */
-        @JvmField
-        val CREATOR = object : Parcelable.Creator<EntitlementInfo> {
-            override fun createFromParcel(parcel: Parcel): EntitlementInfo {
-                return EntitlementInfo(parcel)
-            }
-
-            override fun newArray(size: Int): Array<EntitlementInfo?> {
-                return arrayOfNulls(size)
-            }
-        }
-    }
 }
 
 /**
