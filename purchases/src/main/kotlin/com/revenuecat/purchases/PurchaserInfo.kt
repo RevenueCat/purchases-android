@@ -20,6 +20,7 @@ import java.util.Date
  * @property requestDate Date when this info was requested
  * @property firstSeen The date this user was first seen in RevenueCat.
  * @property originalAppUserId The original App User Id recorded for this user.
+ * @property managementURL URL to manage active subscriptions of this user.
  */
 class PurchaserInfo internal constructor(
     val entitlements: EntitlementInfos,
@@ -32,7 +33,8 @@ class PurchaserInfo internal constructor(
     internal val jsonObject: JSONObject,
     internal val schemaVersion: Int,
     val firstSeen: Date,
-    val originalAppUserId: String
+    val originalAppUserId: String,
+    val managementURL: String?
 ) : Parcelable {
     /**
      * @hide
@@ -52,7 +54,8 @@ class PurchaserInfo internal constructor(
         jsonObject = JSONObject(parcel.readString()),
         schemaVersion = parcel.readInt(),
         firstSeen = Date(parcel.readLong()),
-        originalAppUserId = parcel.readString() ?: ""
+        originalAppUserId = parcel.readString() ?: "",
+        managementURL = ""
     )
 
     /**
