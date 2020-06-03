@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.purchases_sample_java;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -57,7 +60,7 @@ public class CatsActivity extends AppCompatActivity {
         });
     }
 
-    private void configureContent(PurchaserInfo purchaserInfo) {
+    private void configureContent(final PurchaserInfo purchaserInfo) {
         TextView purchaseDateView = findViewById(R.id.purchase_date_label);
         TextView expirationDateView = findViewById(R.id.expiration_date_label);
         TextView catIconView = findViewById(R.id.cat_content_label);
@@ -86,6 +89,24 @@ public class CatsActivity extends AppCompatActivity {
             restoreView.setVisibility(View.VISIBLE);
             expirationDateView.setVisibility(View.GONE);
             purchaseDateView.setVisibility(View.GONE);
+        }
+
+        Button manageSubscriptionButton = findViewById(R.id.manage_subscription);
+
+        if (purchaserInfo.getManagementURL() != null) {
+            manageSubscriptionButton.setVisibility(View.VISIBLE);
+            manageSubscriptionButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(purchaserInfo.getManagementURL())));
+                    } catch (ActivityNotFoundException exception) {
+                        exception.printStackTrace();
+                    }
+                }
+            });
+        } else {
+            manageSubscriptionButton.setVisibility(View.GONE);
         }
     }
 
