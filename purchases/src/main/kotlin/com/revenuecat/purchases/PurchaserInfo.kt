@@ -22,7 +22,7 @@ import java.util.Date
  * @property originalAppUserId The original App User Id recorded for this user.
  * @property managementURL URL to manage active subscriptions of this user.
  */
-class PurchaserInfo internal constructor(
+data class PurchaserInfo internal constructor(
     val entitlements: EntitlementInfos,
     val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
