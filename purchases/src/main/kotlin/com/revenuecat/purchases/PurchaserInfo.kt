@@ -158,6 +158,5 @@ class PurchaserInfo internal constructor(
     companion object {
 
         internal const val SCHEMA_VERSION = 2
-
     }
 }

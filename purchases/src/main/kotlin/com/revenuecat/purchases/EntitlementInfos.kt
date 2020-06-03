@@ -42,5 +42,4 @@ class EntitlementInfos internal constructor(
         result = 31 * result + active.hashCode()
         return result
     }
-
 }

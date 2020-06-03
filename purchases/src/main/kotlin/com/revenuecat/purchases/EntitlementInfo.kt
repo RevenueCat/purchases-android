@@ -1,6 +1,5 @@
 package com.revenuecat.purchases
 
-import android.os.Parcel
 import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
 import java.util.Date
@@ -97,7 +96,6 @@ class EntitlementInfo internal constructor(
         result = 31 * result + (billingIssueDetectedAt?.hashCode() ?: 0)
         return result
     }
-
 }
 
 /**
