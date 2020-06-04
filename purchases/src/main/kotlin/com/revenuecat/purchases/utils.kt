@@ -181,13 +181,6 @@ internal fun Locale.toBCP47(): String {
     return bcp47Tag.toString()
 }
 
-internal data class AppConfig(
-    val languageTag: String,
-    val versionName: String,
-    val platformInfo: PlatformInfo,
-    var finishTransactions: Boolean
-)
-
 data class PlatformInfo(
     val flavor: String,
     val version: String?

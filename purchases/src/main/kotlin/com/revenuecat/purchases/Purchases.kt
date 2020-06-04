@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit
 class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
     private val application: Application,
     backingFieldAppUserID: String?,
-    @JvmSynthetic internal val backend: Backend,
+    private val backend: Backend,
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
     private val executorService: ExecutorService,
@@ -1312,21 +1312,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             require(context.applicationContext is Application) { "Needs an application context." }
             val application = context.getApplication()
             val appConfig = AppConfig(
-                context.getLocale()?.toBCP47() ?: "",
-                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
+                context,
+                !observerMode,
                 platformInfo,
-                !observerMode
+                proxyURL
             )
-
-            val httpClient = proxyURL?.let {
-                debugLog("Purchases is being configured using a proxy for RevenueCat")
-                HTTPClient(appConfig, baseURL = it)
-            } ?: HTTPClient(appConfig)
 
             val backend = Backend(
                 apiKey,
                 Dispatcher(service),
-                httpClient
+                HTTPClient(appConfig)
             )
 
             val billingWrapper = BillingWrapper(

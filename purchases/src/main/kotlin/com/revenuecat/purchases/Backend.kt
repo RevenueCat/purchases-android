@@ -38,7 +38,7 @@ internal typealias PostReceiptDataErrorCallback = (
 internal class Backend(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
-    @JvmSynthetic internal val httpClient: HTTPClient
+    private val httpClient: HTTPClient
 ) {
 
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
