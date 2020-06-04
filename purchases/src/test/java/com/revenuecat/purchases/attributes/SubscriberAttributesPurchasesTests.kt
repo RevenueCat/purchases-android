@@ -119,7 +119,12 @@ class SubscriberAttributesPurchasesTests {
                 every { currentAppUserID } returns appUserId
             },
             subscriberAttributesManager = subscriberAttributesManagerMock,
-            appConfig = AppConfig("en-US", "1.0", PlatformInfo("native", "3.2.0"), true)
+            appConfig = AppConfig(
+                context = mockk(relaxed = true),
+                observerMode = false,
+                platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+                proxyURL = null
+            )
         )
     }
 

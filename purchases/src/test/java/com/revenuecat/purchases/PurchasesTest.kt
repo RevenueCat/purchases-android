@@ -3219,7 +3219,7 @@ class PurchasesTest {
         val expected = URL("https://a-proxy.com")
         Purchases.proxyURL = expected
         Purchases.configure(mockContext, "api")
-        assertThat(Purchases.sharedInstance.backend.httpClient.baseURL).isEqualTo(expected)
+        assertThat(Purchases.sharedInstance.appConfig.baseURL).isEqualTo(expected)
     }
 
     // region Private Methods
@@ -3514,7 +3514,12 @@ class PurchasesTest {
             executorService = mockExecutorService,
             identityManager = mockIdentityManager,
             subscriberAttributesManager = mockSubscriberAttributesManager,
-            appConfig = AppConfig("en-US", "1.0", PlatformInfo("native", "3.2.0"), true)
+            appConfig = AppConfig(
+                context = mockContext,
+                observerMode = false,
+                platformInfo = PlatformInfo("native", "3.2.0"),
+                proxyURL = null
+            )
         )
         Purchases.sharedInstance = purchases
     }
