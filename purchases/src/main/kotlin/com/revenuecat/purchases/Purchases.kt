@@ -33,6 +33,7 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
+import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.HashMap
 import java.util.concurrent.ExecutorService
@@ -1235,8 +1236,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             version = null
         )
 
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
-        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @JvmSynthetic
         internal var postponedAttributionData = mutableListOf<AttributionData>()
 
         /**
@@ -1245,8 +1245,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @JvmStatic
         var debugLogsEnabled = false
 
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
-        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @JvmSynthetic
         internal var backingFieldSharedInstance: Purchases? = null
 
         /**
@@ -1278,6 +1277,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmStatic
         val frameworkVersion = "3.2.0-SNAPSHOT"
+
+        /**
+         * Override to use your own proxy. BEWARE
+         */
+        @JvmStatic
+        var proxyURL: String? = null
 
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
@@ -1313,10 +1318,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 platformInfo,
                 !observerMode
             )
+            if (proxyURL != null) {
+                debugLog("Purchases is being configured using a proxy for RevenueCat")
+            }
             val backend = Backend(
                 apiKey,
                 Dispatcher(service),
-                HTTPClient(appConfig)
+                HTTPClient(appConfig, baseURL = URL(proxyURL))
             )
 
             val billingWrapper = BillingWrapper(
