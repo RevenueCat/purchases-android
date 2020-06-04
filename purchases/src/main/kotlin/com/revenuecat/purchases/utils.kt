@@ -217,3 +217,6 @@ internal fun PurchaseHistoryRecord.toHumanReadableDescription() =
 
 val SkuDetails.priceAmount: Double
     get() = this.priceAmountMicros.div(1000000.0)
+
+internal val Context.versionName: String?
+    get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName

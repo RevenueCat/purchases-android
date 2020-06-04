@@ -11,7 +11,7 @@ internal class AppConfig(
 ) {
 
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""
-    val versionName: String = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+    val versionName: String = context.versionName ?: ""
     var finishTransactions: Boolean = !observerMode
     val baseURL: URL = proxyURL?.also {
         debugLog("Purchases is being configured using a proxy for RevenueCat")
