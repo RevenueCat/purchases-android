@@ -49,6 +49,7 @@ import java.util.concurrent.TimeUnit
  * guide to setup your RevenueCat account.
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
+@Suppress("LongParameterList")
 class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
     private val application: Application,
     backingFieldAppUserID: String?,
