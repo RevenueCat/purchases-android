@@ -184,4 +184,22 @@ class PurchaserInfoTest {
         val y = jsonObject.buildPurchaserInfo()
         assertThat(x.hashCode() == y.hashCode())
     }
+
+    @Test
+    fun `Management url is properly retrieved`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val x = jsonObject.buildPurchaserInfo()
+        assertThat(x.managementURL).isEqualTo("https://play.google.com/store/account/subscriptions")
+    }
+
+    @Test
+    fun `If management url is null in the JSON, the purchaser info is properly built`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val subscriber = jsonObject.getJSONObject("subscriber")
+        subscriber.put("management_url", JSONObject.NULL)
+        jsonObject.put("subscriber", subscriber)
+        val x = jsonObject.buildPurchaserInfo()
+        assertThat(x.managementURL).isNull()
+    }
+
 }
