@@ -52,16 +52,14 @@ import java.util.concurrent.TimeUnit
 class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
     private val application: Application,
     backingFieldAppUserID: String?,
-    private val backend: Backend,
+    @JvmSynthetic internal val backend: Backend,
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
     private val executorService: ExecutorService,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    appConfig: AppConfig
+    @JvmSynthetic internal var appConfig: AppConfig
 ) : LifecycleDelegate {
-
-    internal var appConfig = appConfig
 
     /** @suppress */
     @Suppress("RedundantGetter", "RedundantSetter")
@@ -1282,7 +1280,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Override to use your own proxy. BEWARE
          */
         @JvmStatic
-        var proxyURL: String? = null
+        var proxyURL: URL? = null
 
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
@@ -1318,13 +1316,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 platformInfo,
                 !observerMode
             )
-            if (proxyURL != null) {
+
+            val httpClient = proxyURL?.let {
                 debugLog("Purchases is being configured using a proxy for RevenueCat")
-            }
+                HTTPClient(appConfig, baseURL = it)
+            } ?: HTTPClient(appConfig)
+
             val backend = Backend(
                 apiKey,
                 Dispatcher(service),
-                HTTPClient(appConfig, baseURL = URL(proxyURL))
+                httpClient
             )
 
             val billingWrapper = BillingWrapper(

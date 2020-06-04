@@ -52,6 +52,7 @@ import java.util.ConcurrentModificationException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
+import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -3211,6 +3212,14 @@ class PurchasesTest {
         Purchases.platformInfo = expected
         Purchases.configure(mockContext, "api")
         assertThat(Purchases.sharedInstance.appConfig.platformInfo).isEqualTo(expected)
+    }
+
+    @Test
+    fun `Setting proxy URL info sets it in the HttpClient when configuring the SDK`() {
+        val expected = URL("https://a-proxy.com")
+        Purchases.proxyURL = expected
+        Purchases.configure(mockContext, "api")
+        assertThat(Purchases.sharedInstance.backend.httpClient.baseURL).isEqualTo(expected)
     }
 
     // region Private Methods

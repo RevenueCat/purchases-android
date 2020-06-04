@@ -21,7 +21,7 @@ import java.net.URL
 
 internal class HTTPClient(
     private val appConfig: AppConfig,
-    private val baseURL: URL = URL("https://api.revenuecat.com/")
+    @JvmSynthetic internal val baseURL: URL = URL("https://api.revenuecat.com/")
 ) {
 
     private fun buffer(inputStream: InputStream): BufferedReader {
