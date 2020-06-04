@@ -56,7 +56,7 @@ class HTTPClientTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = expectedPlatformInfo,
-            proxyURL = null
+            proxyURL = baseURL
         )
     }
 
@@ -165,7 +165,7 @@ class HTTPClientTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo("native", null),
-            proxyURL = null
+            proxyURL = baseURL
         )
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
