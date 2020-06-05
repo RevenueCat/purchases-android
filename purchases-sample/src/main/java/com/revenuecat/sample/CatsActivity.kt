@@ -2,7 +2,6 @@ package com.revenuecat.sample
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View.GONE
@@ -13,7 +12,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.purchases.restorePurchasesWith
 import kotlinx.android.synthetic.main.activity_cats.*
-import java.net.URI
 
 class CatsActivity : AppCompatActivity() {
 

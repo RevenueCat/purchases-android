@@ -10,8 +10,6 @@ import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.TypeParceler
 import org.json.JSONObject
-import java.net.URI
-import java.net.URL
 import java.util.Date
 
 /**
