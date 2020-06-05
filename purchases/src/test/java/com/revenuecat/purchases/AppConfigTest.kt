@@ -200,4 +200,15 @@ class AppConfigTest {
         )
         assertThat(x.hashCode() == y.hashCode())
     }
+
+    @Test
+    fun `toString works`() {
+        val x = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null
+        )
+        assertThat(x.toString()).isNotNull()
+    }
 }
