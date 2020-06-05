@@ -12,6 +12,7 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -189,7 +190,7 @@ class PurchaserInfoTest {
     fun `Management url is properly retrieved`() {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
         val x = jsonObject.buildPurchaserInfo()
-        assertThat(x.managementURL).isEqualTo("https://play.google.com/store/account/subscriptions")
+        assertThat(x.managementURL).isEqualTo(URL("https://play.google.com/store/account/subscriptions"))
     }
 
     @Test

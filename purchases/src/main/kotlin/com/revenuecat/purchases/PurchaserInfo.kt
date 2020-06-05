@@ -9,6 +9,7 @@ import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.TypeParceler
 import org.json.JSONObject
+import java.net.URL
 import java.util.Date
 
 /**
@@ -37,7 +38,7 @@ data class PurchaserInfo internal constructor(
     internal val schemaVersion: Int,
     val firstSeen: Date,
     val originalAppUserId: String,
-    val managementURL: String?
+    val managementURL: URL?
 ) : Parcelable {
 
     /**

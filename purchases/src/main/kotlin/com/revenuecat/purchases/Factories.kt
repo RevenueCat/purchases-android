@@ -7,6 +7,7 @@ import com.revenuecat.purchases.caching.SubscriberAttributesPerAppUserIDMap
 import com.revenuecat.purchases.util.Iso8601Utils
 import org.json.JSONException
 import org.json.JSONObject
+import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.Date
 
@@ -71,7 +72,7 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         optInt("schema_version"),
         firstSeen,
         subscriber.optString("original_app_user_id"),
-        managementURL
+        managementURL?.let { URL(it) }
     )
 }
 
