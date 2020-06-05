@@ -130,4 +130,74 @@ class AppConfigTest {
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
 
+    @Test
+    fun `Given two app configs with same data, both are equal`() {
+        val x = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null
+        )
+        val y = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null
+        )
+
+        assertThat(x).isEqualTo(y)
+    }
+
+    @Test
+    fun `Given two app configs with different data, both are not equal`() {
+        val x = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null
+        )
+        var y = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = true,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null
+        )
+
+        assertThat(x).isNotEqualTo(y)
+
+        y = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.1.0"),
+            proxyURL = null
+        )
+
+        assertThat(x).isNotEqualTo(y)
+
+        y = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = URL("https://a.com")
+        )
+
+        assertThat(x).isNotEqualTo(y)
+    }
+
+    @Test
+    fun `Given two same app configs, their hashcodes are the same`() {
+        val x = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null
+        )
+        val y = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null
+        )
+        assertThat(x.hashCode() == y.hashCode())
+    }
 }
