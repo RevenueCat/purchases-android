@@ -99,7 +99,7 @@ public class CatsActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
                     try {
-                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(purchaserInfo.getManagementURL())));
+                        startActivity(new Intent(Intent.ACTION_VIEW, purchaserInfo.getManagementURL()));
                     } catch (ActivityNotFoundException exception) {
                         exception.printStackTrace();
                     }

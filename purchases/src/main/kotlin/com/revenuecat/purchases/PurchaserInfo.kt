@@ -5,10 +5,12 @@
 
 package com.revenuecat.purchases
 
+import android.net.Uri
 import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.TypeParceler
 import org.json.JSONObject
+import java.net.URI
 import java.net.URL
 import java.util.Date
 
@@ -38,7 +40,7 @@ data class PurchaserInfo internal constructor(
     internal val schemaVersion: Int,
     val firstSeen: Date,
     val originalAppUserId: String,
-    val managementURL: URL?
+    val managementURL: Uri?
 ) : Parcelable {
 
     /**

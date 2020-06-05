@@ -13,6 +13,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.purchases.restorePurchasesWith
 import kotlinx.android.synthetic.main.activity_cats.*
+import java.net.URI
 
 class CatsActivity : AppCompatActivity() {
 
@@ -67,7 +68,7 @@ class CatsActivity : AppCompatActivity() {
             manage_subscription.visibility = VISIBLE
             manage_subscription.setOnClickListener {
                 try {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(purchaserInfo.managementURL)))
+                    startActivity(Intent(Intent.ACTION_VIEW, purchaserInfo.managementURL))
                 } catch (e: ActivityNotFoundException) {
                     e.printStackTrace()
                 }

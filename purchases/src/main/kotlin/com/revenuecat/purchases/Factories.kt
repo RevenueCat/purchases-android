@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import android.net.Uri
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.attributes.SubscriberAttribute
 import com.revenuecat.purchases.caching.SubscriberAttributeMap
@@ -72,7 +73,7 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         optInt("schema_version"),
         firstSeen,
         subscriber.optString("original_app_user_id"),
-        managementURL?.let { URL(it) }
+        managementURL?.let { Uri.parse(it) }
     )
 }
 
