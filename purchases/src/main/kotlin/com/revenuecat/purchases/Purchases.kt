@@ -1225,8 +1225,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             version = null
         )
 
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
-        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @JvmSynthetic
         internal var postponedAttributionData = mutableListOf<AttributionData>()
 
         /**
@@ -1235,8 +1234,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @JvmStatic
         var debugLogsEnabled = false
 
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
-        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @JvmSynthetic
         internal var backingFieldSharedInstance: Purchases? = null
 
         /**
