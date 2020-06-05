@@ -22,7 +22,10 @@ import java.util.Date
  * @property requestDate Date when this info was requested
  * @property firstSeen The date this user was first seen in RevenueCat.
  * @property originalAppUserId The original App User Id recorded for this user.
- * @property managementURL URL to manage active subscriptions of this user.
+ * @property managementURL URL to manage the active subscription of the user. If this user has an active iOS
+ * subscription, this will point to the App Store, if the user has an active Play Store subscription
+ * it will point there. If there are no active subscriptions it will be null.
+ * If there are multiple for different platforms, it will point to the Play Store
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
