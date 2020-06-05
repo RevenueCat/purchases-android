@@ -896,7 +896,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             offeringIdentifier = purchase.presentedOfferingIdentifier,
             price = skuDetails?.priceAmount,
             currency = skuDetails?.priceCurrencyCode,
-            duration = skuDetails?.subscriptionPeriod, // TODO: test for managed products
+            duration = skuDetails?.subscriptionPeriod,
             introDuration = skuDetails?.introductoryPricePeriod,
             trialDuration = skuDetails?.freeTrialPeriod
         )
