@@ -216,6 +216,21 @@ internal object SkuDetailsParceler : Parceler<SkuDetails> {
     }
 }
 
+/** @suppress */
+internal object JSONObjectParceler : Parceler<JSONObject> {
+
+    override fun create(parcel: Parcel): JSONObject {
+        return JSONObject(parcel.readString())
+    }
+
+    override fun JSONObject.write(parcel: Parcel, flags: Int) {
+        val field = JSONObject::class.java.getDeclaredField("jsonObject")
+        field.isAccessible = true
+        val value = field.get(this).toString()
+        parcel.writeString(value)
+    }
+}
+
 internal fun BillingResult.toHumanReadableDescription() =
     "DebugMessage: $debugMessage. ErrorCode: ${responseCode.getBillingResponseCodeName()}."
 

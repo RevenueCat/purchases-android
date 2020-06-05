@@ -1,13 +1,14 @@
 package com.revenuecat.purchases
 
-import android.os.Parcel
 import android.os.Parcelable
+import kotlinx.android.parcel.Parcelize
 
 /**
  * This class contains all the entitlements associated to the user.
  * @property all Map of all EntitlementInfo [EntitlementInfo] objects (active and inactive) keyed by
  * entitlement identifier.
  */
+@Parcelize
 class EntitlementInfos internal constructor(
     val all: Map<String, EntitlementInfo>
 ) : Parcelable {
@@ -22,21 +23,6 @@ class EntitlementInfos internal constructor(
      * accessing the `all` map by entitlement identifier.
      */
     operator fun get(s: String) = all[s]
-
-    /** @suppress */
-    constructor(parcel: Parcel) : this(
-        all = parcel.readStringParcelableMap(EntitlementInfo::class.java.classLoader)
-    )
-
-    /** @suppress */
-    override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeStringParcelableMap(all)
-    }
-
-    /** @suppress */
-    override fun describeContents(): Int {
-        return 0
-    }
 
     /** @suppress */
     override fun equals(other: Any?): Boolean {
@@ -55,19 +41,5 @@ class EntitlementInfos internal constructor(
         var result = all.hashCode()
         result = 31 * result + active.hashCode()
         return result
-    }
-
-    /** @suppress */
-    companion object {
-        /** @suppress */
-        @JvmField val CREATOR = object : Parcelable.Creator<EntitlementInfos> {
-            override fun createFromParcel(parcel: Parcel): EntitlementInfos {
-                return EntitlementInfos(parcel)
-            }
-
-            override fun newArray(size: Int): Array<EntitlementInfos?> {
-                return arrayOfNulls(size)
-            }
-        }
     }
 }
