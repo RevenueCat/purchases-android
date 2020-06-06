@@ -1278,7 +1278,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val frameworkVersion = "3.2.0-SNAPSHOT"
 
         /**
-         * Override to use your own proxy. BEWARE
+         * Set this property to your proxy URL before configuring Purchases *only*
+         * if you've received a proxy key value from your RevenueCat contact.
          */
         @JvmStatic
         var proxyURL: URL? = null
