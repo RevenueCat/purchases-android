@@ -896,9 +896,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             offeringIdentifier = purchase.presentedOfferingIdentifier,
             price = skuDetails?.priceAmount,
             currency = skuDetails?.priceCurrencyCode,
-            duration = skuDetails?.subscriptionPeriod,
-            introDuration = skuDetails?.introductoryPricePeriod,
-            trialDuration = skuDetails?.freeTrialPeriod
+            duration = skuDetails?.subscriptionPeriod?.takeUnless { it.isEmpty() },
+            introDuration = skuDetails?.introductoryPricePeriod?.takeUnless { it.isEmpty() },
+            trialDuration = skuDetails?.freeTrialPeriod?.takeUnless { it.isEmpty() }
         )
         backend.postReceiptData(
             purchaseToken = purchase.purchaseToken,
