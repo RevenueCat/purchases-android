@@ -3299,6 +3299,30 @@ class PurchasesTest {
         }
     }
 
+    @Test
+    fun `unknown product type when querying sku details while purchasing defaults to inapp`() {
+        setup()
+        val sku = "sku"
+        val purchaseToken = "token"
+
+        mockSkuDetails(listOf(sku), emptyList(), PurchaseType.INAPP)
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(getMockedPurchaseList(
+            sku,
+            purchaseToken,
+            PurchaseType.UNKNOWN,
+            "offering_a"
+        ))
+        verify (exactly = 1) {
+            mockBillingWrapper.querySkuDetailsAsync(
+                BillingClient.SkuType.INAPP,
+                any(),
+                any(),
+                any()
+            )
+        }
+    }
+
     private fun mockBackend(
         mockInfo: PurchaserInfo,
         errorGettingPurchaserInfo: PurchasesError? = null
