@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases
 
+import android.net.Uri
 import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.TypeParceler
@@ -21,10 +22,14 @@ import java.util.Date
  * @property requestDate Date when this info was requested
  * @property firstSeen The date this user was first seen in RevenueCat.
  * @property originalAppUserId The original App User Id recorded for this user.
+ * @property managementURL URL to manage the active subscription of the user. If this user has an active iOS
+ * subscription, this will point to the App Store, if the user has an active Play Store subscription
+ * it will point there. If there are no active subscriptions it will be null.
+ * If there are multiple for different platforms, it will point to the Play Store
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-class PurchaserInfo internal constructor(
+data class PurchaserInfo internal constructor(
     val entitlements: EntitlementInfos,
     val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
@@ -35,7 +40,8 @@ class PurchaserInfo internal constructor(
     internal val jsonObject: JSONObject,
     internal val schemaVersion: Int,
     val firstSeen: Date,
-    val originalAppUserId: String
+    val originalAppUserId: String,
+    val managementURL: Uri?
 ) : Parcelable {
 
     /**
