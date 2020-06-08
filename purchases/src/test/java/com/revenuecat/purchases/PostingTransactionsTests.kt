@@ -111,13 +111,16 @@ class PostingTransactionsTests {
     fun `durations are sent when posting to backend`() {
         postReceiptSuccess = PostReceiptSuccessContainer()
 
+        val expectedSubscriptionPeriod = "P1M"
+        val expectedIntroPricePeriod = "P2M"
+        val expectedFreeTrialPeriod = "P3M"
         val mockSkuDetails = mockk<SkuDetails>().also {
             every { it.sku } returns "product_id"
             every { it.priceAmountMicros } returns 2000000
             every { it.priceCurrencyCode } returns "USD"
-            every { it.subscriptionPeriod } returns "P1M"
-            every { it.introductoryPricePeriod } returns "P2M"
-            every { it.freeTrialPeriod } returns "P3M"
+            every { it.subscriptionPeriod } returns expectedSubscriptionPeriod
+            every { it.introductoryPricePeriod } returns expectedIntroPricePeriod
+            every { it.freeTrialPeriod } returns expectedFreeTrialPeriod
         }
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
@@ -129,9 +132,9 @@ class PostingTransactionsTests {
             onError = {_,_ -> }
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue()
-        assertThat(postedProductInfoSlot.captured.duration).isEqualTo("P1M")
-        assertThat(postedProductInfoSlot.captured.introDuration).isEqualTo("P2M")
-        assertThat(postedProductInfoSlot.captured.trialDuration).isEqualTo("P3M")
+        assertThat(postedProductInfoSlot.captured.duration).isEqualTo(expectedSubscriptionPeriod)
+        assertThat(postedProductInfoSlot.captured.introDuration).isEqualTo(expectedIntroPricePeriod)
+        assertThat(postedProductInfoSlot.captured.trialDuration).isEqualTo(expectedFreeTrialPeriod)
         verify (exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
