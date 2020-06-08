@@ -846,28 +846,28 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         purchases.forEach { purchase ->
             if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
                 billingWrapper.querySkuDetailsAsync(
-                    purchase.type.toSKUType() ?: BillingClient.SkuType.INAPP,
-                    listOf(purchase.sku),
-                    { skuDetailsList ->
+                    itemType = purchase.type.toSKUType() ?: BillingClient.SkuType.INAPP,
+                    skuList = listOf(purchase.sku),
+                    onReceiveSkuDetails = { skuDetailsList ->
                         postToBackend(
-                            purchase,
-                            skuDetailsList.firstOrNull { it.sku == purchase.sku },
-                            allowSharingPlayStoreAccount,
-                            consumeAllTransactions,
-                            appUserID,
-                            onSuccess,
-                            onError
+                            purchase = purchase,
+                            skuDetails = skuDetailsList.firstOrNull { it.sku == purchase.sku },
+                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                            consumeAllTransactions = consumeAllTransactions,
+                            appUserID = appUserID,
+                            onSuccess = onSuccess,
+                            onError = onError
                         )
                     },
-                    {
+                    onError = {
                         postToBackend(
-                            purchase,
-                            null,
-                            allowSharingPlayStoreAccount,
-                            consumeAllTransactions,
-                            appUserID,
-                            onSuccess,
-                            onError
+                            purchase = purchase,
+                            skuDetails = null,
+                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                            consumeAllTransactions = consumeAllTransactions,
+                            appUserID = appUserID,
+                            onSuccess = onSuccess,
+                            onError = onError
                         )
                     }
                 )
