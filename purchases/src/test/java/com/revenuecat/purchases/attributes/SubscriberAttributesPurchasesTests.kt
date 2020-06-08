@@ -78,13 +78,10 @@ class SubscriberAttributesPurchasesTests {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
-                productID = any(),
                 isRestore = any(),
-                offeringIdentifier = any(),
                 observerMode = any(),
-                price = any(),
-                currency = any(),
                 subscriberAttributes = capture(postedAttributesSlot),
+                productInfo = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
             )
@@ -236,13 +233,10 @@ class SubscriberAttributesPurchasesTests {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
-                productID = any(),
                 isRestore = any(),
-                offeringIdentifier = any(),
                 observerMode = any(),
-                price = any(),
-                currency = any(),
                 subscriberAttributes = expectedAttributes,
+                productInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -322,13 +316,10 @@ class SubscriberAttributesPurchasesTests {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
-                productID = any(),
                 isRestore = any(),
-                offeringIdentifier = any(),
                 observerMode = any(),
-                price = any(),
-                currency = any(),
                 subscriberAttributes = expectedAttributes,
+                productInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -419,13 +410,10 @@ class SubscriberAttributesPurchasesTests {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
-                productID = any(),
                 isRestore = any(),
-                offeringIdentifier = any(),
                 observerMode = any(),
-                price = any(),
-                currency = any(),
                 subscriberAttributes = expectedAttributes,
+                productInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )

@@ -111,37 +111,34 @@ internal class Backend(
     fun postReceiptData(
         purchaseToken: String,
         appUserID: String,
-        productID: String,
         isRestore: Boolean,
-        offeringIdentifier: String?,
         observerMode: Boolean,
-        price: Double?,
-        currency: String?,
         subscriberAttributes: Map<String, SubscriberAttribute>,
+        productInfo: ProductInfo,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback
     ) {
         val cacheKey = listOfNotNull(
             purchaseToken,
-            productID,
+            productInfo.productID,
             appUserID,
             isRestore.toString(),
-            offeringIdentifier,
+            productInfo.offeringIdentifier,
             observerMode.toString(),
-            price?.toString(),
-            currency,
+            productInfo.price?.toString(),
+            productInfo.currency,
             subscriberAttributes.toString()
         )
 
         val body = mapOf(
             "fetch_token" to purchaseToken,
-            "product_id" to productID,
+            "product_id" to productInfo.productID,
             "app_user_id" to appUserID,
             "is_restore" to isRestore,
-            "presented_offering_identifier" to offeringIdentifier,
+            "presented_offering_identifier" to productInfo.offeringIdentifier,
             "observer_mode" to observerMode,
-            "price" to price,
-            "currency" to currency,
+            "price" to productInfo.price,
+            "currency" to productInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() }?.toBackendMap()
         ).filterValues { value -> value != null }
 

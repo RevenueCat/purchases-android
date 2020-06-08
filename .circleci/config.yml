@@ -4,7 +4,7 @@ orbs:
 executors:
   android-executor:
     docker:
-      - image: circleci/android:api-28-alpha
+      - image: circleci/android:api-28
     working_directory: ~/purchases-android
     environment:
       JVM_OPTS: -Xmx3200m
