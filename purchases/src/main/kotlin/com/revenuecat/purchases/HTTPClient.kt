@@ -20,8 +20,7 @@ import java.net.MalformedURLException
 import java.net.URL
 
 internal class HTTPClient(
-    private val appConfig: AppConfig,
-    private val baseURL: URL = URL("https://api.revenuecat.com/")
+    private val appConfig: AppConfig
 ) {
 
     private fun buffer(inputStream: InputStream): BufferedReader {
@@ -81,7 +80,7 @@ internal class HTTPClient(
         val fullURL: URL
         val connection: HttpURLConnection
         try {
-            fullURL = URL(baseURL, "/v1$path")
+            fullURL = URL(appConfig.baseURL, "/v1$path")
             connection = getConnection(fullURL, headers, jsonBody)
         } catch (e: MalformedURLException) {
             throw RuntimeException(e)

@@ -33,6 +33,7 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
+import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.HashMap
 import java.util.concurrent.ExecutorService
@@ -48,6 +49,7 @@ import java.util.concurrent.TimeUnit
  * guide to setup your RevenueCat account.
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
+@Suppress("LongParameterList")
 class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
     private val application: Application,
     backingFieldAppUserID: String?,
@@ -57,10 +59,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val executorService: ExecutorService,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    appConfig: AppConfig
+    @JvmSynthetic internal var appConfig: AppConfig
 ) : LifecycleDelegate {
-
-    internal var appConfig = appConfig
 
     /** @suppress */
     @Suppress("RedundantGetter", "RedundantSetter")
@@ -1235,8 +1235,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             version = null
         )
 
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
-        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @JvmSynthetic
         internal var postponedAttributionData = mutableListOf<AttributionData>()
 
         /**
@@ -1245,8 +1244,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @JvmStatic
         var debugLogsEnabled = false
 
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
-        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @JvmSynthetic
         internal var backingFieldSharedInstance: Purchases? = null
 
         /**
@@ -1280,6 +1278,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val frameworkVersion = "3.2.0-SNAPSHOT"
 
         /**
+         * Set this property to your proxy URL before configuring Purchases *only*
+         * if you've received a proxy key value from your RevenueCat contact.
+         */
+        @JvmStatic
+        var proxyURL: URL? = null
+
+        /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
          * be set as a singleton. You should access the singleton instance using [Purchases.sharedInstance]
          * @param apiKey The API Key generated for your app from https://app.revenuecat.com/
@@ -1308,11 +1313,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             require(context.applicationContext is Application) { "Needs an application context." }
             val application = context.getApplication()
             val appConfig = AppConfig(
-                context.getLocale()?.toBCP47() ?: "",
-                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
+                context,
+                !observerMode,
                 platformInfo,
-                !observerMode
+                proxyURL
             )
+
             val backend = Backend(
                 apiKey,
                 Dispatcher(service),

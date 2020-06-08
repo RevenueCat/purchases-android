@@ -181,13 +181,6 @@ internal fun Locale.toBCP47(): String {
     return bcp47Tag.toString()
 }
 
-internal data class AppConfig(
-    val languageTag: String,
-    val versionName: String,
-    val platformInfo: PlatformInfo,
-    var finishTransactions: Boolean
-)
-
 data class PlatformInfo(
     val flavor: String,
     val version: String?
@@ -239,3 +232,6 @@ internal fun PurchaseHistoryRecord.toHumanReadableDescription() =
 
 val SkuDetails.priceAmount: Double
     get() = this.priceAmountMicros.div(1000000.0)
+
+internal val Context.versionName: String?
+    get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
