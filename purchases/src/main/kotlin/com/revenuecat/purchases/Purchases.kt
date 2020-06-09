@@ -1304,7 +1304,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             val application = context.getApplication()
             val appConfig = AppConfig(
                 context,
-                !observerMode,
+                observerMode,
                 platformInfo,
                 proxyURL
             )

@@ -3278,6 +3278,18 @@ class PurchasesTest {
         assertThat(Purchases.sharedInstance.appConfig.baseURL).isEqualTo(expected)
     }
 
+    @Test
+    fun `Setting observer mode on sets finish transactions to false`() {
+        Purchases.configure(mockContext, "api", observerMode = true)
+        assertThat(Purchases.sharedInstance.appConfig.finishTransactions).isFalse()
+    }
+
+    @Test
+    fun `Setting observer mode off sets finish transactions to true`() {
+        Purchases.configure(mockContext, "api", observerMode = false)
+        assertThat(Purchases.sharedInstance.appConfig.finishTransactions).isTrue()
+    }
+
     // region Private Methods
     private fun mockBillingWrapper() {
         with(mockBillingWrapper) {
