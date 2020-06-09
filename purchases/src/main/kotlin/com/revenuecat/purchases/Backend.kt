@@ -120,14 +120,11 @@ internal class Backend(
     ) {
         val cacheKey = listOfNotNull(
             purchaseToken,
-            productInfo.productID,
             appUserID,
             isRestore.toString(),
-            productInfo.offeringIdentifier,
             observerMode.toString(),
-            productInfo.price?.toString(),
-            productInfo.currency,
-            subscriberAttributes.toString()
+            subscriberAttributes.toString(),
+            productInfo.toString()
         )
 
         val body = mapOf(
@@ -139,7 +136,10 @@ internal class Backend(
             "observer_mode" to observerMode,
             "price" to productInfo.price,
             "currency" to productInfo.currency,
-            "attributes" to subscriberAttributes.takeUnless { it.isEmpty() }?.toBackendMap()
+            "attributes" to subscriberAttributes.takeUnless { it.isEmpty() }?.toBackendMap(),
+            "normal_duration" to productInfo.duration,
+            "intro_duration" to productInfo.introDuration,
+            "trial_duration" to productInfo.trialDuration
         ).filterValues { value -> value != null }
 
         val call = object : Dispatcher.AsyncCall() {

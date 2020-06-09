@@ -143,24 +143,33 @@ class BackendTest {
         offeringIdentifier: String?,
         observerMode: Boolean,
         price: Double?,
-        currency: String?
+        currency: String?,
+        duration: String? = null,
+        introDuration: String? = null,
+        trialDuration: String? = null
     ): PurchaserInfo {
 
         val (fetchToken, productID, info) = mockPostReceiptResponse(
-            isRestore = isRestore,
-            responseCode = responseCode,
-            clientException = clientException,
+            isRestore,
+            responseCode,
+            clientException,
             resultBody = resultBody,
             offeringIdentifier = offeringIdentifier,
             observerMode = observerMode,
             price = price,
-            currency = currency
+            currency = currency,
+            duration = duration,
+            introDuration = introDuration,
+            trialDuration = trialDuration
         )
         val productInfo = ProductInfo(
             productID = productID,
             offeringIdentifier = offeringIdentifier,
             price = price,
-            currency = currency
+            currency = currency,
+            duration = duration,
+            introDuration = introDuration,
+            trialDuration = trialDuration
         )
         backend.postReceiptData(
             purchaseToken = fetchToken,
@@ -185,7 +194,10 @@ class BackendTest {
         offeringIdentifier: String?,
         observerMode: Boolean,
         price: Double?,
-        currency: String?
+        currency: String?,
+        duration: String? = null,
+        introDuration: String? = null,
+        trialDuration: String? = null
     ): Triple<String, String, PurchaserInfo> {
         val fetchToken = "fetch_token"
         val productID = "product_id"
@@ -197,7 +209,10 @@ class BackendTest {
             "presented_offering_identifier" to offeringIdentifier,
             "observer_mode" to observerMode,
             "price" to price,
-            "currency" to currency
+            "currency" to currency,
+            "normal_duration" to duration,
+            "intro_duration" to introDuration,
+            "trial_duration" to trialDuration
         ).mapNotNull { entry: Map.Entry<String, Any?> ->
             entry.value?.let { entry.key to it }
         }.toMap()
@@ -741,5 +756,158 @@ class BackendTest {
                 any()
             )
         }
+    }
+
+    @Test
+    fun `given multiple post calls for same subscriber different durations, both are triggered`() {
+        val (fetchToken, productID, _) = mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            offeringIdentifier = "offering_a",
+            observerMode = false,
+            price = null,
+            currency = null
+        )
+        val (_, _, _) = mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            offeringIdentifier = "offering_a",
+            observerMode = false,
+            price = null,
+            currency = null,
+            duration = "P1M",
+            introDuration = "P1M",
+            trialDuration = "P1M"
+        )
+        val lock = CountDownLatch(2)
+        val productInfo = ProductInfo(
+            productID = productID,
+            offeringIdentifier = "offering_a"
+        )
+        asyncBackend.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            isRestore = false,
+            observerMode = false,
+            subscriberAttributes = emptyMap(),
+            productInfo = productInfo,
+            onSuccess = { _, _ ->
+                lock.countDown()
+            },
+            onError = postReceiptErrorCallback
+        )
+        val productInfo1 = ProductInfo(
+            productID = productID,
+            offeringIdentifier = "offering_a",
+            duration = "P1M",
+            introDuration = "P1M",
+            trialDuration = "P1M"
+        )
+        asyncBackend.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            isRestore = false,
+            observerMode = false,
+            subscriberAttributes = emptyMap(),
+            productInfo = productInfo1,
+            onSuccess = { _, _ ->
+                lock.countDown()
+            },
+            onError = postReceiptErrorCallback
+        )
+        lock.await()
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 2) {
+            mockClient.performRequest(
+                "/receipts",
+                any() as Map<String, Any?>,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple post calls for same subscriber same durations, only one is triggered`() {
+        val (fetchToken, productID, _) = mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            offeringIdentifier = "offering_a",
+            observerMode = false,
+            price = null,
+            currency = null,
+            duration = "P1M",
+            introDuration = "P1M",
+            trialDuration = "P1M"
+        )
+        val lock = CountDownLatch(2)
+        val productInfo = ProductInfo(
+            productID = productID,
+            offeringIdentifier = "offering_a",
+            duration = "P1M",
+            introDuration = "P1M",
+            trialDuration = "P1M"
+        )
+        asyncBackend.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            isRestore = false,
+            observerMode = false,
+            subscriberAttributes = emptyMap(),
+            productInfo = productInfo,
+            onSuccess = { _, _ ->
+                lock.countDown()
+            },
+            onError = postReceiptErrorCallback
+        )
+        asyncBackend.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            isRestore = false,
+            observerMode = false,
+            subscriberAttributes = emptyMap(),
+            productInfo = productInfo,
+            onSuccess = { _, _ ->
+                lock.countDown()
+            },
+            onError = postReceiptErrorCallback
+        )
+        lock.await()
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/receipts",
+                any() as Map<String, Any?>,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `postReceipt passes durations`() {
+        val info = postReceipt(
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            offeringIdentifier = null,
+            observerMode = true,
+            price = 2.5,
+            currency = "USD",
+            duration = "P1M",
+            introDuration = "P2M",
+            trialDuration = "P3M"
+        )
+
+        assertThat(receivedPurchaserInfo).`as`("Received purchaser info is not null").isNotNull
+        assertThat(info).isEqualTo(receivedPurchaserInfo)
     }
 }
