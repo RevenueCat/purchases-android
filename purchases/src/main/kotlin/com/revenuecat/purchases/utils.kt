@@ -181,13 +181,6 @@ internal fun Locale.toBCP47(): String {
     return bcp47Tag.toString()
 }
 
-internal data class AppConfig(
-    val languageTag: String,
-    val versionName: String,
-    val platformInfo: PlatformInfo,
-    var finishTransactions: Boolean
-)
-
 data class PlatformInfo(
     val flavor: String,
     val version: String?
@@ -216,6 +209,21 @@ internal object SkuDetailsParceler : Parceler<SkuDetails> {
     }
 }
 
+/** @suppress */
+internal object JSONObjectParceler : Parceler<JSONObject> {
+
+    override fun create(parcel: Parcel): JSONObject {
+        return JSONObject(parcel.readString())
+    }
+
+    override fun JSONObject.write(parcel: Parcel, flags: Int) {
+        val field = JSONObject::class.java.getDeclaredField("jsonObject")
+        field.isAccessible = true
+        val value = field.get(this).toString()
+        parcel.writeString(value)
+    }
+}
+
 internal fun BillingResult.toHumanReadableDescription() =
     "DebugMessage: $debugMessage. ErrorCode: ${responseCode.getBillingResponseCodeName()}."
 
@@ -224,3 +232,6 @@ internal fun PurchaseHistoryRecord.toHumanReadableDescription() =
 
 val SkuDetails.priceAmount: Double
     get() = this.priceAmountMicros.div(1000000.0)
+
+internal val Context.versionName: String?
+    get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName

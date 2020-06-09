@@ -1,3 +1,18 @@
+## 3.2.0
+
+- Added `proxyKey`, useful for kids category apps, so that they can set up a proxy to send requests through. **Do not use this** unless you've talked to RevenueCat support about it. 
+https://github.com/RevenueCat/purchases-android/pull/152
+https://github.com/RevenueCat/purchases-android/pull/157
+- Added `managementURL` to purchaserInfo. This provides an easy way for apps to create Manage Subscription buttons that will correctly redirect users to the corresponding subscription management page on all platforms. 
+https://github.com/RevenueCat/purchases-android/pull/151
+- Extra fields sent to the post receipt endpoint: `normal_duration`, `intro_duration` and `trial_duration`. These will feed into the LTV model for more accurate LTV values. 
+https://github.com/RevenueCat/purchases-android/pull/148
+https://github.com/RevenueCat/purchases-android/pull/156
+- Fixed a bug where if the `context` passed to the SDK on setup is not an `Application` context, there is be a memory leak and potential issues getting the Advertising Info. 
+https://github.com/RevenueCat/purchases-android/pull/147
+- Migrated more classes to use Parcelize 
+https://github.com/RevenueCat/purchases-android/pull/150
+
 ## 3.1.1
 
 - Fix a subscriber attributes bug where the attributes are deleted when an alias is created. https://github.com/RevenueCat/purchases-android/pull/135

@@ -7,6 +7,7 @@ package com.revenuecat.purchases
 
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.mockk.mockk
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
@@ -51,12 +52,17 @@ class HTTPClientTest {
     
     @Before
     fun setupBefore() {
-        appConfig = AppConfig("en-US", "1.0", expectedPlatformInfo, true)
+        appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = expectedPlatformInfo,
+            proxyURL = baseURL
+        )
     }
 
     @Test
     fun canBeCreated() {
-        HTTPClient(appConfig, baseURL)
+        HTTPClient(appConfig)
     }
 
     @Test
@@ -64,7 +70,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
 
-        HTTPClient(appConfig, baseURL)
+        HTTPClient(appConfig)
             .apply {
                 this.performRequest("/resource", null, mapOf("" to ""))
             }
@@ -79,7 +85,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}").setResponseCode(223)
         server.enqueue(response)
 
-        val client = HTTPClient(appConfig, baseURL)
+        val client = HTTPClient(appConfig)
         val result = client.performRequest("/resource", null, mapOf("" to ""))
 
         server.takeRequest()
@@ -92,7 +98,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{'response': 'OK'}").setResponseCode(223)
         server.enqueue(response)
 
-        val client = HTTPClient(appConfig, baseURL)
+        val client = HTTPClient(appConfig)
         val result = client.performRequest("/resource", null, mapOf("" to ""))
 
         server.takeRequest()
@@ -107,7 +113,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("not uh jason")
         server.enqueue(response)
 
-        val client = HTTPClient(appConfig, baseURL)
+        val client = HTTPClient(appConfig)
         try {
             client.performRequest("/resource", null, mapOf("" to ""))
         } finally {
@@ -124,7 +130,7 @@ class HTTPClientTest {
         val headers = HashMap<String, String>()
         headers["Authentication"] = "Bearer todd"
 
-        val client = HTTPClient(appConfig, baseURL)
+        val client = HTTPClient(appConfig)
         client.performRequest("/resource", null, headers)
 
         val request = server.takeRequest()
@@ -137,7 +143,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
 
-        val client = HTTPClient(appConfig, baseURL)
+        val client = HTTPClient(appConfig)
         client.performRequest("/resource", null, mapOf("" to ""))
 
         val request = server.takeRequest()
@@ -156,15 +162,15 @@ class HTTPClientTest {
     @Test
     fun `Given there is no flavor version, flavor version header is not set`() {
         appConfig = AppConfig(
-            languageTag = "en-US",
-            versionName = "1.0",
+            context = mockk(relaxed = true),
+            observerMode = false,
             platformInfo = PlatformInfo("native", null),
-            finishTransactions = true
+            proxyURL = baseURL
         )
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
 
-        val client = HTTPClient(appConfig, baseURL)
+        val client = HTTPClient(appConfig)
         client.performRequest("/resource", null, mapOf("" to ""))
 
         val request = server.takeRequest()
@@ -180,7 +186,7 @@ class HTTPClientTest {
         val body = HashMap<String, String>()
         body["user_id"] = "jerry"
 
-        val client = HTTPClient(appConfig, baseURL)
+        val client = HTTPClient(appConfig)
         client.performRequest("/resource", body, mapOf("" to ""))
 
         val request = server.takeRequest()
@@ -195,7 +201,7 @@ class HTTPClientTest {
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
 
-        val client = HTTPClient(appConfig, baseURL)
+        val client = HTTPClient(appConfig)
         client.performRequest("/resource", null, mapOf("" to ""))
 
         val request = server.takeRequest()

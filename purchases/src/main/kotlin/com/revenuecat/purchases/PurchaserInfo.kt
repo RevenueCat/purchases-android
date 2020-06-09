@@ -5,8 +5,10 @@
 
 package com.revenuecat.purchases
 
-import android.os.Parcel
+import android.net.Uri
 import android.os.Parcelable
+import kotlinx.android.parcel.Parcelize
+import kotlinx.android.parcel.TypeParceler
 import org.json.JSONObject
 import java.util.Date
 
@@ -20,8 +22,14 @@ import java.util.Date
  * @property requestDate Date when this info was requested
  * @property firstSeen The date this user was first seen in RevenueCat.
  * @property originalAppUserId The original App User Id recorded for this user.
+ * @property managementURL URL to manage the active subscription of the user. If this user has an active iOS
+ * subscription, this will point to the App Store, if the user has an active Play Store subscription
+ * it will point there. If there are no active subscriptions it will be null.
+ * If there are multiple for different platforms, it will point to the Play Store
  */
-class PurchaserInfo internal constructor(
+@Parcelize
+@TypeParceler<JSONObject, JSONObjectParceler>()
+data class PurchaserInfo internal constructor(
     val entitlements: EntitlementInfos,
     val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
@@ -32,28 +40,9 @@ class PurchaserInfo internal constructor(
     internal val jsonObject: JSONObject,
     internal val schemaVersion: Int,
     val firstSeen: Date,
-    val originalAppUserId: String
+    val originalAppUserId: String,
+    val managementURL: Uri?
 ) : Parcelable {
-    /**
-     * @hide
-     */
-    constructor(parcel: Parcel) : this(
-        entitlements =
-            parcel.readParcelable<EntitlementInfos>(EntitlementInfos::class.java.classLoader)
-                ?: EntitlementInfos(emptyMap()),
-        purchasedNonSubscriptionSkus = parcel.readInt().let { size ->
-            (0 until size).map { parcel.readString() }.toSet()
-        },
-        allExpirationDatesByProduct = parcel.readStringDateMap(),
-        allPurchaseDatesByProduct = parcel.readStringDateMap(),
-        allExpirationDatesByEntitlement = parcel.readStringDateMap(),
-        allPurchaseDatesByEntitlement = parcel.readStringDateMap(),
-        requestDate = Date(parcel.readLong()),
-        jsonObject = JSONObject(parcel.readString()),
-        schemaVersion = parcel.readInt(),
-        firstSeen = Date(parcel.readLong()),
-        originalAppUserId = parcel.readString() ?: ""
-    )
 
     /**
      * @return Set of active subscription skus
@@ -156,33 +145,6 @@ class PurchaserInfo internal constructor(
                 "nonConsumablePurchases: $purchasedNonSubscriptionSkus,\n" +
                 "requestDate: $requestDate\n>"
 
-    /**
-     * @hide
-     */
-    override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeParcelable(entitlements, flags)
-        parcel.writeInt(purchasedNonSubscriptionSkus.size)
-        purchasedNonSubscriptionSkus.forEach { entry -> parcel.writeString(entry) }
-        parcel.writeStringDateMap(allExpirationDatesByProduct)
-        parcel.writeStringDateMap(allPurchaseDatesByProduct)
-        @Suppress("DEPRECATION")
-        parcel.writeStringDateMap(allExpirationDatesByEntitlement)
-        @Suppress("DEPRECATION")
-        parcel.writeStringDateMap(allPurchaseDatesByEntitlement)
-        parcel.writeLong(requestDate.time)
-        parcel.writeString(jsonObject.toString())
-        parcel.writeInt(schemaVersion)
-        parcel.writeLong(firstSeen.time)
-        parcel.writeString(originalAppUserId)
-    }
-
-    /**
-     * @hide
-     */
-    override fun describeContents(): Int {
-        return 0
-    }
-
     override fun hashCode(): Int {
         var result = entitlements.hashCode()
         result = 31 * result + purchasedNonSubscriptionSkus.hashCode()
@@ -202,12 +164,5 @@ class PurchaserInfo internal constructor(
     companion object {
 
         internal const val SCHEMA_VERSION = 2
-
-        @JvmField
-        val CREATOR: Parcelable.Creator<PurchaserInfo> =
-            object : Parcelable.Creator<PurchaserInfo> {
-                override fun createFromParcel(source: Parcel): PurchaserInfo = PurchaserInfo(source)
-                override fun newArray(size: Int): Array<PurchaserInfo?> = arrayOfNulls(size)
-            }
     }
 }

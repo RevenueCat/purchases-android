@@ -78,13 +78,10 @@ class SubscriberAttributesPurchasesTests {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
-                productID = any(),
                 isRestore = any(),
-                offeringIdentifier = any(),
                 observerMode = any(),
-                price = any(),
-                currency = any(),
                 subscriberAttributes = capture(postedAttributesSlot),
+                productInfo = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
             )
@@ -106,7 +103,7 @@ class SubscriberAttributesPurchasesTests {
         } just runs
 
         underTest = Purchases(
-            applicationContext = mockk(relaxed = true),
+            application = mockk(relaxed = true),
             backingFieldAppUserID = appUserId,
             backend = backendMock,
             billingWrapper = billingWrapperMock,
@@ -119,7 +116,12 @@ class SubscriberAttributesPurchasesTests {
                 every { currentAppUserID } returns appUserId
             },
             subscriberAttributesManager = subscriberAttributesManagerMock,
-            appConfig = AppConfig("en-US", "1.0", PlatformInfo("native", "3.2.0"), true)
+            appConfig = AppConfig(
+                context = mockk(relaxed = true),
+                observerMode = false,
+                platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+                proxyURL = null
+            )
         )
     }
 
@@ -231,13 +233,10 @@ class SubscriberAttributesPurchasesTests {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
-                productID = any(),
                 isRestore = any(),
-                offeringIdentifier = any(),
                 observerMode = any(),
-                price = any(),
-                currency = any(),
                 subscriberAttributes = expectedAttributes,
+                productInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -317,13 +316,10 @@ class SubscriberAttributesPurchasesTests {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
-                productID = any(),
                 isRestore = any(),
-                offeringIdentifier = any(),
                 observerMode = any(),
-                price = any(),
-                currency = any(),
                 subscriberAttributes = expectedAttributes,
+                productInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -414,13 +410,10 @@ class SubscriberAttributesPurchasesTests {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
-                productID = any(),
                 isRestore = any(),
-                offeringIdentifier = any(),
                 observerMode = any(),
-                price = any(),
-                currency = any(),
                 subscriberAttributes = expectedAttributes,
+                productInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )

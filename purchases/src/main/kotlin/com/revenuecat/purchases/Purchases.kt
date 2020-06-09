@@ -33,6 +33,7 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
+import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.HashMap
 import java.util.concurrent.ExecutorService
@@ -48,8 +49,9 @@ import java.util.concurrent.TimeUnit
  * guide to setup your RevenueCat account.
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
+@Suppress("LongParameterList")
 class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
-    private val applicationContext: Context,
+    private val application: Application,
     backingFieldAppUserID: String?,
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
@@ -57,10 +59,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val executorService: ExecutorService,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    appConfig: AppConfig
+    @JvmSynthetic internal var appConfig: AppConfig
 ) : LifecycleDelegate {
-
-    internal var appConfig = appConfig
 
     /** @suppress */
     @Suppress("RedundantGetter", "RedundantSetter")
@@ -174,17 +174,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     allPurchases.forEach { purchase ->
                         val unsyncedSubscriberAttributesByKey =
                             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
+                        val productInfo = ProductInfo(productID = purchase.sku)
                         backend.postReceiptData(
-                            purchase.purchaseToken,
-                            appUserID,
-                            purchase.sku,
-                            this.allowSharingPlayStoreAccount,
-                            null,
-                            !this.finishTransactions,
-                            null,
-                            null,
-                            unsyncedSubscriberAttributesByKey,
-                            { info, attributeErrors ->
+                            purchaseToken = purchase.purchaseToken,
+                            appUserID = appUserID,
+                            isRestore = this.allowSharingPlayStoreAccount,
+                            observerMode = !this.finishTransactions,
+                            subscriberAttributes = unsyncedSubscriberAttributesByKey,
+                            productInfo = productInfo,
+                            onSuccess = { info, attributeErrors ->
                                 subscriberAttributesManager.markAsSynced(
                                     appUserID,
                                     unsyncedSubscriberAttributesByKey,
@@ -195,7 +193,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                                 debugLog("Purchase $purchase synced")
                             },
-                            { error, errorIsFinishable, attributeErrors ->
+                            onError = { error, errorIsFinishable, attributeErrors ->
                                 if (errorIsFinishable) {
                                     subscriberAttributesManager.markAsSynced(
                                         appUserID,
@@ -386,17 +384,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         subscriberAttributesManager.getUnsyncedSubscriberAttributes(
                                             appUserID
                                         )
+                                    val productInfo = ProductInfo(productID = purchase.sku)
                                     backend.postReceiptData(
-                                        purchase.purchaseToken,
-                                        appUserID,
-                                        purchase.sku,
-                                        true,
-                                        null,
-                                        !finishTransactions,
-                                        null,
-                                        null,
-                                        unsyncedSubscriberAttributesByKey,
-                                        { info, attributeErrors ->
+                                        purchaseToken = purchase.purchaseToken,
+                                        appUserID = appUserID,
+                                        isRestore = true,
+                                        observerMode = !finishTransactions,
+                                        subscriberAttributes = unsyncedSubscriberAttributesByKey,
+                                        productInfo = productInfo,
+                                        onSuccess = { info, attributeErrors ->
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
                                                 unsyncedSubscriberAttributesByKey,
@@ -410,7 +406,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                                 dispatch { listener.onReceived(info) }
                                             }
                                         },
-                                        { error, errorIsFinishable, attributeErrors ->
+                                        onError = { error, errorIsFinishable, attributeErrors ->
                                             if (errorIsFinishable) {
                                                 subscriberAttributesManager.markAsSynced(
                                                     appUserID,
@@ -684,7 +680,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         network: AttributionNetwork,
         networkUserId: String?
     ) {
-        AdvertisingIdClient.getAdvertisingIdInfo(applicationContext) { adInfo ->
+        AdvertisingIdClient.getAdvertisingIdInfo(application) { adInfo ->
             identityManager.currentAppUserID.let { appUserID ->
                 val latestAttributionDataId =
                     deviceCache.getCachedAttributionData(network, appUserID)
@@ -849,44 +845,32 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         purchases.forEach { purchase ->
             if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                if (purchase.type == PurchaseType.INAPP) {
-                    billingWrapper.querySkuDetailsAsync(
-                        BillingClient.SkuType.INAPP,
-                        listOf(purchase.sku),
-                        { skuDetailsList ->
-                            postToBackend(
-                                purchase,
-                                skuDetailsList.firstOrNull { it.sku == purchase.sku },
-                                allowSharingPlayStoreAccount,
-                                consumeAllTransactions,
-                                appUserID,
-                                onSuccess,
-                                onError
-                            )
-                        },
-                        {
-                            postToBackend(
-                                purchase,
-                                null,
-                                allowSharingPlayStoreAccount,
-                                consumeAllTransactions,
-                                appUserID,
-                                onSuccess,
-                                onError
-                            )
-                        }
-                    )
-                } else {
-                    postToBackend(
-                        purchase,
-                        null,
-                        allowSharingPlayStoreAccount,
-                        consumeAllTransactions,
-                        appUserID,
-                        onSuccess,
-                        onError
-                    )
-                }
+                billingWrapper.querySkuDetailsAsync(
+                    itemType = purchase.type.toSKUType() ?: BillingClient.SkuType.INAPP,
+                    skuList = listOf(purchase.sku),
+                    onReceiveSkuDetails = { skuDetailsList ->
+                        postToBackend(
+                            purchase = purchase,
+                            skuDetails = skuDetailsList.firstOrNull { it.sku == purchase.sku },
+                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                            consumeAllTransactions = consumeAllTransactions,
+                            appUserID = appUserID,
+                            onSuccess = onSuccess,
+                            onError = onError
+                        )
+                    },
+                    onError = {
+                        postToBackend(
+                            purchase = purchase,
+                            skuDetails = null,
+                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                            consumeAllTransactions = consumeAllTransactions,
+                            appUserID = appUserID,
+                            onSuccess = onSuccess,
+                            onError = onError
+                        )
+                    }
+                )
             } else {
                 onError?.let { onError ->
                     onError(purchase, PurchasesError(PurchasesErrorCode.PaymentPendingError))
@@ -907,17 +891,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         val unsyncedSubscriberAttributesByKey =
             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
+        val productInfo = ProductInfo(
+            productID = purchase.sku,
+            offeringIdentifier = purchase.presentedOfferingIdentifier,
+            price = skuDetails?.priceAmount,
+            currency = skuDetails?.priceCurrencyCode,
+            duration = skuDetails?.subscriptionPeriod?.takeUnless { it.isEmpty() },
+            introDuration = skuDetails?.introductoryPricePeriod?.takeUnless { it.isEmpty() },
+            trialDuration = skuDetails?.freeTrialPeriod?.takeUnless { it.isEmpty() }
+        )
         backend.postReceiptData(
-            purchase.purchaseToken,
-            appUserID,
-            purchase.sku,
-            allowSharingPlayStoreAccount,
-            purchase.presentedOfferingIdentifier,
-            !consumeAllTransactions,
-            skuDetails?.priceAmount,
-            skuDetails?.priceCurrencyCode,
-            unsyncedSubscriberAttributesByKey,
-            { info, attributeErrors ->
+            purchaseToken = purchase.purchaseToken,
+            appUserID = appUserID,
+            isRestore = allowSharingPlayStoreAccount,
+            observerMode = !consumeAllTransactions,
+            subscriberAttributes = unsyncedSubscriberAttributesByKey,
+            productInfo = productInfo,
+            onSuccess = { info, attributeErrors ->
                 subscriberAttributesManager.markAsSynced(
                     appUserID,
                     unsyncedSubscriberAttributesByKey,
@@ -928,7 +918,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
             },
-            { error, errorIsFinishable, attributeErrors ->
+            onError = { error, errorIsFinishable, attributeErrors ->
                 if (errorIsFinishable) {
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
@@ -1235,8 +1225,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             version = null
         )
 
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
-        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @JvmSynthetic
         internal var postponedAttributionData = mutableListOf<AttributionData>()
 
         /**
@@ -1245,8 +1234,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @JvmStatic
         var debugLogsEnabled = false
 
-        @get:VisibleForTesting(otherwise = VisibleForTesting.NONE)
-        @set:VisibleForTesting(otherwise = VisibleForTesting.NONE)
+        @JvmSynthetic
         internal var backingFieldSharedInstance: Purchases? = null
 
         /**
@@ -1277,7 +1265,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "3.1.1"
+        val frameworkVersion = "3.2.0"
+
+        /**
+         * Set this property to your proxy URL before configuring Purchases *only*
+         * if you've received a proxy key value from your RevenueCat contact.
+         */
+        @JvmStatic
+        var proxyURL: URL? = null
 
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
@@ -1306,12 +1301,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
             require(context.applicationContext is Application) { "Needs an application context." }
+            val application = context.getApplication()
             val appConfig = AppConfig(
-                context.getLocale()?.toBCP47() ?: "",
-                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "",
+                context,
+                observerMode,
                 platformInfo,
-                !observerMode
+                proxyURL
             )
+
             val backend = Backend(
                 apiKey,
                 Dispatcher(service),
@@ -1319,15 +1316,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             )
 
             val billingWrapper = BillingWrapper(
-                BillingWrapper.ClientFactory((context.getApplication()).applicationContext),
-                Handler((context.getApplication()).mainLooper)
+                BillingWrapper.ClientFactory(application),
+                Handler(application.mainLooper)
             )
 
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context.getApplication())
+            val prefs = PreferenceManager.getDefaultSharedPreferences(application)
             val cache = DeviceCache(prefs, apiKey)
 
             return Purchases(
-                context,
+                application,
                 appUserID,
                 backend,
                 billingWrapper,

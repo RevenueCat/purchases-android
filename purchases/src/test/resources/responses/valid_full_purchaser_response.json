@@ -54,6 +54,7 @@
         "product_identifier": "onetime_purchase",
         "purchase_date": "1990-08-30T02:40:36Z"
       }
-    }
+    },
+    "management_url": "https://play.google.com/store/account/subscriptions"
   }
 }

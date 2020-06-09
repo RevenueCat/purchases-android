@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import android.net.Uri
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.attributes.SubscriberAttribute
 import com.revenuecat.purchases.caching.SubscriberAttributeMap
@@ -53,6 +54,12 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         EntitlementInfos(emptyMap())
     }
 
+    val managementURL = if (subscriber.has("management_url")) {
+        subscriber.getNullableString("management_url")
+    } else {
+        null
+    }
+
     return PurchaserInfo(
         entitlementInfos,
         nonSubscriptions.keys().asSequence().toSet(),
@@ -64,7 +71,8 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         this,
         optInt("schema_version"),
         firstSeen,
-        subscriber.optString("original_app_user_id")
+        subscriber.optString("original_app_user_id"),
+        managementURL?.let { Uri.parse(it) }
     )
 }
 

@@ -1,5 +1,7 @@
 package com.revenuecat.sample
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View.GONE
@@ -58,6 +60,19 @@ class CatsActivity : AppCompatActivity() {
             purchase_restore.visibility = VISIBLE
             expiration_date_label.visibility = GONE
             purchase_date_label.visibility = GONE
+        }
+
+        if (purchaserInfo.managementURL != null) {
+            manage_subscription.visibility = VISIBLE
+            manage_subscription.setOnClickListener {
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, purchaserInfo.managementURL))
+                } catch (e: ActivityNotFoundException) {
+                    e.printStackTrace()
+                }
+            }
+        } else {
+            manage_subscription.visibility = GONE
         }
     }
 }

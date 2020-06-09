@@ -11,7 +11,7 @@ android {
         minSdkVersion 14
         targetSdkVersion 28
         versionCode 1
-        versionName "3.1.1"
+        versionName "3.2.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'consumer-proguard-rules.pro'
@@ -50,7 +50,7 @@ dependencies {
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.2.0'
     testImplementation 'org.mockito:mockito-core:3.0.0'
     testImplementation 'com.android.billingclient:billing:2.0.3'
-    testImplementation 'io.mockk:mockk:1.9.3.kotlin12'
+    testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }
 
@@ -107,5 +107,4 @@ dokka {
 
 androidExtensions {
     features = ["parcelize"]
-    experimental = true // Remove when kotlin 1.3.60 is released to fix false error on Parcelize
 }

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.attributes
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Backend
 import com.revenuecat.purchases.HTTPClient
+import com.revenuecat.purchases.ProductInfo
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -209,17 +210,16 @@ class SubscriberAttributesBackendTests {
     fun `posting receipt with attributes works`() {
         mockPostReceiptResponse()
 
-
+        val productInfo = ProductInfo(
+            productID = productID
+        )
         underTest.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
-            productID = productID,
             isRestore = false,
-            offeringIdentifier = null,
             observerMode = false,
-            price = null,
-            currency = null,
             subscriberAttributes = mapOfSubscriberAttributes,
+            productInfo = productInfo,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnError
         )
@@ -234,16 +234,16 @@ class SubscriberAttributesBackendTests {
     fun `posting receipt without attributes skips them`() {
         mockPostReceiptResponse()
 
+        val productInfo = ProductInfo(
+            productID = productID
+        )
         underTest.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
-            productID = productID,
             isRestore = false,
-            offeringIdentifier = null,
             observerMode = false,
-            price = null,
-            currency = null,
             subscriberAttributes = emptyMap(),
+            productInfo = productInfo,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnError
         )
@@ -261,17 +261,16 @@ class SubscriberAttributesBackendTests {
             responseCode = 200,
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
-
+        val productInfo = ProductInfo(
+            productID = productID
+        )
         underTest.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
-            productID = productID,
             isRestore = false,
-            offeringIdentifier = null,
             observerMode = false,
-            price = null,
-            currency = null,
             subscriberAttributes = emptyMap(),
+            productInfo = productInfo,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnError
         )
@@ -288,17 +287,16 @@ class SubscriberAttributesBackendTests {
             responseCode = 505,
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
-
+        val productInfo = ProductInfo(
+            productID = productID
+        )
         underTest.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
-            productID = productID,
             isRestore = false,
-            offeringIdentifier = null,
             observerMode = false,
-            price = null,
-            currency = null,
             subscriberAttributes = emptyMap(),
+            productInfo = productInfo,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnError
         )
@@ -315,17 +313,16 @@ class SubscriberAttributesBackendTests {
             responseCode = 304,
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
-
+        val productInfo = ProductInfo(
+            productID = productID
+        )
         underTest.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
-            productID = productID,
             isRestore = false,
-            offeringIdentifier = null,
             observerMode = false,
-            price = null,
-            currency = null,
             subscriberAttributes = emptyMap(),
+            productInfo = productInfo,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnError
         )
