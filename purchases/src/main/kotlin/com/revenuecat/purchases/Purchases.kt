@@ -1489,7 +1489,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Different compatible attribution networks available
      * @param serverValue Id of this attribution network in the RevenueCat server
      */
-    @Suppress("unused")
+    @Suppress("unused", "MagicNumber")
     enum class AttributionNetwork(val serverValue: Int) {
         /**
          * [https://www.adjust.com/]
@@ -1514,7 +1514,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         /**
          * [https://developers.facebook.com/]
          */
-        FACEBOOK(5)
+        FACEBOOK(5),
+
+        /**
+         * [https://www.mparticle.com/]
+         */
+        MPARTICLE(6)
     }
 
     internal data class AttributionData(
