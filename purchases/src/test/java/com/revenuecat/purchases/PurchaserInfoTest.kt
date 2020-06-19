@@ -206,9 +206,8 @@ class PurchaserInfoTest {
     @Test
     fun `Original purchase date is properly retrieved`() {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val originalPurchaseDate = "2019-07-26T20:30:41.000"
         val x = jsonObject.buildPurchaserInfo()
-        assertThat(x.originalPurchaseDate).isEqualTo(originalPurchaseDate)
+        assertThat(x.originalPurchaseDate!!.time).isEqualTo(1564183841000L)
     }
 
     @Test
