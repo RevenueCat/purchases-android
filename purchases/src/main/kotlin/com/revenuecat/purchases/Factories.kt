@@ -60,19 +60,26 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         null
     }
 
+    val originalPurchaseDate = if (subscriber.has("original_purchase_date")) {
+        Iso8601Utils.parse(subscriber.getString("original_purchase_date"))
+    } else {
+        null
+    }
+
     return PurchaserInfo(
-        entitlementInfos,
-        nonSubscriptions.keys().asSequence().toSet(),
-        expirationDatesByProduct,
-        purchaseDatesByProduct,
-        expirationDatesByEntitlement,
-        purchaseDatesByEntitlement,
-        requestDate,
-        this,
-        optInt("schema_version"),
-        firstSeen,
-        subscriber.optString("original_app_user_id"),
-        managementURL?.let { Uri.parse(it) }
+        entitlements = entitlementInfos,
+        purchasedNonSubscriptionSkus = nonSubscriptions.keys().asSequence().toSet(),
+        allExpirationDatesByProduct = expirationDatesByProduct,
+        allPurchaseDatesByProduct = purchaseDatesByProduct,
+        allExpirationDatesByEntitlement = expirationDatesByEntitlement,
+        allPurchaseDatesByEntitlement = purchaseDatesByEntitlement,
+        requestDate = requestDate,
+        jsonObject = this,
+        schemaVersion = optInt("schema_version"),
+        firstSeen = firstSeen,
+        originalAppUserId = subscriber.optString("original_app_user_id"),
+        managementURL = managementURL?.let { Uri.parse(it) },
+        originalPurchaseDate = originalPurchaseDate
     )
 }
 

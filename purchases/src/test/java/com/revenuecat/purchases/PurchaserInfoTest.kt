@@ -203,4 +203,18 @@ class PurchaserInfoTest {
         assertThat(x.managementURL).isNull()
     }
 
+    @Test
+    fun `Original purchase date is properly retrieved`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val originalPurchaseDate = "2019-07-26T20:30:41.000"
+        val x = jsonObject.buildPurchaserInfo()
+        assertThat(x.originalPurchaseDate).isEqualTo(originalPurchaseDate)
+    }
+
+    @Test
+    fun `Original purchase date is null if missing`() {
+        val x = JSONObject(Responses.validEmptyPurchaserResponse).buildPurchaserInfo()
+        assertThat(x.originalPurchaseDate).isNull()
+    }
+
 }

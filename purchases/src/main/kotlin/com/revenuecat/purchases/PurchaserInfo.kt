@@ -26,6 +26,8 @@ import java.util.Date
  * subscription, this will point to the App Store, if the user has an active Play Store subscription
  * it will point there. If there are no active subscriptions it will be null.
  * If there are multiple for different platforms, it will point to the Play Store
+ * @property originalPurchaseDate the purchase date for the version of the application when the user bought the app.
+ * Use this for grandfathering users when migrating to subscriptions. This can be null, see -Purchases.restorePurchases
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
@@ -41,7 +43,8 @@ data class PurchaserInfo internal constructor(
     internal val schemaVersion: Int,
     val firstSeen: Date,
     val originalAppUserId: String,
-    val managementURL: Uri?
+    val managementURL: Uri?,
+    val originalPurchaseDate: Date?
 ) : Parcelable {
 
     /**
