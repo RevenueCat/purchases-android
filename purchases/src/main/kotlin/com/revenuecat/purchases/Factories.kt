@@ -61,7 +61,9 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     }
 
     val originalPurchaseDate = if (subscriber.has("original_purchase_date")) {
-        Iso8601Utils.parse(subscriber.getString("original_purchase_date"))
+        subscriber.getNullableString("original_purchase_date")?.let {
+            Iso8601Utils.parse(it) ?: null
+        }
     } else {
         null
     }
