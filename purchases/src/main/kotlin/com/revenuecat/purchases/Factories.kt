@@ -36,10 +36,7 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     val purchaseDatesByProduct =
         subscriptions.parsePurchaseDates() + nonSubscriptionsLatestPurchases.parsePurchaseDates()
 
-    var entitlements = JSONObject()
-    if (subscriber.has("entitlements")) {
-        entitlements = subscriber.getJSONObject("entitlements")
-    }
+    val entitlements = subscriber.optJSONObject("entitlements")
     val expirationDatesByEntitlement = entitlements.parseExpirations()
     val purchaseDatesByEntitlement = entitlements.parsePurchaseDates()
 
@@ -47,25 +44,13 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
 
     val firstSeen = Iso8601Utils.parse(subscriber.getString("first_seen"))
 
-    val entitlementInfos = if (subscriber.has("entitlements")) {
-        subscriber.getJSONObject("entitlements")
-            .buildEntitlementInfos(subscriptions, nonSubscriptionsLatestPurchases, requestDate)
-    } else {
-        EntitlementInfos(emptyMap())
-    }
+    val entitlementInfos = entitlements?.let {
+        it.buildEntitlementInfos(subscriptions, nonSubscriptionsLatestPurchases, requestDate)
+    } ?: EntitlementInfos(emptyMap())
 
-    val managementURL = if (subscriber.has("management_url")) {
-        subscriber.getNullableString("management_url")
-    } else {
-        null
-    }
-
-    val originalPurchaseDate = if (subscriber.has("original_purchase_date")) {
-        subscriber.getNullableString("original_purchase_date")?.let {
-            Iso8601Utils.parse(it) ?: null
-        }
-    } else {
-        null
+    val managementURL = subscriber.optNullableString("management_url")
+    val originalPurchaseDate = subscriber.optNullableString("original_purchase_date")?.let {
+        Iso8601Utils.parse(it) ?: null
     }
 
     return PurchaserInfo(

@@ -193,6 +193,7 @@ internal fun String.sha1() =
         }
 
 internal fun JSONObject.getNullableString(name: String): String? = this.getString(name).takeUnless { this.isNull(name) }
+internal fun JSONObject.optNullableString(name: String): String? = this.optString(name)?.takeUnless { this.isNull(name) }
 
 /** @suppress */
 internal object SkuDetailsParceler : Parceler<SkuDetails> {
