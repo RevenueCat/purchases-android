@@ -204,6 +204,13 @@ class PurchaserInfoTest {
     }
 
     @Test
+    fun `If management url is missing in the JSON, it is null in the purchaserInfo`() {
+        val jsonObject = JSONObject(Responses.validEmptyPurchaserResponse)
+        val x = jsonObject.buildPurchaserInfo()
+        assertThat(x.managementURL).isNull()
+    }
+
+    @Test
     fun `Original purchase date is properly retrieved`() {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
         val x = jsonObject.buildPurchaserInfo()
@@ -215,7 +222,6 @@ class PurchaserInfoTest {
         val x = JSONObject(Responses.validEmptyPurchaserResponse).buildPurchaserInfo()
         assertThat(x.originalPurchaseDate).isNull()
     }
-
 
     @Test
     fun `Original purchase date is null if it's present but it's a null string`() {
