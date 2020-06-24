@@ -213,10 +213,10 @@ internal class BillingWrapper internal constructor(
             if (connectionError == null) {
                 billingClient?.queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistoryRecordList ->
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                        purchaseHistoryRecordList.takeUnless { it.isEmpty() }?.forEach {
+                        purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
                             debugLog("Purchase history retrieved ${it.toHumanReadableDescription()}")
                         } ?: debugLog("Purchase history is empty.")
-                        onReceivePurchaseHistory(purchaseHistoryRecordList)
+                        onReceivePurchaseHistory(purchaseHistoryRecordList ?: emptyList())
                     } else {
                         onReceivePurchaseHistoryError(
                             billingResult.responseCode.billingResponseToPurchasesError(
@@ -323,13 +323,13 @@ internal class BillingWrapper internal constructor(
         billingClient?.let { client ->
             val querySubsResult = client.queryPurchases(SkuType.SUBS)
             val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
-            val subFound = querySubsResult.purchasesList.any { it.purchaseToken == purchaseToken }
+            val subFound = querySubsResult.purchasesList?.any { it.purchaseToken == purchaseToken } ?: false
             if (subsResponseOK && subFound) {
                 return@getPurchaseType PurchaseType.SUBS
             }
             val queryInAppsResult = client.queryPurchases(SkuType.INAPP)
             val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
-            val inAppFound = queryInAppsResult.purchasesList.any { it.purchaseToken == purchaseToken }
+            val inAppFound = queryInAppsResult.purchasesList?.any { it.purchaseToken == purchaseToken } ?: false
             if (inAppsResponseIsOK && inAppFound) {
                 return@getPurchaseType PurchaseType.INAPP
             }
