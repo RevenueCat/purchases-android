@@ -179,7 +179,7 @@ internal class BillingWrapper internal constructor(
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
                 .setSkuDetails(skuDetails)
-                .setAccountId(appUserID)
+                .setObfuscatedAccountId(appUserID.sha256())
                 .apply {
                     upgradeOrDowngradeInfo?.oldPurchase?.let { oldPurchase ->
                         setOldSku(oldPurchase.sku, oldPurchase.purchaseToken)
