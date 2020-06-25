@@ -1142,8 +1142,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 " - offering: $presentedOfferingIdentifier"
             }}"
         )
-        var userPurchasing: String? =
-            null // Avoids race condition for userid being modified before purchase is made
+        var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
             if (!appConfig.finishTransactions) {
                 debugLog("finishTransactions is set to false and a purchase has been started. " +
@@ -1157,18 +1156,71 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         }
         userPurchasing?.let { appUserID ->
-            billingWrapper.makePurchaseAsync(
-                activity,
-                appUserID,
-                product,
-                upgradeInfo,
-                presentedOfferingIdentifier
-            )
+            if (upgradeInfo != null) {
+                upgradeOrDowngradePurchase(
+                    product,
+                    upgradeInfo,
+                    activity,
+                    appUserID,
+                    presentedOfferingIdentifier,
+                    listener
+                )
+            } else {
+                billingWrapper.makePurchaseAsync(
+                    activity,
+                    appUserID,
+                    product,
+                    upgradeInfo,
+                    presentedOfferingIdentifier
+                )
+            }
         } ?: dispatch {
             listener.onError(
                 PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError),
                 false
             )
+        }
+    }
+
+    private fun upgradeOrDowngradePurchase(
+        product: SkuDetails,
+        upgradeInfo: UpgradeInfo,
+        activity: Activity,
+        appUserID: String,
+        presentedOfferingIdentifier: String?,
+        listener: MakePurchaseListener
+    ) {
+        billingWrapper.queryPurchaseHistoryBySku(product.type, upgradeInfo.oldSku) { result, purchaseHistoryRecord ->
+            if (result.isSuccessful()) {
+                if (purchaseHistoryRecord != null) {
+                    debugLog("Found existing purchase for sku: ${upgradeInfo.oldSku}")
+                    billingWrapper.makePurchaseAsync(
+                        activity,
+                        appUserID,
+                        product,
+                        UpgradeOrDowngradeInfo(purchaseHistoryRecord, upgradeInfo.prorationMode),
+                        presentedOfferingIdentifier
+                    )
+                } else {
+                    debugLog("Couldn't find existing purchase for sku: ${upgradeInfo.oldSku}")
+                    dispatch {
+                        listener.onError(
+                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError),
+                            false
+                        )
+                    }
+                }
+            } else {
+                val message = "There was an error trying to upgrade. " +
+                    "BillingResponseCode: ${result.responseCode.getBillingResponseCodeName()}"
+                debugLog(message)
+                dispatch {
+                    listener.onError(
+                        result.responseCode.billingResponseToPurchasesError(message),
+                        false
+                    )
+                }
+            }
         }
     }
 

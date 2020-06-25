@@ -164,11 +164,11 @@ internal class BillingWrapper internal constructor(
         activity: Activity,
         appUserID: String,
         skuDetails: SkuDetails,
-        upgradeInfo: UpgradeInfo?,
+        upgradeOrDowngradeInfo: UpgradeOrDowngradeInfo?,
         presentedOfferingIdentifier: String?
     ) {
-        if (upgradeInfo != null) {
-            debugLog("Upgrading old sku ${upgradeInfo.oldSku} with sku: ${skuDetails.sku}")
+        if (upgradeOrDowngradeInfo != null) {
+            debugLog("Upgrading old sku ${upgradeOrDowngradeInfo.oldPurchase.sku} to sku: ${skuDetails.sku}")
         } else {
             debugLog("Making purchase for sku: ${skuDetails.sku}")
         }
@@ -180,9 +180,11 @@ internal class BillingWrapper internal constructor(
             val params = BillingFlowParams.newBuilder()
                 .setSkuDetails(skuDetails)
                 .setAccountId(appUserID)
-                .setOldSku(upgradeInfo?.oldSku)
                 .apply {
-                    upgradeInfo?.prorationMode?.let { prorationMode ->
+                    upgradeOrDowngradeInfo?.oldPurchase?.let { oldPurchase ->
+                        setOldSku(oldPurchase.sku, oldPurchase.purchaseToken)
+                    }
+                    upgradeOrDowngradeInfo?.prorationMode?.let { prorationMode ->
                         setReplaceSkusProrationMode(prorationMode)
                     }
                 }.build()
@@ -301,11 +303,10 @@ internal class BillingWrapper internal constructor(
     }
 
     fun queryPurchases(@SkuType skuType: String): QueryPurchasesResult? {
-        return billingClient?.let {
+        return billingClient?.let { billingClient ->
             debugLog("[QueryPurchases] Querying $skuType")
-            val result = it.queryPurchases(skuType)
+            val result = billingClient.queryPurchases(skuType)
 
-            // Purchases.PurchaseResult#purchasesList is not marked as nullable, but it does sometimes return null.
             val purchasesList = result.purchasesList ?: emptyList<Purchase>()
 
             QueryPurchasesResult(
@@ -316,6 +317,24 @@ internal class BillingWrapper internal constructor(
                     hash to PurchaseWrapper(purchase, PurchaseType.fromSKUType(skuType), null)
                 }.toMap()
             )
+        }
+    }
+
+    fun queryPurchaseHistoryBySku(
+        @SkuType skuType: String,
+        sku: String,
+        completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
+    ) {
+        billingClient?.let { billingClient ->
+            debugLog("[QueryPurchases] Querying Purchase with $sku and type $skuType")
+            billingClient.queryPurchaseHistoryAsync(skuType) { result, purchasesList ->
+                completion(
+                    result,
+                    purchasesList?.firstOrNull { sku == it.sku }?.let {
+                        PurchaseHistoryRecordWrapper(it, PurchaseType.fromSKUType(skuType))
+                    }
+                )
+            }
         }
     }
 

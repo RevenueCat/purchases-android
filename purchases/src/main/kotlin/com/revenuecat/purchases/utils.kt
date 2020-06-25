@@ -11,6 +11,7 @@ import android.os.Parcel
 import android.os.Parcelable
 import android.util.Base64
 import android.util.Log
+import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
@@ -192,6 +193,12 @@ internal fun String.sha1() =
             String(Base64.encode(it, Base64.NO_WRAP))
         }
 
+internal fun String.sha256() =
+    MessageDigest.getInstance("SHA-256")
+        .digest(this.toByteArray()).let {
+            String(Base64.encode(it, Base64.NO_WRAP))
+        }
+
 internal fun JSONObject.getNullableString(name: String): String? = this.getString(name).takeUnless { this.isNull(name) }
 
 /** @suppress */
@@ -235,3 +242,5 @@ val SkuDetails.priceAmount: Double
 
 internal val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
+
+internal fun BillingResult.isSuccessful() = responseCode == BillingClient.BillingResponseCode.OK
