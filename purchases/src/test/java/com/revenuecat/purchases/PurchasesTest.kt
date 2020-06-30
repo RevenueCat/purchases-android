@@ -146,6 +146,7 @@ class PurchasesTest {
     private fun stubOfferings(sku: String): Pair<SkuDetails, Offerings> {
         val skuDetails = mockk<SkuDetails>().also {
             every { it.sku } returns sku
+            every { it.type } returns BillingClient.SkuType.SUBS
         }
         val jsonObject = JSONObject(oneOfferingsResponse)
         val packageObject = Package(
@@ -275,10 +276,20 @@ class PurchasesTest {
         val activity: Activity = mockk()
         val (skuDetails, offerings) = stubOfferings("onemonth_freetrial")
 
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.queryPurchaseHistoryBySku(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(BillingResult(), oldPurchase)
+        }
+
         purchases.purchasePackageWith(
             activity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo("oldSku")
+            UpgradeInfo(oldPurchase.sku)
         ) { _, _ -> }
 
         verify {
@@ -286,7 +297,7 @@ class PurchasesTest {
                 eq(activity),
                 eq(appUserId),
                 skuDetails,
-                UpgradeInfo("oldSku"),
+                UpgradeOrDowngradeInfo(oldPurchase),
                 stubOfferingIdentifier
             )
         }
