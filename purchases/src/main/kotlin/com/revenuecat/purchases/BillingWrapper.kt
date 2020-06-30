@@ -168,7 +168,7 @@ internal class BillingWrapper internal constructor(
         presentedOfferingIdentifier: String?
     ) {
         if (upgradeOrDowngradeInfo != null) {
-            debugLog("Upgrading old sku ${upgradeOrDowngradeInfo.oldPurchase.sku} to sku: ${skuDetails.sku}")
+            debugLog("Moving from old sku ${upgradeOrDowngradeInfo.oldPurchase.sku} to sku ${skuDetails.sku}")
         } else {
             debugLog("Making purchase for sku: ${skuDetails.sku}")
         }
@@ -181,11 +181,13 @@ internal class BillingWrapper internal constructor(
                 .setSkuDetails(skuDetails)
                 .setObfuscatedAccountId(appUserID.sha256())
                 .apply {
-                    upgradeOrDowngradeInfo?.oldPurchase?.let { oldPurchase ->
-                        setOldSku(oldPurchase.sku, oldPurchase.purchaseToken)
-                    }
-                    upgradeOrDowngradeInfo?.prorationMode?.let { prorationMode ->
-                        setReplaceSkusProrationMode(prorationMode)
+                    upgradeOrDowngradeInfo?.let { upgradeOrDowngradeInfo ->
+                        upgradeOrDowngradeInfo.oldPurchase.let { oldPurchase ->
+                            setOldSku(oldPurchase.sku, oldPurchase.purchaseToken)
+                        }
+                        upgradeOrDowngradeInfo.prorationMode?.let { prorationMode ->
+                            setReplaceSkusProrationMode(prorationMode)
+                        }
                     }
                 }.build()
 
