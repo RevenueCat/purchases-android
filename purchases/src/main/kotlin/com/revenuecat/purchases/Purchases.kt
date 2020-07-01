@@ -1190,15 +1190,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         presentedOfferingIdentifier: String?,
         listener: MakePurchaseListener
     ) {
-        billingWrapper.queryPurchaseHistoryBySku(product.type, upgradeInfo.oldSku) { result, purchaseHistoryRecord ->
+        billingWrapper.findPurchaseInPurchaseHistory(product.type, upgradeInfo.oldSku) { result, purchaseRecord ->
             if (result.isSuccessful()) {
-                if (purchaseHistoryRecord != null) {
+                if (purchaseRecord != null) {
                     debugLog("Found existing purchase for sku: ${upgradeInfo.oldSku}")
                     billingWrapper.makePurchaseAsync(
                         activity,
                         appUserID,
                         product,
-                        ReplaceSkuInfo(purchaseHistoryRecord, upgradeInfo.prorationMode),
+                        ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
                         presentedOfferingIdentifier
                     )
                 } else {

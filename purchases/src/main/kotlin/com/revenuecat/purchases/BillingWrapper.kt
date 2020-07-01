@@ -320,7 +320,7 @@ internal class BillingWrapper internal constructor(
         }
     }
 
-    fun queryPurchaseHistoryBySku(
+    fun findPurchaseInPurchaseHistory(
         @SkuType skuType: String,
         sku: String,
         completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit

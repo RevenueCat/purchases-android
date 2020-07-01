@@ -281,7 +281,7 @@ class PurchasesTest {
         every { oldPurchase.type } returns PurchaseType.SUBS
 
         every {
-            mockBillingWrapper.queryPurchaseHistoryBySku(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
         } answers {
             lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(BillingResult(), oldPurchase)
         }
