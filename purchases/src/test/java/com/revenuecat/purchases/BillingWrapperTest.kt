@@ -16,6 +16,7 @@ import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
@@ -28,12 +29,15 @@ import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.AssertionsForClassTypes.assertThat
 import org.assertj.core.api.AssertionsForClassTypes.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.ArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -280,6 +284,7 @@ class BillingWrapperTest {
             assertThat(sku).isEqualTo(params.sku)
             assertThat(skuType).isEqualTo(params.skuType)
             assertThat(upgradeInfo.oldPurchase.sku).isEqualTo(params.oldSku)
+            assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(params.oldSkuPurchaseToken)
             assertThat(upgradeInfo.prorationMode).isEqualTo(params.replaceSkusProrationMode)
             BillingClient.BillingResponseCode.OK.buildResult()
         }
@@ -853,6 +858,48 @@ class BillingWrapperTest {
 
         val purchaseType = wrapper.getPurchaseType("inapp")
         assertThat(purchaseType).isEqualTo(PurchaseType.INAPP)
+    }
+
+    @Test
+    fun `findPurchaseInPurchaseHistory works`() {
+        setup()
+        val sku = "aPurchase"
+        val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
+            every { it.sku } returns sku
+        }
+
+        var recordFound: PurchaseHistoryRecordWrapper? = null
+        wrapper.findPurchaseInPurchaseHistory(BillingClient.SkuType.SUBS, sku) { result, record ->
+            recordFound = record
+        }
+        billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
+            BillingClient.BillingResponseCode.OK.buildResult(),
+            listOf(purchaseHistoryRecord)
+        )
+        assertThat(recordFound).isNotNull
+        assertThat(recordFound!!.purchaseHistoryRecord).isEqualTo(purchaseHistoryRecord)
+    }
+
+    @Test
+    fun `findPurchaseInPurchaseHistory returns null if not found`() {
+        setup()
+        val sku = "aPurchase"
+        val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
+            every { it.sku } returns sku + "somethingrandom"
+        }
+
+        var recordFound: PurchaseHistoryRecordWrapper? = null
+        var completionCalled = false
+        wrapper.findPurchaseInPurchaseHistory(BillingClient.SkuType.SUBS, sku) { result, record ->
+            recordFound = record
+            completionCalled = true
+        }
+        billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
+            BillingClient.BillingResponseCode.OK.buildResult(),
+            listOf(purchaseHistoryRecord)
+        )
+        assertThat(completionCalled).isTrue()
+        assertThat(recordFound).isNull()
     }
 
     private fun mockNullSkuDetailsResponse() {
