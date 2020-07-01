@@ -1157,7 +1157,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
         userPurchasing?.let { appUserID ->
             if (upgradeInfo != null) {
-                upgradeOrDowngradePurchase(
+                replaceOldPurchaseWithNewProduct(
                     product,
                     upgradeInfo,
                     activity,
@@ -1182,7 +1182,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun upgradeOrDowngradePurchase(
+    private fun replaceOldPurchaseWithNewProduct(
         product: SkuDetails,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
@@ -1198,7 +1198,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         activity,
                         appUserID,
                         product,
-                        UpgradeOrDowngradeInfo(purchaseHistoryRecord, upgradeInfo.prorationMode),
+                        ReplaceSkuInfo(purchaseHistoryRecord, upgradeInfo.prorationMode),
                         presentedOfferingIdentifier
                     )
                 } else {

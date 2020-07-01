@@ -164,11 +164,11 @@ internal class BillingWrapper internal constructor(
         activity: Activity,
         appUserID: String,
         skuDetails: SkuDetails,
-        upgradeOrDowngradeInfo: UpgradeOrDowngradeInfo?,
+        replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
-        if (upgradeOrDowngradeInfo != null) {
-            debugLog("Moving from old sku ${upgradeOrDowngradeInfo.oldPurchase.sku} to sku ${skuDetails.sku}")
+        if (replaceSkuInfo != null) {
+            debugLog("Moving from old sku ${replaceSkuInfo.oldPurchase.sku} to sku ${skuDetails.sku}")
         } else {
             debugLog("Making purchase for sku: ${skuDetails.sku}")
         }
@@ -181,11 +181,9 @@ internal class BillingWrapper internal constructor(
                 .setSkuDetails(skuDetails)
                 .setObfuscatedAccountId(appUserID.sha256())
                 .apply {
-                    upgradeOrDowngradeInfo?.let { upgradeOrDowngradeInfo ->
-                        upgradeOrDowngradeInfo.oldPurchase.let { oldPurchase ->
-                            setOldSku(oldPurchase.sku, oldPurchase.purchaseToken)
-                        }
-                        upgradeOrDowngradeInfo.prorationMode?.let { prorationMode ->
+                    replaceSkuInfo?.apply {
+                        setOldSku(oldPurchase.sku, oldPurchase.purchaseToken)
+                        prorationMode?.let { prorationMode ->
                             setReplaceSkusProrationMode(prorationMode)
                         }
                     }

@@ -246,7 +246,7 @@ class BillingWrapperTest {
             activity,
             "jerry",
             skuDetails,
-            mockUpgradeOrDowngradeInfo(),
+            mockReplaceSkuInfo(),
             "offering_a"
         )
 
@@ -265,7 +265,7 @@ class BillingWrapperTest {
         val sku = "product_a"
         @BillingClient.SkuType val skuType = BillingClient.SkuType.SUBS
 
-        val upgradeInfo = mockUpgradeOrDowngradeInfo()
+        val upgradeInfo = mockReplaceSkuInfo()
         val activity: Activity = mockk()
         val skuDetails = mockk<SkuDetails>().also {
             every { it.sku } returns sku
@@ -316,7 +316,7 @@ class BillingWrapperTest {
             activity,
             appUserID,
             skuDetails,
-            mockUpgradeOrDowngradeInfo(),
+            mockReplaceSkuInfo(),
             null
         )
 
@@ -355,7 +355,7 @@ class BillingWrapperTest {
             activity,
             appUserID,
             skuDetails,
-            mockUpgradeOrDowngradeInfo(),
+            mockReplaceSkuInfo(),
             null
         )
 
@@ -756,7 +756,7 @@ class BillingWrapperTest {
             activity,
             "jerry",
             skuDetails,
-            mockUpgradeOrDowngradeInfo(),
+            mockReplaceSkuInfo(),
             "offering_a"
         )
         val purchases = listOf(mockk<Purchase>(relaxed = true).also {
@@ -878,8 +878,8 @@ class BillingWrapperTest {
         return oldPurchase
     }
 
-    private fun mockUpgradeOrDowngradeInfo(): UpgradeOrDowngradeInfo {
+    private fun mockReplaceSkuInfo(): ReplaceSkuInfo {
         val oldPurchase = mockPurchaseHistoryRecordWrapper()
-        return UpgradeOrDowngradeInfo(oldPurchase, BillingFlowParams.ProrationMode.DEFERRED)
+        return ReplaceSkuInfo(oldPurchase, BillingFlowParams.ProrationMode.DEFERRED)
     }
 }

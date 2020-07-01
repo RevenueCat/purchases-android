@@ -297,7 +297,7 @@ class PurchasesTest {
                 eq(activity),
                 eq(appUserId),
                 skuDetails,
-                UpgradeOrDowngradeInfo(oldPurchase),
+                ReplaceSkuInfo(oldPurchase),
                 stubOfferingIdentifier
             )
         }
