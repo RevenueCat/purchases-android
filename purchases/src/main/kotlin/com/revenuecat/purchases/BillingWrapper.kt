@@ -21,6 +21,8 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.util.concurrent.ConcurrentLinkedQueue
 
 internal class BillingWrapper internal constructor(
@@ -136,22 +138,24 @@ internal class BillingWrapper internal constructor(
             if (connectionError == null) {
                 val params = SkuDetailsParams.newBuilder()
                     .setType(itemType).setSkusList(skuList).build()
-                billingClient?.querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
-                    if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                        debugLog("Products request finished for ${skuList.joinToString()}")
-                        debugLog("Retrieved skuDetailsList: ${skuDetailsList?.joinToString { it.toString() }}")
-                        skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
-                            debugLog("${it.sku} - $it")
-                        }
+                withConnectedClient {
+                    querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
+                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                            debugLog("Products request finished for ${skuList.joinToString()}")
+                            debugLog("Retrieved skuDetailsList: ${skuDetailsList?.joinToString { it.toString() }}")
+                            skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
+                                debugLog("${it.sku} - $it")
+                            }
 
-                        onReceiveSkuDetails(skuDetailsList ?: emptyList())
-                    } else {
-                        log("Error when fetching products. ${billingResult.toHumanReadableDescription()}")
-                        onError(
-                            billingResult.responseCode.billingResponseToPurchasesError(
-                                "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
+                            onReceiveSkuDetails(skuDetailsList ?: emptyList())
+                        } else {
+                            log("Error when fetching products. ${billingResult.toHumanReadableDescription()}")
+                            onError(
+                                billingResult.responseCode.billingResponseToPurchasesError(
+                                    "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
+                                )
                             )
-                        )
+                        }
                     }
                 }
             } else {
@@ -164,11 +168,11 @@ internal class BillingWrapper internal constructor(
         activity: Activity,
         appUserID: String,
         skuDetails: SkuDetails,
-        upgradeInfo: UpgradeInfo?,
+        replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
-        if (upgradeInfo != null) {
-            debugLog("Upgrading old sku ${upgradeInfo.oldSku} with sku: ${skuDetails.sku}")
+        if (replaceSkuInfo != null) {
+            debugLog("Moving from old sku ${replaceSkuInfo.oldPurchase.sku} to sku ${skuDetails.sku}")
         } else {
             debugLog("Making purchase for sku: ${skuDetails.sku}")
         }
@@ -179,11 +183,13 @@ internal class BillingWrapper internal constructor(
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
                 .setSkuDetails(skuDetails)
-                .setAccountId(appUserID)
-                .setOldSku(upgradeInfo?.oldSku)
+                .setObfuscatedAccountId(appUserID.sha256())
                 .apply {
-                    upgradeInfo?.prorationMode?.let { prorationMode ->
-                        setReplaceSkusProrationMode(prorationMode)
+                    replaceSkuInfo?.apply {
+                        setOldSku(oldPurchase.sku, oldPurchase.purchaseToken)
+                        prorationMode?.let { prorationMode ->
+                            setReplaceSkusProrationMode(prorationMode)
+                        }
                     }
                 }.build()
 
@@ -196,11 +202,13 @@ internal class BillingWrapper internal constructor(
         activity: Activity,
         params: BillingFlowParams
     ) {
-        billingClient?.launchBillingFlow(activity, params)
-            .takeIf { billingResult -> billingResult?.responseCode != BillingClient.BillingResponseCode.OK }
-            ?.let { billingResult ->
-                log("Failed to launch billing intent. ${billingResult.toHumanReadableDescription()}")
-            }
+        withConnectedClient {
+            launchBillingFlow(activity, params)
+                .takeIf { billingResult -> billingResult?.responseCode != BillingClient.BillingResponseCode.OK }
+                ?.let { billingResult ->
+                    log("Failed to launch billing intent. ${billingResult.toHumanReadableDescription()}")
+                }
+        }
     }
 
     fun queryPurchaseHistoryAsync(
@@ -211,18 +219,20 @@ internal class BillingWrapper internal constructor(
         debugLog("Querying purchase history for type $skuType")
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                billingClient?.queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistoryRecordList ->
-                    if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                        purchaseHistoryRecordList.takeUnless { it.isEmpty() }?.forEach {
-                            debugLog("Purchase history retrieved ${it.toHumanReadableDescription()}")
-                        } ?: debugLog("Purchase history is empty.")
-                        onReceivePurchaseHistory(purchaseHistoryRecordList)
-                    } else {
-                        onReceivePurchaseHistoryError(
-                            billingResult.responseCode.billingResponseToPurchasesError(
-                                "Error receiving purchase history. ${billingResult.toHumanReadableDescription()}"
+                withConnectedClient {
+                    queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistoryRecordList ->
+                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                            purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
+                                debugLog("Purchase history retrieved ${it.toHumanReadableDescription()}")
+                            } ?: debugLog("Purchase history is empty.")
+                            onReceivePurchaseHistory(purchaseHistoryRecordList ?: emptyList())
+                        } else {
+                            onReceivePurchaseHistoryError(
+                                billingResult.responseCode.billingResponseToPurchasesError(
+                                    "Error receiving purchase history. ${billingResult.toHumanReadableDescription()}"
+                                )
                             )
-                        )
+                        }
                     }
                 }
             } else {
@@ -270,9 +280,11 @@ internal class BillingWrapper internal constructor(
         debugLog("Consuming purchase with token $token")
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                billingClient?.consumeAsync(
-                    ConsumeParams.newBuilder().setPurchaseToken(token).build(), onConsumed
-                )
+                withConnectedClient {
+                    consumeAsync(
+                        ConsumeParams.newBuilder().setPurchaseToken(token).build(), onConsumed
+                    )
+                }
             }
         }
     }
@@ -284,10 +296,12 @@ internal class BillingWrapper internal constructor(
         debugLog("Acknowledging purchase with token $token")
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                billingClient?.acknowledgePurchase(
-                    AcknowledgePurchaseParams.newBuilder().setPurchaseToken(token).build()
-                ) { billingResult ->
-                    onAcknowledged(billingResult, token)
+                withConnectedClient {
+                    acknowledgePurchase(
+                        AcknowledgePurchaseParams.newBuilder().setPurchaseToken(token).build()
+                    ) { billingResult ->
+                        onAcknowledged(billingResult, token)
+                    }
                 }
             }
         }
@@ -301,11 +315,10 @@ internal class BillingWrapper internal constructor(
     }
 
     fun queryPurchases(@SkuType skuType: String): QueryPurchasesResult? {
-        return billingClient?.let {
+        return billingClient?.let { billingClient ->
             debugLog("[QueryPurchases] Querying $skuType")
-            val result = it.queryPurchases(skuType)
+            val result = billingClient.queryPurchases(skuType)
 
-            // Purchases.PurchaseResult#purchasesList is not marked as nullable, but it does sometimes return null.
             val purchasesList = result.purchasesList ?: emptyList<Purchase>()
 
             QueryPurchasesResult(
@@ -319,17 +332,35 @@ internal class BillingWrapper internal constructor(
         }
     }
 
+    fun findPurchaseInPurchaseHistory(
+        @SkuType skuType: String,
+        sku: String,
+        completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
+    ) {
+        withConnectedClient {
+            debugLog("[QueryPurchases] Querying Purchase with $sku and type $skuType")
+            queryPurchaseHistoryAsync(skuType) { result, purchasesList ->
+                completion(
+                    result,
+                    purchasesList?.firstOrNull { sku == it.sku }?.let {
+                        PurchaseHistoryRecordWrapper(it, PurchaseType.fromSKUType(skuType))
+                    }
+                )
+            }
+        }
+    }
+
     internal fun getPurchaseType(purchaseToken: String): PurchaseType {
         billingClient?.let { client ->
             val querySubsResult = client.queryPurchases(SkuType.SUBS)
             val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
-            val subFound = querySubsResult.purchasesList.any { it.purchaseToken == purchaseToken }
+            val subFound = querySubsResult.purchasesList?.any { it.purchaseToken == purchaseToken } ?: false
             if (subsResponseOK && subFound) {
                 return@getPurchaseType PurchaseType.SUBS
             }
             val queryInAppsResult = client.queryPurchases(SkuType.INAPP)
             val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
-            val inAppFound = queryInAppsResult.purchasesList.any { it.purchaseToken == purchaseToken }
+            val inAppFound = queryInAppsResult.purchasesList?.any { it.purchaseToken == purchaseToken } ?: false
             if (inAppsResponseIsOK && inAppFound) {
                 return@getPurchaseType PurchaseType.INAPP
             }
@@ -429,4 +460,17 @@ internal class BillingWrapper internal constructor(
     }
 
     fun isConnected(): Boolean = billingClient?.isReady ?: false
+
+    private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
+        billingClient?.takeIf { it.isReady }?.let {
+            it.receivingFunction()
+        } ?: debugLog("Warning: billing client is null, purchase methods won't work. Stacktrace: ${getStackTrace()}")
+    }
+
+    private fun getStackTrace(): String {
+        val stringWriter = StringWriter()
+        val printWriter = PrintWriter(stringWriter)
+        Throwable().printStackTrace(printWriter)
+        return stringWriter.toString()
+    }
 }

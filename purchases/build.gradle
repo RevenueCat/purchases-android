@@ -38,7 +38,7 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
     implementation 'androidx.annotation:annotation:1.1.0'
-    api 'com.android.billingclient:billing:2.0.3'
+    api 'com.android.billingclient:billing:3.0.0'
     implementation "androidx.lifecycle:lifecycle-runtime:2.1.0"
     implementation "androidx.lifecycle:lifecycle-extensions:2.1.0"
     kapt "androidx.lifecycle:lifecycle-compiler:2.1.0"
@@ -49,7 +49,7 @@ dependencies {
     testImplementation 'org.robolectric:robolectric:4.3'
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.2.0'
     testImplementation 'org.mockito:mockito-core:3.0.0'
-    testImplementation 'com.android.billingclient:billing:2.0.3'
+    testImplementation 'com.android.billingclient:billing:3.0.0'
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }

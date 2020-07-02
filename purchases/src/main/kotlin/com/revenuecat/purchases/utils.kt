@@ -8,9 +8,9 @@ package com.revenuecat.purchases
 import android.content.Context
 import android.os.Build
 import android.os.Parcel
-import android.os.Parcelable
 import android.util.Base64
 import android.util.Log
+import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
@@ -41,40 +41,6 @@ internal fun errorLog(message: String) {
 
 internal fun Purchase.toHumanReadableDescription() =
     "${this.sku} ${this.orderId} ${this.purchaseToken}"
-
-internal fun Parcel.readStringDateMap(): Map<String, Date?> {
-    return readInt().let { size ->
-        (0 until size).map {
-            readString() to readLong().let { date ->
-                if (date == -1L) null else Date(date)
-            }
-        }.toMap()
-    }
-}
-
-internal fun <T : Parcelable> Parcel.readStringParcelableMap(loader: ClassLoader?): Map<String, T> {
-    return readInt().let { size ->
-        (0 until size).map {
-            readString() to readParcelable<T>(loader)
-        }.toMap()
-    }
-}
-
-internal fun Parcel.writeStringDateMap(mapStringDate: Map<String, Date?>) {
-    writeInt(mapStringDate.size)
-    mapStringDate.forEach { (entry, date) ->
-        writeString(entry)
-        writeLong(date?.time ?: -1)
-    }
-}
-
-internal fun Parcel.writeStringParcelableMap(mapStringParcelable: Map<String, Parcelable>) {
-    writeInt(mapStringParcelable.size)
-    mapStringParcelable.forEach { (entry, parcelable) ->
-        writeString(entry)
-        writeParcelable(parcelable, 0)
-    }
-}
 
 /**
  * Parses expiration dates in a JSONObject
@@ -192,6 +158,12 @@ internal fun String.sha1() =
             String(Base64.encode(it, Base64.NO_WRAP))
         }
 
+internal fun String.sha256() =
+    MessageDigest.getInstance("SHA-256")
+        .digest(this.toByteArray()).let {
+            String(Base64.encode(it, Base64.NO_WRAP))
+        }
+
 internal fun JSONObject.getNullableString(name: String): String? = this.getString(name).takeUnless { this.isNull(name) }
 internal fun JSONObject.optNullableString(name: String): String? = this.optString(name).takeUnless { this.isNull(name) }
 
@@ -236,3 +208,5 @@ val SkuDetails.priceAmount: Double
 
 internal val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
+
+internal fun BillingResult.isSuccessful() = responseCode == BillingClient.BillingResponseCode.OK
