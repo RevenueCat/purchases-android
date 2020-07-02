@@ -21,6 +21,8 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.util.concurrent.ConcurrentLinkedQueue
 
 internal class BillingWrapper internal constructor(
@@ -462,6 +464,13 @@ internal class BillingWrapper internal constructor(
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {
             it.receivingFunction()
-        } ?: debugLog("Warning: billing client is null, purchase methods won't work")
+        } ?: debugLog("Warning: billing client is null, purchase methods won't work. Stacktrace: ${getStackTrace()}")
+    }
+
+    private fun getStackTrace(): String {
+        val stringWriter = StringWriter()
+        val printWriter = PrintWriter(stringWriter)
+        Throwable().printStackTrace(printWriter)
+        return stringWriter.toString()
     }
 }
