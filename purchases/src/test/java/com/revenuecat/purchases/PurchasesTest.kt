@@ -3775,19 +3775,22 @@ class PurchasesTest {
         type: PurchaseType,
         offeringIdentifier: String?
     ): ProductInfo {
+        val skuDetails = mockk<SkuDetails>()
+        every { skuDetails.priceAmountMicros } returns 2000000
+        every { skuDetails.priceCurrencyCode } returns "USD"
+        every { skuDetails.subscriptionPeriod } returns if (type == PurchaseType.SUBS) "P1M" else null
+        every { skuDetails.introductoryPricePeriod } returns if (type == PurchaseType.SUBS) "P7D" else null
+        every { skuDetails.freeTrialPeriod } returns if (type == PurchaseType.SUBS) "P7D" else null
+
         val productInfo = ProductInfo(
             productID = sku,
-            price = 2.0,
             offeringIdentifier = offeringIdentifier,
-            currency = "USD",
-            duration = if (type == PurchaseType.SUBS) "P1M" else null,
-            introDuration = if (type == PurchaseType.SUBS) "P7D" else null,
-            trialDuration = if (type == PurchaseType.SUBS) "P7D" else null
+            skuDetails = skuDetails
         )
 
         val mockSkuDetails = mockk<SkuDetails>().also {
             every { it.sku } returns productInfo.productID
-            every { it.priceAmountMicros } returns productInfo.price!!.toLong() * 1000000
+            every { it.priceAmountMicros } returns (productInfo.price!! * 1000000).toLong()
             every { it.priceCurrencyCode } returns productInfo.currency
             every { it.subscriptionPeriod } returns productInfo.duration
             every { it.introductoryPricePeriod } returns productInfo.introDuration
