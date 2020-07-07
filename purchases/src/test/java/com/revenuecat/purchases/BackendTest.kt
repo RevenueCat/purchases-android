@@ -7,6 +7,7 @@ package com.revenuecat.purchases
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.SkuDetails
 import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk
@@ -648,6 +649,8 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes price and currency`() {
+        val skuDetails = mockSkuDetails()
+
         val info = postReceipt(
             responseCode = 200,
             isRestore = false,
@@ -656,8 +659,7 @@ class BackendTest {
             observerMode = true,
             productInfo = ProductInfo(
                 productID,
-                price = 2.5,
-                currency = "USD"
+                skuDetails = skuDetails
             )
         )
 
@@ -679,25 +681,38 @@ class BackendTest {
                 offeringIdentifier = "offering_a"
             )
         )
-        val (_, _) = mockPostReceiptResponse(
+
+        val skuDetails = mockSkuDetails()
+        val skuDetails1 = mockSkuDetails(price = 350000)
+        val productInfo = ProductInfo(
+            productID,
+            offeringIdentifier = "offering_a",
+            skuDetails = skuDetails
+        )
+        val productInfo1 = ProductInfo(
+            productID = productID,
+            offeringIdentifier = "offering_a",
+            skuDetails = skuDetails1
+        )
+        mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
             clientException = null,
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = ProductInfo(
-                productID,
-                offeringIdentifier = "offering_a",
-                price = 2.5,
-                currency = "USD"
-            )
+            productInfo = productInfo
+        )
+        mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            observerMode = false,
+            productInfo = productInfo1
         )
         val lock = CountDownLatch(2)
-        val productInfo = ProductInfo(
-            productID = productID,
-            offeringIdentifier = "offering_a"
-        )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
@@ -709,12 +724,6 @@ class BackendTest {
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
-        )
-        val productInfo1 = ProductInfo(
-            productID = productID,
-            offeringIdentifier = "offering_a",
-            price = 2.5,
-            currency = "USD"
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
@@ -753,26 +762,39 @@ class BackendTest {
                 offeringIdentifier = "offering_a"
             )
         )
-        val (_, _) = mockPostReceiptResponse(
+
+        val skuDetails = mockSkuDetails()
+        val skuDetails1 = mockSkuDetails(duration = "P2M")
+
+        val productInfo = ProductInfo(
+            productID = productID,
+            offeringIdentifier = "offering_a",
+            skuDetails = skuDetails
+        )
+        val productInfo1 = ProductInfo(
+            productID,
+            offeringIdentifier = "offering_a",
+            skuDetails = skuDetails1
+        )
+        mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
             clientException = null,
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = ProductInfo(
-                productID,
-                offeringIdentifier = "offering_a",
-                duration = "P1M",
-                introDuration = "P1M",
-                trialDuration = "P1M"
-            )
+            productInfo = productInfo
+        )
+        mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            observerMode = false,
+            productInfo = productInfo1
         )
         val lock = CountDownLatch(2)
-        val productInfo = ProductInfo(
-            productID = productID,
-            offeringIdentifier = "offering_a"
-        )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
@@ -784,13 +806,6 @@ class BackendTest {
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
-        )
-        val productInfo1 = ProductInfo(
-            productID = productID,
-            offeringIdentifier = "offering_a",
-            duration = "P1M",
-            introDuration = "P1M",
-            trialDuration = "P1M"
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
@@ -817,6 +832,13 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber same durations, only one is triggered`() {
+        val skuDetails = mockSkuDetails()
+
+        val productInfo = ProductInfo(
+            productID,
+            offeringIdentifier = "offering_a",
+            skuDetails = skuDetails
+        )
         val (fetchToken, _) = mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
@@ -824,22 +846,10 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = ProductInfo(
-                productID,
-                offeringIdentifier = "offering_a",
-                duration = "P1M",
-                introDuration = "P1M",
-                trialDuration = "P1M"
-            )
+            productInfo = productInfo
         )
+
         val lock = CountDownLatch(2)
-        val productInfo = ProductInfo(
-            productID = productID,
-            offeringIdentifier = "offering_a",
-            duration = "P1M",
-            introDuration = "P1M",
-            trialDuration = "P1M"
-        )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
@@ -875,8 +885,29 @@ class BackendTest {
         }
     }
 
+    private fun mockSkuDetails(
+        price: Long = 25000000,
+        duration: String = "P1M",
+        introDuration: String = "P1M",
+        trialDuration: String = "P1M"
+    ): SkuDetails {
+        val skuDetails = mockk<SkuDetails>()
+        every { skuDetails.priceAmountMicros } returns price
+        every { skuDetails.priceCurrencyCode } returns "USD"
+        every { skuDetails.subscriptionPeriod } returns duration
+        every { skuDetails.introductoryPricePeriod } returns introDuration
+        every { skuDetails.freeTrialPeriod } returns trialDuration
+        return skuDetails
+    }
+
     @Test
     fun `postReceipt passes durations`() {
+        val skuDetails = mockSkuDetails(
+            duration = "P1M",
+            introDuration = "P2M",
+            trialDuration = "P3M"
+        )
+
         val info = postReceipt(
             responseCode = 200,
             isRestore = false,
@@ -885,11 +916,7 @@ class BackendTest {
             observerMode = true,
             productInfo = ProductInfo(
                 productID = productID,
-                price = 2.5,
-                currency = "USD",
-                duration = "P1M",
-                introDuration = "P2M",
-                trialDuration = "P3M"
+                skuDetails = skuDetails
             )
         )
 

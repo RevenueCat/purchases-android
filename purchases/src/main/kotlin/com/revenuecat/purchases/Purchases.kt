@@ -894,11 +894,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val productInfo = ProductInfo(
             productID = purchase.sku,
             offeringIdentifier = purchase.presentedOfferingIdentifier,
-            price = skuDetails?.priceAmount,
-            currency = skuDetails?.priceCurrencyCode,
-            duration = skuDetails?.subscriptionPeriod?.takeUnless { it.isEmpty() },
-            introDuration = skuDetails?.introductoryPricePeriod?.takeUnless { it.isEmpty() },
-            trialDuration = skuDetails?.freeTrialPeriod?.takeUnless { it.isEmpty() }
+            skuDetails = skuDetails
         )
         backend.postReceiptData(
             purchaseToken = purchase.purchaseToken,
