@@ -1,3 +1,14 @@
+## 3.3.0
+
+- Added mParticle as one of the attribution options  
+https://github.com/RevenueCat/purchases-android/pull/163
+- Added original_purchase_date to JSON response
+https://github.com/RevenueCat/purchases-android/pull/164
+- Updated BillingClient to 3.0.0
+https://github.com/RevenueCat/purchases-android/pull/166
+- Moved the SKUDetails inside the ProductInfo that's passed to the Backend class when posting tokens
+https://github.com/RevenueCat/purchases-android/pull/167
+
 ## 3.2.0
 
 - Added `proxyKey`, useful for kids category apps, so that they can set up a proxy to send requests through. **Do not use this** unless you've talked to RevenueCat support about it. 
