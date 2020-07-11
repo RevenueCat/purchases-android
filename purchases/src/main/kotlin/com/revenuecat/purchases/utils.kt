@@ -71,22 +71,29 @@ internal fun JSONObject.parseDates(jsonKey: String): HashMap<String, Date?> {
         val key = it.next()
 
         val expirationObject = getJSONObject(key)
-
-        if (expirationObject.isNull(jsonKey)) {
-            expirationDates[key] = null
-        } else {
-            val dateValue = expirationObject.getString(jsonKey)
-            try {
-                val date = Iso8601Utils.parse(dateValue)
-                expirationDates[key] = date
-            } catch (e: RuntimeException) {
-                throw JSONException(e.message)
-            }
-        }
+        expirationDates[key] = expirationObject.optDate(jsonKey)
     }
 
     return expirationDates
 }
+
+internal fun JSONObject.getDate(name: String) =
+    try {
+        Iso8601Utils.parse(getString(name))
+    } catch (e: RuntimeException) {
+        throw JSONException(e.message)
+    }
+
+internal fun JSONObject.optDate(name: String) =
+    takeUnless { isNull(name) }?.getString(name)?.let {
+        try {
+            Iso8601Utils.parse(it)
+        } catch (e: RuntimeException) {
+            throw JSONException(e.message)
+        }
+    }
+
+internal fun JSONObject.parseDate(name: String): Date = Iso8601Utils.parse(getString(name))
 
 internal fun Context.getLocale(): Locale? =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {

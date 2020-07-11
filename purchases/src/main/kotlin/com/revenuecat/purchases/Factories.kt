@@ -5,6 +5,7 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.attributes.SubscriberAttribute
 import com.revenuecat.purchases.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.caching.SubscriberAttributesPerAppUserIDMap
+import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.util.Iso8601Utils
 import org.json.JSONException
 import org.json.JSONObject
@@ -20,15 +21,26 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     val subscriber = getJSONObject("subscriber")
 
     val nonSubscriptions = subscriber.getJSONObject("non_subscriptions")
+    val nonSubscriptionTransactions = mutableMapOf<String, List<Transaction>>()
     val nonSubscriptionsLatestPurchases = JSONObject()
     nonSubscriptions.keys().forEach { productId ->
-        val arrayOfPurchases = nonSubscriptions.getJSONArray(productId)
-        if (arrayOfPurchases.length() > 0) {
+        val arrayOfNonSubscriptions = nonSubscriptions.getJSONArray(productId)
+        val numberOfNonSubscriptions = arrayOfNonSubscriptions.length()
+        if (numberOfNonSubscriptions > 0) {
             nonSubscriptionsLatestPurchases.put(
                 productId,
-                arrayOfPurchases.getJSONObject(arrayOfPurchases.length() - 1)
+                arrayOfNonSubscriptions.getJSONObject(numberOfNonSubscriptions - 1)
             )
         }
+
+        val transactionsForProductId = mutableListOf<Transaction>()
+        for (i in 0 until numberOfNonSubscriptions) {
+            val transactionJSONObject = arrayOfNonSubscriptions.getJSONObject(i)
+            val transaction = Transaction(productId, transactionJSONObject)
+            transactionsForProductId.add(transaction)
+        }
+
+        nonSubscriptionTransactions[productId] = transactionsForProductId.toList()
     }
 
     val subscriptions = subscriber.getJSONObject("subscriptions")
@@ -37,16 +49,14 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         subscriptions.parsePurchaseDates() + nonSubscriptionsLatestPurchases.parsePurchaseDates()
 
     val entitlements = subscriber.optJSONObject("entitlements")
-    val expirationDatesByEntitlement = entitlements.parseExpirations()
-    val purchaseDatesByEntitlement = entitlements.parsePurchaseDates()
 
     val requestDate = Iso8601Utils.parse(getString("request_date"))
 
     val firstSeen = Iso8601Utils.parse(subscriber.getString("first_seen"))
 
-    val entitlementInfos = entitlements?.let {
-        it.buildEntitlementInfos(subscriptions, nonSubscriptionsLatestPurchases, requestDate)
-    } ?: EntitlementInfos(emptyMap())
+    val entitlementInfos =
+        entitlements?.buildEntitlementInfos(subscriptions, nonSubscriptionsLatestPurchases, requestDate)
+            ?: EntitlementInfos(emptyMap())
 
     val managementURL = subscriber.optNullableString("management_url")
     val originalPurchaseDate = subscriber.optNullableString("original_purchase_date")?.let {
@@ -58,8 +68,7 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         purchasedNonSubscriptionSkus = nonSubscriptions.keys().asSequence().toSet(),
         allExpirationDatesByProduct = expirationDatesByProduct,
         allPurchaseDatesByProduct = purchaseDatesByProduct,
-        allExpirationDatesByEntitlement = expirationDatesByEntitlement,
-        allPurchaseDatesByEntitlement = purchaseDatesByEntitlement,
+        nonSubscriptionTransactions = nonSubscriptionTransactions,
         requestDate = requestDate,
         jsonObject = this,
         schemaVersion = optInt("schema_version"),
@@ -98,13 +107,6 @@ private fun JSONObject.buildEntitlementInfos(
     return EntitlementInfos(all)
 }
 
-private fun JSONObject.optDate(name: String) =
-    takeUnless { isNull(name) }?.getString(name)?.let {
-        Iso8601Utils.parse(it)
-    }
-
-private fun JSONObject.getDate(name: String) = Iso8601Utils.parse(getString(name))
-
 private fun JSONObject.getStore(name: String) = when (getString(name)) {
     "app_store" -> Store.APP_STORE
     "mac_app_store" -> Store.MAC_APP_STORE
@@ -134,8 +136,8 @@ private fun JSONObject.buildEntitlementInfo(
         isActive = expirationDate == null || expirationDate.after(requestDate ?: Date()),
         willRenew = expirationDate == null || (unsubscribeDetectedAt == null && billingIssueDetectedAt == null),
         periodType = productData.optPeriodType("period_type"),
-        latestPurchaseDate = getDate("purchase_date"),
-        originalPurchaseDate = productData.getDate("original_purchase_date"),
+        latestPurchaseDate = parseDate("purchase_date"),
+        originalPurchaseDate = productData.parseDate("original_purchase_date"),
         expirationDate = expirationDate,
         store = productData.getStore("store"),
         productIdentifier = getString("product_identifier"),

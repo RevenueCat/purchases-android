@@ -7,6 +7,7 @@ package com.revenuecat.purchases
 
 import android.net.Uri
 import android.os.Parcelable
+import com.revenuecat.purchases.models.Transaction
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.TypeParceler
 import org.json.JSONObject
@@ -14,11 +15,11 @@ import java.util.Date
 
 /**
  * Class containing all information regarding the purchaser
+ * @property entitlements Entitlements attached to this purchaser info
  * @property purchasedNonSubscriptionSkus Set of non-subscription, non-consumed skus
  * @property allExpirationDatesByProduct Map of skus to expiration dates
  * @property allPurchaseDatesByProduct Map of skus to purchase dates
- * @property allExpirationDatesByEntitlement Map of entitlement ids to expiration dates
- * @property allPurchaseDatesByEntitlement Map of entitlement ids to purchase dates
+ * @property nonSubscriptionTransactions Map of Transactions per product ID
  * @property requestDate Date when this info was requested
  * @property firstSeen The date this user was first seen in RevenueCat.
  * @property originalAppUserId The original App User Id recorded for this user.
@@ -33,11 +34,13 @@ import java.util.Date
 @TypeParceler<JSONObject, JSONObjectParceler>()
 data class PurchaserInfo internal constructor(
     val entitlements: EntitlementInfos,
-    val purchasedNonSubscriptionSkus: Set<String>,
+    @Deprecated(
+        "Use nonSubscriptionTransactions instead",
+        ReplaceWith("nonSubscriptionTransactions.keys")
+    ) val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
-    @Deprecated("Use getExpirationDateForEntitlement instead") val allExpirationDatesByEntitlement: Map<String, Date?>,
-    @Deprecated("Use getPurchaseDateForEntitlement instead") val allPurchaseDatesByEntitlement: Map<String, Date?>,
+    val nonSubscriptionTransactions: Map<String, List<Transaction>>,
     val requestDate: Date,
     internal val jsonObject: JSONObject,
     internal val schemaVersion: Int,
@@ -57,22 +60,13 @@ data class PurchaserInfo internal constructor(
      * @return Set of purchased skus, active and inactive
      */
     val allPurchasedSkus: Set<String>
-        get() = this.purchasedNonSubscriptionSkus + allExpirationDatesByProduct.keys
+        get() = this.nonSubscriptionTransactions.keys + allExpirationDatesByProduct.keys
 
     /**
      * @return The latest expiration date of all purchased skus
      */
     val latestExpirationDate: Date?
         get() = allExpirationDatesByProduct.values.sortedBy { it }.takeUnless { it.isEmpty() }?.last()
-
-    /**
-     * The identifiers of all the active entitlements
-     */
-    @Deprecated("Use PurchaserInfo.entitlements.active instead.",
-        ReplaceWith("entitlements.active")
-    )
-    val activeEntitlements: Set<String>
-        get() = entitlements.active.keys
 
     /**
      * Get the expiration date for a given sku
@@ -123,7 +117,7 @@ data class PurchaserInfo internal constructor(
 
         other as PurchaserInfo
 
-        if (purchasedNonSubscriptionSkus != other.purchasedNonSubscriptionSkus) return false
+        if (nonSubscriptionTransactions != other.nonSubscriptionTransactions) return false
         if (allExpirationDatesByProduct != other.allExpirationDatesByProduct) return false
         if (allPurchaseDatesByProduct != other.allPurchaseDatesByProduct) return false
         if (entitlements != other.entitlements) return false
@@ -145,12 +139,12 @@ data class PurchaserInfo internal constructor(
                 }.toMap()},\n" +
                 "activeEntitlements: ${entitlements.active.map { it.toString() }},\n" +
                 "entitlements: ${entitlements.all.map { it.toString() }},\n" +
-                "nonConsumablePurchases: $purchasedNonSubscriptionSkus,\n" +
+                "nonSubscriptionTransactions: $nonSubscriptionTransactions,\n" +
                 "requestDate: $requestDate\n>"
 
     override fun hashCode(): Int {
         var result = entitlements.hashCode()
-        result = 31 * result + purchasedNonSubscriptionSkus.hashCode()
+        result = 31 * result + nonSubscriptionTransactions.hashCode()
         result = 31 * result + allExpirationDatesByProduct.hashCode()
         result = 31 * result + allPurchaseDatesByProduct.hashCode()
         result = 31 * result + requestDate.hashCode()
@@ -166,6 +160,6 @@ data class PurchaserInfo internal constructor(
     */
     companion object {
 
-        internal const val SCHEMA_VERSION = 2
+        internal const val SCHEMA_VERSION = 3
     }
 }
