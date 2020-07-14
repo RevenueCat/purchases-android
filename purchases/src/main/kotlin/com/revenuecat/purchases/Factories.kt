@@ -5,7 +5,6 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.attributes.SubscriberAttribute
 import com.revenuecat.purchases.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.caching.SubscriberAttributesPerAppUserIDMap
-import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.util.Iso8601Utils
 import org.json.JSONException
 import org.json.JSONObject
@@ -21,7 +20,6 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     val subscriber = getJSONObject("subscriber")
 
     val nonSubscriptions = subscriber.getJSONObject("non_subscriptions")
-    val nonSubscriptionTransactions = mutableMapOf<String, List<Transaction>>()
     val nonSubscriptionsLatestPurchases = JSONObject()
     nonSubscriptions.keys().forEach { productId ->
         val arrayOfNonSubscriptions = nonSubscriptions.getJSONArray(productId)
@@ -32,15 +30,6 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
                 arrayOfNonSubscriptions.getJSONObject(numberOfNonSubscriptions - 1)
             )
         }
-
-        val transactionsForProductId = mutableListOf<Transaction>()
-        for (i in 0 until numberOfNonSubscriptions) {
-            val transactionJSONObject = arrayOfNonSubscriptions.getJSONObject(i)
-            val transaction = Transaction(productId, transactionJSONObject)
-            transactionsForProductId.add(transaction)
-        }
-
-        nonSubscriptionTransactions[productId] = transactionsForProductId.toList()
     }
 
     val subscriptions = subscriber.getJSONObject("subscriptions")
@@ -68,7 +57,6 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         purchasedNonSubscriptionSkus = nonSubscriptions.keys().asSequence().toSet(),
         allExpirationDatesByProduct = expirationDatesByProduct,
         allPurchaseDatesByProduct = purchaseDatesByProduct,
-        nonSubscriptionTransactions = nonSubscriptionTransactions,
         requestDate = requestDate,
         jsonObject = this,
         schemaVersion = optInt("schema_version"),

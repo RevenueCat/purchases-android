@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import android.net.Uri
 import android.os.Parcelable
 import com.revenuecat.purchases.models.Transaction
+import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.TypeParceler
 import org.json.JSONObject
@@ -19,7 +20,6 @@ import java.util.Date
  * @property purchasedNonSubscriptionSkus Set of non-subscription, non-consumed skus
  * @property allExpirationDatesByProduct Map of skus to expiration dates
  * @property allPurchaseDatesByProduct Map of skus to purchase dates
- * @property nonSubscriptionTransactions Map of Transactions per product ID
  * @property requestDate Date when this info was requested
  * @property firstSeen The date this user was first seen in RevenueCat.
  * @property originalAppUserId The original App User Id recorded for this user.
@@ -40,7 +40,6 @@ data class PurchaserInfo internal constructor(
     ) val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
-    val nonSubscriptionTransactions: Map<String, List<Transaction>>,
     val requestDate: Date,
     internal val jsonObject: JSONObject,
     internal val schemaVersion: Int,
@@ -53,20 +52,53 @@ data class PurchaserInfo internal constructor(
     /**
      * @return Set of active subscription skus
      */
-    val activeSubscriptions: Set<String>
-        get() = activeIdentifiers(allExpirationDatesByProduct)
+    @IgnoredOnParcel
+    val activeSubscriptions: Set<String> by lazy {
+        activeIdentifiers(allExpirationDatesByProduct)
+    }
 
     /**
      * @return Set of purchased skus, active and inactive
      */
-    val allPurchasedSkus: Set<String>
-        get() = this.nonSubscriptionTransactions.keys + allExpirationDatesByProduct.keys
+    @IgnoredOnParcel
+    val allPurchasedSkus: Set<String> by lazy {
+        this.nonSubscriptionTransactions.keys + allExpirationDatesByProduct.keys
+    }
 
     /**
      * @return The latest expiration date of all purchased skus
      */
-    val latestExpirationDate: Date?
-        get() = allExpirationDatesByProduct.values.sortedBy { it }.takeUnless { it.isEmpty() }?.last()
+    @IgnoredOnParcel
+    val latestExpirationDate: Date? by lazy {
+        allExpirationDatesByProduct.values.sortedBy { it }.takeUnless { it.isEmpty() }?.last()
+    }
+
+    /**
+     * @return List of all non subscription transactions. Use this to fetch the history of
+     * non-subscription purchases
+     */
+    @IgnoredOnParcel
+    val nonSubscriptionTransactionsList: List<Transaction> by lazy {
+        val nonSubscriptionTransactionList = mutableListOf<Transaction>()
+        val nonSubscriptions = subscriberJSONObject.getJSONObject("non_subscriptions")
+        nonSubscriptions.keys().forEach { productId ->
+            val arrayOfNonSubscriptions = nonSubscriptions.getJSONArray(productId)
+            for (i in 0 until arrayOfNonSubscriptions.length()) {
+                val transactionJSONObject = arrayOfNonSubscriptions.getJSONObject(i)
+                val transaction = Transaction(productId, transactionJSONObject)
+                nonSubscriptionTransactionList.add(transaction)
+            }
+        }
+        nonSubscriptionTransactionList.sortedBy { it.purchaseDate }
+    }
+
+    /**
+     * @return Map of Transactions per product ID
+     */
+    @IgnoredOnParcel
+    val nonSubscriptionTransactions by lazy {
+        nonSubscriptionTransactionsList.groupBy { it.productId }
+    }
 
     /**
      * Get the expiration date for a given sku
@@ -107,6 +139,9 @@ data class PurchaserInfo internal constructor(
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
         return expirations.filterValues { date -> date == null || date.after(requestDate) }.keys
     }
+
+    @IgnoredOnParcel
+    private val subscriberJSONObject = jsonObject.getJSONObject("subscriber")
 
     /**
      * @hide

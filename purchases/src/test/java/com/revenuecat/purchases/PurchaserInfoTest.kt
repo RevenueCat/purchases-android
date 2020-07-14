@@ -266,7 +266,18 @@ class PurchaserInfoTest {
             assertThat(it.productId).isEqualTo("consumable")
         }
 
-        assertThat((oneTimePurchaseTransactions + consumableTransactions).distinctBy { it.transactionId }.size).isEqualTo(4)
+        assertThat((oneTimePurchaseTransactions + consumableTransactions)
+            .distinctBy { it.transactionId }.size).isEqualTo(4)
+    }
+
+    @Test
+    fun `Non subscription transactions list is correctly created`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val x = jsonObject.buildPurchaserInfo()
+
+        assertThat(x.nonSubscriptionTransactionsList).isNotEmpty
+        assertThat(x.nonSubscriptionTransactionsList.size).isEqualTo(4)
+        assertThat((x.nonSubscriptionTransactionsList).distinctBy { it.transactionId }.size).isEqualTo(4)
     }
 
 }
