@@ -42,14 +42,21 @@ class PurchaserInfoTest {
         assertThat(info.latestExpirationDate).isNull()
     }
 
+    @Suppress("DEPRECATION")
     @Test
     @Throws(JSONException::class)
     fun `Given a full response with non subscription SKUs, all SKUs are parsed properly`() {
         val info = fullPurchaserInfo()
-        val nonSubscriptionSKUs = info.nonSubscriptionTransactions.keys
 
-        assertThat(nonSubscriptionSKUs.size).isEqualTo(2)
-        assertThat(nonSubscriptionSKUs).contains("onetime_purchase")
+        assertThat(info.purchasedNonSubscriptionSkus.size).isEqualTo(3)
+        assertThat(info.purchasedNonSubscriptionSkus).contains("100_coins_pack")
+        assertThat(info.purchasedNonSubscriptionSkus).contains("7_extra_lives")
+        assertThat(info.purchasedNonSubscriptionSkus).contains("lifetime_access")
+
+        assertThat(info.nonSubscriptionTransactions.size).isEqualTo(5)
+        assertThat(info.nonSubscriptionTransactions.filter { it.productId == "100_coins_pack" }.size).isEqualTo(2)
+        assertThat(info.nonSubscriptionTransactions.filter { it.productId == "7_extra_lives" }.size).isEqualTo(2)
+        assertThat(info.nonSubscriptionTransactions.filter { it.productId == "lifetime_access" }.size).isEqualTo(1)
     }
 
     @Test
@@ -68,11 +75,12 @@ class PurchaserInfoTest {
         val info = fullPurchaserInfo()
         val purchasedSkus = info.allPurchasedSkus
 
-        assertThat(purchasedSkus.size).isEqualTo(4)
+        assertThat(purchasedSkus.size).isEqualTo(5)
         assertThat(purchasedSkus).contains("onemonth_freetrial")
-        assertThat(purchasedSkus).contains("onetime_purchase")
+        assertThat(purchasedSkus).contains("100_coins_pack")
         assertThat(purchasedSkus).contains("threemonth_freetrial")
-        assertThat(purchasedSkus).contains("consumable")
+        assertThat(purchasedSkus).contains("7_extra_lives")
+        assertThat(purchasedSkus).contains("lifetime_access")
     }
 
     @Test
@@ -250,24 +258,20 @@ class PurchaserInfoTest {
         val x = jsonObject.buildPurchaserInfo()
 
         assertThat(x.nonSubscriptionTransactions).isNotEmpty
-        assertThat(x.nonSubscriptionTransactions.size).isEqualTo(2)
+        assertThat(x.nonSubscriptionTransactions.size).isEqualTo(5)
 
-        val oneTimePurchaseTransactions = x.nonSubscriptionTransactions["onetime_purchase"]
-            ?: error("onetime_purchase transactions are null")
+        val oneTimePurchaseTransactions = x.nonSubscriptionTransactions.filter {
+            it.productId == "100_coins_pack"
+        }
         assertThat(oneTimePurchaseTransactions.size).isEqualTo(2)
-        oneTimePurchaseTransactions.forEach {
-            assertThat(it.productId).isEqualTo("onetime_purchase")
-        }
 
-        val consumableTransactions = x.nonSubscriptionTransactions["consumable"]
-            ?: error("consumable transactions are null")
-        assertThat(consumableTransactions.size).isEqualTo(2)
-        consumableTransactions.forEach {
-            assertThat(it.productId).isEqualTo("consumable")
+        val consumableTransactions = x.nonSubscriptionTransactions.filter {
+            it.productId == "7_extra_lives"
         }
+        assertThat(consumableTransactions.size).isEqualTo(2)
 
         assertThat((oneTimePurchaseTransactions + consumableTransactions)
-            .distinctBy { it.transactionId }.size).isEqualTo(4)
+            .distinctBy { it.revenuecatId }.size).isEqualTo(4)
     }
 
     @Test
@@ -275,9 +279,9 @@ class PurchaserInfoTest {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
         val x = jsonObject.buildPurchaserInfo()
 
-        assertThat(x.nonSubscriptionTransactionsList).isNotEmpty
-        assertThat(x.nonSubscriptionTransactionsList.size).isEqualTo(4)
-        assertThat((x.nonSubscriptionTransactionsList).distinctBy { it.transactionId }.size).isEqualTo(4)
+        assertThat(x.nonSubscriptionTransactions).isNotEmpty
+        assertThat(x.nonSubscriptionTransactions.size).isEqualTo(5)
+        assertThat((x.nonSubscriptionTransactions).distinctBy { it.revenuecatId }.size).isEqualTo(5)
     }
 
 }

@@ -7,7 +7,7 @@
     "first_seen": "2019-06-17T16:05:33Z",
     "original_purchase_date": "2019-07-26T23:30:41Z",
     "non_subscriptions": {
-      "onetime_purchase": [
+      "100_coins_pack": [
         {
           "id": "72c26cc69c",
           "is_sandbox": true,
@@ -23,7 +23,7 @@
           "store": "play_store"
         }
       ],
-      "consumable": [
+      "7_extra_lives": [
         {
           "id": "d6c007ba74",
           "is_sandbox": true,
@@ -37,6 +37,15 @@
           "original_purchase_date": "2019-07-26T22:10:27Z",
           "purchase_date": "2019-07-26T22:10:27Z",
           "store": "app_store"
+        }
+      ],
+      "lifetime_access": [
+        {
+          "id": "b6c007ba74",
+          "is_sandbox": true,
+          "original_purchase_date": "2019-09-11T18:36:20Z",
+          "purchase_date": "2019-09-11T18:36:20Z",
+          "store": "play_store"
         }
       ]
     },
@@ -75,8 +84,8 @@
       },
       "forever_pro": {
         "expires_date": null,
-        "product_identifier": "onetime_purchase",
-        "purchase_date": "1990-08-30T02:40:36Z"
+        "product_identifier": "lifetime_access",
+        "purchase_date": "2019-09-11T18:36:20Z"
       }
     },
     "management_url": "https://play.google.com/store/account/subscriptions"

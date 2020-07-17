@@ -63,7 +63,7 @@ data class PurchaserInfo internal constructor(
      */
     @IgnoredOnParcel
     val allPurchasedSkus: Set<String> by lazy {
-        this.nonSubscriptionTransactions.keys + allExpirationDatesByProduct.keys
+        this.nonSubscriptionTransactions.map { it.productId }.toSet() + allExpirationDatesByProduct.keys
     }
 
     /**
@@ -79,7 +79,7 @@ data class PurchaserInfo internal constructor(
      * non-subscription purchases
      */
     @IgnoredOnParcel
-    val nonSubscriptionTransactionsList: List<Transaction> by lazy {
+    val nonSubscriptionTransactions: List<Transaction> by lazy {
         val nonSubscriptionTransactionList = mutableListOf<Transaction>()
         val nonSubscriptions = subscriberJSONObject.getJSONObject("non_subscriptions")
         nonSubscriptions.keys().forEach { productId ->
@@ -91,14 +91,6 @@ data class PurchaserInfo internal constructor(
             }
         }
         nonSubscriptionTransactionList.sortedBy { it.purchaseDate }
-    }
-
-    /**
-     * @return Map of Transactions per product ID
-     */
-    @IgnoredOnParcel
-    val nonSubscriptionTransactions by lazy {
-        nonSubscriptionTransactionsList.groupBy { it.productId }
     }
 
     /**

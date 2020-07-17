@@ -8,12 +8,13 @@ import java.util.Date
 
 @Parcelize
 data class Transaction(
-    val transactionId: String,
+    val revenuecatId: String,
     val productId: String,
     val purchaseDate: Date
 ) : Parcelable {
-    constructor(productId: String, jsonObject: JSONObject) : this(
-        transactionId = jsonObject.getString("id"),
+
+    internal constructor(productId: String, jsonObject: JSONObject) : this(
+        revenuecatId = jsonObject.getString("id"),
         productId = productId,
         purchaseDate = jsonObject.getDate("purchase_date")
     )
