@@ -40,12 +40,7 @@ internal fun JSONObject.parseDates(jsonKey: String): HashMap<String, Date?> {
     return expirationDates
 }
 
-@Throws(JSONException::class) internal fun JSONObject.getDate(jsonKey: String): Date =
-    try {
-        Iso8601Utils.parse(getString(jsonKey))
-    } catch (e: RuntimeException) {
-        throw JSONException(e.message)
-    }
+internal fun JSONObject.getDate(jsonKey: String): Date = Iso8601Utils.parse(getString(jsonKey))
 
 internal fun JSONObject.optDate(jsonKey: String): Date? = takeUnless { this.isNull(jsonKey) }?.getDate(jsonKey)
 
