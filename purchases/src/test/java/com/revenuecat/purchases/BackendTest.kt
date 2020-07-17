@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.utils.getNullableString
 import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk

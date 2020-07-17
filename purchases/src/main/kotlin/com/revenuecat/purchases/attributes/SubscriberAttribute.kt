@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.attributes
 
-import com.revenuecat.purchases.getNullableString
 import com.revenuecat.purchases.utils.DateProvider
 import com.revenuecat.purchases.utils.DefaultDateProvider
+import com.revenuecat.purchases.utils.getNullableString
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date

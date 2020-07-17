@@ -7,7 +7,6 @@ package com.revenuecat.purchases
 
 import android.content.Context
 import android.os.Build
-import android.os.Parcel
 import android.util.Base64
 import android.util.Log
 import com.android.billingclient.api.BillingClient
@@ -15,12 +14,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.util.Iso8601Utils
-import kotlinx.android.parcel.Parceler
-import org.json.JSONException
-import org.json.JSONObject
 import java.security.MessageDigest
-import java.util.Date
 import java.util.Locale
 
 internal fun debugLog(message: String) {
@@ -41,50 +35,6 @@ internal fun errorLog(message: String) {
 
 internal fun Purchase.toHumanReadableDescription() =
     "${this.sku} ${this.orderId} ${this.purchaseToken}"
-
-/**
- * Parses expiration dates in a JSONObject
- * @throws [JSONException] If the json is invalid.
- */
-internal fun JSONObject.parseExpirations(): Map<String, Date?> {
-    return parseDates("expires_date")
-}
-
-/**
- * Parses purchase dates in a JSONObject
- * @throws [JSONException] If the json is invalid.
- */
-internal fun JSONObject.parsePurchaseDates(): Map<String, Date?> {
-    return parseDates("purchase_date")
-}
-
-/**
- * Parses dates that match a JSON key in a JSONObject
- * @param jsonKey Key of the dates to deserialize from the JSONObject
- * @throws [JSONException] If the json is invalid.
- */
-internal fun JSONObject.parseDates(jsonKey: String): HashMap<String, Date?> {
-    val expirationDates = HashMap<String, Date?>()
-
-    val it = keys()
-    while (it.hasNext()) {
-        val key = it.next()
-
-        val expirationObject = getJSONObject(key)
-        expirationDates[key] = expirationObject.optDate(jsonKey)
-    }
-
-    return expirationDates
-}
-
-@Throws(JSONException::class) internal fun JSONObject.getDate(jsonKey: String): Date =
-    try {
-        Iso8601Utils.parse(getString(jsonKey))
-    } catch (e: RuntimeException) {
-        throw JSONException(e.message)
-    }
-
-internal fun JSONObject.optDate(jsonKey: String): Date? = takeUnless { this.isNull(jsonKey) }?.getDate(jsonKey)
 
 internal fun Context.getLocale(): Locale? =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -161,39 +111,6 @@ internal fun String.sha256() =
         .digest(this.toByteArray()).let {
             String(Base64.encode(it, Base64.NO_WRAP))
         }
-
-internal fun JSONObject.getNullableString(name: String): String? = this.getString(name).takeUnless { this.isNull(name) }
-internal fun JSONObject.optNullableString(name: String): String? = this.optString(name).takeUnless { this.isNull(name) }
-
-/** @suppress */
-internal object SkuDetailsParceler : Parceler<SkuDetails> {
-
-    override fun create(parcel: Parcel): SkuDetails {
-        return SkuDetails(parcel.readString())
-    }
-
-    override fun SkuDetails.write(parcel: Parcel, flags: Int) {
-        val field = SkuDetails::class.java.getDeclaredField("mOriginalJson")
-        field.isAccessible = true
-        val value = field.get(this) as String
-        parcel.writeString(value)
-    }
-}
-
-/** @suppress */
-internal object JSONObjectParceler : Parceler<JSONObject> {
-
-    override fun create(parcel: Parcel): JSONObject {
-        return JSONObject(parcel.readString())
-    }
-
-    override fun JSONObject.write(parcel: Parcel, flags: Int) {
-        val field = JSONObject::class.java.getDeclaredField("jsonObject")
-        field.isAccessible = true
-        val value = field.get(this).toString()
-        parcel.writeString(value)
-    }
-}
 
 internal fun BillingResult.toHumanReadableDescription() =
     "DebugMessage: $debugMessage. ErrorCode: ${responseCode.getBillingResponseCodeName()}."

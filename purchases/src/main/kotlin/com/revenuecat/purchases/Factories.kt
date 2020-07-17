@@ -6,6 +6,11 @@ import com.revenuecat.purchases.attributes.SubscriberAttribute
 import com.revenuecat.purchases.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.caching.SubscriberAttributesPerAppUserIDMap
 import com.revenuecat.purchases.util.Iso8601Utils
+import com.revenuecat.purchases.utils.getDate
+import com.revenuecat.purchases.utils.optDate
+import com.revenuecat.purchases.utils.optNullableString
+import com.revenuecat.purchases.utils.parseExpirations
+import com.revenuecat.purchases.utils.parsePurchaseDates
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Collections.emptyMap

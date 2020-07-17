@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
-import com.revenuecat.purchases.getDate
+import com.revenuecat.purchases.utils.getDate
 import kotlinx.android.parcel.Parcelize
 import org.json.JSONObject
 import java.util.Date

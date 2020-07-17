@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import android.net.Uri
 import android.os.Parcelable
 import com.revenuecat.purchases.models.Transaction
+import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.TypeParceler
