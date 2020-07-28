@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.os.Parcelable
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.parceler.SkuDetailsParceler
 import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.TypeParceler
 

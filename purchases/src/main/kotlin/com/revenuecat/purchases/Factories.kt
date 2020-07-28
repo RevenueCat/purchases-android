@@ -6,6 +6,11 @@ import com.revenuecat.purchases.attributes.SubscriberAttribute
 import com.revenuecat.purchases.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.caching.SubscriberAttributesPerAppUserIDMap
 import com.revenuecat.purchases.util.Iso8601Utils
+import com.revenuecat.purchases.utils.getDate
+import com.revenuecat.purchases.utils.optDate
+import com.revenuecat.purchases.utils.optNullableString
+import com.revenuecat.purchases.utils.parseExpirations
+import com.revenuecat.purchases.utils.parsePurchaseDates
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Collections.emptyMap
@@ -22,11 +27,12 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     val nonSubscriptions = subscriber.getJSONObject("non_subscriptions")
     val nonSubscriptionsLatestPurchases = JSONObject()
     nonSubscriptions.keys().forEach { productId ->
-        val arrayOfPurchases = nonSubscriptions.getJSONArray(productId)
-        if (arrayOfPurchases.length() > 0) {
+        val arrayOfNonSubscriptions = nonSubscriptions.getJSONArray(productId)
+        val numberOfNonSubscriptions = arrayOfNonSubscriptions.length()
+        if (numberOfNonSubscriptions > 0) {
             nonSubscriptionsLatestPurchases.put(
                 productId,
-                arrayOfPurchases.getJSONObject(arrayOfPurchases.length() - 1)
+                arrayOfNonSubscriptions.getJSONObject(numberOfNonSubscriptions - 1)
             )
         }
     }
@@ -37,16 +43,14 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         subscriptions.parsePurchaseDates() + nonSubscriptionsLatestPurchases.parsePurchaseDates()
 
     val entitlements = subscriber.optJSONObject("entitlements")
-    val expirationDatesByEntitlement = entitlements.parseExpirations()
-    val purchaseDatesByEntitlement = entitlements.parsePurchaseDates()
 
     val requestDate = Iso8601Utils.parse(getString("request_date"))
 
     val firstSeen = Iso8601Utils.parse(subscriber.getString("first_seen"))
 
-    val entitlementInfos = entitlements?.let {
-        it.buildEntitlementInfos(subscriptions, nonSubscriptionsLatestPurchases, requestDate)
-    } ?: EntitlementInfos(emptyMap())
+    val entitlementInfos =
+        entitlements?.buildEntitlementInfos(subscriptions, nonSubscriptionsLatestPurchases, requestDate)
+            ?: EntitlementInfos(emptyMap())
 
     val managementURL = subscriber.optNullableString("management_url")
     val originalPurchaseDate = subscriber.optNullableString("original_purchase_date")?.let {
@@ -58,8 +62,6 @@ internal fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         purchasedNonSubscriptionSkus = nonSubscriptions.keys().asSequence().toSet(),
         allExpirationDatesByProduct = expirationDatesByProduct,
         allPurchaseDatesByProduct = purchaseDatesByProduct,
-        allExpirationDatesByEntitlement = expirationDatesByEntitlement,
-        allPurchaseDatesByEntitlement = purchaseDatesByEntitlement,
         requestDate = requestDate,
         jsonObject = this,
         schemaVersion = optInt("schema_version"),
@@ -97,13 +99,6 @@ private fun JSONObject.buildEntitlementInfos(
     }
     return EntitlementInfos(all)
 }
-
-private fun JSONObject.optDate(name: String) =
-    takeUnless { isNull(name) }?.getString(name)?.let {
-        Iso8601Utils.parse(it)
-    }
-
-private fun JSONObject.getDate(name: String) = Iso8601Utils.parse(getString(name))
 
 private fun JSONObject.getStore(name: String) = when (getString(name)) {
     "app_store" -> Store.APP_STORE

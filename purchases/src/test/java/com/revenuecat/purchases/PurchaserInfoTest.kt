@@ -38,18 +38,25 @@ class PurchaserInfoTest {
         assertThat(info).isNotNull
         assertThat(info.activeSubscriptions).isEmpty()
         assertThat(info.allPurchasedSkus).isEmpty()
-        assertThat(info.purchasedNonSubscriptionSkus).isEmpty()
+        assertThat(info.nonSubscriptionTransactions).isEmpty()
         assertThat(info.latestExpirationDate).isNull()
     }
 
+    @Suppress("DEPRECATION")
     @Test
     @Throws(JSONException::class)
     fun `Given a full response with non subscription SKUs, all SKUs are parsed properly`() {
         val info = fullPurchaserInfo()
-        val nonSubscriptionSKUs = info.purchasedNonSubscriptionSkus
 
-        assertThat(nonSubscriptionSKUs.size).isEqualTo(1)
-        assertThat(nonSubscriptionSKUs).contains("onetime_purchase")
+        assertThat(info.purchasedNonSubscriptionSkus.size).isEqualTo(3)
+        assertThat(info.purchasedNonSubscriptionSkus).contains("100_coins_pack")
+        assertThat(info.purchasedNonSubscriptionSkus).contains("7_extra_lives")
+        assertThat(info.purchasedNonSubscriptionSkus).contains("lifetime_access")
+
+        assertThat(info.nonSubscriptionTransactions.size).isEqualTo(5)
+        assertThat(info.nonSubscriptionTransactions.filter { it.productId == "100_coins_pack" }.size).isEqualTo(2)
+        assertThat(info.nonSubscriptionTransactions.filter { it.productId == "7_extra_lives" }.size).isEqualTo(2)
+        assertThat(info.nonSubscriptionTransactions.filter { it.productId == "lifetime_access" }.size).isEqualTo(1)
     }
 
     @Test
@@ -66,12 +73,14 @@ class PurchaserInfoTest {
     @Throws(JSONException::class)
     fun `Given a full response, all purchased SKUs are retrieved properly`() {
         val info = fullPurchaserInfo()
-        val actives = info.allPurchasedSkus
+        val purchasedSkus = info.allPurchasedSkus
 
-        assertThat(actives.size).isEqualTo(3)
-        assertThat(actives).contains("onemonth_freetrial")
-        assertThat(actives).contains("onetime_purchase")
-        assertThat(actives).contains("threemonth_freetrial")
+        assertThat(purchasedSkus.size).isEqualTo(5)
+        assertThat(purchasedSkus).contains("onemonth_freetrial")
+        assertThat(purchasedSkus).contains("100_coins_pack")
+        assertThat(purchasedSkus).contains("threemonth_freetrial")
+        assertThat(purchasedSkus).contains("7_extra_lives")
+        assertThat(purchasedSkus).contains("lifetime_access")
     }
 
     @Test
@@ -119,7 +128,7 @@ class PurchaserInfoTest {
     @Throws(JSONException::class)
     fun `Given a full purchase info, active entitlements are retrieved properly`() {
         val info = fullPurchaserInfo()
-        val actives = info.activeEntitlements
+        val actives = info.entitlements.active.keys
 
         assertThat(actives.size).isEqualTo(2)
 
@@ -233,6 +242,46 @@ class PurchaserInfoTest {
         val x = jsonObject.buildPurchaserInfo()
 
         assertThat(x.originalPurchaseDate).isNull()
+    }
+
+    @Test
+    fun `Non subscription transactions is empty if there are no non_subscriptions`() {
+        val jsonObject = JSONObject(Responses.validEmptyPurchaserResponse)
+        val x = jsonObject.buildPurchaserInfo()
+
+        assertThat(x.nonSubscriptionTransactions).isEmpty()
+    }
+
+    @Test
+    fun `Non subscription transactions is correctly created`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val x = jsonObject.buildPurchaserInfo()
+
+        assertThat(x.nonSubscriptionTransactions).isNotEmpty
+        assertThat(x.nonSubscriptionTransactions.size).isEqualTo(5)
+
+        val oneTimePurchaseTransactions = x.nonSubscriptionTransactions.filter {
+            it.productId == "100_coins_pack"
+        }
+        assertThat(oneTimePurchaseTransactions.size).isEqualTo(2)
+
+        val consumableTransactions = x.nonSubscriptionTransactions.filter {
+            it.productId == "7_extra_lives"
+        }
+        assertThat(consumableTransactions.size).isEqualTo(2)
+
+        assertThat((oneTimePurchaseTransactions + consumableTransactions)
+            .distinctBy { it.revenuecatId }.size).isEqualTo(4)
+    }
+
+    @Test
+    fun `Non subscription transactions list is correctly created`() {
+        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+        val x = jsonObject.buildPurchaserInfo()
+
+        assertThat(x.nonSubscriptionTransactions).isNotEmpty
+        assertThat(x.nonSubscriptionTransactions.size).isEqualTo(5)
+        assertThat((x.nonSubscriptionTransactions).distinctBy { it.revenuecatId }.size).isEqualTo(5)
     }
 
 }

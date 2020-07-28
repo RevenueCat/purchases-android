@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.util;
 
+import com.revenuecat.purchases.utils.SerializationException;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -198,7 +200,7 @@ public final class Iso8601Utils {
             // If we get a ParseException it'll already have the right message/offset.
             // Other exception types can convert here.
         } catch (IndexOutOfBoundsException | IllegalArgumentException e) {
-            throw new RuntimeException("Not an RFC 3339 date: " + date, e);
+            throw new SerializationException("Not an RFC 3339 date: " + date, e);
         }
     }
 
