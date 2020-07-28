@@ -14,15 +14,15 @@ class TransactionTest {
     private val dateString = "1990-08-30T02:40:36Z"
 
     private fun nonSubscriptionsJSONObject(): JSONObject {
-        return JSONObject(
-            "{\n" +
-                "          \"id\": \"$id\",\n" +
-                "          \"is_sandbox\": true,\n" +
-                "          \"original_purchase_date\": \"$dateString\",\n" +
-                "          \"purchase_date\": \"$dateString\",\n" +
-                "          \"store\": \"app_store\"\n" +
-                "        }"
-        )
+        return JSONObject("""
+            {
+              "id": "$id",
+              "is_sandbox": true,
+              "original_purchase_date": "$dateString",
+              "purchase_date": "$dateString",
+              "store": "app_store"
+            }
+        """)
     }
 
     @Test
