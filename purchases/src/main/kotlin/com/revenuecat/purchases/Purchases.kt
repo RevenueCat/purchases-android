@@ -1313,7 +1313,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "3.4.0"
+        val frameworkVersion = "3.5.0-SNAPSHOT"
 
         /**
          * Set this property to your proxy URL before configuring Purchases *only*
