@@ -1,3 +1,8 @@
+## 3.4.0
+
+- New properties added to the PurchaserInfo to better manage non-subscriptions.
+https://github.com/RevenueCat/purchases-android/pull/172
+
 ## 3.3.0
 
 - Added mParticle as one of the attribution options  
