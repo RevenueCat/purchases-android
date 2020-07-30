@@ -110,7 +110,7 @@ workflows:
             branches:
               only: 
                - main
-               - bug/fixes_deploys
+               - bug/fixes-deploys
       - docs-deploy:
           filters:
             tags:
