@@ -108,9 +108,9 @@ workflows:
             - assemble
           filters:
             branches:
-              only: 
-               - main
-               - bug/fixes-deploys
+              only:
+                - main
+                - develop
       - docs-deploy:
           filters:
             tags:
