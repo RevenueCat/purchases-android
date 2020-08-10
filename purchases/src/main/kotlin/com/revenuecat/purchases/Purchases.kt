@@ -21,16 +21,37 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.attributes.SubscriberAttributeKey
-import com.revenuecat.purchases.attributes.SubscriberAttributesManager
-import com.revenuecat.purchases.caching.DeviceCache
+import com.revenuecat.purchases.common.AttributionData
+import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BillingWrapper
+import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.ProductInfo
+import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.util.AdvertisingIdClient
+import com.revenuecat.purchases.common.PurchaseType
+import com.revenuecat.purchases.common.PurchaseWrapper
+import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.billingResponseToPurchasesError
+import com.revenuecat.purchases.common.createOfferings
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.getBillingResponseCodeName
+import com.revenuecat.purchases.common.isSuccessful
+import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.common.toSKUType
+import com.revenuecat.purchases.common.attributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
@@ -1280,7 +1301,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Enable debug logging. Useful for debugging issues with the lovely team @RevenueCat
          */
         @JvmStatic
-        var debugLogsEnabled = false
+        var debugLogsEnabled = Config.debugLogsEnabled
 
         @JvmSynthetic
         internal var backingFieldSharedInstance: Purchases? = null
@@ -1313,7 +1334,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "3.5.0-SNAPSHOT"
+        val frameworkVersion = Config.frameworkVersion
 
         /**
          * Set this property to your proxy URL before configuring Purchases *only*
@@ -1481,6 +1502,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
         @JvmStatic
+        @Deprecated(
+            message = "use .set<NetworkId>() functions instead",
+            replaceWith = ReplaceWith(expression = "set<NetworkId>()"),
+            level = DeprecationLevel.WARNING
+        )
         fun addAttributionData(
             data: JSONObject,
             network: AttributionNetwork,
@@ -1498,6 +1524,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
         @JvmStatic
+        @Deprecated(
+            message = "use .set<NetworkId>() functions instead",
+            replaceWith = ReplaceWith(expression = "set<NetworkId>()"),
+            level = DeprecationLevel.WARNING
+        )
         fun addAttributionData(
             data: Map<String, Any?>,
             network: AttributionNetwork,
@@ -1532,48 +1563,5 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             )
         }
     }
-
-    /**
-     * Different compatible attribution networks available
-     * @param serverValue Id of this attribution network in the RevenueCat server
-     */
-    @Suppress("unused", "MagicNumber")
-    enum class AttributionNetwork(val serverValue: Int) {
-        /**
-         * [https://www.adjust.com/]
-         */
-        ADJUST(1),
-
-        /**
-         * [https://www.appsflyer.com/]
-         */
-        APPSFLYER(2),
-
-        /**
-         * [http://branch.io/]
-         */
-        BRANCH(3),
-
-        /**
-         * [http://tenjin.io/]
-         */
-        TENJIN(4),
-
-        /**
-         * [https://developers.facebook.com/]
-         */
-        FACEBOOK(5),
-
-        /**
-         * [https://www.mparticle.com/]
-         */
-        MPARTICLE(6)
-    }
-
-    internal data class AttributionData(
-        val data: JSONObject,
-        val network: AttributionNetwork,
-        val networkUserId: String?
-    )
     // endregion
 }

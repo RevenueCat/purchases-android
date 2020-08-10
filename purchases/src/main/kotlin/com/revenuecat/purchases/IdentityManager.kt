@@ -1,6 +1,8 @@
 package com.revenuecat.purchases
 
-import com.revenuecat.purchases.caching.DeviceCache
+import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.debugLog
 import java.util.Locale
 import java.util.UUID
 
@@ -20,13 +22,14 @@ internal class IdentityManager(
             ?: generateRandomID()
         debugLog("Identifying App User ID: $appUserIDToUse")
         deviceCache.cacheAppUserID(appUserIDToUse)
-        deviceCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
+        // TODO: fix
+        // deviceCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
     }
 
     fun identify(
         appUserID: String,
         onSuccess: () -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (com.revenuecat.purchases.common.PurchasesError) -> Unit
     ) {
         if (currentUserIsAnonymous()) {
             debugLog("Identifying from an anonymous ID: $appUserID. An alias will be created.")
@@ -44,7 +47,7 @@ internal class IdentityManager(
     fun createAlias(
         newAppUserID: String,
         onSuccess: () -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (com.revenuecat.purchases.common.PurchasesError) -> Unit
     ) {
         debugLog("Creating an alias to $currentAppUserID from $newAppUserID")
         backend.createAlias(
