@@ -15,14 +15,6 @@ Install _fastlane_ using
 or alternatively using `brew install fastlane`
 
 # Available Actions
-### github_release
-```
-fastlane github_release
-```
-Make github release
-
-----
-
 ## Android
 ### android test
 ```
@@ -39,6 +31,21 @@ Increment build number
 fastlane android bump_and_update_changelog
 ```
 Increment build number and update changelog
+### android github_release
+```
+fastlane android github_release
+```
+Make github release
+### android deploy_snapshot
+```
+fastlane android deploy_snapshot
+```
+Deploy a Snapshot release
+### android deploy
+```
+fastlane android deploy
+```
+Deploy a release
 
 ----
 

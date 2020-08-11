@@ -13,6 +13,8 @@
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
+gradle_file_path = "purchases/build.gradle"
+
 default_platform(:android)
 
 platform :android do
@@ -25,7 +27,6 @@ platform :android do
   lane :bump do |options|
     new_version = options[:version]
     fail ArgumentError, "missing version" unless new_version
-    gradle_file_path = "purchases/build.gradle"
     previous_version = android_get_version_name(gradle_file: gradle_file_path)
     android_set_version_name(version_name: new_version, gradle_file: gradle_file_path)
     increment_version_in(previous_version, new_version, '../purchases/src/main/kotlin/com/revenuecat/purchases/Purchases.kt')
@@ -35,35 +36,10 @@ platform :android do
   desc "Increment build number and update changelog"
   lane :bump_and_update_changelog do |options|
     bump(options)
-    attach_changelog_to_master
+    attach_changelog_to_main
   end
-end
 
-def increment_version_in(previous_version, new_version, path)
-  sed_regex = 's|' + previous_version + '|' + new_version + '|'
-  backup_extension = '.bck'
-  sh("sed", '-i', backup_extension, sed_regex, path)
-end
-
-def attach_changelog_to_master
-  current_changelog = File.open("../CHANGELOG.latest.md", 'r')
-  master_changelog = File.open("../CHANGELOG.md", 'r')
-
-  current_changelog_data = current_changelog.read
-  master_changelog_data = master_changelog.read
-
-  current_changelog.close  
-  master_changelog.close
-
-  File.open("../CHANGELOG.md", 'w') { |master_changelog_write_mode|
-    whole_file_data = "#{current_changelog_data}\n#{master_changelog_data}"
-    puts "going to save. Contents - #{whole_file_data}"
-    
-    master_changelog_write_mode.write(whole_file_data)
-  }
-end
-
-desc "Make github release"
+  desc "Make github release"
   lane :github_release do |options|
     release_version = options[:version]
     fail ArgumentError, "missing version" unless release_version
@@ -80,8 +56,58 @@ desc "Make github release"
       name: release_version,
       tag_name: "#{release_version}",
       description: changelog,
-      commitish: "master",
-      upload_assets: [],
-      is_draft: true
+      commitish: "main",
+      upload_assets: []
   )
   end
+
+  desc "Deploy a Snapshot release"
+  lane :deploy_snapshot do | options |
+    gradle_file_path = "purchases/build.gradle"
+    version = android_get_version_name(gradle_file: gradle_file_path)
+    is_snapshot_version = version.end_with?("-SNAPSHOT")
+    unless is_snapshot_version then puts "purchases/build.gradle doesn't have a SNAPSHOT version" else deploy end
+  end
+
+  desc "Deploy a release"
+  lane :deploy do |options|
+    gradle_file_path = "purchases/build.gradle"
+    version = android_get_version_name(gradle_file: gradle_file_path)
+    puts "Deploying #{version}"
+    gradle(
+      tasks: ["androidSourcesJar", "androidJavadocsJar", "uploadArchives"],
+      properties: {
+        "signing.keyId" => $GPG_SIGNING_KEY_ID,
+        "signing.password" => $GPG_SIGNING_KEY_PW,
+        "signing.secretKeyRingFile" => "./secring.gpg",
+        "SONATYPE_NEXUS_USERNAME" => $SONATYPE_NEXUS_USERNAME,
+        "SONATYPE_NEXUS_PASSWORD" => $SONATYPE_NEXUS_PASSWORD,
+        "RELEASE_SIGNING_ENABLED" => true,
+      }
+    )
+  end
+end
+
+def increment_version_in(previous_version, new_version, path)
+  sed_regex = 's|' + previous_version + '|' + new_version + '|'
+  backup_extension = '.bck'
+  sh("sed", '-i', backup_extension, sed_regex, path)
+end
+
+def attach_changelog_to_main
+  current_changelog = File.open("../CHANGELOG.latest.md", 'r')
+  master_changelog = File.open("../CHANGELOG.md", 'r')
+
+  current_changelog_data = current_changelog.read
+  master_changelog_data = master_changelog.read
+
+  current_changelog.close  
+  master_changelog.close
+
+  File.open("../CHANGELOG.md", 'w') { |master_changelog_write_mode|
+    whole_file_data = "#{current_changelog_data}\n#{master_changelog_data}"
+    puts "going to save. Contents - #{whole_file_data}"
+    
+    master_changelog_write_mode.write(whole_file_data)
+  }
+end
