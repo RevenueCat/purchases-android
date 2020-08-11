@@ -13,6 +13,8 @@
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
+gradle_file_path = "purchases/build.gradle"
+
 default_platform(:android)
 
 platform :android do
@@ -25,7 +27,6 @@ platform :android do
   lane :bump do |options|
     new_version = options[:version]
     fail ArgumentError, "missing version" unless new_version
-    gradle_file_path = "purchases/build.gradle"
     previous_version = android_get_version_name(gradle_file: gradle_file_path)
     android_set_version_name(version_name: new_version, gradle_file: gradle_file_path)
     increment_version_in(previous_version, new_version, '../purchases/src/main/kotlin/com/revenuecat/purchases/Purchases.kt')
@@ -35,7 +36,7 @@ platform :android do
   desc "Increment build number and update changelog"
   lane :bump_and_update_changelog do |options|
     bump(options)
-    attach_changelog_to_master
+    attach_changelog_to_main
   end
 
   desc "Make github release"
@@ -55,9 +56,8 @@ platform :android do
       name: release_version,
       tag_name: "#{release_version}",
       description: changelog,
-      commitish: "master",
-      upload_assets: [],
-      is_draft: true
+      commitish: "main",
+      upload_assets: []
   )
   end
 
@@ -66,11 +66,7 @@ platform :android do
     gradle_file_path = "purchases/build.gradle"
     version = android_get_version_name(gradle_file: gradle_file_path)
     is_snapshot_version = version.end_with?("-SNAPSHOT")
-    if is_snapshot_version
-      deploy
-    else
-      puts "purchases/build.gradle doesn't have a SNAPSHOT version"
-    end
+    unless is_snapshot_version then puts "purchases/build.gradle doesn't have a SNAPSHOT version" else deploy end
   end
 
   desc "Deploy a release"
@@ -98,7 +94,7 @@ def increment_version_in(previous_version, new_version, path)
   sh("sed", '-i', backup_extension, sed_regex, path)
 end
 
-def attach_changelog_to_master
+def attach_changelog_to_main
   current_changelog = File.open("../CHANGELOG.latest.md", 'r')
   master_changelog = File.open("../CHANGELOG.md", 'r')
 
