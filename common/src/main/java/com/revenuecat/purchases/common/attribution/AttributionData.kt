@@ -1,6 +1,5 @@
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases.common.attribution
 
-import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import org.json.JSONObject
 
 data class AttributionData(

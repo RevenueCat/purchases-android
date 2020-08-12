@@ -12,9 +12,9 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
+import com.revenuecat.purchases.common.caching.PURCHASER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
 import io.mockk.just
@@ -37,7 +37,7 @@ class DeviceCacheTest {
 
     private val validCachedPurchaserInfo by lazy {
         JSONObject(Responses.validFullPurchaserResponse).apply {
-            put("schema_version", PurchaserInfo.SCHEMA_VERSION)
+            put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
         }.toString()
     }
 
@@ -134,7 +134,7 @@ class DeviceCacheTest {
 
         val cachedJSON = JSONObject(infoJSONSlot.captured)
         assertThat(cachedJSON.has("schema_version"))
-        assertThat(cachedJSON.getInt("schema_version")).isEqualTo(PurchaserInfo.SCHEMA_VERSION)
+        assertThat(cachedJSON.getInt("schema_version")).isEqualTo(PURCHASER_INFO_SCHEMA_VERSION)
     }
 
     @Test

@@ -22,7 +22,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.AttributionData
+import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
 import com.revenuecat.purchases.common.Config

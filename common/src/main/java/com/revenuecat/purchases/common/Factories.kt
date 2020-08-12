@@ -189,7 +189,6 @@ fun JSONObject.createPackage(
     }
 }
 
-/** @suppress */
 fun String.toPackageType(): PackageType =
     PackageType.values().firstOrNull { it.identifier == this }
         ?: if (this.startsWith("\$rc_")) PackageType.UNKNOWN else PackageType.CUSTOM

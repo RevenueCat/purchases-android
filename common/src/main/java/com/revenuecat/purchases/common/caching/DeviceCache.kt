@@ -10,10 +10,10 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.attributes.SubscriberAttribute
+import com.revenuecat.purchases.common.attributes.buildLegacySubscriberAttributes
+import com.revenuecat.purchases.common.attributes.buildSubscriberAttributesMapPerUser
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
-import com.revenuecat.purchases.common.buildLegacySubscriberAttributes
 import com.revenuecat.purchases.common.buildPurchaserInfo
-import com.revenuecat.purchases.common.buildSubscriberAttributesMapPerUser
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.sha1
 import org.json.JSONException
@@ -22,6 +22,7 @@ import java.util.Date
 
 private const val CACHE_REFRESH_PERIOD = 60000 * 5
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
+internal const val PURCHASER_INFO_SCHEMA_VERSION = 3
 
 internal typealias AppUserID = String
 internal typealias SubscriberAttributeMap = Map<String, SubscriberAttribute>
@@ -93,7 +94,7 @@ class DeviceCache(
                 try {
                     val cachedJSONObject = JSONObject(json)
                     val schemaVersion = cachedJSONObject.optInt("schema_version")
-                    return if (schemaVersion == PurchaserInfo.SCHEMA_VERSION) {
+                    return if (schemaVersion == PURCHASER_INFO_SCHEMA_VERSION) {
                         cachedJSONObject.buildPurchaserInfo()
                     } else {
                         null
@@ -107,7 +108,7 @@ class DeviceCache(
     @Synchronized
     fun cachePurchaserInfo(appUserID: String, info: PurchaserInfo) {
         val jsonObject = info.jsonObject.also {
-            it.put("schema_version", PurchaserInfo.SCHEMA_VERSION)
+            it.put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
         }
         preferences.edit()
             .putString(

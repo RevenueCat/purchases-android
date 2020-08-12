@@ -186,12 +186,4 @@ data class PurchaserInfo constructor(
         result = 31 * result + originalAppUserId.hashCode()
         return result
     }
-
-    /**
-    * @hide
-    */
-    companion object {
-        // TODO: make this private
-        const val SCHEMA_VERSION = 3
-    }
 }

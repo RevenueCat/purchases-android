@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.attributes
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.buildSubscriberAttributesMapPerUser
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.common.caching.SubscriberAttributesPerAppUserIDMap
