@@ -8,7 +8,6 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import android.os.Build
 import android.util.Base64
-import android.util.Log
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
@@ -16,22 +15,6 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.SkuDetails
 import java.security.MessageDigest
 import java.util.Locale
-
-internal fun debugLog(message: String) {
-    if (Config.debugLogsEnabled) {
-        Log.d("[Purchases] - DEBUG", message)
-    }
-}
-
-internal fun log(message: String) {
-    Log.w("[Purchases] - INFO", message)
-}
-
-internal fun errorLog(message: String) {
-    if (Config.debugLogsEnabled) {
-        Log.e("[Purchases] - ERROR", message)
-    }
-}
 
 fun Purchase.toHumanReadableDescription() =
     "${this.sku} ${this.orderId} ${this.purchaseToken}"

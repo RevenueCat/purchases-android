@@ -8,8 +8,9 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.attributes.SubscriberAttribute
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.attributes.SubscriberAttribute
+import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -23,22 +24,22 @@ private const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
 internal typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
 
 /** @suppress */
-internal typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, PostReceiptDataErrorCallback>
+typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, PostReceiptDataErrorCallback>
 /** @suppress */
-internal typealias CallbackCacheKey = List<String>
+typealias CallbackCacheKey = List<String>
 /** @suppress */
-internal typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
+typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
 /** @suppress */
-internal typealias PostReceiptDataSuccessCallback =
+typealias PostReceiptDataSuccessCallback =
         (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit
 /** @suppress */
-internal typealias PostReceiptDataErrorCallback = (
+typealias PostReceiptDataErrorCallback = (
     PurchasesError,
     shouldConsumePurchase: Boolean,
     attributeErrors: List<SubscriberAttributeError>
 ) -> Unit
 
-internal class Backend(
+class Backend(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
     private val httpClient: HTTPClient
@@ -244,7 +245,7 @@ internal class Backend(
 
     fun postAttributionData(
         appUserID: String,
-        network: Purchases.AttributionNetwork,
+        network: AttributionNetwork,
         data: JSONObject,
         onSuccessHandler: () -> Unit
     ) {

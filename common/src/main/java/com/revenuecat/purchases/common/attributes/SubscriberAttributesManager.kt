@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.common.attributes
 
-import com.revenuecat.purchases.common.AppUserID
+import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.caching.AppUserID
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 

@@ -21,27 +21,25 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.common.AttributionData
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.AttributionData
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
+import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
-import com.revenuecat.purchases.common.Config
-import com.revenuecat.purchases.interfaces.Callback
-import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.MakePurchaseListener
-import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
-import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
-import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.common.IdentityManager
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ProductInfo
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
-import com.revenuecat.purchases.util.AdvertisingIdClient
 import com.revenuecat.purchases.common.PurchaseType
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.attributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
+import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -50,8 +48,13 @@ import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.toSKUType
-import com.revenuecat.purchases.common.attributes.SubscriberAttributeKey
-import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
+import com.revenuecat.purchases.interfaces.Callback
+import com.revenuecat.purchases.interfaces.GetSkusResponseListener
+import com.revenuecat.purchases.interfaces.MakePurchaseListener
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
+import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
+import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
@@ -698,7 +701,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmSynthetic
     internal fun postAttributionData(
         jsonObject: JSONObject,
-        network: AttributionNetwork,
+        network: com.revenuecat.purchases.common.attribution.AttributionNetwork,
         networkUserId: String?
     ) {
         AdvertisingIdClient.getAdvertisingIdInfo(application) { adInfo ->
@@ -1512,8 +1515,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             network: AttributionNetwork,
             networkUserId: String? = null
         ) {
-            backingFieldSharedInstance?.postAttributionData(data, network, networkUserId) ?: {
-                postponedAttributionData.add(AttributionData(data, network, networkUserId))
+            backingFieldSharedInstance?.postAttributionData(data, network.convert(), networkUserId) ?: {
+                postponedAttributionData.add(
+                    AttributionData(
+                        data,
+                        network.convert(),
+                        networkUserId
+                    )
+                )
             }.invoke()
         }
 
@@ -1563,5 +1572,50 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             )
         }
     }
+
+    /**
+     * Different compatible attribution networks available
+     * @param serverValue Id of this attribution network in the RevenueCat server
+     */
+    @Suppress("unused", "MagicNumber")
+    enum class AttributionNetwork(val serverValue: Int) {
+        /**
+         * [https://www.adjust.com/]
+         */
+        ADJUST(1),
+
+        /**
+         * [https://www.appsflyer.com/]
+         */
+        APPSFLYER(2),
+
+        /**
+         * [http://branch.io/]
+         */
+        BRANCH(3),
+
+        /**
+         * [http://tenjin.io/]
+         */
+        TENJIN(4),
+
+        /**
+         * [https://developers.facebook.com/]
+         */
+        FACEBOOK(5),
+
+        /**
+         * [https://www.mparticle.com/]
+         */
+        MPARTICLE(6)
+    }
+
     // endregion
+}
+
+internal fun Purchases.AttributionNetwork.convert(): AttributionNetwork {
+    AttributionNetwork.values().forEach { network ->
+        if (network.serverValue == this.serverValue) return network
+    }
+    return AttributionNetwork.ADJUST
 }

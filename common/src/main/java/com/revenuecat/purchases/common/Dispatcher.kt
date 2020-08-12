@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.PurchasesError
 import org.json.JSONException
 import java.io.IOException
 import java.util.concurrent.ExecutorService

@@ -6,11 +6,14 @@
 package com.revenuecat.purchases.common.caching
 
 import android.content.SharedPreferences
-import com.revenuecat.purchases.AttributionNetwork
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.common.PurchaseWrapper
+import com.revenuecat.purchases.common.attributes.SubscriberAttribute
+import com.revenuecat.purchases.common.attribution.AttributionNetwork
+import com.revenuecat.purchases.common.buildLegacySubscriberAttributes
 import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.common.buildSubscriberAttributesMapPerUser
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.sha1
 import org.json.JSONException
@@ -24,7 +27,7 @@ internal typealias AppUserID = String
 internal typealias SubscriberAttributeMap = Map<String, SubscriberAttribute>
 internal typealias SubscriberAttributesPerAppUserIDMap = Map<AppUserID, SubscriberAttributeMap>
 
-internal class DeviceCache(
+class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
     private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(
@@ -164,7 +167,7 @@ internal class DeviceCache(
     // region purchase tokens
 
     @Synchronized
-    internal fun getPreviouslySentHashedTokens(): Set<String> {
+    fun getPreviouslySentHashedTokens(): Set<String> {
         return (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
             debugLog("[QueryPurchases] Tokens already posted: $it")
         }

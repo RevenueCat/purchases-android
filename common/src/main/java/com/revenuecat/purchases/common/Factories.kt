@@ -11,9 +11,6 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.common.attributes.SubscriberAttribute
-import com.revenuecat.purchases.common.caching.SubscriberAttributeMap
-import com.revenuecat.purchases.common.caching.SubscriberAttributesPerAppUserIDMap
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
@@ -190,26 +187,6 @@ fun JSONObject.createPackage(
         val packageType = identifier.toPackageType()
         return Package(identifier, packageType, product, offeringIdentifier)
     }
-}
-
-fun JSONObject.buildLegacySubscriberAttributes(): Map<String, SubscriberAttribute> {
-    val attributesJSONObject = getJSONObject("attributes")
-    return attributesJSONObject.buildSubscriberAttributesMap()
-}
-
-fun JSONObject.buildSubscriberAttributesMapPerUser(): SubscriberAttributesPerAppUserIDMap {
-    val attributesJSONObject = getJSONObject("attributes")
-    return attributesJSONObject.keys().asSequence().map { userId ->
-        val attributesForUser = attributesJSONObject[userId] as JSONObject
-        userId to attributesForUser.buildSubscriberAttributesMap()
-    }.toMap()
-}
-
-fun JSONObject.buildSubscriberAttributesMap(): SubscriberAttributeMap {
-    return this.keys().asSequence().map { attributeKey ->
-        val attributeJSONObject = this[attributeKey] as JSONObject
-        attributeKey to SubscriberAttribute(attributeJSONObject)
-    }.toMap()
 }
 
 /** @suppress */

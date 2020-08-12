@@ -2,8 +2,20 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.attributes.SubscriberAttribute
-import com.revenuecat.purchases.attributes.SubscriberAttributesManager
+import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BillingWrapper
+import com.revenuecat.purchases.common.IdentityManager
+import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
+import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
+import com.revenuecat.purchases.common.ProductInfo
+import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
+import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.attributes.SubscriberAttribute
+import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
+import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -106,7 +118,10 @@ class PostingTransactionsTests {
             appConfig = AppConfig(
                 context = mockk(relaxed = true),
                 observerMode = false,
-                platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+                platformInfo = PlatformInfo(
+                    flavor = "native",
+                    version = "3.2.0"
+                ),
                 proxyURL = null
             )
         )
@@ -114,7 +129,8 @@ class PostingTransactionsTests {
 
     @Test
     fun `durations are sent when posting to backend`() {
-        postReceiptSuccess = PostReceiptSuccessContainer()
+        postReceiptSuccess =
+            PostReceiptSuccessContainer()
 
         val expectedSubscriptionPeriod = "P1M"
         val expectedIntroPricePeriod = "P2M"
@@ -156,7 +172,8 @@ class PostingTransactionsTests {
 
     @Test
     fun `inapps send null durations when posting to backend`() {
-        postReceiptSuccess = PostReceiptSuccessContainer()
+        postReceiptSuccess =
+            PostReceiptSuccessContainer()
 
         val mockSkuDetails = mockk<SkuDetails>().also {
             every { it.sku } returns "product_id"
@@ -172,8 +189,8 @@ class PostingTransactionsTests {
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
-            onSuccess = {_,_ -> },
-            onError = {_,_ -> }
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue()
         assertThat(postedProductInfoSlot.captured.duration).isNull()
