@@ -1248,28 +1248,30 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     internal fun updatePendingPurchaseQueue() {
         if (billingWrapper.isConnected()) {
             debugLog("[QueryPurchases] Updating pending purchase queue")
-            if (!executorService.isShutdown) {
-                executorService.execute {
-                    val queryActiveSubscriptionsResult =
-                        billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
-                    val queryUnconsumedInAppsRequest =
-                        billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
-                    if (queryActiveSubscriptionsResult?.isSuccessful() == true &&
-                        queryUnconsumedInAppsRequest?.isSuccessful() == true
-                    ) {
-                        deviceCache.cleanPreviouslySentTokens(
-                            queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
-                            queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
-                        )
-                        postPurchases(
-                            deviceCache.getActivePurchasesNotInCache(
-                                queryActiveSubscriptionsResult.purchasesByHashedToken,
-                                queryUnconsumedInAppsRequest.purchasesByHashedToken
-                            ),
-                            allowSharingPlayStoreAccount,
-                            finishTransactions,
-                            appUserID
-                        )
+            synchronized(executorService) {
+                if (!executorService.isShutdown) {
+                    executorService.execute {
+                        val queryActiveSubscriptionsResult =
+                            billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
+                        val queryUnconsumedInAppsRequest =
+                            billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
+                        if (queryActiveSubscriptionsResult?.isSuccessful() == true &&
+                            queryUnconsumedInAppsRequest?.isSuccessful() == true
+                        ) {
+                            deviceCache.cleanPreviouslySentTokens(
+                                queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
+                                queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
+                            )
+                            postPurchases(
+                                deviceCache.getActivePurchasesNotInCache(
+                                    queryActiveSubscriptionsResult.purchasesByHashedToken,
+                                    queryUnconsumedInAppsRequest.purchasesByHashedToken
+                                ),
+                                allowSharingPlayStoreAccount,
+                                finishTransactions,
+                                appUserID
+                            )
+                        }
                     }
                 }
             }

@@ -36,12 +36,16 @@ open class Dispatcher(
     }
 
     open fun enqueue(call: AsyncCall) {
-        this.executorService.execute(call)
+        synchronized(this.executorService) {
+            this.executorService.execute(call)
+        }
     }
 
     open fun close() {
-        this.executorService.shutdownNow()
+        synchronized(this.executorService) {
+            this.executorService.shutdownNow()
+        }
     }
 
-    open fun isClosed() = this.executorService.isShutdown
+    open fun isClosed() = synchronized(this.executorService) { this.executorService.isShutdown }
 }
