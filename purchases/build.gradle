@@ -5,11 +5,11 @@ apply plugin: 'kotlin-kapt'
 apply from: '../.buildscripts/jacoco.gradle'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion compileVersion
 
     defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 28
+        minSdkVersion minVersion
+        targetSdkVersion compileVersion
         versionCode 1
         versionName "3.5.0-SNAPSHOT"
 
