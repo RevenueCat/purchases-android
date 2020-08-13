@@ -17,6 +17,7 @@ buildscript {
 plugins {
     id("io.gitlab.arturbosch.detekt").version("1.7.2")
     id("com.github.kt3k.coveralls").version("2.10.0")
+    id("com.savvasdalkitsis.module-dependency-graph").version("0.9")
 }
 
 dependencies {
