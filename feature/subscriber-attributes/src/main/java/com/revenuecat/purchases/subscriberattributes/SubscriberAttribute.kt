@@ -1,7 +1,7 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
-import com.revenuecat.purchases.common.DateProvider
-import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.utils.DateProvider
+import com.revenuecat.purchases.utils.DefaultDateProvider
 import com.revenuecat.purchases.utils.getNullableString
 import org.json.JSONException
 import org.json.JSONObject
@@ -41,7 +41,8 @@ data class SubscriberAttribute(
 
     fun toJSONObject() = JSONObject().apply {
         put(JSON_NAME_KEY, key.backendKey)
-        value?.let { put(JSON_NAME_VALUE, value) } ?: put(JSON_NAME_VALUE, JSONObject.NULL)
+        value?.let { put(JSON_NAME_VALUE, value) } ?: put(
+            JSON_NAME_VALUE, JSONObject.NULL)
         put(JSON_NAME_SET_TIME, setTime.time)
         put(JSON_NAME_IS_SYNCED, isSynced)
     }

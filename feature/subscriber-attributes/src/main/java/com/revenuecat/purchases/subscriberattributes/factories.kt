@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
 import com.revenuecat.purchases.common.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.common.caching.SubscriberAttributesPerAppUserIDMap

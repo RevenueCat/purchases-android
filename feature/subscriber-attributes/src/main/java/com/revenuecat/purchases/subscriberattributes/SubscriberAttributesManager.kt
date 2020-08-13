@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.SubscriberAttributeError
@@ -36,7 +36,11 @@ class SubscriberAttributesManager(
     }
 
     @Synchronized
-    fun setAttribute(key: SubscriberAttributeKey, value: String?, appUserID: String) {
+    fun setAttribute(
+        key: com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey,
+        value: String?,
+        appUserID: String
+    ) {
         setAttributes(mapOf(key.backendKey to value), appUserID)
     }
 

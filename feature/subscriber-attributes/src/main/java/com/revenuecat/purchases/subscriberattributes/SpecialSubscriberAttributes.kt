@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
 internal const val SPECIAL_KEY_EMAIL = "\$email"
 internal const val SPECIAL_KEY_DISPLAY_NAME = "\$displayName"
@@ -7,10 +7,18 @@ internal const val SPECIAL_KEY_FCM_TOKENS = "\$fcmTokens"
 
 sealed class SubscriberAttributeKey(val backendKey: String) {
 
-    object Email : SubscriberAttributeKey(SPECIAL_KEY_EMAIL)
-    object DisplayName : SubscriberAttributeKey(SPECIAL_KEY_DISPLAY_NAME)
-    object PhoneNumber : SubscriberAttributeKey(SPECIAL_KEY_PHONE_NUMBER)
-    object FCMTokens : SubscriberAttributeKey(SPECIAL_KEY_FCM_TOKENS)
+    object Email : SubscriberAttributeKey(
+        SPECIAL_KEY_EMAIL
+    )
+    object DisplayName : SubscriberAttributeKey(
+        SPECIAL_KEY_DISPLAY_NAME
+    )
+    object PhoneNumber : SubscriberAttributeKey(
+        SPECIAL_KEY_PHONE_NUMBER
+    )
+    object FCMTokens : SubscriberAttributeKey(
+        SPECIAL_KEY_FCM_TOKENS
+    )
     class Custom(value: String) : SubscriberAttributeKey(value)
 
     override fun equals(other: Any?): Boolean {
