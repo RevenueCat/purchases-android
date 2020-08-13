@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases.utils
 
 import java.util.Date
 
