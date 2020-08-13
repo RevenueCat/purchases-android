@@ -1505,11 +1505,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
         @JvmStatic
-        @Deprecated(
-            message = "use .set<NetworkId>() functions instead",
-            replaceWith = ReplaceWith(expression = "set<NetworkId>()"),
-            level = DeprecationLevel.WARNING
-        )
         fun addAttributionData(
             data: JSONObject,
             network: AttributionNetwork,
@@ -1533,11 +1528,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
         @JvmStatic
-        @Deprecated(
-            message = "use .set<NetworkId>() functions instead",
-            replaceWith = ReplaceWith(expression = "set<NetworkId>()"),
-            level = DeprecationLevel.WARNING
-        )
         fun addAttributionData(
             data: Map<String, Any?>,
             network: AttributionNetwork,
