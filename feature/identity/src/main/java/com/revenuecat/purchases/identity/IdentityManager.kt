@@ -1,12 +1,16 @@
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases.identity
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.common.debugLog
 import java.util.Locale
 import java.util.UUID
 
 class IdentityManager(
     private val deviceCache: DeviceCache,
+    private val subscriberAttributesCache: SubscriberAttributesCache,
     private val backend: Backend
 ) {
 
@@ -21,8 +25,7 @@ class IdentityManager(
             ?: generateRandomID()
         debugLog("Identifying App User ID: $appUserIDToUse")
         deviceCache.cacheAppUserID(appUserIDToUse)
-        // TODO: fix
-//        deviceCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
+        subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
     }
 
     fun identify(
