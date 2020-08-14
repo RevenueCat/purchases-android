@@ -9,9 +9,6 @@ import android.content.SharedPreferences
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.common.PurchaseWrapper
-import com.revenuecat.purchases.common.attributes.SubscriberAttribute
-import com.revenuecat.purchases.common.attributes.buildLegacySubscriberAttributes
-import com.revenuecat.purchases.common.attributes.buildSubscriberAttributesMapPerUser
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.debugLog
@@ -23,10 +20,6 @@ import java.util.Date
 private const val CACHE_REFRESH_PERIOD = 60000 * 5
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 internal const val PURCHASER_INFO_SCHEMA_VERSION = 3
-
-internal typealias AppUserID = String
-internal typealias SubscriberAttributeMap = Map<String, SubscriberAttribute>
-internal typealias SubscriberAttributesPerAppUserIDMap = Map<AppUserID, SubscriberAttributeMap>
 
 class DeviceCache(
     private val preferences: SharedPreferences,
@@ -64,7 +57,8 @@ class DeviceCache(
             .apply()
         clearPurchaserInfoCacheTimestamp()
         clearOfferingsCache()
-        clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
+        // TODO fix
+//        clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
     }
 
     private fun SharedPreferences.Editor.clearPurchaserInfo(): SharedPreferences.Editor {
@@ -261,8 +255,8 @@ class DeviceCache(
 
     // region utils
 
-    private fun SharedPreferences.getJSONObjectOrNull(key: String): JSONObject? {
-        return this.getString(key, null)?.let { json ->
+    fun getJSONObjectOrNull(key: String): JSONObject? {
+        return preferences.getString(key, null)?.let { json ->
             try {
                 JSONObject(json)
             } catch (e: JSONException) {
@@ -270,6 +264,34 @@ class DeviceCache(
             }
         }
     }
+
+    fun putString(
+        cacheKey: String,
+        value: String
+    ) {
+        preferences.edit().putString(
+            cacheKey,
+            value
+        ).apply()
+    }
+
+    fun remove(
+        cacheKey: String
+    ) {
+        preferences.edit().remove(cacheKey).apply()
+    }
+
+    fun findKeysThatStartWith(
+        cacheKey: String
+    ): Set<String> {
+        return preferences.all
+            ?.filterKeys { it.startsWith(cacheKey) }
+            ?.keys ?: emptySet()
+    }
+
+    fun newKey(
+        key: String
+    ) = "$SHARED_PREFERENCES_PREFIX$apiKey.$key"
 
     // endregion
 }
