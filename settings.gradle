@@ -1,3 +1,4 @@
+include ':feature:identity'
 include ':feature:subscriber-attributes'
 include ':utils'
 include ':common'

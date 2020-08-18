@@ -38,6 +38,8 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation project(":common")
     implementation project(":utils")
+    implementation project(":feature:subscriber-attributes")
+    implementation project(":feature:identity")
     api project(":public")
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
     implementation 'androidx.annotation:annotation:1.1.0'

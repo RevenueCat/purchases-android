@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.utils.DateProvider

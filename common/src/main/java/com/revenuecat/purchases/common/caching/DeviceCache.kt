@@ -50,15 +50,13 @@ class DeviceCache(
     }
 
     @Synchronized
-    fun clearCachesForAppUserID(currentAppUserID: String) {
+    fun clearCachesForAppUserID() {
         preferences.edit()
             .clearPurchaserInfo()
             .clearAppUserID()
             .apply()
         clearPurchaserInfoCacheTimestamp()
         clearOfferingsCache()
-        // TODO fix
-//        clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
     }
 
     private fun SharedPreferences.Editor.clearPurchaserInfo(): SharedPreferences.Editor {

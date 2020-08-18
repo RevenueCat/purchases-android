@@ -15,9 +15,11 @@ enum class BackendErrorCode(val value: Int) {
     BackendInvalidPaymentModeOrIntroPriceNotProvided(7105),
     BackendProductIdForGoogleReceiptNotProvided(7106),
     BackendInvalidPlayStoreCredentials(7107),
+    BackendInternalServerError(7110),
     BackendEmptyAppUserId(7220),
     BackendInvalidAuthToken(7224),
     BackendInvalidAPIKey(7225),
+    BackendBadRequest(7226),
     BackendPlayStoreQuotaExceeded(7229),
     BackendPlayStoreInvalidPackageName(7230),
     BackendPlayStoreGenericError(7231),
@@ -83,6 +85,8 @@ fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendInvalidAppleSubscriptionKey -> PurchasesErrorCode.InvalidAppleSubscriptionKeyError
         BackendErrorCode.BackendInvalidSubscriberAttributes,
         BackendErrorCode.BackendInvalidSubscriberAttributesBody -> PurchasesErrorCode.InvalidSubscriberAttributesError
+        BackendErrorCode.BackendBadRequest,
+        BackendErrorCode.BackendInternalServerError -> PurchasesErrorCode.UnexpectedBackendResponseError
     }
 }
 

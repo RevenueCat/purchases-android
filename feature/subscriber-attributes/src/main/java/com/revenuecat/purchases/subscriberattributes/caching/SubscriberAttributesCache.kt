@@ -170,13 +170,13 @@ class SubscriberAttributesCache(
 
     // region legacy subscriber attributes
 
-    private fun legacySubscriberAttributesCacheKey(appUserID: String) =
+    internal fun legacySubscriberAttributesCacheKey(appUserID: String) =
         "$subscriberAttributesCacheKey.$appUserID"
 
     @Synchronized
     private fun getAllLegacyStoredSubscriberAttributes(): SubscriberAttributesPerAppUserIDMap {
         val legacySubscriberAttributesCacheKeyPrefix = legacySubscriberAttributesCacheKey("")
-        val allSubscriberAttributesKeys= deviceCache.findKeysThatStartWith(legacySubscriberAttributesCacheKeyPrefix)
+        val allSubscriberAttributesKeys = deviceCache.findKeysThatStartWith(legacySubscriberAttributesCacheKeyPrefix)
 
         return allSubscriberAttributesKeys.map { preferencesKey ->
             val appUserIDFromKey: AppUserID =

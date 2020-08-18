@@ -3,6 +3,7 @@ apply from: "$rootProject.projectDir/library.gradle"
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation project(":common")
+    implementation project(":public")
     implementation project(":utils")
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"

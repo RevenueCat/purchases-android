@@ -1,10 +1,9 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.common.caching.SubscriberAttributesPerAppUserIDMap
 import io.mockk.Runs
 import io.mockk.every
@@ -18,8 +17,8 @@ import org.junit.Test
 
 class SubscriberAttributesManagerTests {
 
-    private val mockDeviceCache: DeviceCache = mockk()
-    private val mockBackend: Backend = mockk()
+    private val mockDeviceCache: SubscriberAttributesCache = mockk()
+    private val mockBackend: SubscriberAttributesBackend = mockk()
     private val appUserID: String = "appUserID"
     private lateinit var underTest: SubscriberAttributesManager
 
@@ -80,7 +79,7 @@ class SubscriberAttributesManagerTests {
             "removeThis" to null
         ), appUserID)
 
-        verify (exactly = 0) {
+        verify(exactly = 0) {
             mockDeviceCache.setAttributes(appUserID, any())
         }
     }
@@ -119,7 +118,7 @@ class SubscriberAttributesManagerTests {
             mockDeviceCache.setAttributes(appUserID, capture(slotOfSetAttributes))
         } just Runs
 
-        val slotOfPostedAttributes = slot<Map<String, SubscriberAttribute>>()
+        val slotOfPostedAttributes = slot<Map<String, Map<String, Any?>>>()
         every {
             mockBackend.postSubscriberAttributes(
                 capture(slotOfPostedAttributes),
@@ -140,9 +139,7 @@ class SubscriberAttributesManagerTests {
         assertThat(capturedPosted).isNotNull
         assertThat(capturedPosted.size).isEqualTo(1)
         val capturedPostedSubscriberAttribute = capturedPosted["key"]
-        assertThat(capturedPostedSubscriberAttribute).isNotNull
-        assertThat(capturedPostedSubscriberAttribute!!.value).isEqualTo(null)
-        assertThat(capturedPostedSubscriberAttribute.setTime).isEqualTo(subscriberAttribute.setTime)
+        assertThat(capturedPostedSubscriberAttribute).isEqualTo(subscriberAttribute.toBackendMap())
 
         val capturedSet = slotOfSetAttributes.captured
         assertThat(capturedSet).isNotNull
@@ -198,7 +195,7 @@ class SubscriberAttributesManagerTests {
             mockDeviceCache.setAttributes(appUserID, capture(slotOfSetAttributes))
         } just Runs
 
-        val slotOfPostedAttributes = slot<Map<String, SubscriberAttribute>>()
+        val slotOfPostedAttributes = slot<Map<String, Map<String, Any?>>>()
         every {
             mockBackend.postSubscriberAttributes(
                 capture(slotOfPostedAttributes),
@@ -250,7 +247,7 @@ class SubscriberAttributesManagerTests {
             mockDeviceCache.setAttributes(appUserID, capture(slotOfSetAttributes))
         } just Runs
 
-        val slotOfPostedAttributes = slot<Map<String, SubscriberAttribute>>()
+        val slotOfPostedAttributes = slot<Map<String, Map<String, Any?>>>()
         every {
             mockBackend.postSubscriberAttributes(
                 capture(slotOfPostedAttributes),
@@ -297,10 +294,10 @@ class SubscriberAttributesManagerTests {
         )
         underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
         verify(exactly = 1) {
-            mockBackend.postSubscriberAttributes(attributes, appUserID, any(), any())
+            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), appUserID, any(), any())
         }
         verify(exactly = 1) {
-            mockBackend.postSubscriberAttributes(attributes, "user2", any(), any())
+            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), "user2", any(), any())
         }
     }
 
@@ -351,7 +348,7 @@ class SubscriberAttributesManagerTests {
         unsyncedAttributes.forEach { (user, mapOfAttributes) ->
             every {
                 mockBackend.postSubscriberAttributes(
-                    mapOfAttributes,
+                    mapOfAttributes.toBackendMap(),
                     user,
                     captureLambda(),
                     any()

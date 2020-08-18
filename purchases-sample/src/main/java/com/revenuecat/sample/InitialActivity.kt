@@ -14,7 +14,7 @@ class InitialActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-
+        Purchases.sharedInstance.setPhoneNumber("error")
         Purchases.sharedInstance.getPurchaserInfoWith(::showError) { purchaserInfo ->
             if (purchaserInfo.entitlements[PREMIUM_ENTITLEMENT_ID]?.isActive == true) {
                 startCatsActivity(true)

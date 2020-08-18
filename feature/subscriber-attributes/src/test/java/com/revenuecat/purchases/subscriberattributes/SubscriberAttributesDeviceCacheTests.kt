@@ -1,9 +1,10 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.SubscriberAttributeMap
+import com.revenuecat.purchases.common.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.common.caching.SubscriberAttributesPerAppUserIDMap
 import io.mockk.every
 import io.mockk.just
@@ -25,7 +26,8 @@ class SubscriberAttributesDeviceCacheTests {
     private val apiKey = "api_key"
     private val appUserID = "app_user_id"
 
-    private lateinit var underTest: DeviceCache
+    private lateinit var cache: DeviceCache
+    private lateinit var underTest: SubscriberAttributesCache
     private lateinit var mockPrefs: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
     private val putStringSlot = slot<String>()
@@ -67,13 +69,14 @@ class SubscriberAttributesDeviceCacheTests {
             } returns mockEditor
         }
 
-        underTest = DeviceCache(mockPrefs, apiKey)
+        cache = DeviceCache(mockPrefs, apiKey)
+        underTest = SubscriberAttributesCache(cache)
 
         every {
-            mockPrefs.getString(underTest.appUserIDCacheKey, isNull())
+            mockPrefs.getString(cache.appUserIDCacheKey, isNull())
         } returns "appUserID"
         every {
-            mockPrefs.getString(underTest.legacyAppUserIDCacheKey, isNull())
+            mockPrefs.getString(cache.legacyAppUserIDCacheKey, isNull())
         } returns "legacyAppUserID"
     }
 
@@ -133,9 +136,11 @@ class SubscriberAttributesDeviceCacheTests {
 
     @Test
     fun `setting attribute already existing but marking as synced`() {
-        mockNotEmptyCache(mapOf(
-            "tshirtsize" to SubscriberAttribute("tshirtsize", "L")
-        ))
+        mockNotEmptyCache(
+            mapOf(
+                "tshirtsize" to SubscriberAttribute("tshirtsize", "L")
+            )
+        )
 
         val expectedAttributes: Map<String, SubscriberAttribute> = mapOf(
             "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true)
@@ -147,9 +152,11 @@ class SubscriberAttributesDeviceCacheTests {
 
     @Test
     fun `setting existing attribute as null`() {
-        mockNotEmptyCache(mapOf(
-            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true)
-        ))
+        mockNotEmptyCache(
+            mapOf(
+                "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true)
+            )
+        )
 
         val expectedAttributes: Map<String, SubscriberAttribute> = mapOf(
             "tshirtsize" to SubscriberAttribute("tshirtsize", null)
@@ -161,9 +168,11 @@ class SubscriberAttributesDeviceCacheTests {
 
     @Test
     fun `setting existing attribute`() {
-        mockNotEmptyCache(mapOf(
-            "tshirtsize" to SubscriberAttribute("tshirtsize", "L")
-        ))
+        mockNotEmptyCache(
+            mapOf(
+                "tshirtsize" to SubscriberAttribute("tshirtsize", "L")
+            )
+        )
 
         val expectedAttributes: Map<String, SubscriberAttribute> = mapOf(
             "tshirtsize" to SubscriberAttribute("tshirtsize", "M")
@@ -181,7 +190,10 @@ class SubscriberAttributesDeviceCacheTests {
         )
         mockNotEmptyCache(mapOf(expectedAttributes.keys.toList()[0] to expectedAttributes.values.toList()[0]))
 
-        underTest.setAttributes(appUserID, mapOf(expectedAttributes.keys.toList()[1] to expectedAttributes.values.toList()[1]))
+        underTest.setAttributes(
+            appUserID,
+            mapOf(expectedAttributes.keys.toList()[1] to expectedAttributes.values.toList()[1])
+        )
 
         assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
     }
@@ -192,7 +204,7 @@ class SubscriberAttributesDeviceCacheTests {
             "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true)
         )
         mockNotEmptyCache(expectedAttributes)
-        underTest.clearCachesForAppUserID(appUserID)
+        underTest.clearSubscriberAttributesIfSyncedForSubscriber(appUserID)
         verify {
             mockEditor.putString(
                 "com.revenuecat.purchases.$apiKey.subscriberAttributes",
@@ -209,8 +221,8 @@ class SubscriberAttributesDeviceCacheTests {
             "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = false)
         )
         mockNotEmptyCache(expectedAttributes)
-        underTest.clearCachesForAppUserID(appUserID)
-        verify (exactly = 0) {
+        underTest.clearSubscriberAttributesIfSyncedForSubscriber(appUserID)
+        verify(exactly = 0) {
             mockEditor.putString("com.revenuecat.purchases.$apiKey.subscriberAttributes", any())
         }
     }
@@ -239,16 +251,18 @@ class SubscriberAttributesDeviceCacheTests {
     @Test
     fun `Given there are two user IDs, but only one of them has unsynced attributes, getUnsyncedSubscriberAttributes returns a map with only the unsynced attributes for that user`() {
         val expectedAttribute = SubscriberAttribute("tshirtsize", "L")
-        mockNotEmptyCacheMultipleUsers(mapOf(
-            appUserID to  mapOf(
-                "tshirtsize" to expectedAttribute,
-                "age" to SubscriberAttribute("age", "L", isSynced = true)
-            ),
-            "user2" to  mapOf(
-                "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
-                "age" to SubscriberAttribute("age", "L", isSynced = true)
+        mockNotEmptyCacheMultipleUsers(
+            mapOf(
+                appUserID to mapOf(
+                    "tshirtsize" to expectedAttribute,
+                    "age" to SubscriberAttribute("age", "L", isSynced = true)
+                ),
+                "user2" to mapOf(
+                    "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
+                    "age" to SubscriberAttribute("age", "L", isSynced = true)
+                )
             )
-        ))
+        )
         val unsyncedSubscriberAttributes = underTest.getUnsyncedSubscriberAttributes()
         assertThat(unsyncedSubscriberAttributes.size).isEqualTo(1)
         unsyncedSubscriberAttributes.forEach { (_, subscriberAttributesForUser) ->
@@ -263,10 +277,12 @@ class SubscriberAttributesDeviceCacheTests {
             "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true),
             "age" to SubscriberAttribute("age", "L", isSynced = true)
         )
-        mockNotEmptyCacheMultipleUsers(mapOf(
-            appUserID to attributes,
-            "user2" to attributes
-        ))
+        mockNotEmptyCacheMultipleUsers(
+            mapOf(
+                appUserID to attributes,
+                "user2" to attributes
+            )
+        )
         val unsyncedSubscriberAttributes = underTest.getUnsyncedSubscriberAttributes()
         assertThat(unsyncedSubscriberAttributes.size).isEqualTo(0)
     }
@@ -284,7 +300,7 @@ class SubscriberAttributesDeviceCacheTests {
 
         underTest.cleanUpSubscriberAttributeCache(appUserID)
 
-        verify (exactly = 0) { mockEditor.remove(any()) }
+        verify(exactly = 0) { mockEditor.remove(any()) }
         assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
     }
 
@@ -316,19 +332,21 @@ class SubscriberAttributesDeviceCacheTests {
         mockNotEmptyCacheMultipleUsers(cacheContents)
         underTest.cleanUpSubscriberAttributeCache(appUserID)
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockEditor.remove(underTest.legacySubscriberAttributesCacheKey(userOne))
         }
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockEditor.remove(underTest.legacySubscriberAttributesCacheKey(appUserID))
         }
         val expectedAttributesForAppUserID =
             legacyAttributesForAppUserID + newCacheAttributesForAppUserID
-        assertCapturedEqualsExpected(mapOf(
-            userOne to (legacyCacheContents[userOne] ?: error("legacyCacheContents has been modified")),
-            appUserID to expectedAttributesForAppUserID,
-            userThree to (cacheContents[userThree] ?: error("cacheContents has been modified"))
-        ))
+        assertCapturedEqualsExpected(
+            mapOf(
+                userOne to (legacyCacheContents[userOne] ?: error("legacyCacheContents has been modified")),
+                appUserID to expectedAttributesForAppUserID,
+                userThree to (cacheContents[userThree] ?: error("cacheContents has been modified"))
+            )
+        )
     }
 
     @Test
@@ -363,15 +381,17 @@ class SubscriberAttributesDeviceCacheTests {
 
         underTest.cleanUpSubscriberAttributeCache(appUserID)
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockEditor.remove(underTest.legacySubscriberAttributesCacheKey(userOne))
         }
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockEditor.remove(underTest.legacySubscriberAttributesCacheKey(appUserID))
         }
-        assertCapturedEqualsExpected(mapOf(
-            appUserID to newCacheAttributesForAppUserID
-        ))
+        assertCapturedEqualsExpected(
+            mapOf(
+                appUserID to newCacheAttributesForAppUserID
+            )
+        )
     }
 
     private fun createMapOfUnsyncedAttributes(
@@ -401,9 +421,11 @@ class SubscriberAttributesDeviceCacheTests {
         mockEmptyLegacyCache()
         mockNotEmptyCacheMultipleUsers(cacheContents)
         underTest.cleanUpSubscriberAttributeCache(appUserID)
-        assertCapturedEqualsExpected(mapOf(
-            appUserID to expectedAttributes
-        ))
+        assertCapturedEqualsExpected(
+            mapOf(
+                appUserID to expectedAttributes
+            )
+        )
     }
 
     private fun mockEmptyLegacyCache() {
@@ -483,6 +505,5 @@ class SubscriberAttributesDeviceCacheTests {
                 assertThat(expected).isEqualTo(received)
             }
         }
-
     }
 }

@@ -8,8 +8,6 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.common.attributes.SubscriberAttribute
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import org.json.JSONException
 import org.json.JSONObject
@@ -17,8 +15,8 @@ import org.json.JSONObject
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 private const val HTTP_SERVER_ERROR_CODE = 500
 
-private const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
-private const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
+const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
+const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
 
 /** @suppress */
 internal typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
@@ -30,13 +28,12 @@ typealias CallbackCacheKey = List<String>
 /** @suppress */
 typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
 /** @suppress */
-typealias PostReceiptDataSuccessCallback =
-        (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit
+typealias PostReceiptDataSuccessCallback = (PurchaserInfo, body: JSONObject?) -> Unit
 /** @suppress */
 typealias PostReceiptDataErrorCallback = (
     PurchasesError,
     shouldConsumePurchase: Boolean,
-    attributeErrors: List<SubscriberAttributeError>
+    body: JSONObject?
 ) -> Unit
 
 class Backend(
@@ -58,6 +55,38 @@ class Backend(
 
     fun close() {
         this.dispatcher.close()
+    }
+
+    fun performRequest(
+        path: String,
+        body: Map<String, Any?>?,
+        onError: (PurchasesError) -> Unit,
+        onCompletedSuccessfully: () -> Unit,
+        onCompletedWithErrors: (PurchasesError, Boolean, JSONObject?) -> Unit
+    ) {
+        enqueue(object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPClient.Result {
+                return httpClient.performRequest(
+                    path,
+                    body,
+                    authenticationHeaders
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                onError(error)
+            }
+
+            override fun onCompletion(result: HTTPClient.Result) {
+                if (result.isSuccessful()) {
+                    onCompletedSuccessfully()
+                } else {
+                    val error = result.toPurchasesError()
+                    val notAnInternalServerError = result.responseCode < HTTP_SERVER_ERROR_CODE
+                    onCompletedWithErrors(error, notAnInternalServerError, result.body)
+                }
+            }
+        })
     }
 
     private fun enqueue(call: Dispatcher.AsyncCall) {
@@ -117,7 +146,7 @@ class Backend(
         appUserID: String,
         isRestore: Boolean,
         observerMode: Boolean,
-        subscriberAttributes: Map<String, SubscriberAttribute>,
+        subscriberAttributes: Map<String, Map<String, Any?>>,
         productInfo: ProductInfo,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback
@@ -140,7 +169,7 @@ class Backend(
             "observer_mode" to observerMode,
             "price" to productInfo.price,
             "currency" to productInfo.currency,
-            "attributes" to subscriberAttributes.takeUnless { it.isEmpty() }?.toBackendMap(),
+            "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
             "normal_duration" to productInfo.duration,
             "intro_duration" to productInfo.introDuration,
             "trial_duration" to productInfo.trialDuration
@@ -161,19 +190,17 @@ class Backend(
                     postReceiptCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccess, onError) ->
                     try {
-                        val attributeErrors =
-                            result.body?.getAttributeErrors() ?: emptyList()
                         if (result.isSuccessful()) {
-                            onSuccess(result.body!!.buildPurchaserInfo(), attributeErrors)
+                            onSuccess(result.body!!.buildPurchaserInfo(), result.body)
                         } else {
                             onError(
                                 result.toPurchasesError(),
                                 result.responseCode < HTTP_SERVER_ERROR_CODE,
-                                attributeErrors
+                                result.body
                             )
                         }
                     } catch (e: JSONException) {
-                        onError(e.toPurchasesError(), false, emptyList())
+                        onError(e.toPurchasesError(), false, null)
                     }
                 }
             }
@@ -185,7 +212,7 @@ class Backend(
                     onError(
                         error,
                         false,
-                        emptyList()
+                        null
                     )
                 }
             }
@@ -302,68 +329,6 @@ class Backend(
         })
     }
 
-    fun postSubscriberAttributes(
-        attributes: Map<String, SubscriberAttribute>,
-        appUserID: String,
-        onSuccessHandler: () -> Unit,
-        onErrorHandler: (
-            PurchasesError,
-            didBackendGetAttributes: Boolean,
-            attributeErrors: List<SubscriberAttributeError>
-        ) -> Unit
-    ) {
-        enqueue(object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPClient.Result {
-                return httpClient.performRequest(
-                    "/subscribers/" + encode(appUserID) + "/attributes",
-                    mapOf("attributes" to attributes.toBackendMap()),
-                    authenticationHeaders
-                )
-            }
-
-            override fun onError(error: PurchasesError) {
-                onErrorHandler(error, false, emptyList())
-            }
-
-            override fun onCompletion(result: HTTPClient.Result) {
-                if (result.isSuccessful()) {
-                    onSuccessHandler()
-                } else {
-                    val error = result.toPurchasesError()
-                    var attributeErrors: List<SubscriberAttributeError> = emptyList()
-                    result.body?.takeIf { error.code == PurchasesErrorCode.InvalidSubscriberAttributesError }
-                        ?.let { body ->
-                            attributeErrors = body.getAttributeErrors()
-                        }
-                    onErrorHandler(error, result.responseCode < HTTP_SERVER_ERROR_CODE, attributeErrors)
-                }
-            }
-        })
-    }
-
-    // Returns list of attribute errors found in the JSON object. The errors can be under
-    // ATTRIBUTES_ERROR_RESPONSE_KEY (for post receipt calls) or under
-    // ATTRIBUTE_ERRORS_KEY (for post subscriber attributes calls). If no attribute errors,
-    // returns an empty list
-    private fun JSONObject.getAttributeErrors(): List<SubscriberAttributeError> {
-        val attributeErrorsJSONObject =
-            this.optJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY) ?: this
-
-        return attributeErrorsJSONObject.optJSONArray(ATTRIBUTE_ERRORS_KEY)
-            ?.let { jsonArray ->
-                (0 until jsonArray.length())
-                    .map { index -> jsonArray.getJSONObject(index) }
-                    .filter { it.has("key_name") && it.has("message") }
-                    .map {
-                        SubscriberAttributeError(
-                            it.getString("key_name"),
-                            it.getString("message")
-                        )
-                    }
-                    .toList()
-            } ?: emptyList()
-    }
-
     private fun HTTPClient.Result.isSuccessful(): Boolean {
         return responseCode < UNSUCCESSFUL_HTTP_STATUS_CODE
     }
@@ -380,10 +345,4 @@ class Backend(
             this[cacheKey]!!.add(functions)
         }
     }
-}
-
-internal fun Map<String, SubscriberAttribute>.toBackendMap(): Map<String, Map<String, Any?>> {
-    return map { (key, subscriberAttribute) ->
-        key to subscriberAttribute.toBackendMap()
-    }.toMap()
 }
