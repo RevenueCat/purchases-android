@@ -1,14 +1,21 @@
 package com.revenuecat.purchases.subscriberattributes
 
+import android.app.Application
+import android.content.Context
+import android.provider.Settings
+import com.google.android.gms.ads.identifier.AdvertisingIdClient
+import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesPerAppUserIDMap
+import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -39,20 +46,14 @@ class SubscriberAttributesManagerTests {
 
     @Test
     fun `setting dictionary of attributes`() {
-        val slot = slot<Map<String, SubscriberAttribute>>()
-        every {
-            mockDeviceCache.setAttributes(appUserID, capture(slot))
-        } just Runs
-        every {
-            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
-        } returns emptyMap()
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
         val attributes = mapOf(
             "tshirtsize" to "L",
             "age" to "34",
             "removeThis" to null
         )
         underTest.setAttributes(attributes, appUserID)
-        val captured = slot.captured
+        val captured = capturingSlot.captured
         assertThat(captured).isNotNull
         attributes.forEach { (key, value) ->
             val subscriberAttribute = captured[key] ?: error("Should be there")
@@ -74,10 +75,12 @@ class SubscriberAttributesManagerTests {
             "removeThis" to SubscriberAttribute("tshirtsize", null)
         )
 
-        underTest.setAttributes(mapOf(
-            "tshirtsize" to "L",
-            "removeThis" to null
-        ), appUserID)
+        underTest.setAttributes(
+            mapOf(
+                "tshirtsize" to "L",
+                "removeThis" to null
+            ), appUserID
+        )
 
         verify(exactly = 0) {
             mockDeviceCache.setAttributes(appUserID, any())
@@ -327,6 +330,184 @@ class SubscriberAttributesManagerTests {
         }
     }
 
+    @Test
+    fun `collectDeviceIdentifiers`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(
+            mockContext = mockContext,
+            expectedAdID = "12345",
+            expectedAndroidID = "androidid"
+        )
+
+        underTest.collectDeviceIdentifiers(appUserID, mockContext)
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(2)
+
+        val gpsAdIdSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
+        assertThat(gpsAdIdSubscriberAttribute).isNotNull
+        assertThat(gpsAdIdSubscriberAttribute!!.value).isEqualTo("12345")
+
+        val androidIDSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
+        assertThat(androidIDSubscriberAttribute).isNotNull
+        assertThat(androidIDSubscriberAttribute!!.value).isEqualTo("androidid")
+    }
+
+    @Test
+    fun `GooglePlayServicesNotAvailableException when calling collectDeviceIdentifiers`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(
+            mockContext = mockContext,
+            expectedAdID = "12345",
+            expectedAndroidID = "androidid",
+            gpsException = GooglePlayServicesRepairableException(1, "error", null)
+        )
+
+        underTest.collectDeviceIdentifiers(appUserID, mockContext)
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+
+        val gpsAdIdSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
+        assertThat(gpsAdIdSubscriberAttribute).isNull()
+
+        val androidIDSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
+        assertThat(androidIDSubscriberAttribute).isNotNull
+        assertThat(androidIDSubscriberAttribute!!.value).isEqualTo("androidid")
+    }
+
+    @Test
+    fun `GooglePlayServicesRepairableException when calling collectDeviceIdentifiers`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(
+            mockContext = mockContext,
+            expectedAdID = "12345",
+            expectedAndroidID = "androidid",
+            gpsException = GooglePlayServicesRepairableException(1, "error", null)
+        )
+
+        underTest.collectDeviceIdentifiers(appUserID, mockContext)
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+
+        val gpsAdIdSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
+        assertThat(gpsAdIdSubscriberAttribute).isNull()
+
+        val androidIDSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
+        assertThat(androidIDSubscriberAttribute).isNotNull
+        assertThat(androidIDSubscriberAttribute!!.value).isEqualTo("androidid")
+    }
+
+    @Test
+    fun `collectDeviceIdentifiers when ad tracking is limited`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(
+            mockContext = mockContext,
+            expectedAdID = "12345",
+            expectedAndroidID = "androidid",
+            expectedIsLimitAdTrackingEnabled = true
+        )
+
+        underTest.collectDeviceIdentifiers(appUserID, mockContext)
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+
+        val gpsAdIdSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
+        assertThat(gpsAdIdSubscriberAttribute).isNull()
+
+        val androidIDSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
+        assertThat(androidIDSubscriberAttribute).isNotNull
+        assertThat(androidIDSubscriberAttribute!!.value).isEqualTo("androidid")
+    }
+
+    @Test
+    fun `setAttributionID`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(
+            mockContext = mockContext,
+            expectedAdID = "12345",
+            expectedAndroidID = "androidid"
+        )
+
+        underTest.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Facebook,
+            "facebook_id",
+            appUserID,
+            mockContext
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(3)
+
+        val gpsAdIdSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
+        assertThat(gpsAdIdSubscriberAttribute).isNotNull
+        assertThat(gpsAdIdSubscriberAttribute!!.value).isEqualTo("12345")
+
+        val androidIDSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
+        assertThat(androidIDSubscriberAttribute).isNotNull
+        assertThat(androidIDSubscriberAttribute!!.value).isEqualTo("androidid")
+
+        val facebookID =
+            captured[SubscriberAttributeKey.AttributionIds.Facebook.backendKey]
+        assertThat(facebookID).isNotNull
+        assertThat(facebookID!!.value).isEqualTo("facebook_id")
+    }
+
+    private fun mockAdvertisingInfo(
+        mockContext: Context,
+        expectedAdID: String?,
+        expectedAndroidID: String?,
+        expectedIsLimitAdTrackingEnabled: Boolean = false,
+        gpsException: Exception? = null
+    ) {
+        val mockAdInfo = mockk<AdvertisingIdClient.Info>().apply {
+            every { isLimitAdTrackingEnabled } returns expectedIsLimitAdTrackingEnabled
+            every { id } returns expectedAdID
+        }
+        mockkStatic(AdvertisingIdClient::class)
+        if (gpsException == null) {
+            every {
+                AdvertisingIdClient.getAdvertisingIdInfo(mockContext)
+            } returns mockAdInfo
+        } else {
+            every {
+                AdvertisingIdClient.getAdvertisingIdInfo(mockContext)
+            } throws gpsException
+        }
+
+        mockkStatic(Settings.Secure::class)
+        every {
+            Settings.Secure.getString(mockContext.contentResolver, Settings.Secure.ANDROID_ID)
+        } returns expectedAndroidID
+    }
+
     private fun mockSettingUpdatedSyncedAttributes(
         allAttributes: SubscriberAttributesPerAppUserIDMap
     ) {
@@ -385,5 +566,16 @@ class SubscriberAttributesManagerTests {
         } returns unsyncedAttributes
 
         return allStoredAttributes to unsyncedAttributes
+    }
+
+    private fun mockSettingAttributesOnEmptyCache(): CapturingSlot<Map<String, SubscriberAttribute>> {
+        val slot = slot<Map<String, SubscriberAttribute>>()
+        every {
+            mockDeviceCache.setAttributes(appUserID, capture(slot))
+        } just Runs
+        every {
+            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
+        } returns emptyMap()
+        return slot
     }
 }

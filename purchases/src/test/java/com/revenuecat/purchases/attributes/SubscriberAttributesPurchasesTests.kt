@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.attributes
 
+import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
@@ -44,6 +45,9 @@ class SubscriberAttributesPurchasesTests {
     private val subscriberAttributesManagerMock = mockk<SubscriberAttributesManager>()
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingWrapper>(relaxed = true)
+    private lateinit var applicationMock: Application
+    private lateinit var executorServiceMock: ExecutorService
+
     private var postReceiptError: PostReceiptErrorContainer? = null
     private var postReceiptCompletion: PostReceiptCompletionContainer? = null
     private var subscriberAttribute = SubscriberAttribute("key", "value")
@@ -113,7 +117,7 @@ class SubscriberAttributesPurchasesTests {
         } just runs
 
         underTest = Purchases(
-            application = mockk(relaxed = true),
+            application = mockk<Application>(relaxed = true).also { applicationMock = it },
             backingFieldAppUserID = appUserId,
             backend = backendMock,
             billingWrapper = billingWrapperMock,
@@ -121,7 +125,8 @@ class SubscriberAttributesPurchasesTests {
             executorService = mockk<ExecutorService>().apply {
                 val capturedRunnable = slot<Runnable>()
                 every { execute(capture(capturedRunnable)) } answers { capturedRunnable.captured.run() }
-            },
+                every { isShutdown } returns false
+            }.also { executorServiceMock = it },
             identityManager = mockk<IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId
             },
@@ -493,6 +498,100 @@ class SubscriberAttributesPurchasesTests {
 
     // endregion
 
+    // region Attribution IDs
+
+    @Test
+    fun `collectDeviceIdentifiers`() {
+        every {
+            subscriberAttributesManagerMock.collectDeviceIdentifiers(appUserId, applicationMock)
+        } just Runs
+
+        underTest.collectDeviceIdentifiers()
+
+        verify {
+            subscriberAttributesManagerMock.collectDeviceIdentifiers(appUserId, applicationMock)
+        }
+        verify(exactly = 1) {
+            executorServiceMock.execute(any())
+        }
+    }
+
+    @Test
+    fun `setAdjustID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.Adjust) { id ->
+            underTest.setAdjustID(id)
+        }
+    }
+
+    @Test
+    fun `setAppsflyerID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.AppsFlyer) { id ->
+            underTest.setAppsflyerID(id)
+        }
+    }
+
+    @Test
+    fun `setFBAnonymousID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.Facebook) { id ->
+            underTest.setFBAnonymousID(id)
+        }
+    }
+
+    @Test
+    fun `setMparticleID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.Mparticle) { id ->
+            underTest.setMparticleID(id)
+        }
+    }
+
+    // endregion
+
+    // region Campaign parameters
+
+    @Test
+    fun `setMediaSource`() {
+        campaignParameterTest(SubscriberAttributeKey.CampaignParameters.MediaSource) { parameter ->
+            underTest.setMediaSource(parameter)
+        }
+    }
+
+    @Test
+    fun `setCampaign`() {
+        campaignParameterTest(SubscriberAttributeKey.CampaignParameters.Campaign) { parameter ->
+            underTest.setCampaign(parameter)
+        }
+    }
+
+    @Test
+    fun `setAdGroup`() {
+        campaignParameterTest(SubscriberAttributeKey.CampaignParameters.AdGroup) { parameter ->
+            underTest.setAdGroup(parameter)
+        }
+    }
+
+    @Test
+    fun `setAd`() {
+        campaignParameterTest(SubscriberAttributeKey.CampaignParameters.Ad) { parameter ->
+            underTest.setAd(parameter)
+        }
+    }
+
+    @Test
+    fun `setKeyword`() {
+        campaignParameterTest(SubscriberAttributeKey.CampaignParameters.Keyword) { parameter ->
+            underTest.setKeyword(parameter)
+        }
+    }
+
+    @Test
+    fun `setCreative`() {
+        campaignParameterTest(SubscriberAttributeKey.CampaignParameters.Creative) { parameter ->
+            underTest.setCreative(parameter)
+        }
+    }
+
+    // endregion
+
     private fun getFinishableErrorResponse(): PostReceiptErrorContainer {
         return PostReceiptErrorContainer(
             PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
@@ -501,11 +600,54 @@ class SubscriberAttributesPurchasesTests {
         )
     }
 
-    private fun getNonFinishableErrorResponse(): PostReceiptErrorContainer {
-        return PostReceiptErrorContainer(
-            PurchasesError(PurchasesErrorCode.UnknownError),
-            true,
-            JSONObject(Responses.internalServerErrorResponse)
-        )
+    private fun attributionIDTest(
+        network: SubscriberAttributeKey.AttributionIds,
+        functionToTest: (String) -> Unit
+    ) {
+        val id = "12345"
+
+        every {
+            subscriberAttributesManagerMock.setAttributionID(
+                network,
+                id,
+                appUserId,
+                applicationMock
+            )
+        } just Runs
+
+        functionToTest(id)
+
+        verify {
+            subscriberAttributesManagerMock.setAttributionID(
+                network,
+                id,
+                appUserId,
+                applicationMock
+            )
+        }
+        verify(exactly = 1) {
+            executorServiceMock.execute(any())
+        }
+    }
+
+    private fun campaignParameterTest(
+        parameter: SubscriberAttributeKey.CampaignParameters,
+        functionToTest: (String) -> Unit
+    ) {
+        val parameterValue = "parametervalue"
+
+        every {
+            subscriberAttributesManagerMock.setAttribute(any(), parameterValue, appUserId)
+        } just Runs
+
+        functionToTest(parameterValue)
+
+        verify {
+            subscriberAttributesManagerMock.setAttribute(
+                parameter,
+                parameterValue,
+                appUserId
+            )
+        }
     }
 }

@@ -599,6 +599,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     // region Subscriber Attributes
+    // region Special Attributes
 
     /**
      * Subscriber attributes are useful for storing additional, structured information on a user.
@@ -668,8 +669,121 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     // endregion
+    // region Attribution IDs
+
+    fun collectDeviceIdentifiers() {
+        executeOnBackground {
+            subscriberAttributesManager.collectDeviceIdentifiers(appUserID, application)
+        }
+    }
+
+    fun setAdjustID(adjustID: String?) {
+        debugLog("setAdjustID called")
+        executeOnBackground {
+            subscriberAttributesManager.setAttributionID(
+                SubscriberAttributeKey.AttributionIds.Adjust,
+                adjustID,
+                appUserID,
+                application
+            )
+        }
+    }
+
+    fun setAppsflyerID(appsflyerID: String?) {
+        debugLog("setAppsflyerId called")
+        executeOnBackground {
+            subscriberAttributesManager.setAttributionID(
+                SubscriberAttributeKey.AttributionIds.AppsFlyer,
+                appsflyerID,
+                appUserID,
+                application
+            )
+        }
+    }
+
+    fun setFBAnonymousID(fbAnonymousID: String?) {
+        debugLog("setFBAnonymousID called")
+        executeOnBackground {
+            subscriberAttributesManager.setAttributionID(
+                SubscriberAttributeKey.AttributionIds.Facebook,
+                fbAnonymousID,
+                appUserID,
+                application
+            )
+        }
+    }
+
+    fun setMparticleID(mparticleID: String?) {
+        debugLog("setMparticleID called")
+        executeOnBackground {
+            subscriberAttributesManager.setAttributionID(
+                SubscriberAttributeKey.AttributionIds.Mparticle,
+                mparticleID,
+                appUserID,
+                application
+            )
+        }
+    }
 
     // endregion
+    // region Campaign parameters
+
+    fun setMediaSource(mediaSource: String?) {
+        debugLog("setMediaSource called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.MediaSource,
+            mediaSource,
+            appUserID
+        )
+    }
+
+    fun setCampaign(campaign: String?) {
+        debugLog("setCampaign called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Campaign,
+            campaign,
+            appUserID
+        )
+    }
+
+    fun setAdGroup(adGroup: String?) {
+        debugLog("setAdGroup called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.AdGroup,
+            adGroup,
+            appUserID
+        )
+    }
+
+    fun setAd(ad: String?) {
+        debugLog("setAd called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Ad,
+            ad,
+            appUserID
+        )
+    }
+
+    fun setKeyword(keyword: String?) {
+        debugLog("setKeyword called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Keyword,
+            keyword,
+            appUserID
+        )
+    }
+
+    fun setCreative(creative: String?) {
+        debugLog("setCreative called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Creative,
+            creative,
+            appUserID
+        )
+    }
+
+    //endregion
+    //endregion
 
     @JvmName("-deprecated_makePurchase")
     @Deprecated(
@@ -1098,6 +1212,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
+    private fun executeOnBackground(command: () -> Unit) {
+        synchronized(executorService) {
+            if (!executorService.isShutdown) {
+                executorService.execute(command)
+            }
+        }
+    }
+
     @Synchronized
     private fun getPurchaseCallback(sku: String): MakePurchaseListener? {
         return state.purchaseCallbacks[sku].also {
@@ -1517,6 +1639,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [network] [AttributionNetwork] to post the data to
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
+        @Deprecated(
+            "Use the .set<NetworkId> functions instead",
+            ReplaceWith(".set<NetworkId>")
+        )
         @JvmStatic
         fun addAttributionData(
             data: JSONObject,
@@ -1540,6 +1666,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [network] [AttributionNetwork] to post the data to
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
+        @Deprecated(
+            "Use the .set<NetworkId> functions instead",
+            ReplaceWith(".set<NetworkId>")
+        )
         @JvmStatic
         fun addAttributionData(
             data: Map<String, Any?>,
