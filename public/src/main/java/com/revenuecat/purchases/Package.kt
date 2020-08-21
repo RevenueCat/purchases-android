@@ -18,7 +18,6 @@ data class Package(
     val identifier: String,
     val packageType: PackageType,
     val product: SkuDetails,
-    // TODO: make internal
     val offering: String
 ) : Parcelable
 

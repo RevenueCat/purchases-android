@@ -49,7 +49,7 @@ class HTTPClientTest {
     private lateinit var appConfig: AppConfig
 
     private val expectedPlatformInfo = PlatformInfo("flutter", "2.1.0")
-    
+
     @Before
     fun setupBefore() {
         appConfig = AppConfig(

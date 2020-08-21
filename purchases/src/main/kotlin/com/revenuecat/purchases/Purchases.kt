@@ -22,7 +22,6 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
 import com.revenuecat.purchases.common.Config
@@ -37,6 +36,7 @@ import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.attributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
+import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -771,11 +771,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         handleErrorFetchingOfferings(error, completion)
                     })
                 } catch (error: JSONException) {
+                    errorLog("JSONException when building Offerings object. Message: ${ error.localizedMessage }")
                     handleErrorFetchingOfferings(
                         PurchasesError(
                             PurchasesErrorCode.UnexpectedBackendResponseError,
                             error.localizedMessage
-                        ),
+                        ).also { errorLog(it.toString()) },
                         completion
                     )
                 }
@@ -897,7 +898,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 )
             } else {
                 onError?.let { onError ->
-                    onError(purchase, PurchasesError(PurchasesErrorCode.PaymentPendingError))
+                    onError(
+                        purchase,
+                        PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it.toString()) }
+                    )
                 }
             }
         }
@@ -1196,7 +1200,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         } ?: dispatch {
             listener.onError(
-                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError),
+                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it.toString()) },
                 false
             )
         }
@@ -1225,7 +1229,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     debugLog("Couldn't find existing purchase for sku: ${upgradeInfo.oldSku}")
                     dispatch {
                         listener.onError(
-                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError),
+                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError).also { errorLog(it.toString()) },
                             false
                         )
                     }

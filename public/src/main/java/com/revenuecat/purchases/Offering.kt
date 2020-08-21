@@ -17,7 +17,6 @@ import kotlinx.android.parcel.Parcelize
  * @property availablePackages Array of [Package] objects available for purchase.
  */
 @Parcelize
-// TODO: make constructor internal
 data class Offering constructor(
     val identifier: String,
     val serverDescription: String,

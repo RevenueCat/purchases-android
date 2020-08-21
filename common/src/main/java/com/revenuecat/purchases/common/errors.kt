@@ -42,11 +42,11 @@ fun Exception.toPurchasesError(): PurchasesError {
             PurchasesError(PurchasesErrorCode.InsufficientPermissionsError, localizedMessage)
         }
         else -> PurchasesError(PurchasesErrorCode.UnknownError, localizedMessage)
-    }
+    }.also { errorLog(it.toString()) }
 }
 
 fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
-    PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
+    PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage).also { errorLog(it.toString()) }
 
 fun HTTPClient.Result.toPurchasesError(): PurchasesError {
     var errorCode: Int? = null
@@ -60,7 +60,7 @@ fun HTTPClient.Result.toPurchasesError(): PurchasesError {
         ?: PurchasesError(
             PurchasesErrorCode.UnknownBackendError,
             "Backend Code: ${errorCode ?: "N/A"} - $errorMessage"
-        )
+        ).also { errorLog(it.toString()) }
 }
 
 fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
@@ -121,7 +121,7 @@ fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): Purchas
         BillingClient.BillingResponseCode.SERVICE_TIMEOUT -> PurchasesErrorCode.StoreProblemError
         else -> PurchasesErrorCode.UnknownError
     }
-    return PurchasesError(errorCode, underlyingErrorMessage)
+    return PurchasesError(errorCode, underlyingErrorMessage).also { errorLog(it.toString()) }
 }
 
 data class SubscriberAttributeError(
