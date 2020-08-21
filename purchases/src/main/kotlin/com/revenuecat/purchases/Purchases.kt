@@ -37,7 +37,6 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.attributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
 import com.revenuecat.purchases.common.attribution.AttributionData
-import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
@@ -64,6 +63,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -701,7 +701,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmSynthetic
     internal fun postAttributionData(
         jsonObject: JSONObject,
-        network: com.revenuecat.purchases.common.attribution.AttributionNetwork,
+        network: CommonAttributionNetwork,
         networkUserId: String?
     ) {
         AdvertisingIdClient.getAdvertisingIdInfo(application) { adInfo ->
@@ -1609,9 +1609,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
 }
 
-internal fun Purchases.AttributionNetwork.convert(): AttributionNetwork {
-    AttributionNetwork.values().forEach { network ->
+internal fun Purchases.AttributionNetwork.convert(): CommonAttributionNetwork {
+    CommonAttributionNetwork.values().forEach { network ->
         if (network.serverValue == this.serverValue) return network
     }
-    return AttributionNetwork.ADJUST
+    return CommonAttributionNetwork.ADJUST
 }

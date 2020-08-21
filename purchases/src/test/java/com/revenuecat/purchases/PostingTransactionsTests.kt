@@ -98,7 +98,11 @@ class PostingTransactionsTests {
             expectedAttributes
         }
         every {
-            subscriberAttributesManagerMock.markAsSynced(appUserId, capture(attributesToMarkAsSyncSlot), capture(attributesErrorsSlot))
+            subscriberAttributesManagerMock.markAsSynced(
+                appUserId,
+                capture(attributesToMarkAsSyncSlot),
+                capture(attributesErrorsSlot)
+            )
         } just runs
 
         underTest = Purchases(
@@ -129,8 +133,7 @@ class PostingTransactionsTests {
 
     @Test
     fun `durations are sent when posting to backend`() {
-        postReceiptSuccess =
-            PostReceiptSuccessContainer()
+        postReceiptSuccess = PostReceiptSuccessContainer()
 
         val expectedSubscriptionPeriod = "P1M"
         val expectedIntroPricePeriod = "P2M"
@@ -149,14 +152,14 @@ class PostingTransactionsTests {
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
-            onSuccess = {_,_ -> },
-            onError = {_,_ -> }
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue()
         assertThat(postedProductInfoSlot.captured.duration).isEqualTo(expectedSubscriptionPeriod)
         assertThat(postedProductInfoSlot.captured.introDuration).isEqualTo(expectedIntroPricePeriod)
         assertThat(postedProductInfoSlot.captured.trialDuration).isEqualTo(expectedFreeTrialPeriod)
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
@@ -172,8 +175,7 @@ class PostingTransactionsTests {
 
     @Test
     fun `inapps send null durations when posting to backend`() {
-        postReceiptSuccess =
-            PostReceiptSuccessContainer()
+        postReceiptSuccess = PostReceiptSuccessContainer()
 
         val mockSkuDetails = mockk<SkuDetails>().also {
             every { it.sku } returns "product_id"
@@ -196,7 +198,7 @@ class PostingTransactionsTests {
         assertThat(postedProductInfoSlot.captured.duration).isNull()
         assertThat(postedProductInfoSlot.captured.introDuration).isNull()
         assertThat(postedProductInfoSlot.captured.trialDuration).isNull()
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
