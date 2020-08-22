@@ -25,7 +25,7 @@ jobs:
           key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
       - run:
           name: Download Dependencies
-          command: ./gradlew androidDependencies
+          command: ./gradlew androidDependencies --no-daemon
       - save_cache:
           paths:
             - ~/.gradle
@@ -33,13 +33,13 @@ jobs:
       - android/restore-build-cache
       - run:
           name: Run Tests
-          command: ./gradlew lint test
+          command: ./gradlew lint test --no-daemon
       - run:
           name: Test coverage report
-          command: ./gradlew testDebugUnitTestCoverage coveralls
+          command: ./gradlew testDebugUnitTestCoverage coveralls --no-daemon
       - run:
           name: Detekt
-          command: ./gradlew detektAll
+          command: ./gradlew detektAll --no-daemon
       - android/save-build-cache
       - store_artifacts:
           path: purchases/build/reports
