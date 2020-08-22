@@ -5,7 +5,7 @@ executors:
   android-executor:
     docker:
       - image: circleci/android:api-28
-    resource_class: medium+
+    resource_class: medium
     working_directory: ~/purchases-android
     environment:
       JVM_OPTS: -Xmx4096m
