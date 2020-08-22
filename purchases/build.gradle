@@ -31,7 +31,7 @@ android {
     
     testOptions {
         unitTests.includeAndroidResources = true
-        all {
+        unitTests.all {
             maxHeapSize = "1024m"
         }
     }
