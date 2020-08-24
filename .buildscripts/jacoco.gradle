@@ -1,64 +1,86 @@
-apply plugin: 'jacoco'
-jacoco { toolVersion = "0.8.5" }
+def coveredProject = subprojects
 
-tasks.withType(Test) {
-    jacoco.includeNoLocationClasses = true
-    jacoco.excludes = ['jdk.internal.*']
+apply plugin: 'jacoco'
+
+configure(coveredProject) { prj ->
+    apply plugin: 'jacoco'
+
+    jacoco {
+        toolVersion = "0.8.5"
+    }
+
+    task jacocoReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
+        group = 'Reporting'
+        description = 'Generate Jacoco coverage'
+
+        reports {
+            html.enabled = true
+            xml.enabled = true
+            csv.enabled = false
+        }
+        final fileFilter = ['**/R.class',
+                            '**/R$*.class',
+                            '**/*$ViewInjector*.*',
+                            '**/*$ViewBinder*.*',
+                            '**/BuildConfig.*',
+                            '**/Manifest*.*',
+                            '**/*$Lambda$*.*', // Jacoco can not handle several "$" in class name.
+                            '**/*$inlined$*.*' // Kotlin specific, Jacoco can not handle several "$" in class name.
+        ]
+        final kotlinTree = fileTree(dir: "${prj.buildDir}/tmp/kotlin-classes/debug", excludes: fileFilter)
+        final javacTree = fileTree(dir: "${prj.buildDir}/intermediates/javac/debug", excludes: fileFilter)
+        final mainSrc = [
+                "${prj.projectDir}/src/main/java",
+                "${prj.projectDir}/src/main/kotlin",
+        ]
+
+        sourceDirectories.setFrom(files(mainSrc))
+        getClassDirectories().setFrom(files([kotlinTree, javacTree]))
+        executionData.setFrom fileTree(dir: prj.buildDir, includes: [
+                'jacoco/testDebugUnitTest.exec', 'outputs/code-coverage/connected/*coverage.ec'
+        ])
+    }
 }
 
-project.afterEvaluate {
+task jacocoFullReport(type: JacocoReport, group: 'Coverage reports') {
+    group = 'Reporting'
+    description = 'Generates an aggregate report from all subprojects'
 
-    (android.hasProperty('applicationVariants')
-            ? android.'applicationVariants'
-            : android.'libraryVariants').all { variant ->
-        def variantName = variant.name
-        def unitTestTask = "test${variantName.capitalize()}UnitTest"
+    tasks.withType(Test) {
+        ignoreFailures true
+    }
 
-        tasks.create(name: "${unitTestTask}Coverage", type: JacocoReport, dependsOn: [
-                "$unitTestTask",
-        ]) {
-            group = "Reporting"
-            description = "Generate Jacoco coverage reports for the ${variantName.capitalize()} build"
+    def projects = coveredProject
+    //noinspection GrUnresolvedAccess
+    dependsOn(projects.jacocoReport)
 
-            reports {
-                html.enabled = true
-                xml.enabled = true
-                csv.enabled = false
-            }
+    final source = files(projects.jacocoReport.sourceDirectories)
 
-            getClassDirectories().setFrom(
-                    fileTree(
-                            dir: "$project.rootDir/purchases/build/tmp/kotlin-classes/debug",
-                            excludes: ['**/R.class',
-                                       '**/R$*.class',
-                                       '**/*$ViewInjector*.*',
-                                       '**/*$ViewBinder*.*',
-                                       '**/BuildConfig.*',
-                                       '**/Manifest*.*',
-                                       '**/*$Lambda$*.*', // Jacoco can not handle several "$" in class name.
-                                       '**/*$inlined$*.*', // Kotlin specific, Jacoco can not handle several "$" in class name.
-                                       '**/*Module.*', // Modules for Dagger.
-                                       '**/*Dagger*.*', // Dagger auto-generated code.
-                                       '**/*MembersInjector*.*', // Dagger auto-generated code.
-                                       '**/*_Provide*Factory*.*'] // Dagger auto-generated code.
-                    )
-            )
+    additionalSourceDirs.setFrom source
+    sourceDirectories.setFrom source
 
-            def coverageSourceDirs = [
-                    "$project.rootDir/purchases/src/main/java",
-                    "$project.rootDir/purchases/src/main/kotlin",
-            ]
-            additionalSourceDirs.setFrom(files(coverageSourceDirs))
-            sourceDirectories.setFrom(files(coverageSourceDirs))
+    classDirectories.setFrom files(projects.jacocoReport.classDirectories)
+    executionData.setFrom files(projects.jacocoReport.executionData)
 
-            executionData(files([
-                    "$project.rootDir/purchases/build/jacoco/${unitTestTask}.exec",
-            ]))
+    reports {
+        html {
+            enabled true
+            destination file('build/reports/jacoco/html')
         }
+        xml {
+            enabled true
+            destination file('build/reports/jacoco/jacocoFullReport.xml')
+        }
+    }
+
+    doFirst {
+        //noinspection GroovyAssignabilityCheck
+        executionData.setFrom files(executionData.findAll { it.exists() })
     }
 }
 
 coveralls {
-    sourceDirs = ['purchases/src/main/kotlin', 'purchases/src/main/kotlin']
+//    print("$jacocoFullReport.sourceDirectories")
+//    sourceDirs = ['purchases/src/main/kotlin', 'purchases/src/main/kotlin']
     jacocoReportPath 'purchases/build/reports/jacoco/testDebugUnitTestCoverage/testDebugUnitTestCoverage.xml'
 }
