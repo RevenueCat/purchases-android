@@ -1611,8 +1611,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 }
 
 internal fun Purchases.AttributionNetwork.convert(): CommonAttributionNetwork {
-    CommonAttributionNetwork.values().forEach { network ->
-        if (network.serverValue == this.serverValue) return network
-    }
-    return CommonAttributionNetwork.ADJUST
+    return CommonAttributionNetwork.values()
+        .first { attributionNetwork -> attributionNetwork.serverValue == this.serverValue }
 }
