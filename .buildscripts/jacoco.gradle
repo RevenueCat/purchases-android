@@ -82,5 +82,5 @@ task jacocoFullReport(type: JacocoReport, group: 'Coverage reports') {
 coveralls {
 //    print("$jacocoFullReport.sourceDirectories")
 //    sourceDirs = ['purchases/src/main/kotlin', 'purchases/src/main/kotlin']
-    jacocoReportPath 'purchases/build/reports/jacoco/testDebugUnitTestCoverage/testDebugUnitTestCoverage.xml'
+    jacocoReportPath 'build/reports/jacoco/testDebugUnitTestCoverage/testDebugUnitTestCoverage.xml'
 }
