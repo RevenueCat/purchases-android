@@ -34,9 +34,9 @@ jobs:
       - run:
           name: Run Tests
           command: ./gradlew lint test --no-daemon --max-workers=2
-      - run:
-          name: Test coverage report
-          command: ./gradlew jacocoFullReport coveralls --no-daemon --max-workers=2
+#      - run:
+#          name: Test coverage report
+#          command: ./gradlew jacocoFullReport coveralls --no-daemon --max-workers=2
       - run:
           name: Detekt
           command: ./gradlew detektAll --no-daemon --max-workers=2
