@@ -2,6 +2,11 @@ def coveredProject = subprojects
 
 apply plugin: 'jacoco'
 
+tasks.withType(Test) {
+    jacoco.includeNoLocationClasses = true
+    jacoco.excludes = ['jdk.internal.*']
+}
+
 configure(coveredProject) { prj ->
     apply plugin: 'jacoco'
 
