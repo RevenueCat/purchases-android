@@ -25,7 +25,7 @@ jobs:
           key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
       - run:
           name: Download Dependencies
-          command: ./gradlew androidDependencies --no-daemon --max-workers=2 
+          command: ./gradlew androidDependencies --no-daemon --max-workers=2
       - save_cache:
           paths:
             - ~/.gradle
@@ -36,7 +36,7 @@ jobs:
           command: ./gradlew lint test --no-daemon --max-workers=2
       - run:
           name: Test coverage report
-          command: ./gradlew testDebugUnitTestCoverage coveralls --no-daemon --max-workers=2
+          command: ./gradlew jacocoFullReport coveralls --no-daemon --max-workers=2
       - run:
           name: Detekt
           command: ./gradlew detektAll --no-daemon --max-workers=2
