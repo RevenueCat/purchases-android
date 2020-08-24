@@ -1,2 +1,5 @@
+include ':utils'
+include ':common'
+include ':public'
 include ':purchases', ':purchases-sample'
 include ':purchases-sample-java'

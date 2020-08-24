@@ -5,9 +5,10 @@ executors:
   android-executor:
     docker:
       - image: circleci/android:api-28
+    resource_class: medium
     working_directory: ~/purchases-android
     environment:
-      JVM_OPTS: -Xmx3200m
+      JVM_OPTS: -Xmx4096m
       CIRCLE_JDK_VERSION: oraclejdk8
 
 jobs:
@@ -21,36 +22,36 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}
       - run:
           name: Download Dependencies
-          command: ./gradlew androidDependencies
+          command: ./gradlew androidDependencies --no-daemon --max-workers=2
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}
       - android/restore-build-cache
       - run:
           name: Run Tests
-          command: ./gradlew lint test
-      - run:
-          name: Test coverage report
-          command: ./gradlew testDebugUnitTestCoverage coveralls
+          command: ./gradlew lint test --no-daemon --max-workers=2
+#      - run:
+#          name: Test coverage report
+#          command: ./gradlew jacocoFullReport coveralls --no-daemon --max-workers=2
       - run:
           name: Detekt
-          command: ./gradlew detektAll
+          command: ./gradlew detektAll --no-daemon --max-workers=2
       - android/save-build-cache
       - store_artifacts:
-          path: purchases/build/reports
+          path: build/reports
       - store_test_results:
-          path: purchases/build/test-results
+          path: build/test-results
 
   docs-deploy:
     executor: android-executor
     steps:
       - checkout
       - restore_cache:
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}
       - android/restore-build-cache
       - run:
           name: Install awscli
@@ -70,7 +71,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}
       - run:
           name: Deployment
           command: |
@@ -85,7 +86,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}
       - run:
           name: Deployment
           command: |
@@ -100,7 +101,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}
       - android/restore-build-cache
       - run:
           name: Assemble
@@ -108,7 +109,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.gradle
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}
+          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}
       - android/save-build-cache
 
 workflows:

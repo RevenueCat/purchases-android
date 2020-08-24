@@ -2,7 +2,6 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: "kotlin-android-extensions"
 apply plugin: 'kotlin-kapt'
-apply from: '../.buildscripts/jacoco.gradle'
 
 android {
     compileSdkVersion 28
@@ -31,11 +30,17 @@ android {
     
     testOptions {
         unitTests.includeAndroidResources = true
+        unitTests.all {
+            maxHeapSize = "1024m"
+        }
     }
 }
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation project(":common")
+    implementation project(":utils")
+    api project(":public")
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
     implementation 'androidx.annotation:annotation:1.1.0'
     api 'com.android.billingclient:billing:3.0.0'

@@ -2,8 +2,20 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.attributes.SubscriberAttribute
-import com.revenuecat.purchases.attributes.SubscriberAttributesManager
+import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BillingWrapper
+import com.revenuecat.purchases.common.IdentityManager
+import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
+import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
+import com.revenuecat.purchases.common.ProductInfo
+import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
+import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.attributes.SubscriberAttribute
+import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
+import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -86,7 +98,11 @@ class PostingTransactionsTests {
             expectedAttributes
         }
         every {
-            subscriberAttributesManagerMock.markAsSynced(appUserId, capture(attributesToMarkAsSyncSlot), capture(attributesErrorsSlot))
+            subscriberAttributesManagerMock.markAsSynced(
+                appUserId,
+                capture(attributesToMarkAsSyncSlot),
+                capture(attributesErrorsSlot)
+            )
         } just runs
 
         underTest = Purchases(
@@ -106,7 +122,10 @@ class PostingTransactionsTests {
             appConfig = AppConfig(
                 context = mockk(relaxed = true),
                 observerMode = false,
-                platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+                platformInfo = PlatformInfo(
+                    flavor = "native",
+                    version = "3.2.0"
+                ),
                 proxyURL = null
             )
         )
@@ -133,14 +152,14 @@ class PostingTransactionsTests {
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
-            onSuccess = {_,_ -> },
-            onError = {_,_ -> }
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue()
         assertThat(postedProductInfoSlot.captured.duration).isEqualTo(expectedSubscriptionPeriod)
         assertThat(postedProductInfoSlot.captured.introDuration).isEqualTo(expectedIntroPricePeriod)
         assertThat(postedProductInfoSlot.captured.trialDuration).isEqualTo(expectedFreeTrialPeriod)
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
@@ -172,14 +191,14 @@ class PostingTransactionsTests {
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
-            onSuccess = {_,_ -> },
-            onError = {_,_ -> }
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue()
         assertThat(postedProductInfoSlot.captured.duration).isNull()
         assertThat(postedProductInfoSlot.captured.introDuration).isNull()
         assertThat(postedProductInfoSlot.captured.trialDuration).isNull()
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,

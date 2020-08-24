@@ -21,9 +21,32 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.attributes.SubscriberAttributeKey
-import com.revenuecat.purchases.attributes.SubscriberAttributesManager
-import com.revenuecat.purchases.caching.DeviceCache
+import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BillingWrapper
+import com.revenuecat.purchases.common.Config
+import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.IdentityManager
+import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.ProductInfo
+import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
+import com.revenuecat.purchases.common.PurchaseType
+import com.revenuecat.purchases.common.PurchaseWrapper
+import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.attributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
+import com.revenuecat.purchases.common.attribution.AttributionData
+import com.revenuecat.purchases.common.billingResponseToPurchasesError
+import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.createOfferings
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.getBillingResponseCodeName
+import com.revenuecat.purchases.common.isSuccessful
+import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.common.toSKUType
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
@@ -40,6 +63,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -677,7 +701,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmSynthetic
     internal fun postAttributionData(
         jsonObject: JSONObject,
-        network: AttributionNetwork,
+        network: CommonAttributionNetwork,
         networkUserId: String?
     ) {
         AdvertisingIdClient.getAdvertisingIdInfo(application) { adInfo ->
@@ -747,11 +771,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         handleErrorFetchingOfferings(error, completion)
                     })
                 } catch (error: JSONException) {
+                    errorLog("JSONException when building Offerings object. Message: ${ error.localizedMessage }")
                     handleErrorFetchingOfferings(
                         PurchasesError(
                             PurchasesErrorCode.UnexpectedBackendResponseError,
                             error.localizedMessage
-                        ),
+                        ).also { errorLog(it) },
                         completion
                     )
                 }
@@ -873,7 +898,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 )
             } else {
                 onError?.let { onError ->
-                    onError(purchase, PurchasesError(PurchasesErrorCode.PaymentPendingError))
+                    onError(
+                        purchase,
+                        PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) }
+                    )
                 }
             }
         }
@@ -1114,6 +1142,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 }.let { purchaseCallbacks ->
                     purchaseCallbacks.forEach { (_, callback) ->
                         val purchasesError = responseCode.billingResponseToPurchasesError(message)
+                            .also { errorLog(it) }
                         dispatch {
                             callback.onError(
                                 purchasesError,
@@ -1172,7 +1201,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         } ?: dispatch {
             listener.onError(
-                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError),
+                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) },
                 false
             )
         }
@@ -1201,7 +1230,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     debugLog("Couldn't find existing purchase for sku: ${upgradeInfo.oldSku}")
                     dispatch {
                         listener.onError(
-                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError),
+                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError).also { errorLog(it) },
                             false
                         )
                     }
@@ -1212,7 +1241,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 debugLog(message)
                 dispatch {
                     listener.onError(
-                        result.responseCode.billingResponseToPurchasesError(message),
+                        result.responseCode.billingResponseToPurchasesError(message).also { errorLog(it) },
                         false
                     )
                 }
@@ -1282,7 +1311,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Enable debug logging. Useful for debugging issues with the lovely team @RevenueCat
          */
         @JvmStatic
-        var debugLogsEnabled = false
+        var debugLogsEnabled = Config.debugLogsEnabled
 
         @JvmSynthetic
         internal var backingFieldSharedInstance: Purchases? = null
@@ -1315,7 +1344,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = "3.5.0-SNAPSHOT"
+        val frameworkVersion = Config.frameworkVersion
 
         /**
          * Set this property to your proxy URL before configuring Purchases *only*
@@ -1488,8 +1517,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             network: AttributionNetwork,
             networkUserId: String? = null
         ) {
-            backingFieldSharedInstance?.postAttributionData(data, network, networkUserId) ?: {
-                postponedAttributionData.add(AttributionData(data, network, networkUserId))
+            backingFieldSharedInstance?.postAttributionData(data, network.convert(), networkUserId) ?: {
+                postponedAttributionData.add(
+                    AttributionData(
+                        data,
+                        network.convert(),
+                        networkUserId
+                    )
+                )
             }.invoke()
         }
 
@@ -1572,10 +1607,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         MPARTICLE(6)
     }
 
-    internal data class AttributionData(
-        val data: JSONObject,
-        val network: AttributionNetwork,
-        val networkUserId: String?
-    )
     // endregion
+}
+
+internal fun Purchases.AttributionNetwork.convert(): CommonAttributionNetwork {
+    return CommonAttributionNetwork.values()
+        .first { attributionNetwork -> attributionNetwork.serverValue == this.serverValue }
 }
