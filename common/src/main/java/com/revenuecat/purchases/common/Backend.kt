@@ -91,10 +91,10 @@ class Backend(
                         if (result.isSuccessful()) {
                             onSuccess(result.body!!.buildPurchaserInfo())
                         } else {
-                            onError(result.toPurchasesError())
+                            onError(result.toPurchasesError().also { errorLog(it) })
                         }
                     } catch (e: JSONException) {
-                        onError(e.toPurchasesError())
+                        onError(e.toPurchasesError().also { errorLog(it) })
                     }
                 }
             }
@@ -167,13 +167,13 @@ class Backend(
                             onSuccess(result.body!!.buildPurchaserInfo(), attributeErrors)
                         } else {
                             onError(
-                                result.toPurchasesError(),
+                                result.toPurchasesError().also { errorLog(it) },
                                 result.responseCode < HTTP_SERVER_ERROR_CODE,
                                 attributeErrors
                             )
                         }
                     } catch (e: JSONException) {
-                        onError(e.toPurchasesError(), false, emptyList())
+                        onError(e.toPurchasesError().also { errorLog(it) }, false, emptyList())
                     }
                 }
             }
@@ -226,10 +226,10 @@ class Backend(
                         try {
                             onSuccess(result.body!!)
                         } catch (e: JSONException) {
-                            onError(e.toPurchasesError())
+                            onError(e.toPurchasesError().also { errorLog(it) })
                         }
                     } else {
-                        onError(result.toPurchasesError())
+                        onError(result.toPurchasesError().also { errorLog(it) })
                     }
                 }
             }
@@ -296,7 +296,7 @@ class Backend(
                 if (result.isSuccessful()) {
                     onSuccessHandler()
                 } else {
-                    onErrorHandler(result.toPurchasesError())
+                    onErrorHandler(result.toPurchasesError().also { errorLog(it) })
                 }
             }
         })
@@ -329,7 +329,7 @@ class Backend(
                 if (result.isSuccessful()) {
                     onSuccessHandler()
                 } else {
-                    val error = result.toPurchasesError()
+                    val error = result.toPurchasesError().also { errorLog(it) }
                     var attributeErrors: List<SubscriberAttributeError> = emptyList()
                     result.body?.takeIf { error.code == PurchasesErrorCode.InvalidSubscriberAttributesError }
                         ?.let { body ->

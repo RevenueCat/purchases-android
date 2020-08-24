@@ -776,7 +776,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         PurchasesError(
                             PurchasesErrorCode.UnexpectedBackendResponseError,
                             error.localizedMessage
-                        ).also { errorLog(it.toString()) },
+                        ).also { errorLog(it) },
                         completion
                     )
                 }
@@ -900,7 +900,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 onError?.let { onError ->
                     onError(
                         purchase,
-                        PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it.toString()) }
+                        PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) }
                     )
                 }
             }
@@ -1142,6 +1142,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 }.let { purchaseCallbacks ->
                     purchaseCallbacks.forEach { (_, callback) ->
                         val purchasesError = responseCode.billingResponseToPurchasesError(message)
+                            .also { errorLog(it) }
                         dispatch {
                             callback.onError(
                                 purchasesError,
@@ -1200,7 +1201,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         } ?: dispatch {
             listener.onError(
-                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it.toString()) },
+                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) },
                 false
             )
         }
@@ -1229,7 +1230,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     debugLog("Couldn't find existing purchase for sku: ${upgradeInfo.oldSku}")
                     dispatch {
                         listener.onError(
-                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError).also { errorLog(it.toString()) },
+                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError).also { errorLog(it) },
                             false
                         )
                     }
@@ -1240,7 +1241,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 debugLog(message)
                 dispatch {
                     listener.onError(
-                        result.responseCode.billingResponseToPurchasesError(message),
+                        result.responseCode.billingResponseToPurchasesError(message).also { errorLog(it) },
                         false
                     )
                 }

@@ -25,12 +25,12 @@ open class Dispatcher(
             try {
                 onCompletion(call())
             } catch (e: JSONException) {
-                onError(e.toPurchasesError())
+                onError(e.toPurchasesError().also { errorLog(it) })
             } catch (e: IOException) {
-                onError(e.toPurchasesError())
+                onError(e.toPurchasesError().also { errorLog(it) })
             } catch (e: SecurityException) {
                 // This can happen if a user disables the INTERNET permission.
-                onError(e.toPurchasesError())
+                onError(e.toPurchasesError().also { errorLog(it) })
             }
         }
     }
