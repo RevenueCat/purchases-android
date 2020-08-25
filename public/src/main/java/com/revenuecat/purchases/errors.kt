@@ -13,11 +13,6 @@ class PurchasesError(
     // Message explaining the error
     val message: String = code.description
 
-    // TODO: comment this out? what is this?
-//    init {
-//        errorLog("${code.description}${underlyingErrorMessage?.let { " | $it" }}")
-//    }
-
     override fun toString(): String {
         return "PurchasesError(code=$code, underlyingErrorMessage=$underlyingErrorMessage, message='$message')"
     }

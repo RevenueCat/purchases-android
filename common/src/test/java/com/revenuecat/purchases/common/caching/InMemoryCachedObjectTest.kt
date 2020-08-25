@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.common.caching
 
 import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.utils.DateProvider
+import com.revenuecat.purchases.common.DateProvider
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test

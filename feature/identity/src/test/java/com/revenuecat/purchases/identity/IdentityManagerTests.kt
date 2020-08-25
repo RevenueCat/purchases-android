@@ -5,7 +5,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every

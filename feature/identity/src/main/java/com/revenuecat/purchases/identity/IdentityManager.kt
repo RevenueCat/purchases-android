@@ -3,7 +3,7 @@ package com.revenuecat.purchases.identity
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.common.debugLog
 import java.util.Locale
 import java.util.UUID

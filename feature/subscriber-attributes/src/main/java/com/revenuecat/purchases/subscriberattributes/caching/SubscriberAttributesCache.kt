@@ -3,8 +3,9 @@
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.
 //
 
-package com.revenuecat.purchases.common.caching
+package com.revenuecat.purchases.subscriberattributes.caching
 
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.buildLegacySubscriberAttributes

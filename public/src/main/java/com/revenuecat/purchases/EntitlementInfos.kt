@@ -9,7 +9,6 @@ import kotlinx.android.parcel.Parcelize
  * entitlement identifier.
  */
 @Parcelize
-// TODO: make constructor internal
 class EntitlementInfos constructor(
     val all: Map<String, EntitlementInfo>
 ) : Parcelable {

@@ -81,7 +81,7 @@ class Backend(
                 if (result.isSuccessful()) {
                     onCompletedSuccessfully()
                 } else {
-                    val error = result.toPurchasesError()
+                    val error = result.toPurchasesError().also { errorLog(it) }
                     val notAnInternalServerError = result.responseCode < HTTP_SERVER_ERROR_CODE
                     onCompletedWithErrors(error, notAnInternalServerError, result.body)
                 }
@@ -120,10 +120,10 @@ class Backend(
                         if (result.isSuccessful()) {
                             onSuccess(result.body!!.buildPurchaserInfo())
                         } else {
-                            onError(result.toPurchasesError())
+                            onError(result.toPurchasesError().also { errorLog(it) })
                         }
                     } catch (e: JSONException) {
-                        onError(e.toPurchasesError())
+                        onError(e.toPurchasesError().also { errorLog(it) })
                     }
                 }
             }
@@ -194,13 +194,13 @@ class Backend(
                             onSuccess(result.body!!.buildPurchaserInfo(), result.body)
                         } else {
                             onError(
-                                result.toPurchasesError(),
+                                result.toPurchasesError().also { errorLog(it) },
                                 result.responseCode < HTTP_SERVER_ERROR_CODE,
                                 result.body
                             )
                         }
                     } catch (e: JSONException) {
-                        onError(e.toPurchasesError(), false, null)
+                        onError(e.toPurchasesError().also { errorLog(it) }, false, null)
                     }
                 }
             }
@@ -253,10 +253,10 @@ class Backend(
                         try {
                             onSuccess(result.body!!)
                         } catch (e: JSONException) {
-                            onError(e.toPurchasesError())
+                            onError(e.toPurchasesError().also { errorLog(it) })
                         }
                     } else {
-                        onError(result.toPurchasesError())
+                        onError(result.toPurchasesError().also { errorLog(it) })
                     }
                 }
             }
@@ -323,7 +323,7 @@ class Backend(
                 if (result.isSuccessful()) {
                     onSuccessHandler()
                 } else {
-                    onErrorHandler(result.toPurchasesError())
+                    onErrorHandler(result.toPurchasesError().also { errorLog(it) })
                 }
             }
         })

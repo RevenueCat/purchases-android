@@ -17,12 +17,12 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
+import org.robolectric.annotation.Config as AnnotationConfig
 import java.net.URL
 import java.util.HashMap
 
 @RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
+@AnnotationConfig(manifest = AnnotationConfig.NONE)
 class HTTPClientTest {
 
     companion object {
@@ -49,7 +49,7 @@ class HTTPClientTest {
     private lateinit var appConfig: AppConfig
 
     private val expectedPlatformInfo = PlatformInfo("flutter", "2.1.0")
-    
+
     @Before
     fun setupBefore() {
         appConfig = AppConfig(
@@ -153,7 +153,7 @@ class HTTPClientTest {
         assertThat(request.getHeader("X-Platform-Version")).isEqualTo("${Build.VERSION.SDK_INT}")
         assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo(expectedPlatformInfo.flavor)
         assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo(expectedPlatformInfo.version)
-        assertThat(request.getHeader("X-Version")).isEqualTo(com.revenuecat.purchases.common.Config.frameworkVersion)
+        assertThat(request.getHeader("X-Version")).isEqualTo(Config.frameworkVersion)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")

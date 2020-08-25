@@ -3,8 +3,8 @@ package com.revenuecat.purchases.subscriberattributes
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.caching.SubscriberAttributesCache
-import com.revenuecat.purchases.common.caching.SubscriberAttributesPerAppUserIDMap
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesPerAppUserIDMap
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just

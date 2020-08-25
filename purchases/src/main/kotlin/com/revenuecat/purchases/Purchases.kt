@@ -34,10 +34,8 @@ import com.revenuecat.purchases.common.PurchaseType
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.attribution.AttributionData
-import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -56,6 +54,7 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesBackend
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.util.AdvertisingIdClient
@@ -68,6 +67,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -705,7 +705,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmSynthetic
     internal fun postAttributionData(
         jsonObject: JSONObject,
-        network: com.revenuecat.purchases.common.attribution.AttributionNetwork,
+        network: CommonAttributionNetwork,
         networkUserId: String?
     ) {
         AdvertisingIdClient.getAdvertisingIdInfo(application) { adInfo ->
@@ -775,11 +775,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         handleErrorFetchingOfferings(error, completion)
                     })
                 } catch (error: JSONException) {
+                    errorLog("JSONException when building Offerings object. Message: ${ error.localizedMessage }")
                     handleErrorFetchingOfferings(
                         PurchasesError(
                             PurchasesErrorCode.UnexpectedBackendResponseError,
                             error.localizedMessage
-                        ),
+                        ).also { errorLog(it) },
                         completion
                     )
                 }
@@ -901,7 +902,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 )
             } else {
                 onError?.let { onError ->
-                    onError(purchase, PurchasesError(PurchasesErrorCode.PaymentPendingError))
+                    onError(
+                        purchase,
+                        PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) }
+                    )
                 }
             }
         }
@@ -1142,6 +1146,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 }.let { purchaseCallbacks ->
                     purchaseCallbacks.forEach { (_, callback) ->
                         val purchasesError = responseCode.billingResponseToPurchasesError(message)
+                            .also { errorLog(it) }
                         dispatch {
                             callback.onError(
                                 purchasesError,
@@ -1200,7 +1205,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         } ?: dispatch {
             listener.onError(
-                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError),
+                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) },
                 false
             )
         }
@@ -1229,7 +1234,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     debugLog("Couldn't find existing purchase for sku: ${upgradeInfo.oldSku}")
                     dispatch {
                         listener.onError(
-                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError),
+                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError).also { errorLog(it) },
                             false
                         )
                     }
@@ -1240,7 +1245,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 debugLog(message)
                 dispatch {
                     listener.onError(
-                        result.responseCode.billingResponseToPurchasesError(message),
+                        result.responseCode.billingResponseToPurchasesError(message).also { errorLog(it) },
                         false
                     )
                 }
@@ -1611,9 +1616,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
 }
 
-internal fun Purchases.AttributionNetwork.convert(): AttributionNetwork {
-    AttributionNetwork.values().forEach { network ->
-        if (network.serverValue == this.serverValue) return network
-    }
-    return AttributionNetwork.ADJUST
+internal fun Purchases.AttributionNetwork.convert(): CommonAttributionNetwork {
+    return CommonAttributionNetwork.values()
+        .first { attributionNetwork -> attributionNetwork.serverValue == this.serverValue }
 }

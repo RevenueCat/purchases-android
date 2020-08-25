@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.subscriberattributes
 
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.caching.AppUserID
-import com.revenuecat.purchases.common.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 

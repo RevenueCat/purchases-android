@@ -109,20 +109,18 @@ fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseCodeName()
 }
 
 fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): PurchasesError {
-    log(underlyingErrorMessage)
     val errorCode = when (this) {
+        BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
+        BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
         BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED -> PurchasesErrorCode.PurchaseNotAllowedError
-        BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> PurchasesErrorCode.StoreProblemError
+        BillingClient.BillingResponseCode.ERROR,
+        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+        BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+        BillingClient.BillingResponseCode.SERVICE_TIMEOUT -> PurchasesErrorCode.StoreProblemError
         BillingClient.BillingResponseCode.OK -> PurchasesErrorCode.UnknownError
         BillingClient.BillingResponseCode.USER_CANCELED -> PurchasesErrorCode.PurchaseCancelledError
-        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE -> PurchasesErrorCode.StoreProblemError
-        BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> PurchasesErrorCode.PurchaseNotAllowedError
         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> PurchasesErrorCode.ProductNotAvailableForPurchaseError
         BillingClient.BillingResponseCode.DEVELOPER_ERROR -> PurchasesErrorCode.PurchaseInvalidError
-        BillingClient.BillingResponseCode.ERROR -> PurchasesErrorCode.StoreProblemError
-        BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> PurchasesErrorCode.ProductAlreadyPurchasedError
-        BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> PurchasesErrorCode.PurchaseNotAllowedError
-        BillingClient.BillingResponseCode.SERVICE_TIMEOUT -> PurchasesErrorCode.StoreProblemError
         else -> PurchasesErrorCode.UnknownError
     }
     return PurchasesError(errorCode, underlyingErrorMessage)

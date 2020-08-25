@@ -33,7 +33,6 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-// TODO: make constructor internal
 data class PurchaserInfo constructor(
     val entitlements: EntitlementInfos,
     @Deprecated(
@@ -43,9 +42,7 @@ data class PurchaserInfo constructor(
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
     val requestDate: Date,
-    // TODO: make private. Or maybe not?
     val jsonObject: JSONObject,
-    // TODO: make private
     val schemaVersion: Int,
     val firstSeen: Date,
     val originalAppUserId: String,

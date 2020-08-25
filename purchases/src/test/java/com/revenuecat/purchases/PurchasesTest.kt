@@ -21,6 +21,7 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
+import com.revenuecat.purchases.common.IdentityManager
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
@@ -29,12 +30,11 @@ import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseType
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.attribution.AttributionNetwork
+import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.toSKUType
-import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
@@ -70,6 +70,7 @@ import java.util.ConcurrentModificationException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
+import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -1041,7 +1042,7 @@ class PurchasesTest {
 
         val jsonObject = JSONObject()
         jsonObject.put("key", "value")
-        val network = AttributionNetwork.APPSFLYER
+        val network = CommonAttributionNetwork.APPSFLYER
 
         val jsonSlot = slot<JSONObject>()
         every {
@@ -1063,7 +1064,7 @@ class PurchasesTest {
     fun addAttributionConvertsStringStringMapToJsonObject() {
         setup()
 
-        val network = AttributionNetwork.APPSFLYER
+        val network = CommonAttributionNetwork.APPSFLYER
         val capturedJSONObject = slot<JSONObject>()
         every {
             mockBackend.postAttributionData(
@@ -2265,7 +2266,7 @@ class PurchasesTest {
     @Test
     fun `Data is successfully postponed if no instance is set`() {
         val jsonObject = JSONObject()
-        val network = AttributionNetwork.APPSFLYER
+        val network = CommonAttributionNetwork.APPSFLYER
 
         every {
             mockBackend.postAttributionData(appUserId, network, jsonObject, captureLambda())
@@ -2285,7 +2286,7 @@ class PurchasesTest {
 
     @Test
     fun `Data is successfully postponed if no instance is set when sending map`() {
-        val network = AttributionNetwork.APPSFLYER
+        val network = CommonAttributionNetwork.APPSFLYER
         val capturedJSONObject = slot<JSONObject>()
 
         every {
@@ -2308,7 +2309,7 @@ class PurchasesTest {
 
     @Test
     fun `GPS ID is automatically added`() {
-        val network = AttributionNetwork.APPSFLYER
+        val network = CommonAttributionNetwork.APPSFLYER
         val capturedJSONObject = slot<JSONObject>()
 
         every {
@@ -2338,7 +2339,7 @@ class PurchasesTest {
 
     @Test
     fun `GPS ID is not added if limited`() {
-        val network = AttributionNetwork.APPSFLYER
+        val network = CommonAttributionNetwork.APPSFLYER
         val capturedJSONObject = slot<JSONObject>()
 
         every {
@@ -2363,7 +2364,7 @@ class PurchasesTest {
 
     @Test
     fun `GPS ID is not added if not present`() {
-        val network = AttributionNetwork.APPSFLYER
+        val network = CommonAttributionNetwork.APPSFLYER
         val capturedJSONObject = slot<JSONObject>()
 
         every {
@@ -2395,7 +2396,7 @@ class PurchasesTest {
     fun `do not resend last attribution data to backend`() {
         setup()
 
-        val network = AttributionNetwork.APPSFLYER
+        val network = CommonAttributionNetwork.APPSFLYER
         val capturedJSONObject = slot<JSONObject>()
 
         every {
@@ -2422,7 +2423,7 @@ class PurchasesTest {
     fun `cache last sent attribution data`() {
         setup()
 
-        val network = AttributionNetwork.APPSFLYER
+        val network = CommonAttributionNetwork.APPSFLYER
         val capturedJSONObject = slot<JSONObject>()
 
         every {
@@ -2435,7 +2436,7 @@ class PurchasesTest {
         mockAdInfo(false, networkUserID)
 
         every {
-            mockCache.getCachedAttributionData(AttributionNetwork.APPSFLYER, appUserId)
+            mockCache.getCachedAttributionData(CommonAttributionNetwork.APPSFLYER, appUserId)
         } returns null
 
         Purchases.addAttributionData(mapOf("key" to "value"), Purchases.AttributionNetwork.APPSFLYER, networkUserID)
@@ -2451,7 +2452,7 @@ class PurchasesTest {
 
     @Test
     fun `network ID is set`() {
-        val network = AttributionNetwork.APPSFLYER
+        val network = CommonAttributionNetwork.APPSFLYER
         val capturedJSONObject = slot<JSONObject>()
 
         every {
@@ -3540,7 +3541,7 @@ class PurchasesTest {
                 cacheAppUserID(any())
             } just Runs
             every {
-                getCachedAttributionData(AttributionNetwork.APPSFLYER, appUserId)
+                getCachedAttributionData(CommonAttributionNetwork.APPSFLYER, appUserId)
             } returns null
             every {
                 setPurchaserInfoCacheTimestampToNow()
@@ -3635,7 +3636,7 @@ class PurchasesTest {
 
         every {
             mockCache.cacheAttributionData(
-                AttributionNetwork.APPSFLYER,
+                CommonAttributionNetwork.APPSFLYER,
                 appUserId,
                 listOfNotNull(adID.takeUnless { limitAdTrackingEnabled }, networkUserID).joinToString("_")
             )

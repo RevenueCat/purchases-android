@@ -3,9 +3,9 @@ package com.revenuecat.purchases.subscriberattributes
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.caching.SubscriberAttributeMap
-import com.revenuecat.purchases.common.caching.SubscriberAttributesCache
-import com.revenuecat.purchases.common.caching.SubscriberAttributesPerAppUserIDMap
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributeMap
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesPerAppUserIDMap
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk

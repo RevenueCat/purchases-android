@@ -22,6 +22,8 @@ plugins {
     id("com.savvasdalkitsis.module-dependency-graph").version("0.9")
 }
 
+apply(from = ".buildscripts/jacoco.gradle")
+
 dependencies {
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.8.0")
 }

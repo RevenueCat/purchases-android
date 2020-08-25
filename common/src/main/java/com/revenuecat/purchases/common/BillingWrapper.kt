@@ -154,7 +154,7 @@ class BillingWrapper(
                             onError(
                                 billingResult.responseCode.billingResponseToPurchasesError(
                                     "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
-                                )
+                                ).also { errorLog(it) }
                             )
                         }
                     }
@@ -231,7 +231,7 @@ class BillingWrapper(
                             onReceivePurchaseHistoryError(
                                 billingResult.responseCode.billingResponseToPurchasesError(
                                     "Error receiving purchase history. ${billingResult.toHumanReadableDescription()}"
-                                )
+                                ).also { errorLog(it) }
                             )
                         }
                     }
@@ -431,9 +431,9 @@ class BillingWrapper(
                         serviceRequests.remove().let { serviceRequest ->
                             mainHandler.post {
                                 serviceRequest(
-                                    billingResult.responseCode.billingResponseToPurchasesError(
-                                        message
-                                    )
+                                    billingResult.responseCode
+                                        .billingResponseToPurchasesError(message)
+                                        .also { errorLog(it) }
                                 )
                             }
                         }

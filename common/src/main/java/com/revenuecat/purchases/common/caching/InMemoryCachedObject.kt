@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.common.caching
 
-import com.revenuecat.purchases.utils.DateProvider
-import com.revenuecat.purchases.utils.DefaultDateProvider
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import java.util.Date
 
 class InMemoryCachedObject<T>(
