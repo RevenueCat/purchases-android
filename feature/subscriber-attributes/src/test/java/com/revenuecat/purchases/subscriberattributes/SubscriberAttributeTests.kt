@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.subscriberattributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.utils.DateProvider
+import com.revenuecat.purchases.common.DateProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.json.JSONException
