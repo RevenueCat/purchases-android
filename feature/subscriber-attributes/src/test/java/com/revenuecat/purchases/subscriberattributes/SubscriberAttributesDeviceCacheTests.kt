@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesPerAppUserIDMap
+import com.revenuecat.purchases.subscriberattributes.caching.legacySubscriberAttributesCacheKey
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk

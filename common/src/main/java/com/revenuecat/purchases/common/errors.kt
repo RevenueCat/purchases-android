@@ -65,6 +65,7 @@ fun HTTPClient.Result.toPurchasesError(): PurchasesError {
         )
 }
 
+@Suppress("ComplexMethod")
 fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
     return when (this) {
         BackendErrorCode.BackendInvalidPlatform -> PurchasesErrorCode.UnknownError
