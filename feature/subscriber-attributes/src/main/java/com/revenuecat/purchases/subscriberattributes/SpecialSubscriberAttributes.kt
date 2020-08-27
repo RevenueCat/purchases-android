@@ -45,9 +45,6 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
     class Custom(value: String) : SubscriberAttributeKey(value)
 
     sealed class DeviceIdentifiers {
-        object IDFA : SubscriberAttributeKey(SPECIAL_KEY_IDFA)
-        object IDFV : SubscriberAttributeKey(SPECIAL_KEY_IDFV)
-        object IP : SubscriberAttributeKey(SPECIAL_KEY_IP)
         object GPSAdID : SubscriberAttributeKey(SPECIAL_KEY_GPS_AD_ID)
         object AndroidID : SubscriberAttributeKey(SPECIAL_KEY_ANDROID_ID)
     }
