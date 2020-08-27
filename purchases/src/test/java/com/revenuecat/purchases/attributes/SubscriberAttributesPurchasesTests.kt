@@ -544,6 +544,13 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setOnesignalID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.OneSignal) { id ->
+            underTest.setOnesignalID(id)
+        }
+    }
+
     // endregion
 
     // region Campaign parameters

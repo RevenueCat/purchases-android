@@ -24,6 +24,7 @@ internal const val SPECIAL_KEY_ADJUST_ID = "\$adjustId"
 internal const val SPECIAL_KEY_APPSFLYER_ID = "\$appsflyerId"
 internal const val SPECIAL_KEY_FB_ANON_ID = "\$fbAnonId"
 internal const val SPECIAL_KEY_MPARTICLE_ID = "\$mparticleId"
+internal const val SPECIAL_KEY_ONESIGNAL_ID = "\$onesignalId"
 
 /**
  * Optional campaign parameters
@@ -56,6 +57,7 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
         object AppsFlyer : AttributionIds(SPECIAL_KEY_APPSFLYER_ID)
         object Facebook : AttributionIds(SPECIAL_KEY_FB_ANON_ID)
         object Mparticle : AttributionIds(SPECIAL_KEY_MPARTICLE_ID)
+        object OneSignal : AttributionIds(SPECIAL_KEY_ONESIGNAL_ID)
     }
 
     sealed class CampaignParameters(backendKey: String) : SubscriberAttributeKey(backendKey) {

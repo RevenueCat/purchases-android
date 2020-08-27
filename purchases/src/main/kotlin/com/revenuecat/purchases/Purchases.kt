@@ -672,6 +672,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // region Attribution IDs
 
     fun collectDeviceIdentifiers() {
+        debugLog("collectDeviceIdentifiers called")
         executeOnBackground {
             subscriberAttributesManager.collectDeviceIdentifiers(appUserID, application)
         }
@@ -719,6 +720,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             subscriberAttributesManager.setAttributionID(
                 SubscriberAttributeKey.AttributionIds.Mparticle,
                 mparticleID,
+                appUserID,
+                application
+            )
+        }
+    }
+
+    fun setOnesignalID(onesignalID: String?) {
+        debugLog("setMparticleID called")
+        executeOnBackground {
+            subscriberAttributesManager.setAttributionID(
+                SubscriberAttributeKey.AttributionIds.OneSignal,
+                onesignalID,
                 appUserID,
                 application
             )
