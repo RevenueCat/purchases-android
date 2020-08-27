@@ -17,11 +17,10 @@ internal typealias SubscriberAttributesPerAppUserIDMap = Map<AppUserID, Subscrib
 class SubscriberAttributesCache(
     internal val deviceCache: DeviceCache
 ) {
+
     internal val subscriberAttributesCacheKey: String by lazy {
         deviceCache.newKey("subscriberAttributes")
     }
-
-    // region subscriber attributes
 
     @Synchronized
     fun setAttributes(appUserID: AppUserID, attributesToBeSet: SubscriberAttributeMap) {
@@ -55,18 +54,6 @@ class SubscriberAttributesCache(
     fun getUnsyncedSubscriberAttributes(appUserID: String) =
         getAllStoredSubscriberAttributes(appUserID).filterUnsynced(appUserID)
 
-    private fun SubscriberAttributeMap.filterUnsynced(appUserID: AppUserID): SubscriberAttributeMap =
-        this.filterValues { !it.isSynced }
-            .also { unsyncedAttributesByKey ->
-                debugLog("Found ${unsyncedAttributesByKey.count()} unsynced attributes for appUserID: $appUserID \n" +
-                    if (unsyncedAttributesByKey.isNotEmpty()) {
-                        unsyncedAttributesByKey.values.joinToString("\n")
-                    } else {
-                        ""
-                    }
-                )
-            }
-
     @Synchronized
     fun clearSubscriberAttributesIfSyncedForSubscriber(appUserID: String) {
         val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes(appUserID)
@@ -89,6 +76,15 @@ class SubscriberAttributesCache(
         deleteSyncedSubscriberAttributesForOtherUsers(currentAppUserID)
     }
 
+    internal fun DeviceCache.putAttributes(
+        updatedSubscriberAttributesForAll: SubscriberAttributesPerAppUserIDMap
+    ) {
+        return deviceCache.putString(
+            subscriberAttributesCacheKey,
+            updatedSubscriberAttributesForAll.toJSONObject().toString()
+        )
+    }
+
     @Synchronized
     private fun deleteSyncedSubscriberAttributesForOtherUsers(currentAppUserID: String) {
         debugLog("Deleting old synced subscriber attributes that don't belong to $currentAppUserID.")
@@ -107,14 +103,16 @@ class SubscriberAttributesCache(
         deviceCache.putAttributes(filteredMap)
     }
 
-    internal fun DeviceCache.putAttributes(
-        updatedSubscriberAttributesForAll: SubscriberAttributesPerAppUserIDMap
-    ) {
-        return deviceCache.putString(
-            subscriberAttributesCacheKey,
-            updatedSubscriberAttributesForAll.toJSONObject().toString()
-        )
-    }
+    private fun SubscriberAttributeMap.filterUnsynced(appUserID: AppUserID): SubscriberAttributeMap =
+        this.filterValues { !it.isSynced }
+            .also { unsyncedAttributesByKey ->
+                debugLog("Found ${unsyncedAttributesByKey.count()} unsynced attributes for appUserID: $appUserID \n" +
+                    if (unsyncedAttributesByKey.isNotEmpty()) {
+                        unsyncedAttributesByKey.values.joinToString("\n")
+                    } else {
+                        ""
+                    }
+                )
+            }
 
-    // endregion
 }
