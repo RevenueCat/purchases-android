@@ -6,7 +6,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.SubscriberAttributeError
 
-class SubscriberAttributesBackend(
+class SubscriberAttributesPoster(
     private val backend: Backend
 ) {
 

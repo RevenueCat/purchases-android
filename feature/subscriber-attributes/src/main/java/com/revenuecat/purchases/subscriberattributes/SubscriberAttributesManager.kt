@@ -8,7 +8,7 @@ import com.revenuecat.purchases.common.errorLog
 
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
-    val backend: SubscriberAttributesBackend
+    val backend: SubscriberAttributesPoster
 ) {
 
     @Synchronized

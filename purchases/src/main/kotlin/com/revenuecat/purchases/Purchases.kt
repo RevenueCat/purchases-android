@@ -52,7 +52,7 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesBackend
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
@@ -1397,7 +1397,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 Dispatcher(service),
                 HTTPClient(appConfig)
             )
-            val subscriberAttributesBackend = SubscriberAttributesBackend(backend)
+            val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
             val billingWrapper = BillingWrapper(
                 BillingWrapper.ClientFactory(application),
@@ -1416,7 +1416,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 cache,
                 service,
                 IdentityManager(cache, subscriberAttributesCache, backend),
-                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesBackend),
+                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesPoster),
                 appConfig
             ).also { sharedInstance = it }
         }
