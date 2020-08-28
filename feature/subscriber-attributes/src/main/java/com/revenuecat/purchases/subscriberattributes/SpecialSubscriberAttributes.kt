@@ -47,6 +47,7 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
     sealed class DeviceIdentifiers {
         object GPSAdID : SubscriberAttributeKey(SPECIAL_KEY_GPS_AD_ID)
         object AndroidID : SubscriberAttributeKey(SPECIAL_KEY_ANDROID_ID)
+        object IP : SubscriberAttributeKey(SPECIAL_KEY_IP)
     }
 
     sealed class AttributionIds(backendKey: String) : SubscriberAttributeKey(backendKey) {

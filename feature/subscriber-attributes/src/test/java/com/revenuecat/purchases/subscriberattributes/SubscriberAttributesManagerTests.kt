@@ -356,6 +356,11 @@ class SubscriberAttributesManagerTests {
             captured[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
         assertThat(androidIDSubscriberAttribute).isNotNull
         assertThat(androidIDSubscriberAttribute!!.value).isEqualTo("androidid")
+
+        val ipSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
+        assertThat(ipSubscriberAttribute).isNotNull
+        assertThat(ipSubscriberAttribute!!.value).isEqualTo("true")
     }
 
     @Test
@@ -473,6 +478,11 @@ class SubscriberAttributesManagerTests {
             captured[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
         assertThat(androidIDSubscriberAttribute).isNotNull
         assertThat(androidIDSubscriberAttribute!!.value).isEqualTo("androidid")
+
+        val ipSubscriberAttribute =
+            captured[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
+        assertThat(ipSubscriberAttribute).isNotNull
+        assertThat(ipSubscriberAttribute!!.value).isEqualTo("true")
 
         val facebookID =
             captured[SubscriberAttributeKey.AttributionIds.Facebook.backendKey]

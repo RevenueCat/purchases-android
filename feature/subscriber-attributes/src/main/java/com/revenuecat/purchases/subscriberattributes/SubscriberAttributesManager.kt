@@ -7,10 +7,10 @@ import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
-import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
@@ -150,6 +150,7 @@ class SubscriberAttributesManager(
         val androidID =
             Settings.Secure.getString(applicationContext.contentResolver, Settings.Secure.ANDROID_ID)
         deviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey] = androidID
+        deviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey] = "true"
         return deviceIdentifiers
     }
 
