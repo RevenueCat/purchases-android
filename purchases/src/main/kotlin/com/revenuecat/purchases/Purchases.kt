@@ -1450,7 +1450,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Enable debug logging. Useful for debugging issues with the lovely team @RevenueCat
          */
         @JvmStatic
-        var debugLogsEnabled = Config.debugLogsEnabled
+        var debugLogsEnabled
+            get() = Config.debugLogsEnabled
+            set(value) {
+                Config.debugLogsEnabled = value
+            }
 
         @JvmSynthetic
         internal var backingFieldSharedInstance: Purchases? = null
