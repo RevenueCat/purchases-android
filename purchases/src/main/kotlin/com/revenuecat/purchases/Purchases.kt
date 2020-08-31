@@ -27,15 +27,12 @@ import com.revenuecat.purchases.common.BillingWrapper
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
-import com.revenuecat.purchases.common.IdentityManager
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ProductInfo
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseType
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.attributes.SubscriberAttributeKey
-import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
 import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -47,12 +44,19 @@ import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.toSKUType
+import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
+import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
@@ -204,25 +208,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             appUserID = appUserID,
                             isRestore = this.allowSharingPlayStoreAccount,
                             observerMode = !this.finishTransactions,
-                            subscriberAttributes = unsyncedSubscriberAttributesByKey,
+                            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
                             productInfo = productInfo,
-                            onSuccess = { info, attributeErrors ->
+                            onSuccess = { info, body ->
                                 subscriberAttributesManager.markAsSynced(
                                     appUserID,
                                     unsyncedSubscriberAttributesByKey,
-                                    attributeErrors
+                                    body.getAttributeErrors()
                                 )
                                 deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 cachePurchaserInfo(info)
                                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                                 debugLog("Purchase $purchase synced")
                             },
-                            onError = { error, errorIsFinishable, attributeErrors ->
+                            onError = { error, errorIsFinishable, body ->
                                 if (errorIsFinishable) {
                                     subscriberAttributesManager.markAsSynced(
                                         appUserID,
                                         unsyncedSubscriberAttributesByKey,
-                                        attributeErrors
+                                        body.getAttributeErrors()
                                     )
                                     deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 }
@@ -414,13 +418,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         appUserID = appUserID,
                                         isRestore = true,
                                         observerMode = !finishTransactions,
-                                        subscriberAttributes = unsyncedSubscriberAttributesByKey,
+                                        subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
                                         productInfo = productInfo,
-                                        onSuccess = { info, attributeErrors ->
+                                        onSuccess = { info, body ->
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
                                                 unsyncedSubscriberAttributesByKey,
-                                                attributeErrors
+                                                body.getAttributeErrors()
                                             )
                                             consumeAndSave(finishTransactions, purchase)
                                             cachePurchaserInfo(info)
@@ -430,12 +434,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                                 dispatch { listener.onReceived(info) }
                                             }
                                         },
-                                        onError = { error, errorIsFinishable, attributeErrors ->
+                                        onError = { error, errorIsFinishable, body ->
                                             if (errorIsFinishable) {
                                                 subscriberAttributesManager.markAsSynced(
                                                     appUserID,
                                                     unsyncedSubscriberAttributesByKey,
-                                                    attributeErrors
+                                                    body.getAttributeErrors()
                                                 )
                                                 consumeAndSave(finishTransactions, purchase)
                                             }
@@ -929,25 +933,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             appUserID = appUserID,
             isRestore = allowSharingPlayStoreAccount,
             observerMode = !consumeAllTransactions,
-            subscriberAttributes = unsyncedSubscriberAttributesByKey,
+            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
             productInfo = productInfo,
-            onSuccess = { info, attributeErrors ->
+            onSuccess = { info, body ->
                 subscriberAttributesManager.markAsSynced(
                     appUserID,
                     unsyncedSubscriberAttributesByKey,
-                    attributeErrors
+                    body.getAttributeErrors()
                 )
                 consumeAndSave(consumeAllTransactions, purchase)
                 cachePurchaserInfo(info)
                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
             },
-            onError = { error, errorIsFinishable, attributeErrors ->
+            onError = { error, errorIsFinishable, body ->
                 if (errorIsFinishable) {
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
                         unsyncedSubscriberAttributesByKey,
-                        attributeErrors
+                        body.getAttributeErrors()
                     )
                     consumeAndSave(consumeAllTransactions, purchase)
                 }
@@ -1393,6 +1397,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 Dispatcher(service),
                 HTTPClient(appConfig)
             )
+            val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
             val billingWrapper = BillingWrapper(
                 BillingWrapper.ClientFactory(application),
@@ -1401,6 +1406,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(application)
             val cache = DeviceCache(prefs, apiKey)
+            val subscriberAttributesCache = SubscriberAttributesCache(cache)
 
             return Purchases(
                 application,
@@ -1409,8 +1415,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 billingWrapper,
                 cache,
                 service,
-                IdentityManager(cache, backend),
-                SubscriberAttributesManager(cache, backend),
+                IdentityManager(cache, subscriberAttributesCache, backend),
+                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesPoster),
                 appConfig
             ).also { sharedInstance = it }
         }

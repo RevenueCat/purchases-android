@@ -20,8 +20,8 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class PurchaserInfoTest {
 
-    private fun fullPurchaserInfo(): PurchaserInfo {
-        return JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo()
+    private val fullPurchaserInfo: PurchaserInfo by lazy {
+        JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo()
     }
 
     @Test(expected = JSONException::class)
@@ -48,7 +48,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given a full response with non subscription SKUs, all SKUs are parsed properly`() {
-        val info = fullPurchaserInfo()
+        val info = fullPurchaserInfo
 
         assertThat(info.purchasedNonSubscriptionSkus.size).isEqualTo(3)
         assertThat(info.purchasedNonSubscriptionSkus).contains("100_coins_pack")
@@ -64,7 +64,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given a full response, active subscription is calculated properly`() {
-        val info = fullPurchaserInfo()
+        val info = fullPurchaserInfo
         val actives = info.activeSubscriptions
 
         assertThat(actives.size).isEqualTo(1)
@@ -74,7 +74,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given a full response, all purchased SKUs are retrieved properly`() {
-        val info = fullPurchaserInfo()
+        val info = fullPurchaserInfo
         val purchasedSkus = info.allPurchasedSkus
 
         assertThat(purchasedSkus.size).isEqualTo(5)
@@ -88,7 +88,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given a full purchase info, latest expiration date is calculated properly`() {
-        val info = fullPurchaserInfo()
+        val info = fullPurchaserInfo
 
         val latest = info.latestExpirationDate
 
@@ -99,7 +99,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given a full purchase info, expiration date is de-serialized properly`() {
-        val info = fullPurchaserInfo()
+        val info = fullPurchaserInfo
 
         val oneMonthDate = info.getExpirationDateForSku("onemonth_freetrial")
         val threeMonthDate = info.getExpirationDateForSku("threemonth_freetrial")
@@ -111,14 +111,14 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given two valid products, json is deserialized properly`() {
-        val info = JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo()
+        val info = fullPurchaserInfo
         assertThat(info).isNotNull
     }
 
     @Test
     @Throws(JSONException::class)
     fun `Given a full purchase info, expiration dates are retrieved properly`() {
-        val info = fullPurchaserInfo()
+        val info = fullPurchaserInfo
 
         val pro = info.getExpirationDateForEntitlement("pro")
         val oldPro = info.getExpirationDateForEntitlement("old_pro")
@@ -129,7 +129,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given a full purchase info, active entitlements are retrieved properly`() {
-        val info = fullPurchaserInfo()
+        val info = fullPurchaserInfo
         val actives = info.entitlements.active.keys
 
         assertThat(actives.size).isEqualTo(2)
@@ -143,7 +143,7 @@ class PurchaserInfoTest {
     @Test
     @Throws(JSONException::class)
     fun `Given a null expiration date, expiration date is null`() {
-        val info = fullPurchaserInfo()
+        val info = fullPurchaserInfo
 
         val foreverPro = info.getExpirationDateForEntitlement("forever_pro")
 
@@ -152,13 +152,13 @@ class PurchaserInfoTest {
 
     @Test
     fun `Given a request date, it is de-serialized properly`() {
-        val info = fullPurchaserInfo()
+        val info = fullPurchaserInfo
         assertThat(info.requestDate).isNotNull()
     }
 
     @Test
     fun `Given a valid purchaser info, purchase date is parsed`() {
-        val info = fullPurchaserInfo()
+        val info = fullPurchaserInfo
         assertThat(info.getPurchaseDateForEntitlement("pro")).isNotNull()
     }
 
@@ -256,18 +256,15 @@ class PurchaserInfoTest {
 
     @Test
     fun `Non subscription transactions is correctly created`() {
-        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val x = jsonObject.buildPurchaserInfo()
+        assertThat(fullPurchaserInfo.nonSubscriptionTransactions).isNotEmpty
+        assertThat(fullPurchaserInfo.nonSubscriptionTransactions.size).isEqualTo(5)
 
-        assertThat(x.nonSubscriptionTransactions).isNotEmpty
-        assertThat(x.nonSubscriptionTransactions.size).isEqualTo(5)
-
-        val oneTimePurchaseTransactions = x.nonSubscriptionTransactions.filter {
+        val oneTimePurchaseTransactions = fullPurchaserInfo.nonSubscriptionTransactions.filter {
             it.productId == "100_coins_pack"
         }
         assertThat(oneTimePurchaseTransactions.size).isEqualTo(2)
 
-        val consumableTransactions = x.nonSubscriptionTransactions.filter {
+        val consumableTransactions = fullPurchaserInfo.nonSubscriptionTransactions.filter {
             it.productId == "7_extra_lives"
         }
         assertThat(consumableTransactions.size).isEqualTo(2)
@@ -278,12 +275,8 @@ class PurchaserInfoTest {
 
     @Test
     fun `Non subscription transactions list is correctly created`() {
-        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val x = jsonObject.buildPurchaserInfo()
-
-        assertThat(x.nonSubscriptionTransactions).isNotEmpty
-        assertThat(x.nonSubscriptionTransactions.size).isEqualTo(5)
-        assertThat((x.nonSubscriptionTransactions).distinctBy { it.revenuecatId }.size).isEqualTo(5)
+        assertThat(fullPurchaserInfo.nonSubscriptionTransactions).isNotEmpty
+        assertThat(fullPurchaserInfo.nonSubscriptionTransactions.size).isEqualTo(5)
+        assertThat((fullPurchaserInfo.nonSubscriptionTransactions).distinctBy { it.revenuecatId }.size).isEqualTo(5)
     }
-
 }

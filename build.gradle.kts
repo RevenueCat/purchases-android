@@ -1,5 +1,7 @@
 buildscript {
     val kotlinVersion by extra("1.3.72")
+    val compileVersion by extra(28)
+    val minVersion by extra(14)
     repositories {
         jcenter()
         google()

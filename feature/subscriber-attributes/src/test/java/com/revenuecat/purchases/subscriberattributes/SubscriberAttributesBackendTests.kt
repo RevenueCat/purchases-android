@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchaserInfo
@@ -8,7 +8,6 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.ProductInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
@@ -26,14 +25,15 @@ import java.io.IOException
 private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
-class SubscriberAttributesBackendTests {
+class SubscriberAttributesPosterTests {
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val appUserID = "jerry"
-    private var underTest: Backend = Backend(
+    private var backend: Backend = Backend(
         API_KEY,
         SyncDispatcher(),
         mockClient
     )
+    private var subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
     private var receivedError: PurchasesError? = null
     private var receivedSyncedSuccessfully: Boolean? = null
@@ -48,10 +48,17 @@ class SubscriberAttributesBackendTests {
             receivedAttributeErrors = attributeErrors
         }
 
-    private val expectedOnSuccessPostReceipt: (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit =
-        { info, attributeErrors ->
+    private val expectedOnErrorPostReceipt: (PurchasesError, Boolean, JSONObject?) -> Unit =
+        { error, syncedSuccessfully, body ->
+            receivedError = error
+            receivedSyncedSuccessfully = syncedSuccessfully
+            receivedAttributeErrors = body.getAttributeErrors()
+        }
+
+    private val expectedOnSuccessPostReceipt: (PurchaserInfo, body: JSONObject?) -> Unit =
+        { info, body ->
             receivedPurchaserInfo = info
-            receivedAttributeErrors = attributeErrors
+            receivedAttributeErrors = body.getAttributeErrors()
         }
 
     private val expectedOnSuccess: () -> Unit =
@@ -64,7 +71,12 @@ class SubscriberAttributesBackendTests {
             fail("Shouldn't be error.")
         }
 
-    private val unexpectedOnSuccessPostReceipt: (PurchaserInfo, attributeErrors: List<SubscriberAttributeError>) -> Unit =
+    private val unexpectedOnErrorPostReceipt: (PurchasesError, Boolean, JSONObject?) -> Unit =
+        { _, _, _ ->
+            fail("Shouldn't be success.")
+        }
+
+    private val unexpectedOnSuccessPostReceipt: (PurchaserInfo, body: JSONObject?) -> Unit =
         { _, _ ->
             fail("Shouldn't be success.")
         }
@@ -90,8 +102,8 @@ class SubscriberAttributesBackendTests {
     fun `posting subscriber attributes works`() {
         mockResponse("/subscribers/$appUserID/attributes", 200)
 
-        underTest.postSubscriberAttributes(
-            mapOf("email" to SubscriberAttribute("email", "un@email.com")),
+        subscriberAttributesPoster.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", "un@email.com").toBackendMap()),
             appUserID,
             expectedOnSuccess,
             unexpectedOnError
@@ -103,8 +115,8 @@ class SubscriberAttributesBackendTests {
     fun `posting null subscriber attributes works`() {
         mockResponse("/subscribers/$appUserID/attributes", 200)
 
-        underTest.postSubscriberAttributes(
-            mapOf("email" to SubscriberAttribute("email", null)),
+        subscriberAttributesPoster.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", null).toBackendMap()),
             appUserID,
             expectedOnSuccess,
             unexpectedOnError
@@ -116,8 +128,8 @@ class SubscriberAttributesBackendTests {
     fun `error when posting attributes`() {
         mockResponse("/subscribers/$appUserID/attributes", 0, clientException = IOException())
 
-        underTest.postSubscriberAttributes(
-            mapOf("email" to SubscriberAttribute("email", null)),
+        subscriberAttributesPoster.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
             unexpectedOnSuccess,
             expectedOnError
@@ -140,8 +152,8 @@ class SubscriberAttributesBackendTests {
                 "[{'key_name': 'email', 'message': 'Value is not a valid email address.'}]}"
         )
 
-        underTest.postSubscriberAttributes(
-            mapOf("email" to SubscriberAttribute("email", null)),
+        subscriberAttributesPoster.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
             unexpectedOnSuccess,
             expectedOnError
@@ -165,8 +177,8 @@ class SubscriberAttributesBackendTests {
                 "'attribute_errors':[]}"
         )
 
-        underTest.postSubscriberAttributes(
-            mapOf("email" to SubscriberAttribute("email", null)),
+        subscriberAttributesPoster.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
             unexpectedOnSuccess,
             expectedOnError
@@ -181,8 +193,8 @@ class SubscriberAttributesBackendTests {
     fun `backend error when posting attributes`() {
         mockResponse("/subscribers/$appUserID/attributes", 503)
 
-        underTest.postSubscriberAttributes(
-            mapOf("email" to SubscriberAttribute("email", null)),
+        subscriberAttributesPoster.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
             unexpectedOnSuccess,
             expectedOnError
@@ -202,7 +214,7 @@ class SubscriberAttributesBackendTests {
     private val mapOfSubscriberAttributes = mapOf(
         "key" to subscriberAttribute1,
         "key1" to subscriberAttribute2
-    )
+    ).toBackendMap()
     private val fetchToken = "fetch_token"
     private val productID = "product_id"
 
@@ -213,7 +225,7 @@ class SubscriberAttributesBackendTests {
         val productInfo = ProductInfo(
             productID = productID
         )
-        underTest.postReceiptData(
+        backend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
@@ -221,7 +233,7 @@ class SubscriberAttributesBackendTests {
             subscriberAttributes = mapOfSubscriberAttributes,
             productInfo = productInfo,
             onSuccess = expectedOnSuccessPostReceipt,
-            onError = unexpectedOnError
+            onError = unexpectedOnErrorPostReceipt
         )
 
         assertThat(receivedPurchaserInfo).isNotNull
@@ -237,7 +249,7 @@ class SubscriberAttributesBackendTests {
         val productInfo = ProductInfo(
             productID = productID
         )
-        underTest.postReceiptData(
+        backend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
@@ -245,7 +257,7 @@ class SubscriberAttributesBackendTests {
             subscriberAttributes = emptyMap(),
             productInfo = productInfo,
             onSuccess = expectedOnSuccessPostReceipt,
-            onError = unexpectedOnError
+            onError = unexpectedOnErrorPostReceipt
         )
 
         assertThat(receivedPurchaserInfo).isNotNull
@@ -259,12 +271,12 @@ class SubscriberAttributesBackendTests {
     fun `200 but subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
             responseCode = 200,
-            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
+            responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
         )
         val productInfo = ProductInfo(
             productID = productID
         )
-        underTest.postReceiptData(
+        backend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
@@ -272,7 +284,7 @@ class SubscriberAttributesBackendTests {
             subscriberAttributes = emptyMap(),
             productInfo = productInfo,
             onSuccess = expectedOnSuccessPostReceipt,
-            onError = unexpectedOnError
+            onError = unexpectedOnErrorPostReceipt
         )
 
         assertThat(receivedPurchaserInfo).isNotNull
@@ -285,12 +297,12 @@ class SubscriberAttributesBackendTests {
     fun `505 and subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
             responseCode = 505,
-            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
+            responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
         )
         val productInfo = ProductInfo(
             productID = productID
         )
-        underTest.postReceiptData(
+        backend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
@@ -298,7 +310,7 @@ class SubscriberAttributesBackendTests {
             subscriberAttributes = emptyMap(),
             productInfo = productInfo,
             onSuccess = unexpectedOnSuccessPostReceipt,
-            onError = expectedOnError
+            onError = expectedOnErrorPostReceipt
         )
 
         assertThat(receivedPurchaserInfo).isNull()
@@ -311,12 +323,12 @@ class SubscriberAttributesBackendTests {
     fun `304 and subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
             responseCode = 304,
-            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
+            responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
         )
         val productInfo = ProductInfo(
             productID = productID
         )
-        underTest.postReceiptData(
+        backend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
@@ -324,7 +336,7 @@ class SubscriberAttributesBackendTests {
             subscriberAttributes = emptyMap(),
             productInfo = productInfo,
             onSuccess = unexpectedOnSuccessPostReceipt,
-            onError = expectedOnError
+            onError = expectedOnErrorPostReceipt
         )
 
         assertThat(receivedPurchaserInfo).isNull()
@@ -364,7 +376,7 @@ class SubscriberAttributesBackendTests {
     private val actualPostReceiptBodySlot = slot<Map<String, Any?>>()
     private fun mockPostReceiptResponse(
         responseCode: Int = 200,
-        responseBody: String = "{}"
+        responseBody: JSONObject = JSONObject("{}")
     ) {
         every {
             mockClient.performRequest(
@@ -375,7 +387,7 @@ class SubscriberAttributesBackendTests {
         } answers {
             HTTPClient.Result().also {
                 it.responseCode = responseCode
-                it.body = JSONObject(responseBody)
+                it.body = responseBody
                 every {
                     it.body!!.buildPurchaserInfo()
                 } returns mockk()

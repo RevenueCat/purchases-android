@@ -96,6 +96,7 @@ object Responses {
                   }
                 }
             """
+
     const val validEmptyPurchaserResponse = """
                 {
                   "request_date": "2019-08-16T10:30:42Z",
@@ -112,6 +113,7 @@ object Responses {
                   }
                 }
             """
+
     const val subscriberAttributesErrorsPostReceiptResponse = """
                {
                   "request_date": "2019-08-16T10:30:42Z",
@@ -180,5 +182,26 @@ object Responses {
                     }
                   }
                 } 
+            """
+
+    const val internalServerErrorResponse = """
+                {
+                    "code": 7110, 
+                    "message": "Internal server error."
+                }
+            """
+
+    const val invalidCredentialsErrorResponse = """
+                {
+                    "code": 7225, 
+                    "message": "Invalid credentials error."
+                }
+            """
+
+    const val badRequestErrorResponse = """
+                {
+                    "code": 7226, 
+                    "message": "Missing required params."
+                }
             """
 }

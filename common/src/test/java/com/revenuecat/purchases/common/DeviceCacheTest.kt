@@ -88,7 +88,7 @@ class DeviceCacheTest {
 
     @Test
     fun `given a purchaser info, the key in the cache is correct`() {
-        mockString(cache.purchaserInfoCacheKey(appUserID), Responses.validFullPurchaserResponse)
+        mockString(cache.purchaserInfoCacheKey(appUserID), Responses.validFullPurchaserResponse.toString())
         cache.getCachedPurchaserInfo(appUserID)
         verify {
             mockPrefs.getString(cache.purchaserInfoCacheKey(appUserID), isNull())
@@ -274,7 +274,7 @@ class DeviceCacheTest {
         mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
         mockString(cache.purchaserInfoCacheKey(appUserID), null)
         mockString(cache.subscriberAttributesCacheKey, null)
-        cache.clearCachesForAppUserID(appUserID)
+        cache.clearCachesForAppUserID()
         verify { mockEditor.remove(cache.appUserIDCacheKey) }
         verify { mockEditor.remove(cache.legacyAppUserIDCacheKey) }
         verify { mockEditor.remove(cache.purchaserInfoCacheKey("appUserID")) }
@@ -289,7 +289,7 @@ class DeviceCacheTest {
         mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
         mockString(cache.purchaserInfoCacheKey(appUserID), null)
         mockString(cache.subscriberAttributesCacheKey, null)
-        cache.clearCachesForAppUserID(appUserID)
+        cache.clearCachesForAppUserID()
         assertThat(cache.isPurchaserInfoCacheStale()).isTrue()
         assertThat(cache.isOfferingsCacheStale()).isTrue()
     }

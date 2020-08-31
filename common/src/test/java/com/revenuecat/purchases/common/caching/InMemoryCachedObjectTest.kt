@@ -75,7 +75,8 @@ class InMemoryCachedObjectTest {
     @Test
     fun `timestamp is set correctly when setting instance`() {
         val now = Date()
-        val inMemoryCachedObject = InMemoryCachedObject<Offerings>(100, dateProvider = object : DateProvider {
+        val inMemoryCachedObject = InMemoryCachedObject<Offerings>(100, dateProvider = object :
+            DateProvider {
             override val now: Date
                 get() {
                     return now

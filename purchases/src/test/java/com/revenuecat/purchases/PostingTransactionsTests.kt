@@ -5,16 +5,16 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
-import com.revenuecat.purchases.common.IdentityManager
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ProductInfo
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.attributes.SubscriberAttribute
-import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
 import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
 import io.mockk.just
@@ -38,7 +38,7 @@ class PostingTransactionsTests {
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingWrapper>(relaxed = true)
     private var postReceiptError: PostReceiptErrorContainer? = null
-    private var postReceiptSuccess: PostReceiptSuccessContainer? = null
+    private var postReceiptSuccess: PostReceiptCompletionContainer? = null
     private var subscriberAttribute = SubscriberAttribute("key", "value")
     private var expectedAttributes = mapOf(
         subscriberAttribute.key.backendKey to subscriberAttribute
@@ -51,12 +51,12 @@ class PostingTransactionsTests {
     internal data class PostReceiptErrorContainer(
         val error: PurchasesError,
         val shouldConsumePurchase: Boolean,
-        val subscriberAttributesErrors: List<SubscriberAttributeError>
+        val body: JSONObject?
     )
 
-    internal data class PostReceiptSuccessContainer(
+    internal data class PostReceiptCompletionContainer(
         val info: PurchaserInfo = JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo(),
-        val subscriberAttributeErrors: List<SubscriberAttributeError> = emptyList()
+        val body: JSONObject? = JSONObject(Responses.validFullPurchaserResponse)
     )
 
     @Before
@@ -86,9 +86,9 @@ class PostingTransactionsTests {
             )
         } answers {
             postReceiptError?.let {
-                errorSlot.captured(it.error, it.shouldConsumePurchase, it.subscriberAttributesErrors)
+                errorSlot.captured(it.error, it.shouldConsumePurchase, it.body)
             } ?: postReceiptSuccess?.let {
-                successSlot.captured(it.info, it.subscriberAttributeErrors)
+                successSlot.captured(it.info, it.body)
             }
         }
 
@@ -115,7 +115,7 @@ class PostingTransactionsTests {
                 val capturedRunnable = slot<Runnable>()
                 every { execute(capture(capturedRunnable)) } answers { capturedRunnable.captured.run() }
             },
-            identityManager = mockk<IdentityManager>(relaxed = true).apply {
+            identityManager = mockk<com.revenuecat.purchases.identity.IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId
             },
             subscriberAttributesManager = subscriberAttributesManagerMock,
@@ -133,7 +133,7 @@ class PostingTransactionsTests {
 
     @Test
     fun `durations are sent when posting to backend`() {
-        postReceiptSuccess = PostReceiptSuccessContainer()
+        postReceiptSuccess = PostReceiptCompletionContainer()
 
         val expectedSubscriptionPeriod = "P1M"
         val expectedIntroPricePeriod = "P2M"
@@ -165,7 +165,7 @@ class PostingTransactionsTests {
                 appUserID = appUserId,
                 isRestore = any(),
                 observerMode = any(),
-                subscriberAttributes = expectedAttributes,
+                subscriberAttributes = expectedAttributes.toBackendMap(),
                 productInfo = any(),
                 onSuccess = any(),
                 onError = any()
@@ -175,7 +175,7 @@ class PostingTransactionsTests {
 
     @Test
     fun `inapps send null durations when posting to backend`() {
-        postReceiptSuccess = PostReceiptSuccessContainer()
+        postReceiptSuccess = PostReceiptCompletionContainer()
 
         val mockSkuDetails = mockk<SkuDetails>().also {
             every { it.sku } returns "product_id"
@@ -204,7 +204,7 @@ class PostingTransactionsTests {
                 appUserID = appUserId,
                 isRestore = any(),
                 observerMode = any(),
-                subscriberAttributes = expectedAttributes,
+                subscriberAttributes = expectedAttributes.toBackendMap(),
                 productInfo = any(),
                 onSuccess = any(),
                 onError = any()
@@ -213,5 +213,4 @@ class PostingTransactionsTests {
     }
 
     // endregion
-
 }

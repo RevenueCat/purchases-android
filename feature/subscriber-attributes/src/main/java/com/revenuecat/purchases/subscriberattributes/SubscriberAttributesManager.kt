@@ -1,15 +1,14 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
-import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.caching.AppUserID
-import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 
 class SubscriberAttributesManager(
-    val deviceCache: DeviceCache,
-    val backend: Backend
+    val deviceCache: SubscriberAttributesCache,
+    val backend: SubscriberAttributesPoster
 ) {
 
     @Synchronized
@@ -36,7 +35,11 @@ class SubscriberAttributesManager(
     }
 
     @Synchronized
-    fun setAttribute(key: SubscriberAttributeKey, value: String?, appUserID: String) {
+    fun setAttribute(
+        key: com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey,
+        value: String?,
+        appUserID: String
+    ) {
         setAttributes(mapOf(key.backendKey to value), appUserID)
     }
 
@@ -52,7 +55,7 @@ class SubscriberAttributesManager(
 
         unsyncedStoredAttributesForAllUsers.forEach { (syncingAppUserID, unsyncedAttributesForUser) ->
             backend.postSubscriberAttributes(
-                unsyncedAttributesForUser,
+                unsyncedAttributesForUser.toBackendMap(),
                 syncingAppUserID,
                 {
                     markAsSynced(syncingAppUserID, unsyncedAttributesForUser, emptyList())

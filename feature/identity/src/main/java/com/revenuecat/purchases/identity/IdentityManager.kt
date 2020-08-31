@@ -1,12 +1,16 @@
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases.identity
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.common.debugLog
 import java.util.Locale
 import java.util.UUID
 
 class IdentityManager(
     private val deviceCache: DeviceCache,
+    private val subscriberAttributesCache: SubscriberAttributesCache,
     private val backend: Backend
 ) {
 
@@ -21,7 +25,7 @@ class IdentityManager(
             ?: generateRandomID()
         debugLog("Identifying App User ID: $appUserIDToUse")
         deviceCache.cacheAppUserID(appUserIDToUse)
-        deviceCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
+        subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
     }
 
     fun identify(
@@ -35,7 +39,8 @@ class IdentityManager(
         } else {
             synchronized(this@IdentityManager) {
                 debugLog("Changing App User ID: $currentAppUserID -> $appUserID")
-                deviceCache.clearCachesForAppUserID(currentAppUserID)
+                deviceCache.clearCachesForAppUserID()
+                subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
                 deviceCache.cacheAppUserID(appUserID)
             }
             onSuccess()
@@ -54,7 +59,8 @@ class IdentityManager(
             {
                 synchronized(this@IdentityManager) {
                     debugLog("Alias created")
-                    deviceCache.clearCachesForAppUserID(currentAppUserID)
+                    deviceCache.clearCachesForAppUserID()
+                    subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
                     deviceCache.cacheAppUserID(newAppUserID)
                 }
                 onSuccess()
@@ -65,7 +71,8 @@ class IdentityManager(
 
     @Synchronized
     fun reset() {
-        deviceCache.clearCachesForAppUserID(currentAppUserID)
+        deviceCache.clearCachesForAppUserID()
+        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         deviceCache.cacheAppUserID(generateRandomID())
     }
 

@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.attributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.IdentityManager
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
@@ -13,13 +12,16 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
-import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.attributes.SubscriberAttribute
-import com.revenuecat.purchases.common.attributes.SubscriberAttributeKey
-import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
 import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.common.toPurchasesError
+import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.restorePurchasesWith
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.subscriberattributes.toBackendMap
+import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -27,6 +29,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
+import org.json.JSONException
 import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
@@ -42,7 +45,7 @@ class SubscriberAttributesPurchasesTests {
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingWrapper>(relaxed = true)
     private var postReceiptError: PostReceiptErrorContainer? = null
-    private var postReceiptSuccess: PostReceiptSuccessContainer? = null
+    private var postReceiptCompletion: PostReceiptCompletionContainer? = null
     private var subscriberAttribute = SubscriberAttribute("key", "value")
     private var expectedAttributes = mapOf(
         subscriberAttribute.key.backendKey to subscriberAttribute
@@ -50,23 +53,23 @@ class SubscriberAttributesPurchasesTests {
 
     private val attributesToMarkAsSyncSlot = slot<Map<String, SubscriberAttribute>>()
     private val attributesErrorsSlot = slot<List<SubscriberAttributeError>>()
-    private val postedAttributesSlot = slot<Map<String, SubscriberAttribute>>()
+    private val postedAttributesSlot = slot<Map<String, Map<String, Any?>>>()
 
     internal data class PostReceiptErrorContainer(
         val error: PurchasesError,
         val shouldConsumePurchase: Boolean,
-        val subscriberAttributesErrors: List<SubscriberAttributeError>
+        val body: JSONObject?
     )
 
-    internal data class PostReceiptSuccessContainer(
+    internal data class PostReceiptCompletionContainer(
         val info: PurchaserInfo = JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo(),
-        val subscriberAttributeErrors: List<SubscriberAttributeError> = emptyList()
+        val body: JSONObject? = JSONObject(Responses.validFullPurchaserResponse)
     )
 
     @Before
     fun setup() {
         postReceiptError = null
-        postReceiptSuccess = null
+        postReceiptCompletion = null
 
         every {
             billingWrapperMock.queryAllPurchases(captureLambda(), any())
@@ -90,9 +93,9 @@ class SubscriberAttributesPurchasesTests {
             )
         } answers {
             postReceiptError?.let {
-                errorSlot.captured(it.error, it.shouldConsumePurchase, it.subscriberAttributesErrors)
-            } ?: postReceiptSuccess?.let {
-                successSlot.captured(it.info, it.subscriberAttributeErrors)
+                errorSlot.captured(it.error, it.shouldConsumePurchase, it.body)
+            } ?: postReceiptCompletion?.let {
+                successSlot.captured(it.info, it.body)
             }
         }
 
@@ -102,7 +105,11 @@ class SubscriberAttributesPurchasesTests {
             expectedAttributes
         }
         every {
-            subscriberAttributesManagerMock.markAsSynced(appUserId, capture(attributesToMarkAsSyncSlot), capture(attributesErrorsSlot))
+            subscriberAttributesManagerMock.markAsSynced(
+                appUserId,
+                capture(attributesToMarkAsSyncSlot),
+                capture(attributesErrorsSlot)
+            )
         } just runs
 
         underTest = Purchases(
@@ -208,7 +215,7 @@ class SubscriberAttributesPurchasesTests {
         } just Runs
         setup()
         underTest.onAppForegrounded()
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         }
     }
@@ -220,7 +227,7 @@ class SubscriberAttributesPurchasesTests {
         } just Runs
         setup()
         underTest.onAppBackgrounded()
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         }
     }
@@ -228,17 +235,17 @@ class SubscriberAttributesPurchasesTests {
     // region syncing purchases
     @Test
     fun `attributes are sent when syncing purchases`() {
-        postReceiptSuccess = PostReceiptSuccessContainer()
+        postReceiptCompletion = PostReceiptCompletionContainer()
 
         underTest.syncPurchases()
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
                 isRestore = any(),
                 observerMode = any(),
-                subscriberAttributes = expectedAttributes,
+                subscriberAttributes = expectedAttributes.toBackendMap(),
                 productInfo = any(),
                 onSuccess = any(),
                 onError = any()
@@ -247,16 +254,14 @@ class SubscriberAttributesPurchasesTests {
     }
 
     @Test
-    fun `attributes are marked as synced when syncing purchases`() {
-        val expectedSubscriberAttributeErrors = listOf(
-            SubscriberAttributeError("key", "value")
-        )
-        postReceiptSuccess = PostReceiptSuccessContainer(
-            subscriberAttributeErrors = expectedSubscriberAttributeErrors
+    fun `attributes are marked as synced when syncing purchases is successful but there are attribute errors`() {
+        val expectedSubscriberAttributeErrors = getSubscriberAttributeErrorList()
+        postReceiptCompletion = PostReceiptCompletionContainer(
+            body = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
         )
         underTest.syncPurchases()
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             subscriberAttributesManagerMock.markAsSynced(
                 appUserId,
                 expectedAttributes,
@@ -266,43 +271,34 @@ class SubscriberAttributesPurchasesTests {
     }
 
     @Test
-    fun `attributes are marked as synced when error is finishable when syncing purchases`() {
-        val expectedSubscriberAttributeErrors = listOf(
-            SubscriberAttributeError("key", "value")
-        )
-        postReceiptError = PostReceiptErrorContainer(
-            PurchasesError(PurchasesErrorCode.NetworkError),
-            true,
-            expectedSubscriberAttributeErrors
-        )
+    fun `when syncing purchases, attributes are marked as synced if error is finishable`() {
+        postReceiptError = getFinishableErrorResponse()
+
         underTest.syncPurchases()
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             subscriberAttributesManagerMock.markAsSynced(
                 appUserId,
                 expectedAttributes,
-                expectedSubscriberAttributeErrors
+                emptyList()
             )
         }
     }
 
     @Test
-    fun `attributes are not marked as synced when backend did not get them when syncing purchases`() {
-        val expectedSubscriberAttributeErrors = listOf(
-            SubscriberAttributeError("key", "value")
-        )
+    fun `when syncing purchases, attributes are not marked as synced if error is not finishable`() {
         postReceiptError = PostReceiptErrorContainer(
             PurchasesError(PurchasesErrorCode.NetworkError),
             false,
-            expectedSubscriberAttributeErrors
+            null
         )
         underTest.syncPurchases()
 
-        verify (exactly = 0) {
+        verify(exactly = 0) {
             subscriberAttributesManagerMock.markAsSynced(
                 appUserId,
                 expectedAttributes,
-                expectedSubscriberAttributeErrors
+                any()
             )
         }
     }
@@ -311,17 +307,17 @@ class SubscriberAttributesPurchasesTests {
     // region restoring purchases
     @Test
     fun `attributes are sent when restoring purchases`() {
-        postReceiptSuccess = PostReceiptSuccessContainer()
+        postReceiptCompletion = PostReceiptCompletionContainer()
 
         underTest.restorePurchasesWith { }
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
                 isRestore = any(),
                 observerMode = any(),
-                subscriberAttributes = expectedAttributes,
+                subscriberAttributes = expectedAttributes.toBackendMap(),
                 productInfo = any(),
                 onSuccess = any(),
                 onError = any()
@@ -330,16 +326,14 @@ class SubscriberAttributesPurchasesTests {
     }
 
     @Test
-    fun `attributes are marked as synced when restoring`() {
-        val expectedSubscriberAttributeErrors = listOf(
-            SubscriberAttributeError("key", "value")
-        )
-        postReceiptSuccess = PostReceiptSuccessContainer(
-            subscriberAttributeErrors = expectedSubscriberAttributeErrors
+    fun `attributes are marked as synced when restoring is successful but there are attribute errors`() {
+        val expectedSubscriberAttributeErrors = getSubscriberAttributeErrorList()
+        postReceiptCompletion = PostReceiptCompletionContainer(
+            body = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
         )
         underTest.restorePurchasesWith { }
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             subscriberAttributesManagerMock.markAsSynced(
                 appUserId,
                 expectedAttributes,
@@ -349,41 +343,40 @@ class SubscriberAttributesPurchasesTests {
     }
 
     @Test
-    fun `attributes are marked as synced when backend did not get them posting receipt when restoring`() {
-        val expectedSubscriberAttributeErrors = listOf(
-            SubscriberAttributeError("key", "value")
-        )
-        postReceiptError = PostReceiptErrorContainer(
-            PurchasesError(PurchasesErrorCode.NetworkError),
-            true,
-            expectedSubscriberAttributeErrors
-        )
+    fun `when restoring, attributes are marked as synced if error is finishable`() {
+        postReceiptError = getFinishableErrorResponse()
 
         underTest.restorePurchasesWith { }
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             subscriberAttributesManagerMock.markAsSynced(
                 appUserId,
                 expectedAttributes,
-                expectedSubscriberAttributeErrors
+                emptyList()
             )
         }
     }
 
+    private fun getSubscriberAttributeErrorList(): List<SubscriberAttributeError> {
+        return listOf(
+            SubscriberAttributeError("invalid_name", "Attribute key name is not valid.")
+        )
+    }
+
     @Test
-    fun `attributes are not marked as synced when backend did not get them posting receipt when restoring`() {
+    fun `when restoring, attributes are not marked as synced if error is not finishable`() {
         val expectedSubscriberAttributeErrors = listOf(
             SubscriberAttributeError("key", "value")
         )
         postReceiptError = PostReceiptErrorContainer(
             PurchasesError(PurchasesErrorCode.NetworkError),
             false,
-            expectedSubscriberAttributeErrors
+            null
         )
 
         underTest.restorePurchasesWith { }
 
-        verify (exactly = 0) {
+        verify(exactly = 0) {
             subscriberAttributesManagerMock.markAsSynced(
                 appUserId,
                 expectedAttributes,
@@ -397,7 +390,7 @@ class SubscriberAttributesPurchasesTests {
 
     @Test
     fun `attributes are sent when purchasing`() {
-        postReceiptSuccess = PostReceiptSuccessContainer()
+        postReceiptCompletion = PostReceiptCompletionContainer()
 
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
@@ -405,17 +398,17 @@ class SubscriberAttributesPurchasesTests {
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
-            onSuccess = {_,_ -> },
-            onError = {_,_ -> }
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
         )
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
                 appUserID = appUserId,
                 isRestore = any(),
                 observerMode = any(),
-                subscriberAttributes = expectedAttributes,
+                subscriberAttributes = expectedAttributes.toBackendMap(),
                 productInfo = any(),
                 onSuccess = any(),
                 onError = any()
@@ -424,12 +417,10 @@ class SubscriberAttributesPurchasesTests {
     }
 
     @Test
-    fun `attributes are marked as synced when purchasing`() {
-        val expectedSubscriberAttributeErrors = listOf(
-            SubscriberAttributeError("key", "value")
-        )
-        postReceiptSuccess = PostReceiptSuccessContainer(
-            subscriberAttributeErrors = expectedSubscriberAttributeErrors
+    fun `attributes are marked as synced when posting purchase is successful but there are attribute errors`() {
+        val expectedSubscriberAttributeErrors = getSubscriberAttributeErrorList()
+        postReceiptCompletion = PostReceiptCompletionContainer(
+            body = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
         )
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
@@ -437,11 +428,11 @@ class SubscriberAttributesPurchasesTests {
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
-            onSuccess = {_,_ -> },
-            onError = {_,_ -> }
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
         )
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             subscriberAttributesManagerMock.markAsSynced(
                 appUserId,
                 expectedAttributes,
@@ -451,15 +442,8 @@ class SubscriberAttributesPurchasesTests {
     }
 
     @Test
-    fun `attributes are marked as synced when backend did not get them posting receipt when purchasing`() {
-        val expectedSubscriberAttributeErrors = listOf(
-            SubscriberAttributeError("key", "value")
-        )
-        postReceiptError = PostReceiptErrorContainer(
-            PurchasesError(PurchasesErrorCode.NetworkError),
-            true,
-            expectedSubscriberAttributeErrors
-        )
+    fun `when purchasing, attributes are marked as synced if error is finishable`() {
+        postReceiptError = getFinishableErrorResponse()
 
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
@@ -467,28 +451,25 @@ class SubscriberAttributesPurchasesTests {
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
-            onSuccess = {_,_ -> },
-            onError = {_,_ -> }
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
         )
 
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             subscriberAttributesManagerMock.markAsSynced(
                 appUserId,
                 expectedAttributes,
-                expectedSubscriberAttributeErrors
+                emptyList()
             )
         }
     }
 
     @Test
-    fun `attributes are not marked as synced when backend did not get them posting receipt when purchasing`() {
-        val expectedSubscriberAttributeErrors = listOf(
-            SubscriberAttributeError("key", "value")
-        )
+    fun `when purchasing, attributes are not marked as synced if error is not finishable`() {
         postReceiptError = PostReceiptErrorContainer(
-            PurchasesError(PurchasesErrorCode.NetworkError),
+            JSONException("exception").toPurchasesError(),
             false,
-            expectedSubscriberAttributeErrors
+            null
         )
 
         underTest.postToBackend(
@@ -497,19 +478,34 @@ class SubscriberAttributesPurchasesTests {
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
-            onSuccess = {_,_ -> },
-            onError = {_,_ -> }
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
         )
 
-        verify (exactly = 0) {
+        verify(exactly = 0) {
             subscriberAttributesManagerMock.markAsSynced(
                 appUserId,
                 expectedAttributes,
-                expectedSubscriberAttributeErrors
+                any()
             )
         }
     }
 
     // endregion
 
+    private fun getFinishableErrorResponse(): PostReceiptErrorContainer {
+        return PostReceiptErrorContainer(
+            PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
+            true,
+            JSONObject(Responses.badRequestErrorResponse)
+        )
+    }
+
+    private fun getNonFinishableErrorResponse(): PostReceiptErrorContainer {
+        return PostReceiptErrorContainer(
+            PurchasesError(PurchasesErrorCode.UnknownError),
+            true,
+            JSONObject(Responses.internalServerErrorResponse)
+        )
+    }
 }

@@ -72,12 +72,12 @@ class BackendTest {
             this@BackendTest.receivedPurchaserInfo = info
         }
 
-    private val onReceivePostReceiptSuccessHandler: (PurchaserInfo, List<SubscriberAttributeError>) -> Unit =
+    private val onReceivePostReceiptSuccessHandler: (PurchaserInfo, JSONObject?) -> Unit =
         { info, _ ->
             this@BackendTest.receivedPurchaserInfo = info
         }
 
-    private val postReceiptErrorCallback: (PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit =
+    private val postReceiptErrorCallback: (PurchasesError, Boolean, JSONObject?) -> Unit =
         { error, _, _ ->
         this@BackendTest.receivedError = error
     }

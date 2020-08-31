@@ -1,7 +1,7 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
-import com.revenuecat.purchases.common.caching.SubscriberAttributeMap
-import com.revenuecat.purchases.common.caching.SubscriberAttributesPerAppUserIDMap
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributeMap
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesPerAppUserIDMap
 import org.json.JSONObject
 
 fun JSONObject.buildLegacySubscriberAttributes(): Map<String, SubscriberAttribute> {

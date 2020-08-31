@@ -3,12 +3,12 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion compileVersion
 
     defaultConfig {
         applicationId "com.revenuecat.purchases_sample"
-        minSdkVersion 14
-        targetSdkVersion 28
+        minSdkVersion minVersion
+        targetSdkVersion compileVersion
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

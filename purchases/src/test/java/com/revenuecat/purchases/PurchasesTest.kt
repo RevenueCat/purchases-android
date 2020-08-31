@@ -21,7 +21,6 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
-import com.revenuecat.purchases.common.IdentityManager
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
@@ -30,16 +29,18 @@ import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseType
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.attributes.SubscriberAttributesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.toSKUType
+import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.util.AdvertisingIdClient
+import com.revenuecat.purchases.utils.Responses
 import io.mockk.Call
 import io.mockk.MockKAnswerScope
 import io.mockk.Runs
@@ -777,7 +778,7 @@ class PurchasesTest {
                 onError = any()
             )
         } answers {
-            lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, emptyList())
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, null)
         }
 
         var callbackCalled = false
@@ -1122,11 +1123,7 @@ class PurchasesTest {
             type = PurchaseType.INAPP
         ) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
-            capturedLambda?.invoke(
-                PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                true,
-                emptyList()
-            )
+            capturedLambda?.invokeWithFinishableError()
         }
         mockPostReceiptError(
             skuSub,
@@ -1136,11 +1133,7 @@ class PurchasesTest {
             type = PurchaseType.SUBS
         ) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
-            capturedLambda?.invoke(
-                PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                true,
-                emptyList()
-            )
+            capturedLambda?.invokeWithFinishableError()
         }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
@@ -1163,7 +1156,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun triesToConsumeNonSubscriptionPurchasesOn50x() {
+    fun doesNotConsumeNonSubscriptionPurchasesOn50x() {
         setup()
 
         val sku = "onemonth_freetrial"
@@ -1180,11 +1173,7 @@ class PurchasesTest {
             type = PurchaseType.INAPP
         ) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
-                it.invoke(
-                    PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                    true,
-                    emptyList()
-                )
+                it.invokeWithNotFinishableError()
             }
         }
         var capturedLambda1: (PostReceiptDataErrorCallback)? = null
@@ -1196,11 +1185,7 @@ class PurchasesTest {
             type = PurchaseType.SUBS
         ) {
             capturedLambda1 = lambda<PostReceiptDataErrorCallback>().captured.also {
-                it.invoke(
-                    PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                    true,
-                    emptyList()
-                )
+                it.invokeWithNotFinishableError()
             }
         }
 
@@ -1482,7 +1467,10 @@ class PurchasesTest {
                 onError = any()
             )
         } answers {
-            lambda<PostReceiptDataSuccessCallback>().captured.invoke(info, emptyList())
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(
+                info,
+                JSONObject(Responses.validFullPurchaserResponse)
+            )
         }
         purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
         val sku = "onemonth_freetrial"
@@ -2015,11 +2003,7 @@ class PurchasesTest {
             type = PurchaseType.INAPP
         ) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
-                it.invoke(
-                    PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                    true,
-                    emptyList()
-                )
+                it.invokeWithFinishableError()
             }
         }
 
@@ -2032,11 +2016,7 @@ class PurchasesTest {
             type = PurchaseType.SUBS
         ) {
             capturedLambda1 = lambda<PostReceiptDataErrorCallback>().captured.also {
-                it.invoke(
-                    PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                    true,
-                    emptyList()
-                )
+                it.invokeWithFinishableError()
             }
         }
 
@@ -2081,7 +2061,7 @@ class PurchasesTest {
             type = PurchaseType.INAPP,
             answer = {
                 captured = lambda<PostReceiptDataErrorCallback>().captured.also {
-                    it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), true, emptyList())
+                    it.invokeWithNotFinishableError()
                 }
             })
         mockPostReceiptError(
@@ -2092,7 +2072,7 @@ class PurchasesTest {
             type = PurchaseType.SUBS,
             answer = {
                 captured = lambda<PostReceiptDataErrorCallback>().captured.also {
-                    it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), true, emptyList())
+                    it.invokeWithNotFinishableError()
                 }
             })
         purchases.finishTransactions = false
@@ -2506,7 +2486,7 @@ class PurchasesTest {
         })
         lock.await(200, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isZero()
-        verify(exactly = 0) { mockCache.clearCachesForAppUserID(appUserId) }
+        verify(exactly = 0) { mockCache.clearCachesForAppUserID() }
     }
 
     @Test
@@ -2570,7 +2550,7 @@ class PurchasesTest {
         capturedLambda!!.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
             true,
-            emptyList()
+            JSONObject(Responses.invalidCredentialsErrorResponse)
         )
         capturedConsumeResponseListener.captured.invoke(
             BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -2638,11 +2618,7 @@ class PurchasesTest {
             )
         )
         assertThat(capturedLambda).isNotNull
-        capturedLambda!!.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-            true,
-            emptyList()
-        )
+        capturedLambda!!.invokeWithFinishableError()
         capturedConsumeResponseListener.captured.invoke(
             BillingClient.BillingResponseCode.OK.buildResult(),
             "crazy_purchase_token"
@@ -2673,7 +2649,7 @@ class PurchasesTest {
             type = PurchaseType.INAPP
         ) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
-                it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), false, emptyList())
+                it.invokeWithNotFinishableError()
             }
         }
 
@@ -2686,7 +2662,7 @@ class PurchasesTest {
             type = PurchaseType.SUBS
         ) {
             capturedLambda1 = lambda<PostReceiptDataErrorCallback>().captured.also {
-                it.invoke(PurchasesError(PurchasesErrorCode.InvalidCredentialsError), false, emptyList())
+                it.invokeWithNotFinishableError()
             }
         }
 
@@ -3141,11 +3117,7 @@ class PurchasesTest {
             type = PurchaseType.SUBS
         ) {
             capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
-                it.invoke(
-                    PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                    true,
-                    emptyList()
-                )
+                it.invokeWithFinishableError()
             }
         }
 
@@ -3174,7 +3146,7 @@ class PurchasesTest {
         val skuSub = "sub"
         val purchaseTokenSub = "token_sub"
 
-        var capturedLambda: (PostReceiptDataErrorCallback)? = null
+        var capturedLambda: (PostReceiptDataErrorCallback)?
         mockPostReceiptError(
             skuSub,
             purchaseTokenSub,
@@ -3182,12 +3154,9 @@ class PurchasesTest {
             offeringIdentifier = null,
             type = PurchaseType.SUBS
         ) {
-            capturedLambda = lambda<PostReceiptDataErrorCallback>().captured
-            capturedLambda?.invoke(
-                PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-                true,
-                emptyList()
-            )
+            capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
+                it.invokeWithFinishableError()
+            }
         }
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(
@@ -3545,7 +3514,10 @@ class PurchasesTest {
                     onError = any()
                 )
             } answers {
-                lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, emptyList())
+                lambda<PostReceiptDataSuccessCallback>().captured.invoke(
+                    mockInfo,
+                    JSONObject(Responses.validFullPurchaserResponse)
+                )
             }
             every {
                 close()
@@ -3833,7 +3805,10 @@ class PurchasesTest {
                 onError = any()
             )
         } answers {
-            lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, emptyList())
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(
+                mockInfo,
+                JSONObject(Responses.validFullPurchaserResponse)
+            )
         }
 
         return productInfo
@@ -3899,6 +3874,22 @@ class PurchasesTest {
         every {
             mockSubscriberAttributesManager.markAsSynced(userIdToUse, any(), any())
         } just runs
+    }
+
+    private fun PostReceiptDataErrorCallback.invokeWithFinishableError() {
+        invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+            true,
+            JSONObject(Responses.invalidCredentialsErrorResponse)
+        )
+    }
+
+    private fun PostReceiptDataErrorCallback.invokeWithNotFinishableError() {
+        invoke(
+            PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
+            true,
+            JSONObject(Responses.internalServerErrorResponse)
+        )
     }
 
     // endregion

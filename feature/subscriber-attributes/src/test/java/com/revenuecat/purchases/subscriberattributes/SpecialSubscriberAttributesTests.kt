@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.attributes
+package com.revenuecat.purchases.subscriberattributes
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
