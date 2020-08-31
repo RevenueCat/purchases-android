@@ -84,7 +84,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
-    private val executorService: ExecutorService,
+    private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @JvmSynthetic internal var appConfig: AppConfig
@@ -673,14 +673,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     fun collectDeviceIdentifiers() {
         debugLog("collectDeviceIdentifiers called")
-        executeOnBackground {
+        dispatcher.executeOnBackground {
             subscriberAttributesManager.collectDeviceIdentifiers(appUserID, application)
         }
     }
 
     fun setAdjustID(adjustID: String?) {
         debugLog("setAdjustID called")
-        executeOnBackground {
+        dispatcher.executeOnBackground {
             subscriberAttributesManager.setAttributionID(
                 SubscriberAttributeKey.AttributionIds.Adjust,
                 adjustID,
@@ -692,7 +692,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     fun setAppsflyerID(appsflyerID: String?) {
         debugLog("setAppsflyerId called")
-        executeOnBackground {
+        dispatcher.executeOnBackground {
             subscriberAttributesManager.setAttributionID(
                 SubscriberAttributeKey.AttributionIds.AppsFlyer,
                 appsflyerID,
@@ -704,7 +704,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     fun setFBAnonymousID(fbAnonymousID: String?) {
         debugLog("setFBAnonymousID called")
-        executeOnBackground {
+        dispatcher.executeOnBackground {
             subscriberAttributesManager.setAttributionID(
                 SubscriberAttributeKey.AttributionIds.Facebook,
                 fbAnonymousID,
@@ -716,7 +716,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     fun setMparticleID(mparticleID: String?) {
         debugLog("setMparticleID called")
-        executeOnBackground {
+        dispatcher.executeOnBackground {
             subscriberAttributesManager.setAttributionID(
                 SubscriberAttributeKey.AttributionIds.Mparticle,
                 mparticleID,
@@ -728,7 +728,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     fun setOnesignalID(onesignalID: String?) {
         debugLog("setMparticleID called")
-        executeOnBackground {
+        dispatcher.executeOnBackground {
             subscriberAttributesManager.setAttributionID(
                 SubscriberAttributeKey.AttributionIds.OneSignal,
                 onesignalID,
@@ -1225,14 +1225,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun executeOnBackground(command: () -> Unit) {
-        synchronized(executorService) {
-            if (!executorService.isShutdown) {
-                executorService.execute(command)
-            }
-        }
-    }
-
     @Synchronized
     private fun getPurchaseCallback(sku: String): MakePurchaseListener? {
         return state.purchaseCallbacks[sku].also {
@@ -1392,31 +1384,27 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     internal fun updatePendingPurchaseQueue() {
         if (billingWrapper.isConnected()) {
             debugLog("[QueryPurchases] Updating pending purchase queue")
-            synchronized(executorService) {
-                if (!executorService.isShutdown) {
-                    executorService.execute {
-                        val queryActiveSubscriptionsResult =
-                            billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
-                        val queryUnconsumedInAppsRequest =
-                            billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
-                        if (queryActiveSubscriptionsResult?.isSuccessful() == true &&
-                            queryUnconsumedInAppsRequest?.isSuccessful() == true
-                        ) {
-                            deviceCache.cleanPreviouslySentTokens(
-                                queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
-                                queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
-                            )
-                            postPurchases(
-                                deviceCache.getActivePurchasesNotInCache(
-                                    queryActiveSubscriptionsResult.purchasesByHashedToken,
-                                    queryUnconsumedInAppsRequest.purchasesByHashedToken
-                                ),
-                                allowSharingPlayStoreAccount,
-                                finishTransactions,
-                                appUserID
-                            )
-                        }
-                    }
+            dispatcher.executeOnBackground {
+                val queryActiveSubscriptionsResult =
+                    billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
+                val queryUnconsumedInAppsRequest =
+                    billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
+                if (queryActiveSubscriptionsResult?.isSuccessful() == true &&
+                    queryUnconsumedInAppsRequest?.isSuccessful() == true
+                ) {
+                    deviceCache.cleanPreviouslySentTokens(
+                        queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
+                        queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
+                    )
+                    postPurchases(
+                        deviceCache.getActivePurchasesNotInCache(
+                            queryActiveSubscriptionsResult.purchasesByHashedToken,
+                            queryUnconsumedInAppsRequest.purchasesByHashedToken
+                        ),
+                        allowSharingPlayStoreAccount,
+                        finishTransactions,
+                        appUserID
+                    )
                 }
             }
         } else {
@@ -1531,9 +1519,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 proxyURL
             )
 
+            val dispatcher = Dispatcher(service)
             val backend = Backend(
                 apiKey,
-                Dispatcher(service),
+                dispatcher,
                 HTTPClient(appConfig)
             )
             val subscriberAttributesBackend = SubscriberAttributesBackend(backend)
@@ -1553,7 +1542,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 backend,
                 billingWrapper,
                 cache,
-                service,
+                dispatcher,
                 IdentityManager(cache, subscriberAttributesCache, backend),
                 SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesBackend),
                 appConfig

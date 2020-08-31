@@ -9,6 +9,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
@@ -35,7 +36,6 @@ import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.ExecutorService
 
 @RunWith(AndroidJUnit4::class)
 class SubscriberAttributesPurchasesTests {
@@ -46,7 +46,7 @@ class SubscriberAttributesPurchasesTests {
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingWrapper>(relaxed = true)
     private lateinit var applicationMock: Application
-    private lateinit var executorServiceMock: ExecutorService
+    private lateinit var dispatcherMock: Dispatcher
 
     private var postReceiptError: PostReceiptErrorContainer? = null
     private var postReceiptCompletion: PostReceiptCompletionContainer? = null
@@ -122,11 +122,10 @@ class SubscriberAttributesPurchasesTests {
             backend = backendMock,
             billingWrapper = billingWrapperMock,
             deviceCache = mockk(relaxed = true),
-            executorService = mockk<ExecutorService>().apply {
-                val capturedRunnable = slot<Runnable>()
-                every { execute(capture(capturedRunnable)) } answers { capturedRunnable.captured.run() }
-                every { isShutdown } returns false
-            }.also { executorServiceMock = it },
+            dispatcher = mockk<Dispatcher>().apply {
+                val capturedCommand = slot<() -> Unit>()
+                every { executeOnBackground(capture(capturedCommand)) } answers { capturedCommand.captured() }
+            }.also { dispatcherMock = it },
             identityManager = mockk<IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId
             },
@@ -512,7 +511,7 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.collectDeviceIdentifiers(appUserId, applicationMock)
         }
         verify(exactly = 1) {
-            executorServiceMock.execute(any())
+            dispatcherMock.executeOnBackground(any())
         }
     }
 
@@ -633,7 +632,7 @@ class SubscriberAttributesPurchasesTests {
             )
         }
         verify(exactly = 1) {
-            executorServiceMock.execute(any())
+            dispatcherMock.executeOnBackground(any())
         }
     }
 

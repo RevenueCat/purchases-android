@@ -41,6 +41,14 @@ open class Dispatcher(
         }
     }
 
+    fun executeOnBackground(command: () -> Unit) {
+        synchronized(this.executorService) {
+            if (!executorService.isShutdown) {
+                executorService.execute(command)
+            }
+        }
+    }
+
     open fun close() {
         synchronized(this.executorService) {
             this.executorService.shutdownNow()

@@ -5,6 +5,7 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
@@ -27,7 +28,6 @@ import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.ExecutorService
 
 @RunWith(AndroidJUnit4::class)
 class PostingTransactionsTests {
@@ -111,9 +111,9 @@ class PostingTransactionsTests {
             backend = backendMock,
             billingWrapper = billingWrapperMock,
             deviceCache = mockk(relaxed = true),
-            executorService = mockk<ExecutorService>().apply {
-                val capturedRunnable = slot<Runnable>()
-                every { execute(capture(capturedRunnable)) } answers { capturedRunnable.captured.run() }
+            dispatcher = mockk<Dispatcher>().apply {
+                val capturedCommand = slot<() -> Unit>()
+                every { executeOnBackground(capture(capturedCommand)) } answers { capturedCommand.captured() }
             },
             identityManager = mockk<com.revenuecat.purchases.identity.IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId
