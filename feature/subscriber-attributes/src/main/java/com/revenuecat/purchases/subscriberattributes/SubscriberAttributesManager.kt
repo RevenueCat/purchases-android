@@ -10,7 +10,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesBackend,
-    val attributionFetcher: AttributionFetcher
+    private val attributionFetcher: AttributionFetcher
 ) {
 
     @Synchronized
@@ -114,37 +114,20 @@ class SubscriberAttributesManager(
     }
 
     /**
-     * Collect gpsAdId and androidId automatically
-     *
-     * This method cannot be called in the main thread as it may block leading to ANRs.
-     * An IllegalStateException will be thrown if this is called on the main thread.
+     * Collect GPS ID, ANDROID ID and sets IP to true automatically
      */
     fun collectDeviceIdentifiers(
         appUserID: String,
         applicationContext: Application
     ) {
-        val attributesToSet = getDeviceIdentifiers(applicationContext)
-        setAttributes(attributesToSet, appUserID)
-    }
-
-    private fun getDeviceIdentifiers(applicationContext: Application): MutableMap<String, String?> {
-        val (advertisingID, androidID) = attributionFetcher.getDeviceIdentifiers(applicationContext)
-
-        val deviceIdentifiers = mutableMapOf<String, String?>()
-
-        if (advertisingID != null) {
-            deviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey] = advertisingID
+        getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
+            setAttributes(deviceIdentifiers, appUserID)
         }
-        deviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey] = androidID
-        deviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey] = "true"
-        return deviceIdentifiers
     }
 
     /**
-     * Set the specific ID for the specified attribution network. It also collects GPS ID and ANDROID_ID automatically.
-     *
-     * This method cannot be called in the main thread as it may block leading to ANRs.
-     * An IllegalStateException will be thrown if this is called on the main thread.
+     * Set the specific ID for the specified attribution network. It also collects GPS ID, ANDROID ID and sets
+     * IP to true automatically.
      */
     fun setAttributionID(
         attributionKey: SubscriberAttributeKey.AttributionIds,
@@ -152,8 +135,23 @@ class SubscriberAttributesManager(
         appUserID: String,
         applicationContext: Application
     ) {
-        val deviceIdentifiers = getDeviceIdentifiers(applicationContext)
-        val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
-        setAttributes(attributesToSet, appUserID)
+        getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
+            val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
+            setAttributes(attributesToSet, appUserID)
+        }
+    }
+
+    private fun getDeviceIdentifiers(
+        applicationContext: Application,
+        completion: (deviceIdentifiers: Map<String, String?>) -> Unit
+    ) {
+        attributionFetcher.getDeviceIdentifiers(applicationContext) { advertisingID, androidID ->
+            val deviceIdentifiers = mapOf(
+                SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to advertisingID,
+                SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to androidID,
+                SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
+            ).filterValues { it != null }
+            completion(deviceIdentifiers)
+        }
     }
 }

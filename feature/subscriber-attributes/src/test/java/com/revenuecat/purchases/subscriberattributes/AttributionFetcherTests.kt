@@ -5,10 +5,11 @@ import android.content.Context
 import android.provider.Settings
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import com.google.android.gms.common.GooglePlayServicesRepairableException
+import com.revenuecat.purchases.common.Dispatcher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 
@@ -18,7 +19,15 @@ class AttributionFetcherTests {
 
     @Before
     fun setup() {
-        underTest = AttributionFetcher()
+        val mockDispatcher = mockk<Dispatcher>()
+        every {
+            mockDispatcher.executeOnBackground(captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.also {
+                it.invoke()
+            }
+        }
+        underTest = AttributionFetcher(mockDispatcher)
     }
 
     @Test
@@ -30,12 +39,16 @@ class AttributionFetcherTests {
             expectedAndroidID = "androidid"
         )
 
-        val (advertisingID, androidID) = underTest.getDeviceIdentifiers(mockContext)
+        var completionCalled = false
+        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+            completionCalled = true
+            assertThat(advertisingID).isNotNull()
+            assertThat(advertisingID).isEqualTo("12345")
 
-        Assertions.assertThat(advertisingID).isNotNull()
-        Assertions.assertThat(advertisingID).isEqualTo("12345")
+            assertThat(androidID).isEqualTo("androidid")
+        }
 
-        Assertions.assertThat(androidID).isEqualTo("androidid")
+        assertThat(completionCalled).isTrue()
     }
 
     @Test
@@ -48,11 +61,15 @@ class AttributionFetcherTests {
             gpsException = GooglePlayServicesRepairableException(1, "error", null)
         )
 
-        val (advertisingID, androidID) = underTest.getDeviceIdentifiers(mockContext)
+        var completionCalled = false
+        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+            completionCalled = true
 
-        Assertions.assertThat(advertisingID).isNull()
+            assertThat(advertisingID).isNull()
+            assertThat(androidID).isEqualTo("androidid")
+        }
 
-        Assertions.assertThat(androidID).isEqualTo("androidid")
+        assertThat(completionCalled).isTrue()
     }
 
     @Test
@@ -65,11 +82,15 @@ class AttributionFetcherTests {
             gpsException = GooglePlayServicesRepairableException(1, "error", null)
         )
 
-        val (advertisingID, androidID) = underTest.getDeviceIdentifiers(mockContext)
+        var completionCalled = false
+        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+            completionCalled = true
 
-        Assertions.assertThat(advertisingID).isNull()
+            assertThat(advertisingID).isNull()
+            assertThat(androidID).isEqualTo("androidid")
+        }
 
-        Assertions.assertThat(androidID).isEqualTo("androidid")
+        assertThat(completionCalled).isTrue()
     }
 
     @Test
@@ -82,11 +103,15 @@ class AttributionFetcherTests {
             expectedIsLimitAdTrackingEnabled = true
         )
 
-        val (advertisingID, androidID) = underTest.getDeviceIdentifiers(mockContext)
+        var completionCalled = false
+        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+            completionCalled = true
 
-        Assertions.assertThat(advertisingID).isNull()
+            assertThat(advertisingID).isNull()
+            assertThat(androidID).isEqualTo("androidid")
+        }
 
-        Assertions.assertThat(androidID).isEqualTo("androidid")
+        assertThat(completionCalled).isTrue()
     }
 
     private fun mockAdvertisingInfo(

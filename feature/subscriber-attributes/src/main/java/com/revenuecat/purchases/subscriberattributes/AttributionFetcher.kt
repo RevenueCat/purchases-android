@@ -6,11 +6,29 @@ import android.provider.Settings
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.errorLog
 
-class AttributionFetcher {
+class AttributionFetcher(
+    private val dispatcher: Dispatcher
+) {
 
-    fun getDeviceIdentifiers(applicationContext: Application): Pair<String?, String> {
+    fun getDeviceIdentifiers(
+        applicationContext: Application,
+        completion: (advertisingID: String?, androidID: String) -> Unit
+    ) {
+        dispatcher.executeOnBackground {
+            val advertisingID: String? = getAdvertisingID(applicationContext)
+            val androidID = getAndroidID(applicationContext)
+            completion(advertisingID, androidID)
+        }
+    }
+
+    @SuppressLint("HardwareIds")
+    private fun getAndroidID(applicationContext: Application) =
+        Settings.Secure.getString(applicationContext.contentResolver, Settings.Secure.ANDROID_ID)
+
+    private fun getAdvertisingID(applicationContext: Application): String? {
         var advertisingID: String? = null
         try {
             val adInfo = AdvertisingIdClient.getAdvertisingIdInfo(applicationContext)
@@ -28,10 +46,6 @@ class AttributionFetcher {
                     "Message: ${e.localizedMessage}"
             )
         }
-        @SuppressLint("HardwareIds")
-        val androidID =
-            Settings.Secure.getString(applicationContext.contentResolver, Settings.Secure.ANDROID_ID)
-        return advertisingID to androidID
+        return advertisingID
     }
-
 }

@@ -436,8 +436,12 @@ class SubscriberAttributesManagerTests {
         expectedAndroidID: String
     ) {
         every {
-            mockAttributionFetcher.getDeviceIdentifiers(mockContext)
-        } returns (expectedAdID to expectedAndroidID)
+            mockAttributionFetcher.getDeviceIdentifiers(mockContext, captureLambda())
+        } answers {
+            lambda<(String?, String) -> Unit>().captured.also {
+                it.invoke(expectedAdID, expectedAndroidID)
+            }
+        }
     }
 
     private fun mockSettingUpdatedSyncedAttributes(

@@ -51,6 +51,7 @@ import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.subscriberattributes.AttributionFetcher
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesBackend
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -1535,7 +1536,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             val prefs = PreferenceManager.getDefaultSharedPreferences(application)
             val cache = DeviceCache(prefs, apiKey)
             val subscriberAttributesCache = SubscriberAttributesCache(cache)
-
+            val attributionFetcher = AttributionFetcher(dispatcher)
             return Purchases(
                 application,
                 appUserID,
@@ -1544,7 +1545,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 cache,
                 dispatcher,
                 IdentityManager(cache, subscriberAttributesCache, backend),
-                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesBackend),
+                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesBackend, attributionFetcher),
                 appConfig
             ).also { sharedInstance = it }
         }
