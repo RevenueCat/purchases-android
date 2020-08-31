@@ -674,69 +674,57 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     fun collectDeviceIdentifiers() {
         debugLog("collectDeviceIdentifiers called")
-        dispatcher.executeOnBackground {
-            subscriberAttributesManager.collectDeviceIdentifiers(appUserID, application)
-        }
+        subscriberAttributesManager.collectDeviceIdentifiers(appUserID, application)
     }
 
     fun setAdjustID(adjustID: String?) {
         debugLog("setAdjustID called")
-        dispatcher.executeOnBackground {
-            subscriberAttributesManager.setAttributionID(
-                SubscriberAttributeKey.AttributionIds.Adjust,
-                adjustID,
-                appUserID,
-                application
-            )
-        }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Adjust,
+            adjustID,
+            appUserID,
+            application
+        )
     }
 
     fun setAppsflyerID(appsflyerID: String?) {
         debugLog("setAppsflyerId called")
-        dispatcher.executeOnBackground {
-            subscriberAttributesManager.setAttributionID(
-                SubscriberAttributeKey.AttributionIds.AppsFlyer,
-                appsflyerID,
-                appUserID,
-                application
-            )
-        }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.AppsFlyer,
+            appsflyerID,
+            appUserID,
+            application
+        )
     }
 
     fun setFBAnonymousID(fbAnonymousID: String?) {
         debugLog("setFBAnonymousID called")
-        dispatcher.executeOnBackground {
-            subscriberAttributesManager.setAttributionID(
-                SubscriberAttributeKey.AttributionIds.Facebook,
-                fbAnonymousID,
-                appUserID,
-                application
-            )
-        }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Facebook,
+            fbAnonymousID,
+            appUserID,
+            application
+        )
     }
 
     fun setMparticleID(mparticleID: String?) {
         debugLog("setMparticleID called")
-        dispatcher.executeOnBackground {
-            subscriberAttributesManager.setAttributionID(
-                SubscriberAttributeKey.AttributionIds.Mparticle,
-                mparticleID,
-                appUserID,
-                application
-            )
-        }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Mparticle,
+            mparticleID,
+            appUserID,
+            application
+        )
     }
 
     fun setOnesignalID(onesignalID: String?) {
         debugLog("setMparticleID called")
-        dispatcher.executeOnBackground {
-            subscriberAttributesManager.setAttributionID(
-                SubscriberAttributeKey.AttributionIds.OneSignal,
-                onesignalID,
-                appUserID,
-                application
-            )
-        }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.OneSignal,
+            onesignalID,
+            appUserID,
+            application
+        )
     }
 
     // endregion
