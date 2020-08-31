@@ -143,7 +143,7 @@ class DispatcherTest {
         every {
             executorService.execute(any())
         } just Runs
-        
+
         every {
             executorService.isShutdown
         } returns false

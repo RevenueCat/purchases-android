@@ -1,11 +1,6 @@
 package com.revenuecat.purchases.subscriberattributes
 
-import android.annotation.SuppressLint
 import android.app.Application
-import android.provider.Settings
-import com.google.android.gms.ads.identifier.AdvertisingIdClient
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException
-import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -14,7 +9,8 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
-    val backend: SubscriberAttributesBackend
+    val backend: SubscriberAttributesBackend,
+    val attributionFetcher: AttributionFetcher
 ) {
 
     @Synchronized
@@ -132,23 +128,13 @@ class SubscriberAttributesManager(
     }
 
     private fun getDeviceIdentifiers(applicationContext: Application): MutableMap<String, String?> {
+        val (advertisingID, androidID) = attributionFetcher.getDeviceIdentifiers(applicationContext)
+
         val deviceIdentifiers = mutableMapOf<String, String?>()
-        try {
-            val adInfo = AdvertisingIdClient.getAdvertisingIdInfo(applicationContext)
-            if (!adInfo.isLimitAdTrackingEnabled) {
-                val advertisingID = adInfo.id
-                deviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey] = advertisingID
-            }
-        } catch (e: GooglePlayServicesNotAvailableException) {
-            errorLog("GooglePlayServices is not installed. Couldn't get and advertising identifier. " +
-                "Message: ${e.localizedMessage}")
-        } catch (e: GooglePlayServicesRepairableException) {
-            errorLog("GooglePlayServicesRepairableException when getting advertising identifier. " +
-                "Message: ${e.localizedMessage}")
+
+        if (advertisingID != null) {
+            deviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey] = advertisingID
         }
-        @SuppressLint("HardwareIds")
-        val androidID =
-            Settings.Secure.getString(applicationContext.contentResolver, Settings.Secure.ANDROID_ID)
         deviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey] = androidID
         deviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey] = "true"
         return deviceIdentifiers
