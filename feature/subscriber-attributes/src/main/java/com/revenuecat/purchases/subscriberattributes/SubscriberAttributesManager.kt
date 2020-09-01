@@ -9,7 +9,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
-    val backend: SubscriberAttributesBackend,
+    val backend: SubscriberAttributesPoster,
     private val attributionFetcher: AttributionFetcher
 ) {
 

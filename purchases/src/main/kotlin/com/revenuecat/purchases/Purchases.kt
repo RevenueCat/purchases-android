@@ -53,8 +53,8 @@ import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.subscriberattributes.AttributionFetcher
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesBackend
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
@@ -1514,7 +1514,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 dispatcher,
                 HTTPClient(appConfig)
             )
-            val subscriberAttributesBackend = SubscriberAttributesBackend(backend)
+            val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
             val billingWrapper = BillingWrapper(
                 BillingWrapper.ClientFactory(application),
@@ -1525,6 +1525,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             val cache = DeviceCache(prefs, apiKey)
             val subscriberAttributesCache = SubscriberAttributesCache(cache)
             val attributionFetcher = AttributionFetcher(dispatcher)
+
             return Purchases(
                 application,
                 appUserID,
@@ -1533,7 +1534,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 cache,
                 dispatcher,
                 IdentityManager(cache, subscriberAttributesCache, backend),
-                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesBackend, attributionFetcher),
+                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesPoster, attributionFetcher),
                 appConfig
             ).also { sharedInstance = it }
         }

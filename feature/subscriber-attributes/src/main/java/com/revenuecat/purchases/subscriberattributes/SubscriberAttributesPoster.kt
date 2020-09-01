@@ -8,7 +8,7 @@ import com.revenuecat.purchases.common.HTTP_NOT_FOUND_ERROR_CODE
 import com.revenuecat.purchases.common.HTTP_SERVER_ERROR_CODE
 import com.revenuecat.purchases.common.SubscriberAttributeError
 
-class SubscriberAttributesBackend(
+class SubscriberAttributesPoster(
     private val backend: Backend
 ) {
 

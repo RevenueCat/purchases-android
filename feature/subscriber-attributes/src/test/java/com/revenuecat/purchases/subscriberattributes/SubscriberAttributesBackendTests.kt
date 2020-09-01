@@ -25,7 +25,7 @@ import java.io.IOException
 private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
-class SubscriberAttributesBackendTests {
+class SubscriberAttributesPosterTests {
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val appUserID = "jerry"
     private var backend: Backend = Backend(
@@ -33,7 +33,7 @@ class SubscriberAttributesBackendTests {
         SyncDispatcher(),
         mockClient
     )
-    private var subscriberAttributesBackend = SubscriberAttributesBackend(backend)
+    private var subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
     private var receivedError: PurchasesError? = null
     private var receivedSyncedSuccessfully: Boolean? = null
@@ -102,7 +102,7 @@ class SubscriberAttributesBackendTests {
     fun `posting subscriber attributes works`() {
         mockResponse("/subscribers/$appUserID/attributes", 200)
 
-        subscriberAttributesBackend.postSubscriberAttributes(
+        subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", "un@email.com").toBackendMap()),
             appUserID,
             expectedOnSuccess,
@@ -115,7 +115,7 @@ class SubscriberAttributesBackendTests {
     fun `posting null subscriber attributes works`() {
         mockResponse("/subscribers/$appUserID/attributes", 200)
 
-        subscriberAttributesBackend.postSubscriberAttributes(
+        subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null).toBackendMap()),
             appUserID,
             expectedOnSuccess,
@@ -128,7 +128,7 @@ class SubscriberAttributesBackendTests {
     fun `error when posting attributes`() {
         mockResponse("/subscribers/$appUserID/attributes", 0, clientException = IOException())
 
-        subscriberAttributesBackend.postSubscriberAttributes(
+        subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
             unexpectedOnSuccess,
@@ -152,7 +152,7 @@ class SubscriberAttributesBackendTests {
                 "[{'key_name': 'email', 'message': 'Value is not a valid email address.'}]}"
         )
 
-        subscriberAttributesBackend.postSubscriberAttributes(
+        subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
             unexpectedOnSuccess,
@@ -177,7 +177,7 @@ class SubscriberAttributesBackendTests {
                 "'attribute_errors':[]}"
         )
 
-        subscriberAttributesBackend.postSubscriberAttributes(
+        subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
             unexpectedOnSuccess,
@@ -193,7 +193,7 @@ class SubscriberAttributesBackendTests {
     fun `backend error when posting attributes`() {
         mockResponse("/subscribers/$appUserID/attributes", 503)
 
-        subscriberAttributesBackend.postSubscriberAttributes(
+        subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
             unexpectedOnSuccess,
@@ -215,7 +215,7 @@ class SubscriberAttributesBackendTests {
                 "'message': 'Subscription not found for subscriber.'}"
         )
 
-        subscriberAttributesBackend.postSubscriberAttributes(
+        subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
             unexpectedOnSuccess,

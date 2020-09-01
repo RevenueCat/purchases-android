@@ -20,7 +20,7 @@ import org.junit.Test
 class SubscriberAttributesManagerTests {
 
     private val mockDeviceCache: SubscriberAttributesCache = mockk()
-    private val mockBackend: SubscriberAttributesBackend = mockk()
+    private val mockBackend: SubscriberAttributesPoster = mockk()
     private val mockAttributionFetcher: AttributionFetcher = mockk()
     private val appUserID: String = "appUserID"
     private lateinit var underTest: SubscriberAttributesManager
