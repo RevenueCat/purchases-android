@@ -7,7 +7,7 @@ executors:
       - image: circleci/android:api-28
     working_directory: ~/purchases-android
     environment:
-      JVM_OPTS: -Xmx3200m
+      JVM_OPTS: -Xmx4096m
       CIRCLE_JDK_VERSION: oraclejdk8
 
 jobs:
@@ -32,13 +32,13 @@ jobs:
       - android/restore-build-cache
       - run:
           name: Run Tests
-          command: ./gradlew lint test
+          command: ./gradlew lint test --no-daemon --max-workers=2
       - run:
           name: Test coverage report
           command: ./gradlew testDebugUnitTestCoverage coveralls
       - run:
           name: Detekt
-          command: ./gradlew detektAll
+          command: ./gradlew detektAll --no-daemon --max-workers=2
       - android/save-build-cache
       - store_artifacts:
           path: purchases/build/reports
