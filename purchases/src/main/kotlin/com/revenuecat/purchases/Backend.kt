@@ -12,6 +12,7 @@ import org.json.JSONObject
 
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 private const val HTTP_SERVER_ERROR_CODE = 500
+private const val HTTP_NOT_FOUND_ERROR_CODE = 404
 
 private const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 private const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
@@ -331,7 +332,10 @@ internal class Backend(
                         ?.let { body ->
                             attributeErrors = body.getAttributeErrors()
                         }
-                    onErrorHandler(error, result.responseCode < HTTP_SERVER_ERROR_CODE, attributeErrors)
+                    val internalServerError = result.responseCode >= HTTP_SERVER_ERROR_CODE
+                    val notFoundError = result.responseCode == HTTP_NOT_FOUND_ERROR_CODE
+                    val successfullySynced = !(internalServerError || notFoundError)
+                    onErrorHandler(error, successfullySynced, attributeErrors)
                 }
             }
         })
