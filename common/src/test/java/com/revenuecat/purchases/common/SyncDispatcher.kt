@@ -7,11 +7,11 @@ internal class SyncDispatcher : Dispatcher(mockk()) {
 
     private var closed = false
 
-    override fun enqueue(call: AsyncCall) {
+    override fun enqueue(command: Runnable) {
         if (closed) {
             throw RejectedExecutionException()
         }
-        call.run()
+        command.run()
     }
 
     override fun close() {

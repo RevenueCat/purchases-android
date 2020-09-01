@@ -35,7 +35,7 @@ open class Dispatcher(
         }
     }
 
-    fun enqueue(command: Runnable) {
+    open fun enqueue(command: Runnable) {
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
                 executorService.execute(command)
