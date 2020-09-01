@@ -510,9 +510,6 @@ class SubscriberAttributesPurchasesTests {
         verify {
             subscriberAttributesManagerMock.collectDeviceIdentifiers(appUserId, applicationMock)
         }
-        verify(exactly = 1) {
-            dispatcherMock.executeOnBackground(any())
-        }
     }
 
     @Test
@@ -630,9 +627,6 @@ class SubscriberAttributesPurchasesTests {
                 appUserId,
                 applicationMock
             )
-        }
-        verify(exactly = 1) {
-            dispatcherMock.executeOnBackground(any())
         }
     }
 
