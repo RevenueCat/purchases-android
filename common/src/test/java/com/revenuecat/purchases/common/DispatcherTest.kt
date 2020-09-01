@@ -42,6 +42,10 @@ class DispatcherTest {
         val result = HTTPClient.Result()
 
         every {
+            executorService.isShutdown
+        } returns false
+
+        every {
             executorService.execute(any())
         } just Runs
 

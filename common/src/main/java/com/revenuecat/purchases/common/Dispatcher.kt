@@ -43,7 +43,7 @@ open class Dispatcher(
         }
     }
 
-    fun enqueue(command: () -> Unit) {
+    open fun enqueue(command: () -> Unit) {
         enqueue(Runnable { command.invoke() })
     }
 
