@@ -43,10 +43,6 @@ open class Dispatcher(
         }
     }
 
-    open fun enqueue(command: () -> Unit) {
-        enqueue(Runnable { command.invoke() })
-    }
-
     open fun close() {
         synchronized(this.executorService) {
             this.executorService.shutdownNow()

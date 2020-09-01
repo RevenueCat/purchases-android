@@ -21,7 +21,6 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
-import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
@@ -99,10 +98,6 @@ class PurchasesTest {
     private lateinit var purchases: Purchases
     private var receivedSkus: List<SkuDetails>? = null
     private var receivedOfferings: Offerings? = null
-    private var mockDispatcher = mockk<Dispatcher>().apply {
-        val capturedCommand = slot<() -> Unit>()
-        every { enqueue(capture(capturedCommand)) } answers { capturedCommand.captured() }
-    }
 
     private val stubOfferingIdentifier = "offering_a"
     private val stubProductIdentifier = "monthly_freetrial"
@@ -3721,7 +3716,7 @@ class PurchasesTest {
             mockBackend,
             mockBillingWrapper,
             mockCache,
-            dispatcher = mockDispatcher,
+            dispatcher = SyncDispatcher(),
             identityManager = mockIdentityManager,
             subscriberAttributesManager = mockSubscriberAttributesManager,
             appConfig = AppConfig(

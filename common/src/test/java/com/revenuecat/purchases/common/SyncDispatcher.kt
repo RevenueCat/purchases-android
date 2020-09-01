@@ -14,10 +14,6 @@ internal class SyncDispatcher : Dispatcher(mockk()) {
         command.run()
     }
 
-    override fun enqueue(command: () -> Unit) {
-        enqueue(Runnable { command.invoke() })
-    }
-
     override fun close() {
         closed = true
     }

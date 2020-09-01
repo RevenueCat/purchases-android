@@ -5,7 +5,6 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
-import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
@@ -111,10 +110,7 @@ class PostingTransactionsTests {
             backend = backendMock,
             billingWrapper = billingWrapperMock,
             deviceCache = mockk(relaxed = true),
-            dispatcher = mockk<Dispatcher>().apply {
-                val capturedCommand = slot<() -> Unit>()
-                every { enqueue(capture(capturedCommand)) } answers { capturedCommand.captured() }
-            },
+            dispatcher = SyncDispatcher(),
             identityManager = mockk<com.revenuecat.purchases.identity.IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId
             },

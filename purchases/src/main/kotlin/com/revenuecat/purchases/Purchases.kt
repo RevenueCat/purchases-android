@@ -1373,7 +1373,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     internal fun updatePendingPurchaseQueue() {
         if (billingWrapper.isConnected()) {
             debugLog("[QueryPurchases] Updating pending purchase queue")
-            dispatcher.enqueue {
+            dispatcher.enqueue(Runnable {
                 val queryActiveSubscriptionsResult =
                     billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
                 val queryUnconsumedInAppsRequest =
@@ -1395,7 +1395,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         appUserID
                     )
                 }
-            }
+            })
         } else {
             debugLog("[QueryPurchases] Skipping updating pending purchase queue " +
                 "since BillingClient is not connected yet")

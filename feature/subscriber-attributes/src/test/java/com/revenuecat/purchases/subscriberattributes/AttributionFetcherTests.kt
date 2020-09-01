@@ -5,7 +5,6 @@ import android.content.Context
 import android.provider.Settings
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import com.google.android.gms.common.GooglePlayServicesRepairableException
-import com.revenuecat.purchases.common.Dispatcher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -19,15 +18,7 @@ class AttributionFetcherTests {
 
     @Before
     fun setup() {
-        val mockDispatcher = mockk<Dispatcher>()
-        every {
-            mockDispatcher.enqueue(captureLambda())
-        } answers {
-            lambda<() -> Unit>().captured.also {
-                it.invoke()
-            }
-        }
-        underTest = AttributionFetcher(mockDispatcher)
+        underTest = AttributionFetcher(SyncDispatcher())
     }
 
     @Test

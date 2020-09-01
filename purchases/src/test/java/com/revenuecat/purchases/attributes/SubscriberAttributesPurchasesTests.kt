@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.SyncDispatcher
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
@@ -122,10 +123,7 @@ class SubscriberAttributesPurchasesTests {
             backend = backendMock,
             billingWrapper = billingWrapperMock,
             deviceCache = mockk(relaxed = true),
-            dispatcher = mockk<Dispatcher>().apply {
-                val capturedCommand = slot<() -> Unit>()
-                every { enqueue(capture(capturedCommand)) } answers { capturedCommand.captured() }
-            }.also { dispatcherMock = it },
+            dispatcher = SyncDispatcher(),
             identityManager = mockk<IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId
             },

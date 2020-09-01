@@ -17,11 +17,11 @@ class AttributionFetcher(
         applicationContext: Application,
         completion: (advertisingID: String?, androidID: String) -> Unit
     ) {
-        dispatcher.enqueue {
+        dispatcher.enqueue(Runnable {
             val advertisingID: String? = getAdvertisingID(applicationContext)
             val androidID = getAndroidID(applicationContext)
             completion(advertisingID, androidID)
-        }
+        })
     }
 
     @SuppressLint("HardwareIds")

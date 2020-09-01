@@ -133,9 +133,9 @@ class DispatcherTest {
             executorService.isShutdown
         } returns true
 
-        dispatcher.enqueue {
+        dispatcher.enqueue(Runnable {
             fail("should never execute")
-        }
+        })
 
         verify(exactly = 0) {
             executorService.execute(any())
@@ -152,8 +152,7 @@ class DispatcherTest {
             executorService.isShutdown
         } returns false
 
-        dispatcher.enqueue {
-        }
+        dispatcher.enqueue(Runnable {  })
 
         verify(exactly = 1) {
             executorService.execute(any())
