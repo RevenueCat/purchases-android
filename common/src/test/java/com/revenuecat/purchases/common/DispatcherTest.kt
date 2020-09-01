@@ -129,7 +129,7 @@ class DispatcherTest {
             executorService.isShutdown
         } returns true
 
-        dispatcher.executeOnBackground {
+        dispatcher.enqueue {
             fail("should never execute")
         }
 
@@ -148,7 +148,7 @@ class DispatcherTest {
             executorService.isShutdown
         } returns false
 
-        dispatcher.executeOnBackground {
+        dispatcher.enqueue {
         }
 
         verify(exactly = 1) {

@@ -21,7 +21,7 @@ class AttributionFetcherTests {
     fun setup() {
         val mockDispatcher = mockk<Dispatcher>()
         every {
-            mockDispatcher.executeOnBackground(captureLambda())
+            mockDispatcher.enqueue(captureLambda())
         } answers {
             lambda<() -> Unit>().captured.also {
                 it.invoke()

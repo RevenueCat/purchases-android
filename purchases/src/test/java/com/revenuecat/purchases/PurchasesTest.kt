@@ -101,7 +101,7 @@ class PurchasesTest {
     private var receivedOfferings: Offerings? = null
     private var mockDispatcher = mockk<Dispatcher>().apply {
         val capturedCommand = slot<() -> Unit>()
-        every { executeOnBackground(capture(capturedCommand)) } answers { capturedCommand.captured() }
+        every { enqueue(capture(capturedCommand)) } answers { capturedCommand.captured() }
     }
 
     private val stubOfferingIdentifier = "offering_a"

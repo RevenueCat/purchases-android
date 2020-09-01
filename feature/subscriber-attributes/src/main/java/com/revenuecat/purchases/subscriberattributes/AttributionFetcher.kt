@@ -17,7 +17,7 @@ class AttributionFetcher(
         applicationContext: Application,
         completion: (advertisingID: String?, androidID: String) -> Unit
     ) {
-        dispatcher.executeOnBackground {
+        dispatcher.enqueue {
             val advertisingID: String? = getAdvertisingID(applicationContext)
             val androidID = getAndroidID(applicationContext)
             completion(advertisingID, androidID)

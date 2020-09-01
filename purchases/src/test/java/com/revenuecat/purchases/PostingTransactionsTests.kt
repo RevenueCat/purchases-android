@@ -113,7 +113,7 @@ class PostingTransactionsTests {
             deviceCache = mockk(relaxed = true),
             dispatcher = mockk<Dispatcher>().apply {
                 val capturedCommand = slot<() -> Unit>()
-                every { executeOnBackground(capture(capturedCommand)) } answers { capturedCommand.captured() }
+                every { enqueue(capture(capturedCommand)) } answers { capturedCommand.captured() }
             },
             identityManager = mockk<com.revenuecat.purchases.identity.IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId

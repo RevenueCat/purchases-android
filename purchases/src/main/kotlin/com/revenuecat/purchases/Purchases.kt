@@ -1373,7 +1373,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     internal fun updatePendingPurchaseQueue() {
         if (billingWrapper.isConnected()) {
             debugLog("[QueryPurchases] Updating pending purchase queue")
-            dispatcher.executeOnBackground {
+            dispatcher.enqueue {
                 val queryActiveSubscriptionsResult =
                     billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
                 val queryUnconsumedInAppsRequest =

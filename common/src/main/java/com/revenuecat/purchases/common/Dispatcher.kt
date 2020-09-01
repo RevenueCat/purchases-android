@@ -35,18 +35,16 @@ open class Dispatcher(
         }
     }
 
-    open fun enqueue(call: AsyncCall) {
-        synchronized(this.executorService) {
-            this.executorService.execute(call)
-        }
-    }
-
-    fun executeOnBackground(command: () -> Unit) {
+    fun enqueue(command: Runnable) {
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
                 executorService.execute(command)
             }
         }
+    }
+
+    fun enqueue(command: () -> Unit) {
+        enqueue(Runnable { command.invoke() })
     }
 
     open fun close() {
