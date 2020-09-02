@@ -103,7 +103,7 @@ jobs:
           key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}
       - run:
           name: Deployment
-          command: fastlane android deploy_snapshot
+          command: bundle exec fastlane android deploy_snapshot
 
   assemble:
     executor: android-executor
