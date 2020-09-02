@@ -144,7 +144,6 @@ workflows:
             branches:
               only:
                 - main
-                - tries_to_fix_deploys
       - deploy-snapshot:
           requires:
             - assemble
