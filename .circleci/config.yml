@@ -144,6 +144,7 @@ workflows:
             branches:
               only:
                 - main
+                - tries_to_fix_deploys
       - deploy-snapshot:
           requires:
             - assemble
@@ -151,7 +152,6 @@ workflows:
             branches:
               only:
                 - develop
-                - tries_to_fix_deploys
       - docs-deploy:
           filters:
             tags:
