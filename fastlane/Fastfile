@@ -13,7 +13,7 @@
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
-gradle_file_path = "purchases/build.gradle"
+gradle_file_path = "library.gradle"
 
 default_platform(:android)
 
@@ -29,7 +29,7 @@ platform :android do
     fail ArgumentError, "missing version" unless new_version
     previous_version = android_get_version_name(gradle_file: gradle_file_path)
     android_set_version_name(version_name: new_version, gradle_file: gradle_file_path)
-    increment_version_in(previous_version, new_version, '../purchases/src/main/kotlin/com/revenuecat/purchases/Purchases.kt')
+    increment_version_in(previous_version, new_version, '../common/src/main/java/com/revenuecat/purchases/common/Config.kt')
     increment_version_in(previous_version, new_version, '../gradle.properties')
   end
 
