@@ -63,15 +63,13 @@ platform :android do
 
   desc "Deploy a Snapshot release"
   lane :deploy_snapshot do | options |
-    gradle_file_path = "purchases/build.gradle"
     version = android_get_version_name(gradle_file: gradle_file_path)
     is_snapshot_version = version.end_with?("-SNAPSHOT")
-    unless is_snapshot_version then puts "purchases/build.gradle doesn't have a SNAPSHOT version" else deploy end
+    unless is_snapshot_version then puts "#{gradle_file_path} doesn't have a SNAPSHOT version" else deploy end
   end
 
   desc "Deploy a release"
   lane :deploy do |options|
-    gradle_file_path = "purchases/build.gradle"
     version = android_get_version_name(gradle_file: gradle_file_path)
     puts "Deploying #{version}"
     gradle(
