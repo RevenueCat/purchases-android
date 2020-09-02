@@ -13,7 +13,7 @@
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
-gradle_file_path = "purchases/build.gradle"
+gradle_file_path = "library.gradle"
 
 default_platform(:android)
 
@@ -29,7 +29,7 @@ platform :android do
     fail ArgumentError, "missing version" unless new_version
     previous_version = android_get_version_name(gradle_file: gradle_file_path)
     android_set_version_name(version_name: new_version, gradle_file: gradle_file_path)
-    increment_version_in(previous_version, new_version, '../purchases/src/main/kotlin/com/revenuecat/purchases/Purchases.kt')
+    increment_version_in(previous_version, new_version, '../common/src/main/java/com/revenuecat/purchases/common/Config.kt')
     increment_version_in(previous_version, new_version, '../gradle.properties')
   end
 
@@ -63,25 +63,23 @@ platform :android do
 
   desc "Deploy a Snapshot release"
   lane :deploy_snapshot do | options |
-    gradle_file_path = "purchases/build.gradle"
     version = android_get_version_name(gradle_file: gradle_file_path)
     is_snapshot_version = version.end_with?("-SNAPSHOT")
-    unless is_snapshot_version then puts "purchases/build.gradle doesn't have a SNAPSHOT version" else deploy end
+    unless is_snapshot_version then puts "#{gradle_file_path} doesn't have a SNAPSHOT version" else deploy end
   end
 
   desc "Deploy a release"
   lane :deploy do |options|
-    gradle_file_path = "purchases/build.gradle"
     version = android_get_version_name(gradle_file: gradle_file_path)
     puts "Deploying #{version}"
     gradle(
       tasks: ["androidSourcesJar", "androidJavadocsJar", "uploadArchives"],
       properties: {
-        "signing.keyId" => $GPG_SIGNING_KEY_ID,
-        "signing.password" => $GPG_SIGNING_KEY_PW,
+        "signing.keyId" => ENV['GPG_SIGNING_KEY_ID'],
+        "signing.password" => ENV['GPG_SIGNING_KEY_PW'],
         "signing.secretKeyRingFile" => "./secring.gpg",
-        "SONATYPE_NEXUS_USERNAME" => $SONATYPE_NEXUS_USERNAME,
-        "SONATYPE_NEXUS_PASSWORD" => $SONATYPE_NEXUS_PASSWORD,
+        "SONATYPE_NEXUS_USERNAME" => ENV['SONATYPE_NEXUS_USERNAME'],
+        "SONATYPE_NEXUS_PASSWORD" => ENV['SONATYPE_NEXUS_PASSWORD'],
         "RELEASE_SIGNING_ENABLED" => true,
       }
     )

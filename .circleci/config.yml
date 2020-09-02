@@ -85,7 +85,7 @@ jobs:
             if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
               echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
             else
-              fastlane android deploy
+              bundle exec fastlane android deploy
             fi
 
   deploy-snapshot:
@@ -107,7 +107,7 @@ jobs:
             if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
               echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
             else
-              fastlane android deploy_snapshot
+              bundle exec fastlane android deploy_snapshot
             fi
 
   assemble:
