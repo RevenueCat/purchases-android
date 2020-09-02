@@ -103,12 +103,7 @@ jobs:
           key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}
       - run:
           name: Deployment
-          command: |
-            if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
-              echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
-            else
-              fastlane android deploy_snapshot
-            fi
+          command: fastlane android deploy_snapshot
 
   assemble:
     executor: android-executor
@@ -151,6 +146,7 @@ workflows:
             branches:
               only:
                 - develop
+                - tries_to_fix_deploys
       - docs-deploy:
           filters:
             tags:
