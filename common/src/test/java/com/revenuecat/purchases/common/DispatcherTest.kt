@@ -14,6 +14,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.json.JSONException
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,6 +40,10 @@ class DispatcherTest {
     @Test
     fun executesInExecutor() {
         val result = HTTPClient.Result()
+
+        every {
+            executorService.isShutdown
+        } returns false
 
         every {
             executorService.execute(any())
@@ -120,5 +125,37 @@ class DispatcherTest {
         call.run()
 
         assertThat(errorHolder.get().code).isEqualTo(PurchasesErrorCode.InsufficientPermissionsError)
+    }
+
+    @Test
+    fun `execute on background when service is shutdown`() {
+        every {
+            executorService.isShutdown
+        } returns true
+
+        dispatcher.enqueue(Runnable {
+            fail("should never execute")
+        })
+
+        verify(exactly = 0) {
+            executorService.execute(any())
+        }
+    }
+
+    @Test
+    fun `execute on background when service is not shutdown`() {
+        every {
+            executorService.execute(any())
+        } just Runs
+
+        every {
+            executorService.isShutdown
+        } returns false
+
+        dispatcher.enqueue(Runnable {  })
+
+        verify(exactly = 1) {
+            executorService.execute(any())
+        }
     }
 }

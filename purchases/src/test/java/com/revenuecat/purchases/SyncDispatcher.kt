@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.subscriberattributes
+package com.revenuecat.purchases
 
 import com.revenuecat.purchases.common.Dispatcher
 import io.mockk.mockk

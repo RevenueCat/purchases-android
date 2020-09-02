@@ -1,14 +1,16 @@
 package com.revenuecat.purchases.subscriberattributes
 
+import android.app.Application
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
-import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
-    val backend: SubscriberAttributesPoster
+    val backend: SubscriberAttributesPoster,
+    private val attributionFetcher: AttributionFetcher
 ) {
 
     @Synchronized
@@ -36,7 +38,7 @@ class SubscriberAttributesManager(
 
     @Synchronized
     fun setAttribute(
-        key: com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey,
+        key: SubscriberAttributeKey,
         value: String?,
         appUserID: String
     ) {
@@ -68,8 +70,10 @@ class SubscriberAttributesManager(
                     if (didBackendGetAttributes) {
                         markAsSynced(syncingAppUserID, unsyncedAttributesForUser, attributeErrors)
                     }
-                    errorLog("There was an error syncing subscriber attributes for " +
-                        "appUserID: $syncingAppUserID. Error: $error")
+                    errorLog(
+                        "There was an error syncing subscriber attributes for " +
+                            "appUserID: $syncingAppUserID. Error: $error"
+                    )
                 }
             )
         }
@@ -91,8 +95,10 @@ class SubscriberAttributesManager(
         if (attributesToMarkAsSynced.isEmpty()) {
             return
         }
-        debugLog("Marking the following attributes as synced for appUserID: $appUserID: \n" +
-            attributesToMarkAsSynced.values.joinToString("\n"))
+        debugLog(
+            "Marking the following attributes as synced for appUserID: $appUserID: \n" +
+                attributesToMarkAsSynced.values.joinToString("\n")
+        )
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)
         val attributesToBeSet = currentlyStoredAttributes.toMutableMap()
         attributesToMarkAsSynced.forEach { (key, subscriberAttribute) ->
@@ -105,5 +111,47 @@ class SubscriberAttributesManager(
         }
 
         deviceCache.setAttributes(appUserID, attributesToBeSet)
+    }
+
+    /**
+     * Collect GPS ID, ANDROID ID and sets IP to true automatically
+     */
+    fun collectDeviceIdentifiers(
+        appUserID: String,
+        applicationContext: Application
+    ) {
+        getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
+            setAttributes(deviceIdentifiers, appUserID)
+        }
+    }
+
+    /**
+     * Set the specific ID for the specified attribution network. It also collects GPS ID, ANDROID ID and sets
+     * IP to true automatically.
+     */
+    fun setAttributionID(
+        attributionKey: SubscriberAttributeKey.AttributionIds,
+        value: String?,
+        appUserID: String,
+        applicationContext: Application
+    ) {
+        getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
+            val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
+            setAttributes(attributesToSet, appUserID)
+        }
+    }
+
+    private fun getDeviceIdentifiers(
+        applicationContext: Application,
+        completion: (deviceIdentifiers: Map<String, String?>) -> Unit
+    ) {
+        attributionFetcher.getDeviceIdentifiers(applicationContext) { advertisingID, androidID ->
+            val deviceIdentifiers = mapOf(
+                SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to advertisingID,
+                SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to androidID,
+                SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
+            ).filterValues { it != null }
+            completion(deviceIdentifiers)
+        }
     }
 }

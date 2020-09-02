@@ -27,7 +27,6 @@ import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.ExecutorService
 
 @RunWith(AndroidJUnit4::class)
 class PostingTransactionsTests {
@@ -111,10 +110,7 @@ class PostingTransactionsTests {
             backend = backendMock,
             billingWrapper = billingWrapperMock,
             deviceCache = mockk(relaxed = true),
-            executorService = mockk<ExecutorService>().apply {
-                val capturedRunnable = slot<Runnable>()
-                every { execute(capture(capturedRunnable)) } answers { capturedRunnable.captured.run() }
-            },
+            dispatcher = SyncDispatcher(),
             identityManager = mockk<com.revenuecat.purchases.identity.IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId
             },

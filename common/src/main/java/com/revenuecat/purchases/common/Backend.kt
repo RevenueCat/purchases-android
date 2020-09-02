@@ -13,7 +13,8 @@ import org.json.JSONException
 import org.json.JSONObject
 
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
-private const val HTTP_SERVER_ERROR_CODE = 500
+const val HTTP_SERVER_ERROR_CODE = 500
+const val HTTP_NOT_FOUND_ERROR_CODE = 404
 
 const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
@@ -62,7 +63,7 @@ class Backend(
         body: Map<String, Any?>?,
         onError: (PurchasesError) -> Unit,
         onCompletedSuccessfully: () -> Unit,
-        onCompletedWithErrors: (PurchasesError, Boolean, JSONObject?) -> Unit
+        onCompletedWithErrors: (PurchasesError, Int, JSONObject?) -> Unit
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
@@ -82,8 +83,7 @@ class Backend(
                     onCompletedSuccessfully()
                 } else {
                     val error = result.toPurchasesError().also { errorLog(it) }
-                    val notAnInternalServerError = result.responseCode < HTTP_SERVER_ERROR_CODE
-                    onCompletedWithErrors(error, notAnInternalServerError, result.body)
+                    onCompletedWithErrors(error, result.responseCode, result.body)
                 }
             }
         })

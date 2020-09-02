@@ -51,9 +51,10 @@ import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.subscriberattributes.AttributionFetcher
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
@@ -84,7 +85,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val backend: Backend,
     private val billingWrapper: BillingWrapper,
     private val deviceCache: DeviceCache,
-    private val executorService: ExecutorService,
+    private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @JvmSynthetic internal var appConfig: AppConfig
@@ -599,6 +600,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     // region Subscriber Attributes
+    // region Special Attributes
 
     /**
      * Subscriber attributes are useful for storing additional, structured information on a user.
@@ -668,8 +670,122 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     // endregion
+    // region Attribution IDs
+
+    fun collectDeviceIdentifiers() {
+        debugLog("collectDeviceIdentifiers called")
+        subscriberAttributesManager.collectDeviceIdentifiers(appUserID, application)
+    }
+
+    fun setAdjustID(adjustID: String?) {
+        debugLog("setAdjustID called")
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Adjust,
+            adjustID,
+            appUserID,
+            application
+        )
+    }
+
+    fun setAppsflyerID(appsflyerID: String?) {
+        debugLog("setAppsflyerId called")
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.AppsFlyer,
+            appsflyerID,
+            appUserID,
+            application
+        )
+    }
+
+    fun setFBAnonymousID(fbAnonymousID: String?) {
+        debugLog("setFBAnonymousID called")
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Facebook,
+            fbAnonymousID,
+            appUserID,
+            application
+        )
+    }
+
+    fun setMparticleID(mparticleID: String?) {
+        debugLog("setMparticleID called")
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Mparticle,
+            mparticleID,
+            appUserID,
+            application
+        )
+    }
+
+    fun setOnesignalID(onesignalID: String?) {
+        debugLog("setMparticleID called")
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.OneSignal,
+            onesignalID,
+            appUserID,
+            application
+        )
+    }
 
     // endregion
+    // region Campaign parameters
+
+    fun setMediaSource(mediaSource: String?) {
+        debugLog("setMediaSource called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.MediaSource,
+            mediaSource,
+            appUserID
+        )
+    }
+
+    fun setCampaign(campaign: String?) {
+        debugLog("setCampaign called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Campaign,
+            campaign,
+            appUserID
+        )
+    }
+
+    fun setAdGroup(adGroup: String?) {
+        debugLog("setAdGroup called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.AdGroup,
+            adGroup,
+            appUserID
+        )
+    }
+
+    fun setAd(ad: String?) {
+        debugLog("setAd called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Ad,
+            ad,
+            appUserID
+        )
+    }
+
+    fun setKeyword(keyword: String?) {
+        debugLog("setKeyword called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Keyword,
+            keyword,
+            appUserID
+        )
+    }
+
+    fun setCreative(creative: String?) {
+        debugLog("setCreative called")
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Creative,
+            creative,
+            appUserID
+        )
+    }
+
+    //endregion
+    //endregion
 
     @JvmName("-deprecated_makePurchase")
     @Deprecated(
@@ -1257,33 +1373,29 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     internal fun updatePendingPurchaseQueue() {
         if (billingWrapper.isConnected()) {
             debugLog("[QueryPurchases] Updating pending purchase queue")
-            synchronized(executorService) {
-                if (!executorService.isShutdown) {
-                    executorService.execute {
-                        val queryActiveSubscriptionsResult =
-                            billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
-                        val queryUnconsumedInAppsRequest =
-                            billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
-                        if (queryActiveSubscriptionsResult?.isSuccessful() == true &&
-                            queryUnconsumedInAppsRequest?.isSuccessful() == true
-                        ) {
-                            deviceCache.cleanPreviouslySentTokens(
-                                queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
-                                queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
-                            )
-                            postPurchases(
-                                deviceCache.getActivePurchasesNotInCache(
-                                    queryActiveSubscriptionsResult.purchasesByHashedToken,
-                                    queryUnconsumedInAppsRequest.purchasesByHashedToken
-                                ),
-                                allowSharingPlayStoreAccount,
-                                finishTransactions,
-                                appUserID
-                            )
-                        }
-                    }
+            dispatcher.enqueue(Runnable {
+                val queryActiveSubscriptionsResult =
+                    billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
+                val queryUnconsumedInAppsRequest =
+                    billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
+                if (queryActiveSubscriptionsResult?.isSuccessful() == true &&
+                    queryUnconsumedInAppsRequest?.isSuccessful() == true
+                ) {
+                    deviceCache.cleanPreviouslySentTokens(
+                        queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
+                        queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
+                    )
+                    postPurchases(
+                        deviceCache.getActivePurchasesNotInCache(
+                            queryActiveSubscriptionsResult.purchasesByHashedToken,
+                            queryUnconsumedInAppsRequest.purchasesByHashedToken
+                        ),
+                        allowSharingPlayStoreAccount,
+                        finishTransactions,
+                        appUserID
+                    )
                 }
-            }
+            })
         } else {
             debugLog("[QueryPurchases] Skipping updating pending purchase queue " +
                 "since BillingClient is not connected yet")
@@ -1315,7 +1427,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * Enable debug logging. Useful for debugging issues with the lovely team @RevenueCat
          */
         @JvmStatic
-        var debugLogsEnabled = Config.debugLogsEnabled
+        var debugLogsEnabled
+            get() = Config.debugLogsEnabled
+            set(value) {
+                Config.debugLogsEnabled = value
+            }
 
         @JvmSynthetic
         internal var backingFieldSharedInstance: Purchases? = null
@@ -1392,9 +1508,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 proxyURL
             )
 
+            val dispatcher = Dispatcher(service)
             val backend = Backend(
                 apiKey,
-                Dispatcher(service),
+                dispatcher,
                 HTTPClient(appConfig)
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
@@ -1407,6 +1524,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             val prefs = PreferenceManager.getDefaultSharedPreferences(application)
             val cache = DeviceCache(prefs, apiKey)
             val subscriberAttributesCache = SubscriberAttributesCache(cache)
+            val attributionFetcher = AttributionFetcher(dispatcher)
 
             return Purchases(
                 application,
@@ -1414,9 +1532,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 backend,
                 billingWrapper,
                 cache,
-                service,
+                dispatcher,
                 IdentityManager(cache, subscriberAttributesCache, backend),
-                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesPoster),
+                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesPoster, attributionFetcher),
                 appConfig
             ).also { sharedInstance = it }
         }
@@ -1517,6 +1635,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [network] [AttributionNetwork] to post the data to
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
+        @Deprecated(
+            "Use the .set<NetworkId> functions instead",
+            ReplaceWith(".set<NetworkId>")
+        )
         @JvmStatic
         fun addAttributionData(
             data: JSONObject,
@@ -1540,6 +1662,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param [network] [AttributionNetwork] to post the data to
          * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
          */
+        @Deprecated(
+            "Use the .set<NetworkId> functions instead",
+            ReplaceWith(".set<NetworkId>")
+        )
         @JvmStatic
         fun addAttributionData(
             data: Map<String, Any?>,

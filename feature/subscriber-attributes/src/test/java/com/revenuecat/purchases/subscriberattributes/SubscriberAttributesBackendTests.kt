@@ -205,6 +205,28 @@ class SubscriberAttributesPosterTests {
         assertThat(receivedAttributeErrors).isEmpty()
     }
 
+    @Test
+    fun `Not found error when posting attributes`() {
+        mockResponse(
+            "/subscribers/$appUserID/attributes",
+            404,
+            expectedResultBody = "{" +
+                "'code': 7259," +
+                "'message': 'Subscription not found for subscriber.'}"
+        )
+
+        subscriberAttributesPoster.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
+            appUserID,
+            unexpectedOnSuccess,
+            expectedOnError
+        )
+
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+        assertThat(receivedSyncedSuccessfully).isFalse()
+        assertThat(receivedAttributeErrors!!.size).isEqualTo(0)
+    }
+
     // endregion
 
     // region posting attributes when posting receipt

@@ -67,7 +67,6 @@ import java.util.ArrayList
 import java.util.Collections.emptyList
 import java.util.ConcurrentModificationException
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
@@ -99,10 +98,6 @@ class PurchasesTest {
     private lateinit var purchases: Purchases
     private var receivedSkus: List<SkuDetails>? = null
     private var receivedOfferings: Offerings? = null
-    private var mockExecutorService = mockk<ExecutorService>().apply {
-        val capturedRunnable = slot<Runnable>()
-        every { execute(capture(capturedRunnable)) } answers { capturedRunnable.captured.run() }
-    }
 
     private val stubOfferingIdentifier = "offering_a"
     private val stubProductIdentifier = "monthly_freetrial"
@@ -2825,9 +2820,6 @@ class PurchasesTest {
     fun `when updating pending purchases, if result from query SUBS is not positive skip`() {
         setup()
         every {
-            mockExecutorService.isShutdown
-        } returns false
-        every {
             mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)
         } returns BillingWrapper.QueryPurchasesResult(-1, emptyMap())
         every {
@@ -2842,9 +2834,6 @@ class PurchasesTest {
     @Test
     fun `when updating pending purchases, if result from query INAPP is not positive skip`() {
         setup()
-        every {
-            mockExecutorService.isShutdown
-        } returns false
         every {
             mockBillingWrapper.queryPurchases(PurchaseType.SUBS.toSKUType()!!)
         } returns BillingWrapper.QueryPurchasesResult(0, emptyMap())
@@ -2904,18 +2893,6 @@ class PurchasesTest {
         }
         verify(exactly = 0) {
             mockBillingWrapper.queryPurchases(PurchaseType.INAPP.toSKUType()!!)
-        }
-    }
-
-    @Test
-    fun `when updating pending purchases, do not do anything if executor service disconnected`() {
-        setup()
-        every {
-            mockExecutorService.isShutdown
-        } returns true
-        purchases.updatePendingPurchaseQueue()
-        verify(exactly = 0) {
-            mockBillingWrapper.queryPurchases(any())
         }
     }
 
@@ -3710,9 +3687,6 @@ class PurchasesTest {
         queriedINAPP: Map<String, PurchaseWrapper>,
         notInCache: List<PurchaseWrapper>
     ) {
-        every {
-            mockExecutorService.isShutdown
-        } returns false
         val queryPurchasesResultSUBS = BillingWrapper.QueryPurchasesResult(0, queriedSUBS)
         val queryPurchasesResultINAPP = BillingWrapper.QueryPurchasesResult(0, queriedINAPP)
         every {
@@ -3742,7 +3716,7 @@ class PurchasesTest {
             mockBackend,
             mockBillingWrapper,
             mockCache,
-            executorService = mockExecutorService,
+            dispatcher = SyncDispatcher(),
             identityManager = mockIdentityManager,
             subscriberAttributesManager = mockSubscriberAttributesManager,
             appConfig = AppConfig(

@@ -4,6 +4,8 @@ import android.net.Uri
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.HTTP_NOT_FOUND_ERROR_CODE
+import com.revenuecat.purchases.common.HTTP_SERVER_ERROR_CODE
 import com.revenuecat.purchases.common.SubscriberAttributeError
 
 class SubscriberAttributesPoster(
@@ -27,13 +29,15 @@ class SubscriberAttributesPoster(
                 onErrorHandler(error, false, emptyList())
             },
             onSuccessHandler,
-            { error, notAnInternalServerError, body ->
+            { error, responseCode, body ->
+                val internalServerError = responseCode >= HTTP_SERVER_ERROR_CODE
+                val notFoundError = responseCode == HTTP_NOT_FOUND_ERROR_CODE
+                val successfullySynced = !(internalServerError || notFoundError)
                 var attributeErrors: List<SubscriberAttributeError> = emptyList()
-                body?.takeIf { error.code == PurchasesErrorCode.InvalidSubscriberAttributesError }
-                    ?.let { body ->
-                        attributeErrors = body.getAttributeErrors()
-                    }
-                onErrorHandler(error, notAnInternalServerError, attributeErrors)
+                if (error.code == PurchasesErrorCode.InvalidSubscriberAttributesError) {
+                    attributeErrors = body.getAttributeErrors()
+                }
+                onErrorHandler(error, successfullySynced, attributeErrors)
             }
         )
     }

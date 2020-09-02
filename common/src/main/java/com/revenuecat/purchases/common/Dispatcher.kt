@@ -35,9 +35,11 @@ open class Dispatcher(
         }
     }
 
-    open fun enqueue(call: AsyncCall) {
+    open fun enqueue(command: Runnable) {
         synchronized(this.executorService) {
-            this.executorService.execute(call)
+            if (!executorService.isShutdown) {
+                executorService.execute(command)
+            }
         }
     }
 
