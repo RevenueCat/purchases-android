@@ -76,12 +76,7 @@ platform :android do
       tasks: [
           "androidSourcesJar",
           "androidJavadocsJar",
-          "purchases:uploadArchives",
-          "public:uploadArchives",
-          "common:uploadArchives",
-          "utils:uploadArchives",
-          "feature:subscriber-attributes:uploadArchives",
-          "feature:identity:uploadArchives"
+          "uploadArchives"
       ],
       properties: {
         "signing.keyId" => ENV['GPG_SIGNING_KEY_ID'],
