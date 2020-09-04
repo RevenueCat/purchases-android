@@ -80,8 +80,8 @@ platform :android do
           "public:uploadArchives",
           "common:uploadArchives",
           "utils:uploadArchives",
-          ":feature:subscriber-attributes",
-          ":feature:identity"
+          "feature:subscriber-attributes:uploadArchives",
+          "feature:identity:uploadArchives"
       ],
       properties: {
         "signing.keyId" => ENV['GPG_SIGNING_KEY_ID'],
