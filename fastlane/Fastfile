@@ -73,7 +73,16 @@ platform :android do
     version = android_get_version_name(gradle_file: gradle_file_path)
     puts "Deploying #{version}"
     gradle(
-      tasks: ["androidSourcesJar", "androidJavadocsJar", "uploadArchives"],
+      tasks: [
+          "androidSourcesJar",
+          "androidJavadocsJar",
+          "purchases:uploadArchives",
+          "public:uploadArchives",
+          "common:uploadArchives",
+          "utils:uploadArchives",
+          ":feature:subscriber-attributes",
+          ":feature:identity"
+      ],
       properties: {
         "signing.keyId" => ENV['GPG_SIGNING_KEY_ID'],
         "signing.password" => ENV['GPG_SIGNING_KEY_PW'],
