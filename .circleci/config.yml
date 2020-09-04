@@ -151,6 +151,7 @@ workflows:
             branches:
               only:
                 - develop
+                - uploadarchivesisbroken
       - docs-deploy:
           filters:
             tags:
