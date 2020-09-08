@@ -115,8 +115,7 @@ jobs:
       - run:
           name: Fixing GPG compatibility
           command: |
-            echo import-key | gpg --batch --pinentry-mode=loopback
-            --passphrase-fd 0 --export-secret-keys > /home/circleci/.gnupg/secring.gpg
+            echo import-key | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 --export-secret-keys > /home/circleci/.gnupg/secring.gpg
       - run:
           name: Deployment
           command: |
