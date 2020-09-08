@@ -79,7 +79,7 @@ platform :android do
       properties: {
         "signing.keyId" => ENV['GPG_SIGNING_KEY_ID'],
         "signing.password" => ENV['GPG_SIGNING_KEY_PW'],
-        "signing.secretKeyRingFile" => "~/.gnupg/secring.gpg",
+        "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
         "SONATYPE_NEXUS_USERNAME" => ENV['SONATYPE_NEXUS_USERNAME'],
         "SONATYPE_NEXUS_PASSWORD" => ENV['SONATYPE_NEXUS_PASSWORD'],
         "RELEASE_SIGNING_ENABLED" => true,
