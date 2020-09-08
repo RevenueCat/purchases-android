@@ -108,14 +108,14 @@ jobs:
             echo "export GPG_KEY=$GPG_KEY_FILE" >> $BASH_ENV
       - run:
           name: Base64 decode gpg keystore to file
-          command: echo $SIGNING_GPG_BASE64 | base64 --decode > secring.gpg
+          command: echo $SIGNING_GPG_BASE64 | base64 --decode > import-key
       - run:
           name: Import GPG keys
-          command: gpg --batch --import $GPG_KEY
+          command: gpg --batch --import import-key
       - run:
           name: Fixing GPG compatibility
           command: |
-            echo secring.gpg | gpg --batch --pinentry-mode=loopback
+            echo import-key | gpg --batch --pinentry-mode=loopback
             --passphrase-fd 0 --export-secret-keys > /home/circleci/.gnupg/secring.gpg
       - run:
           name: Deployment
