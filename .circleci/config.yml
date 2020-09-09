@@ -102,6 +102,20 @@ jobs:
       - restore_cache:
           key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}
       - run:
+          name: Prepare GPG keystore file
+          command: |
+            export GPG_KEY_FILE=`mktemp`
+            echo "export GPG_KEY=$GPG_KEY_FILE" >> $BASH_ENV
+      - run:
+          name: Base64 decode gpg keystore to file
+          command: echo $SIGNING_GPG_BASE64 | base64 --decode > $GPG_KEY
+      - run:
+          name: Import GPG keys
+          command: gpg --batch --import $GPG_KEY
+      - run:
+          name: Fixing GPG compatibility
+          command: echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 --export-secret-keys > /home/circleci/.gnupg/secring.gpg
+      - run:
           name: Deployment
           command: |
             if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
