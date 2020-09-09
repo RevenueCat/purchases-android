@@ -159,13 +159,12 @@ workflows:
               only:
                 - main
       - deploy-snapshot:
-#          requires:
-#            - assemble
+          requires:
+            - assemble
           filters:
             branches:
               only:
                 - develop
-                - uploadarchivesisbroken
       - docs-deploy:
           filters:
             tags:
