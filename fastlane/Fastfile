@@ -77,8 +77,8 @@ platform :android do
           "androidSourcesJar", "androidJavadocsJar", "uploadArchives"
       ],
       properties: {
-        "signing.keyId" => ENV['GPG_SIGNING_KEY_ID'],
-        "signing.password" => ENV['GPG_SIGNING_KEY_PW'],
+        "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
+        "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
         "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
         "SONATYPE_NEXUS_USERNAME" => ENV['SONATYPE_NEXUS_USERNAME'],
         "SONATYPE_NEXUS_PASSWORD" => ENV['SONATYPE_NEXUS_PASSWORD'],

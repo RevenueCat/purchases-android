@@ -114,7 +114,7 @@ jobs:
           command: gpg --batch --import $GPG_KEY
       - run:
           name: Fixing GPG compatibility
-          command: echo $GPG_SIGNING_KEY_PW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 --export-secret-keys > /home/circleci/.gnupg/secring.gpg
+          command: echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 --export-secret-keys > /home/circleci/.gnupg/secring.gpg
       - run:
           name: Deployment
           command: |
