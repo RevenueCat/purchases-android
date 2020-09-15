@@ -21,6 +21,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.api.R
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingWrapper
@@ -36,7 +37,6 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.getBillingResponseCodeName
@@ -153,7 +153,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     init {
-        debugLog("Debug logging enabled.")
+        debugLog(application.getString(R.string.debug_logging_enabled))
         debugLog("SDK Version - $frameworkVersion")
         debugLog("Initial App User ID - $backingFieldAppUserID")
         identityManager.configure(backingFieldAppUserID)
@@ -168,7 +168,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /** @suppress */
     override fun onAppBackgrounded() {
-        debugLog("App backgrounded")
+        debugLog(application.getString(R.string.app_backgrounded))
         synchronizeSubscriberAttributesIfNeeded()
     }
 
@@ -895,7 +895,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     handleErrorFetchingOfferings(
                         PurchasesError(
                             PurchasesErrorCode.UnexpectedBackendResponseError,
-                            error.localizedMessage
+                            error.localizedMessage,
+                            application
                         ).also { errorLog(it) },
                         completion
                     )
@@ -1020,7 +1021,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 onError?.let { onError ->
                     onError(
                         purchase,
-                        PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) }
+                        PurchasesError(PurchasesErrorCode.PaymentPendingError, application).also { errorLog(it) }
                     )
                 }
             }
@@ -1261,7 +1262,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     }
                 }.let { purchaseCallbacks ->
                     purchaseCallbacks.forEach { (_, callback) ->
-                        val purchasesError = responseCode.billingResponseToPurchasesError(message)
+                        val purchasesError = responseCode.billingResponseToPurchasesError(message, application)
                             .also { errorLog(it) }
                         dispatch {
                             callback.onError(
@@ -1321,7 +1322,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         } ?: dispatch {
             listener.onError(
-                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) },
+                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError, null, application).also { errorLog(it) },
                 false
             )
         }
@@ -1350,7 +1351,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     debugLog("Couldn't find existing purchase for sku: ${upgradeInfo.oldSku}")
                     dispatch {
                         listener.onError(
-                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError).also { errorLog(it) },
+                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError, null, application).also { errorLog(it) },
                             false
                         )
                     }
@@ -1361,7 +1362,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 debugLog(message)
                 dispatch {
                     listener.onError(
-                        result.responseCode.billingResponseToPurchasesError(message).also { errorLog(it) },
+                        result.responseCode.billingResponseToPurchasesError(message, application).also { errorLog(it) },
                         false
                     )
                 }
@@ -1512,7 +1513,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             val backend = Backend(
                 apiKey,
                 dispatcher,
-                HTTPClient(appConfig)
+                HTTPClient(appConfig),
+                application
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 

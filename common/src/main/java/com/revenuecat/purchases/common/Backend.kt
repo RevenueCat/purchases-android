@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases.common
 
+import android.app.Application
 import android.net.Uri
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
@@ -40,7 +41,8 @@ typealias PostReceiptDataErrorCallback = (
 class Backend(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
-    private val httpClient: HTTPClient
+    private val httpClient: HTTPClient,
+    private val context: Application
 ) {
 
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
@@ -82,7 +84,7 @@ class Backend(
                 if (result.isSuccessful()) {
                     onCompletedSuccessfully()
                 } else {
-                    val error = result.toPurchasesError().also { errorLog(it) }
+                    val error = result.toPurchasesError(context).also { errorLog(it) }
                     onCompletedWithErrors(error, result.responseCode, result.body)
                 }
             }
@@ -120,10 +122,10 @@ class Backend(
                         if (result.isSuccessful()) {
                             onSuccess(result.body!!.buildPurchaserInfo())
                         } else {
-                            onError(result.toPurchasesError().also { errorLog(it) })
+                            onError(result.toPurchasesError(context).also { errorLog(it) })
                         }
                     } catch (e: JSONException) {
-                        onError(e.toPurchasesError().also { errorLog(it) })
+                        onError(e.toPurchasesError(context).also { errorLog(it) })
                     }
                 }
             }
@@ -194,13 +196,13 @@ class Backend(
                             onSuccess(result.body!!.buildPurchaserInfo(), result.body)
                         } else {
                             onError(
-                                result.toPurchasesError().also { errorLog(it) },
+                                result.toPurchasesError(context).also { errorLog(it) },
                                 result.responseCode < HTTP_SERVER_ERROR_CODE,
                                 result.body
                             )
                         }
                     } catch (e: JSONException) {
-                        onError(e.toPurchasesError().also { errorLog(it) }, false, null)
+                        onError(e.toPurchasesError(context).also { errorLog(it) }, false, null)
                     }
                 }
             }
@@ -224,8 +226,8 @@ class Backend(
 
     fun getOfferings(
         appUserID: String,
-        onSuccess: (JSONObject) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
+        onSuccess: (JSONObject) -> Unit
     ) {
         val path = "/subscribers/" + encode(appUserID) + "/offerings"
         val call = object : Dispatcher.AsyncCall() {
@@ -253,10 +255,10 @@ class Backend(
                         try {
                             onSuccess(result.body!!)
                         } catch (e: JSONException) {
-                            onError(e.toPurchasesError().also { errorLog(it) })
+                            onError(e.toPurchasesError(context).also { errorLog(it) })
                         }
                     } else {
-                        onError(result.toPurchasesError().also { errorLog(it) })
+                        onError(result.toPurchasesError(context).also { errorLog(it) })
                     }
                 }
             }
@@ -323,7 +325,7 @@ class Backend(
                 if (result.isSuccessful()) {
                     onSuccessHandler()
                 } else {
-                    onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    onErrorHandler(result.toPurchasesError(context).also { errorLog(it) })
                 }
             }
         })
