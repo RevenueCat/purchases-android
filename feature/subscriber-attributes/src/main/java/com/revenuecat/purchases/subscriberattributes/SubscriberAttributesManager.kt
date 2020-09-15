@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.subscriberattributes.logging.AttributionStrings
 
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
@@ -51,7 +52,7 @@ class SubscriberAttributesManager(
         val unsyncedStoredAttributesForAllUsers =
             deviceCache.getUnsyncedSubscriberAttributes()
         if (unsyncedStoredAttributesForAllUsers.isEmpty()) {
-            debugLog("No subscriber attributes to synchronize.")
+            debugLog(AttributionStrings.NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE)
             return
         }
 
