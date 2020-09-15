@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common
 
-import android.app.Application
 import com.android.billingclient.api.BillingClient
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -36,22 +35,22 @@ enum class BackendErrorCode(val value: Int) {
     }
 }
 
-fun Exception.toPurchasesError(context: Application): PurchasesError {
+fun Exception.toPurchasesError(): PurchasesError {
     return when (this) {
         is JSONException, is IOException -> {
-            PurchasesError(PurchasesErrorCode.NetworkError, localizedMessage, context)
+            PurchasesError(PurchasesErrorCode.NetworkError, localizedMessage)
         }
         is SecurityException -> {
-            PurchasesError(PurchasesErrorCode.InsufficientPermissionsError, localizedMessage, context)
+            PurchasesError(PurchasesErrorCode.InsufficientPermissionsError, localizedMessage)
         }
-        else -> PurchasesError(PurchasesErrorCode.UnknownError, localizedMessage, context)
+        else -> PurchasesError(PurchasesErrorCode.UnknownError, localizedMessage)
     }
 }
 
-fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String, context: Application) =
-    PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage, context)
+fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
+    PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
 
-fun HTTPClient.Result.toPurchasesError(context: Application): PurchasesError {
+fun HTTPClient.Result.toPurchasesError(): PurchasesError {
     var errorCode: Int? = null
     var errorMessage = ""
     body?.let { body ->
@@ -59,11 +58,10 @@ fun HTTPClient.Result.toPurchasesError(context: Application): PurchasesError {
         errorMessage = if (body.has("message")) body.get("message") as String else ""
     }
 
-    return errorCode?.let { BackendErrorCode.valueOf(it) }?.toPurchasesError(errorMessage, context)
+    return errorCode?.let { BackendErrorCode.valueOf(it) }?.toPurchasesError(errorMessage)
         ?: PurchasesError(
             PurchasesErrorCode.UnknownBackendError,
-            "Backend Code: ${errorCode ?: "N/A"} - $errorMessage",
-            context
+            "Backend Code: ${errorCode ?: "N/A"} - $errorMessage"
         )
 }
 
@@ -111,7 +109,7 @@ fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseCodeName()
     }
 }
 
-fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String, context: Application): PurchasesError {
+fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): PurchasesError {
     val errorCode = when (this) {
         BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
         BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
@@ -126,7 +124,7 @@ fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String, context:
         BillingClient.BillingResponseCode.DEVELOPER_ERROR -> PurchasesErrorCode.PurchaseInvalidError
         else -> PurchasesErrorCode.UnknownError
     }
-    return PurchasesError(errorCode, underlyingErrorMessage, context)
+    return PurchasesError(errorCode, underlyingErrorMessage)
 }
 
 data class SubscriberAttributeError(
