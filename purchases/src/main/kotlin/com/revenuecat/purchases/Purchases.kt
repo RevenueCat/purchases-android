@@ -672,11 +672,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Attribution IDs
 
+    /**
+     * Automatically collect subscriber attributes associated with the device identifiers
+     * $gpsAdId, $androidId, $ip
+     */
     fun collectDeviceIdentifiers() {
         debugLog("collectDeviceIdentifiers called")
         subscriberAttributesManager.collectDeviceIdentifiers(appUserID, application)
     }
 
+    /**
+     * Subscriber attribute associated with the Adjust Id for the user
+     * Required for the RevenueCat Adjust integration
+     *
+     * @param adjustID null will delete the subscriber attribute
+     */
     fun setAdjustID(adjustID: String?) {
         debugLog("setAdjustID called")
         subscriberAttributesManager.setAttributionID(
@@ -687,6 +697,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the AppsFlyer Id for the user
+     * Required for the RevenueCat AppsFlyer integration
+     *
+     * @param appsflyerID null will delete the subscriber attribute
+     */
     fun setAppsflyerID(appsflyerID: String?) {
         debugLog("setAppsflyerId called")
         subscriberAttributesManager.setAttributionID(
@@ -697,6 +713,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the Facebook SDK Anonymous Id for the user
+     * Recommended for the RevenueCat Facebook integration
+     *
+     * @param fbAnonymousID null will delete the subscriber attribute
+     */
     fun setFBAnonymousID(fbAnonymousID: String?) {
         debugLog("setFBAnonymousID called")
         subscriberAttributesManager.setAttributionID(
@@ -707,6 +729,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the mParticle Id for the user
+     * Recommended for the RevenueCat mParticle integration
+     *
+     * @param mparticleID null will delete the subscriber attribute
+     */
     fun setMparticleID(mparticleID: String?) {
         debugLog("setMparticleID called")
         subscriberAttributesManager.setAttributionID(
@@ -717,6 +745,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the OneSignal Player Id for the user
+     * Required for the RevenueCat OneSignal integration
+     *
+     * @param onesignalID null will delete the subscriber attribute
+     */
     fun setOnesignalID(onesignalID: String?) {
         debugLog("setMparticleID called")
         subscriberAttributesManager.setAttributionID(
@@ -730,6 +764,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     // endregion
     // region Campaign parameters
 
+    /**
+     * Subscriber attribute associated with the install media source for the user
+     *
+     * @param mediaSource null will delete the subscriber attribute.
+     */
     fun setMediaSource(mediaSource: String?) {
         debugLog("setMediaSource called")
         subscriberAttributesManager.setAttribute(
@@ -739,6 +778,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the install campaign for the user
+     *
+     * @param campaign null will delete the subscriber attribute.
+     */
     fun setCampaign(campaign: String?) {
         debugLog("setCampaign called")
         subscriberAttributesManager.setAttribute(
@@ -748,6 +792,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the install ad group for the user
+     *
+     * @param adGroup null will delete the subscriber attribute.
+     */
     fun setAdGroup(adGroup: String?) {
         debugLog("setAdGroup called")
         subscriberAttributesManager.setAttribute(
@@ -757,6 +806,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the install ad for the user
+     *
+     * @param ad null will delete the subscriber attribute.
+     */
     fun setAd(ad: String?) {
         debugLog("setAd called")
         subscriberAttributesManager.setAttribute(
@@ -766,6 +820,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the install keyword for the user
+     *
+     * @param keyword null will delete the subscriber attribute.
+     */
     fun setKeyword(keyword: String?) {
         debugLog("setKeyword called")
         subscriberAttributesManager.setAttribute(
@@ -775,6 +834,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the install ad creative for the user
+     *
+     * @param creative null will delete the subscriber attribute.
+     */
     fun setCreative(creative: String?) {
         debugLog("setCreative called")
         subscriberAttributesManager.setAttribute(
