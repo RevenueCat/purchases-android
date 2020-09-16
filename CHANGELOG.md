@@ -1,8 +1,9 @@
 ## 3.5.0
-
-- Deprecated `addAttribution` in favor of `setAdjustId`, `setAppsflyerId`, `setFbAnonymousId`, `setMparticleId`.
-- Added support for OneSignal via `setOnesignalId`
-     https://github.com/RevenueCat/purchases-android/pull/184
+- Attribution V2:
+    - Deprecated `addAttribution` in favor of `setAdjustId`, `setAppsflyerId`, `setFbAnonymousId`, `setMparticleId`.
+    - Added support for OneSignal via `setOnesignalId`
+    - Added `setMediaSource`, `setCampaign`, `setAdGroup`, `setAd`, `setKeyword`, `setCreative`, and `collectDeviceIdentifiers`
+         https://github.com/RevenueCat/purchases-android/pull/184
 - Fixed a RejectedExecutionException due to un-synchronized accesses to the ExecutorService 
     https://github.com/RevenueCat/purchases-android/pull/179
 - Fixed downgrades/upgrades https://github.com/RevenueCat/purchases-flutter/issues/93
