@@ -3231,7 +3231,7 @@ class PurchasesTest {
         setup()
         Purchases.sharedInstance.invalidatePurchaserInfoCache()
         verify(exactly = 1) {
-            mockCache.clearPurchaserInfoCacheTimestamp()
+            mockCache.clearPurchaserInfoCache(appUserId)
         }
     }
 
@@ -3527,6 +3527,9 @@ class PurchasesTest {
             } just Runs
             every {
                 clearPurchaserInfoCacheTimestamp()
+            } just Runs
+            every {
+                clearPurchaserInfoCache(appUserId)
             } just Runs
             every {
                 clearOfferingsCacheTimestamp()
