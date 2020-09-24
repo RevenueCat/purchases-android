@@ -124,6 +124,14 @@ class DeviceCache(
     }
 
     @Synchronized
+    fun clearPurchaserInfoCache(appUserID: String) {
+        clearPurchaserInfoCacheTimestamp()
+        val editor = preferences.edit()
+        editor.remove(purchaserInfoCacheKey(appUserID))
+        editor.apply()
+    }
+
+    @Synchronized
     fun setPurchaserInfoCacheTimestampToNow() {
         purchaserInfoCachesLastUpdated = Date()
     }

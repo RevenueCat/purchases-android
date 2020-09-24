@@ -365,6 +365,15 @@ class DeviceCacheTest {
         assertThat(cache.purchaserInfoCachesLastUpdated).isNotNull()
     }
 
+    @Test
+    fun `clearing purchaser info caches clears the shared preferences`() {
+        cache.cachePurchaserInfo(appUserID, mockk(relaxed = true))
+        assertThat(cache.purchaserInfoCachesLastUpdated).isNotNull()
+        cache.clearPurchaserInfoCache(appUserID)
+        verify { mockEditor.remove(cache.purchaserInfoCacheKey(appUserID)) }
+        assertThat(cache.purchaserInfoCachesLastUpdated).isNull()
+    }
+
     private fun mockString(key: String, value: String?) {
         every {
             mockPrefs.getString(eq(key), isNull())
