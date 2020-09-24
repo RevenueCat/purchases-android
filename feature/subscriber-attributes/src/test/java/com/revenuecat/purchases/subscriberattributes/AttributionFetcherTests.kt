@@ -11,6 +11,7 @@ import io.mockk.mockkStatic
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.TimeoutException
 
 class AttributionFetcherTests {
 
@@ -49,7 +50,7 @@ class AttributionFetcherTests {
             mockContext = mockContext,
             expectedAdID = "12345",
             expectedAndroidID = "androidid",
-            gpsException = GooglePlayServicesRepairableException(1, "error", null)
+            expectedException = GooglePlayServicesRepairableException(1, "error", null)
         )
 
         var completionCalled = false
@@ -70,7 +71,7 @@ class AttributionFetcherTests {
             mockContext = mockContext,
             expectedAdID = "12345",
             expectedAndroidID = "androidid",
-            gpsException = GooglePlayServicesRepairableException(1, "error", null)
+            expectedException = GooglePlayServicesRepairableException(1, "error", null)
         )
 
         var completionCalled = false
@@ -105,26 +106,47 @@ class AttributionFetcherTests {
         assertThat(completionCalled).isTrue()
     }
 
+    @Test
+    fun `TimeoutException when getting device identifiers`() {
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(
+            mockContext = mockContext,
+            expectedAdID = "12345",
+            expectedAndroidID = "androidid",
+            expectedException = TimeoutException()
+        )
+
+        var completionCalled = false
+        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+            completionCalled = true
+
+            assertThat(advertisingID).isNull()
+            assertThat(androidID).isEqualTo("androidid")
+        }
+
+        assertThat(completionCalled).isTrue()
+    }
+
     private fun mockAdvertisingInfo(
         mockContext: Context,
         expectedAdID: String?,
         expectedAndroidID: String?,
         expectedIsLimitAdTrackingEnabled: Boolean = false,
-        gpsException: Exception? = null
+        expectedException: Exception? = null
     ) {
         val mockAdInfo = mockk<AdvertisingIdClient.Info>().apply {
             every { isLimitAdTrackingEnabled } returns expectedIsLimitAdTrackingEnabled
             every { id } returns expectedAdID
         }
         mockkStatic(AdvertisingIdClient::class)
-        if (gpsException == null) {
+        if (expectedException == null) {
             every {
                 AdvertisingIdClient.getAdvertisingIdInfo(mockContext)
             } returns mockAdInfo
         } else {
             every {
                 AdvertisingIdClient.getAdvertisingIdInfo(mockContext)
-            } throws gpsException
+            } throws expectedException
         }
 
         mockkStatic(Settings.Secure::class)
