@@ -1,3 +1,11 @@
+## 3.5.1
+
+- Fixes an issue where after calling invalidatePurchaserInfoCache and then purchaserInfoWithCompletion, the invalidated 
+  cached version of purchaserInfo would be returned first, and only the delegate would get the updated version.
+    https://github.com/RevenueCat/purchases-android/pull/189
+- Catch TimeoutException when calling getAdvertisingIdInfo
+    https://github.com/RevenueCat/purchases-android/pull/194
+   
 ## 3.5.0
 - Attribution V2:
     - Deprecated `addAttribution` in favor of `setAdjustId`, `setAppsflyerId`, `setFbAnonymousId`, `setMparticleId`.
