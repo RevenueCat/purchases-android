@@ -11,6 +11,7 @@ import io.mockk.mockkStatic
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import java.util.concurrent.TimeoutException
 
 class AttributionFetcherTests {
@@ -107,13 +108,13 @@ class AttributionFetcherTests {
     }
 
     @Test
-    fun `TimeoutException when getting device identifiers`() {
+    fun `IOException when getting device identifiers`() {
         val mockContext = mockk<Application>(relaxed = true)
         mockAdvertisingInfo(
             mockContext = mockContext,
             expectedAdID = "12345",
             expectedAndroidID = "androidid",
-            expectedException = TimeoutException()
+            expectedException = IOException(TimeoutException())
         )
 
         var completionCalled = false
