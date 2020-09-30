@@ -128,6 +128,27 @@ class AttributionFetcherTests {
         assertThat(completionCalled).isTrue()
     }
 
+    @Test
+    fun `TimeoutException when getting device identifiers`() {
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(
+            mockContext = mockContext,
+            expectedAdID = "12345",
+            expectedAndroidID = "androidid",
+            expectedException = TimeoutException()
+        )
+
+        var completionCalled = false
+        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+            completionCalled = true
+
+            assertThat(advertisingID).isNull()
+            assertThat(androidID).isEqualTo("androidid")
+        }
+
+        assertThat(completionCalled).isTrue()
+    }
+
     private fun mockAdvertisingInfo(
         mockContext: Context,
         expectedAdID: String?,

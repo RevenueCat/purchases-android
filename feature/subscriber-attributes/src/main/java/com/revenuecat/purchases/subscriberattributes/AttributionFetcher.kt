@@ -9,6 +9,7 @@ import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.errorLog
 import java.io.IOException
+import java.util.concurrent.TimeoutException
 
 class AttributionFetcher(
     private val dispatcher: Dispatcher
@@ -44,6 +45,11 @@ class AttributionFetcher(
         } catch (e: GooglePlayServicesRepairableException) {
             errorLog(
                 "GooglePlayServicesRepairableException when getting advertising identifier. " +
+                    "Message: ${e.localizedMessage}"
+            )
+        } catch (e: TimeoutException) {
+            errorLog(
+                "TimeoutException when getting advertising identifier. " +
                     "Message: ${e.localizedMessage}"
             )
         } catch (e: IOException) {
