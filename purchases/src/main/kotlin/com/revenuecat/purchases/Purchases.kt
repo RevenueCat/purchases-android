@@ -434,38 +434,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * Change the product from [productChangeInfo] with the one in [packageToPurchase].
-     *
-     * @param [activity] Current activity
-     * @param [packageToPurchase] The new package to purchase
-     * @param [productChangeInfo] The oldProduct of this object will be replaced with the
-     * product in [packageToPurchase]. An optional [BillingFlowParams.ProrationMode] can also be specified.
-     * @param [listener] The listener that will be called when the purchase of the new product completes.
-     */
-    fun purchasePackage(
-        activity: Activity,
-        packageToPurchase: Package,
-        productChangeInfo: ProductChangeInfo,
-        listener: ProductChangeListener
-    ) {
-        @Suppress("DEPRECATION")
-        purchasePackage(
-            activity,
-            packageToPurchase,
-            UpgradeInfo(productChangeInfo.oldProduct.productID, productChangeInfo.prorationMode),
-            object : MakePurchaseListener {
-                override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
-                    listener.onCompleted(purchase, purchaserInfo)
-                }
-
-                override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                    listener.onError(error, userCancelled)
-                }
-            }
-        )
-    }
-
-    /**
      * Make a purchase.
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
