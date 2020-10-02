@@ -1128,12 +1128,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     }
                 )
             } else {
-                onError?.let { onError ->
-                    onError(
-                        purchase,
-                        PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) }
-                    )
-                }
+                onError?.invoke(
+                    purchase,
+                    PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) }
+                )
             }
         }
     }
@@ -1345,7 +1343,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards PurchaseWrapper>) {
                 val productChangeInProgress = state.productChangeCallback != null
                 if (productChangeInProgress && purchases.isEmpty()) {
-                    deferredChangeCompleted()
+                    // Can happen if the product change is ProrationMode.DEFERRED
+                    getPurchaserInfoWith { purchaserInfo ->
+                        state.productChangeCallback?.let { callback ->
+                            dispatch {
+                                callback.onCompleted(null, purchaserInfo)
+                            }
+                        }
+                    }
                     return
                 }
 
@@ -1426,16 +1431,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun deferredChangeCompleted() {
-        getPurchaserInfoWith { purchaserInfo ->
-            state.productChangeCallback?.let { callback ->
-                dispatch {
-                    callback.onCompleted(null, purchaserInfo)
-                }
-            }
-        }
-    }
-
     private fun startPurchase(
         activity: Activity,
         product: SkuDetails,
@@ -1468,12 +1463,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 null,
                 presentedOfferingIdentifier
             )
-        } ?: dispatch {
-            listener.onError(
-                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) },
-                false
-            )
-        }
+        } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
 
     private fun startProductChange(
@@ -1509,12 +1499,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 presentedOfferingIdentifier,
                 listener
             )
-        } ?: dispatch {
-            listener.onError(
-                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) },
-                false
-            )
-        }
+        } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
 
     private fun replaceOldPurchaseWithNewProduct(
