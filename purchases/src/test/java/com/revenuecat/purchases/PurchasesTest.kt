@@ -3404,6 +3404,37 @@ class PurchasesTest {
         assertThat(receivedUserCancelled).isFalse()
     }
 
+    @Test
+    fun `Deferred downgrade`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val (skuDetails, offerings) = stubOfferings("onemonth_freetrial")
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+
+        purchases.purchasePackageWith(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            UpgradeInfo(oldPurchase.sku)
+        ) { _, _ -> }
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+
+    }
+
     // region Private Methods
     private fun mockBillingWrapper() {
         with(mockBillingWrapper) {

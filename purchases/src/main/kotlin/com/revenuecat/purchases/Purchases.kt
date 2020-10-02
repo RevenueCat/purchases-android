@@ -48,6 +48,8 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
+import com.revenuecat.purchases.interfaces.ProductChangeListener
+import com.revenuecat.purchases.interfaces.PurchaseListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
@@ -335,6 +337,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * and the optional prorationMode.
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated(
+        message = "The listener has changed since the purchase sent to the onCompleted can be null",
+        replaceWith = ReplaceWith(
+            expression = "purchasePackage(activity, packageToPurchase, productChangeInfo, listener)"
+        ),
+        level = DeprecationLevel.WARNING
+    )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
@@ -347,6 +356,38 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             packageToPurchase.offering,
             upgradeInfo,
             listener
+        )
+    }
+
+    /**
+     * Change the product from [productChangeInfo] with the one in [packageToPurchase].
+     *
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The new package to purchase
+     * @param [productChangeInfo] The oldProduct of this object will be replaced with the product in [packageToPurchase].
+     * An optional [BillingFlowParams.ProrationMode] can also be specified.
+     * @param [listener] The listener that will be called when the purchase of the new product completes.
+     */
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        productChangeInfo: ProductChangeInfo,
+        listener: ProductChangeListener
+    ) {
+        @Suppress("DEPRECATION")
+        purchasePackage(
+            activity,
+            packageToPurchase,
+            UpgradeInfo(productChangeInfo.oldProduct.productID, productChangeInfo.prorationMode),
+            object : MakePurchaseListener {
+                override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
+                    listener.onCompleted(purchase, purchaserInfo)
+                }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    listener.onError(error, userCancelled)
+                }
+            }
         )
     }
 
@@ -1248,31 +1289,34 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
+    @Synchronized
+    private fun getProductChangeCallback(sku: String): ProductChangeListener? {
+        return state.productChangeCallbacks[sku].also {
+            state =
+                state.copy(productChangeCallbacks = state.productChangeCallbacks.filterNot { it.key == sku })
+        }
+    }
+
     private fun getPurchasesUpdatedListener(): BillingWrapper.PurchasesUpdatedListener {
         return object : BillingWrapper.PurchasesUpdatedListener {
             override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards PurchaseWrapper>) {
+                val productChangeInProgress = state.productChangeSku != null
+                if (productChangeInProgress && purchases.isEmpty()) {
+                    deferredChangeCompleted()
+                    return
+                }
+
+                val callbackPair =
+                    if (productChangeInProgress) getProductChangeCompletedCallbacks()
+                    else getPurchaseCompletedCallbacks()
+
                 postPurchases(
                     purchases,
                     allowSharingPlayStoreAccount,
                     finishTransactions,
                     appUserID,
-                    { purchaseWrapper, info ->
-                        getPurchaseCallback(purchaseWrapper.sku)?.let { callback ->
-                            dispatch {
-                                callback.onCompleted(purchaseWrapper.containedPurchase, info)
-                            }
-                        }
-                    },
-                    { purchase, error ->
-                        getPurchaseCallback(purchase.sku)?.let { callback ->
-                            dispatch {
-                                callback.onError(
-                                    error,
-                                    error.code == PurchasesErrorCode.PurchaseCancelledError
-                                )
-                            }
-                        }
-                    }
+                    onSuccess = callbackPair.first,
+                    onError = callbackPair.second
                 )
             }
 
@@ -1282,11 +1326,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 message: String
             ) {
                 synchronized(this@Purchases) {
-                    state.purchaseCallbacks.also {
-                        state = state.copy(purchaseCallbacks = emptyMap())
+                    if (state.productChangeSku != null) {
+                        state.productChangeCallbacks.also {
+                            state = state.copy(productChangeCallbacks = emptyMap())
+                        }
+                    } else {
+                        state.purchaseCallbacks.also {
+                            state = state.copy(purchaseCallbacks = emptyMap())
+                        }
                     }
-                }.let { purchaseCallbacks ->
-                    purchaseCallbacks.forEach { (_, callback) ->
+                }.let { callbacks ->
+                    callbacks.forEach { (_, callback) ->
                         val purchasesError = responseCode.billingResponseToPurchasesError(message)
                             .also { errorLog(it) }
                         dispatch {
@@ -1295,6 +1345,66 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                 purchasesError.code == PurchasesErrorCode.PurchaseCancelledError
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun getProductChangeCompletedCallbacks(): Pair<(PurchaseWrapper, PurchaserInfo) -> Unit, (
+        PurchaseWrapper,
+        PurchasesError
+    ) -> Unit> {
+        val onSuccess: (PurchaseWrapper, PurchaserInfo) -> Unit = { purchaseWrapper, info ->
+            getPurchaseCallback(purchaseWrapper.sku)?.let { purchaseCallback ->
+                dispatch {
+                    purchaseCallback.onCompleted(purchaseWrapper.containedPurchase, info)
+                }
+            }
+        }
+        val onError: (PurchaseWrapper, PurchasesError) -> Unit = { purchase, error ->
+            getPurchaseCallback(purchase.sku)?.let { purchaseCallback ->
+                purchaseCallback.dispatch(error)
+            }
+        }
+
+        return Pair(onSuccess, onError)
+    }
+
+    private fun getPurchaseCompletedCallbacks(): Pair<(PurchaseWrapper, PurchaserInfo) -> Unit, (
+        PurchaseWrapper,
+        PurchasesError
+    ) -> Unit> {
+        val onSuccess: (PurchaseWrapper, PurchaserInfo) -> Unit = { purchaseWrapper, info ->
+            getProductChangeCallback(purchaseWrapper.sku)?.let { callback ->
+                dispatch {
+                    callback.onCompleted(purchaseWrapper.containedPurchase, info)
+                }
+            }
+        }
+        val onError: (PurchaseWrapper, PurchasesError) -> Unit = { purchase, error ->
+            getProductChangeCallback(purchase.sku)?.let { productChangeCallback ->
+                productChangeCallback.dispatch(error)
+            }
+        }
+        return Pair(onSuccess, onError)
+    }
+
+    private fun PurchaseListener.dispatch(error: PurchasesError) {
+        dispatch {
+            onError(
+                error,
+                error.code == PurchasesErrorCode.PurchaseCancelledError
+            )
+        }
+    }
+
+    private fun deferredChangeCompleted() {
+        getPurchaserInfoWith { purchaserInfo ->
+            state.productChangeSku?.let {
+                getProductChangeCallback(it)?.let { callback ->
+                    dispatch {
+                        callback.onCompleted(null, purchaserInfo)
                     }
                 }
             }
