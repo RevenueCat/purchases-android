@@ -72,6 +72,9 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
+typealias SuccessfulPurchaseCallback = (PurchaseWrapper, PurchaserInfo) -> Unit
+typealias ErrorPurchaseCallback = (PurchaseWrapper, PurchasesError) -> Unit
+
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
  * for your user. This can be when a user logs in if you have accounts or on launch if you can
@@ -1093,8 +1096,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
-        onSuccess: ((PurchaseWrapper, PurchaserInfo) -> Unit)? = null,
-        onError: ((PurchaseWrapper, PurchasesError) -> Unit)? = null
+        onSuccess: (SuccessfulPurchaseCallback)? = null,
+        onError: (ErrorPurchaseCallback)? = null
     ) {
         purchases.forEach { purchase ->
             if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
@@ -1142,8 +1145,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
-        onSuccess: ((PurchaseWrapper, PurchaserInfo) -> Unit)? = null,
-        onError: ((PurchaseWrapper, PurchasesError) -> Unit)? = null
+        onSuccess: (SuccessfulPurchaseCallback)? = null,
+        onError: (ErrorPurchaseCallback)? = null
     ) {
         val unsyncedSubscriberAttributesByKey =
             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
@@ -1381,16 +1384,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun getPurchaseCompletedCallbacks(
-    ): Pair<(PurchaseWrapper, PurchaserInfo) -> Unit, (PurchaseWrapper, PurchasesError) -> Unit> {
-        val onSuccess: (PurchaseWrapper, PurchaserInfo) -> Unit = { purchaseWrapper, info ->
+    private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
+        val onSuccess: SuccessfulPurchaseCallback = { purchaseWrapper, info ->
             getPurchaseCallback(purchaseWrapper.sku)?.let { purchaseCallback ->
                 dispatch {
                     purchaseCallback.onCompleted(purchaseWrapper.containedPurchase, info)
                 }
             }
         }
-        val onError: (PurchaseWrapper, PurchasesError) -> Unit = { purchase, error ->
+        val onError: ErrorPurchaseCallback = { purchase, error ->
             getPurchaseCallback(purchase.sku)?.let { purchaseCallback ->
                 purchaseCallback.dispatch(error)
             }
@@ -1399,16 +1401,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         return Pair(onSuccess, onError)
     }
 
-    private fun getProductChangeCompletedCallbacks(
-    ): Pair<(PurchaseWrapper, PurchaserInfo) -> Unit, (PurchaseWrapper, PurchasesError) -> Unit> {
-        val onSuccess: (PurchaseWrapper, PurchaserInfo) -> Unit = { purchaseWrapper, info ->
+    private fun getProductChangeCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
+        val onSuccess: SuccessfulPurchaseCallback = { purchaseWrapper, info ->
             getAndClearProductChangeCallback(purchaseWrapper.sku)?.let { productChangeCallback ->
                 dispatch {
                     productChangeCallback.onCompleted(purchaseWrapper.containedPurchase, info)
                 }
             }
         }
-        val onError: (PurchaseWrapper, PurchasesError) -> Unit = { purchase, error ->
+        val onError: ErrorPurchaseCallback = { purchase, error ->
             getAndClearProductChangeCallback(purchase.sku)?.let { productChangeCallback ->
                 productChangeCallback.dispatch(error)
             }
@@ -1427,11 +1428,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun deferredChangeCompleted() {
         getPurchaserInfoWith { purchaserInfo ->
-            state.productChangeSku?.let {
-                getAndClearProductChangeCallback(it)?.let { callback ->
-                    dispatch {
-                        callback.onCompleted(null, purchaserInfo)
-                    }
+            state.productChangeCallback?.let { callback ->
+                dispatch {
+                    callback.onCompleted(null, purchaserInfo)
                 }
             }
         }
