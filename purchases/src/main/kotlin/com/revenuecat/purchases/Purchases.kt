@@ -1359,6 +1359,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 val productChangeInProgress = state.productChangeCallback != null
                 if (productChangeInProgress && purchases.isEmpty()) {
                     // Can happen if the product change is ProrationMode.DEFERRED
+                    invalidatePurchaserInfoCache()
                     getPurchaserInfoWith { purchaserInfo ->
                         getAndClearProductChangeCallback()?.let { callback ->
                             dispatch {
