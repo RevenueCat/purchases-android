@@ -1331,17 +1331,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     @Synchronized
-    private fun getProductChangeCallback(sku: String): ProductChangeListener? {
-        return state.productChangeCallbacks[sku].also {
-            state =
-                state.copy(productChangeCallbacks = state.productChangeCallbacks.filterNot { it.key == sku })
+    private fun getAndClearProductChangeCallback(sku: String): ProductChangeListener? {
+        return state.productChangeCallback.also {
+            state = state.copy(productChangeCallback = null)
         }
     }
 
     private fun getPurchasesUpdatedListener(): BillingWrapper.PurchasesUpdatedListener {
         return object : BillingWrapper.PurchasesUpdatedListener {
             override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards PurchaseWrapper>) {
-                val productChangeInProgress = state.productChangeSku != null
+                val productChangeInProgress = state.productChangeCallback != null
                 if (productChangeInProgress && purchases.isEmpty()) {
                     deferredChangeCompleted()
                     return
@@ -1366,36 +1365,24 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 @BillingClient.BillingResponseCode responseCode: Int,
                 message: String
             ) {
+                val purchasesError =
+                    responseCode.billingResponseToPurchasesError(message).also { errorLog(it) }
+
                 synchronized(this@Purchases) {
-                    if (state.productChangeSku != null) {
-                        state.productChangeCallbacks.also {
-                            state = state.copy(productChangeCallbacks = emptyMap())
-                        }
-                    } else {
-                        state.purchaseCallbacks.also {
-                            state = state.copy(purchaseCallbacks = emptyMap())
-                        }
-                    }
-                }.let { callbacks ->
-                    callbacks.forEach { (_, callback) ->
-                        val purchasesError = responseCode.billingResponseToPurchasesError(message)
-                            .also { errorLog(it) }
-                        dispatch {
-                            callback.onError(
-                                purchasesError,
-                                purchasesError.code == PurchasesErrorCode.PurchaseCancelledError
-                            )
-                        }
+                    state.productChangeCallback?.let { productChangeCallback ->
+                        state = state.copy(productChangeCallback = null)
+                        productChangeCallback.dispatch(purchasesError)
+                    } ?: state.purchaseCallbacks.let { purchaseCallbacks ->
+                        state = state.copy(purchaseCallbacks = emptyMap())
+                        purchaseCallbacks.values.forEach { it.dispatch(purchasesError) }
                     }
                 }
             }
         }
     }
 
-    private fun getProductChangeCompletedCallbacks(): Pair<(PurchaseWrapper, PurchaserInfo) -> Unit, (
-        PurchaseWrapper,
-        PurchasesError
-    ) -> Unit> {
+    private fun getPurchaseCompletedCallbacks(
+    ): Pair<(PurchaseWrapper, PurchaserInfo) -> Unit, (PurchaseWrapper, PurchasesError) -> Unit> {
         val onSuccess: (PurchaseWrapper, PurchaserInfo) -> Unit = { purchaseWrapper, info ->
             getPurchaseCallback(purchaseWrapper.sku)?.let { purchaseCallback ->
                 dispatch {
@@ -1412,19 +1399,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         return Pair(onSuccess, onError)
     }
 
-    private fun getPurchaseCompletedCallbacks(): Pair<(PurchaseWrapper, PurchaserInfo) -> Unit, (
-        PurchaseWrapper,
-        PurchasesError
-    ) -> Unit> {
+    private fun getProductChangeCompletedCallbacks(
+    ): Pair<(PurchaseWrapper, PurchaserInfo) -> Unit, (PurchaseWrapper, PurchasesError) -> Unit> {
         val onSuccess: (PurchaseWrapper, PurchaserInfo) -> Unit = { purchaseWrapper, info ->
-            getProductChangeCallback(purchaseWrapper.sku)?.let { callback ->
+            getAndClearProductChangeCallback(purchaseWrapper.sku)?.let { productChangeCallback ->
                 dispatch {
-                    callback.onCompleted(purchaseWrapper.containedPurchase, info)
+                    productChangeCallback.onCompleted(purchaseWrapper.containedPurchase, info)
                 }
             }
         }
         val onError: (PurchaseWrapper, PurchasesError) -> Unit = { purchase, error ->
-            getProductChangeCallback(purchase.sku)?.let { productChangeCallback ->
+            getAndClearProductChangeCallback(purchase.sku)?.let { productChangeCallback ->
                 productChangeCallback.dispatch(error)
             }
         }
@@ -1443,7 +1428,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun deferredChangeCompleted() {
         getPurchaserInfoWith { purchaserInfo ->
             state.productChangeSku?.let {
-                getProductChangeCallback(it)?.let { callback ->
+                getAndClearProductChangeCallback(it)?.let { callback ->
                     dispatch {
                         callback.onCompleted(null, purchaserInfo)
                     }
@@ -1499,8 +1484,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeListener
     ) {
-        state = state.copy(productChangeSku = product.sku)
-
         debugLog("product change started:" +
             " $product ${presentedOfferingIdentifier?.let {
                 " - offering: $presentedOfferingIdentifier"
@@ -1513,10 +1496,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 debugLog("finishTransactions is set to false and a purchase has been started. " +
                     "Are you sure you want to do this?")
             }
-            if (!state.productChangeCallbacks.containsKey(product.sku)) {
-                state = state.copy(
-                    productChangeCallbacks = state.productChangeCallbacks + mapOf(product.sku to listener)
-                )
+            if (state.productChangeCallback == null) {
+                state = state.copy(productChangeCallback = listener)
                 userPurchasing = identityManager.currentAppUserID
             }
         }

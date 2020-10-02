@@ -8,7 +8,6 @@ internal data class PurchasesState(
     val allowSharingPlayStoreAccount: Boolean? = null,
     val updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null,
     val purchaseCallbacks: Map<String, MakePurchaseListener> = emptyMap(),
-    val productChangeCallbacks: Map<String, ProductChangeListener> = emptyMap(),
-    val lastSentPurchaserInfo: PurchaserInfo? = null,
-    val productChangeSku: String? = null
+    val productChangeCallback: ProductChangeListener? = null,
+    val lastSentPurchaserInfo: PurchaserInfo? = null
 )
