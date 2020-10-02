@@ -350,6 +350,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    fun purchaseProduct(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeListener
+    ) {
+        startProductChange(
+            activity,
+            skuDetails,
+            null,
+            upgradeInfo,
+            listener
+        )
+    }
+
     /**
      * Make a purchase.
      * @param [activity] Current activity
@@ -1332,7 +1347,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     @Synchronized
-    private fun getAndClearProductChangeCallback(sku: String): ProductChangeListener? {
+    private fun getAndClearProductChangeCallback(): ProductChangeListener? {
         return state.productChangeCallback.also {
             state = state.copy(productChangeCallback = null)
         }
@@ -1345,7 +1360,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 if (productChangeInProgress && purchases.isEmpty()) {
                     // Can happen if the product change is ProrationMode.DEFERRED
                     getPurchaserInfoWith { purchaserInfo ->
-                        state.productChangeCallback?.let { callback ->
+                        getAndClearProductChangeCallback()?.let { callback ->
                             dispatch {
                                 callback.onCompleted(null, purchaserInfo)
                             }
@@ -1408,14 +1423,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getProductChangeCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { purchaseWrapper, info ->
-            getAndClearProductChangeCallback(purchaseWrapper.sku)?.let { productChangeCallback ->
+            getAndClearProductChangeCallback()?.let { productChangeCallback ->
                 dispatch {
                     productChangeCallback.onCompleted(purchaseWrapper.containedPurchase, info)
                 }
             }
         }
-        val onError: ErrorPurchaseCallback = { purchase, error ->
-            getAndClearProductChangeCallback(purchase.sku)?.let { productChangeCallback ->
+        val onError: ErrorPurchaseCallback = { _, error ->
+            getAndClearProductChangeCallback()?.let { productChangeCallback ->
                 productChangeCallback.dispatch(error)
             }
         }
