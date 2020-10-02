@@ -306,13 +306,45 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * oldSku and the optional prorationMode.
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated(
+        message = "The listener has changed to accept a null Purchase on the onCompleted",
+        replaceWith = ReplaceWith(
+            expression = """
+                Purchases.sharedInstance.purchasePackage(activity, skuDetails, upgradeInfo, ProductChangeListener)
+            """
+        ),
+        level = DeprecationLevel.WARNING
+    )
     fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
         upgradeInfo: UpgradeInfo,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, skuDetails, null, upgradeInfo, listener)
+        startProductChange(
+            activity,
+            skuDetails,
+            null,
+            upgradeInfo,
+            object : ProductChangeListener {
+                override fun onCompleted(purchase: Purchase?, purchaserInfo: PurchaserInfo) {
+                    if (purchase == null) {
+                        listener.onError(
+                            PurchasesError(
+                                PurchasesErrorCode.PaymentPendingError,
+                                "The product change has been deferred."
+                            ), false
+                        )
+                    } else {
+                        listener.onCompleted(purchase, purchaserInfo)
+                    }
+                }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    listener.onError(error, userCancelled)
+                }
+            }
+        )
     }
 
     /**
@@ -326,7 +358,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skuDetails: SkuDetails,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, skuDetails, null, null, listener)
+        startPurchase(activity, skuDetails, null, listener)
     }
 
     /**
@@ -338,9 +370,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        message = "The listener has changed since the purchase sent to the onCompleted can be null",
+        message = "The listener has changed to accept a null Purchase on the onCompleted",
         replaceWith = ReplaceWith(
-            expression = "purchasePackage(activity, packageToPurchase, productChangeInfo, listener)"
+            expression = "Purchases.sharedInstance.purchasePackage(" +
+                "activity, packageToPurchase, upgradeInfo, ProductChangeListener)"
         ),
         level = DeprecationLevel.WARNING
     )
@@ -350,7 +383,48 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         upgradeInfo: UpgradeInfo,
         listener: MakePurchaseListener
     ) {
-        startPurchase(
+        startProductChange(
+            activity,
+            packageToPurchase.product,
+            packageToPurchase.offering,
+            upgradeInfo,
+            object : ProductChangeListener {
+                override fun onCompleted(purchase: Purchase?, purchaserInfo: PurchaserInfo) {
+                    if (purchase == null) {
+                        listener.onError(
+                            PurchasesError(
+                                PurchasesErrorCode.PaymentPendingError,
+                                "The product change has been deferred."
+                            ), false
+                        )
+                    } else {
+                        listener.onCompleted(purchase, purchaserInfo)
+                    }
+                }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    listener.onError(error, userCancelled)
+                }
+            }
+        )
+    }
+
+    /**
+     * Change the product from [productChangeInfo] with the one in [packageToPurchase].
+     *
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The new package to purchase
+     * @param [upgradeInfo] The oldProduct of this object will be replaced with the product in [packageToPurchase].
+     * An optional [BillingFlowParams.ProrationMode] can also be specified.
+     * @param [listener] The listener that will be called when the purchase of the new product completes.
+     */
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeListener
+    ) {
+        startProductChange(
             activity,
             packageToPurchase.product,
             packageToPurchase.offering,
@@ -364,8 +438,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      *
      * @param [activity] Current activity
      * @param [packageToPurchase] The new package to purchase
-     * @param [productChangeInfo] The oldProduct of this object will be replaced with the product in [packageToPurchase].
-     * An optional [BillingFlowParams.ProrationMode] can also be specified.
+     * @param [productChangeInfo] The oldProduct of this object will be replaced with the
+     * product in [packageToPurchase]. An optional [BillingFlowParams.ProrationMode] can also be specified.
      * @param [listener] The listener that will be called when the purchase of the new product completes.
      */
     fun purchasePackage(
@@ -406,7 +480,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             activity,
             packageToPurchase.product,
             packageToPurchase.offering,
-            null,
             listener
         )
     }
@@ -1415,7 +1488,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         activity: Activity,
         product: SkuDetails,
         presentedOfferingIdentifier: String?,
-        upgradeInfo: UpgradeInfo?,
         listener: MakePurchaseListener
     ) {
         debugLog("purchase started - product:" +
@@ -1437,24 +1509,58 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         }
         userPurchasing?.let { appUserID ->
-            if (upgradeInfo != null) {
-                replaceOldPurchaseWithNewProduct(
-                    product,
-                    upgradeInfo,
-                    activity,
-                    appUserID,
-                    presentedOfferingIdentifier,
-                    listener
-                )
-            } else {
-                billingWrapper.makePurchaseAsync(
-                    activity,
-                    appUserID,
-                    product,
-                    upgradeInfo,
-                    presentedOfferingIdentifier
-                )
+            billingWrapper.makePurchaseAsync(
+                activity,
+                appUserID,
+                product,
+                null,
+                presentedOfferingIdentifier
+            )
+        } ?: dispatch {
+            listener.onError(
+                PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) },
+                false
+            )
+        }
+    }
+
+    private fun startProductChange(
+        activity: Activity,
+        product: SkuDetails,
+        presentedOfferingIdentifier: String?,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeListener
+    ) {
+        state = state.copy(productChangeSku = product.sku)
+
+        debugLog("product change started:" +
+            " $product ${presentedOfferingIdentifier?.let {
+                " - offering: $presentedOfferingIdentifier"
+            }} UpgradeInfo: $upgradeInfo"
+        )
+
+        var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
+        synchronized(this@Purchases) {
+            if (!appConfig.finishTransactions) {
+                debugLog("finishTransactions is set to false and a purchase has been started. " +
+                    "Are you sure you want to do this?")
             }
+            if (!state.productChangeCallbacks.containsKey(product.sku)) {
+                state = state.copy(
+                    productChangeCallbacks = state.productChangeCallbacks + mapOf(product.sku to listener)
+                )
+                userPurchasing = identityManager.currentAppUserID
+            }
+        }
+        userPurchasing?.let { appUserID ->
+            replaceOldPurchaseWithNewProduct(
+                product,
+                upgradeInfo,
+                activity,
+                appUserID,
+                presentedOfferingIdentifier,
+                listener
+            )
         } ?: dispatch {
             listener.onError(
                 PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) },
@@ -1469,7 +1575,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
-        listener: MakePurchaseListener
+        listener: PurchaseListener
     ) {
         billingWrapper.findPurchaseInPurchaseHistory(product.type, upgradeInfo.oldSku) { result, purchaseRecord ->
             if (result.isSuccessful()) {
