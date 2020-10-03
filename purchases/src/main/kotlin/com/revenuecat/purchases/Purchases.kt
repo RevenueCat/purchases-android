@@ -65,9 +65,7 @@ import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.HashMap
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
 /**
@@ -1756,13 +1754,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         private fun createDefaultExecutor(): ExecutorService {
-            return ThreadPoolExecutor(
-                1,
-                2,
-                0,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingQueue()
-            )
+            return Executors.newSingleThreadScheduledExecutor()
         }
     }
 
