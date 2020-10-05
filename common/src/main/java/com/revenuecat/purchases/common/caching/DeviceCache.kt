@@ -8,6 +8,8 @@ package com.revenuecat.purchases.common.caching
 import android.content.SharedPreferences
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.buildPurchaserInfo
@@ -17,16 +19,16 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
 
-private const val CACHE_REFRESH_PERIOD = 60000 * 5
+private const val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 60000 * 5
+private const val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 60000 * 60 * 24
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 internal const val PURCHASER_INFO_SCHEMA_VERSION = 3
 
 class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
-    private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(
-        CACHE_REFRESH_PERIOD
-    )
+    private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(),
+    private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
     val legacyAppUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
     val appUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.new" }
@@ -112,11 +114,8 @@ class DeviceCache(
     }
 
     @Synchronized
-    fun isPurchaserInfoCacheStale(): Boolean {
-        return purchaserInfoCachesLastUpdated?.let { cachesLastUpdated ->
-            Date().time - cachesLastUpdated.time >= CACHE_REFRESH_PERIOD
-        } ?: true
-    }
+    fun isPurchaserInfoCacheStale(appInBackground: Boolean) =
+        purchaserInfoCachesLastUpdated.isStale(appInBackground)
 
     @Synchronized
     fun clearPurchaserInfoCacheTimestamp() {
@@ -236,7 +235,7 @@ class DeviceCache(
     }
 
     @Synchronized
-    fun isOfferingsCacheStale(): Boolean = offeringsCachedObject.isCacheStale()
+    fun isOfferingsCacheStale(appInBackground: Boolean) = offeringsCachedObject.lastUpdatedAt.isStale(appInBackground)
 
     @Synchronized
     fun clearOfferingsCacheTimestamp() {
@@ -258,6 +257,17 @@ class DeviceCache(
         userId: String,
         network: AttributionNetwork
     ) = "$attributionCacheKey.$userId.$network"
+
+    private fun Date?.isStale(appInBackground: Boolean): Boolean {
+        return this?.let { cachesLastUpdated ->
+            val cacheDuration = when {
+                appInBackground -> CACHE_REFRESH_PERIOD_IN_BACKGROUND
+                else -> CACHE_REFRESH_PERIOD_IN_FOREGROUND
+            }
+
+            dateProvider.now.time - cachesLastUpdated.time >= cacheDuration
+        } ?: true
+    }
 
     // region utils
 

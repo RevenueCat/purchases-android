@@ -39,10 +39,13 @@ open class Dispatcher(
         }
     }
 
-    open fun enqueue(command: Runnable) {
+    open fun enqueue(
+        command: Runnable,
+        randomDelay: Boolean = false
+    ) {
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
-                if (executorService is ScheduledExecutorService) {
+                if (randomDelay && executorService is ScheduledExecutorService) {
                     val randomDelay = (0..JITTERING_DELAY_MILLISECONDS).random()
                     executorService.schedule(command, randomDelay.toLong(), TimeUnit.MILLISECONDS)
                 } else {
