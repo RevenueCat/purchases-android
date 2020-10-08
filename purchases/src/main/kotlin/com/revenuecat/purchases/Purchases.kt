@@ -266,22 +266,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun getOfferings(
         listener: ReceiveOfferingsListener
     ) {
-        synchronized(this@Purchases) {
+        val (appUserID, cachedOfferings) = synchronized(this@Purchases) {
             identityManager.currentAppUserID to deviceCache.cachedOfferings
-        }.let { (appUserID, cachedOfferings) ->
-            if (cachedOfferings == null) {
-                debugLog("No cached offerings, fetching")
-                fetchAndCacheOfferings(appUserID, state.appInBackground, listener)
-            } else {
-                debugLog("Vending offerings from cache")
-                dispatch {
-                    listener.onReceived(cachedOfferings)
-                }
-                state.appInBackground.let { appInBackground ->
-                    if (deviceCache.isOfferingsCacheStale(appInBackground)) {
-                        debugLog("Offerings cache is stale, updating cache")
-                        fetchAndCacheOfferings(appUserID, appInBackground)
-                    }
+        }
+        if (cachedOfferings == null) {
+            debugLog("No cached offerings, fetching")
+            fetchAndCacheOfferings(appUserID, state.appInBackground, listener)
+        } else {
+            debugLog("Vending offerings from cache")
+            dispatch {
+                listener.onReceived(cachedOfferings)
+            }
+            state.appInBackground.let { appInBackground ->
+                if (deviceCache.isOfferingsCacheStale(appInBackground)) {
+                    debugLog("Offerings cache is stale, updating cache")
+                    fetchAndCacheOfferings(appUserID, appInBackground)
                 }
             }
         }

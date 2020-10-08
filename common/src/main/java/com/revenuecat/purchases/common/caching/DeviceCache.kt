@@ -35,7 +35,9 @@ class DeviceCache(
     val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.tokens" }
     val subscriberAttributesCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.subscriberAttributes" }
-    private val purchaserInfoCachesLastUpdatedCacheBaseKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.purchaserInfoLastUpdated" }
+    private val purchaserInfoCachesLastUpdatedCacheBaseKey: String by lazy {
+        "$SHARED_PREFERENCES_PREFIX$apiKey.purchaserInfoLastUpdated"
+    }
 
     // region app user id
 
