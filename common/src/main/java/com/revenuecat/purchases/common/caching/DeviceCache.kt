@@ -35,8 +35,7 @@ class DeviceCache(
     val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.tokens" }
     val subscriberAttributesCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.subscriberAttributes" }
-
-    var purchaserInfoCachesLastUpdated: Date? = null
+    private val purchaserInfoCachesLastUpdatedCacheBaseKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.purchaserInfoLastUpdated" }
 
     // region app user id
 
@@ -52,12 +51,12 @@ class DeviceCache(
     }
 
     @Synchronized
-    fun clearCachesForAppUserID() {
+    fun clearCachesForAppUserID(appUserID: String) {
         preferences.edit()
             .clearPurchaserInfo()
             .clearAppUserID()
+            .clearPurchaserInfoCacheTimestamp(appUserID)
             .apply()
-        clearPurchaserInfoCacheTimestamp()
         clearOfferingsCache()
     }
 
@@ -77,10 +76,17 @@ class DeviceCache(
         return this
     }
 
+    private fun SharedPreferences.Editor.clearPurchaserInfoCacheTimestamp(appUserID: String): SharedPreferences.Editor {
+        remove(purchaserInfoLastUpdatedCacheKey(appUserID))
+        return this
+    }
+
     // endregion
 
     // region purchaser info
     fun purchaserInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
+
+    fun purchaserInfoLastUpdatedCacheKey(appUserID: String) = "$purchaserInfoCachesLastUpdatedCacheBaseKey.$appUserID"
 
     fun getCachedPurchaserInfo(appUserID: String): PurchaserInfo? {
         return preferences.getString(purchaserInfoCacheKey(appUserID), null)
@@ -110,29 +116,39 @@ class DeviceCache(
                 jsonObject.toString()
             ).apply()
 
-        setPurchaserInfoCacheTimestampToNow()
+        setPurchaserInfoCacheTimestampToNow(appUserID)
     }
 
     @Synchronized
-    fun isPurchaserInfoCacheStale(appInBackground: Boolean) =
-        purchaserInfoCachesLastUpdated.isStale(appInBackground)
+    fun isPurchaserInfoCacheStale(appUserID: String, appInBackground: Boolean) =
+        getPurchaserInfoCachesLastUpdated(appUserID).isStale(appInBackground)
 
     @Synchronized
-    fun clearPurchaserInfoCacheTimestamp() {
-        purchaserInfoCachesLastUpdated = null
+    fun clearPurchaserInfoCacheTimestamp(appUserID: String) {
+        preferences.edit().clearPurchaserInfoCacheTimestamp(appUserID).apply()
     }
 
     @Synchronized
     fun clearPurchaserInfoCache(appUserID: String) {
-        clearPurchaserInfoCacheTimestamp()
         val editor = preferences.edit()
+        editor.clearPurchaserInfoCacheTimestamp(appUserID)
         editor.remove(purchaserInfoCacheKey(appUserID))
         editor.apply()
     }
 
     @Synchronized
-    fun setPurchaserInfoCacheTimestampToNow() {
-        purchaserInfoCachesLastUpdated = Date()
+    fun setPurchaserInfoCacheTimestampToNow(appUserID: String) {
+        setPurchaserInfoCacheTimestamp(appUserID, Date())
+    }
+
+    @Synchronized
+    fun setPurchaserInfoCacheTimestamp(appUserID: String, date: Date) {
+        preferences.edit().putLong(purchaserInfoLastUpdatedCacheKey(appUserID), date.time).apply()
+    }
+
+    @Synchronized
+    fun getPurchaserInfoCachesLastUpdated(appUserID: String): Date? {
+        return Date(preferences.getLong(purchaserInfoLastUpdatedCacheKey(appUserID), 0))
     }
 
     // endregion
@@ -260,6 +276,7 @@ class DeviceCache(
 
     private fun Date?.isStale(appInBackground: Boolean): Boolean {
         return this?.let { cachesLastUpdated ->
+            debugLog("Checking if cache is stale AppInBackground $appInBackground")
             val cacheDuration = when {
                 appInBackground -> CACHE_REFRESH_PERIOD_IN_BACKGROUND
                 else -> CACHE_REFRESH_PERIOD_IN_FOREGROUND

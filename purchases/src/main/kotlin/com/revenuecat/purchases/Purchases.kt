@@ -179,7 +179,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             state = state.copy(appInBackground = false)
         }
         debugLog("App foregrounded")
-        if (deviceCache.isPurchaserInfoCacheStale(appInBackground = false)) {
+        if (deviceCache.isPurchaserInfoCacheStale(appInBackground = false, appUserID = appUserID)) {
             debugLog("PurchaserInfo cache is stale, updating caches")
             fetchAndCachePurchaserInfo(identityManager.currentAppUserID, appInBackground = false)
         }
@@ -571,7 +571,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             debugLog("Vending purchaserInfo from cache")
             dispatch { listener?.onReceived(cachedPurchaserInfo) }
             state.appInBackground.let { appInBackground ->
-                if (deviceCache.isPurchaserInfoCacheStale(appInBackground)) {
+                if (deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground)) {
                     debugLog("Cache is stale, updating caches")
                     fetchAndCachePurchaserInfo(appUserID, appInBackground)
                 }
@@ -1037,7 +1037,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         appInBackground: Boolean,
         completion: ReceivePurchaserInfoListener? = null
     ) {
-        deviceCache.setPurchaserInfoCacheTimestampToNow()
+        deviceCache.setPurchaserInfoCacheTimestampToNow(appUserID) // Could this be a problem?
         backend.getPurchaserInfo(
             appUserID,
             appInBackground,
@@ -1048,7 +1048,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             { error ->
                 Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
-                deviceCache.clearPurchaserInfoCacheTimestamp()
+                deviceCache.clearPurchaserInfoCacheTimestamp(appUserID)
                 dispatch { completion?.onError(error) }
             })
     }

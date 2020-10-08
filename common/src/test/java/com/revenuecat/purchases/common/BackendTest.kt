@@ -213,13 +213,15 @@ class BackendTest {
     private fun getPurchaserInfo(
         responseCode: Int,
         clientException: Exception?,
-        resultBody: String?
+        resultBody: String?,
+        appInBackground: Boolean = false
     ): PurchaserInfo {
         val info =
             mockResponse("/subscribers/$appUserID", null, responseCode, clientException, resultBody)
 
         backend.getPurchaserInfo(
             appUserID,
+            appInBackground,
             onReceivePurchaserInfoSuccessHandler,
             onReceivePurchaserInfoErrorHandler
         )
@@ -305,7 +307,12 @@ class BackendTest {
 
         mockResponse("/subscribers/$appUserID/offerings", null, 200, null, noOfferingsResponse)
 
-        backend.getOfferings(appUserID, onReceiveOfferingsResponseSuccessHandler, onReceiveOfferingsErrorHandler)
+        backend.getOfferings(
+            appUserID,
+            appInBackground = false,
+            onSuccess = onReceiveOfferingsResponseSuccessHandler,
+            onError = onReceiveOfferingsErrorHandler
+        )
 
         assertThat(receivedOfferingsJSON).`as`("Received offerings response is not null").isNotNull
         assertThat(receivedOfferingsJSON!!.getJSONArray("offerings").length()).isZero()
@@ -427,12 +434,12 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getPurchaserInfo(appUserID, {
+        asyncBackend.getPurchaserInfo(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceivePurchaserInfoErrorHandler)
-        asyncBackend.getPurchaserInfo(appUserID, {
+        }, onError = onReceivePurchaserInfoErrorHandler)
+        asyncBackend.getPurchaserInfo(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceivePurchaserInfoErrorHandler)
+        }, onError = onReceivePurchaserInfoErrorHandler)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
@@ -514,12 +521,12 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, {
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, {
+        }, onError = onReceiveOfferingsErrorHandler)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceiveOfferingsErrorHandler)
+        }, onError = onReceiveOfferingsErrorHandler)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
@@ -542,12 +549,12 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, {
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings("anotherUser", {
+        }, onError = onReceiveOfferingsErrorHandler)
+        asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceiveOfferingsErrorHandler)
+        }, onError = onReceiveOfferingsErrorHandler)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
