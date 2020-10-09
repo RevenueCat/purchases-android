@@ -12,7 +12,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
-private const val JITTERING_DELAY_MILLISECONDS = 1000
+private const val JITTERING_DELAY_MILLISECONDS = 5000
 
 open class Dispatcher(
     private val executorService: ExecutorService
