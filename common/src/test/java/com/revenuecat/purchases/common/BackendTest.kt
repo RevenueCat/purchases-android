@@ -44,9 +44,10 @@ class BackendTest {
     fun setup() = mockkStatic("com.revenuecat.purchases.common.FactoriesKt")
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
+    private val dispatcher = SyncDispatcher()
     private var backend: Backend = Backend(
         API_KEY,
-        SyncDispatcher(),
+        dispatcher,
         mockClient
     )
     private var asyncBackend: Backend = Backend(
@@ -896,21 +897,6 @@ class BackendTest {
         }
     }
 
-    private fun mockSkuDetails(
-        price: Long = 25000000,
-        duration: String = "P1M",
-        introDuration: String = "P1M",
-        trialDuration: String = "P1M"
-    ): SkuDetails {
-        val skuDetails = mockk<SkuDetails>()
-        every { skuDetails.priceAmountMicros } returns price
-        every { skuDetails.priceCurrencyCode } returns "USD"
-        every { skuDetails.subscriptionPeriod } returns duration
-        every { skuDetails.introductoryPricePeriod } returns introDuration
-        every { skuDetails.freeTrialPeriod } returns trialDuration
-        return skuDetails
-    }
-
     @Test
     fun `postReceipt passes durations`() {
         val skuDetails = mockSkuDetails(
@@ -934,4 +920,47 @@ class BackendTest {
         assertThat(receivedPurchaserInfo).`as`("Received purchaser info is not null").isNotNull
         assertThat(info).isEqualTo(receivedPurchaserInfo)
     }
+
+    @Test
+    fun `offerings call is enqueued with delay if on background`() {
+        mockResponse("/subscribers/$appUserID/offerings", null, 200, null, noOfferingsResponse)
+        dispatcher.calledWithRandomDelay = null
+        backend.getOfferings(
+            appUserID,
+            appInBackground = true,
+            onSuccess = onReceiveOfferingsResponseSuccessHandler,
+            onError = onReceiveOfferingsErrorHandler
+        )
+
+        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
+        assertThat(calledWithRandomDelay).isNotNull()
+        assertThat(calledWithRandomDelay).isTrue()
+    }
+
+    @Test
+    fun `purchaser info call is enqueued with delay if on background`() {
+        dispatcher.calledWithRandomDelay = null
+
+        getPurchaserInfo(200, null, null)
+
+        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
+        assertThat(calledWithRandomDelay).isNotNull()
+        assertThat(calledWithRandomDelay).isTrue()
+    }
+
+    private fun mockSkuDetails(
+        price: Long = 25000000,
+        duration: String = "P1M",
+        introDuration: String = "P1M",
+        trialDuration: String = "P1M"
+    ): SkuDetails {
+        val skuDetails = mockk<SkuDetails>()
+        every { skuDetails.priceAmountMicros } returns price
+        every { skuDetails.priceCurrencyCode } returns "USD"
+        every { skuDetails.subscriptionPeriod } returns duration
+        every { skuDetails.introductoryPricePeriod } returns introDuration
+        every { skuDetails.freeTrialPeriod } returns trialDuration
+        return skuDetails
+    }
+
 }

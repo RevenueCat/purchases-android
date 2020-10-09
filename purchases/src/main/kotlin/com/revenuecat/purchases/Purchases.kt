@@ -175,11 +175,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /** @suppress */
     override fun onAppForegrounded() {
+        val firstTimeInForeground = state.firstTimeInForeground
         synchronized(this) {
-            state = state.copy(appInBackground = false)
+            state = state.copy(appInBackground = false, firstTimeInForeground = false)
         }
         debugLog("App foregrounded")
-        if (deviceCache.isPurchaserInfoCacheStale(appInBackground = false, appUserID = appUserID)) {
+        if (firstTimeInForeground || deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)) {
             debugLog("PurchaserInfo cache is stale, updating caches")
             fetchAndCachePurchaserInfo(identityManager.currentAppUserID, appInBackground = false)
         }

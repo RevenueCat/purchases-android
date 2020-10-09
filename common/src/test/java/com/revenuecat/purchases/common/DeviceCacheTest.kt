@@ -29,6 +29,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Calendar
 import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
@@ -266,7 +267,8 @@ class DeviceCacheTest {
         val activePurchasesNotInCache =
             cache.getActivePurchasesNotInCache(
                 mapOf("hash1" to activeSub),
-                mapOf("hash2" to PurchaseWrapper(mockk(relaxed = true), PurchaseType.INAPP, null)))
+                mapOf("hash2" to PurchaseWrapper(mockk(relaxed = true), PurchaseType.INAPP, null))
+            )
         assertThat(activePurchasesNotInCache).contains(activeSub)
     }
 
@@ -347,6 +349,18 @@ class DeviceCacheTest {
     }
 
     @Test
+    fun `isPurchaserInfoCacheStale in background returns true if the cached object is stale`() {
+        every {
+            mockEditor.putLong(cache.purchaserInfoLastUpdatedCacheKey("appUserID"), any())
+        } returns mockEditor
+        cache.cachePurchaserInfo("waldo", mockk(relaxed = true))
+        mockLong(cache.purchaserInfoLastUpdatedCacheKey("waldo"), Date(0).time)
+        assertThat(cache.isPurchaserInfoCacheStale("waldo", appInBackground = true)).isTrue()
+        mockLong(cache.purchaserInfoLastUpdatedCacheKey("waldo"), Date().time)
+        assertThat(cache.isPurchaserInfoCacheStale("waldo", appInBackground = true)).isFalse()
+    }
+
+    @Test
     fun `isOfferingsCacheStale returns true if the cached object is stale`() {
         val offeringsCachedObject = mockk<InMemoryCachedObject<Offerings>>(relaxed = true)
         cache = DeviceCache(mockPrefs, apiKey, offeringsCachedObject)
@@ -355,9 +369,32 @@ class DeviceCacheTest {
             offeringsCachedObject.lastUpdatedAt
         } returns Date()
         assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isFalse()
+
+        val cal = Calendar.getInstance()
+        cal.time = Date()
+        cal.add(Calendar.MINUTE, -6)
         every {
             offeringsCachedObject.lastUpdatedAt
-        } returns Date(0)
+        } returns cal.time
+        assertThat(cache.isOfferingsCacheStale(appInBackground = true)).isTrue()
+    }
+
+    @Test
+    fun `isOfferingsCacheStale in background returns true if the cached object is stale`() {
+        val offeringsCachedObject = mockk<InMemoryCachedObject<Offerings>>(relaxed = true)
+        cache = DeviceCache(mockPrefs, apiKey, offeringsCachedObject)
+        cache.cacheOfferings(mockk())
+        every {
+            offeringsCachedObject.lastUpdatedAt
+        } returns Date()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = true)).isFalse()
+
+        val cal = Calendar.getInstance()
+        cal.time = Date()
+        cal.add(Calendar.DATE, -2)
+        every {
+            offeringsCachedObject.lastUpdatedAt
+        } returns cal.time
         assertThat(cache.isOfferingsCacheStale(appInBackground = true)).isTrue()
     }
 
