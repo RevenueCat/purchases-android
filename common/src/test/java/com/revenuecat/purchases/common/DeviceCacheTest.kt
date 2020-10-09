@@ -338,26 +338,20 @@ class DeviceCacheTest {
 
     @Test
     fun `isPurchaserInfoCacheStale returns true if the cached object is stale`() {
-        every {
-            mockEditor.putLong(cache.purchaserInfoLastUpdatedCacheKey("appUserID"), any())
-        } returns mockEditor
-        cache.cachePurchaserInfo("waldo", mockk(relaxed = true))
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey("waldo"), Date(0).time)
-        assertThat(cache.isPurchaserInfoCacheStale("waldo", appInBackground = false)).isTrue()
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey("waldo"), Date().time)
-        assertThat(cache.isPurchaserInfoCacheStale("waldo", appInBackground = false)).isFalse()
+        cache.cachePurchaserInfo(appUserID, mockk(relaxed = true))
+        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), Date(0).time)
+        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)).isTrue()
+        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), Date().time)
+        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)).isFalse()
     }
 
     @Test
     fun `isPurchaserInfoCacheStale in background returns true if the cached object is stale`() {
-        every {
-            mockEditor.putLong(cache.purchaserInfoLastUpdatedCacheKey("appUserID"), any())
-        } returns mockEditor
-        cache.cachePurchaserInfo("waldo", mockk(relaxed = true))
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey("waldo"), Date(0).time)
-        assertThat(cache.isPurchaserInfoCacheStale("waldo", appInBackground = true)).isTrue()
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey("waldo"), Date().time)
-        assertThat(cache.isPurchaserInfoCacheStale("waldo", appInBackground = true)).isFalse()
+        cache.cachePurchaserInfo(appUserID, mockk(relaxed = true))
+        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), Date(0).time)
+        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = true)).isTrue()
+        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), Date().time)
+        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = true)).isFalse()
     }
 
     @Test

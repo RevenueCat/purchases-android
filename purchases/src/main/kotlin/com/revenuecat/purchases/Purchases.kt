@@ -175,8 +175,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /** @suppress */
     override fun onAppForegrounded() {
-        val firstTimeInForeground = state.firstTimeInForeground
+        val firstTimeInForeground: Boolean
         synchronized(this) {
+            firstTimeInForeground = state.firstTimeInForeground
             state = state.copy(appInBackground = false, firstTimeInForeground = false)
         }
         debugLog("App foregrounded")
@@ -1037,7 +1038,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         appInBackground: Boolean,
         completion: ReceivePurchaserInfoListener? = null
     ) {
-        deviceCache.setPurchaserInfoCacheTimestampToNow(appUserID) // Could this be a problem?
+        deviceCache.setPurchaserInfoCacheTimestampToNow(appUserID)
         backend.getPurchaserInfo(
             appUserID,
             appInBackground,

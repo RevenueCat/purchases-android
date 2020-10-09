@@ -8,8 +8,8 @@ internal class SyncDispatcher : Dispatcher(mockk()) {
     private var closed = false
     var calledWithRandomDelay: Boolean? = null
 
-    override fun enqueue(command: Runnable, randomDelay: Boolean) {
-        calledWithRandomDelay = randomDelay
+    override fun enqueue(command: Runnable, useRandomDelay: Boolean) {
+        calledWithRandomDelay = useRandomDelay
         if (closed) {
             throw RejectedExecutionException()
         }
