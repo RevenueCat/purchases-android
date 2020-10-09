@@ -376,7 +376,7 @@ class DeviceCacheTest {
         every {
             offeringsCachedObject.lastUpdatedAt
         } returns cal.time
-        assertThat(cache.isOfferingsCacheStale(appInBackground = true)).isTrue()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue()
     }
 
     @Test

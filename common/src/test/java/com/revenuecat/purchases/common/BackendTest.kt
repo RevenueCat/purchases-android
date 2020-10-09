@@ -941,7 +941,7 @@ class BackendTest {
     fun `purchaser info call is enqueued with delay if on background`() {
         dispatcher.calledWithRandomDelay = null
 
-        getPurchaserInfo(200, null, null)
+        getPurchaserInfo(200, clientException = null, resultBody = null, appInBackground = true)
 
         val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
         assertThat(calledWithRandomDelay).isNotNull()
