@@ -479,9 +479,6 @@ class PurchasesTest {
         verify(exactly = 1) {
             mockBackend.getPurchaserInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
-        verify(exactly = 1) {
-            mockCache.isPurchaserInfoCacheStale(appInBackground = false, appUserID = appUserId)
-        }
     }
 
     @Test
@@ -519,6 +516,7 @@ class PurchasesTest {
             notInCache = emptyList()
         )
         mockSynchronizeSubscriberAttributesForAllUsers()
+        purchases.state = purchases.state.copy(firstTimeInForeground = false)
         Purchases.sharedInstance.onAppForegrounded()
         verify(exactly = 0) {
             mockBackend.getPurchaserInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
