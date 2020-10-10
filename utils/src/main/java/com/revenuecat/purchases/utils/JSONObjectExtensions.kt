@@ -45,4 +45,4 @@ fun JSONObject.optDate(jsonKey: String): Date? = takeUnless { this.isNull(jsonKe
 
 fun JSONObject.getNullableString(name: String): String? = takeUnless { this.isNull(name) }?.getString(name)
 
-fun JSONObject.optNullableString(name: String): String? = takeUnless { this.has(name) }?.getNullableString(name)
+fun JSONObject.optNullableString(name: String): String? = takeIf { this.has(name) }?.getNullableString(name)
