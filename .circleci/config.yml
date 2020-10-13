@@ -9,7 +9,7 @@ executors:
     resource_class: large
     working_directory: ~/purchases-android
     environment:
-      JVM_OPTS: -Xmx4096m
+      JVM_OPTS: -Xmx6g
       CIRCLE_JDK_VERSION: oraclejdk8
 
 commands:
@@ -130,7 +130,7 @@ jobs:
             if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
               echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
             else
-              ./gradlew build
+              ./gradlew build --no-daemon --max-workers=2
               bundle exec fastlane android deploy_snapshot
             fi
 
@@ -143,7 +143,7 @@ jobs:
       - android/restore-build-cache
       - run:
           name: Assemble
-          command: ./gradlew assemble
+          command: ./gradlew assemble --no-daemon --max-workers=2
       - save_cache:
           paths:
             - ~/.gradle
