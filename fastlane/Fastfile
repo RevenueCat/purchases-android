@@ -74,7 +74,7 @@ platform :android do
     puts "Deploying #{version}"
     gradle(
       tasks: [
-          "androidSourcesJar", "androidJavadocsJar", "uploadArchives"
+          "build", "androidSourcesJar", "androidJavadocsJar", "uploadArchives"
       ],
       properties: {
         "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
