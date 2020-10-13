@@ -11,8 +11,8 @@ buildscript {
         classpath("com.vanniktech:gradle-maven-publish-plugin:0.9.0")
         classpath("com.android.tools.build:gradle:4.0.2")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-        classpath("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
-        classpath("org.jacoco:org.jacoco.core:0.8.5")
+//        classpath("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
+//        classpath("org.jacoco:org.jacoco.core:0.8.5")
     }
 }
 
@@ -22,7 +22,7 @@ plugins {
     id("com.savvasdalkitsis.module-dependency-graph").version("0.9")
 }
 
-apply(from = ".buildscripts/jacoco.gradle")
+//apply(from = ".buildscripts/jacoco.gradle")
 
 dependencies {
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.8.0")

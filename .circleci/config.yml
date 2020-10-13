@@ -77,7 +77,9 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Dokka
-          command: ./gradlew dokka
+          command: |
+            ./gradlew build
+            ./gradlew dokka
       - run:
           name: Deploy to S3
           command: aws s3 sync ~/purchases-android/docs s3://purchases-docs/android --delete --acl public-read
@@ -169,13 +171,13 @@ workflows:
       - deploy-snapshot:
           requires:
             - assemble
-          filters:
-            branches:
-              only:
-                - develop
-      - docs-deploy:
-          filters:
-            tags:
-              only: /^(\d+\.)(\d+\.)(\d+)$/
-            branches:
-              ignore: /.*/
+#          filters:
+#            branches:
+#              only:
+#                - develop
+#      - docs-deploy:
+#          filters:
+#            tags:
+#              only: /^(\d+\.)(\d+\.)(\d+)$/
+#            branches:
+#              ignore: /.*/
