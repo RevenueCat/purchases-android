@@ -107,7 +107,6 @@ jobs:
             if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
               echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
             else
-              ./gradlew build --no-daemon --max-workers=2
               bundle exec fastlane android deploy
             fi
 
@@ -131,7 +130,6 @@ jobs:
             if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
               echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
             else
-              ./gradlew build --no-daemon --max-workers=2
               bundle exec fastlane android deploy_snapshot
             fi
 
@@ -162,20 +160,20 @@ workflows:
       - assemble:
           requires:
             - build
-      - deploy:
-          requires:
-            - assemble
-          filters:
-            branches:
-              only:
-                - main
+#      - deploy:
+#          requires:
+#            - assemble
+#          filters:
+#            branches:
+#              only:
+#                - main
       - deploy-snapshot:
           requires:
             - assemble
-          filters:
-            branches:
-              only:
-                - develop
+#          filters:
+#            branches:
+#              only:
+#                - develop
       - docs-deploy:
           filters:
             tags:
