@@ -160,16 +160,16 @@ workflows:
       - assemble:
           requires:
             - build
-#      - deploy:
-#          requires:
-#            - assemble
+      - deploy:
+          requires:
+            - assemble
 #          filters:
 #            branches:
 #              only:
 #                - main
-      - deploy-snapshot:
-          requires:
-            - assemble
+#      - deploy-snapshot:
+#          requires:
+#            - assemble
 #          filters:
 #            branches:
 #              only:
