@@ -5,6 +5,7 @@ dependencies {
     implementation project(":common")
     implementation project(":public")
     implementation project(":utils")
+    implementation project(":strings")
 
     implementation 'com.google.android.gms:play-services-ads-identifier:17.0.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
