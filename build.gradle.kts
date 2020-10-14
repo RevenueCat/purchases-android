@@ -11,7 +11,7 @@ buildscript {
         classpath("com.vanniktech:gradle-maven-publish-plugin:0.9.0")
         classpath("com.android.tools.build:gradle:4.0.2")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-//        classpath("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
+        classpath("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
 //        classpath("org.jacoco:org.jacoco.core:0.8.5")
     }
 }

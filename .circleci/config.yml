@@ -78,8 +78,8 @@ jobs:
       - run:
           name: Dokka
           command: |
-            ./gradlew build
-            ./gradlew dokka
+            ./gradlew build --no-daemon --max-workers=2
+            ./gradlew dokka --no-daemon --max-workers=2
       - run:
           name: Deploy to S3
           command: aws s3 sync ~/purchases-android/docs s3://purchases-docs/android --delete --acl public-read
@@ -164,18 +164,18 @@ workflows:
       - deploy:
           requires:
             - assemble
-          filters:
-            branches:
-              only:
-                - main
-      - deploy-snapshot:
-          requires:
-            - assemble
+#          filters:
+#            branches:
+#              only:
+#                - main
+#      - deploy-snapshot:
+#          requires:
+#            - assemble
 #          filters:
 #            branches:
 #              only:
 #                - develop
-#      - docs-deploy:
+      - docs-deploy
 #          filters:
 #            tags:
 #              only: /^(\d+\.)(\d+\.)(\d+)$/
