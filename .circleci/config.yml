@@ -156,29 +156,29 @@ workflows:
   test-assemble-deploy-docs:
     jobs:
       - build
-#      - test:
-#          requires:
-#            - build
+      - test:
+          requires:
+            - build
       - assemble:
           requires:
             - build
       - deploy:
           requires:
             - assemble
-#          filters:
-#            branches:
-#              only:
-#                - main
-#      - deploy-snapshot:
-#          requires:
-#            - assemble
-#          filters:
-#            branches:
-#              only:
-#                - develop
-#      - docs-deploy
-#          filters:
-#            tags:
-#              only: /^(\d+\.)(\d+\.)(\d+)$/
-#            branches:
-#              ignore: /.*/
+          filters:
+            branches:
+              only:
+                - main
+      - deploy-snapshot:
+          requires:
+            - assemble
+          filters:
+            branches:
+              only:
+                - develop
+      - docs-deploy
+          filters:
+            tags:
+              only: /^(\d+\.)(\d+\.)(\d+)$/
+            branches:
+              ignore: /.*/
