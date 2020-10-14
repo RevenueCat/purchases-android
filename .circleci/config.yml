@@ -78,7 +78,6 @@ jobs:
       - run:
           name: Dokka
           command: |
-            ./gradlew build --no-daemon --max-workers=2
             ./gradlew dokka --no-daemon --max-workers=2
       - run:
           name: Deploy to S3
@@ -163,17 +162,17 @@ workflows:
       - deploy:
           requires:
             - assemble
-#          filters:
-#            branches:
-#              only:
-#                - main
-#      - deploy-snapshot:
-#          requires:
-#            - assemble
-#          filters:
-#            branches:
-#              only:
-#                - develop
+          filters:
+            branches:
+              only:
+                - main
+      - deploy-snapshot:
+          requires:
+            - assemble
+          filters:
+            branches:
+              only:
+                - develop
       - docs-deploy:
           filters:
             tags:
