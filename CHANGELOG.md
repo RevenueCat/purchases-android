@@ -1,3 +1,8 @@
+## 3.5.3
+
+- More aggressive caches and jittering for apps in background 
+    https://github.com/RevenueCat/purchases-android/pull/201
+   
 ## 3.5.2
 
 - Catch IOException when getAdvertisingIdInfo 
