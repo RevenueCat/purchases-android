@@ -65,9 +65,7 @@ import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.HashMap
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
 /**
@@ -168,20 +166,28 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /** @suppress */
     override fun onAppBackgrounded() {
+        synchronized(this) {
+            state = state.copy(appInBackground = true)
+        }
         debugLog("App backgrounded")
         synchronizeSubscriberAttributesIfNeeded()
     }
 
     /** @suppress */
     override fun onAppForegrounded() {
-        debugLog("App foregrounded")
-        if (deviceCache.isPurchaserInfoCacheStale()) {
-            debugLog("PurchaserInfo cache is stale, updating caches")
-            fetchAndCachePurchaserInfo(identityManager.currentAppUserID)
+        val firstTimeInForeground: Boolean
+        synchronized(this) {
+            firstTimeInForeground = state.firstTimeInForeground
+            state = state.copy(appInBackground = false, firstTimeInForeground = false)
         }
-        if (deviceCache.isOfferingsCacheStale()) {
+        debugLog("App foregrounded")
+        if (firstTimeInForeground || deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)) {
+            debugLog("PurchaserInfo cache is stale, updating caches")
+            fetchAndCachePurchaserInfo(identityManager.currentAppUserID, appInBackground = false)
+        }
+        if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
             debugLog("Offerings cache is stale, updating caches")
-            fetchAndCacheOfferings(identityManager.currentAppUserID)
+            fetchAndCacheOfferings(identityManager.currentAppUserID, appInBackground = false)
         }
         updatePendingPurchaseQueue()
         synchronizeSubscriberAttributesIfNeeded()
@@ -262,20 +268,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun getOfferings(
         listener: ReceiveOfferingsListener
     ) {
-        synchronized(this@Purchases) {
+        val (appUserID, cachedOfferings) = synchronized(this@Purchases) {
             identityManager.currentAppUserID to deviceCache.cachedOfferings
-        }.let { (appUserID, cachedOfferings) ->
-            if (cachedOfferings == null) {
-                debugLog("No cached offerings, fetching")
-                fetchAndCacheOfferings(appUserID, listener)
-            } else {
-                debugLog("Vending offerings from cache")
-                dispatch {
-                    listener.onReceived(cachedOfferings)
-                }
-                if (deviceCache.isOfferingsCacheStale()) {
+        }
+        if (cachedOfferings == null) {
+            debugLog("No cached offerings, fetching")
+            fetchAndCacheOfferings(appUserID, state.appInBackground, listener)
+        } else {
+            debugLog("Vending offerings from cache")
+            dispatch {
+                listener.onReceived(cachedOfferings)
+            }
+            state.appInBackground.let { appInBackground ->
+                if (deviceCache.isOfferingsCacheStale(appInBackground)) {
                     debugLog("Offerings cache is stale, updating cache")
-                    fetchAndCacheOfferings(appUserID)
+                    fetchAndCacheOfferings(appUserID, appInBackground)
                 }
             }
         }
@@ -564,13 +571,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (cachedPurchaserInfo != null) {
             debugLog("Vending purchaserInfo from cache")
             dispatch { listener?.onReceived(cachedPurchaserInfo) }
-            if (deviceCache.isPurchaserInfoCacheStale()) {
-                debugLog("Cache is stale, updating caches")
-                fetchAndCachePurchaserInfo(appUserID)
+            state.appInBackground.let { appInBackground ->
+                if (deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground)) {
+                    debugLog("Cache is stale, updating caches")
+                    fetchAndCachePurchaserInfo(appUserID, appInBackground)
+                }
             }
         } else {
             debugLog("No cached purchaser info, fetching")
-            fetchAndCachePurchaserInfo(appUserID, listener)
+            fetchAndCachePurchaserInfo(appUserID, state.appInBackground, listener)
         }
     }
 
@@ -922,11 +931,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun fetchAndCacheOfferings(
         appUserID: String,
+        appInBackground: Boolean,
         completion: ReceiveOfferingsListener? = null
     ) {
         deviceCache.setOfferingsCacheTimestampToNow()
         backend.getOfferings(
             appUserID,
+            appInBackground,
             { offeringsJSON ->
                 try {
                     val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
@@ -1016,17 +1027,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         appUserID: String,
         completion: ReceivePurchaserInfoListener? = null
     ) {
-        fetchAndCachePurchaserInfo(appUserID, completion)
-        fetchAndCacheOfferings(appUserID)
+        state.appInBackground.let { appInBackground ->
+            fetchAndCachePurchaserInfo(appUserID, appInBackground, completion)
+            fetchAndCacheOfferings(appUserID, appInBackground)
+        }
     }
 
     private fun fetchAndCachePurchaserInfo(
         appUserID: String,
+        appInBackground: Boolean,
         completion: ReceivePurchaserInfoListener? = null
     ) {
-        deviceCache.setPurchaserInfoCacheTimestampToNow()
+        deviceCache.setPurchaserInfoCacheTimestampToNow(appUserID)
         backend.getPurchaserInfo(
             appUserID,
+            appInBackground,
             { info ->
                 cachePurchaserInfo(info)
                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
@@ -1034,7 +1049,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             { error ->
                 Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
-                deviceCache.clearPurchaserInfoCacheTimestamp()
+                deviceCache.clearPurchaserInfoCacheTimestamp(appUserID)
                 dispatch { completion?.onError(error) }
             })
     }
@@ -1756,13 +1771,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         private fun createDefaultExecutor(): ExecutorService {
-            return ThreadPoolExecutor(
-                1,
-                2,
-                0,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingQueue()
-            )
+            return Executors.newSingleThreadScheduledExecutor()
         }
     }
 

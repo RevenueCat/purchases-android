@@ -6,8 +6,10 @@ import java.util.concurrent.RejectedExecutionException
 internal class SyncDispatcher : Dispatcher(mockk()) {
 
     private var closed = false
+    var calledWithRandomDelay: Boolean? = null
 
-    override fun enqueue(command: Runnable) {
+    override fun enqueue(command: Runnable, useRandomDelay: Boolean) {
+        calledWithRandomDelay = useRandomDelay
         if (closed) {
             throw RejectedExecutionException()
         }
