@@ -41,6 +41,7 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.util.AdvertisingIdClient
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.stubSkuDetails
 import io.mockk.Call
 import io.mockk.MockKAnswerScope
 import io.mockk.Runs
@@ -3977,27 +3978,19 @@ class PurchasesTest {
         type: PurchaseType,
         offeringIdentifier: String?
     ): ProductInfo {
-        val skuDetails = mockk<SkuDetails>()
-        every { skuDetails.priceAmountMicros } returns 2000000
-        every { skuDetails.priceCurrencyCode } returns "USD"
-        every { skuDetails.subscriptionPeriod } returns if (type == PurchaseType.SUBS) "P1M" else null
-        every { skuDetails.introductoryPricePeriod } returns if (type == PurchaseType.SUBS) "P7D" else null
-        every { skuDetails.freeTrialPeriod } returns if (type == PurchaseType.SUBS) "P7D" else null
+        val skuDetails = stubSkuDetails(
+            productId = sku,
+            price = 2.00,
+            subscriptionPeriod = if (type == PurchaseType.SUBS) "P1M" else "",
+            introductoryPricePeriod = if (type == PurchaseType.SUBS) "P7D" else null,
+            freeTrialPeriod = if (type == PurchaseType.SUBS) "P7D" else null
+        )
 
         val productInfo = ProductInfo(
             productID = sku,
             offeringIdentifier = offeringIdentifier,
             skuDetails = skuDetails
         )
-
-        val mockSkuDetails = mockk<SkuDetails>().also {
-            every { it.sku } returns productInfo.productID
-            every { it.priceAmountMicros } returns (productInfo.price!! * 1000000).toLong()
-            every { it.priceCurrencyCode } returns productInfo.currency
-            every { it.subscriptionPeriod } returns productInfo.duration
-            every { it.introductoryPricePeriod } returns productInfo.introDuration
-            every { it.freeTrialPeriod } returns productInfo.trialDuration
-        }
 
         every {
             mockBillingWrapper.querySkuDetailsAsync(
@@ -4007,7 +4000,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            lambda<(List<SkuDetails>) -> Unit>().captured.invoke(listOf(mockSkuDetails))
+            lambda<(List<SkuDetails>) -> Unit>().captured.invoke(listOf(skuDetails))
         }
 
         return productInfo
