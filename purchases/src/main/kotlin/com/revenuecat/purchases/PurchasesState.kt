@@ -9,5 +9,7 @@ internal data class PurchasesState(
     val updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null,
     val purchaseCallbacks: Map<String, MakePurchaseListener> = emptyMap(),
     val productChangeCallback: ProductChangeListener? = null,
-    val lastSentPurchaserInfo: PurchaserInfo? = null
+    val lastSentPurchaserInfo: PurchaserInfo? = null,
+    val appInBackground: Boolean = true,
+    val firstTimeInForeground: Boolean = true
 )

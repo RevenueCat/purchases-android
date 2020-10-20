@@ -1,3 +1,21 @@
+## 3.5.3
+
+- More aggressive caches and jittering for apps in background 
+    https://github.com/RevenueCat/purchases-android/pull/201
+   
+## 3.5.2
+
+- Catch IOException when getAdvertisingIdInfo 
+    https://github.com/RevenueCat/purchases-android/pull/197
+- Updates BillingClient to 3.0.1
+    https://github.com/RevenueCat/purchases-android/pull/199
+- Changes the way we deserialize the JSON "management_url" to prevent weird behavior 
+    https://github.com/RevenueCat/purchases-android/pull/203
+- Moved strings to their own module 
+    https://github.com/RevenueCat/purchases-android/pull/202
+- Fixes dokka
+    https://github.com/RevenueCat/purchases-android/pull/205
+   
 ## 3.5.1
 
 - Fixes an issue where after calling invalidatePurchaserInfoCache and then purchaserInfoWithCompletion, the invalidated 

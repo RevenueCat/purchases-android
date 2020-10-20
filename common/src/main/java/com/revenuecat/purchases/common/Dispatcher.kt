@@ -9,6 +9,10 @@ import com.revenuecat.purchases.PurchasesError
 import org.json.JSONException
 import java.io.IOException
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
+
+private const val JITTERING_DELAY_MILLISECONDS = 5000
 
 open class Dispatcher(
     private val executorService: ExecutorService
@@ -35,10 +39,18 @@ open class Dispatcher(
         }
     }
 
-    open fun enqueue(command: Runnable) {
+    open fun enqueue(
+        command: Runnable,
+        useRandomDelay: Boolean = false
+    ) {
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
-                executorService.execute(command)
+                if (useRandomDelay && executorService is ScheduledExecutorService) {
+                    val delayToApply = (0..JITTERING_DELAY_MILLISECONDS).random()
+                    executorService.schedule(command, delayToApply.toLong(), TimeUnit.MILLISECONDS)
+                } else {
+                    executorService.execute(command)
+                }
             }
         }
     }

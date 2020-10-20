@@ -4,9 +4,9 @@ import android.app.Application
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
-import com.revenuecat.purchases.subscriberattributes.logging.AttributionStrings
 
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,

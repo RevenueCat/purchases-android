@@ -89,14 +89,18 @@ class Backend(
         })
     }
 
-    private fun enqueue(call: Dispatcher.AsyncCall) {
+    private fun enqueue(
+        call: Dispatcher.AsyncCall,
+        randomDelay: Boolean = false
+    ) {
         if (!dispatcher.isClosed()) {
-            dispatcher.enqueue(call)
+            dispatcher.enqueue(call, randomDelay)
         }
     }
 
     fun getPurchaserInfo(
         appUserID: String,
+        appInBackground: Boolean,
         onSuccess: (PurchaserInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
@@ -137,7 +141,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            callbacks.addCallback(call, cacheKey, onSuccess to onError)
+            callbacks.addCallback(call, cacheKey, onSuccess to onError, randomDelay = appInBackground)
         }
     }
 
@@ -224,6 +228,7 @@ class Backend(
 
     fun getOfferings(
         appUserID: String,
+        appInBackground: Boolean,
         onSuccess: (JSONObject) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
@@ -262,7 +267,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            offeringsCallbacks.addCallback(call, path, onSuccess to onError)
+            offeringsCallbacks.addCallback(call, path, onSuccess to onError, randomDelay = appInBackground)
         }
     }
 
@@ -336,11 +341,12 @@ class Backend(
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
         call: Dispatcher.AsyncCall,
         cacheKey: K,
-        functions: Pair<S, E>
+        functions: Pair<S, E>,
+        randomDelay: Boolean = false
     ) {
         if (!containsKey(cacheKey)) {
             this[cacheKey] = mutableListOf(functions)
-            enqueue(call)
+            enqueue(call, randomDelay)
         } else {
             this[cacheKey]!!.add(functions)
         }

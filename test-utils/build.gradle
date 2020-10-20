@@ -1,0 +1,7 @@
+apply from: "$rootProject.projectDir/library.gradle"
+
+dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    implementation 'com.android.billingclient:billing:3.0.1'
+}
