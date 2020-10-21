@@ -36,6 +36,7 @@ import com.revenuecat.purchases.common.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
+import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -3501,6 +3502,37 @@ class PurchasesTest {
         assertThat(receivedUserCancelled).isFalse()
     }
 
+    @Test
+    fun `Deferred downgrade`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val (skuDetails, offerings) = stubOfferings("onemonth_freetrial")
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+
+        purchases.purchasePackageWith(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            UpgradeInfo(oldPurchase.sku)
+        ) { _, _ -> }
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+
+    }
+
     // region Private Methods
     private fun mockBillingWrapper() {
         with(mockBillingWrapper) {
@@ -3639,6 +3671,601 @@ class PurchasesTest {
         verify(exactly = 1) {
             mockCache.isPurchaserInfoCacheStale(appInBackground = false, appUserID = appUserId)
         }
+    }
+
+    @Test
+    fun `when making purchase with upgrade info and old method, completion block is called`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.SUBS, null)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+        var callCount = 0
+
+        purchases.purchaseProduct(
+            activity,
+            productInfo.skuDetails!!,
+            UpgradeInfo(oldPurchase.sku),
+            object : MakePurchaseListener {
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    fail("should be successful")
+                }
+
+                override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
+                    callCount++
+                }
+            }
+        )
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
+        )
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `when making purchase with upgrade info and old method, error is called if product change is deferred`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.SUBS, null)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+        var callCount = 0
+
+        purchases.purchaseProduct(
+            activity,
+            productInfo.skuDetails!!,
+            UpgradeInfo(oldPurchase.sku),
+            object : MakePurchaseListener {
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    callCount++
+                    assertThat(error.code).isEqualTo(PurchasesErrorCode.PaymentPendingError)
+                    assertThat(userCancelled).isFalse()
+                }
+
+                override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
+                    fail("should be error")
+                }
+            }
+        )
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `when making purchase with upgrade info and old method, error is forwarded`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.SUBS, null)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        val stubBillingResult = mockk<BillingResult>()
+        every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(stubBillingResult, null)
+        }
+
+        var receivedError: PurchasesError? = null
+        var receivedUserCancelled: Boolean? = null
+        purchases.purchaseProduct(
+            activity,
+            productInfo.skuDetails!!,
+            UpgradeInfo(oldPurchase.sku),
+            object : MakePurchaseListener {
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    receivedError = error
+                    receivedUserCancelled = userCancelled
+                }
+
+                override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
+                    fail("should be error")
+                }
+            }
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedUserCancelled).isFalse()
+    }
+
+    @Test
+    fun `when purchasing a package with upgrade info and old method, completion block is called`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+
+        val (_, offerings) = stubOfferings(sku)
+        mockQueryingSkuDetails(sku, PurchaseType.SUBS, null)
+
+        val purchaseToken = "crazy_purchase_token"
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+        var callCount = 0
+
+        purchases.purchasePackage(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            UpgradeInfo(oldPurchase.sku),
+            object : MakePurchaseListener {
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    fail("should be successful")
+                }
+
+                override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
+                    callCount++
+                }
+            }
+        )
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(offerings[stubOfferingIdentifier]!!.monthly!!.product.sku, purchaseToken, PurchaseType.SUBS)
+        )
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `when purchasing a package with upgrade info and old method, error is called if product change is deferred`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+        val (_, offerings) = stubOfferings(sku)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+        var callCount = 0
+
+        purchases.purchasePackage(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            UpgradeInfo(oldPurchase.sku),
+            object : MakePurchaseListener {
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    callCount++
+                    assertThat(error.code).isEqualTo(PurchasesErrorCode.PaymentPendingError)
+                    assertThat(userCancelled).isFalse()
+                }
+
+                override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
+                    fail("should be error")
+                }
+            }
+        )
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `when purchasing a package with upgrade info and old method, error is forwarded`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+        val (_, offerings) = stubOfferings(sku)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        val stubBillingResult = mockk<BillingResult>()
+        every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(stubBillingResult, null)
+        }
+
+        var receivedError: PurchasesError? = null
+        var receivedUserCancelled: Boolean? = null
+        purchases.purchasePackage(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            UpgradeInfo(oldPurchase.sku),
+            object : MakePurchaseListener {
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    receivedError = error
+                    receivedUserCancelled = userCancelled
+                }
+
+                override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
+                    fail("should be error")
+                }
+            }
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedUserCancelled).isFalse()
+    }
+
+    @Test
+    fun `when making purchase with upgrade info, completion block is called`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.SUBS, null)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+        var callCount = 0
+
+        purchases.purchaseProductWith(
+            activity,
+            productInfo.skuDetails!!,
+            UpgradeInfo(oldPurchase.sku),
+            onError = { _, _ ->
+                fail("should be successful")
+            }, onSuccess = { _, _ ->
+                callCount++
+            })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(sku, purchaseToken, PurchaseType.SUBS)
+        )
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `when making purchase with upgrade info, completion is called with null purchase if product change is deferred`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.SUBS, null)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+        var callCount = 0
+        purchases.purchaseProductWith(
+            activity,
+            productInfo.skuDetails!!,
+            UpgradeInfo(oldPurchase.sku),
+            onError = { error, userCancelled ->
+                fail("should be success")
+            }, onSuccess = { purchase, _ ->
+                callCount++
+                assertThat(purchase).isNull()
+            })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `when making purchase with upgrade info, error is forwarded`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.SUBS, null)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        val stubBillingResult = mockk<BillingResult>()
+        every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(stubBillingResult, null)
+        }
+
+        var receivedError: PurchasesError? = null
+        var receivedUserCancelled: Boolean? = null
+
+        purchases.purchaseProductWith(
+            activity,
+            productInfo.skuDetails!!,
+            UpgradeInfo(oldPurchase.sku),
+            onError = { error, userCancelled ->
+                receivedError = error
+                receivedUserCancelled = userCancelled
+            }, onSuccess = { _, _ ->
+                fail("should be error")
+            })
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedUserCancelled).isFalse()
+    }
+
+    @Test
+    fun `when making purchase with upgrade info, failures purchasing are forwarded`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.SUBS, null)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+        var receivedError: PurchasesError? = null
+        var receivedUserCancelled: Boolean? = null
+
+        purchases.purchaseProductWith(
+            activity,
+            productInfo.skuDetails!!,
+            UpgradeInfo(oldPurchase.sku),
+            onError = { error, userCancelled ->
+                receivedError = error
+                receivedUserCancelled = userCancelled
+            }, onSuccess = { _, _ ->
+                fail("should be error")
+            })
+
+        val purchase = mockk<Purchase>(relaxed = true)
+        every { purchase.sku } returns sku
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(listOf(purchase), 2, "")
+
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedUserCancelled).isFalse()
+    }
+
+
+    @Test
+    fun `when purchasing a package with upgrade info, completion block is called`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+
+        val (_, offerings) = stubOfferings(sku)
+        mockQueryingSkuDetails(sku, PurchaseType.SUBS, null)
+
+        val purchaseToken = "crazy_purchase_token"
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+        var callCount = 0
+
+        purchases.purchasePackageWith(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            UpgradeInfo(oldPurchase.sku),
+            onError = { _, _ ->
+                fail("should be successful")
+            }, onSuccess = { _, _ ->
+                callCount++
+            }
+        )
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(offerings[stubOfferingIdentifier]!!.monthly!!.product.sku, purchaseToken, PurchaseType.SUBS)
+        )
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `when purchasing a package with upgrade info, completion is called with null purchase if product change is deferred`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+        val (_, offerings) = stubOfferings(sku)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+        var callCount = 0
+
+        purchases.purchasePackageWith(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            UpgradeInfo(oldPurchase.sku),
+            onError = { error, userCancelled ->
+                fail("should be success")
+            }, onSuccess = { purchase, _ ->
+                callCount++
+                assertThat(purchase).isNull()
+            }
+        )
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `when purchasing a package with upgrade info, error is forwarded`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+        val (_, offerings) = stubOfferings(sku)
+
+        val productInfo = mockQueryingSkuDetails(sku, PurchaseType.SUBS, null)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        val stubBillingResult = mockk<BillingResult>()
+        every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(stubBillingResult, null)
+        }
+
+        var receivedError: PurchasesError? = null
+        var receivedUserCancelled: Boolean? = null
+        purchases.purchasePackageWith(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            UpgradeInfo(oldPurchase.sku),
+            onError = { error, userCancelled ->
+                receivedError = error
+                receivedUserCancelled = userCancelled
+            }, onSuccess = { _, _ ->
+                fail("should be error")
+            }
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedUserCancelled).isFalse()
+    }
+
+    @Test
+    fun `when purchasing a package with upgrade info, failures purchasing are forwarded`() {
+        setup()
+
+        val activity: Activity = mockk()
+        val sku = "onemonth_freetrial"
+        val (_, offerings) = stubOfferings(sku)
+
+        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
+        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.type } returns PurchaseType.SUBS
+
+        every {
+            mockBillingWrapper.findPurchaseInPurchaseHistory(PurchaseType.SUBS.toSKUType()!!, "oldSku", captureLambda())
+        } answers {
+            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
+                BillingResult(),
+                oldPurchase
+            )
+        }
+
+        var receivedError: PurchasesError? = null
+        var receivedUserCancelled: Boolean? = null
+        purchases.purchasePackageWith(
+            activity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            UpgradeInfo(oldPurchase.sku),
+            onError = { error, userCancelled ->
+                receivedError = error
+                receivedUserCancelled = userCancelled
+            }, onSuccess = { _, _ ->
+                fail("should be error")
+            }
+        )
+
+        val purchase = mockk<Purchase>(relaxed = true)
+        every { purchase.sku } returns sku
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(listOf(purchase), 2, "")
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+        assertThat(receivedUserCancelled).isFalse()
     }
 
     private fun mockBackend(
