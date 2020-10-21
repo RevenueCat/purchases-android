@@ -1378,7 +1378,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    @Synchronized
     private fun getPurchaseCallback(sku: String): MakePurchaseListener? {
         return state.purchaseCallbacks[sku].also {
             state =
@@ -1386,7 +1385,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    @Synchronized
     private fun getAndClearProductChangeCallback(): ProductChangeListener? {
         return state.productChangeCallback.also {
             state = state.copy(productChangeCallback = null)
