@@ -374,8 +374,9 @@ class BillingWrapper(
         billingResult: BillingResult,
         purchases: List<Purchase>?
     ) {
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
-            purchases.map { purchase ->
+        val notNullPurchasesList = purchases ?: emptyList()
+        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
+            notNullPurchasesList.map { purchase ->
                 debugLog("BillingWrapper purchases updated. ${purchase.toHumanReadableDescription()}")
                 var type: PurchaseType?
                 var presentedOffering: String?
@@ -391,9 +392,12 @@ class BillingWrapper(
             }.let { mappedPurchases ->
                 purchasesUpdatedListener?.onPurchasesUpdated(mappedPurchases)
             }
+        } else if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+            // When doing a DEFERRED downgrade, the result is OK, but the list of purchases is null
+            purchasesUpdatedListener?.onPurchasesUpdated(emptyList())
         } else {
             debugLog("BillingWrapper purchases failed to update. ${billingResult.toHumanReadableDescription()}" +
-                "${purchases?.takeUnless { it.isEmpty() }?.let { purchase ->
+                "${notNullPurchasesList.takeUnless { it.isEmpty() }?.let { purchase ->
                     "Purchases:" + purchase.joinToString(
                         ", ",
                         transform = { it.toHumanReadableDescription() }

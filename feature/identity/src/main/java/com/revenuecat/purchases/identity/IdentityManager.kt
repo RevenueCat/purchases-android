@@ -3,8 +3,8 @@ package com.revenuecat.purchases.identity
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import java.util.Locale
 import java.util.UUID
 
@@ -39,7 +39,7 @@ class IdentityManager(
         } else {
             synchronized(this@IdentityManager) {
                 debugLog("Changing App User ID: $currentAppUserID -> $appUserID")
-                deviceCache.clearCachesForAppUserID()
+                deviceCache.clearCachesForAppUserID(currentAppUserID)
                 subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
                 deviceCache.cacheAppUserID(appUserID)
             }
@@ -59,7 +59,7 @@ class IdentityManager(
             {
                 synchronized(this@IdentityManager) {
                     debugLog("Alias created")
-                    deviceCache.clearCachesForAppUserID()
+                    deviceCache.clearCachesForAppUserID(currentAppUserID)
                     subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
                     deviceCache.cacheAppUserID(newAppUserID)
                 }
@@ -71,7 +71,7 @@ class IdentityManager(
 
     @Synchronized
     fun reset() {
-        deviceCache.clearCachesForAppUserID()
+        deviceCache.clearCachesForAppUserID(currentAppUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         deviceCache.cacheAppUserID(generateRandomID())
     }

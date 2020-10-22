@@ -8,7 +8,7 @@ class SyncDispatcher : Dispatcher(mockk()) {
 
     private var closed = false
 
-    override fun enqueue(command: Runnable) {
+    override fun enqueue(command: Runnable, useRandomDelay: Boolean) {
         if (closed) {
             throw RejectedExecutionException()
         }
