@@ -4,6 +4,7 @@
     https://github.com/RevenueCat/purchases-android/pull/211
 - Fixes Deferred downgrades. The Purchase object in the completion block of `purchaseProduct` and `purchasePackage` is now nullable when changing products.
     https://github.com/RevenueCat/purchases-android/pull/200
+- Deprecated makePurchase and getEntitlements have been removed
    
 ## 3.5.3
 
