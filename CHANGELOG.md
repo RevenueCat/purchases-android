@@ -1,4 +1,4 @@
-## 3.6.0
+## 4.0.0
 
 - Removes Billing permission from AndroidManifest since it's added by the BillingClient
     https://github.com/RevenueCat/purchases-android/pull/211
