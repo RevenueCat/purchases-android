@@ -163,9 +163,10 @@ workflows:
           requires:
             - assemble
           filters:
+            tags:
+              only: /^(\d+\.)(\d+\.)(\d+)$/
             branches:
-              only:
-                - main
+              ignore: /.*/
       - deploy-snapshot:
           requires:
             - assemble
