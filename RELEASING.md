@@ -8,6 +8,7 @@ Automatic Releasing
  1. Pull main and develop
  1. cd bin
  1. `./release_version.sh -c x.y.z -n a.b.c`, where a.b.c will be the next release after this one. If you're releasing version 3.0.2, for example, this would be ./release_version.sh -c 3.0.2 -n 3.1.0. This will do all of the other steps in the manual process.
+ 1. Update the main branch. You can do this by pushing develop to main.
  1. Visit [Sonatype Nexus](https://oss.sonatype.org/)
  1. Click on Staging Repositories on the left side
  1. Scroll down to find the purchase repository
