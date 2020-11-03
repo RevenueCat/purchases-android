@@ -251,15 +251,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }, { errorLog("Error syncing purchases $it") })
     }
 
-    @JvmName("-deprecated_getEntitlements")
-    @Deprecated(
-        message = "moved to getOfferings()",
-        replaceWith = ReplaceWith(expression = "getOfferings(listener)"),
-        level = DeprecationLevel.ERROR
-    )
-    fun getEntitlements() {
-    }
-
     /**
      * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
      * products vis RevenueCat and greatly simplifies management. See
@@ -946,35 +937,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     //endregion
     //endregion
-
-    @JvmName("-deprecated_makePurchase")
-    @Deprecated(
-        message = "moved to purchaseProduct()",
-        replaceWith = ReplaceWith(expression = "purchaseProduct(activity, skuDetails, upgradeInfo, listener)"),
-        level = DeprecationLevel.ERROR
-    )
-    fun makePurchase(
-        activity: Activity,
-        skuDetails: SkuDetails,
-        oldSku: String,
-        listener: MakePurchaseListener
-    ) {
-        purchaseProduct(activity, skuDetails, UpgradeInfo(oldSku), listener)
-    }
-
-    @JvmName("-deprecated_makePurchase")
-    @Deprecated(
-        message = "moved to purchaseProduct()",
-        replaceWith = ReplaceWith(expression = "purchaseProduct(activity, skuDetails, listener)"),
-        level = DeprecationLevel.ERROR
-    )
-    fun makePurchase(
-        activity: Activity,
-        skuDetails: SkuDetails,
-        listener: MakePurchaseListener
-    ) {
-        purchaseProduct(activity, skuDetails, listener)
-    }
 
     // region Internal Methods
 
