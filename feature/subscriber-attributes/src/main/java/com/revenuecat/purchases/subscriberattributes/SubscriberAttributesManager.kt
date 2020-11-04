@@ -94,7 +94,7 @@ class SubscriberAttributesManager(
         if (attributesToMarkAsSynced.isEmpty()) {
             return
         }
-        log(AttributionStrings.MARK_ATTRIBUTES_SYNC_SUCCESS.format(appUserID) +
+        debugLog(AttributionStrings.MARK_ATTRIBUTES_SYNC_SUCCESS.format(appUserID) +
                 attributesToMarkAsSynced.values.joinToString("\n")
         )
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)
