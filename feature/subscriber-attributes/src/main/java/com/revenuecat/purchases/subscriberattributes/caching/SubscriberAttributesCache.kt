@@ -7,6 +7,7 @@ package com.revenuecat.purchases.subscriberattributes.caching
 
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.buildSubscriberAttributesMapPerUser
 
@@ -60,7 +61,7 @@ class SubscriberAttributesCache(
         if (unsyncedSubscriberAttributes.isNotEmpty()) {
             return
         }
-        debugLog("Deleting subscriber attributes for $appUserID from cache.")
+        debugLog(AttributionStrings.DELETE_ATTRIBUTES.format(appUserID))
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
         val updatedStoredSubscriberAttributes =
             allStoredSubscriberAttributes.toMutableMap().also {
@@ -87,7 +88,7 @@ class SubscriberAttributesCache(
 
     @Synchronized
     private fun deleteSyncedSubscriberAttributesForOtherUsers(currentAppUserID: String) {
-        debugLog("Deleting old synced subscriber attributes that don't belong to $currentAppUserID.")
+        debugLog(AttributionStrings.DELETE_ATTRIBUTES_OTHER_USERS.format(currentAppUserID))
 
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
 
@@ -106,7 +107,7 @@ class SubscriberAttributesCache(
     private fun SubscriberAttributeMap.filterUnsynced(appUserID: AppUserID): SubscriberAttributeMap =
         this.filterValues { !it.isSynced }
             .also { unsyncedAttributesByKey ->
-                debugLog("Found ${unsyncedAttributesByKey.count()} unsynced attributes for appUserID: $appUserID \n" +
+                debugLog(AttributionStrings.UNSYNCED_ATTRIBUTES_COUNT.format(unsyncedAttributesByKey.count(), appUserID) + "\n" +
                     if (unsyncedAttributesByKey.isNotEmpty()) {
                         unsyncedAttributesByKey.values.joinToString("\n")
                     } else {
