@@ -107,7 +107,7 @@ class SubscriberAttributesCache(
     private fun SubscriberAttributeMap.filterUnsynced(appUserID: AppUserID): SubscriberAttributeMap =
         this.filterValues { !it.isSynced }
             .also { unsyncedAttributesByKey ->
-                debugLog(AttributionStrings.UNSYNCED_ATTRIBUTES_COUNT.format(unsyncedAttributesByKey.count(), appUserID) 
+                debugLog(AttributionStrings.UNSYNCED_ATTRIBUTES_COUNT.format(unsyncedAttributesByKey.count(), appUserID)
                 + "\n" +
                     if (unsyncedAttributesByKey.isNotEmpty()) {
                         unsyncedAttributesByKey.values.joinToString("\n")
