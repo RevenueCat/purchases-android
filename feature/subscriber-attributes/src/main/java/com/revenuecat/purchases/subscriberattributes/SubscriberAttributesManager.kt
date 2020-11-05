@@ -2,7 +2,6 @@ package com.revenuecat.purchases.subscriberattributes
 
 import android.app.Application
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.strings.AttributionStrings
