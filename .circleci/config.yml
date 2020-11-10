@@ -2,6 +2,7 @@ version: 2.1
 orbs:
   android: circleci/android@0.2.1
   android-wordpress-orb: wordpress-mobile/android@1.0.15
+  gcp-cli: circleci/gcp-cli@2.1.0
 
 executors:
   android-executor:
@@ -157,7 +158,7 @@ jobs:
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
 
-  integration-tests:
+  integration-tests-build:
     executor: android-executor
     steps:
       - checkout
@@ -184,26 +185,36 @@ jobs:
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - android/save-build-cache
-      - run:
-          name: Store Google Service Account
-          command: echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
-      - run:
-          name: Authorize gcloud and set config defaults
-          command: |
-            sudo gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
-            sudo gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+      - persist_to_workspace:
+          root: .
+          paths:
+            - purchases-sample/build/outputs/apk/release/purchases-sample-release.apk
+            - purchases-sample/build/outputs/apk/androidTest/release/purchases-sample-release-androidTest.apk
+
+  run-firebase-tests:
+    description: "Run integration tests for Android in Firebase"
+    executor: gcp-cli/google
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - gcp-cli/initialize:
+          gcloud-service-key: GCLOUD_SERVICE_KEY
+          google-compute-zone: GOOGLE_COMPUTE_ZONE
+          google-project-id: GOOGLE_PROJECT_ID
       - run:
           name: Test with Firebase Test Lab
           command: >
-            sudo gcloud firebase test android run \
+            gcloud firebase test android run --type instrumentation \
               --app purchases-sample/build/outputs/apk/release/purchases-sample-release.apk \
               --test purchases-sample/build/outputs/apk/androidTest/release/purchases-sample-release-androidTest.apk \
+              --timeout 2m \
               --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
       - run:
           name: Copy test results data
           command: |
             mkdir -p ~/gsutil/
-            sudo gsutil -m cp -r -U `sudo gsutil ls gs://cloud-test-$GOOGLE_PROJECT_ID | tail -1` ~/gsutil/ | true
+            gsutil -m cp -r -U `gsutil ls gs://cloud-test-$GOOGLE_PROJECT_ID | tail -1` ~/gsutil/ | true
       - store_artifacts:
           path: ~/gsutil/
       - store_test_results:
@@ -238,4 +249,13 @@ workflows:
 
   integration-test:
     jobs:
-      - integration-tests
+      - integration-tests-build:
+          filters:
+            tags:
+              only: /^(\d+\.)(\d+\.)(\d+)$/
+            # Uncomment before merging
+            # branches:
+            #   only: /^release\/(\d+\.)(\d+\.)(\d+)$/
+      - run-firebase-tests:
+          requires:
+            - integration-tests-build
