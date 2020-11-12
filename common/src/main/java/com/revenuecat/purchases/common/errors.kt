@@ -92,21 +92,11 @@ fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
 }
 
 fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseCodeName(): String {
-    return when (this) {
-        BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED -> "FEATURE_NOT_SUPPORTED"
-        BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> "SERVICE_DISCONNECTED"
-        BillingClient.BillingResponseCode.OK -> "OK"
-        BillingClient.BillingResponseCode.USER_CANCELED -> "USER_CANCELED"
-        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE -> "SERVICE_UNAVAILABLE"
-        BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> "BILLING_UNAVAILABLE"
-        BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> "ITEM_UNAVAILABLE"
-        BillingClient.BillingResponseCode.DEVELOPER_ERROR -> "DEVELOPER_ERROR"
-        BillingClient.BillingResponseCode.ERROR -> "ERROR"
-        BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> "ITEM_ALREADY_OWNED"
-        BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> "ITEM_NOT_OWNED"
-        BillingClient.BillingResponseCode.SERVICE_TIMEOUT -> "SERVICE_TIMEOUT"
-        else -> "$this"
-    }
+    val allPossibleBillingResponseCodes = BillingClient.BillingResponseCode::class.java.declaredFields
+    return allPossibleBillingResponseCodes
+        .firstOrNull { it.getInt(it) == this }
+        ?.name
+        ?: "$this"
 }
 
 fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): PurchasesError {
