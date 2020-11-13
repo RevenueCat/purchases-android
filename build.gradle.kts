@@ -1,5 +1,5 @@
 buildscript {
-    val kotlinVersion by extra("1.3.72")
+    val kotlinVersion by extra("1.4.10")
     val compileVersion by extra(28)
     val minVersion by extra(14)
     repositories {
@@ -9,7 +9,7 @@ buildscript {
     }
     dependencies {
         classpath("com.vanniktech:gradle-maven-publish-plugin:0.9.0")
-        classpath("com.android.tools.build:gradle:4.0.2")
+        classpath("com.android.tools.build:gradle:4.1.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
 //        classpath("org.jacoco:org.jacoco.core:0.8.5")
