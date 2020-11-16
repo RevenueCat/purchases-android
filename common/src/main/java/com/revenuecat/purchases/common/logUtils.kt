@@ -9,8 +9,12 @@ fun debugLog(message: String) {
     }
 }
 
-fun log(message: String) {
-    Log.w("[Purchases] - INFO", message)
+fun infoLog(message: String) {
+    Log.i("[Purchases] - INFO", message)
+}
+
+fun warnLog(message: String) {
+    Log.w("[Purchases] - WARNING", message)
 }
 
 fun errorLog(message: String) {
@@ -23,4 +27,26 @@ fun errorLog(error: PurchasesError) {
     if (Config.debugLogsEnabled) {
         Log.e("[Purchases] - ERROR", error.toString())
     }
+}
+
+/**
+ * Enum of log levels.
+ */
+enum class LogLevel {
+    /**
+     * For logs at the debug level.
+     */
+    DEBUG,
+    /**
+     * For logs at the error level.
+     */
+    ERROR,
+    /**
+     * For logs at the info level.
+     */
+    INFO,
+    /**
+     * For logs at the warn level.
+     */
+    WARN
 }

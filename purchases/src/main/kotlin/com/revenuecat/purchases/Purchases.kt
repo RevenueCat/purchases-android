@@ -40,8 +40,8 @@ import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.getBillingResponseCodeName
+import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.isSuccessful
-import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
@@ -1033,7 +1033,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         error: PurchasesError,
         completion: ReceiveOfferingsListener?
     ) {
-        log("Error fetching offerings - $error")
+        infoLog("Error fetching offerings - $error")
         deviceCache.clearOfferingsCacheTimestamp()
         dispatch {
             completion?.onError(error)
@@ -1049,8 +1049,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         .filterNot { detailsByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
-            log("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
-            log("Ensure your products are correctly configured in Play Store Developer Console")
+            infoLog("Could not find SkuDetails for ${missingProducts.joinToString(", ")}")
+            infoLog("Ensure your products are correctly configured in Play Store Developer Console")
         }
 
     private fun getSkus(
