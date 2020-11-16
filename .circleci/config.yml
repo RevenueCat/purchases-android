@@ -134,7 +134,7 @@ jobs:
             fi
       - android-wordpress-orb/save-gradle-cache
 
-  assemble:
+  assemble-sample-app:
     executor: android-executor
     steps:
       - checkout
@@ -148,7 +148,7 @@ jobs:
       - run:
           name: Assemble
           command: |
-            ./gradlew assemble \
+            ./gradlew -p purchases-sample assemble \
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
@@ -161,23 +161,25 @@ jobs:
       - checkout
       - run:
           name: Replace API_KEY
-          command: sed -i s/api_key/$API_KEY/ purchases-sample/src/main/java/com/revenuecat/sample/MainApplication.kt
+          working_directory: integration-tests/src/androidTest/java/com/revenuecat/purchases/integrationtests/
+          command: |
+            sed -i s/REVENUECAT_API_KEY/$API_KEY/ IntegrationTest.kt
       - android/restore-build-cache
       - run:
           name: Prepare Keystore
-          working_directory: purchases-sample
+          working_directory: integration-tests
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
       - run:
           name: Assemble Release APK
           command: |
-            ./gradlew -p purchases-sample assembleRelease \
+            ./gradlew -p integration-tests assembleRelease \
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - run:
           name: Assemble AndroidTest APK
           command: |
-            ./gradlew -p purchases-sample assembleAndroidTest -PtestBuildType=release \
+            ./gradlew -p integration-tests assembleAndroidTest -PtestBuildType=release \
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
@@ -185,8 +187,8 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - purchases-sample/build/outputs/apk/release/purchases-sample-release.apk
-            - purchases-sample/build/outputs/apk/androidTest/release/purchases-sample-release-androidTest.apk
+            - integration-tests/build/outputs/apk/release/integration-tests-release.apk
+            - integration-tests/build/outputs/apk/androidTest/release/integration-tests-release-androidTest.apk
 
   run-firebase-tests:
     description: "Run integration tests for Android in Firebase"
@@ -203,8 +205,8 @@ jobs:
           name: Test with Firebase Test Lab
           command: >
             gcloud firebase test android run --type instrumentation \
-              --app purchases-sample/build/outputs/apk/release/purchases-sample-release.apk \
-              --test purchases-sample/build/outputs/apk/androidTest/release/purchases-sample-release-androidTest.apk \
+              --app integration-tests/build/outputs/apk/release/integration-tests-release.apk \
+              --test integration-tests/build/outputs/apk/androidTest/release/integration-tests-release-androidTest.apk \
               --timeout 2m \
               --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
       - run:
@@ -212,6 +214,7 @@ jobs:
           command: |
             mkdir -p ~/gsutil/
             gsutil -m cp -r -U `gsutil ls gs://cloud-test-$GOOGLE_PROJECT_ID | tail -1` ~/gsutil/ | true
+          when: always
       - store_artifacts:
           path: ~/gsutil/
       - store_test_results:
@@ -222,17 +225,17 @@ workflows:
   test-assemble-deploy-docs:
     jobs:
       - test
-      - assemble
+      - assemble-sample-app
       - deploy:
           requires:
-            - assemble
+            - assemble-sample-app
           filters:
             branches:
               only:
                 - main
       - deploy-snapshot:
           requires:
-            - assemble
+            - assemble-sample-app
           filters:
             branches:
               only:
