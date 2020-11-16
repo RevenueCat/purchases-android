@@ -1,3 +1,11 @@
+## 4.0.0
+
+- Removes Billing permission from AndroidManifest since it's added by the BillingClient.
+    https://github.com/RevenueCat/purchases-android/pull/211
+- Fixes Deferred downgrades. The Purchase object in the completion block of `purchaseProduct` and `purchasePackage` is now nullable when changing products.
+    https://github.com/RevenueCat/purchases-android/pull/200
+- Deprecated makePurchase and getEntitlements have been removed. Use purchaseProduct/purchasePackage and getOfferings instead.
+   
 ## 3.5.3
 
 - More aggressive caches and jittering for apps in background 

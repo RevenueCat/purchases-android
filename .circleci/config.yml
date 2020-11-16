@@ -230,9 +230,10 @@ workflows:
           requires:
             - assemble-sample-app
           filters:
+            tags:
+              only: /^(\d+\.)(\d+\.)(\d+)$/
             branches:
-              only:
-                - main
+              ignore: /.*/
       - deploy-snapshot:
           requires:
             - assemble-sample-app
