@@ -8,6 +8,7 @@ fun log(intent: LogIntent, message: String) {
         LogIntent.GOOGLEERROR -> errorLog(emojifiedMessage)
         LogIntent.GOOGLEINFO -> infoLog(emojifiedMessage)
         LogIntent.INFO -> infoLog(emojifiedMessage)
+        LogIntent.DEBUGINFO -> debugLog(emojifiedMessage)
         LogIntent.PURCHASE -> debugLog(emojifiedMessage)
         LogIntent.RCERROR -> errorLog(emojifiedMessage)
         LogIntent.RCPURCHASESUCCESS -> debugLog(emojifiedMessage)
@@ -30,9 +31,13 @@ enum class LogIntent(val emojiList: List<String>) {
      */
     GOOGLEINFO(listOf(Emojis.GOOGLE_ERROR, Emojis.DOUBLE_EXCLAMATION)),
     /**
-     * Emoji for information messages.
+     * Emoji for information messages on the info level.
      */
     INFO(listOf(Emojis.INFO)),
+    /**
+     * Emoji for information messages on the debug level.
+     */
+    DEBUGINFO(listOf(Emojis.INFO)),
     /**
      * Emoji for purchase messages.
      */
