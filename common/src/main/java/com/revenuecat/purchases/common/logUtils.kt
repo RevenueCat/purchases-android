@@ -9,8 +9,12 @@ fun debugLog(message: String) {
     }
 }
 
-fun log(message: String) {
-    Log.w("[Purchases] - INFO", message)
+fun infoLog(message: String) {
+    Log.i("[Purchases] - INFO", message)
+}
+
+fun warnLog(message: String) {
+    Log.w("[Purchases] - WARN", message)
 }
 
 fun errorLog(message: String) {
