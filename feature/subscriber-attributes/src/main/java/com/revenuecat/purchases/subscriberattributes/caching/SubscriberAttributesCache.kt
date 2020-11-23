@@ -5,8 +5,9 @@
 
 package com.revenuecat.purchases.subscriberattributes.caching
 
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.buildSubscriberAttributesMapPerUser
@@ -61,7 +62,7 @@ class SubscriberAttributesCache(
         if (unsyncedSubscriberAttributes.isNotEmpty()) {
             return
         }
-        debugLog(AttributionStrings.DELETE_ATTRIBUTES.format(appUserID))
+        log(LogIntent.DEBUG_INFO, AttributionStrings.DELETE_ATTRIBUTES.format(appUserID))
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
         val updatedStoredSubscriberAttributes =
             allStoredSubscriberAttributes.toMutableMap().also {
@@ -88,7 +89,7 @@ class SubscriberAttributesCache(
 
     @Synchronized
     private fun deleteSyncedSubscriberAttributesForOtherUsers(currentAppUserID: String) {
-        debugLog(AttributionStrings.DELETE_ATTRIBUTES_OTHER_USERS.format(currentAppUserID))
+        log(LogIntent.DEBUG_INFO, AttributionStrings.DELETE_ATTRIBUTES_OTHER_USERS.format(currentAppUserID))
 
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
 
@@ -107,8 +108,8 @@ class SubscriberAttributesCache(
     private fun SubscriberAttributeMap.filterUnsynced(appUserID: AppUserID): SubscriberAttributeMap =
         this.filterValues { !it.isSynced }
             .also { unsyncedAttributesByKey ->
-                debugLog(AttributionStrings.UNSYNCED_ATTRIBUTES_COUNT.format(unsyncedAttributesByKey.count(),
-                        appUserID) +
+                log(LogIntent.DEBUG_INFO, AttributionStrings.UNSYNCED_ATTRIBUTES_COUNT
+                        .format(unsyncedAttributesByKey.count(), appUserID) +
                     if (unsyncedAttributesByKey.isNotEmpty()) {
                         unsyncedAttributesByKey.values.joinToString("\n")
                     } else {

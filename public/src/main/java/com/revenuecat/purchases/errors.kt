@@ -1,8 +1,5 @@
 package com.revenuecat.purchases
 
-import com.revenuecat.purchases.strings.AttributionStrings
-import com.revenuecat.purchases.strings.ConfigureStrings
-
 /**
  * This class represents an error
  * @param code Error code
@@ -33,7 +30,7 @@ enum class PurchasesErrorCode(val description: String) {
     InvalidReceiptError("The receipt is not valid."),
     MissingReceiptFileError("The receipt is missing."),
     NetworkError("Error performing request."),
-    InvalidCredentialsError(ConfigureStrings.INVALID_CREDENTIALS_ERROR),
+    InvalidCredentialsError("There was a credentials issue. Check the underlying error for more details."),
     UnexpectedBackendResponseError("Received malformed response from the backend."),
     ReceiptInUseByOtherSubscriberError("The receipt is in use by other subscriber."),
     InvalidAppUserIdError("The app user id is not valid."),
@@ -47,5 +44,5 @@ enum class PurchasesErrorCode(val description: String) {
     IneligibleError("The User is ineligible for that action."),
     InsufficientPermissionsError("App does not have sufficient permissions to make purchases."),
     PaymentPendingError("The payment is pending."),
-    InvalidSubscriberAttributesError(AttributionStrings.INVALID_SUBSCRIBER_ATTRIBUTES)
+    InvalidSubscriberAttributesError("One or more of the attributes sent could not be saved.")
 }
