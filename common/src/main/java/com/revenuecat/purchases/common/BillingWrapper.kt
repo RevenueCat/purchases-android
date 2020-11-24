@@ -101,7 +101,7 @@ class BillingWrapper(
                     billingClient = clientFactory.buildClient(this)
                 }
                 billingClient?.let {
-                    log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_CLIENT_STARTED.format("$it"))
+                    log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_CLIENT_STARTED.format(it))
                     it.startConnection(this)
                 }
             }
@@ -112,7 +112,7 @@ class BillingWrapper(
         mainHandler.post {
             synchronized(this@BillingWrapper) {
                 billingClient?.let {
-                    log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_CLIENT_ENDED.format("$it"))
+                    log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_CLIENT_ENDED.format(it))
                     it.endConnection()
                 }
                 billingClient = null
@@ -151,7 +151,7 @@ class BillingWrapper(
                             log(LogIntent.PURCHASE, OfferingStrings.RETRIEVED_SKU
                                     .format(skuDetailsList?.joinToString { it.toString() }))
                             skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
-                                log(LogIntent.PURCHASE, OfferingStrings.PRODUCTS.format(it.sku, "$it"))
+                                log(LogIntent.PURCHASE, OfferingStrings.PRODUCTS.format(it.sku, it))
                             }
 
                             onReceiveSkuDetails(skuDetailsList ?: emptyList())
@@ -304,7 +304,7 @@ class BillingWrapper(
         token: String,
         onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.ACKNOWLEDGE_PURCHASE)
+        log(LogIntent.PURCHASE, PurchaseStrings.ACKNOWLEDGE_PURCHASE.format(token))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
