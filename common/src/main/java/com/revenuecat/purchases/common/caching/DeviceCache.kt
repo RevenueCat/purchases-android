@@ -10,11 +10,13 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.buildPurchaserInfo
-import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.strings.ReceiptStrings
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
@@ -187,22 +189,22 @@ class DeviceCache(
     @Synchronized
     fun getPreviouslySentHashedTokens(): Set<String> {
         return (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
-            debugLog("[QueryPurchases] Tokens already posted: $it")
+            log(LogIntent.DEBUG_INFO, ReceiptStrings.QUERYPURCHASES_TOKEN_POSTED.format(it))
         }
     }
 
     @Synchronized
     fun addSuccessfullyPostedToken(token: String) {
-        debugLog("[QueryPurchases] Saving token $token with hash ${token.sha1()}")
+        log(LogIntent.DEBUG_INFO, ReceiptStrings.QUERYPURCHASES_TOKEN_SAVE_HASH.format(token, token.sha1()))
         getPreviouslySentHashedTokens().let {
-            debugLog("[QueryPurchases] Tokens in cache before saving $it")
+            log(LogIntent.DEBUG_INFO, ReceiptStrings.QUERYPURCHASES_TOKEN_IN_CACHE.format(it))
             setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
         }
     }
 
     @Synchronized
     private fun setSavedTokenHashes(newSet: Set<String>) {
-        debugLog("[QueryPurchases] Saving tokens $newSet")
+        log(LogIntent.DEBUG_INFO, ReceiptStrings.QUERYPURCHASES_TOKEN_SAVE.format(newSet))
         preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
     }
 
@@ -215,7 +217,7 @@ class DeviceCache(
         activeSubsHashedTokens: Set<String>,
         unconsumedInAppsHashedTokens: Set<String>
     ) {
-        debugLog("[QueryPurchases] Cleaning previously sent tokens")
+        log(LogIntent.DEBUG_INFO, ReceiptStrings.QUERYPURCHASES_CLEAN_PREV_SET_HASHED_TOKEN)
         setSavedTokenHashes(
             (activeSubsHashedTokens + unconsumedInAppsHashedTokens).intersect(
                 getPreviouslySentHashedTokens()
@@ -278,7 +280,7 @@ class DeviceCache(
 
     private fun Date?.isStale(appInBackground: Boolean): Boolean {
         return this?.let { cachesLastUpdated ->
-            debugLog("Checking if cache is stale AppInBackground $appInBackground")
+            log(LogIntent.DEBUG_INFO, ReceiptStrings.DATE_STALE_BACKGROUND.format(appInBackground))
             val cacheDuration = when {
                 appInBackground -> CACHE_REFRESH_PERIOD_IN_BACKGROUND
                 else -> CACHE_REFRESH_PERIOD_IN_FOREGROUND

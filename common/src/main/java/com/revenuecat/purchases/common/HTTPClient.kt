@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common
 
 import android.os.Build
+import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -18,6 +19,7 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+import kotlin.jvm.Throws
 
 class HTTPClient(
     private val appConfig: AppConfig
@@ -91,7 +93,7 @@ class HTTPClient(
 
         val payload: String?
         try {
-            debugLog("${connection.requestMethod} $path")
+            log(LogIntent.DEBUG_INFO, NetworkStrings.HTTP_REQUEST_STARTED.format(connection.requestMethod, path))
             result.responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
         } finally {
@@ -101,6 +103,8 @@ class HTTPClient(
 
         result.body = payload?.let { JSONObject(it) } ?: throw IOException("Network call payload is null.")
         debugLog("${connection.requestMethod} $path ${result.responseCode}")
+        log(LogIntent.DEBUG_INFO,
+                NetworkStrings.HTTP_REQUEST_COMPLETED.format(connection.requestMethod, path, result.responseCode))
         return result
     }
 
