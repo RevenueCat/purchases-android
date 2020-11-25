@@ -19,7 +19,6 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
-import kotlin.jvm.Throws
 
 class HTTPClient(
     private val appConfig: AppConfig
@@ -102,7 +101,6 @@ class HTTPClient(
         }
 
         result.body = payload?.let { JSONObject(it) } ?: throw IOException("Network call payload is null.")
-        debugLog("${connection.requestMethod} $path ${result.responseCode}")
         log(LogIntent.DEBUG_INFO,
                 NetworkStrings.HTTP_REQUEST_COMPLETED.format(connection.requestMethod, path, result.responseCode))
         return result
