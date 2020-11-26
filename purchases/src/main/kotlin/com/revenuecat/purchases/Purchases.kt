@@ -236,7 +236,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                 deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 cachePurchaserInfo(info)
                                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                                log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format("$purchase"))
+                                log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
                             },
                             onError = { error, errorIsFinishable, body ->
                                 if (errorIsFinishable) {
@@ -248,13 +248,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                     deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 }
                                 log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS
-                                        .format("$purchase", "$error"))
+                                        .format(purchase, error))
                             }
                         )
                     }
                 }
             }
-        }, { log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASE_ERROR.format("$it")) })
+        }, { log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASE_ERROR.format(it)) })
     }
 
     /**
@@ -283,7 +283,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
             state.appInBackground.let { appInBackground ->
                 if (deviceCache.isOfferingsCacheStale(appInBackground)) {
-                    log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_BACKGROUND)
+                    if (appInBackground) {
+                        log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_BACKGROUND)
+                    } else {
+                        log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_FOREGROUND)
+                    }
                     fetchAndCacheOfferings(appUserID, appInBackground)
                     log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATE_NETWORK)
                 }
@@ -520,8 +524,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                             consumeAndSave(finishTransactions, purchase)
                                             cachePurchaserInfo(info)
                                             sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                                            log(LogIntent.DEBUG_INFO, RestoreStrings.PURCHASE_RESTORED
-                                                    .format("$purchase"))
+                                            log(LogIntent.DEBUG_INFO, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                             if (sortedByTime.last() == purchase) {
                                                 dispatch { listener.onReceived(info) }
                                             }
@@ -536,7 +539,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                                 consumeAndSave(finishTransactions, purchase)
                                             }
                                             log(LogIntent.RC_ERROR, RestoreStrings.RESTORE_PURCHASE_ERROR
-                                                    .format("$purchase", "$error"))
+                                                    .format(purchase, error))
                                             if (sortedByTime.last() == purchase) {
                                                 dispatch { listener.onError(error) }
                                             }
@@ -1040,7 +1043,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         error: PurchasesError,
         completion: ReceiveOfferingsListener?
     ) {
-        log(LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_OFFERINGS_ERROR.format("$error"))
+        log(LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error))
         deviceCache.clearOfferingsCacheTimestamp()
         dispatch {
             completion?.onError(error)
@@ -1056,7 +1059,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         .filterNot { detailsByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
-            log(LogIntent.GOOGLE_INFO, OfferingStrings.CANNOT_FIND_PRODUCT.format(missingProducts.joinToString(", ")))
+            log(LogIntent.GOOGLE_INFO, OfferingStrings.CANNOT_FIND_PRODUCT
+                    .format(missingProducts.joinToString(", ")))
             log(LogIntent.GOOGLE_INFO, OfferingStrings.CONFIG_PROBLEM)
         }
 
@@ -1268,7 +1272,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
+                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGE_PURCHASE_ERROR
                             .format(billingResult.toHumanReadableDescription()))
                 }
             }

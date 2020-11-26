@@ -160,7 +160,7 @@ class BillingWrapper(
                                     .format(billingResult.toHumanReadableDescription()))
                             onError(
                                 billingResult.responseCode.billingResponseToPurchasesError(
-                                    "Error when fetching products. " + "${billingResult.toHumanReadableDescription()}"
+                                    "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
                                 ).also { errorLog(it) }
                             )
                         }
