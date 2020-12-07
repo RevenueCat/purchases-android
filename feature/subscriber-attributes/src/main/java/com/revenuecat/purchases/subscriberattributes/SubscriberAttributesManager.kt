@@ -88,12 +88,12 @@ class SubscriberAttributesManager(
         attributeErrors: List<SubscriberAttributeError>
     ) {
         if (attributeErrors.isNotEmpty()) {
-            log(LogIntent.RC_ERROR, AttributionStrings.ATTRIBUTE_ERROR.format(attributeErrors))
+            log(LogIntent.RC_ERROR, AttributionStrings.ATTRIBUTES_ERROR.format(attributeErrors))
         }
         if (attributesToMarkAsSynced.isEmpty()) {
             return
         }
-        log(LogIntent.INFO, AttributionStrings.MARK_ATTRIBUTES_SYNC_SUCCESS.format(appUserID) +
+        log(LogIntent.INFO, AttributionStrings.MARKING_ATTRIBUTES_SYNC_SUCCESS.format(appUserID) +
                 attributesToMarkAsSynced.values.joinToString("\n")
         )
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)

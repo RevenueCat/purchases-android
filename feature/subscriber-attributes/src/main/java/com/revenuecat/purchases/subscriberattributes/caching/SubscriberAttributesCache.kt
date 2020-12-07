@@ -62,7 +62,7 @@ class SubscriberAttributesCache(
         if (unsyncedSubscriberAttributes.isNotEmpty()) {
             return
         }
-        log(LogIntent.DEBUG_INFO, AttributionStrings.DELETE_ATTRIBUTES.format(appUserID))
+        log(LogIntent.DEBUG_INFO, AttributionStrings.DELETING_ATTRIBUTES.format(appUserID))
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
         val updatedStoredSubscriberAttributes =
             allStoredSubscriberAttributes.toMutableMap().also {
@@ -89,7 +89,7 @@ class SubscriberAttributesCache(
 
     @Synchronized
     private fun deleteSyncedSubscriberAttributesForOtherUsers(currentAppUserID: String) {
-        log(LogIntent.DEBUG_INFO, AttributionStrings.DELETE_ATTRIBUTES_OTHER_USERS.format(currentAppUserID))
+        log(LogIntent.DEBUG_INFO, AttributionStrings.DELETING_ATTRIBUTES_OTHER_USERS.format(currentAppUserID))
 
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
 
