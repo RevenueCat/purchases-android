@@ -5,10 +5,10 @@ object PurchaserInfoStrings {
     const val INVALIDATING_PURCHASERINFO_CACHE = "Invalidating PurchaserInfo cache."
     const val SENDING_LATEST_PURCHASERINFO_TO_LISTENER = "Sending latest PurchaserInfo to listener."
     const val NO_CACHED_PURCHASERINFO = "No cached PurchaserInfo, fetching from network."
-    const val PURCHASERINFO_STALE_UPDATE_FOREGROUND = "PurchaserInfo cache is stale, updating from " +
+    const val PURCHASERINFO_STALE_UPDATING_FOREGROUND = "PurchaserInfo cache is stale, updating from " +
             "network in foreground."
-    const val PURCHASERINFO_STALE_UPDATE_BACKGROUND = "PurchaserInfo cache is stale, updating from " +
+    const val PURCHASERINFO_STALE_UPDATING_BACKGROUND = "PurchaserInfo cache is stale, updating from " +
             "network in background."
-    const val UPDATED_FROM_NETWORK = "PurchaserInfo updated from network."
+    const val PURCHASERINFO_UPDATED_NETWORK = "PurchaserInfo updated from network."
     const val VENDING_CACHE = "Vending PurchaserInfo from cache."
 }

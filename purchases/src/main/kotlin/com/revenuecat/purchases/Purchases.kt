@@ -192,7 +192,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
         log(LogIntent.DEBUG_INFO, ConfigureStrings.APP_FOREGROUNDED)
         if (firstTimeInForeground || deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)) {
-            log(LogIntent.DEBUG_INFO, PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATE_FOREGROUND)
+            log(LogIntent.DEBUG_INFO, PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_FOREGROUND)
             fetchAndCachePurchaserInfo(identityManager.currentAppUserID, appInBackground = false)
         }
         if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
@@ -656,19 +656,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             dispatch { listener?.onReceived(cachedPurchaserInfo) }
             state.appInBackground.let { appInBackground ->
                 if (deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground) && appInBackground) {
-                    log(LogIntent.DEBUG_INFO, PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATE_BACKGROUND)
+                    log(LogIntent.DEBUG_INFO, PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_BACKGROUND)
                     fetchAndCachePurchaserInfo(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.UPDATED_FROM_NETWORK)
+                    log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.PURCHASERINFO_UPDATED_NETWORK)
                 } else if (deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground) && !appInBackground) {
-                    log(LogIntent.DEBUG_INFO, PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATE_FOREGROUND)
+                    log(LogIntent.DEBUG_INFO, PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_FOREGROUND)
                     fetchAndCachePurchaserInfo(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.UPDATED_FROM_NETWORK)
+                    log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.PURCHASERINFO_UPDATED_NETWORK)
                 }
             }
         } else {
             log(LogIntent.DEBUG_INFO, PurchaserInfoStrings.NO_CACHED_PURCHASERINFO)
             fetchAndCachePurchaserInfo(appUserID, state.appInBackground, listener)
-            log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.UPDATED_FROM_NETWORK)
+            log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.PURCHASERINFO_UPDATED_NETWORK)
         }
     }
 
