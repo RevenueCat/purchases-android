@@ -1566,7 +1566,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     }
                 }
             } else {
-                val message = PurchaseStrings.UPGRADING_SKU_ERROR.format(result.responseCode.getBillingResponseCodeName())
+                val message = PurchaseStrings.UPGRADING_SKU_ERROR
+                        .format(result.responseCode.getBillingResponseCodeName())
                 log(LogIntent.GOOGLE_ERROR, message)
                 dispatch {
                     listener.onError(

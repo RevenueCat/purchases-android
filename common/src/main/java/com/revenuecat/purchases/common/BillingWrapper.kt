@@ -180,7 +180,8 @@ class BillingWrapper(
         presentedOfferingIdentifier: String?
     ) {
         if (replaceSkuInfo != null) {
-            log(LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU.format(replaceSkuInfo.oldPurchase.sku, skuDetails.sku))
+            log(LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
+                    .format(replaceSkuInfo.oldPurchase.sku, skuDetails.sku))
         } else {
             log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(skuDetails.sku))
         }
