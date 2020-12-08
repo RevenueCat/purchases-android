@@ -71,7 +71,7 @@ class SubscriberAttributesManager(
                     if (didBackendGetAttributes) {
                         markAsSynced(syncingAppUserID, unsyncedAttributesForUser, attributeErrors)
                     }
-                    log(LogIntent.RC_ERROR, AttributionStrings.SYNCING_ATTRIBUTES_ERROR.format(syncingAppUserID, error))
+                    log(LogIntent.RC_ERROR, AttributionStrings.ATTRIBUTES_SYNC_ERROR.format(syncingAppUserID, error))
                 }
             )
         }

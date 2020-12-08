@@ -9,6 +9,6 @@ object AttributionStrings {
     const val NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE = "No subscriber attributes to synchronize."
     const val SKIP_SAME_ATTRIBUTES = "Attribution data is the same as latest. Skipping."
     const val METHOD_CALLED = "%s called"
-    const val SYNCING_ATTRIBUTES_ERROR = "Error when syncing subscriber attributes. App User ID: %s, Error: %s"
+    const val ATTRIBUTES_SYNC_ERROR = "Error when syncing subscriber attributes. App User ID: %s, Error: %s"
     const val UNSYNCED_ATTRIBUTES_COUNT = "Found %d unsynced attributes for App User ID: %s"
 }
