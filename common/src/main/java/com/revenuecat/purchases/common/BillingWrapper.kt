@@ -101,7 +101,7 @@ class BillingWrapper(
                     billingClient = clientFactory.buildClient(this)
                 }
                 billingClient?.let {
-                    log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_CLIENT_STARTED.format(it))
+                    log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_CLIENT_STARTING.format(it))
                     it.startConnection(this)
                 }
             }
@@ -112,7 +112,7 @@ class BillingWrapper(
         mainHandler.post {
             synchronized(this@BillingWrapper) {
                 billingClient?.let {
-                    log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_CLIENT_ENDED.format(it))
+                    log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_CLIENT_ENDING.format(it))
                     it.endConnection()
                 }
                 billingClient = null
@@ -146,7 +146,7 @@ class BillingWrapper(
                 withConnectedClient {
                     querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                            log(LogIntent.DEBUG_INFO, OfferingStrings.FINISH_FETCHING_PRODUCTS
+                            log(LogIntent.DEBUG_INFO, OfferingStrings.FINISHED_FETCHING_PRODUCTS
                                     .format(skuList.joinToString()))
                             log(LogIntent.PURCHASE, OfferingStrings.RETRIEVED_SKU
                                     .format(skuDetailsList?.joinToString { it.toString() }))
@@ -156,7 +156,7 @@ class BillingWrapper(
 
                             onReceiveSkuDetails(skuDetailsList ?: emptyList())
                         } else {
-                            log(LogIntent.GOOGLE_ERROR, OfferingStrings.INVALID_PRODUCT_IDENTIFIERS
+                            log(LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
                                     .format(billingResult.toHumanReadableDescription()))
                             onError(
                                 billingResult.responseCode.billingResponseToPurchasesError(
@@ -180,9 +180,9 @@ class BillingWrapper(
         presentedOfferingIdentifier: String?
     ) {
         if (replaceSkuInfo != null) {
-            log(LogIntent.PURCHASE, PurchaseStrings.UPGRADE_SKU.format(replaceSkuInfo.oldPurchase.sku, skuDetails.sku))
+            log(LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU.format(replaceSkuInfo.oldPurchase.sku, skuDetails.sku))
         } else {
-            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_PRODUCT.format(skuDetails.sku))
+            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(skuDetails.sku))
         }
         synchronized(this@BillingWrapper) {
             productTypes[skuDetails.sku] = PurchaseType.fromSKUType(skuDetails.type)
@@ -226,16 +226,16 @@ class BillingWrapper(
         onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
-        log(LogIntent.DEBUG_INFO, PurchaseStrings.SKU_QUERY.format(skuType))
+        log(LogIntent.DEBUG_INFO, RestoreStrings.QUERYING_PURCHASE_HISTORY.format(skuType))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
                     queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistoryRecordList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
-                                log(LogIntent.DEBUG_INFO, PurchaseStrings.PURCHASE_HISTORY_RETRIEVED
+                                log(LogIntent.DEBUG_INFO, RestoreStrings.PURCHASE_HISTORY_RETRIEVED
                                         .format(it.toHumanReadableDescription()))
-                            } ?: log(LogIntent.DEBUG_INFO, PurchaseStrings.PURCHASE_HISTORY_EMPTY)
+                            } ?: log(LogIntent.DEBUG_INFO, RestoreStrings.PURCHASE_HISTORY_EMPTY)
                             onReceivePurchaseHistory(purchaseHistoryRecordList ?: emptyList())
                         } else {
                             onReceivePurchaseHistoryError(
@@ -304,7 +304,7 @@ class BillingWrapper(
         token: String,
         onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.ACKNOWLEDGE_PURCHASE.format(token))
+        log(LogIntent.PURCHASE, PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(token))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
@@ -336,7 +336,7 @@ class BillingWrapper(
                 result.responseCode,
                 purchasesList.map { purchase ->
                     val hash = purchase.purchaseToken.sha1()
-                    log(LogIntent.DEBUG_INFO, RestoreStrings.QUERYING_PURCHASE_RESULT.format(skuType, hash))
+                    log(LogIntent.DEBUG_INFO, RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(skuType, hash))
                     hash to PurchaseWrapper(purchase, PurchaseType.fromSKUType(skuType), null)
                 }.toMap()
             )
@@ -349,7 +349,7 @@ class BillingWrapper(
         completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
     ) {
         withConnectedClient {
-            log(LogIntent.DEBUG_INFO, RestoreStrings.FIND_QUERYING_PURCHASE.format(sku, skuType))
+            log(LogIntent.DEBUG_INFO, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, skuType))
             queryPurchaseHistoryAsync(skuType) { result, purchasesList ->
                 completion(
                     result,
@@ -386,7 +386,7 @@ class BillingWrapper(
         val notNullPurchasesList = purchases ?: emptyList()
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
             notNullPurchasesList.map { purchase ->
-                log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_WRAPPER_UPDATED
+                log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
                         .format(purchase.toHumanReadableDescription()))
                 var type: PurchaseType?
                 var presentedOffering: String?
@@ -482,7 +482,7 @@ class BillingWrapper(
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {
             it.receivingFunction()
-        } ?: log(LogIntent.GOOGLE_INFO, BillingStrings.BILLING_CLIENT_NULL.format(getStackTrace()))
+        } ?: log(LogIntent.GOOGLE_INFO, BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()))
     }
 
     private fun getStackTrace(): String {

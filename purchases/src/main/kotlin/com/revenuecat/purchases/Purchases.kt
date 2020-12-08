@@ -195,9 +195,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             fetchAndCachePurchaserInfo(identityManager.currentAppUserID, appInBackground = false)
         }
         if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
-            log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_FOREGROUND)
+            log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_UPDATING_FOREGROUND)
             fetchAndCacheOfferings(identityManager.currentAppUserID, appInBackground = false)
-            log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATE_NETWORK)
+            log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_NETWORK)
         }
         updatePendingPurchaseQueue()
         synchronizeSubscriberAttributesIfNeeded()
@@ -212,7 +212,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @warning This function should only be called if you're not calling any purchase method.
      */
     fun syncPurchases() {
-        log(LogIntent.DEBUG_INFO, PurchaseStrings.SYNCING_PURCHASE)
+        log(LogIntent.DEBUG_INFO, PurchaseStrings.SYNCING_PURCHASES)
         billingWrapper.queryAllPurchases({ allPurchases ->
             if (allPurchases.isNotEmpty()) {
                 identityManager.currentAppUserID.let { appUserID ->
@@ -247,7 +247,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                     )
                                     deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 }
-                                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS
+                                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
                                         .format(purchase, error))
                             }
                         )
@@ -274,7 +274,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             identityManager.currentAppUserID to deviceCache.cachedOfferings
         }
         if (cachedOfferings == null) {
-            log(LogIntent.DEBUG_INFO, OfferingStrings.NO_CACHED_OFFERINGS)
+            log(LogIntent.DEBUG_INFO, OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK)
             fetchAndCacheOfferings(appUserID, state.appInBackground, listener)
         } else {
             log(LogIntent.DEBUG_INFO, OfferingStrings.VENDING_OFFERINGS_CACHE)
@@ -283,13 +283,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
             state.appInBackground.let { appInBackground ->
                 if (deviceCache.isOfferingsCacheStale(appInBackground) && appInBackground) {
-                    log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_BACKGROUND)
+                    log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_UPDATING_BACKGROUND)
                     fetchAndCacheOfferings(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATE_NETWORK)
+                    log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_NETWORK)
                 } else if (deviceCache.isOfferingsCacheStale(appInBackground) && !appInBackground) {
-                    log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_FOREGROUND)
+                    log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_UPDATING_FOREGROUND)
                     fetchAndCacheOfferings(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATE_NETWORK)
+                    log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_NETWORK)
                 }
             }
         }
@@ -490,7 +490,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun restorePurchases(
         listener: ReceivePurchaserInfoListener
     ) {
-        log(LogIntent.DEBUG_INFO, RestoreStrings.RESTORE_PURCHASE)
+        log(LogIntent.DEBUG_INFO, RestoreStrings.RESTORING_PURCHASE)
         if (!allowSharingPlayStoreAccount) {
             log(LogIntent.WARNING, RestoreStrings.SHARING_ACC_RESTORE_FALSE)
         }
@@ -538,7 +538,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                                 )
                                                 consumeAndSave(finishTransactions, purchase)
                                             }
-                                            log(LogIntent.RC_ERROR, RestoreStrings.RESTORE_PURCHASE_ERROR
+                                            log(LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
                                                     .format(purchase, error))
                                             if (sortedByTime.last() == purchase) {
                                                 dispatch { listener.onError(error) }
@@ -1240,7 +1240,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGE_PURCHASE_ERROR
+                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
                             .format(billingResult.toHumanReadableDescription()))
                 }
             }
@@ -1272,7 +1272,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGE_PURCHASE_ERROR
+                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
                             .format(billingResult.toHumanReadableDescription()))
                 }
             }
@@ -1474,9 +1474,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         presentedOfferingIdentifier: String?,
         listener: MakePurchaseListener
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.STARTING_PURCHASE.format(
+        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
                 " $product ${presentedOfferingIdentifier?.let {
-                    PurchaseStrings.OFFERING_STRING + "$presentedOfferingIdentifier"
+                    PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
                 }}"
         ))
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
@@ -1509,9 +1509,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeListener
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE.format(
+        log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $product ${presentedOfferingIdentifier?.let {
-                    PurchaseStrings.OFFERING_STRING + "$presentedOfferingIdentifier"
+                    PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
                 }} UpgradeInfo: $upgradeInfo"
 
         ))
@@ -1548,7 +1548,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         billingWrapper.findPurchaseInPurchaseHistory(product.type, upgradeInfo.oldSku) { result, purchaseRecord ->
             if (result.isSuccessful()) {
                 if (purchaseRecord != null) {
-                    log(LogIntent.PURCHASE, PurchaseStrings.EXISTING_PURCHASE.format(upgradeInfo.oldSku))
+                    log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
                     billingWrapper.makePurchaseAsync(
                         activity,
                         appUserID,
@@ -1566,7 +1566,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     }
                 }
             } else {
-                val message = PurchaseStrings.UPGRADE_SKU_ERROR.format(result.responseCode.getBillingResponseCodeName())
+                val message = PurchaseStrings.UPGRADING_SKU_ERROR.format(result.responseCode.getBillingResponseCodeName())
                 log(LogIntent.GOOGLE_ERROR, message)
                 dispatch {
                     listener.onError(
@@ -1581,7 +1581,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmSynthetic
     internal fun updatePendingPurchaseQueue() {
         if (billingWrapper.isConnected()) {
-            log(LogIntent.DEBUG_INFO, PurchaseStrings.UPDATE_PURCHASE_QUEUE)
+            log(LogIntent.DEBUG_INFO, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
             dispatcher.enqueue(Runnable {
                 val queryActiveSubscriptionsResult =
                     billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
