@@ -254,7 +254,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     }
                 }
             }
-        }, { log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASE_ERROR.format(it)) })
+        }, { log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it)) })
     }
 
     /**
