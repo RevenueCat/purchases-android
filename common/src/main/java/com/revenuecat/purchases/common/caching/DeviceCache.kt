@@ -280,7 +280,7 @@ class DeviceCache(
 
     private fun Date?.isStale(appInBackground: Boolean): Boolean {
         return this?.let { cachesLastUpdated ->
-            log(LogIntent.DEBUG_INFO, ReceiptStrings.CHECK_CACHE_BACKGROUND.format(appInBackground))
+            log(LogIntent.DEBUG_INFO, ReceiptStrings.CHECKING_IF_CACHE_STALE.format(appInBackground))
             val cacheDuration = when {
                 appInBackground -> CACHE_REFRESH_PERIOD_IN_BACKGROUND
                 else -> CACHE_REFRESH_PERIOD_IN_FOREGROUND
