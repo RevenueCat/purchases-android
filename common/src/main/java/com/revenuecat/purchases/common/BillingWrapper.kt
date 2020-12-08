@@ -432,7 +432,8 @@ class BillingWrapper(
     override fun onBillingSetupFinished(billingResult: BillingResult) {
         when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
-                log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_SETUP_FINISHED.format(billingClient?.toString()))
+                log(LogIntent.DEBUG_INFO, BillingStrings.BILLING_SERVICE_SETUP_FINISHED
+                        .format(billingClient?.toString()))
                 stateListener?.onConnected()
                 executePendingRequests()
             }
