@@ -6,7 +6,7 @@ object AttributionStrings {
     const val ATTRIBUTES_SYNC_SUCCESS = "Subscriber attributes synced successfully for App User ID: %s"
     const val DELETING_ATTRIBUTES = "Deleting subscriber attributes for %s from cache"
     const val DELETING_ATTRIBUTES_OTHER_USERS = "Deleting old synced subscriber attributes that don't belong to %s"
-    const val MARKING_ATTRIBUTES_SYNC_SUCCESS = "Marking the following attributes as synced for App User ID: %s"
+    const val MARKING_ATTRIBUTES_SYNC = "Marking the following attributes as synced for App User ID: %s"
     const val METHOD_CALLED = "%s called"
     const val NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE = "No subscriber attributes to synchronize."
     const val SKIP_SAME_ATTRIBUTES = "Attribution data is the same as latest. Skipping."

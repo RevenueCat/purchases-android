@@ -655,12 +655,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             log(LogIntent.DEBUG_INFO, PurchaserInfoStrings.VENDING_CACHE)
             dispatch { listener?.onReceived(cachedPurchaserInfo) }
             state.appInBackground.let { appInBackground ->
-                if (deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground) && appInBackground) {
-                    log(LogIntent.DEBUG_INFO, PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_BACKGROUND)
-                    fetchAndCachePurchaserInfo(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.PURCHASERINFO_UPDATED_NETWORK)
-                } else if (deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground) && !appInBackground) {
-                    log(LogIntent.DEBUG_INFO, PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_FOREGROUND)
+                if (deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground)) {
+                    log(LogIntent.DEBUG_INFO, if (appInBackground)
+                        PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_BACKGROUND
+                    else PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_FOREGROUND)
                     fetchAndCachePurchaserInfo(appUserID, appInBackground)
                     log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.PURCHASERINFO_UPDATED_NETWORK)
                 }
