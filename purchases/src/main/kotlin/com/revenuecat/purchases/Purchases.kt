@@ -282,12 +282,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 listener.onReceived(cachedOfferings)
             }
             state.appInBackground.let { appInBackground ->
-                if (deviceCache.isOfferingsCacheStale(appInBackground = true)) {
-                    log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_UPDATING_BACKGROUND)
-                    fetchAndCacheOfferings(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_NETWORK)
-                } else if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
-                    log(LogIntent.DEBUG_INFO, OfferingStrings.OFFERINGS_STALE_UPDATING_FOREGROUND)
+                if (deviceCache.isOfferingsCacheStale(appInBackground)) {
+                    log(LogIntent.DEBUG_INFO,
+                            if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_BACKGROUND
+                            else OfferingStrings.OFFERINGS_STALE_UPDATING_FOREGROUND)
                     fetchAndCacheOfferings(appUserID, appInBackground)
                     log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_NETWORK)
                 }
