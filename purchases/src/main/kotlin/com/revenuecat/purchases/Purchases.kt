@@ -1654,8 +1654,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         var sharedInstance: Purchases
             get() =
                 backingFieldSharedInstance
-                    ?: throw UninitializedPropertyAccessException(ConfigureStrings.NO_SHARED_SINGLETON
-                    )
+                    ?: throw UninitializedPropertyAccessException(ConfigureStrings.NO_SINGLETON_INSTANCE)
             @VisibleForTesting(otherwise = VisibleForTesting.NONE)
             internal set(value) {
                 backingFieldSharedInstance?.close()
