@@ -217,7 +217,7 @@ class DeviceCache(
         activeSubsHashedTokens: Set<String>,
         unconsumedInAppsHashedTokens: Set<String>
     ) {
-        log(LogIntent.DEBUG_INFO, ReceiptStrings.CLEANING_PREV_SET_HASHED_TOKEN)
+        log(LogIntent.DEBUG_INFO, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
         setSavedTokenHashes(
             (activeSubsHashedTokens + unconsumedInAppsHashedTokens).intersect(
                 getPreviouslySentHashedTokens()
