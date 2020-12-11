@@ -3,7 +3,7 @@ package com.revenuecat.purchases.strings
 object PurchaseStrings {
     const val ACKNOWLEDGING_PURCHASE = "Acknowledging purchase with token %s"
     const val ACKNOWLEDGING_PURCHASE_ERROR = "Error acknowledging purchase. Will retry next queryPurchases. %s"
-    const val BILLING_CLIENT_NOT_CONNECTED = "[QueryPurchases] Skipping updating pending purchase queue since " +
+    const val BILLING_CLIENT_NOT_CONNECTED = "Skipping updating pending purchase queue since " +
             "BillingClient is not connected yet."
     const val CONSUMING_PURCHASE = "Consuming purchase with token %s"
     const val CONSUMING_PURCHASE_ERROR = "Error consuming purchase. Will retry next queryPurchases. %s"
@@ -20,7 +20,7 @@ object PurchaseStrings {
     const val SYNCING_PURCHASES = "Syncing purchases"
     const val SYNCING_PURCHASES_ERROR = "Error syncing purchases %s"
     const val SYNCING_PURCHASES_ERROR_DETAILS = "Error syncing purchases %s. Error: %s"
-    const val UPDATING_PENDING_PURCHASE_QUEUE = "[QueryPurchases] Updating pending purchase queue"
+    const val UPDATING_PENDING_PURCHASE_QUEUE = "Updating pending purchase queue"
     const val UPGRADING_SKU = "Moving from old SKU %s to sku %s"
     const val UPGRADING_SKU_ERROR = "There was an error trying to upgrade. BillingResponseCode: %s"
 }
