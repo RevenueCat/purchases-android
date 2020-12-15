@@ -1,6 +1,22 @@
+release-tags-and-branches: &release-tags-and-branches
+  filters:
+    tags:
+      ignore: /^.*-SNAPSHOT/
+    branches:
+      only: /^release\/.*/
+
+release-tags: &release-tags
+  filters:
+    tags:
+      ignore: /^.*-SNAPSHOT/
+    branches:
+      ignore: /.*/
+
 version: 2.1
 orbs:
   android: circleci/android@0.2.1
+  android-wordpress-orb: wordpress-mobile/android@1.0.15
+  gcp-cli: circleci/gcp-cli@2.1.0
 
 executors:
   android-executor:
@@ -11,8 +27,18 @@ executors:
     environment:
       JVM_OPTS: -Xmx6g
       CIRCLE_JDK_VERSION: oraclejdk8
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
 
 commands:
+
+  android-dependencies:
+    steps:
+      - android-wordpress-orb/restore-gradle-cache
+      - run:
+          name: Download Dependencies
+          command: ./gradlew androidDependencies
+      - android-wordpress-orb/save-gradle-cache
+
   prepare-signing-key:
     steps:
       - run:
@@ -28,37 +54,25 @@ commands:
           command: gpg --batch --import $GPG_KEY
       - run:
           name: Fixing GPG compatibility
-          command: echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 --export-secret-keys > /home/circleci/.gnupg/secring.gpg
+          command: |
+            echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
+            --export-secret-keys > /home/circleci/.gnupg/secring.gpg
 
 jobs:
-  build:
-    executor: android-executor
-    steps:
-      - checkout
-      - android/accept-licenses
+
   test:
     executor: android-executor
     steps:
       - checkout
-      - restore_cache:
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}-{{ checksum "strings/build.gradle" }}
-      - run:
-          name: Download Dependencies
-          command: ./gradlew androidDependencies --no-daemon --max-workers=2
-      - save_cache:
-          paths:
-            - ~/.gradle
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}-{{ checksum "strings/build.gradle" }}
+      - android/accept-licenses
+      - android-dependencies
       - android/restore-build-cache
       - run:
           name: Run Tests
-          command: ./gradlew lint test --no-daemon --max-workers=2
-#      - run:
-#          name: Test coverage report
-#          command: ./gradlew jacocoFullReport coveralls --no-daemon --max-workers=2
+          command: ./gradlew lint test
       - run:
           name: Detekt
-          command: ./gradlew detektAll --no-daemon --max-workers=2
+          command: ./gradlew detektAll
       - android/save-build-cache
       - store_artifacts:
           path: build/reports
@@ -69,16 +83,16 @@ jobs:
     executor: android-executor
     steps:
       - checkout
-      - restore_cache:
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}-{{ checksum "strings/build.gradle" }}
+      - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
+      - run:
+          name: Dokka
+          command: ./gradlew dokka
+      - android-wordpress-orb/save-gradle-cache
+      - android/save-build-cache
       - run:
           name: Install awscli
           command: sudo pip install awscli
-      - run:
-          name: Dokka
-          command: |
-            ./gradlew dokka --no-daemon --max-workers=2
       - run:
           name: Deploy to S3
           command: aws s3 sync ~/purchases-android/docs s3://purchases-docs/android --delete --acl public-read
@@ -97,9 +111,9 @@ jobs:
           key: 1-gems-{{ checksum "Gemfile.lock" }}
           paths:
             - vendor/bundle
-      - restore_cache:
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}-{{ checksum "strings/build.gradle" }}
       - prepare-signing-key
+      - android-wordpress-orb/restore-gradle-cache
+      - android/restore-build-cache
       - run:
           name: Deployment
           command: |
@@ -108,6 +122,8 @@ jobs:
             else
               bundle exec fastlane android deploy
             fi
+      - android-wordpress-orb/save-gradle-cache
+      - android/save-build-cache
 
   deploy-snapshot:
     executor: android-executor
@@ -120,8 +136,7 @@ jobs:
           key: 1-gems-{{ checksum "Gemfile.lock" }}
           paths:
             - vendor/bundle
-      - restore_cache:
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}-{{ checksum "strings/build.gradle" }}
+      - android-wordpress-orb/restore-gradle-cache
       - prepare-signing-key
       - run:
           name: Deployment
@@ -131,52 +146,116 @@ jobs:
             else
               bundle exec fastlane android deploy_snapshot
             fi
+      - android-wordpress-orb/save-gradle-cache
 
-  assemble:
+  assemble-sample-app:
     executor: android-executor
     steps:
       - checkout
-      - restore_cache:
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}-{{ checksum "strings/build.gradle" }}
+      - android/accept-licenses
+      - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
       - run:
+          name: Prepare Keystore
+          working_directory: purchases-sample
+          command: echo $RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
           name: Assemble
-          command: ./gradlew assemble --no-daemon --max-workers=2
-      - save_cache:
-          paths:
-            - ~/.gradle
-          key: jars-{{ checksum "build.gradle.kts" }}-{{ checksum  "purchases/build.gradle" }}-{{ checksum "common/build.gradle" }}-{{ checksum "public/build.gradle" }}-{{ checksum "utils/build.gradle" }}-{{ checksum "strings/build.gradle" }}
+          command: |
+            ./gradlew -p purchases-sample assemble \
+            -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
+            -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
+            -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
+      - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
+
+  integration-tests-build:
+    executor: android-executor
+    steps:
+      - checkout
+      - run:
+          name: Replace API_KEY
+          working_directory: integration-tests/src/androidTest/java/com/revenuecat/purchases/integrationtests/
+          command: |
+            sed -i s/REVENUECAT_API_KEY/$API_KEY/ IntegrationTest.kt
+      - android/restore-build-cache
+      - run:
+          name: Prepare Keystore
+          working_directory: integration-tests
+          command: echo $RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
+          name: Assemble Release APK
+          command: |
+            ./gradlew -p integration-tests assembleRelease \
+            -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
+            -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
+            -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
+      - run:
+          name: Assemble AndroidTest APK
+          command: |
+            ./gradlew -p integration-tests assembleAndroidTest -PtestBuildType=release \
+            -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
+            -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
+            -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
+      - android/save-build-cache
+      - persist_to_workspace:
+          root: .
+          paths:
+            - integration-tests/build/outputs/apk/release/integration-tests-release.apk
+            - integration-tests/build/outputs/apk/androidTest/release/integration-tests-release-androidTest.apk
+
+  run-firebase-tests:
+    description: "Run integration tests for Android in Firebase"
+    executor: gcp-cli/google
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - gcp-cli/initialize:
+          gcloud-service-key: GCLOUD_SERVICE_KEY
+          google-compute-zone: GOOGLE_COMPUTE_ZONE
+          google-project-id: GOOGLE_PROJECT_ID
+      - run:
+          name: Test with Firebase Test Lab
+          command: >
+            gcloud firebase test android run --type instrumentation \
+              --app integration-tests/build/outputs/apk/release/integration-tests-release.apk \
+              --test integration-tests/build/outputs/apk/androidTest/release/integration-tests-release-androidTest.apk \
+              --timeout 2m \
+              --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
+      - run:
+          name: Copy test results data
+          command: |
+            mkdir -p ~/gsutil/
+            gsutil -m cp -r -U `gsutil ls gs://cloud-test-$GOOGLE_PROJECT_ID | tail -1` ~/gsutil/ | true
+          when: always
+      - store_artifacts:
+          path: ~/gsutil/
+      - store_test_results:
+          path: ~/gsutil/
 
 workflows:
   version: 2
   test-assemble-deploy-docs:
     jobs:
-      - build
-      - test:
-          requires:
-            - build
-      - assemble:
-          requires:
-            - build
+      - test
+      - assemble-sample-app
       - deploy:
+          <<: *release-tags
           requires:
-            - assemble
-          filters:
-            tags:
-              only: /^(\d+\.)(\d+\.)(\d+)$/
-            branches:
-              ignore: /.*/
+            - assemble-sample-app
       - deploy-snapshot:
           requires:
-            - assemble
+            - assemble-sample-app
           filters:
             branches:
               only:
                 - develop
-      - docs-deploy:
-          filters:
-            tags:
-              only: /^(\d+\.)(\d+\.)(\d+)$/
-            branches:
-              ignore: /.*/
+      - docs-deploy: *release-tags
+
+  integration-test:
+    jobs:
+      - integration-tests-build: *release-tags-and-branches
+      - run-firebase-tests:
+          requires:
+            - integration-tests-build

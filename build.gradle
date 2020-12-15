@@ -1,31 +1,28 @@
 buildscript {
-    val kotlinVersion by extra("1.4.10")
-    val compileVersion by extra(28)
-    val minVersion by extra(14)
+    ext.kotlinVersion = "1.4.10"
+    ext.compileVersion = 28
+    ext.minVersion = 14
     repositories {
         jcenter()
         google()
-        maven { url = uri("http://oss.sonatype.org/content/repositories/snapshots/") }
+        maven { url "http://oss.sonatype.org/content/repositories/snapshots/" }
     }
     dependencies {
-        classpath("com.vanniktech:gradle-maven-publish-plugin:0.9.0")
-        classpath("com.android.tools.build:gradle:4.1.1")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-        classpath("org.jetbrains.dokka:dokka-gradle-plugin:0.10.0")
-//        classpath("org.jacoco:org.jacoco.core:0.8.5")
+        classpath "com.vanniktech:gradle-maven-publish-plugin:0.9.0"
+        classpath "com.android.tools.build:gradle:4.1.1"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.10.0"
     }
 }
 
 plugins {
-    id("io.gitlab.arturbosch.detekt").version("1.7.2")
-    id("com.github.kt3k.coveralls").version("2.10.0")
-    id("com.savvasdalkitsis.module-dependency-graph").version("0.9")
+    id "io.gitlab.arturbosch.detekt" version "1.7.2"
+    id "com.github.kt3k.coveralls" version "2.10.0"
+    id "com.savvasdalkitsis.module-dependency-graph" version "0.9"
 }
 
-// apply(from = ".buildscripts/jacoco.gradle")
-
 dependencies {
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.8.0")
+    detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:1.8.0"
 }
 
 allprojects {
@@ -35,11 +32,11 @@ allprojects {
     }
 }
 
-tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
+task clean(type: Delete) {
+    delete rootProject.buildDir
 }
 
-val detektAll by tasks.registering(io.gitlab.arturbosch.detekt.Detekt::class) {
+task detektAll(type: io.gitlab.arturbosch.detekt.Detekt) {
     description = "Runs over whole code base without the starting overhead for each module."
     buildUponDefaultConfig = true
     autoCorrect = true
@@ -58,7 +55,7 @@ val detektAll by tasks.registering(io.gitlab.arturbosch.detekt.Detekt::class) {
     }
 }
 
-val detektAllBaseline by tasks.registering(io.gitlab.arturbosch.detekt.DetektCreateBaselineTask::class) {
+task detektAllBaseline(type: io.gitlab.arturbosch.detekt.DetektCreateBaselineTask) {
     description = "Overrides current top level baseline with issues found on this run." +
             "Issues found on the baseline will be ignored on detekt runs."
     buildUponDefaultConfig.set(true)
