@@ -1,3 +1,17 @@
+release-tags-and-branches: &release-tags-and-branches
+  filters:
+    tags:
+      ignore: /^.*-SNAPSHOT/
+    branches:
+      only: /^release\/.*/
+
+release-tags: &release-tags
+  filters:
+    tags:
+      ignore: /^.*-SNAPSHOT/
+    branches:
+      ignore: /.*/
+
 version: 2.1
 orbs:
   android: circleci/android@0.2.1
@@ -227,13 +241,9 @@ workflows:
       - test
       - assemble-sample-app
       - deploy:
+          <<: *release-tags
           requires:
             - assemble-sample-app
-          filters:
-            tags:
-              only: /^(\d+\.)(\d+\.)(\d+)$/
-            branches:
-              ignore: /.*/
       - deploy-snapshot:
           requires:
             - assemble-sample-app
@@ -241,22 +251,11 @@ workflows:
             branches:
               only:
                 - develop
-      - docs-deploy:
-          filters:
-            tags:
-              only: /^(\d+\.)(\d+\.)(\d+)$/
-            branches:
-              ignore: /.*/
+      - docs-deploy: *release-tags
 
   integration-test:
     jobs:
-      - integration-tests-build:
-          filters:
-            tags:
-              only: /^(\d+\.)(\d+\.)(\d+)$/
-            # Uncomment before merging
-            # branches:
-            #   only: /^release\/(\d+\.)(\d+\.)(\d+)$/
+      - integration-tests-build: *release-tags-and-branches
       - run-firebase-tests:
           requires:
             - integration-tests-build
