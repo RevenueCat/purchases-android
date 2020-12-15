@@ -150,7 +150,7 @@ class BillingWrapper(
 
                             onReceiveSkuDetails(skuDetailsList ?: emptyList())
                         } else {
-                            log("Error when fetching products. ${billingResult.toHumanReadableDescription()}")
+                            infoLog("Error when fetching products. ${billingResult.toHumanReadableDescription()}")
                             onError(
                                 billingResult.responseCode.billingResponseToPurchasesError(
                                     "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
@@ -208,7 +208,7 @@ class BillingWrapper(
             launchBillingFlow(activity, params)
                 .takeIf { billingResult -> billingResult?.responseCode != BillingClient.BillingResponseCode.OK }
                 ?.let { billingResult ->
-                    log("Failed to launch billing intent. ${billingResult.toHumanReadableDescription()}")
+                    infoLog("Failed to launch billing intent. ${billingResult.toHumanReadableDescription()}")
                 }
         }
     }
@@ -428,7 +428,7 @@ class BillingWrapper(
             BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
                 val message =
                     "Billing is not available in this device. ${billingResult.toHumanReadableDescription()}"
-                log(message)
+                infoLog(message)
                 // The calls will fail with an error that will be surfaced. We want to surface these errors
                 // Can't call executePendingRequests because it will not do anything since it checks for isReady()
                 synchronized(this@BillingWrapper) {
@@ -453,7 +453,7 @@ class BillingWrapper(
             BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
             BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
             BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> {
-                log("Billing Service Setup finished with error code: ${billingResult.toHumanReadableDescription()}")
+                infoLog("Billing Service Setup finished with error code: ${billingResult.toHumanReadableDescription()}")
             }
             BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
                 // Billing service is already trying to connect. Don't do anything.
