@@ -1,0 +1,10 @@
+apply from: "$rootProject.projectDir/library.gradle"
+
+dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+
+    implementation project(path: ':purchases')
+    implementation project(path: ':common')
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+}

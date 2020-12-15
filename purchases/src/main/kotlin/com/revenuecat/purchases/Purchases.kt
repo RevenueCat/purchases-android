@@ -1711,48 +1711,72 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             observerMode: Boolean = false,
             service: ExecutorService = createDefaultExecutor()
         ): Purchases {
-            require(context.hasPermission(Manifest.permission.INTERNET)) { "Purchases requires INTERNET permission." }
+            val builtConfiguration = PurchasesConfiguration.Builder(context, apiKey)
+                .appUserID(appUserID)
+                .observerMode(observerMode)
+                .service(service)
+                .build()
+            return configure(builtConfiguration)
+        }
 
-            require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
+        /**
+         * Configures an instance of the Purchases SDK with a specified API key. The instance will
+         * be set as a singleton. You should access the singleton instance using [Purchases.sharedInstance]
+         * @param configuration TODO
+         * @return An instantiated `[Purchases] object that has been set as a singleton.
+         */
+        @JvmStatic
+        fun configure(
+            configuration: PurchasesConfiguration
+        ): Purchases {
+            with(configuration) {
+                require(context.hasPermission(Manifest.permission.INTERNET)) {
+                    "Purchases requires INTERNET permission."
+                }
 
-            require(context.applicationContext is Application) { "Needs an application context." }
-            val application = context.getApplication()
-            val appConfig = AppConfig(
-                context,
-                observerMode,
-                platformInfo,
-                proxyURL
-            )
+                require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
-            val dispatcher = Dispatcher(service)
-            val backend = Backend(
-                apiKey,
-                dispatcher,
-                HTTPClient(appConfig)
-            )
-            val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
+                require(context.applicationContext is Application) { "Needs an application context." }
+                val application = context.getApplication()
+                val appConfig = AppConfig(
+                    context,
+                    observerMode,
+                    platformInfo,
+                    proxyURL,
+                    configuration.store
+                )
 
-            val billingWrapper = BillingWrapper(
-                BillingWrapper.ClientFactory(application),
-                Handler(application.mainLooper)
-            )
+                val dispatcher = Dispatcher(service ?: createDefaultExecutor())
+                val backend = Backend(
+                    apiKey,
+                    dispatcher,
+                    HTTPClient(appConfig)
+                )
+                val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
-            val prefs = PreferenceManager.getDefaultSharedPreferences(application)
-            val cache = DeviceCache(prefs, apiKey)
-            val subscriberAttributesCache = SubscriberAttributesCache(cache)
-            val attributionFetcher = AttributionFetcher(dispatcher)
+                val billingWrapper = BillingWrapper(
+                    BillingWrapper.ClientFactory(application),
+                    Handler(application.mainLooper)
+                )
 
-            return Purchases(
-                application,
-                appUserID,
-                backend,
-                billingWrapper,
-                cache,
-                dispatcher,
-                IdentityManager(cache, subscriberAttributesCache, backend),
-                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesPoster, attributionFetcher),
-                appConfig
-            ).also { sharedInstance = it }
+                val prefs = PreferenceManager.getDefaultSharedPreferences(application)
+                val cache = DeviceCache(prefs, apiKey)
+                val subscriberAttributesCache = SubscriberAttributesCache(cache)
+                val attributionFetcher = AttributionFetcher(dispatcher)
+                return Purchases(
+                    application,
+                    appUserID,
+                    backend,
+                    billingWrapper,
+                    cache,
+                    dispatcher,
+                    IdentityManager(cache, subscriberAttributesCache, backend),
+                    SubscriberAttributesManager(
+                        subscriberAttributesCache, subscriberAttributesPoster, attributionFetcher
+                    ),
+                    appConfig
+                ).also { sharedInstance = it }
+            }
         }
 
         /**
