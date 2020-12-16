@@ -236,22 +236,10 @@ jobs:
 
 workflows:
   version: 2
-  test-assemble-deploy-docs:
+  build-test:
     jobs:
       - test
       - assemble-sample-app
-      - deploy:
-          <<: *release-tags
-          requires:
-            - assemble-sample-app
-      - deploy-snapshot:
-          requires:
-            - assemble-sample-app
-          filters:
-            branches:
-              only:
-                - develop
-      - docs-deploy: *release-tags
 
   integration-test:
     jobs:
@@ -259,3 +247,13 @@ workflows:
       - run-firebase-tests:
           requires:
             - integration-tests-build
+
+  deploy:
+    jobs:
+      - deploy: *release-tags
+      - deploy-snapshot:
+          filters:
+            branches:
+              only:
+                - develop
+      - docs-deploy: *release-tags
