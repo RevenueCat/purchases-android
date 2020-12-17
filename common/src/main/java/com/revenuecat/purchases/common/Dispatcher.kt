@@ -54,6 +54,7 @@ open class Dispatcher(
 
                 // Exceptions are being swallowed if using execute instead of submit
                 // Future.get is blocking so we create a Thread
+                // More info: https://github.com/RevenueCat/purchases-android/pull/234
                 Thread {
                     try {
                         future.get()
