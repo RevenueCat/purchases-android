@@ -45,12 +45,24 @@ open class Dispatcher(
     ) {
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
-                if (useRandomDelay && executorService is ScheduledExecutorService) {
+                val future = if (useRandomDelay && executorService is ScheduledExecutorService) {
                     val delayToApply = (0..JITTERING_DELAY_MILLISECONDS).random()
                     executorService.schedule(command, delayToApply.toLong(), TimeUnit.MILLISECONDS)
                 } else {
-                    executorService.execute(command)
+                    executorService.submit(command)
                 }
+
+                // Exceptions are being swallowed if using execute instead of submit
+                // Future.get is blocking so we create a Thread
+                Thread {
+                    try {
+                        future.get()
+                    } catch (e: InterruptedException) {
+                        Thread.currentThread().interrupt()
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        e.cause?.let { throw it }
+                    }
+                }.start()
             }
         }
     }
