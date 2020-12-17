@@ -3,7 +3,7 @@
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.
 //
 
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases.google
 
 import android.app.Activity
 import android.content.Context
@@ -22,6 +22,16 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
+import com.revenuecat.purchases.common.PurchaseType
+import com.revenuecat.purchases.common.PurchaseWrapper
+import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.billingResponseToPurchasesError
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.infoLog
+import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings

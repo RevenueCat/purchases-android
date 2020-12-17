@@ -1,3 +1,4 @@
+include ':feature:google'
 include ':feature:amazon'
 include ':integration-tests'
 include ':strings'

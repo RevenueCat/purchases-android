@@ -23,7 +23,6 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.BillingWrapper
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
@@ -44,6 +43,7 @@ import com.revenuecat.purchases.common.getBillingResponseCodeName
 import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.toSKUType
+import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
