@@ -70,7 +70,7 @@ fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
     return when (this) {
         BackendErrorCode.BackendInvalidPlatform -> PurchasesErrorCode.UnknownError
         BackendErrorCode.BackendStoreProblem -> PurchasesErrorCode.StoreProblemError
-        BackendErrorCode.BackendCannotTransferPurchase -> PurchasesErrorCode.ReceiptInUseByOtherSubscriberError
+        BackendErrorCode.BackendCannotTransferPurchase -> PurchasesErrorCode.ReceiptAlreadyInUseError
         BackendErrorCode.BackendInvalidReceiptToken -> PurchasesErrorCode.InvalidReceiptError
         BackendErrorCode.BackendInvalidAppStoreSharedSecret,
         BackendErrorCode.BackendInvalidPlayStoreCredentials,

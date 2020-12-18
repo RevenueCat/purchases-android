@@ -3,6 +3,7 @@ package com.revenuecat.purchases.subscriberattributes
 import android.app.Application
 import android.content.Context
 import android.provider.Settings
+import android.util.Log
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import io.mockk.every
@@ -21,6 +22,10 @@ class AttributionFetcherTests {
     @Before
     fun setup() {
         underTest = AttributionFetcher(SyncDispatcher())
+        mockkStatic(Log::class)
+        every {
+            Log.e(any(), any())
+        } returns 0
     }
 
     @Test
