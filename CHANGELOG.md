@@ -1,3 +1,10 @@
+## 4.0.1
+
+- Adds mapping for ITEM_ALREADY_OWNED
+    https://github.com/RevenueCat/purchases-android/pull/220
+- Fixes incompatibilities with Mockito 1.x.x
+    https://github.com/RevenueCat/purchases-android/pull/228
+   
 ## 4.0.0
 
 - Removes Billing permission from AndroidManifest since it's added by the BillingClient.
