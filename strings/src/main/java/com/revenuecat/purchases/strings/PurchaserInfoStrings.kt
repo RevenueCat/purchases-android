@@ -7,7 +7,7 @@ object PurchaserInfoStrings {
             "network in background."
     const val PURCHASERINFO_STALE_UPDATING_FOREGROUND = "PurchaserInfo cache is stale, updating from " +
             "network in foreground."
-    const val PURCHASERINFO_UPDATED_NETWORK = "PurchaserInfo updated from network."
+    const val PURCHASERINFO_UPDATED_FROM_NETWORK = "PurchaserInfo updated from network."
     const val PURCHASERINFO_UPDATED_NOTIFYING_LISTENER = "PurchaserInfo updated, sending to listener."
     const val SENDING_LATEST_PURCHASERINFO_TO_LISTENER = "Sending latest PurchaserInfo to listener."
     const val VENDING_CACHE = "Vending PurchaserInfo from cache."

@@ -3,7 +3,7 @@ package com.revenuecat.purchases.strings
 object ConfigureStrings {
     const val APP_BACKGROUNDED = "App backgrounded"
     const val APP_FOREGROUNDED = "App foregrounded"
-    const val DEBUG_ENABLE = "Debug logging enabled"
+    const val DEBUG_ENABLED = "Debug logging enabled"
     const val INITIAL_APP_USER_ID = "Initial App User ID - %s"
     const val LISTENER_SET = "Listener set"
     const val NO_SINGLETON_INSTANCE = "There is no singleton instance. " +

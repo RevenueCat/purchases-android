@@ -52,7 +52,7 @@ class SubscriberAttributesManager(
         val unsyncedStoredAttributesForAllUsers =
             deviceCache.getUnsyncedSubscriberAttributes()
         if (unsyncedStoredAttributesForAllUsers.isEmpty()) {
-            log(LogIntent.DEBUG_INFO, AttributionStrings.NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE)
+            log(LogIntent.DEBUG, AttributionStrings.NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE)
             return
         }
 
@@ -88,12 +88,12 @@ class SubscriberAttributesManager(
         attributeErrors: List<SubscriberAttributeError>
     ) {
         if (attributeErrors.isNotEmpty()) {
-            log(LogIntent.RC_ERROR, AttributionStrings.ATTRIBUTES_ERROR.format(attributeErrors))
+            log(LogIntent.RC_ERROR, AttributionStrings.SUBSCRIBER_ATTRIBUTES_ERROR.format(attributeErrors))
         }
         if (attributesToMarkAsSynced.isEmpty()) {
             return
         }
-        log(LogIntent.INFO, AttributionStrings.MARKING_ATTRIBUTES_SYNC.format(appUserID) +
+        log(LogIntent.INFO, AttributionStrings.MARKING_ATTRIBUTES_SYNCED.format(appUserID) +
                 attributesToMarkAsSynced.values.joinToString("\n")
         )
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)
