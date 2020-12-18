@@ -2,14 +2,13 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.strings.Emojis
 
-const val V2_LOGS_ENABLED = false
+const val V2_LOGS_ENABLED = true
 
 fun log(intent: LogIntent, message: String) {
-    var fullMessage = ""
-    if (V2_LOGS_ENABLED) {
-        fullMessage = "${intent.emojiList.joinToString("")} $message"
+    val fullMessage = if (V2_LOGS_ENABLED) {
+        "${intent.emojiList.joinToString("")} $message"
     } else {
-        fullMessage = message
+        message
     }
     when (intent) {
         LogIntent.DEBUG -> debugLog(fullMessage)
@@ -64,7 +63,7 @@ enum class LogIntent(val emojiList: List<String>) {
     /**
      * Emoji for App User ID related messages.
      */
-    USER(listOf(Emojis.USER)),
+    USER(listOf(Emojis.PERSON)),
     /**
      * Emoji for warning messages.
      */

@@ -7,6 +7,6 @@ object Emojis {
    const val MONEY_BAG = "💰"
    const val ROBOT = "🤖"
    const val SAD_CAT_EYES = "😿"
-   const val USER = "👤"
+   const val PERSON = "👤"
    const val WARNING = "\u26A0\uFE0F"
 }
