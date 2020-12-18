@@ -2,7 +2,7 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.strings.Emojis
 
-const val V2_LOGS_ENABLED = true
+const val V2_LOGS_ENABLED = false
 
 fun log(intent: LogIntent, message: String) {
     val fullMessage = if (V2_LOGS_ENABLED) {
