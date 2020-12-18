@@ -92,7 +92,7 @@ class HTTPClient(
 
         val payload: String?
         try {
-            log(LogIntent.DEBUG_INFO, NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
+            log(LogIntent.DEBUG, NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
             result.responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
         } finally {
@@ -101,7 +101,7 @@ class HTTPClient(
         }
 
         result.body = payload?.let { JSONObject(it) } ?: throw IOException("Network call payload is null.")
-        log(LogIntent.DEBUG_INFO,
+        log(LogIntent.DEBUG,
                 NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, result.responseCode))
         return result
     }

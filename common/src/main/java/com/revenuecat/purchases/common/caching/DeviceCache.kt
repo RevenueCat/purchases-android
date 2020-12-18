@@ -189,22 +189,22 @@ class DeviceCache(
     @Synchronized
     fun getPreviouslySentHashedTokens(): Set<String> {
         return (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
-            log(LogIntent.DEBUG_INFO, ReceiptStrings.TOKENS_ALREADY_POSTED.format(it))
+            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_ALREADY_POSTED.format(it))
         }
     }
 
     @Synchronized
     fun addSuccessfullyPostedToken(token: String) {
-        log(LogIntent.DEBUG_INFO, ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()))
+        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()))
         getPreviouslySentHashedTokens().let {
-            log(LogIntent.DEBUG_INFO, ReceiptStrings.TOKENS_IN_CACHE.format(it))
+            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(it))
             setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
         }
     }
 
     @Synchronized
     private fun setSavedTokenHashes(newSet: Set<String>) {
-        log(LogIntent.DEBUG_INFO, ReceiptStrings.SAVING_TOKENS.format(newSet))
+        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS.format(newSet))
         preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
     }
 
@@ -217,7 +217,7 @@ class DeviceCache(
         activeSubsHashedTokens: Set<String>,
         unconsumedInAppsHashedTokens: Set<String>
     ) {
-        log(LogIntent.DEBUG_INFO, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
+        log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
         setSavedTokenHashes(
             (activeSubsHashedTokens + unconsumedInAppsHashedTokens).intersect(
                 getPreviouslySentHashedTokens()
@@ -280,7 +280,7 @@ class DeviceCache(
 
     private fun Date?.isStale(appInBackground: Boolean): Boolean {
         return this?.let { cachesLastUpdated ->
-            log(LogIntent.DEBUG_INFO, ReceiptStrings.CHECKING_IF_CACHE_STALE.format(appInBackground))
+            log(LogIntent.DEBUG, ReceiptStrings.CHECKING_IF_CACHE_STALE.format(appInBackground))
             val cacheDuration = when {
                 appInBackground -> CACHE_REFRESH_PERIOD_IN_BACKGROUND
                 else -> CACHE_REFRESH_PERIOD_IN_FOREGROUND
