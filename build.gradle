@@ -2,6 +2,7 @@ buildscript {
     ext.kotlinVersion = "1.4.10"
     ext.compileVersion = 28
     ext.minVersion = 14
+    ext.billingVersion = "3.0.2"
     repositories {
         jcenter()
         google()
