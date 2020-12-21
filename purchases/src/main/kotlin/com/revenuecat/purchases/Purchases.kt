@@ -57,6 +57,9 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
+import com.revenuecat.purchases.strings.AttributionStrings
+import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.strings.PurchaserInfoStrings
 import com.revenuecat.purchases.subscriberattributes.AttributionFetcher
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -160,9 +163,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     init {
-        debugLog("Debug logging enabled.")
-        debugLog("SDK Version - $frameworkVersion")
-        debugLog("Initial App User ID - $backingFieldAppUserID")
+        log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
+        log(LogIntent.DEBUG, ConfigureStrings.SDK_VERSION.format(frameworkVersion))
+        log(LogIntent.USER, ConfigureStrings.INITIAL_APP_USER_ID.format(backingFieldAppUserID))
         identityManager.configure(backingFieldAppUserID)
         ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
         billingWrapper.stateListener = object : BillingWrapper.StateListener {
@@ -178,7 +181,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         synchronized(this) {
             state = state.copy(appInBackground = true)
         }
-        debugLog("App backgrounded")
+        log(LogIntent.DEBUG, ConfigureStrings.APP_BACKGROUNDED)
         synchronizeSubscriberAttributesIfNeeded()
     }
 
@@ -189,9 +192,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             firstTimeInForeground = state.firstTimeInForeground
             state = state.copy(appInBackground = false, firstTimeInForeground = false)
         }
-        debugLog("App foregrounded")
+        log(LogIntent.DEBUG, ConfigureStrings.APP_FOREGROUNDED)
         if (firstTimeInForeground || deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)) {
-            debugLog("PurchaserInfo cache is stale, updating caches")
+            log(LogIntent.DEBUG, PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_FOREGROUND)
             fetchAndCachePurchaserInfo(identityManager.currentAppUserID, appInBackground = false)
         }
         if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
@@ -655,17 +658,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         val cachedPurchaserInfo = deviceCache.getCachedPurchaserInfo(appUserID)
         if (cachedPurchaserInfo != null) {
-            debugLog("Vending purchaserInfo from cache")
+            log(LogIntent.DEBUG, PurchaserInfoStrings.VENDING_CACHE)
             dispatch { listener?.onReceived(cachedPurchaserInfo) }
             state.appInBackground.let { appInBackground ->
                 if (deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground)) {
-                    debugLog("Cache is stale, updating caches")
+                    log(LogIntent.DEBUG,
+                            if (appInBackground) PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_BACKGROUND
+                            else PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_FOREGROUND)
                     fetchAndCachePurchaserInfo(appUserID, appInBackground)
+                    log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.PURCHASERINFO_UPDATED_FROM_NETWORK)
                 }
             }
         } else {
-            debugLog("No cached purchaser info, fetching")
+            log(LogIntent.DEBUG, PurchaserInfoStrings.NO_CACHED_PURCHASERINFO)
             fetchAndCachePurchaserInfo(appUserID, state.appInBackground, listener)
+            log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.PURCHASERINFO_UPDATED_FROM_NETWORK)
         }
     }
 
@@ -690,7 +697,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * app, like if a promotional subscription is granted through the RevenueCat dashboard.
      */
     fun invalidatePurchaserInfoCache() {
-        debugLog("Invalidating Purchaser info cache")
+        log(LogIntent.DEBUG, PurchaserInfoStrings.INVALIDATING_PURCHASERINFO_CACHE)
         deviceCache.clearPurchaserInfoCache(appUserID)
     }
 
@@ -708,7 +715,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param attributes Map of attributes by key. Set the value as null to delete an attribute.
      */
     fun setAttributes(attributes: Map<String, String?>) {
-        debugLog("setAttributes called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAttributes"))
         subscriberAttributesManager.setAttributes(attributes, appUserID)
     }
 
@@ -718,7 +725,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param email Null or empty will delete the subscriber attribute.
      */
     fun setEmail(email: String?) {
-        debugLog("setEmail called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setEmail"))
         subscriberAttributesManager.setAttribute(SubscriberAttributeKey.Email, email, appUserID)
     }
 
@@ -728,7 +735,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param phoneNumber Null or empty will delete the subscriber attribute.
      */
     fun setPhoneNumber(phoneNumber: String?) {
-        debugLog("setPhoneNumber called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setPhoneNumber"))
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.PhoneNumber,
             phoneNumber,
@@ -742,7 +749,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param displayName Null or empty will delete the subscriber attribute.
      */
     fun setDisplayName(displayName: String?) {
-        debugLog("setDisplayName called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setDisplayName"))
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.DisplayName,
             displayName,
@@ -756,7 +763,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param fcmToken Null or empty will delete the subscriber attribute.
      */
     fun setPushToken(fcmToken: String?) {
-        debugLog("setPushToken called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setPushToken"))
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.FCMTokens,
             fcmToken,
@@ -772,7 +779,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * $gpsAdId, $androidId, $ip
      */
     fun collectDeviceIdentifiers() {
-        debugLog("collectDeviceIdentifiers called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("collectDeviceIdentifiers"))
         subscriberAttributesManager.collectDeviceIdentifiers(appUserID, application)
     }
 
@@ -783,7 +790,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param adjustID null will delete the subscriber attribute
      */
     fun setAdjustID(adjustID: String?) {
-        debugLog("setAdjustID called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAdjustID"))
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Adjust,
             adjustID,
@@ -799,7 +806,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param appsflyerID null will delete the subscriber attribute
      */
     fun setAppsflyerID(appsflyerID: String?) {
-        debugLog("setAppsflyerId called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAppsflyerID"))
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.AppsFlyer,
             appsflyerID,
@@ -815,7 +822,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param fbAnonymousID null will delete the subscriber attribute
      */
     fun setFBAnonymousID(fbAnonymousID: String?) {
-        debugLog("setFBAnonymousID called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setFBAnonymousID"))
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Facebook,
             fbAnonymousID,
@@ -831,7 +838,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param mparticleID null will delete the subscriber attribute
      */
     fun setMparticleID(mparticleID: String?) {
-        debugLog("setMparticleID called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMparticleID"))
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Mparticle,
             mparticleID,
@@ -847,7 +854,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param onesignalID null will delete the subscriber attribute
      */
     fun setOnesignalID(onesignalID: String?) {
-        debugLog("setMparticleID called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setOnesignalID"))
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.OneSignal,
             onesignalID,
@@ -865,7 +872,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param mediaSource null will delete the subscriber attribute.
      */
     fun setMediaSource(mediaSource: String?) {
-        debugLog("setMediaSource called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMediaSource"))
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.MediaSource,
             mediaSource,
@@ -879,7 +886,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param campaign null will delete the subscriber attribute.
      */
     fun setCampaign(campaign: String?) {
-        debugLog("setCampaign called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setCampaign"))
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Campaign,
             campaign,
@@ -893,7 +900,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param adGroup null will delete the subscriber attribute.
      */
     fun setAdGroup(adGroup: String?) {
-        debugLog("setAdGroup called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAdGroup"))
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.AdGroup,
             adGroup,
@@ -907,7 +914,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param ad null will delete the subscriber attribute.
      */
     fun setAd(ad: String?) {
-        debugLog("setAd called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAd"))
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Ad,
             ad,
@@ -921,7 +928,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param keyword null will delete the subscriber attribute.
      */
     fun setKeyword(keyword: String?) {
-        debugLog("setKeyword called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("seKeyword"))
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Keyword,
             keyword,
@@ -935,7 +942,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param creative null will delete the subscriber attribute.
      */
     fun setCreative(creative: String?) {
-        debugLog("setCreative called")
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setCreative"))
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Creative,
             creative,
@@ -961,7 +968,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 val newCacheValue = adInfo.generateAttributionDataCacheValue(networkUserId)
 
                 if (latestAttributionDataId != null && latestAttributionDataId == newCacheValue) {
-                    debugLog("Attribution data is the same as latest. Skipping.")
+                    log(LogIntent.DEBUG, AttributionStrings.SKIP_SAME_ATTRIBUTES)
                 } else {
                     if (adInfo?.isLimitAdTrackingEnabled == false) {
                         jsonObject.put("rc_gps_adid", adInfo.id)
@@ -1315,7 +1322,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun afterSetListener(listener: UpdatedPurchaserInfoListener?) {
         if (listener != null) {
-            debugLog("Listener set")
+            log(LogIntent.DEBUG, ConfigureStrings.LISTENER_SET)
             deviceCache.getCachedPurchaserInfo(identityManager.currentAppUserID)?.let {
                 this.sendUpdatedPurchaserInfoToDelegateIfChanged(it)
             }
@@ -1327,9 +1334,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             .let { (listener, lastSentPurchaserInfo) ->
                 if (listener != null && lastSentPurchaserInfo != info) {
                     if (lastSentPurchaserInfo != null) {
-                        debugLog("Purchaser info updated, sending to listener")
+                        log(LogIntent.DEBUG, PurchaserInfoStrings.PURCHASERINFO_UPDATED_NOTIFYING_LISTENER)
                     } else {
-                        debugLog("Sending latest purchaser info to listener")
+                        log(LogIntent.DEBUG, PurchaserInfoStrings.SENDING_LATEST_PURCHASERINFO_TO_LISTENER)
                     }
                     synchronized(this@Purchases) {
                         state = state.copy(lastSentPurchaserInfo = info)
@@ -1650,10 +1657,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         var sharedInstance: Purchases
             get() =
                 backingFieldSharedInstance
-                    ?: throw UninitializedPropertyAccessException(
-                        "There is no singleton instance. " +
-                            "Make sure you configure Purchases before trying to get the default instance."
-                    )
+                    ?: throw UninitializedPropertyAccessException(ConfigureStrings.NO_SINGLETON_INSTANCE)
             @VisibleForTesting(otherwise = VisibleForTesting.NONE)
             internal set(value) {
                 backingFieldSharedInstance?.close()
