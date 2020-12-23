@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
+import com.revenuecat.purchases.strings.ConfigureStrings
 import java.net.URL
 
 class AppConfig(
@@ -14,7 +15,7 @@ class AppConfig(
     val versionName: String = context.versionName ?: ""
     var finishTransactions: Boolean = !observerMode
     val baseURL: URL = proxyURL?.also {
-        debugLog("Purchases is being configured using a proxy for RevenueCat")
+        log(LogIntent.INFO, ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET)
     } ?: URL("https://api.revenuecat.com/")
 
     override fun equals(other: Any?): Boolean {
