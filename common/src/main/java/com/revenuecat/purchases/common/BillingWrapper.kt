@@ -234,7 +234,7 @@ class BillingWrapper(
                     queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistoryRecordList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
-                                log(LogIntent.DEBUG, RestoreStrings.PURCHASE_HISTORY_RETRIEVED
+                                log(LogIntent.RC_PURCHASE_SUCCESS, RestoreStrings.PURCHASE_HISTORY_RETRIEVED
                                         .format(it.toHumanReadableDescription()))
                             } ?: log(LogIntent.DEBUG, RestoreStrings.PURCHASE_HISTORY_EMPTY)
                             onReceivePurchaseHistory(purchaseHistoryRecordList ?: emptyList())
@@ -289,7 +289,7 @@ class BillingWrapper(
         token: String,
         onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
-        log(LogIntent.RC_SUCCESS, PurchaseStrings.CONSUMING_PURCHASE.format(token))
+        log(LogIntent.PURCHASE, PurchaseStrings.CONSUMING_PURCHASE.format(token))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
