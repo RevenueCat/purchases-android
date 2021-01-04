@@ -167,7 +167,7 @@ jobs:
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - store_artifacts:
-          path: purchases-sample/build/outputs/apk/debug/purchases-sample-debug.apk
+          path: purchases-sample/build/outputs/apk/release/purchases-sample-release.apk
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
 
