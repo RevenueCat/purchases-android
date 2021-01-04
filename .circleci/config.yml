@@ -156,6 +156,11 @@ jobs:
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
       - run:
+          name: Replace API_KEY
+          working_directory: purchases-sample
+          command: |
+            sed -i s/api_key/$API_KEY/ src/main/java/com/revenuecat/sample/MainApplication.kt
+      - run:
           name: Prepare Keystore
           working_directory: purchases-sample
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
@@ -166,6 +171,8 @@ jobs:
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
+      - store_artifacts:
+          path: purchases-sample/build/outputs/apk/release/purchases-sample-release.apk
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
 
