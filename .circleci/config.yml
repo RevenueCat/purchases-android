@@ -159,7 +159,7 @@ jobs:
           name: Replace API_KEY
           working_directory: purchases-sample
           command: |
-            sed -i s/REVENUECAT_API_KEY/$API_KEY/ src/main/java/com/revenuecat/sample/MainApplication.kt
+            sed -i s/api_key/$API_KEY/ src/main/java/com/revenuecat/sample/MainApplication.kt
       - run:
           name: Prepare Keystore
           working_directory: purchases-sample
