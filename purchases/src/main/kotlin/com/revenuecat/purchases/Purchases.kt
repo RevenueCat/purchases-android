@@ -166,7 +166,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         log(LogIntent.DEBUG, ConfigureStrings.SDK_VERSION.format(frameworkVersion))
         log(LogIntent.USER, ConfigureStrings.INITIAL_APP_USER_ID.format(backingFieldAppUserID))
         identityManager.configure(backingFieldAppUserID)
-        ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
+
+        dispatch {
+            ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
+        }
+
         billingWrapper.stateListener = object : BillingWrapper.StateListener {
             override fun onConnected() {
                 updatePendingPurchaseQueue()
@@ -637,7 +641,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         this.backend.close()
         billingWrapper.purchasesUpdatedListener = null
         updatedPurchaserInfoListener = null // Do not call on state since the setter does more stuff
-        ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleHandler)
+
+        dispatch {
+            ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleHandler)
+        }
     }
 
     /**
