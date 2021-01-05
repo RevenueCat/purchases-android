@@ -3,6 +3,7 @@ buildscript {
     ext.compileVersion = 28
     ext.minVersion = 14
     ext.billingVersion = "3.0.2"
+    ext.lifecycleVersion = "2.3.0-rc01"
     repositories {
         jcenter()
         google()
