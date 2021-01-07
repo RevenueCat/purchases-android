@@ -6,12 +6,13 @@ import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.RequestId
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.amazon.listener.ProductDataResponseListener
 import com.revenuecat.purchases.amazon.toProductDetails
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ProductDetailsListCallback
 import com.revenuecat.purchases.common.PurchasesErrorCallback
-import com.revenuecat.purchases.common.debugLog
-import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.ProductDetails
 
 class ProductDataHandler : ProductDataResponseListener {
@@ -33,7 +34,7 @@ class ProductDataHandler : ProductDataResponseListener {
         onReceive: (List<ProductDetails>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        debugLog("Requesting products with identifiers: ${skuList.joinToString()}")
+        log(LogIntent.DEBUG, AmazonStrings.REQUESTING_PRODUCTS.format(skuList.joinToString()))
 
         if (productDataCache.keys.containsAll(skuList)) {
             val cachedProducts: Map<String, Product> = productDataCache.filterKeys { skuList.contains(it) }
@@ -45,10 +46,10 @@ class ProductDataHandler : ProductDataResponseListener {
     }
 
     override fun onProductDataResponse(response: ProductDataResponse) {
-        debugLog("Products request finished with result ${response.requestStatus.name}")
+        log(LogIntent.DEBUG, AmazonStrings.PRODUCTS_REQUEST_FINISHED.format(response.requestStatus.name))
 
         if (response.unavailableSkus.isNotEmpty()) {
-            debugLog("Unavailable products: ${response.unavailableSkus}")
+            log(LogIntent.DEBUG, AmazonStrings.PRODUCTS_REQUEST_UNAVAILABLE.format(response.unavailableSkus))
         }
 
         val requestId = response.requestId
@@ -71,10 +72,10 @@ class ProductDataHandler : ProductDataResponseListener {
         marketplace: String,
         onReceive: ProductDetailsListCallback
     ) {
-        debugLog("Retrieved productData: $productData")
+        log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA.format(productData))
 
         if (productData.isEmpty()) {
-            debugLog("Product data is empty")
+            log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA_EMPTY)
         }
 
         val productDetailsList = productData.values.map { it.toProductDetails(marketplace) }
@@ -93,8 +94,6 @@ class ProductDataHandler : ProductDataResponseListener {
             }
 
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
-
-        errorLog(purchasesError)
 
         onError(purchasesError)
     }

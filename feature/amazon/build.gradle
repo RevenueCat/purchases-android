@@ -6,6 +6,7 @@ dependencies {
 
     implementation project(path: ':purchases')
     implementation project(path: ':common')
+    implementation project(path: ':strings')
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
 }

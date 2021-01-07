@@ -21,13 +21,14 @@ import com.revenuecat.purchases.amazon.listener.PurchaseUpdatesResponseListener
 import com.revenuecat.purchases.amazon.listener.UserDataResponseListener
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ProductDetailsListCallback
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.PurchasesErrorCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.RevenueCatPurchaseState
-import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.ProductDetails
 
 class AmazonBilling constructor(
@@ -126,7 +127,7 @@ class AmazonBilling constructor(
         presentedOfferingIdentifier: String?
     ) {
         if (replaceSkuInfo != null) {
-            errorLog("Amazon doesn't support product changes")
+            log(LogIntent.AMAZON_WARNING, AmazonStrings.PRODUCT_CHANGES_NOT_SUPPORTED)
             return
         }
         purchaseHandler.purchase(

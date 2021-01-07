@@ -8,10 +8,12 @@ import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
-import com.revenuecat.purchases.common.debugLog
-import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.strings.PurchaseStrings
 
 class PurchaseHandler : PurchaseResponseListener {
 
@@ -27,7 +29,7 @@ class PurchaseHandler : PurchaseResponseListener {
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        debugLog("Making purchase for sku: ${productDetails.sku}")
+        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(productDetails.sku))
 
         synchronized(this@PurchaseHandler) {
             productTypes[productDetails.sku] = productDetails.type
@@ -39,8 +41,7 @@ class PurchaseHandler : PurchaseResponseListener {
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
-        debugLog("Purchase request finished with result ${response.requestStatus.name}")
-        debugLog("PurchaseResponse JSON: ${response.toJSON().toString(1)}")
+        log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
 
         val requestId = response.requestId
         val callbacks = purchaseCallbacks[requestId]
@@ -55,7 +56,7 @@ class PurchaseHandler : PurchaseResponseListener {
                 PurchaseResponse.RequestStatus.NOT_SUPPORTED -> onNotSupported(onError)
                 null -> onUnknownError(onError)
             }
-        } ?: errorLog("Couldn't find callbacks for completed purchase")
+        }
     }
 
     private fun onSuccessfulPurchase(
@@ -75,7 +76,6 @@ class PurchaseHandler : PurchaseResponseListener {
             PurchasesErrorCode.StoreProblemError,
             "Failed to make purchase. There was an Amazon store problem"
         ).let {
-            errorLog(it)
             onError(it)
         }
     }
@@ -85,7 +85,6 @@ class PurchaseHandler : PurchaseResponseListener {
             PurchasesErrorCode.StoreProblemError,
             "Failed to make purchase. Call is not supported"
         ).let {
-            errorLog(it)
             onError(it)
         }
     }
@@ -95,7 +94,6 @@ class PurchaseHandler : PurchaseResponseListener {
             PurchasesErrorCode.ProductAlreadyPurchasedError,
             "Failed to make purchase. Product already owns SKU."
         ).let {
-            errorLog(it)
             onError(it)
         }
     }
@@ -105,7 +103,6 @@ class PurchaseHandler : PurchaseResponseListener {
             PurchasesErrorCode.ProductNotAvailableForPurchaseError,
             "Failed to make purchase. SKU is invalid"
         ).let {
-            errorLog(it)
             onError(it)
         }
     }
@@ -116,7 +113,6 @@ class PurchaseHandler : PurchaseResponseListener {
             PurchasesErrorCode.PurchaseCancelledError,
             "Failed to make purchase. This error normally means that the purchase was cancelled"
         ).let {
-            errorLog(it)
             onError(it)
         }
     }
