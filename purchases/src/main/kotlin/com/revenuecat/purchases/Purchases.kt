@@ -1277,7 +1277,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     unsyncedSubscriberAttributesByKey,
                     body.getAttributeErrors()
                 )
-                consumeAndSave(consumeAllTransactions, purchase)
+                billingWrapper.consumeAndSave(consumeAllTransactions, purchase)
                 cachePurchaserInfo(info)
                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
@@ -1289,79 +1289,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         unsyncedSubscriberAttributesByKey,
                         body.getAttributeErrors()
                     )
-                    consumeAndSave(consumeAllTransactions, purchase)
+                    billingWrapper.consumeAndSave(consumeAllTransactions, purchase)
                 }
                 onError?.let { it(purchase, error) }
             }
         )
-    }
-
-    private fun consumeAndSave(
-        shouldTryToConsume: Boolean,
-        purchase: PurchaseWrapper
-    ) {
-        if (purchase.type == PurchaseType.UNKNOWN) {
-            // Would only get here if the purchase was trigger from outside of the app and there was
-            // an issue getting the purchase type
-            return
-        }
-        if (purchase.containedPurchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
-            // PENDING purchases should not be acknowledged or consumed
-            return
-        }
-        if (shouldTryToConsume && purchase.isConsumable) {
-            billingWrapper.consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()))
-                }
-            }
-        } else if (shouldTryToConsume && !purchase.containedPurchase.isAcknowledged) {
-            billingWrapper.acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()))
-                }
-            }
-        } else {
-            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-        }
-    }
-
-    private fun consumeAndSave(
-        shouldTryToConsume: Boolean,
-        purchase: PurchaseHistoryRecordWrapper
-    ) {
-        if (purchase.type == PurchaseType.UNKNOWN) {
-            // Would only get here if the purchase was trigger from outside of the app and there was
-            // an issue getting the purchase type
-            return
-        }
-        if (shouldTryToConsume && purchase.isConsumable) {
-            billingWrapper.consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()))
-                }
-            }
-        } else if (shouldTryToConsume) {
-            billingWrapper.acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()))
-                }
-            }
-        } else {
-            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-        }
     }
 
     private fun getSkuDetails(
@@ -1370,7 +1302,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onError: (PurchasesError) -> Unit
     ) {
         billingWrapper.querySkuDetailsAsync(
-            BillingClient.SkuType.SUBS,
+            ProductType.SUBS,
             skus,
             { subscriptionsSKUDetails ->
                 val detailsByID = HashMap<String, ProductDetails>()
@@ -1382,7 +1314,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                 if (inAPPSkus.isNotEmpty()) {
                     billingWrapper.querySkuDetailsAsync(
-                        BillingClient.SkuType.INAPP,
+                        ProductType.INAPP,
                         inAPPSkus,
                         { skuDetails ->
                             detailsByID.putAll(skuDetails.map { it.sku to it })

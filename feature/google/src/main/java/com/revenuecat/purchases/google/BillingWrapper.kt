@@ -42,7 +42,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 class BillingWrapper(
     private val clientFactory: ClientFactory,
-    private val mainHandler: Handler
+    private val mainHandler: Handler,
+    private val deviceCache: DeviceCache
 ) : PurchasesUpdatedListener, BillingClientStateListener {
 
     @get:Synchronized
@@ -301,7 +302,79 @@ class BillingWrapper(
         )
     }
 
-    fun consumePurchase(
+    fun consumeAndSave(
+        shouldTryToConsume: Boolean,
+        purchase: PurchaseWrapper
+    ) {
+        if (purchase !is GooglePurchaseWrapper) return
+
+        if (purchase.type == ProductType.UNKNOWN) {
+            // Would only get here if the purchase was trigger from outside of the app and there was
+            // an issue getting the purchase type
+            return
+        }
+        if (purchase.purchaseState != RevenueCatPurchaseState.PURCHASED) {
+            // PENDING purchases should not be acknowledged or consumed
+            return
+        }
+        if (shouldTryToConsume && purchase.isConsumable) {
+            consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                } else {
+                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
+                        .format(billingResult.toHumanReadableDescription()))
+                }
+            }
+        } else if (shouldTryToConsume && !purchase.containedPurchase.isAcknowledged) {
+            acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                } else {
+                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
+                        .format(billingResult.toHumanReadableDescription()))
+                }
+            }
+        } else {
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+        }
+    }
+
+    fun consumeAndSave(
+        shouldTryToConsume: Boolean,
+        purchase: PurchaseHistoryRecordWrapper
+    ) {
+        if (purchase.type == ProductType.UNKNOWN) {
+            // Would only get here if the purchase was trigger from outside of the app and there was
+            // an issue getting the purchase type
+            return
+        }
+        if (shouldTryToConsume && purchase.isConsumable) {
+            consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                } else {
+                    log(
+                        LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
+                            .format(billingResult.toHumanReadableDescription()))
+                }
+            }
+        } else if (shouldTryToConsume) {
+            acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                } else {
+                    log(
+                        LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
+                            .format(billingResult.toHumanReadableDescription()))
+                }
+            }
+        } else {
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+        }
+    }
+
+    private fun consumePurchase(
         token: String,
         onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
@@ -317,7 +390,7 @@ class BillingWrapper(
         }
     }
 
-    fun acknowledge(
+    private fun acknowledge(
         token: String,
         onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
