@@ -58,8 +58,7 @@ class Backend(
         path: String,
         body: Map<String, Any?>?,
         onError: (PurchasesError) -> Unit,
-        onCompletedSuccessfully: () -> Unit,
-        onCompletedWithErrors: (PurchasesError, Int, JSONObject) -> Unit
+        onCompleted: (PurchasesError?, Int, JSONObject) -> Unit
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
@@ -75,12 +74,12 @@ class Backend(
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
-                if (result.isSuccessful()) {
-                    onCompletedSuccessfully()
+                val error = if (!result.isSuccessful()) {
+                    result.toPurchasesError().also { errorLog(it) }
                 } else {
-                    val error = result.toPurchasesError().also { errorLog(it) }
-                    onCompletedWithErrors(error, result.responseCode, result.body)
+                    null
                 }
+                onCompleted(error, result.responseCode, result.body)
             }
         })
     }
