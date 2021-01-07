@@ -110,15 +110,13 @@ class BackendTest {
     ): PurchaserInfo {
         val info: PurchaserInfo = mockk()
 
-        val result = HTTPClient.Result()
-        result.responseCode = responseCode
-        result.body = JSONObject(resultBody ?: "{}")
+        val result = HTTPClient.Result(responseCode, JSONObject(resultBody ?: "{}"))
 
         val headers = HashMap<String, String>()
         headers["Authorization"] = "Bearer $API_KEY"
 
         every {
-            result.body!!.buildPurchaserInfo()
+            result.body.buildPurchaserInfo()
         } returns info
 
         val everyMockedCall = every {

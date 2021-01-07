@@ -385,10 +385,7 @@ class SubscriberAttributesPosterTests {
 
         if (clientException == null) {
             everyMockedCall answers {
-                HTTPClient.Result().also {
-                    it.responseCode = responseCode
-                    it.body = JSONObject(expectedResultBody ?: "{}")
-                }
+                HTTPClient.Result(responseCode, JSONObject(expectedResultBody ?: "{}"))
             }
         } else {
             everyMockedCall throws clientException
@@ -407,11 +404,9 @@ class SubscriberAttributesPosterTests {
                 mapOf("Authorization" to "Bearer $API_KEY")
             )
         } answers {
-            HTTPClient.Result().also {
-                it.responseCode = responseCode
-                it.body = responseBody
+            HTTPClient.Result(responseCode, responseBody).also {
                 every {
-                    it.body!!.buildPurchaserInfo()
+                    it.body.buildPurchaserInfo()
                 } returns mockk()
             }
         }

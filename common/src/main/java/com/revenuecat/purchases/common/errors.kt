@@ -51,12 +51,8 @@ fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
     PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
 
 fun HTTPClient.Result.toPurchasesError(): PurchasesError {
-    var errorCode: Int? = null
-    var errorMessage = ""
-    body?.let { body ->
-        errorCode = if (body.has("code")) body.get("code") as Int else null
-        errorMessage = if (body.has("message")) body.get("message") as String else ""
-    }
+    val errorCode = if (body.has("code")) body.get("code") as Int else null
+    val errorMessage = if (body.has("message")) body.get("message") as String else ""
 
     return errorCode?.let { BackendErrorCode.valueOf(it) }?.toPurchasesError(errorMessage)
         ?: PurchasesError(

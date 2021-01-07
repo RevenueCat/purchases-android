@@ -29,6 +29,7 @@ import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseType
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
@@ -772,7 +773,7 @@ class PurchasesTest {
             }
         }
 
-        val mockInfo = mockk<PurchaserInfo>()
+        val mockInfo = JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo()
         every {
             mockBackend.postReceiptData(
                 purchaseToken = any(),
@@ -785,7 +786,7 @@ class PurchasesTest {
                 onError = any()
             )
         } answers {
-            lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, null)
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, mockInfo.jsonObject)
         }
 
         var callbackCalled = false
