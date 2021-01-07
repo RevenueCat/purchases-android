@@ -15,7 +15,7 @@ data class PurchaseHistoryRecordWrapper(
         purchaseHistoryRecord: PurchaseHistoryRecord,
         type: ProductType
     ) : this(
-        isConsumable = type == ProductType.INAPP, // TODO: check this
+        isConsumable = type == ProductType.INAPP,
         purchaseToken = purchaseHistoryRecord.purchaseToken,
         purchaseTime = purchaseHistoryRecord.purchaseTime,
         sku = purchaseHistoryRecord.sku,
