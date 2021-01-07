@@ -304,11 +304,32 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skus] List of skus
      * @param [listener] Response listener
      */
+    @Deprecated("GetSkusResponseListener replaced with GetProductDetailsCallback")
     fun getSubscriptionSkus(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.SUBS, listener)
+        getSkus(skus, BillingClient.SkuType.SUBS.toProductType(), object : GetProductDetailsCallback {
+            override fun onReceived(productDetailsList: List<ProductDetails>) {
+                listener.onReceived(productDetailsList.map { it.skuDetails })
+            }
+
+            override fun onError(error: PurchasesError) {
+                listener.onError(error)
+            }
+        })
+    }
+
+    /**
+     * Gets the ProductDetails for the given list of subscription skus.
+     * @param [skus] List of skus
+     * @param [callback] Response callback
+     */
+    fun getSubscriptionSkus(
+        skus: List<String>,
+        callback: GetProductDetailsCallback
+    ) {
+        getSkus(skus, ProductType.SUBS, callback)
     }
 
     /**
@@ -316,11 +337,32 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skus] List of skus
      * @param [listener] Response listener
      */
+    @Deprecated("GetSkusResponseListener replaced with GetProductDetailsCallback")
     fun getNonSubscriptionSkus(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.INAPP, listener)
+        getSkus(skus, BillingClient.SkuType.INAPP.toProductType(), object : GetProductDetailsCallback {
+            override fun onReceived(productDetailsList: List<ProductDetails>) {
+                listener.onReceived(productDetailsList.map { it.skuDetails })
+            }
+
+            override fun onError(error: PurchasesError) {
+                listener.onError(error)
+            }
+        })
+    }
+
+    /**
+     * Gets the SKUDetails for the given list of non-subscription skus.
+     * @param [skus] List of skus
+     * @param [callback] Response callback
+     */
+    fun getNonSubscriptionSkus(
+        skus: List<String>,
+        callback: GetProductDetailsCallback
+    ) {
+        getSkus(skus, ProductType.INAPP, callback)
     }
 
     /**
@@ -348,13 +390,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         startProductChange(
             activity,
-            skuDetails,
+            skuDetails.toProductDetails(),
             null,
             upgradeInfo,
             listener.toProductChangeListener()
         )
     }
 
+    @Deprecated("SkuDetails replaced with ProductDetails")
     fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
@@ -363,7 +406,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         startProductChange(
             activity,
-            skuDetails,
+            skuDetails.toProductDetails(),
+            null,
+            upgradeInfo,
+            listener
+        )
+    }
+
+    fun purchaseProduct(
+        activity: Activity,
+        productDetails: ProductDetails,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeListener
+    ) {
+        startProductChange(
+            activity,
+            productDetails,
             null,
             upgradeInfo,
             listener
@@ -376,12 +434,27 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skuDetails] The skuDetails of the product you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated("SkuDetails replaced with ProductDetails")
     fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, skuDetails, null, listener)
+        startPurchase(activity, skuDetails.toProductDetails(), null, listener)
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [skuDetails] The skuDetails of the product you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun purchaseProduct(
+        activity: Activity,
+        productDetails: ProductDetails,
+        listener: MakePurchaseListener
+    ) {
+        startPurchase(activity, productDetails, null, listener)
     }
 
     /**
@@ -1063,7 +1136,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun logMissingProducts(
         offerings: Offerings,
-        detailsByID: HashMap<String, SkuDetails>
+        detailsByID: HashMap<String, ProductDetails>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
         .map { it.product.sku }
@@ -1076,19 +1149,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getSkus(
         skus: List<String>,
-        @BillingClient.SkuType skuType: String,
-        completion: GetSkusResponseListener
+        productType: ProductType,
+        callback: GetProductDetailsCallback
     ) {
         billingWrapper.querySkuDetailsAsync(
-            skuType,
+            productType,
             skus,
-            { skuDetails ->
+            { productDetailsList ->
                 dispatch {
-                    completion.onReceived(skuDetails)
+                    callback.onReceived(productDetailsList)
                 }
             }, {
                 dispatch {
-                    completion.onError(it)
+                    callback.onError(it)
                 }
             })
     }
@@ -1145,7 +1218,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     onReceiveSkuDetails = { skuDetailsList ->
                         postToBackend(
                             purchase = purchase,
-                            skuDetails = skuDetailsList.firstOrNull { it.sku == purchase.sku },
+                            productDetails = skuDetailsList.firstOrNull { it.sku == purchase.sku },
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1156,7 +1229,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     onError = {
                         postToBackend(
                             purchase = purchase,
-                            skuDetails = null,
+                            productDetails = null,
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1177,7 +1250,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmSynthetic
     internal fun postToBackend(
         purchase: PurchaseWrapper,
-        skuDetails: SkuDetails?,
+        productDetails: ProductDetails?,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
@@ -1189,7 +1262,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val productInfo = ProductInfo(
             productID = purchase.sku,
             offeringIdentifier = purchase.presentedOfferingIdentifier,
-            skuDetails = skuDetails
+            productDetails = productDetails
         )
         backend.postReceiptData(
             purchaseToken = purchase.purchaseToken,
@@ -1293,14 +1366,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getSkuDetails(
         skus: List<String>,
-        onCompleted: (HashMap<String, SkuDetails>) -> Unit,
+        onCompleted: (HashMap<String, ProductDetails>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         billingWrapper.querySkuDetailsAsync(
             BillingClient.SkuType.SUBS,
             skus,
             { subscriptionsSKUDetails ->
-                val detailsByID = HashMap<String, SkuDetails>()
+                val detailsByID = HashMap<String, ProductDetails>()
                 val inAPPSkus =
                     skus - subscriptionsSKUDetails
                         .map { details -> details.sku to details }
@@ -1480,7 +1553,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun startPurchase(
         activity: Activity,
-        product: SkuDetails,
+        product: ProductDetails,
         presentedOfferingIdentifier: String?,
         listener: MakePurchaseListener
     ) {
@@ -1514,14 +1587,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun startProductChange(
         activity: Activity,
-        product: SkuDetails,
-        presentedOfferingIdentifier: String?,
+        productDetails: ProductDetails,
+        offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeListener
     ) {
+        // TODO: update
         log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $product ${presentedOfferingIdentifier?.let {
-                    PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
+                " $productDetails ${offeringIdentifier?.let {
+                    PurchaseStrings.OFFERING + "$offeringIdentifier"
                 }} UpgradeInfo: $upgradeInfo"
 
         ))
@@ -1537,24 +1611,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
-                product,
+                productDetails,
                 upgradeInfo,
                 activity,
                 appUserID,
-                presentedOfferingIdentifier,
+                offeringIdentifier,
                 listener
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
 
     private fun replaceOldPurchaseWithNewProduct(
-        product: SkuDetails,
+        product: ProductDetails,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
         listener: PurchaseErrorListener
     ) {
+        // TODO: update
         billingWrapper.findPurchaseInPurchaseHistory(product.type, upgradeInfo.oldSku) { result, purchaseRecord ->
             if (result.isSuccessful()) {
                 if (purchaseRecord != null) {
@@ -1593,7 +1668,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     internal fun updatePendingPurchaseQueue() {
         if (billingWrapper.isConnected()) {
             log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
-            dispatcher.enqueue(Runnable {
+            dispatcher.enqueue({
                 val queryActiveSubscriptionsResult =
                     billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
                 val queryUnconsumedInAppsRequest =
