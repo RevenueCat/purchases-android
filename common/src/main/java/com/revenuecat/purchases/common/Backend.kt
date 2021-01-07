@@ -29,13 +29,9 @@ typealias CallbackCacheKey = List<String>
 /** @suppress */
 typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
 /** @suppress */
-typealias PostReceiptDataSuccessCallback = (PurchaserInfo, body: JSONObject?) -> Unit
+typealias PostReceiptDataSuccessCallback = (PurchaserInfo, body: JSONObject) -> Unit
 /** @suppress */
-typealias PostReceiptDataErrorCallback = (
-    PurchasesError,
-    shouldConsumePurchase: Boolean,
-    body: JSONObject?
-) -> Unit
+typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, body: JSONObject?) -> Unit
 
 class Backend(
     private val apiKey: String,
@@ -63,7 +59,7 @@ class Backend(
         body: Map<String, Any?>?,
         onError: (PurchasesError) -> Unit,
         onCompletedSuccessfully: () -> Unit,
-        onCompletedWithErrors: (PurchasesError, Int, JSONObject?) -> Unit
+        onCompletedWithErrors: (PurchasesError, Int, JSONObject) -> Unit
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
@@ -122,7 +118,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     try {
                         if (result.isSuccessful()) {
-                            onSuccess(result.body!!.buildPurchaserInfo())
+                            onSuccess(result.body.buildPurchaserInfo())
                         } else {
                             onError(result.toPurchasesError().also { errorLog(it) })
                         }
@@ -195,7 +191,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     try {
                         if (result.isSuccessful()) {
-                            onSuccess(result.body!!.buildPurchaserInfo(), result.body)
+                            onSuccess(result.body.buildPurchaserInfo(), result.body)
                         } else {
                             onError(
                                 result.toPurchasesError().also { errorLog(it) },
@@ -256,7 +252,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(result.body!!)
+                            onSuccess(result.body)
                         } catch (e: JSONException) {
                             onError(e.toPurchasesError().also { errorLog(it) })
                         }

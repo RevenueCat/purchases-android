@@ -55,7 +55,7 @@ class PostingTransactionsTests {
 
     internal data class PostReceiptCompletionContainer(
         val info: PurchaserInfo = JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo(),
-        val body: JSONObject? = JSONObject(Responses.validFullPurchaserResponse)
+        val body: JSONObject = JSONObject(Responses.validFullPurchaserResponse)
     )
 
     @Before
