@@ -127,7 +127,7 @@ enum class Store {
      */
     UNKNOWN_STORE,
     /**
-     * For entitlements granted via an unknown store.
+     * For entitlements granted via Amazon store.
      */
     AMAZON
 }
