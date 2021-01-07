@@ -19,7 +19,6 @@ import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
@@ -27,9 +26,7 @@ import com.revenuecat.purchases.common.PurchaseType
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
-import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.strings.BillingStrings
@@ -44,31 +41,12 @@ class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
     private val deviceCache: DeviceCache
-) : PurchasesUpdatedListener, BillingClientStateListener {
-
-    @get:Synchronized
-    @set:Synchronized
-    @Volatile
-    var stateListener: StateListener? = null
+) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
     @get:Synchronized
     @set:Synchronized
     @Volatile
     var billingClient: BillingClient? = null
-
-    @get:Synchronized
-    @Volatile
-    var purchasesUpdatedListener: PurchasesUpdatedListener? = null
-        set(value) {
-            synchronized(this@BillingWrapper) {
-                field = value
-            }
-            if (value != null) {
-                startConnection()
-            } else {
-                endConnection()
-            }
-        }
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
@@ -84,19 +62,6 @@ class BillingWrapper(
         }
     }
 
-    interface PurchasesUpdatedListener {
-        fun onPurchasesUpdated(purchases: List<PurchaseWrapper>)
-        fun onPurchasesFailedToUpdate(
-            purchases: List<Purchase>?,
-            @BillingClient.BillingResponseCode responseCode: Int,
-            message: String
-        )
-    }
-
-    interface StateListener {
-        fun onConnected()
-    }
-
     private fun executePendingRequests() {
         synchronized(this@BillingWrapper) {
             while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
@@ -105,7 +70,7 @@ class BillingWrapper(
         }
     }
 
-    private fun startConnection() {
+    override fun startConnection() {
         mainHandler.post {
             synchronized(this@BillingWrapper) {
                 if (billingClient == null) {
@@ -119,7 +84,7 @@ class BillingWrapper(
         }
     }
 
-    private fun endConnection() {
+    override fun endConnection() {
         mainHandler.post {
             synchronized(this@BillingWrapper) {
                 billingClient?.let {
@@ -143,7 +108,7 @@ class BillingWrapper(
         }
     }
 
-    fun querySkuDetailsAsync(
+    override fun querySkuDetailsAsync(
         productType: ProductType,
         skuList: List<String>,
         onReceive: ProductDetailsListCallback,
@@ -189,7 +154,7 @@ class BillingWrapper(
         }
     }
 
-    fun makePurchaseAsync(
+    override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
         productDetails: ProductDetails,
@@ -270,7 +235,7 @@ class BillingWrapper(
         }
     }
 
-    fun queryAllPurchases(
+    override fun queryAllPurchases(
         onReceivePurchaseHistory: (List<PurchaseHistoryRecordWrapper>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
@@ -302,7 +267,7 @@ class BillingWrapper(
         )
     }
 
-    fun consumeAndSave(
+    override fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: PurchaseWrapper
     ) {
@@ -340,7 +305,7 @@ class BillingWrapper(
         }
     }
 
-    fun consumeAndSave(
+    override fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: PurchaseHistoryRecordWrapper
     ) {
@@ -415,7 +380,7 @@ class BillingWrapper(
         fun isSuccessful(): Boolean = responseCode == BillingClient.BillingResponseCode.OK
     }
 
-    fun queryPurchases(@SkuType skuType: String): QueryPurchasesResult? {
+    override fun queryPurchases(@SkuType skuType: String): QueryPurchasesResult? {
         return billingClient?.let { billingClient ->
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE.format(skuType))
             val result = billingClient.queryPurchases(skuType)
@@ -433,7 +398,7 @@ class BillingWrapper(
         }
     }
 
-    fun findPurchaseInPurchaseHistory(
+    override fun findPurchaseInPurchaseHistory(
         productType: ProductType,
         sku: String,
         completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
@@ -508,15 +473,18 @@ class BillingWrapper(
                 }}"
             )
 
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(
-                purchases,
+            val responseCode =
                 if (purchases == null && billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     BillingClient.BillingResponseCode.ERROR
                 } else {
                     billingResult.responseCode
-                },
-                "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
-            )
+                }
+
+            val message = "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
+
+            val purchasesError = responseCode.billingResponseToPurchasesError(message).also { errorLog(it) }
+
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(purchasesError)
         }
     }
 
@@ -570,7 +538,7 @@ class BillingWrapper(
         log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient.toString()))
     }
 
-    fun isConnected(): Boolean = billingClient?.isReady ?: false
+    override fun isConnected(): Boolean = billingClient?.isReady ?: false
 
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {
