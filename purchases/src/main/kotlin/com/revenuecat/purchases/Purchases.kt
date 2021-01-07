@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.Looper
 import android.preference.PreferenceManager
 import android.util.Log
+import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
@@ -38,11 +39,14 @@ import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.getBillingResponseCodeName
 import com.revenuecat.purchases.common.isSuccessful
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.GooglePurchaseWrapper
+import com.revenuecat.purchases.google.skuDetails
+import com.revenuecat.purchases.google.toProductDetails
+import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
@@ -1745,7 +1749,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     observerMode,
                     platformInfo,
                     proxyURL,
-                    configuration.store
+                    store
                 )
 
                 val dispatcher = Dispatcher(service ?: createDefaultExecutor())
@@ -1765,6 +1769,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         Handler(application.mainLooper),
                         cache
                     )
+                    Store.AMAZON -> {
+                        try {
+                            Class.forName("com.revenuecat.purchases.amazon.AmazonBilling")
+                                .getConstructor(Context::class.java, Backend::class.java)
+                                .newInstance(application.applicationContext, backend) as BillingAbstract
+                        } catch (e: ClassNotFoundException) {
+                            errorLog("Make sure purchases-amazon is added as dependency")
+                            throw e
+                        }
+                    }
                     else -> {
                         errorLog("Incompatible store ($store) used")
                         throw RuntimeException("Couldn't configure SDK. Incompatible store ($store) used")
