@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import com.android.billingclient.api.PurchaseHistoryRecord
+import com.revenuecat.purchases.ProductType
 
 data class PurchaseHistoryRecordWrapper(
     val isConsumable: Boolean,
@@ -8,13 +9,13 @@ data class PurchaseHistoryRecordWrapper(
     val purchaseTime: Long,
     val sku: String,
     val purchaseHistoryRecord: PurchaseHistoryRecord,
-    val type: PurchaseType
+    val type: ProductType
 ) {
     constructor(
         purchaseHistoryRecord: PurchaseHistoryRecord,
-        type: PurchaseType
+        type: ProductType
     ) : this(
-        isConsumable = type == PurchaseType.INAPP,
+        isConsumable = type == ProductType.INAPP, // TODO: check this
         purchaseToken = purchaseHistoryRecord.purchaseToken,
         purchaseTime = purchaseHistoryRecord.purchaseTime,
         sku = purchaseHistoryRecord.sku,
