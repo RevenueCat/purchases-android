@@ -20,15 +20,23 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetailsParams
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.ProductDetailsListCallback
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
-import com.revenuecat.purchases.common.PurchaseType
 import com.revenuecat.purchases.common.PurchaseWrapper
+import com.revenuecat.purchases.common.PurchasesErrorCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -373,11 +381,12 @@ class BillingWrapper(
         }
     }
 
-    data class QueryPurchasesResult(
-        @BillingClient.BillingResponseCode val responseCode: Int,
-        val purchasesByHashedToken: Map<String, PurchaseWrapper>
-    ) {
-        fun isSuccessful(): Boolean = responseCode == BillingClient.BillingResponseCode.OK
+    class GoogleQueryPurchasesResult(
+        @BillingClient.BillingResponseCode responseCode: Int,
+        purchasesByHashedToken: Map<String, PurchaseWrapper>
+    ) : QueryPurchasesResult(responseCode, purchasesByHashedToken) {
+
+        override fun isSuccessful(): Boolean = responseCode == BillingClient.BillingResponseCode.OK
     }
 
     override fun queryPurchases(@SkuType skuType: String): QueryPurchasesResult? {
@@ -387,12 +396,12 @@ class BillingWrapper(
 
             val purchasesList = result.purchasesList ?: emptyList<Purchase>()
 
-            QueryPurchasesResult(
+            GoogleQueryPurchasesResult(
                 result.responseCode,
                 purchasesList.map { purchase ->
                     val hash = purchase.purchaseToken.sha1()
                     log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(skuType, hash))
-                    hash to PurchaseWrapper(purchase, PurchaseType.fromSKUType(skuType), null)
+                    hash to GooglePurchaseWrapper(purchase, skuType.toProductType(), presentedOfferingIdentifier = null)
                 }.toMap()
             )
         }
