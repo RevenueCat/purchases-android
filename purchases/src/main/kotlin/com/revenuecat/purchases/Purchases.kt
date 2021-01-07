@@ -1213,7 +1213,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         purchases.forEach { purchase ->
             if (purchase.purchaseState == RevenueCatPurchaseState.PURCHASED) {
                 billingWrapper.querySkuDetailsAsync(
-                    itemType = purchase.type.toSKUType() ?: BillingClient.SkuType.INAPP,
+                    productType = purchase.type,
                     skuList = listOf(purchase.sku),
                     onReceiveSkuDetails = { skuDetailsList ->
                         postToBackend(
@@ -1513,7 +1513,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val onSuccess: SuccessfulPurchaseCallback = { purchaseWrapper, info ->
             getPurchaseCallback(purchaseWrapper.sku)?.let { purchaseCallback ->
                 dispatch {
-                    purchaseCallback.onCompleted(purchaseWrapper.containedPurchase, info)
+                    purchaseCallback.onCompleted((purchaseWrapper as GooglePurchaseWrapper).containedPurchase, info)
                 }
             }
         }

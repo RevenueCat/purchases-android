@@ -69,7 +69,7 @@ class BillingWrapper(
             }
         }
 
-    private val productTypes = mutableMapOf<String, PurchaseType>()
+    private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
 
     private val serviceRequests =
@@ -143,16 +143,22 @@ class BillingWrapper(
     }
 
     fun querySkuDetailsAsync(
-        @BillingClient.SkuType itemType: String,
+        productType: ProductType,
         skuList: List<String>,
-        onReceiveSkuDetails: (List<SkuDetails>) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onReceive: ProductDetailsListCallback,
+        onError: PurchasesErrorCallback
     ) {
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skuList.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 val params = SkuDetailsParams.newBuilder()
-                    .setType(itemType).setSkusList(skuList).build()
+                    .apply {
+                        productType.toSKUType()?.let {
+                            this.setType(it)
+                        }
+                    }
+                    .setSkusList(skuList).build()
+
                 withConnectedClient {
                     querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
@@ -164,7 +170,7 @@ class BillingWrapper(
                                 log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
                             }
 
-                            onReceiveSkuDetails(skuDetailsList ?: emptyList())
+                            onReceive(skuDetailsList?.map { it.toProductDetails() } ?: emptyList())
                         } else {
                             log(LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
                                     .format(billingResult.toHumanReadableDescription()))
@@ -185,23 +191,23 @@ class BillingWrapper(
     fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        skuDetails: SkuDetails,
+        productDetails: ProductDetails,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
         if (replaceSkuInfo != null) {
             log(LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
-                    .format(replaceSkuInfo.oldPurchase.sku, skuDetails.sku))
+                    .format(replaceSkuInfo.oldPurchase.sku, productDetails.sku))
         } else {
-            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(skuDetails.sku))
+            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(productDetails.sku))
         }
         synchronized(this@BillingWrapper) {
-            productTypes[skuDetails.sku] = PurchaseType.fromSKUType(skuDetails.type)
-            presentedOfferingsByProductIdentifier[skuDetails.sku] = presentedOfferingIdentifier
+            productTypes[productDetails.sku] = productDetails.type
+            presentedOfferingsByProductIdentifier[productDetails.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
-                .setSkuDetails(skuDetails)
+                .setSkuDetails(productDetails.skuDetails)
                 // Causing issues with downgrades/upgrades https://issuetracker.google.com/issues/155005449
                 // .setObfuscatedAccountId(appUserID.sha256())
                 .apply {
@@ -224,7 +230,7 @@ class BillingWrapper(
     ) {
         withConnectedClient {
             launchBillingFlow(activity, params)
-                .takeIf { billingResult -> billingResult?.responseCode != BillingClient.BillingResponseCode.OK }
+                .takeIf { billingResult -> billingResult.responseCode != BillingClient.BillingResponseCode.OK }
                 ?.let { billingResult ->
                     log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_INTENT_FAILED
                             .format(billingResult.toHumanReadableDescription()))
@@ -277,13 +283,13 @@ class BillingWrapper(
                             subsPurchasesList.map {
                                 PurchaseHistoryRecordWrapper(
                                     it,
-                                    PurchaseType.SUBS
+                                    ProductType.SUBS
                                 )
                             } +
                                 inAppPurchasesList.map {
                                     PurchaseHistoryRecordWrapper(
                                         it,
-                                        PurchaseType.INAPP
+                                        ProductType.INAPP
                                     )
                                 }
                         )
@@ -355,39 +361,41 @@ class BillingWrapper(
     }
 
     fun findPurchaseInPurchaseHistory(
-        @SkuType skuType: String,
+        productType: ProductType,
         sku: String,
         completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
     ) {
         withConnectedClient {
-            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, skuType))
-            queryPurchaseHistoryAsync(skuType) { result, purchasesList ->
-                completion(
-                    result,
-                    purchasesList?.firstOrNull { sku == it.sku }?.let {
-                        PurchaseHistoryRecordWrapper(it, PurchaseType.fromSKUType(skuType))
-                    }
-                )
-            }
+            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
+            productType.toSKUType()?.let { skuType ->
+                queryPurchaseHistoryAsync(skuType) { result, purchasesList ->
+                    completion(
+                        result,
+                        purchasesList?.firstOrNull { sku == it.sku }?.let {
+                            PurchaseHistoryRecordWrapper(it, productType)
+                        }
+                    )
+                }
+            } ?: log(LogIntent.GOOGLE_ERROR, PurchaseStrings.NOT_RECOGNIZED_PRODUCT_TYPE)
         }
     }
 
-    internal fun getPurchaseType(purchaseToken: String): PurchaseType {
+    internal fun getPurchaseType(purchaseToken: String): ProductType {
         billingClient?.let { client ->
             val querySubsResult = client.queryPurchases(SkuType.SUBS)
             val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
             val subFound = querySubsResult.purchasesList?.any { it.purchaseToken == purchaseToken } ?: false
             if (subsResponseOK && subFound) {
-                return@getPurchaseType PurchaseType.SUBS
+                return@getPurchaseType ProductType.SUBS
             }
             val queryInAppsResult = client.queryPurchases(SkuType.INAPP)
             val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
             val inAppFound = queryInAppsResult.purchasesList?.any { it.purchaseToken == purchaseToken } ?: false
             if (inAppsResponseIsOK && inAppFound) {
-                return@getPurchaseType PurchaseType.INAPP
+                return@getPurchaseType ProductType.INAPP
             }
         }
-        return PurchaseType.UNKNOWN
+        return ProductType.UNKNOWN
     }
 
     override fun onPurchasesUpdated(
@@ -399,13 +407,13 @@ class BillingWrapper(
             notNullPurchasesList.map { purchase ->
                 log(LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
                         .format(purchase.toHumanReadableDescription()))
-                var type: PurchaseType?
+                var type: ProductType?
                 var presentedOffering: String?
                 synchronized(this@BillingWrapper) {
                     type = productTypes[purchase.sku]
                     presentedOffering = presentedOfferingsByProductIdentifier[purchase.sku]
                 }
-                PurchaseWrapper(
+                GooglePurchaseWrapper(
                     purchase,
                     type ?: getPurchaseType(purchase.purchaseToken),
                     presentedOffering
