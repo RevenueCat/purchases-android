@@ -1211,7 +1211,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onError: (ErrorPurchaseCallback)? = null
     ) {
         purchases.forEach { purchase ->
-            if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+            if (purchase.purchaseState == RevenueCatPurchaseState.PURCHASED) {
                 billingWrapper.querySkuDetailsAsync(
                     itemType = purchase.type.toSKUType() ?: BillingClient.SkuType.INAPP,
                     skuList = listOf(purchase.sku),
