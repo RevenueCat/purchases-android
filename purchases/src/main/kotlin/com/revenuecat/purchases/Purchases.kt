@@ -1523,7 +1523,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeListener
     ) {
-        // TODO: update
         log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $productDetails ${offeringIdentifier?.let {
                     PurchaseStrings.OFFERING + "$offeringIdentifier"
@@ -1560,7 +1559,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         presentedOfferingIdentifier: String?,
         listener: PurchaseErrorListener
     ) {
-        // TODO: update
         billing.findPurchaseInPurchaseHistory(product.type, upgradeInfo.oldSku) { result, purchaseRecord ->
             if (result.isSuccessful()) {
                 if (purchaseRecord != null) {
