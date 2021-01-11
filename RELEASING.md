@@ -1,6 +1,6 @@
 Automatic Releasing
 =========
- 1. Create a branch bump/x.y.z
+ 1. Create a branch release/x.y.z
  1. Create a CHANGELOG.latest.md with the changes for the current version (to be used by Fastlane for the github release notes)
  1. Run `fastlane bump_and_update_changelog version:X.Y.Z` (where X.Y.Z is the new version) to update the version number in `gradle.properties`, `Config.kt` and in `library/build.gradle` 
  1. Commit the changes `git commit -am "Version X.Y.Z"` (where X.Y.Z is the new version)
