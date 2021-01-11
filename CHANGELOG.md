@@ -10,6 +10,7 @@
     https://github.com/RevenueCat/purchases-android/pull/238
     https://github.com/RevenueCat/purchases-android/pull/237
     https://github.com/RevenueCat/purchases-android/pull/236
+    https://github.com/RevenueCat/purchases-android/pull/244
 - Made `body` in the HttpResult not null
     https://github.com/RevenueCat/purchases-android/pull/242
 
