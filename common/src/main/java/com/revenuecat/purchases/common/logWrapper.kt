@@ -2,14 +2,9 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.strings.Emojis
 
-const val V2_LOGS_ENABLED = false
-
 fun log(intent: LogIntent, message: String) {
-    val fullMessage = if (V2_LOGS_ENABLED) {
-        "${intent.emojiList.joinToString("")} $message"
-    } else {
-        message
-    }
+    val fullMessage = "${intent.emojiList.joinToString("")} $message"
+
     when (intent) {
         LogIntent.DEBUG -> debugLog(fullMessage)
         LogIntent.GOOGLE_ERROR -> errorLog(fullMessage)
