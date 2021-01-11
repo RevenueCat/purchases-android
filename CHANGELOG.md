@@ -1,3 +1,19 @@
+## 4.0.2
+
+- Update lifecycle version to 2.3.0-rc01 and made sure addObserver is called from the main thread. Should fix #240.
+    https://github.com/RevenueCat/purchases-android/pull/241
+- Updates BillingClient to version 3.0.2
+    https://github.com/RevenueCat/purchases-android/pull/235
+- Fixes some exceptions being swallowed by ExecutorService
+    https://github.com/RevenueCat/purchases-android/pull/234
+- Revamped logging strings, makes log messages from Purchases easier to spot and understand.
+    https://github.com/RevenueCat/purchases-android/pull/238
+    https://github.com/RevenueCat/purchases-android/pull/237
+    https://github.com/RevenueCat/purchases-android/pull/236
+- Made `body` in the HttpResult not null
+    https://github.com/RevenueCat/purchases-android/pull/242
+
+
 ## 4.0.1
 
 - Adds mapping for ITEM_ALREADY_OWNED
