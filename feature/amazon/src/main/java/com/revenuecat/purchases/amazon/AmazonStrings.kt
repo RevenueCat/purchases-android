@@ -14,4 +14,5 @@ object AmazonStrings {
     const val ERROR_PURCHASE_INVALID_SKU = "Failed to make purchase. SKU is invalid"
     const val ERROR_PURCHASE_FAILED = "Failed to make purchase. " +
         "This error normally means that the purchase was cancelled"
+    const val ERROR_FETCHING_RECEIPT_INFO = "There was an error fetching receipt information: %s"
 }

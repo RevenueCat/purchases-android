@@ -42,6 +42,7 @@ abstract class BillingAbstract {
     abstract fun endConnection()
 
     abstract fun queryAllPurchases(
+        appUserID: String,
         onReceivePurchaseHistory: (List<PurchaseHistoryRecordWrapper>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     )

@@ -5,6 +5,7 @@ import android.content.Context
 import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductDataResponse
+import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.Receipt
@@ -14,6 +15,8 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
 import com.revenuecat.purchases.amazon.handler.PurchaseHandler
 import com.revenuecat.purchases.amazon.handler.PurchaseUpdatesHandler
@@ -33,6 +36,7 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 class AmazonBilling constructor(
     private val applicationContext: Context,
@@ -65,16 +69,62 @@ class AmazonBilling constructor(
     override fun endConnection() { }
 
     override fun queryAllPurchases(
+        appUserID: String,
         onReceivePurchaseHistory: (List<PurchaseHistoryRecordWrapper>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     ) {
-        // TODO
+        purchaseUpdatesHandler.queryPurchases(
+            onSuccess = { receipts, userData ->
+                var receiptsCount = 0
+                val purchaseHistoryRecordWrappers = mutableListOf<PurchaseHistoryRecordWrapper>()
+
+                receipts.forEach { receipt ->
+                    backend.postAmazonReceiptData(
+                        receipt.receiptId,
+                        appUserID,
+                        userData.userId,
+                        receipt.sku,
+                        onSuccessHandler = { response ->
+                            val termSku = response["termSku"] as String
+                            val purchaseHistoryRecordWrapper = PurchaseHistoryRecordWrapper(
+                                isConsumable = receipt.productType == ProductType.CONSUMABLE,
+                                purchaseToken = receipt.receiptId,
+                                purchaseTime = receipt.purchaseDate.time,
+                                sku = termSku,
+                                type = receipt.productType.toRevenueCatProductType()
+                            )
+
+                            purchaseHistoryRecordWrappers.add(purchaseHistoryRecordWrapper)
+                            receiptsCount++
+                            if (receiptsCount == receipts.count()) {
+                                onReceivePurchaseHistory(purchaseHistoryRecordWrappers)
+                            }
+                        },
+                        onErrorHandler = { error ->
+                            log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FETCHING_RECEIPT_INFO.format(error))
+                            receiptsCount++
+                            if (receiptsCount == receipts.count()) {
+                                if (purchaseHistoryRecordWrappers.isEmpty()) {
+                                    val error = PurchasesError(
+                                        PurchasesErrorCode.InvalidReceiptError,
+                                        "Error fetching purchase history. All receipts are invalid."
+                                    )
+                                    onReceivePurchaseHistoryError(error)
+                                } else {
+                                    onReceivePurchaseHistory(purchaseHistoryRecordWrappers)
+                                }
+                            }
+                        })
+                }
+            },
+            onReceivePurchaseHistoryError
+        )
     }
 
     // region Product Data
 
     override fun querySkuDetailsAsync(
-        productType: ProductType,
+        productType: RevenueCatProductType,
         skus: Set<String>,
         onReceive: ProductDetailsListCallback,
         onError: PurchasesErrorCallback
@@ -92,7 +142,7 @@ class AmazonBilling constructor(
     ) {
         if (purchase !is AmazonPurchaseWrapper) throw IllegalStateException("Trying to consume a non Amazon purchase")
 
-        if (purchase.type == ProductType.UNKNOWN) return
+        if (purchase.type == RevenueCatProductType.UNKNOWN) return
 
         // Only PURCHASED purchases should be fulfilled
         if (purchase.purchaseState != RevenueCatPurchaseState.PURCHASED) return
@@ -117,7 +167,7 @@ class AmazonBilling constructor(
     }
 
     override fun findPurchaseInPurchaseHistory(
-        skuType: ProductType,
+        skuType: RevenueCatProductType,
         sku: String,
         completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
     ) {

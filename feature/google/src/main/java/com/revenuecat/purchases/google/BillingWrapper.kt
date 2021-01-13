@@ -241,6 +241,7 @@ class BillingWrapper(
     }
 
     override fun queryAllPurchases(
+        appUserID: String,
         onReceivePurchaseHistory: (List<PurchaseHistoryRecordWrapper>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {

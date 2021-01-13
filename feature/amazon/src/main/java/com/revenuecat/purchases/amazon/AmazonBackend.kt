@@ -4,7 +4,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
-import com.revenuecat.purchases.models.ProductDetails
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -24,7 +23,7 @@ class AmazonBackend(
         receiptId: String,
         appUserID: String,
         storeUserID: String,
-        productDetails: ProductDetails,
+        sku: String,
         onSuccess: (JSONObject) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
@@ -32,12 +31,12 @@ class AmazonBackend(
             receiptId,
             appUserID,
             storeUserID,
-            productDetails.toString()
+            sku
         )
 
         val body = mapOf(
             "fetch_token" to receiptId,
-            "product_id" to productDetails.sku,
+            "product_id" to sku,
             "app_user_id" to appUserID,
             "store_user_id" to storeUserID
         )

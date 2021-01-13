@@ -17,6 +17,7 @@ fun log(intent: LogIntent, message: String) {
         LogIntent.USER -> debugLog(fullMessage)
         LogIntent.WARNING -> warnLog(fullMessage)
         LogIntent.AMAZON_WARNING -> warnLog(fullMessage)
+        LogIntent.AMAZON_ERROR -> errorLog(fullMessage)
     }
 }
 
@@ -67,5 +68,9 @@ enum class LogIntent(val emojiList: List<String>) {
     /**
      * Emojis for Amazon info messages.
      */
-    AMAZON_WARNING(listOf(Emojis.BOX, Emojis.DOUBLE_EXCLAMATION))
+    AMAZON_WARNING(listOf(Emojis.BOX, Emojis.DOUBLE_EXCLAMATION)),
+    /**
+     * Emojis for Amazon error messages.
+     */
+    AMAZON_ERROR(listOf(Emojis.BOX, Emojis.DOUBLE_EXCLAMATION))
 }

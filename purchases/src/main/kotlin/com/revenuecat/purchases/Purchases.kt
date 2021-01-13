@@ -30,6 +30,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.ProductInfo
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
@@ -57,7 +58,6 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -224,9 +224,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     fun syncPurchases() {
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
-        billing.queryAllPurchases({ allPurchases ->
-            if (allPurchases.isNotEmpty()) {
-                identityManager.currentAppUserID.let { appUserID ->
+
+        val appUserID = identityManager.currentAppUserID
+
+        billing.queryAllPurchases(
+            appUserID,
+            onReceivePurchaseHistory = { allPurchases ->
+                if (allPurchases.isNotEmpty()) {
                     allPurchases.forEach { purchase ->
                         val unsyncedSubscriberAttributesByKey =
                             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
@@ -258,14 +262,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                     )
                                     deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 }
-                                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                        .format(purchase, error))
+                                log(
+                                    LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
+                                        .format(purchase, error)
+                                )
                             }
                         )
                     }
                 }
+            },
+            onReceivePurchaseHistoryError = {
+                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it))
             }
-        }, { log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it)) })
+        )
     }
 
     /**
@@ -576,63 +585,67 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (!allowSharingPlayStoreAccount) {
             log(LogIntent.WARNING, RestoreStrings.SHARING_ACC_RESTORE_FALSE)
         }
+
+        val appUserID = identityManager.currentAppUserID
+
         this.finishTransactions.let { finishTransactions ->
             billing.queryAllPurchases(
-                { allPurchases ->
+                appUserID,
+                onReceivePurchaseHistory = { allPurchases ->
                     if (allPurchases.isEmpty()) {
                         getPurchaserInfo(listener)
                     } else {
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
-                            identityManager.currentAppUserID.let { appUserID ->
-                                sortedByTime.forEach { purchase ->
-                                    val unsyncedSubscriberAttributesByKey =
-                                        subscriberAttributesManager.getUnsyncedSubscriberAttributes(
-                                            appUserID
+                            sortedByTime.forEach { purchase ->
+                                val unsyncedSubscriberAttributesByKey =
+                                    subscriberAttributesManager.getUnsyncedSubscriberAttributes(
+                                        appUserID
+                                    )
+                                val receiptInfo = ReceiptInfo(productID = purchase.sku)
+                                backend.postReceiptData(
+                                    purchaseToken = purchase.purchaseToken,
+                                    appUserID = appUserID,
+                                    isRestore = true,
+                                    observerMode = !finishTransactions,
+                                    subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+                                    receiptInfo = receiptInfo,
+                                    onSuccess = { info, body ->
+                                        subscriberAttributesManager.markAsSynced(
+                                            appUserID,
+                                            unsyncedSubscriberAttributesByKey,
+                                            body.getAttributeErrors()
                                         )
-                                    val receiptInfo = ReceiptInfo(productID = purchase.sku)
-                                    backend.postReceiptData(
-                                        purchaseToken = purchase.purchaseToken,
-                                        appUserID = appUserID,
-                                        isRestore = true,
-                                        observerMode = !finishTransactions,
-                                        subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                                        receiptInfo = receiptInfo,
-                                        onSuccess = { info, body ->
+                                        billing.consumeAndSave(finishTransactions, purchase)
+                                        cachePurchaserInfo(info)
+                                        sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                                        log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { listener.onReceived(info) }
+                                        }
+                                    },
+                                    onError = { error, errorIsFinishable, body ->
+                                        if (errorIsFinishable) {
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
                                                 unsyncedSubscriberAttributesByKey,
                                                 body.getAttributeErrors()
                                             )
                                             billing.consumeAndSave(finishTransactions, purchase)
-                                            cachePurchaserInfo(info)
-                                            sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                                            log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
-                                            if (sortedByTime.last() == purchase) {
-                                                dispatch { listener.onReceived(info) }
-                                            }
-                                        },
-                                        onError = { error, errorIsFinishable, body ->
-                                            if (errorIsFinishable) {
-                                                subscriberAttributesManager.markAsSynced(
-                                                    appUserID,
-                                                    unsyncedSubscriberAttributesByKey,
-                                                    body.getAttributeErrors()
-                                                )
-                                                billing.consumeAndSave(finishTransactions, purchase)
-                                            }
-                                            log(LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
-                                                    .format(purchase, error))
-                                            if (sortedByTime.last() == purchase) {
-                                                dispatch { listener.onError(error) }
-                                            }
                                         }
-                                    )
-                                }
+                                        log(
+                                            LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
+                                                .format(purchase, error)
+                                        )
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { listener.onError(error) }
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
                 },
-                { error ->
+                onReceivePurchaseHistoryError = { error ->
                     dispatch { listener.onError(error) }
                 }
             )
