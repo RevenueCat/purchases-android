@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common
 
 import android.app.Activity
-import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
@@ -87,16 +86,14 @@ abstract class BillingAbstract {
 
     @SuppressWarnings("ForbiddenComment")
     abstract fun queryPurchases(
-        @BillingClient.SkuType skuType: String // TODO: change
-    ): QueryPurchasesResult?
+        appUserID: String,
+        completion: (QueryPurchasesResult) -> Unit
+    )
 
-    abstract class QueryPurchasesResult(
-        val responseCode: Int,
+    open class QueryPurchasesResult(
+        val isSuccessful: Boolean,
         val purchasesByHashedToken: Map<String, PurchaseWrapper>
-    ) {
-
-        abstract fun isSuccessful(): Boolean
-    }
+    )
 
     interface PurchasesUpdatedListener {
         fun onPurchasesUpdated(purchases: List<PurchaseWrapper>)

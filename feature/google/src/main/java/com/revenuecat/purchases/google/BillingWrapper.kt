@@ -350,29 +350,41 @@ class BillingWrapper(
     }
 
     class GoogleQueryPurchasesResult(
-        @BillingClient.BillingResponseCode responseCode: Int,
+        isSuccessful: Boolean,
         purchasesByHashedToken: Map<String, PurchaseWrapper>
-    ) : QueryPurchasesResult(responseCode, purchasesByHashedToken) {
+    ) : QueryPurchasesResult(isSuccessful, purchasesByHashedToken)
 
-        override fun isSuccessful(): Boolean = responseCode == BillingClient.BillingResponseCode.OK
+    private fun Purchase.PurchasesResult.isSuccessful() = responseCode == BillingClient.BillingResponseCode.OK
+
+    override fun queryPurchases(
+        appUserID: String,
+        completion: (QueryPurchasesResult) -> Unit
+    ) {
+        billingClient?.let { billingClient ->
+            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
+
+            val queryActiveSubscriptionsResult = billingClient.queryPurchases(SkuType.SUBS)
+            val queryUnconsumedInAppsRequest = billingClient.queryPurchases(SkuType.INAPP)
+
+            val isSuccessful =
+                queryActiveSubscriptionsResult.isSuccessful() && queryUnconsumedInAppsRequest.isSuccessful()
+
+            val activeSubscriptionsList = queryActiveSubscriptionsResult.purchasesList ?: emptyList<Purchase>()
+            val mapOfActiveSubscriptions = activeSubscriptionsList.toMapOfGooglePurchaseWrapper(SkuType.SUBS)
+
+            val unconsumedInAppsList = queryUnconsumedInAppsRequest.purchasesList ?: emptyList<Purchase>()
+            val mapOfUnconsumedInApps = unconsumedInAppsList.toMapOfGooglePurchaseWrapper(SkuType.INAPP)
+
+            GoogleQueryPurchasesResult(isSuccessful, mapOfActiveSubscriptions + mapOfUnconsumedInApps)
+        } ?: completion(GoogleQueryPurchasesResult(isSuccessful = false, emptyMap()))
     }
 
-    override fun queryPurchases(@SkuType skuType: String): QueryPurchasesResult? {
-        return billingClient?.let { billingClient ->
-            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE.format(skuType))
-            val result = billingClient.queryPurchases(skuType)
-
-            val purchasesList = result.purchasesList ?: emptyList<Purchase>()
-
-            GoogleQueryPurchasesResult(
-                result.responseCode,
-                purchasesList.map { purchase ->
-                    val hash = purchase.purchaseToken.sha1()
-                    log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(skuType, hash))
-                    hash to GooglePurchaseWrapper(purchase, skuType.toProductType(), presentedOfferingIdentifier = null)
-                }.toMap()
-            )
-        }
+    private fun List<Purchase>.toMapOfGooglePurchaseWrapper(@SkuType skuType: String): Map<String, GooglePurchaseWrapper> {
+        return this.map { purchase ->
+            val hash = purchase.purchaseToken.sha1()
+            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(skuType, hash))
+            hash to GooglePurchaseWrapper(purchase, skuType.toProductType(), presentedOfferingIdentifier = null)
+        }.toMap()
     }
 
     override fun findPurchaseInPurchaseHistory(

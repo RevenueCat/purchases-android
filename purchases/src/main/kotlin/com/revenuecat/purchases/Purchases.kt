@@ -1611,26 +1611,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (billing.isConnected()) {
             log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
             dispatcher.enqueue({
-                val queryActiveSubscriptionsResult =
-                    billing.queryPurchases(BillingClient.SkuType.SUBS)
-                val queryUnconsumedInAppsRequest =
-                    billing.queryPurchases(BillingClient.SkuType.INAPP)
-                if (queryActiveSubscriptionsResult?.isSuccessful() == true &&
-                    queryUnconsumedInAppsRequest?.isSuccessful() == true
-                ) {
-                    deviceCache.cleanPreviouslySentTokens(
-                        queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
-                        queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
-                    )
-                    postPurchases(
-                        deviceCache.getActivePurchasesNotInCache(
-                            queryActiveSubscriptionsResult.purchasesByHashedToken,
-                            queryUnconsumedInAppsRequest.purchasesByHashedToken
-                        ),
-                        allowSharingPlayStoreAccount,
-                        finishTransactions,
-                        appUserID
-                    )
+                appUserID.let { appUserID ->
+                    billing.queryPurchases(appUserID) { queryResult ->
+                        if (queryResult.isSuccessful) {
+                            deviceCache.cleanPreviouslySentTokens(queryResult.purchasesByHashedToken.keys)
+                            postPurchases(
+                                deviceCache.getActivePurchasesNotInCache(queryResult.purchasesByHashedToken),
+                                allowSharingPlayStoreAccount,
+                                finishTransactions,
+                                appUserID
+                            )
+                        }
+                    }
                 }
             })
         } else {
@@ -1783,8 +1775,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     Store.AMAZON -> {
                         try {
                             Class.forName("com.revenuecat.purchases.amazon.AmazonBilling")
-                                .getConstructor(Context::class.java, Backend::class.java)
-                                .newInstance(application.applicationContext, backend) as BillingAbstract
+                                .getConstructor(Context::class.java, Backend::class.java, DeviceCache::class.java)
+                                .newInstance(application.applicationContext, backend, cache) as BillingAbstract
                         } catch (e: ClassNotFoundException) {
                             errorLog("Make sure purchases-amazon is added as dependency")
                             throw e
