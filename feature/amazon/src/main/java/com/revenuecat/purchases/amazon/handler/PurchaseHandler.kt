@@ -44,7 +44,7 @@ class PurchaseHandler : PurchaseResponseListener {
         log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
 
         val requestId = response.requestId
-        val callbacks = purchaseCallbacks[requestId]
+        val callbacks = purchaseCallbacks.remove(requestId)
 
         callbacks?.let { (onSuccess, onError) ->
             when (response.requestStatus) {
