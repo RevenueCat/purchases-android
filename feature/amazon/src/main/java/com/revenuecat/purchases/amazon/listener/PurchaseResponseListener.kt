@@ -11,6 +11,18 @@ import com.revenuecat.purchases.models.ProductDetails
 
 interface PurchaseResponseListener : PurchasingListener {
 
+    override fun onUserDataResponse(response: UserDataResponse) {
+        /* intentionally ignored. Use UserDataResponseListener instead */
+    }
+
+    override fun onProductDataResponse(response: ProductDataResponse) {
+        /* intentionally ignored. Use ProductDataResponseListener instead */
+    }
+
+    override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
+        /* intentionally ignored. Use PurchaseUpdatesResponseListener instead */
+    }
+
     fun purchase(
         appUserID: String,
         productDetails: ProductDetails,
@@ -18,16 +30,4 @@ interface PurchaseResponseListener : PurchasingListener {
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit
     )
-
-    override fun onUserDataResponse(response: UserDataResponse) {
-        /* default implementation */
-    }
-
-    override fun onProductDataResponse(response: ProductDataResponse) {
-        /* default implementation */
-    }
-
-    override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
-        /* default implementation */
-    }
 }

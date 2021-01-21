@@ -7,14 +7,14 @@ import com.amazon.device.iap.model.UserDataResponse
 
 interface PurchaseUpdatesResponseListener : PurchasingListener {
     override fun onUserDataResponse(response: UserDataResponse) {
-        /* default implementation */
+        /* intentionally ignored. Use UserDataResponseListener instead */
     }
 
     override fun onProductDataResponse(response: ProductDataResponse) {
-        /* default implementation */
+        /* intentionally ignored. Use ProductDataResponseListener instead */
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
-        /* default implementation */
+        /* intentionally ignored. Use PurchaseResponseListener instead */
     }
 }

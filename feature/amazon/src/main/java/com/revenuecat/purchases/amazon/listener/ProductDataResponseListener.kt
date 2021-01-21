@@ -9,15 +9,15 @@ import com.revenuecat.purchases.models.ProductDetails
 
 interface ProductDataResponseListener : PurchasingListener {
     override fun onUserDataResponse(response: UserDataResponse) {
-        /* default implementation */
+        /* intentionally ignored. Use UserDataResponseListener instead */
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
-        /* default implementation */
+        /* intentionally ignored. Use PurchaseResponseListener instead */
     }
 
     override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
-        /* default implementation */
+        /* intentionally ignored. Use PurchaseUpdatesResponseListener instead */
     }
 
     fun getProductData(
