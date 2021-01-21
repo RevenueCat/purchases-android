@@ -92,7 +92,7 @@ class SubscriberAttributesPurchasesTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = capture(postedAttributesSlot),
-                productInfo = any(),
+                receiptInfo = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
             )
@@ -248,7 +248,7 @@ class SubscriberAttributesPurchasesTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
-                productInfo = any(),
+                receiptInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -320,7 +320,7 @@ class SubscriberAttributesPurchasesTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
-                productInfo = any(),
+                receiptInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -411,7 +411,7 @@ class SubscriberAttributesPurchasesTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
-                productInfo = any(),
+                receiptInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )

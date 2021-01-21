@@ -145,7 +145,7 @@ class BackendTest {
         clientException: Exception?,
         resultBody: String?,
         observerMode: Boolean,
-        productInfo: ProductInfo
+        receiptInfo: ReceiptInfo
     ): PurchaserInfo {
         val (fetchToken, info) = mockPostReceiptResponse(
             isRestore,
@@ -153,7 +153,7 @@ class BackendTest {
             clientException,
             resultBody = resultBody,
             observerMode = observerMode,
-            productInfo = productInfo
+            receiptInfo = receiptInfo
         )
 
         backend.postReceiptData(
@@ -162,7 +162,7 @@ class BackendTest {
             isRestore = isRestore,
             observerMode = observerMode,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = receiptInfo,
             onSuccess = onReceivePostReceiptSuccessHandler,
             onError = postReceiptErrorCallback
         )
@@ -179,21 +179,21 @@ class BackendTest {
         resultBody: String?,
         delayed: Boolean = false,
         observerMode: Boolean,
-        productInfo: ProductInfo
+        receiptInfo: ReceiptInfo
     ): Pair<String, PurchaserInfo> {
         val fetchToken = "fetch_token"
         val body = mapOf(
             "fetch_token" to fetchToken,
             "app_user_id" to appUserID,
-            "product_id" to productInfo.productID,
+            "product_id" to receiptInfo.productID,
             "is_restore" to isRestore,
-            "presented_offering_identifier" to productInfo.offeringIdentifier,
+            "presented_offering_identifier" to receiptInfo.offeringIdentifier,
             "observer_mode" to observerMode,
-            "price" to productInfo.price,
-            "currency" to productInfo.currency,
-            "normal_duration" to productInfo.duration,
-            "intro_duration" to productInfo.introDuration,
-            "trial_duration" to productInfo.trialDuration
+            "price" to receiptInfo.price,
+            "currency" to receiptInfo.currency,
+            "normal_duration" to receiptInfo.duration,
+            "intro_duration" to receiptInfo.introDuration,
+            "trial_duration" to receiptInfo.trialDuration
         ).mapNotNull { entry: Map.Entry<String, Any?> ->
             entry.value?.let { entry.key to it }
         }.toMap()
@@ -278,7 +278,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             observerMode = false,
-            productInfo = ProductInfo(productID)
+            receiptInfo = ReceiptInfo(productID)
         )
 
         assertThat(receivedPurchaserInfo).`as`("Received info is not null").isNotNull
@@ -293,7 +293,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             observerMode = false,
-            productInfo = ProductInfo(productID)
+            receiptInfo = ReceiptInfo(productID)
         )
 
         assertThat(receivedPurchaserInfo).`as`("Received info is null").isNull()
@@ -452,7 +452,7 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber, only one is triggered`() {
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = productID,
             offeringIdentifier = "offering_a"
         )
@@ -463,7 +463,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = ProductInfo(
+            receiptInfo = ReceiptInfo(
                 productID,
                 offeringIdentifier = "offering_a"
             )
@@ -476,13 +476,13 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
         )
-        val productInfo1 = ProductInfo(
+        val productInfo1 = ReceiptInfo(
             productID = productID,
             offeringIdentifier = "offering_a"
         )
@@ -492,7 +492,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo1,
+            receiptInfo = productInfo1,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -581,13 +581,13 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = ProductInfo(
+            receiptInfo = ReceiptInfo(
                 productID,
                 offeringIdentifier = "offering_a"
             )
         )
         val lock = CountDownLatch(2)
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = productID,
             offeringIdentifier = "offering_a"
         )
@@ -597,7 +597,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -610,12 +610,12 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = ProductInfo(
+            receiptInfo = ReceiptInfo(
                 productID,
                 offeringIdentifier = "offering_b"
             )
         )
-        val productInfo1 = ProductInfo(
+        val productInfo1 = ReceiptInfo(
             productID = productID,
             offeringIdentifier = "offering_b"
         )
@@ -625,7 +625,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo1,
+            receiptInfo = productInfo1,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -650,7 +650,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             observerMode = true,
-            productInfo = ProductInfo(productID)
+            receiptInfo = ReceiptInfo(productID)
         )
 
         assertThat(receivedPurchaserInfo).`as`("Received info is not null").isNotNull
@@ -667,7 +667,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             observerMode = true,
-            productInfo = ProductInfo(
+            receiptInfo = ReceiptInfo(
                 productID,
                 skuDetails = skuDetails
             )
@@ -686,7 +686,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = ProductInfo(
+            receiptInfo = ReceiptInfo(
                 productID,
                 offeringIdentifier = "offering_a"
             )
@@ -694,12 +694,12 @@ class BackendTest {
 
         val skuDetails = mockSkuDetails()
         val skuDetails1 = mockSkuDetails(price = 350000)
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID,
             offeringIdentifier = "offering_a",
             skuDetails = skuDetails
         )
-        val productInfo1 = ProductInfo(
+        val productInfo1 = ReceiptInfo(
             productID = productID,
             offeringIdentifier = "offering_a",
             skuDetails = skuDetails1
@@ -711,7 +711,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = productInfo
+            receiptInfo = productInfo
         )
         mockPostReceiptResponse(
             isRestore = false,
@@ -720,7 +720,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = productInfo1
+            receiptInfo = productInfo1
         )
         val lock = CountDownLatch(2)
         asyncBackend.postReceiptData(
@@ -729,7 +729,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -741,7 +741,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo1,
+            receiptInfo = productInfo1,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -767,7 +767,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = ProductInfo(
+            receiptInfo = ReceiptInfo(
                 productID,
                 offeringIdentifier = "offering_a"
             )
@@ -776,12 +776,12 @@ class BackendTest {
         val skuDetails = mockSkuDetails()
         val skuDetails1 = mockSkuDetails(duration = "P2M")
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = productID,
             offeringIdentifier = "offering_a",
             skuDetails = skuDetails
         )
-        val productInfo1 = ProductInfo(
+        val productInfo1 = ReceiptInfo(
             productID,
             offeringIdentifier = "offering_a",
             skuDetails = skuDetails1
@@ -793,7 +793,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = productInfo
+            receiptInfo = productInfo
         )
         mockPostReceiptResponse(
             isRestore = false,
@@ -802,7 +802,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = productInfo1
+            receiptInfo = productInfo1
         )
         val lock = CountDownLatch(2)
         asyncBackend.postReceiptData(
@@ -811,7 +811,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -823,7 +823,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo1,
+            receiptInfo = productInfo1,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -844,7 +844,7 @@ class BackendTest {
     fun `given multiple post calls for same subscriber same durations, only one is triggered`() {
         val skuDetails = mockSkuDetails()
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID,
             offeringIdentifier = "offering_a",
             skuDetails = skuDetails
@@ -856,7 +856,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            productInfo = productInfo
+            receiptInfo = productInfo
         )
 
         val lock = CountDownLatch(2)
@@ -866,7 +866,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -878,7 +878,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -909,7 +909,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             observerMode = true,
-            productInfo = ProductInfo(
+            receiptInfo = ReceiptInfo(
                 productID = productID,
                 skuDetails = skuDetails
             )

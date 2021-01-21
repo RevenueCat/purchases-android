@@ -8,7 +8,7 @@ import com.revenuecat.purchases.common.BillingWrapper
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
-import com.revenuecat.purchases.common.ProductInfo
+import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
@@ -45,7 +45,7 @@ class PostingTransactionsTests {
 
     private val attributesToMarkAsSyncSlot = slot<Map<String, SubscriberAttribute>>()
     private val attributesErrorsSlot = slot<List<SubscriberAttributeError>>()
-    private val postedProductInfoSlot = slot<ProductInfo>()
+    private val postedProductInfoSlot = slot<ReceiptInfo>()
 
     internal data class PostReceiptErrorContainer(
         val error: PurchasesError,
@@ -79,7 +79,7 @@ class PostingTransactionsTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = any(),
-                productInfo = capture(postedProductInfoSlot),
+                receiptInfo = capture(postedProductInfoSlot),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
             )
@@ -162,7 +162,7 @@ class PostingTransactionsTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
-                productInfo = any(),
+                receiptInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -201,7 +201,7 @@ class PostingTransactionsTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
-                productInfo = any(),
+                receiptInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )

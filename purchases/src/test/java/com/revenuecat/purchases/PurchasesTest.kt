@@ -24,7 +24,7 @@ import com.revenuecat.purchases.common.BillingWrapper
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
-import com.revenuecat.purchases.common.ProductInfo
+import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseType
 import com.revenuecat.purchases.common.PurchaseWrapper
@@ -357,7 +357,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -370,7 +370,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo1,
+                receiptInfo = productInfo1,
                 onSuccess = any(),
                 onError = any()
             )
@@ -412,7 +412,7 @@ class PurchasesTest {
                     isRestore = false,
                     observerMode = false,
                     subscriberAttributes = emptyMap(),
-                    productInfo = it,
+                    receiptInfo = it,
                     onSuccess = any(),
                     onError = any()
                 )
@@ -432,7 +432,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = any(),
+                receiptInfo = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -575,7 +575,7 @@ class PurchasesTest {
                 isRestore = true,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -602,7 +602,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -631,7 +631,7 @@ class PurchasesTest {
                 isRestore = true,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -695,7 +695,7 @@ class PurchasesTest {
         assertThat(capturedLambda).isNotNull
         assertThat(restoreCalled).isTrue()
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = sku
         )
         verify(exactly = 1) {
@@ -705,13 +705,13 @@ class PurchasesTest {
                 isRestore = true,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
         }
 
-        val productInfo1 = ProductInfo(
+        val productInfo1 = ReceiptInfo(
             productID = skuSub
         )
         verify(exactly = 1) {
@@ -721,7 +721,7 @@ class PurchasesTest {
                 isRestore = true,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo1,
+                receiptInfo = productInfo1,
                 onSuccess = any(),
                 onError = any()
             )
@@ -781,7 +781,7 @@ class PurchasesTest {
                 isRestore = true,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = any(),
+                receiptInfo = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -825,7 +825,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1556,7 +1556,7 @@ class PurchasesTest {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = any(),
-                productInfo = any(),
+                receiptInfo = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -2047,7 +2047,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2060,7 +2060,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo1,
+                receiptInfo = productInfo1,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2218,7 +2218,7 @@ class PurchasesTest {
 
         purchases.syncPurchases()
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = sku
         )
         assertThat(capturedLambda).isNotNull
@@ -2229,12 +2229,12 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
         }
-        val productInfo1 = ProductInfo(
+        val productInfo1 = ReceiptInfo(
             productID = skuSub
         )
         verify(exactly = 1) {
@@ -2244,7 +2244,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo1,
+                receiptInfo = productInfo1,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2279,7 +2279,7 @@ class PurchasesTest {
 
         purchases.syncPurchases()
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = sku
         )
         assertThat(capturedLambda).isNotNull
@@ -2290,13 +2290,13 @@ class PurchasesTest {
                 isRestore = true,
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
         }
 
-        val productInfo1 = ProductInfo(
+        val productInfo1 = ReceiptInfo(
             productID = skuSub
         )
         verify(exactly = 1) {
@@ -2306,7 +2306,7 @@ class PurchasesTest {
                 isRestore = true,
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo1,
+                receiptInfo = productInfo1,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2335,7 +2335,7 @@ class PurchasesTest {
 
         purchases.syncPurchases()
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = sku
         )
         verify {
@@ -2345,7 +2345,7 @@ class PurchasesTest {
                 isRestore = true,
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2802,7 +2802,7 @@ class PurchasesTest {
                 isRestore = true,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2870,7 +2870,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2898,7 +2898,7 @@ class PurchasesTest {
         )
         purchases.updatePendingPurchaseQueue()
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = "product"
         )
         verify(exactly = 0) {
@@ -2908,7 +2908,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3019,7 +3019,7 @@ class PurchasesTest {
                 )
         )
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = sku
         )
         verify(exactly = 0) {
@@ -3029,13 +3029,13 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
         }
 
-        val productInfo1 = ProductInfo(
+        val productInfo1 = ReceiptInfo(
             productID = skuSub,
             offeringIdentifier = "offering_a"
         )
@@ -3046,7 +3046,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo1,
+                receiptInfo = productInfo1,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3091,7 +3091,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3136,7 +3136,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3275,7 +3275,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3298,7 +3298,7 @@ class PurchasesTest {
                 "offering_a"
             )
         )
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = skuSub,
             offeringIdentifier = "offering_a"
         )
@@ -3309,7 +3309,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3367,7 +3367,7 @@ class PurchasesTest {
                 "offering_a"
             )
         )
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = sku,
             offeringIdentifier = "offering_a"
         )
@@ -3378,7 +3378,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = any()
             )
@@ -4295,7 +4295,7 @@ class PurchasesTest {
                     isRestore = any(),
                     observerMode = any(),
                     subscriberAttributes = any(),
-                    productInfo = any(),
+                    receiptInfo = any(),
                     onSuccess = captureLambda(),
                     onError = any()
                 )
@@ -4563,7 +4563,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = observerMode,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = any(),
                 onError = captureLambda()
             )
@@ -4577,7 +4577,7 @@ class PurchasesTest {
         mockInfo: PurchaserInfo,
         offeringIdentifier: String?,
         type: PurchaseType
-    ): ProductInfo {
+    ): ReceiptInfo {
         val productInfo = mockQueryingSkuDetails(sku, type, offeringIdentifier)
 
         every {
@@ -4587,7 +4587,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = observerMode,
                 subscriberAttributes = emptyMap(),
-                productInfo = productInfo,
+                receiptInfo = productInfo,
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -4605,7 +4605,7 @@ class PurchasesTest {
         sku: String,
         type: PurchaseType,
         offeringIdentifier: String?
-    ): ProductInfo {
+    ): ReceiptInfo {
         val skuDetails = stubSkuDetails(
             productId = sku,
             price = 2.00,
@@ -4614,7 +4614,7 @@ class PurchasesTest {
             freeTrialPeriod = if (type == PurchaseType.SUBS) "P7D" else null
         )
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = sku,
             offeringIdentifier = offeringIdentifier,
             skuDetails = skuDetails

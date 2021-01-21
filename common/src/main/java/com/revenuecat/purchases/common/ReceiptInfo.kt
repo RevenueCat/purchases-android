@@ -2,7 +2,7 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.models.ProductDetails
 
-class ProductInfo(
+class ReceiptInfo(
     val productID: String,
     val offeringIdentifier: String? = null,
     val productDetails: ProductDetails? = null
@@ -18,7 +18,7 @@ class ProductInfo(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ProductInfo
+        other as ReceiptInfo
 
         if (productID != other.productID) return false
         if (offeringIdentifier != other.offeringIdentifier) return false
@@ -39,7 +39,7 @@ class ProductInfo(
     }
 
     override fun toString(): String {
-        return "ProductInfo(" +
+        return "ReceiptInfo(" +
             "productID='$productID', " +
             "offeringIdentifier=$offeringIdentifier, " +
             "price=$price, " +

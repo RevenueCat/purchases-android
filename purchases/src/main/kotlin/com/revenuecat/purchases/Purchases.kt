@@ -30,7 +30,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
-import com.revenuecat.purchases.common.ProductInfo
+import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.RevenueCatPurchaseState
@@ -230,14 +230,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     allPurchases.forEach { purchase ->
                         val unsyncedSubscriberAttributesByKey =
                             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-                        val productInfo = ProductInfo(productID = purchase.sku)
+                        val productInfo = ReceiptInfo(productID = purchase.sku)
                         backend.postReceiptData(
                             purchaseToken = purchase.purchaseToken,
                             appUserID = appUserID,
                             isRestore = this.allowSharingPlayStoreAccount,
                             observerMode = !this.finishTransactions,
                             subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                            productInfo = productInfo,
+                            receiptInfo = productInfo,
                             onSuccess = { info, body ->
                                 subscriberAttributesManager.markAsSynced(
                                     appUserID,
@@ -589,14 +589,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         subscriberAttributesManager.getUnsyncedSubscriberAttributes(
                                             appUserID
                                         )
-                                    val productInfo = ProductInfo(productID = purchase.sku)
+                                    val productInfo = ReceiptInfo(productID = purchase.sku)
                                     backend.postReceiptData(
                                         purchaseToken = purchase.purchaseToken,
                                         appUserID = appUserID,
                                         isRestore = true,
                                         observerMode = !finishTransactions,
                                         subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                                        productInfo = productInfo,
+                                        receiptInfo = productInfo,
                                         onSuccess = { info, body ->
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
@@ -1264,7 +1264,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         val unsyncedSubscriberAttributesByKey =
             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = purchase.sku,
             offeringIdentifier = purchase.presentedOfferingIdentifier,
             productDetails = productDetails
@@ -1275,7 +1275,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             isRestore = allowSharingPlayStoreAccount,
             observerMode = !consumeAllTransactions,
             subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = { info, body ->
                 subscriberAttributesManager.markAsSynced(
                     appUserID,
