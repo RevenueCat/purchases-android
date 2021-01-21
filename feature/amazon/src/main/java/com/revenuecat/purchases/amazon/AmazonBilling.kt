@@ -88,14 +88,10 @@ class AmazonBilling constructor(
     ) {
         if (purchase !is AmazonPurchaseWrapper) return
 
-        if (purchase.type == ProductType.UNKNOWN) {
-            return
-        }
+        if (purchase.type == ProductType.UNKNOWN) return
 
-        if (purchase.purchaseState != RevenueCatPurchaseState.PURCHASED) {
-            // PENDING purchases should not be fulfilled
-            return
-        }
+        // PENDING purchases should not be fulfilled
+        if (purchase.purchaseState != RevenueCatPurchaseState.PURCHASED) return
 
         if (shouldTryToConsume) {
             PurchasingService.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
