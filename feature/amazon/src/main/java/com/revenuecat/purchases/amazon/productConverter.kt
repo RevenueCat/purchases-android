@@ -43,7 +43,7 @@ fun Product.toProductDetails(marketplace: String): ProductDetails {
         sku,
         productType.toRevenueCatProductType(),
         price,
-        priceAmountMicros = priceDouble.times(1000000).toLong(),
+        priceAmountMicros = priceDouble.times(1_000_000).toLong(),
         priceCurrencyCode = currency.currencyCode,
         originalPrice = null,
         originalPriceAmountMicros = 0,
