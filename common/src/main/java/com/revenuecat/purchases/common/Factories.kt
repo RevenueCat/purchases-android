@@ -112,7 +112,7 @@ private fun JSONObject.getStore(name: String) = when (getString(name)) {
     "play_store" -> Store.PLAY_STORE
     "stripe" -> Store.STRIPE
     "promotional" -> Store.PROMOTIONAL
-    "amazon_store" -> Store.AMAZON
+    "amazon" -> Store.AMAZON
     else -> Store.UNKNOWN_STORE
 }
 
