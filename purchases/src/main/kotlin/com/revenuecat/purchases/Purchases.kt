@@ -314,7 +314,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.SUBS.toProductType(), object : GetProductDetailsCallback {
+        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), object : GetProductDetailsCallback {
             override fun onReceived(productDetailsList: List<ProductDetails>) {
                 listener.onReceived(productDetailsList.map { it.skuDetails })
             }
@@ -334,7 +334,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skus: List<String>,
         callback: GetProductDetailsCallback
     ) {
-        getSkus(skus, ProductType.SUBS, callback)
+        getSkus(skus.toSet(), ProductType.SUBS, callback)
     }
 
     /**
@@ -347,7 +347,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.INAPP.toProductType(), object : GetProductDetailsCallback {
+        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), object : GetProductDetailsCallback {
             override fun onReceived(productDetailsList: List<ProductDetails>) {
                 listener.onReceived(productDetailsList.map { it.skuDetails })
             }
@@ -367,7 +367,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skus: List<String>,
         callback: GetProductDetailsCallback
     ) {
-        getSkus(skus, ProductType.INAPP, callback)
+        getSkus(skus.toSet(), ProductType.INAPP, callback)
     }
 
     /**
@@ -1089,7 +1089,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             { offeringsJSON ->
                 try {
                     val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-                    val skus = mutableListOf<String>()
+                    val skus = mutableSetOf<String>()
                     for (i in 0 until jsonArrayOfOfferings.length()) {
                         val jsonPackagesArray =
                             jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
@@ -1153,7 +1153,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
     private fun getSkus(
-        skus: List<String>,
+        skus: Set<String>,
         productType: ProductType,
         callback: GetProductDetailsCallback
     ) {
@@ -1219,7 +1219,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (purchase.purchaseState == RevenueCatPurchaseState.PURCHASED) {
                 billing.querySkuDetailsAsync(
                     productType = purchase.type,
-                    skuList = listOf(purchase.sku),
+                    skus = setOf(purchase.sku),
                     onReceive = { skuDetailsList ->
                         postToBackend(
                             purchase = purchase,
@@ -1302,7 +1302,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun getSkuDetails(
-        skus: List<String>,
+        skus: Set<String>,
         onCompleted: (HashMap<String, ProductDetails>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {

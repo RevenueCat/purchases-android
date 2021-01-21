@@ -47,7 +47,7 @@ abstract class BillingAbstract {
 
     abstract fun querySkuDetailsAsync(
         productType: ProductType,
-        skuList: List<String>,
+        skus: Set<String>,
         onReceive: ProductDetailsListCallback,
         onError: PurchasesErrorCallback
     )

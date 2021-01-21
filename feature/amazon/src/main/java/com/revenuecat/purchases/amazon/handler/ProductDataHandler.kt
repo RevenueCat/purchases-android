@@ -29,19 +29,19 @@ class ProductDataHandler : ProductDataResponseListener {
     private val productDataCache = mutableMapOf<String, Product>()
 
     override fun getProductData(
-        skuList: List<String>,
+        skus: Set<String>,
         marketplace: String,
         onReceive: (List<ProductDetails>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        log(LogIntent.DEBUG, AmazonStrings.REQUESTING_PRODUCTS.format(skuList.joinToString()))
+        log(LogIntent.DEBUG, AmazonStrings.REQUESTING_PRODUCTS.format(skus.joinToString()))
 
-        if (productDataCache.keys.containsAll(skuList)) {
-            val cachedProducts: Map<String, Product> = productDataCache.filterKeys { skuList.contains(it) }
+        if (productDataCache.keys.containsAll(skus)) {
+            val cachedProducts: Map<String, Product> = productDataCache.filterKeys { skus.contains(it) }
             handleSuccessfulProductDataResponse(cachedProducts, marketplace, onReceive)
         } else {
-            val productDataRequestId = PurchasingService.getProductData(skuList.toSet())
-            productDataRequests[productDataRequestId] = Request(skuList, marketplace, onReceive, onError)
+            val productDataRequestId = PurchasingService.getProductData(skus)
+            productDataRequests[productDataRequestId] = Request(skus.toList(), marketplace, onReceive, onError)
         }
     }
 

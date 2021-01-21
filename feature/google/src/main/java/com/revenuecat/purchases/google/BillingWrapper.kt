@@ -118,11 +118,11 @@ class BillingWrapper(
 
     override fun querySkuDetailsAsync(
         productType: ProductType,
-        skuList: List<String>,
+        skus: Set<String>,
         onReceive: ProductDetailsListCallback,
         onError: PurchasesErrorCallback
     ) {
-        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skuList.joinToString()))
+        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 val params = SkuDetailsParams.newBuilder()
@@ -131,13 +131,13 @@ class BillingWrapper(
                             this.setType(it)
                         }
                     }
-                    .setSkusList(skuList).build()
+                    .setSkusList(skus.toList()).build()
 
                 withConnectedClient {
                     querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                    .format(skuList.joinToString()))
+                                    .format(skus.joinToString()))
                             log(LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
                                     .format(skuDetailsList?.joinToString { it.toString() }))
                             skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {

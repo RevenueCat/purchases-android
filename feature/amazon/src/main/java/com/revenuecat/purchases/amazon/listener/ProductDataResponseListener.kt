@@ -21,7 +21,7 @@ interface ProductDataResponseListener : PurchasingListener {
     }
 
     fun getProductData(
-        skuList: List<String>,
+        skus: Set<String>,
         marketplace: String,
         onReceive: (List<ProductDetails>) -> Unit,
         onError: (PurchasesError) -> Unit

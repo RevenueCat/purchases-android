@@ -71,12 +71,12 @@ class AmazonBilling constructor(
 
     override fun querySkuDetailsAsync(
         productType: ProductType,
-        skuList: List<String>,
+        skus: Set<String>,
         onReceive: ProductDetailsListCallback,
         onError: PurchasesErrorCallback
     ) {
         userDataHandler.getUserData { userData ->
-            productDataHandler.getProductData(skuList, userData.marketplace, onReceive, onError)
+            productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
         }
     }
 
