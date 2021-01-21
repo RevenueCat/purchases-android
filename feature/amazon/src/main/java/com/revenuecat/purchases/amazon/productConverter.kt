@@ -29,7 +29,7 @@ fun Product.toProductDetails(marketplace: String): ProductDetails {
     val priceDouble: Double =
         if (price.startsWith(currencySymbol)) {
             // Looks like Amazon always prefixes the price with the currency, no matter the Locale
-            val formattedPriceWithoutSymbol = price.removePrefix(currencySymbol)
+            val formattedPriceWithoutSymbol = price.split(currencySymbol).first { it != currencySymbol }
             try {
                 numberFormat.parse(formattedPriceWithoutSymbol).toDouble()
             } catch (e: ParseException) {
