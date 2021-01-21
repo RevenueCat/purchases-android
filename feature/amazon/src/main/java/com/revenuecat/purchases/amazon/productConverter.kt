@@ -61,4 +61,4 @@ fun Product.toProductDetails(marketplace: String): ProductDetails {
 }
 
 private fun JSONObject.getProductType(productType: String) =
-    AmazonProductType.values().firstOrNull { it.name == productType }
+    AmazonProductType.values().firstOrNull { it.name == this.getString(productType) }
