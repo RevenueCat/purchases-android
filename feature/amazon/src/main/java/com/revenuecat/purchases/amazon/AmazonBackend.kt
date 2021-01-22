@@ -2,7 +2,6 @@ package com.revenuecat.purchases.amazon
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.BuildConfig
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.models.ProductDetails
@@ -40,8 +39,7 @@ class AmazonBackend(
             "fetch_token" to receiptId,
             "product_id" to productDetails.sku,
             "app_user_id" to appUserID,
-            "store_user_id" to storeUserID,
-            "shared_secret" to BuildConfig.AMAZON_SHARED_SECRET
+            "store_user_id" to storeUserID
         )
 
         val call = {

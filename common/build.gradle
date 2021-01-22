@@ -1,13 +1,5 @@
 apply from: "$rootProject.projectDir/library.gradle"
 
-android {
-    buildTypes {
-        debug {
-            buildConfigField "String", "AMAZON_SHARED_SECRET", AmazonSharedSecret
-        }
-    }
-}
-
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation project(":public")
