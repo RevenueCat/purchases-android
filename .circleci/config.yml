@@ -68,6 +68,9 @@ jobs:
       - android-dependencies
       - android/restore-build-cache
       - run:
+          name: Download Amazon Dependency
+          command: ./gradlew getAmazonLibrary
+      - run:
           name: Run Tests
           command: ./gradlew lint test
       - run:
