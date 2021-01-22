@@ -3,11 +3,13 @@ package com.revenuecat.purchases
 import android.app.Activity
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.google.toProductDetails
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
+import com.revenuecat.purchases.models.ProductDetails
 
 private typealias PurchaseCompletedFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
 private typealias ProductChangeCompletedFunction = (purchase: Purchase?, purchaserInfo: PurchaserInfo) -> Unit
@@ -110,13 +112,30 @@ fun Purchases.getOfferingsWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
+@Deprecated("SkuDetails replaced with ProductDetails")
 fun Purchases.purchaseProductWith(
     activity: Activity,
     skuDetails: SkuDetails,
     onError: PurchaseErrorFunction = ON_PURCHASE_ERROR_STUB,
     onSuccess: PurchaseCompletedFunction
 ) {
-    purchaseProduct(activity, skuDetails, purchaseCompletedListener(onSuccess, onError))
+    purchaseProduct(activity, skuDetails.toProductDetails(), purchaseCompletedListener(onSuccess, onError))
+}
+
+/**
+ * Purchase product.
+ * @param [activity] Current activity
+ * @param [productDetails] The productDetails of the product you wish to purchase
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+fun Purchases.purchaseProductWith(
+    activity: Activity,
+    productDetails: ProductDetails,
+    onError: PurchaseErrorFunction = ON_PURCHASE_ERROR_STUB,
+    onSuccess: PurchaseCompletedFunction
+) {
+    purchaseProduct(activity, productDetails, purchaseCompletedListener(onSuccess, onError))
 }
 
 /**
@@ -127,6 +146,7 @@ fun Purchases.purchaseProductWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
+@Deprecated("SkuDetails replaced with ProductDetails")
 fun Purchases.purchaseProductWith(
     activity: Activity,
     skuDetails: SkuDetails,
@@ -135,6 +155,24 @@ fun Purchases.purchaseProductWith(
     onSuccess: ProductChangeCompletedFunction
 ) {
     purchaseProduct(activity, skuDetails, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
+}
+
+/**
+ * Make a purchase.
+ * @param [activity] Current activity
+ * @param [productDetails] The productDetails of the product you wish to purchase
+ * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+fun Purchases.purchaseProductWith(
+    activity: Activity,
+    productDetails: ProductDetails,
+    upgradeInfo: UpgradeInfo,
+    onError: PurchaseErrorFunction = ON_PURCHASE_ERROR_STUB,
+    onSuccess: ProductChangeCompletedFunction
+) {
+    purchaseProduct(activity, productDetails, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
 }
 
 /**
