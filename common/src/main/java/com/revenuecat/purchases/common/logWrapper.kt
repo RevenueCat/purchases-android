@@ -67,5 +67,5 @@ enum class LogIntent(val emojiList: List<String>) {
     /**
      * Emojis for Amazon info messages.
      */
-    AMAZON_WARNING(listOf(Emojis.ROBOT, Emojis.DOUBLE_EXCLAMATION))
+    AMAZON_WARNING(listOf(Emojis.BOX, Emojis.DOUBLE_EXCLAMATION))
 }
