@@ -22,9 +22,6 @@ import java.net.URL
 import java.util.HashMap
 import org.robolectric.annotation.Config as AnnotationConfig
 
-
-
-
 @RunWith(AndroidJUnit4::class)
 @AnnotationConfig(manifest = AnnotationConfig.NONE)
 class HTTPClientTest {
