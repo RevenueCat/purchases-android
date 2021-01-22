@@ -4,9 +4,6 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.models.ProductDetails
 import org.json.JSONObject
 
-val ProductDetails.skuDetails: SkuDetails
-    get() = SkuDetails(this.originalJson.toString())
-
 fun SkuDetails.toProductDetails() =
     ProductDetails(
         sku,
