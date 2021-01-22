@@ -4,7 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.BillingWrapper
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
@@ -12,6 +11,8 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
@@ -108,7 +109,7 @@ class PostingTransactionsTests {
             application = mockk(relaxed = true),
             backingFieldAppUserID = appUserId,
             backend = backendMock,
-            billingWrapper = billingWrapperMock,
+            billing = billingWrapperMock,
             deviceCache = mockk(relaxed = true),
             dispatcher = SyncDispatcher(),
             identityManager = mockk<com.revenuecat.purchases.identity.IdentityManager>(relaxed = true).apply {
@@ -122,7 +123,8 @@ class PostingTransactionsTests {
                     flavor = "native",
                     version = "3.2.0"
                 ),
-                proxyURL = null
+                proxyURL = null,
+                store = Store.PLAY_STORE
             )
         )
     }
@@ -134,7 +136,7 @@ class PostingTransactionsTests {
         val expectedSubscriptionPeriod = "P1M"
         val expectedIntroPricePeriod = "P2M"
         val expectedFreeTrialPeriod = "P3M"
-        val mockSkuDetails = mockk<SkuDetails>().also {
+        val mockProductDetails = mockk<ProductDetails>().also {
             every { it.sku } returns "product_id"
             every { it.priceAmountMicros } returns 2000000
             every { it.priceCurrencyCode } returns "USD"
@@ -144,7 +146,7 @@ class PostingTransactionsTests {
         }
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            skuDetails = mockSkuDetails,
+            productDetails = mockProductDetails,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
@@ -173,7 +175,7 @@ class PostingTransactionsTests {
     fun `inapps send null durations when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
-        val mockSkuDetails = mockk<SkuDetails>().also {
+        val mockProductDetails = mockk<ProductDetails>().also {
             every { it.sku } returns "product_id"
             every { it.priceAmountMicros } returns 2000000
             every { it.priceCurrencyCode } returns "USD"
@@ -183,7 +185,7 @@ class PostingTransactionsTests {
         }
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            skuDetails = mockSkuDetails,
+            productDetails = mockProductDetails,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,

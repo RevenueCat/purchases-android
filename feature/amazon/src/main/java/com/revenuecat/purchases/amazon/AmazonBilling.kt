@@ -107,6 +107,20 @@ class AmazonBilling constructor(
         // TODO
     }
 
+    override fun consumePurchase(
+        token: String,
+        onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit
+    ) {
+        TODO("not implemented")
+    }
+
+    override fun acknowledge(
+        token: String,
+        onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit
+    ) {
+        TODO("not implemented")
+    }
+
     override fun findPurchaseInPurchaseHistory(
         skuType: ProductType,
         sku: String,

@@ -348,7 +348,7 @@ class BillingWrapper(
         }
     }
 
-    private fun consumePurchase(
+    override fun consumePurchase(
         token: String,
         onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
@@ -364,7 +364,7 @@ class BillingWrapper(
         }
     }
 
-    private fun acknowledge(
+    override fun acknowledge(
         token: String,
         onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
