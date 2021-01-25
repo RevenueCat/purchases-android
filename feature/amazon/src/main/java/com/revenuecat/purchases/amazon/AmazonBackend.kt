@@ -20,13 +20,13 @@ class AmazonBackend(
     @get:Synchronized @set:Synchronized
     @Volatile var postAmazonReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostAmazonReceiptCallback>>()
 
-    fun postAmazonReceiptData(
+    fun getAmazonReceiptData(
         receiptId: String,
         appUserID: String,
         storeUserID: String,
         productDetails: ProductDetails,
-        onSuccessHandler: (JSONObject) -> Unit,
-        onErrorHandler: (PurchasesError) -> Unit
+        onSuccess: (JSONObject) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
         val cacheKey = listOfNotNull(
             receiptId,
@@ -71,7 +71,7 @@ class AmazonBackend(
             )
         }
 
-        val functions = onSuccessHandler to onErrorHandler
+        val functions = onSuccess to onError
         synchronized(this@AmazonBackend) {
             if (!postAmazonReceiptCallbacks.containsKey(cacheKey)) {
                 postAmazonReceiptCallbacks[cacheKey] = mutableListOf(functions)

@@ -7,10 +7,13 @@ import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.PurchaseUpdatesResponse
+import com.amazon.device.iap.model.Receipt
+import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataResponse
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
 import com.revenuecat.purchases.amazon.handler.PurchaseHandler
 import com.revenuecat.purchases.amazon.handler.PurchaseUpdatesHandler
@@ -145,30 +148,40 @@ class AmazonBilling constructor(
             productDetails,
             presentedOfferingIdentifier,
             onSuccess = { receipt, userData ->
-                backend.postAmazonReceiptData(
-                    receipt.receiptId,
-                    appUserID,
-                    userData.userId,
-                    productDetails,
-                    onSuccessHandler = { response ->
-                        val termSku = response["termSku"] as String
-                        val amazonPurchaseWrapper = AmazonPurchaseWrapper(
-                            sku = termSku,
-                            containedReceipt = receipt,
-                            presentedOfferingIdentifier = presentedOfferingIdentifier,
-                            purchaseState = RevenueCatPurchaseState.PURCHASED
-                        )
-                        purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
-                    },
-                    onErrorHandler = { error ->
-                        purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
-                    }
-                )
+                handleReceipt(receipt, appUserID, userData, productDetails, presentedOfferingIdentifier)
             },
-            onError = { error ->
-                purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
-            }
+            onError = ::onPurchaseError
         )
+    }
+
+    private fun handleReceipt(
+        receipt: Receipt,
+        appUserID: String,
+        userData: UserData,
+        productDetails: ProductDetails,
+        presentedOfferingIdentifier: String?
+    ) {
+        backend.getAmazonReceiptData(
+            receipt.receiptId,
+            appUserID,
+            userData.userId,
+            productDetails,
+            onSuccess = { response ->
+                val termSku = response["termSku"] as String
+                val amazonPurchaseWrapper = AmazonPurchaseWrapper(
+                    sku = termSku,
+                    containedReceipt = receipt,
+                    presentedOfferingIdentifier = presentedOfferingIdentifier,
+                    purchaseState = RevenueCatPurchaseState.PURCHASED
+                )
+                purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
+            },
+            onError = ::onPurchaseError
+        )
+    }
+
+    private fun onPurchaseError(error: PurchasesError) {
+        purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
     }
 
     override fun isConnected(): Boolean = connected
