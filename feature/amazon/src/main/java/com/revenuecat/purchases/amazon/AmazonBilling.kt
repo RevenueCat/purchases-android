@@ -89,7 +89,7 @@ class AmazonBilling constructor(
         shouldTryToConsume: Boolean,
         purchase: PurchaseWrapper
     ) {
-        if (purchase !is AmazonPurchaseWrapper) return
+        if (purchase !is AmazonPurchaseWrapper) throw IllegalStateException("Trying to consume a non Amazon purchase")
 
         if (purchase.type == ProductType.UNKNOWN) return
 
