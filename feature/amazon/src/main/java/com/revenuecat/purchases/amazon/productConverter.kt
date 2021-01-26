@@ -27,24 +27,24 @@ fun Product.toProductDetails(marketplace: String): ProductDetails {
     val currency = Currency.getInstance(Locale("EN", marketplace))
     val currencySymbol = currency.symbol
 
-    val priceDouble: Double =
+    val priceNumeric: Float =
         if (price.startsWith(currencySymbol)) {
             // Looks like Amazon always prefixes the price with the currency, no matter the Locale
             val formattedPriceWithoutSymbol = price.split(currencySymbol).first { it != currencySymbol }
             try {
-                numberFormat.parse(formattedPriceWithoutSymbol).toDouble()
+                numberFormat.parse(formattedPriceWithoutSymbol).toFloat()
             } catch (e: ParseException) {
-                0.0
+                0.0f
             }
         } else {
-            0.0
+            0.0f
         }
 
     return ProductDetails(
         sku,
         productType.toRevenueCatProductType(),
         price,
-        priceAmountMicros = priceDouble.times(MICROS_MULTIPLIER).toLong(),
+        priceAmountMicros = priceNumeric.times(MICROS_MULTIPLIER).toLong(),
         priceCurrencyCode = currency.currencyCode,
         originalPrice = null,
         originalPriceAmountMicros = 0,
