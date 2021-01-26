@@ -36,7 +36,7 @@ import com.revenuecat.purchases.models.ProductDetails
 
 class AmazonBilling constructor(
     private val applicationContext: Context,
-    private val backend: AmazonBackend,
+    private val amazonBackend: AmazonBackend,
     private val productDataHandler: ProductDataResponseListener = ProductDataHandler(),
     private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(),
     private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(),
@@ -161,7 +161,7 @@ class AmazonBilling constructor(
         productDetails: ProductDetails,
         presentedOfferingIdentifier: String?
     ) {
-        backend.getAmazonReceiptData(
+        amazonBackend.getAmazonReceiptData(
             receipt.receiptId,
             appUserID,
             userData.userId,
