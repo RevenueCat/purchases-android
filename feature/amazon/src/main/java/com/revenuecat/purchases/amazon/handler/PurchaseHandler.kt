@@ -73,48 +73,30 @@ class PurchaseHandler : PurchaseResponseListener {
     }
 
     private fun onUnknownError(onError: (PurchasesError) -> Unit) {
-        PurchasesError(
-            PurchasesErrorCode.StoreProblemError,
-            "Failed to make purchase. There was an Amazon store problem"
-        ).let {
-            onError(it)
-        }
+        onError(PurchasesError(PurchasesErrorCode.StoreProblemError, AmazonStrings.ERROR_PURCHASE_UNKNOWN))
     }
 
     private fun onNotSupported(onError: (PurchasesError) -> Unit) {
-        PurchasesError(
-            PurchasesErrorCode.StoreProblemError,
-            "Failed to make purchase. Call is not supported"
-        ).let {
-            onError(it)
-        }
+        onError(PurchasesError(PurchasesErrorCode.StoreProblemError, AmazonStrings.ERROR_PURCHASE_NOT_SUPPORTED))
     }
 
     private fun onAlreadyPurchased(onError: (PurchasesError) -> Unit) {
-        PurchasesError(
-            PurchasesErrorCode.ProductAlreadyPurchasedError,
-            "Failed to make purchase. Product already owns SKU."
-        ).let {
-            onError(it)
-        }
+        onError(
+            PurchasesError(PurchasesErrorCode.ProductAlreadyPurchasedError, AmazonStrings.ERROR_PURCHASE_ALREADY_OWNED)
+        )
     }
 
     private fun onInvalidSku(onError: (PurchasesError) -> Unit) {
-        PurchasesError(
-            PurchasesErrorCode.ProductNotAvailableForPurchaseError,
-            "Failed to make purchase. SKU is invalid"
-        ).let {
-            onError(it)
-        }
+        onError(
+            PurchasesError(
+                PurchasesErrorCode.ProductNotAvailableForPurchaseError,
+                AmazonStrings.ERROR_PURCHASE_INVALID_SKU
+            )
+        )
     }
 
     private fun onFailed(onError: (PurchasesError) -> Unit) {
         // Indicates that the purchase failed. Can simply mean user cancelled
-        PurchasesError(
-            PurchasesErrorCode.PurchaseCancelledError,
-            "Failed to make purchase. This error normally means that the purchase was cancelled"
-        ).let {
-            onError(it)
-        }
+        onError(PurchasesError(PurchasesErrorCode.PurchaseCancelledError, AmazonStrings.ERROR_PURCHASE_FAILED))
     }
 }
