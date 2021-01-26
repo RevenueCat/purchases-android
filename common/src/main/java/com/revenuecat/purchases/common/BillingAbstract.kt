@@ -11,6 +11,7 @@ typealias ProductDetailsListCallback = (List<ProductDetails>) -> Unit
 
 typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 
+@SuppressWarnings("TooManyFunctions")
 abstract class BillingAbstract {
 
     @get:Synchronized
@@ -88,6 +89,7 @@ abstract class BillingAbstract {
 
     abstract fun isConnected(): Boolean
 
+    @SuppressWarnings("ForbiddenComment")
     abstract fun queryPurchases(
         @BillingClient.SkuType skuType: String // TODO: change
     ): QueryPurchasesResult?

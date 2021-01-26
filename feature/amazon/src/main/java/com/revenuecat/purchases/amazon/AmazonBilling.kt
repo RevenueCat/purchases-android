@@ -61,6 +61,7 @@ class AmazonBilling constructor(
         connected = true
     }
 
+    @SuppressWarnings("EmptyFunctionBlock")
     override fun endConnection() { }
 
     override fun queryAllPurchases(
@@ -99,10 +100,9 @@ class AmazonBilling constructor(
         if (shouldTryToConsume) {
             PurchasingService.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
         }
-
-        // TODO: add logic for Unavailable
     }
 
+    @SuppressWarnings("ForbiddenComment")
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: PurchaseHistoryRecordWrapper

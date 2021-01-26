@@ -6,14 +6,13 @@
     <ID>EmptyCatchBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${ }</ID>
     <ID>EmptyCatchBlock:Purchases.kt$Purchases.Companion.&lt;no name provided&gt;${ }</ID>
     <ID>EmptyFunctionBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${}</ID>
-    <ID>EmptyFunctionBlock:Purchases.kt$Purchases${ }</ID>
-    <ID>EmptyFunctionBlock:listenerConversions.kt${ }</ID>
     <ID>LargeClass:Purchases.kt$Purchases$Purchases</ID>
     <ID>LongMethod:Purchases.kt$Purchases$restorePurchases</ID>
-    <ID>LongParameterList:Backend.kt$Backend$( purchaseToken: String, appUserID: String, isRestore: Boolean, observerMode: Boolean, subscriberAttributes: Map&lt;String, Map&lt;String, Any?&gt;&gt;, productInfo: ProductInfo, onSuccess: PostReceiptDataSuccessCallback, onError: PostReceiptDataErrorCallback )</ID>
+    <ID>LongMethod:Purchases.kt$Purchases.Companion$configure</ID>
+    <ID>LongParameterList:AmazonBackend.kt$AmazonBackend$( receiptId: String, appUserID: String, storeUserID: String, productDetails: ProductDetails, onSuccess: (JSONObject) -&gt; Unit, onError: (PurchasesError) -&gt; Unit )</ID>
+    <ID>LongParameterList:Backend.kt$Backend$( purchaseToken: String, appUserID: String, isRestore: Boolean, observerMode: Boolean, subscriberAttributes: Map&lt;String, Map&lt;String, Any?&gt;&gt;, receiptInfo: ReceiptInfo, onSuccess: PostReceiptDataSuccessCallback, onError: PostReceiptDataErrorCallback )</ID>
     <ID>LongParameterList:EntitlementInfo.kt$EntitlementInfo$( val identifier: String, val isActive: Boolean, val willRenew: Boolean, val periodType: PeriodType, val latestPurchaseDate: Date, val originalPurchaseDate: Date, val expirationDate: Date?, val store: Store, val productIdentifier: String, val isSandbox: Boolean, val unsubscribeDetectedAt: Date?, val billingIssueDetectedAt: Date? )</ID>
-    <ID>MagicNumber:build.gradle.kts$14</ID>
-    <ID>MagicNumber:build.gradle.kts$28</ID>
+    <ID>LongParameterList:ProductDetails.kt$ProductDetails$( val sku: String, val type: ProductType, val price: String, // For example $3.00 val priceAmountMicros: Long, val priceCurrencyCode: String, // Null for amazon val originalPrice: String?, // 0 for amazon val originalPriceAmountMicros: Long, val title: String, val description: String, // Null if no subscriptionPeriod. Null for amazon val subscriptionPeriod: String?, // Null if no freeTrialPeriod. Null for amazon val freeTrialPeriod: String?, // Null if no introductoryPrice. Null for amazon val introductoryPrice: String?, // 0 for no intro price and amazon val introductoryPriceAmountMicros: Long, // Null if no introductoryPricePeriod. Null for amazon val introductoryPricePeriod: String?, // Null if no introductoryPriceCycles. 0 for amazon val introductoryPriceCycles: Int, val iconUrl: String, val originalJson: JSONObject )</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendBadRequest$7226</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendCannotTransferPurchase$7102</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendEmptyAppUserId$7220</ID>
@@ -34,10 +33,11 @@
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendProductIdForGoogleReceiptNotProvided$7106</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendStoreProblem$7101</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendUserIneligibleForPromoOffer$7232</ID>
-    <ID>MagicNumber:utils.kt$1000000.0</ID>
-    <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): PurchaseType</ID>
+    <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): ProductType</ID>
+    <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$override fun consumeAndSave( shouldTryToConsume: Boolean, purchase: PurchaseWrapper )</ID>
     <ID>TooGenericExceptionCaught:AdvertisingIdClient.kt$AdvertisingIdClient$e: Exception</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
+    <ID>TooManyFunctions:AmazonBilling.kt$AmazonBilling$AmazonBilling</ID>
     <ID>TooManyFunctions:Backend.kt$Backend$Backend</ID>
     <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper$BillingWrapper</ID>
     <ID>TooManyFunctions:DeviceCache.kt$DeviceCache$DeviceCache</ID>

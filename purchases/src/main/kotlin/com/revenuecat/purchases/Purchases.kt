@@ -1779,7 +1779,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     }
                     else -> {
                         errorLog("Incompatible store ($store) used")
-                        throw RuntimeException("Couldn't configure SDK. Incompatible store ($store) used")
+                        throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")
                     }
                 }
 

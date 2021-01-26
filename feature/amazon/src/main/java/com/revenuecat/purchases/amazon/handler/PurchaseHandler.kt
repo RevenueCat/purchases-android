@@ -59,6 +59,7 @@ class PurchaseHandler : PurchaseResponseListener {
         }
     }
 
+    @SuppressWarnings("ForbiddenComment")
     private fun onSuccessfulPurchase(
         receipt: Receipt,
         userData: UserData,

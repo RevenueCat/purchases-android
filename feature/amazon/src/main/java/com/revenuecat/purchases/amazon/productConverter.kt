@@ -2,6 +2,7 @@ package com.revenuecat.purchases.amazon
 
 import com.amazon.device.iap.internal.model.ProductBuilder
 import com.amazon.device.iap.model.Product
+import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.ProductDetails
 import org.json.JSONObject
 import java.text.NumberFormat
@@ -43,7 +44,7 @@ fun Product.toProductDetails(marketplace: String): ProductDetails {
         sku,
         productType.toRevenueCatProductType(),
         price,
-        priceAmountMicros = priceDouble.times(1_000_000).toLong(),
+        priceAmountMicros = priceDouble.times(MICROS_MULTIPLIER).toLong(),
         priceCurrencyCode = currency.currencyCode,
         originalPrice = null,
         originalPriceAmountMicros = 0,

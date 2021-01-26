@@ -10,6 +10,7 @@ class UserDataHandler : UserDataResponseListener {
 
     private val requests = mutableMapOf<RequestId, (UserData) -> Unit>()
 
+    @SuppressWarnings("ForbiddenComment")
     override fun onUserDataResponse(response: UserDataResponse) {
         // TODO: handle status of response
         requests.remove(response.requestId)?.let { completion ->
@@ -17,6 +18,7 @@ class UserDataHandler : UserDataResponseListener {
         }
     }
 
+    @SuppressWarnings("ForbiddenComment")
     override fun getUserData(
         onCompletion: (UserData) -> Unit
     ) {
