@@ -284,7 +284,7 @@ class BillingWrapper(
             return
         }
         if (purchase.purchaseState != RevenueCatPurchaseState.PURCHASED) {
-            // PENDING purchases should not be acknowledged or consumed
+            // Only PURCHASED purchases should be fulfilled
             return
         }
         if (shouldTryToConsume && purchase.isConsumable) {

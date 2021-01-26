@@ -94,7 +94,7 @@ class AmazonBilling constructor(
 
         if (purchase.type == ProductType.UNKNOWN) return
 
-        // PENDING purchases should not be fulfilled
+        // Only PURCHASED purchases should be fulfilled
         if (purchase.purchaseState != RevenueCatPurchaseState.PURCHASED) return
 
         if (shouldTryToConsume) {
