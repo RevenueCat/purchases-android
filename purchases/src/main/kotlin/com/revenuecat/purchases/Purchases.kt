@@ -589,14 +589,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         subscriberAttributesManager.getUnsyncedSubscriberAttributes(
                                             appUserID
                                         )
-                                    val productInfo = ReceiptInfo(productID = purchase.sku)
+                                    val receiptInfo = ReceiptInfo(productID = purchase.sku)
                                     backend.postReceiptData(
                                         purchaseToken = purchase.purchaseToken,
                                         appUserID = appUserID,
                                         isRestore = true,
                                         observerMode = !finishTransactions,
                                         subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                                        receiptInfo = productInfo,
+                                        receiptInfo = receiptInfo,
                                         onSuccess = { info, body ->
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,

@@ -127,11 +127,7 @@ class BillingWrapper(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 val params = SkuDetailsParams.newBuilder()
-                    .apply {
-                        productType.toSKUType()?.let {
-                            this.setType(it)
-                        }
-                    }
+                    .setType(productType.toSKUType() ?: SkuType.INAPP)
                     .setSkusList(skus.toList()).build()
 
                 withConnectedClient {
