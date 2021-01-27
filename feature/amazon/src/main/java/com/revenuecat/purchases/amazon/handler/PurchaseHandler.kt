@@ -91,7 +91,9 @@ class PurchaseHandler : PurchaseResponseListener {
         )
     }
 
+    @SuppressWarnings("ForbiddenComment")
     private fun onFailed(onError: (PurchasesError) -> Unit) {
+        // TODO: replace link with our own
         // Indicates that the purchase failed. Can simply mean user cancelled.
         //
         // According to Amazon's EU MFA flow documentation, the flow would
