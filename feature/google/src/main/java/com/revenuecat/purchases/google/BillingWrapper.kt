@@ -279,7 +279,7 @@ class BillingWrapper(
         if (purchase !is GooglePurchaseWrapper) return
 
         if (purchase.type == ProductType.UNKNOWN) {
-            // Would only get here if the purchase was trigger from outside of the app and there was
+            // Would only get here if the purchase was triggered from outside of the app and there was
             // an issue getting the purchase type
             return
         }
@@ -315,7 +315,7 @@ class BillingWrapper(
         purchase: PurchaseHistoryRecordWrapper
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
-            // Would only get here if the purchase was trigger from outside of the app and there was
+            // Would only get here if the purchase was triggered from outside of the app and there was
             // an issue getting the purchase type
             return
         }
