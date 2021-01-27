@@ -65,11 +65,7 @@ class PurchaseHandler : PurchaseResponseListener {
         userData: UserData,
         onSuccess: (Receipt, UserData) -> Unit
     ) {
-        if (receipt.isCanceled) {
-            // TODO: Do we do anything?
-        } else {
-            onSuccess(receipt, userData)
-        }
+        onSuccess(receipt, userData)
     }
 
     private fun onUnknownError(onError: (PurchasesError) -> Unit) {
