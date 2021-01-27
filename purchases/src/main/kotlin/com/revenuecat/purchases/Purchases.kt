@@ -43,7 +43,6 @@ import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
-import java.util.*
 import java.util.Collections.emptyMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -595,8 +594,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @JvmOverloads
     fun logIn(
-            newAppUserID: String,
-            listener: LogInListener? = null
+        newAppUserID: String,
+        listener: LogInListener? = null
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
             identityManager.logIn(newAppUserID,

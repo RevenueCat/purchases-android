@@ -9,7 +9,8 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
-import java.util.*
+import java.util.Locale
+import java.util.UUID
 
 class IdentityManager(
     private val deviceCache: DeviceCache,
@@ -51,9 +52,9 @@ class IdentityManager(
     }
 
     fun logIn(
-            newAppUserID: String,
-            onSuccess: (PurchaserInfo, Boolean) -> Unit,
-            onError: (PurchasesError) -> Unit
+        newAppUserID: String,
+        onSuccess: (PurchaserInfo, Boolean) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
         if (newAppUserID.isBlank()) {
             onError(PurchasesError(PurchasesErrorCode.InvalidAppUserIdError, "appUserID can't be null, empty or blank"))
