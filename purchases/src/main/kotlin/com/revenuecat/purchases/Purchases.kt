@@ -622,7 +622,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    fun logIn(
+    internal fun logIn(
         newAppUserID: String,
         listener: LogInListener? = null
     ) {
@@ -657,7 +657,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    fun logOut(listener: ReceivePurchaserInfoListener? = null) {
+    internal fun logOut(listener: ReceivePurchaserInfoListener? = null) {
         if (identityManager.currentUserIsAnonymous()) {
             log(LogIntent.RC_ERROR, "Called logOut but the current user is anonymous")
             listener?.onError(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
