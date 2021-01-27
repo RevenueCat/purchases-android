@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import org.json.JSONException
 import org.json.JSONObject
 
+private const val HTTP_STATUS_CREATED = 201
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 const val HTTP_SERVER_ERROR_CODE = 500
 const val HTTP_NOT_FOUND_ERROR_CODE = 404
@@ -351,7 +352,7 @@ class Backend(
 
             override fun onCompletion(result: HTTPClient.Result) {
                 if (result.isSuccessful()) {
-                    val created = result.responseCode == 201
+                    val created = result.responseCode == HTTP_STATUS_CREATED
                     val purchaserInfo = result.body.buildPurchaserInfo()
                     onSuccessHandler(purchaserInfo, created)
                 } else {
