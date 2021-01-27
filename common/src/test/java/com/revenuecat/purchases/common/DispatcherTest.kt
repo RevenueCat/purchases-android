@@ -8,29 +8,44 @@ package com.revenuecat.purchases.common
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import io.mockk.Runs
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONException
+import org.json.JSONObject
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class DispatcherTest {
-    private var executorService: ExecutorService = mockk()
-    private var dispatcher: Dispatcher = Dispatcher(executorService)
+
+    private val mockExecutorService: ExecutorService = mockk()
+    private val dispatcherWithMockExecutor = Dispatcher(mockExecutorService)
+
+    private lateinit var currentThreadExecutorService: CurrentThreadExecutorService
+
+    private lateinit var dispatcher: Dispatcher
 
     private var errorCalled: Boolean? = false
 
     private var result: HTTPClient.Result? = null
+
+
+    @Before
+    fun `setup`() {
+        currentThreadExecutorService = CurrentThreadExecutorService()
+        dispatcher = Dispatcher(currentThreadExecutorService)
+    }
 
     @Test
     fun canBeCreated() {
@@ -39,24 +54,24 @@ class DispatcherTest {
 
     @Test
     fun executesInExecutor() {
-        val result = HTTPClient.Result()
+        val result = HTTPClient.Result(200, JSONObject("{}"))
 
         every {
-            executorService.isShutdown
+            mockExecutorService.isShutdown
         } returns false
 
         every {
-            executorService.execute(any())
-        } just Runs
+            mockExecutorService.submit(any())
+        } returns mockk()
 
-        dispatcher.enqueue(object : Dispatcher.AsyncCall() {
+        dispatcherWithMockExecutor.enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
                 return result
             }
         })
 
         verify {
-            executorService.execute(any())
+            mockExecutorService.submit(any())
         }
     }
 
@@ -79,7 +94,7 @@ class DispatcherTest {
 
     @Test
     fun asyncCallHandlesSuccess() {
-        val result = HTTPClient.Result()
+        val result = HTTPClient.Result(200, JSONObject("{}"))
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
                 return result
@@ -98,13 +113,13 @@ class DispatcherTest {
     @Test
     fun closeStopsThreads() {
         every {
-            executorService.shutdownNow()
+            mockExecutorService.shutdownNow()
         } returns null
 
-        dispatcher.close()
+        dispatcherWithMockExecutor.close()
 
         verify {
-            executorService.shutdownNow()
+            mockExecutorService.shutdownNow()
         }
     }
 
@@ -130,32 +145,42 @@ class DispatcherTest {
     @Test
     fun `execute on background when service is shutdown`() {
         every {
-            executorService.isShutdown
+            mockExecutorService.isShutdown
         } returns true
 
-        dispatcher.enqueue(Runnable {
+
+        dispatcherWithMockExecutor.enqueue({
             fail("should never execute")
         })
 
         verify(exactly = 0) {
-            executorService.execute(any())
+            mockExecutorService.execute(any())
         }
     }
 
     @Test
     fun `execute on background when service is not shutdown`() {
-        every {
-            executorService.execute(any())
-        } just Runs
+        dispatcher.enqueue({ })
 
-        every {
-            executorService.isShutdown
-        } returns false
+        assertThat(currentThreadExecutorService.executeCalled).isTrue
+    }
 
-        dispatcher.enqueue(Runnable {  })
+    class CurrentThreadExecutorService(
+        private val callerRunsPolicy: CallerRunsPolicy = CallerRunsPolicy()
+    ): ThreadPoolExecutor(
+        0,
+        1,
+        0L,
+        TimeUnit.SECONDS,
+        SynchronousQueue(),
+        callerRunsPolicy
+    ) {
 
-        verify(exactly = 1) {
-            executorService.execute(any())
+        var executeCalled = false
+
+        override fun execute(command: Runnable?) {
+            executeCalled = true
+            callerRunsPolicy.rejectedExecution(command, this)
         }
     }
 }

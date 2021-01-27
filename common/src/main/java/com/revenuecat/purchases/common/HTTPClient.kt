@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common
 
 import android.os.Build
+import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -87,21 +88,21 @@ class HTTPClient(
         }
 
         val inputStream = getInputStream(connection)
-        val result = Result()
 
         val payload: String?
+        val responseCode: Int
         try {
-            debugLog("${connection.requestMethod} $path")
-            result.responseCode = connection.responseCode
+            log(LogIntent.DEBUG, NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
+            responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
         } finally {
             inputStream?.close()
             connection.disconnect()
         }
 
-        result.body = payload?.let { JSONObject(it) } ?: throw IOException("Network call payload is null.")
-        debugLog("${connection.requestMethod} $path ${result.responseCode}")
-        return result
+        val responseBody = payload?.let { JSONObject(it) } ?: throw IOException("Network call payload is null.")
+        log(LogIntent.DEBUG, NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
+        return Result(responseCode, responseBody)
     }
 
     private fun Map<String, Any?>.convert(): JSONObject {
@@ -159,8 +160,8 @@ class HTTPClient(
         }
     }
 
-    class Result {
-        var responseCode: Int = 0
-        var body: JSONObject? = null
-    }
+    data class Result(
+        val responseCode: Int,
+        val body: JSONObject
+    )
 }

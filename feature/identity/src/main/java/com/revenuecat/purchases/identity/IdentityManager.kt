@@ -2,9 +2,11 @@ package com.revenuecat.purchases.identity
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
-import com.revenuecat.purchases.common.debugLog
 import java.util.Locale
 import java.util.UUID
 
@@ -23,7 +25,7 @@ class IdentityManager(
             ?: deviceCache.getCachedAppUserID()
             ?: deviceCache.getLegacyCachedAppUserID()
             ?: generateRandomID()
-        debugLog("Identifying App User ID: $appUserIDToUse")
+        log(LogIntent.USER, IdentityStrings.IDENTIFYING_APP_USER_ID.format(appUserIDToUse))
         deviceCache.cacheAppUserID(appUserIDToUse)
         subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
     }
@@ -34,12 +36,12 @@ class IdentityManager(
         onError: (PurchasesError) -> Unit
     ) {
         if (currentUserIsAnonymous()) {
-            debugLog("Identifying from an anonymous ID: $appUserID. An alias will be created.")
+            log(LogIntent.USER, IdentityStrings.IDENTIFYING_ANON_ID.format(appUserID))
             createAlias(appUserID, onSuccess, onError)
         } else {
             synchronized(this@IdentityManager) {
-                debugLog("Changing App User ID: $currentAppUserID -> $appUserID")
-                deviceCache.clearCachesForAppUserID()
+                log(LogIntent.USER, IdentityStrings.CHANGING_APP_USER_ID.format(currentAppUserID, appUserID))
+                deviceCache.clearCachesForAppUserID(currentAppUserID)
                 subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
                 deviceCache.cacheAppUserID(appUserID)
             }
@@ -52,14 +54,14 @@ class IdentityManager(
         onSuccess: () -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        debugLog("Creating an alias to $currentAppUserID from $newAppUserID")
+        log(LogIntent.USER, IdentityStrings.CREATING_ALIAS.format(currentAppUserID, newAppUserID))
         backend.createAlias(
             currentAppUserID,
             newAppUserID,
             {
                 synchronized(this@IdentityManager) {
-                    debugLog("Alias created")
-                    deviceCache.clearCachesForAppUserID()
+                    log(LogIntent.USER, IdentityStrings.CREATING_ALIAS_SUCCESS)
+                    deviceCache.clearCachesForAppUserID(currentAppUserID)
                     subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
                     deviceCache.cacheAppUserID(newAppUserID)
                 }
@@ -71,7 +73,7 @@ class IdentityManager(
 
     @Synchronized
     fun reset() {
-        deviceCache.clearCachesForAppUserID()
+        deviceCache.clearCachesForAppUserID(currentAppUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         deviceCache.cacheAppUserID(generateRandomID())
     }
@@ -89,7 +91,7 @@ class IdentityManager(
     private fun generateRandomID(): String {
         return "\$RCAnonymousID:" + UUID.randomUUID().toString().toLowerCase(Locale.ROOT).replace("-", "")
             .also {
-                debugLog("Generated New App User ID - $it")
+                log(LogIntent.USER, IdentityStrings.SETTING_NEW_ANON_ID)
             }
     }
 }

@@ -103,7 +103,7 @@ class HTTPClientTest {
 
         server.takeRequest()
 
-        assertThat(result.body!!.getString("response")).`as`("response is OK").isEqualTo("OK")
+        assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
     }
 
     // Errors

@@ -1,13 +1,14 @@
 Automatic Releasing
 =========
- 1. Create a branch bump/x.y.z
+ 1. Create a branch release/x.y.z
  1. Create a CHANGELOG.latest.md with the changes for the current version (to be used by Fastlane for the github release notes)
  1. Run `fastlane bump_and_update_changelog version:X.Y.Z` (where X.Y.Z is the new version) to update the version number in `gradle.properties`, `Config.kt` and in `library/build.gradle` 
  1. Commit the changes `git commit -am "Version X.Y.Z"` (where X.Y.Z is the new version)
  1. Make a PR, merge when approved
- 1. Pull main
+ 1. Pull main and develop
  1. cd bin
  1. `./release_version.sh -c x.y.z -n a.b.c`, where a.b.c will be the next release after this one. If you're releasing version 3.0.2, for example, this would be ./release_version.sh -c 3.0.2 -n 3.1.0. This will do all of the other steps in the manual process.
+ 1. Update the main branch. You can do this by pushing develop to main.
  1. Visit [Sonatype Nexus](https://oss.sonatype.org/)
  1. Click on Staging Repositories on the left side
  1. Scroll down to find the purchase repository

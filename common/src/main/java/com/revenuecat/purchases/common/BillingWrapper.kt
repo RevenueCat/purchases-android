@@ -22,6 +22,10 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.strings.BillingStrings
+import com.revenuecat.purchases.strings.OfferingStrings
+import com.revenuecat.purchases.strings.PurchaseStrings
+import com.revenuecat.purchases.strings.RestoreStrings
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -97,7 +101,7 @@ class BillingWrapper(
                     billingClient = clientFactory.buildClient(this)
                 }
                 billingClient?.let {
-                    debugLog("Starting connection for $it")
+                    log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
                     it.startConnection(this)
                 }
             }
@@ -108,7 +112,7 @@ class BillingWrapper(
         mainHandler.post {
             synchronized(this@BillingWrapper) {
                 billingClient?.let {
-                    debugLog("Ending connection for $it")
+                    log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_ENDING.format(it))
                     it.endConnection()
                 }
                 billingClient = null
@@ -134,7 +138,7 @@ class BillingWrapper(
         onReceiveSkuDetails: (List<SkuDetails>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        debugLog("Requesting products with identifiers: ${skuList.joinToString()}")
+        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skuList.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 val params = SkuDetailsParams.newBuilder()
@@ -142,15 +146,18 @@ class BillingWrapper(
                 withConnectedClient {
                     querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                            debugLog("Products request finished for ${skuList.joinToString()}")
-                            debugLog("Retrieved skuDetailsList: ${skuDetailsList?.joinToString { it.toString() }}")
+                            log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
+                                    .format(skuList.joinToString()))
+                            log(LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
+                                    .format(skuDetailsList?.joinToString { it.toString() }))
                             skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
-                                debugLog("${it.sku} - $it")
+                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
                             }
 
                             onReceiveSkuDetails(skuDetailsList ?: emptyList())
                         } else {
-                            log("Error when fetching products. ${billingResult.toHumanReadableDescription()}")
+                            log(LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
+                                    .format(billingResult.toHumanReadableDescription()))
                             onError(
                                 billingResult.responseCode.billingResponseToPurchasesError(
                                     "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
@@ -173,9 +180,10 @@ class BillingWrapper(
         presentedOfferingIdentifier: String?
     ) {
         if (replaceSkuInfo != null) {
-            debugLog("Moving from old sku ${replaceSkuInfo.oldPurchase.sku} to sku ${skuDetails.sku}")
+            log(LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
+                    .format(replaceSkuInfo.oldPurchase.sku, skuDetails.sku))
         } else {
-            debugLog("Making purchase for sku: ${skuDetails.sku}")
+            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(skuDetails.sku))
         }
         synchronized(this@BillingWrapper) {
             productTypes[skuDetails.sku] = PurchaseType.fromSKUType(skuDetails.type)
@@ -208,7 +216,8 @@ class BillingWrapper(
             launchBillingFlow(activity, params)
                 .takeIf { billingResult -> billingResult?.responseCode != BillingClient.BillingResponseCode.OK }
                 ?.let { billingResult ->
-                    log("Failed to launch billing intent. ${billingResult.toHumanReadableDescription()}")
+                    log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_INTENT_FAILED
+                            .format(billingResult.toHumanReadableDescription()))
                 }
         }
     }
@@ -218,15 +227,16 @@ class BillingWrapper(
         onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
-        debugLog("Querying purchase history for type $skuType")
+        log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_HISTORY.format(skuType))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
                     queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistoryRecordList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
-                                debugLog("Purchase history retrieved ${it.toHumanReadableDescription()}")
-                            } ?: debugLog("Purchase history is empty.")
+                                log(LogIntent.RC_PURCHASE_SUCCESS, RestoreStrings.PURCHASE_HISTORY_RETRIEVED
+                                        .format(it.toHumanReadableDescription()))
+                            } ?: log(LogIntent.DEBUG, RestoreStrings.PURCHASE_HISTORY_EMPTY)
                             onReceivePurchaseHistory(purchaseHistoryRecordList ?: emptyList())
                         } else {
                             onReceivePurchaseHistoryError(
@@ -279,7 +289,7 @@ class BillingWrapper(
         token: String,
         onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
-        debugLog("Consuming purchase with token $token")
+        log(LogIntent.PURCHASE, PurchaseStrings.CONSUMING_PURCHASE.format(token))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
@@ -295,7 +305,7 @@ class BillingWrapper(
         token: String,
         onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
-        debugLog("Acknowledging purchase with token $token")
+        log(LogIntent.PURCHASE, PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(token))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
@@ -318,7 +328,7 @@ class BillingWrapper(
 
     fun queryPurchases(@SkuType skuType: String): QueryPurchasesResult? {
         return billingClient?.let { billingClient ->
-            debugLog("[QueryPurchases] Querying $skuType")
+            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE.format(skuType))
             val result = billingClient.queryPurchases(skuType)
 
             val purchasesList = result.purchasesList ?: emptyList<Purchase>()
@@ -327,7 +337,7 @@ class BillingWrapper(
                 result.responseCode,
                 purchasesList.map { purchase ->
                     val hash = purchase.purchaseToken.sha1()
-                    debugLog("[QueryPurchases] Purchase of type $skuType with hash $hash")
+                    log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(skuType, hash))
                     hash to PurchaseWrapper(purchase, PurchaseType.fromSKUType(skuType), null)
                 }.toMap()
             )
@@ -340,7 +350,7 @@ class BillingWrapper(
         completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
     ) {
         withConnectedClient {
-            debugLog("[QueryPurchases] Querying Purchase with $sku and type $skuType")
+            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, skuType))
             queryPurchaseHistoryAsync(skuType) { result, purchasesList ->
                 completion(
                     result,
@@ -374,9 +384,11 @@ class BillingWrapper(
         billingResult: BillingResult,
         purchases: List<Purchase>?
     ) {
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
-            purchases.map { purchase ->
-                debugLog("BillingWrapper purchases updated. ${purchase.toHumanReadableDescription()}")
+        val notNullPurchasesList = purchases ?: emptyList()
+        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
+            notNullPurchasesList.map { purchase ->
+                log(LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
+                        .format(purchase.toHumanReadableDescription()))
                 var type: PurchaseType?
                 var presentedOffering: String?
                 synchronized(this@BillingWrapper) {
@@ -391,9 +403,13 @@ class BillingWrapper(
             }.let { mappedPurchases ->
                 purchasesUpdatedListener?.onPurchasesUpdated(mappedPurchases)
             }
+        } else if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+            // When doing a DEFERRED downgrade, the result is OK, but the list of purchases is null
+            purchasesUpdatedListener?.onPurchasesUpdated(emptyList())
         } else {
-            debugLog("BillingWrapper purchases failed to update. ${billingResult.toHumanReadableDescription()}" +
-                "${purchases?.takeUnless { it.isEmpty() }?.let { purchase ->
+            log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
+                    .format(billingResult.toHumanReadableDescription()) +
+                    "${notNullPurchasesList.takeUnless { it.isEmpty() }?.let { purchase ->
                     "Purchases:" + purchase.joinToString(
                         ", ",
                         transform = { it.toHumanReadableDescription() }
@@ -416,15 +432,16 @@ class BillingWrapper(
     override fun onBillingSetupFinished(billingResult: BillingResult) {
         when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
-                debugLog("Billing Service Setup finished for ${billingClient?.toString()}.")
+                log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_SETUP_FINISHED
+                        .format(billingClient?.toString()))
                 stateListener?.onConnected()
                 executePendingRequests()
             }
             BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
             BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
                 val message =
-                    "Billing is not available in this device. ${billingResult.toHumanReadableDescription()}"
-                log(message)
+                        BillingStrings.BILLING_UNAVAILABLE.format(billingResult.toHumanReadableDescription())
+                log(LogIntent.GOOGLE_WARNING, message)
                 // The calls will fail with an error that will be surfaced. We want to surface these errors
                 // Can't call executePendingRequests because it will not do anything since it checks for isReady()
                 synchronized(this@BillingWrapper) {
@@ -449,7 +466,8 @@ class BillingWrapper(
             BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
             BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
             BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> {
-                log("Billing Service Setup finished with error code: ${billingResult.toHumanReadableDescription()}")
+                log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_ERROR
+                        .format(billingResult.toHumanReadableDescription()))
             }
             BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
                 // Billing service is already trying to connect. Don't do anything.
@@ -458,7 +476,7 @@ class BillingWrapper(
     }
 
     override fun onBillingServiceDisconnected() {
-        debugLog("Billing Service disconnected for ${billingClient?.toString()}")
+        log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient.toString()))
     }
 
     fun isConnected(): Boolean = billingClient?.isReady ?: false
@@ -466,7 +484,7 @@ class BillingWrapper(
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {
             it.receivingFunction()
-        } ?: debugLog("Warning: billing client is null, purchase methods won't work. Stacktrace: ${getStackTrace()}")
+        } ?: log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()))
     }
 
     private fun getStackTrace(): String {

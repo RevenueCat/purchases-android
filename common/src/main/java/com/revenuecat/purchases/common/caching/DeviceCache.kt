@@ -8,33 +8,38 @@ package com.revenuecat.purchases.common.caching
 import android.content.SharedPreferences
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.buildPurchaserInfo
-import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.strings.ReceiptStrings
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
 
-private const val CACHE_REFRESH_PERIOD = 60000 * 5
+private const val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 60000 * 5
+private const val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 60000 * 60 * 24
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 internal const val PURCHASER_INFO_SCHEMA_VERSION = 3
 
 class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
-    private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(
-        CACHE_REFRESH_PERIOD
-    )
+    private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(),
+    private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
     val legacyAppUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
     val appUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.new" }
     val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.tokens" }
     val subscriberAttributesCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.subscriberAttributes" }
-
-    var purchaserInfoCachesLastUpdated: Date? = null
+    private val purchaserInfoCachesLastUpdatedCacheBaseKey: String by lazy {
+        "$SHARED_PREFERENCES_PREFIX$apiKey.purchaserInfoLastUpdated"
+    }
 
     // region app user id
 
@@ -50,12 +55,12 @@ class DeviceCache(
     }
 
     @Synchronized
-    fun clearCachesForAppUserID() {
+    fun clearCachesForAppUserID(appUserID: String) {
         preferences.edit()
             .clearPurchaserInfo()
             .clearAppUserID()
+            .clearPurchaserInfoCacheTimestamp(appUserID)
             .apply()
-        clearPurchaserInfoCacheTimestamp()
         clearOfferingsCache()
     }
 
@@ -75,10 +80,17 @@ class DeviceCache(
         return this
     }
 
+    private fun SharedPreferences.Editor.clearPurchaserInfoCacheTimestamp(appUserID: String): SharedPreferences.Editor {
+        remove(purchaserInfoLastUpdatedCacheKey(appUserID))
+        return this
+    }
+
     // endregion
 
     // region purchaser info
     fun purchaserInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
+
+    fun purchaserInfoLastUpdatedCacheKey(appUserID: String) = "$purchaserInfoCachesLastUpdatedCacheBaseKey.$appUserID"
 
     fun getCachedPurchaserInfo(appUserID: String): PurchaserInfo? {
         return preferences.getString(purchaserInfoCacheKey(appUserID), null)
@@ -108,32 +120,39 @@ class DeviceCache(
                 jsonObject.toString()
             ).apply()
 
-        setPurchaserInfoCacheTimestampToNow()
+        setPurchaserInfoCacheTimestampToNow(appUserID)
     }
 
     @Synchronized
-    fun isPurchaserInfoCacheStale(): Boolean {
-        return purchaserInfoCachesLastUpdated?.let { cachesLastUpdated ->
-            Date().time - cachesLastUpdated.time >= CACHE_REFRESH_PERIOD
-        } ?: true
-    }
+    fun isPurchaserInfoCacheStale(appUserID: String, appInBackground: Boolean) =
+        getPurchaserInfoCachesLastUpdated(appUserID).isStale(appInBackground)
 
     @Synchronized
-    fun clearPurchaserInfoCacheTimestamp() {
-        purchaserInfoCachesLastUpdated = null
+    fun clearPurchaserInfoCacheTimestamp(appUserID: String) {
+        preferences.edit().clearPurchaserInfoCacheTimestamp(appUserID).apply()
     }
 
     @Synchronized
     fun clearPurchaserInfoCache(appUserID: String) {
-        clearPurchaserInfoCacheTimestamp()
         val editor = preferences.edit()
+        editor.clearPurchaserInfoCacheTimestamp(appUserID)
         editor.remove(purchaserInfoCacheKey(appUserID))
         editor.apply()
     }
 
     @Synchronized
-    fun setPurchaserInfoCacheTimestampToNow() {
-        purchaserInfoCachesLastUpdated = Date()
+    fun setPurchaserInfoCacheTimestampToNow(appUserID: String) {
+        setPurchaserInfoCacheTimestamp(appUserID, Date())
+    }
+
+    @Synchronized
+    fun setPurchaserInfoCacheTimestamp(appUserID: String, date: Date) {
+        preferences.edit().putLong(purchaserInfoLastUpdatedCacheKey(appUserID), date.time).apply()
+    }
+
+    @Synchronized
+    fun getPurchaserInfoCachesLastUpdated(appUserID: String): Date? {
+        return Date(preferences.getLong(purchaserInfoLastUpdatedCacheKey(appUserID), 0))
     }
 
     // endregion
@@ -170,22 +189,22 @@ class DeviceCache(
     @Synchronized
     fun getPreviouslySentHashedTokens(): Set<String> {
         return (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
-            debugLog("[QueryPurchases] Tokens already posted: $it")
+            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_ALREADY_POSTED.format(it))
         }
     }
 
     @Synchronized
     fun addSuccessfullyPostedToken(token: String) {
-        debugLog("[QueryPurchases] Saving token $token with hash ${token.sha1()}")
+        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()))
         getPreviouslySentHashedTokens().let {
-            debugLog("[QueryPurchases] Tokens in cache before saving $it")
+            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(it))
             setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
         }
     }
 
     @Synchronized
     private fun setSavedTokenHashes(newSet: Set<String>) {
-        debugLog("[QueryPurchases] Saving tokens $newSet")
+        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS.format(newSet))
         preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
     }
 
@@ -198,7 +217,7 @@ class DeviceCache(
         activeSubsHashedTokens: Set<String>,
         unconsumedInAppsHashedTokens: Set<String>
     ) {
-        debugLog("[QueryPurchases] Cleaning previously sent tokens")
+        log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
         setSavedTokenHashes(
             (activeSubsHashedTokens + unconsumedInAppsHashedTokens).intersect(
                 getPreviouslySentHashedTokens()
@@ -236,7 +255,7 @@ class DeviceCache(
     }
 
     @Synchronized
-    fun isOfferingsCacheStale(): Boolean = offeringsCachedObject.isCacheStale()
+    fun isOfferingsCacheStale(appInBackground: Boolean) = offeringsCachedObject.lastUpdatedAt.isStale(appInBackground)
 
     @Synchronized
     fun clearOfferingsCacheTimestamp() {
@@ -258,6 +277,18 @@ class DeviceCache(
         userId: String,
         network: AttributionNetwork
     ) = "$attributionCacheKey.$userId.$network"
+
+    private fun Date?.isStale(appInBackground: Boolean): Boolean {
+        return this?.let { cachesLastUpdated ->
+            log(LogIntent.DEBUG, ReceiptStrings.CHECKING_IF_CACHE_STALE.format(appInBackground))
+            val cacheDuration = when {
+                appInBackground -> CACHE_REFRESH_PERIOD_IN_BACKGROUND
+                else -> CACHE_REFRESH_PERIOD_IN_FOREGROUND
+            }
+
+            dateProvider.now.time - cachesLastUpdated.time >= cacheDuration
+        } ?: true
+    }
 
     // region utils
 

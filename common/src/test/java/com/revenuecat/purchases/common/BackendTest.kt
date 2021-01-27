@@ -44,9 +44,10 @@ class BackendTest {
     fun setup() = mockkStatic("com.revenuecat.purchases.common.FactoriesKt")
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
+    private val dispatcher = SyncDispatcher()
     private var backend: Backend = Backend(
         API_KEY,
-        SyncDispatcher(),
+        dispatcher,
         mockClient
     )
     private var asyncBackend: Backend = Backend(
@@ -109,15 +110,13 @@ class BackendTest {
     ): PurchaserInfo {
         val info: PurchaserInfo = mockk()
 
-        val result = HTTPClient.Result()
-        result.responseCode = responseCode
-        result.body = JSONObject(resultBody ?: "{}")
+        val result = HTTPClient.Result(responseCode, JSONObject(resultBody ?: "{}"))
 
         val headers = HashMap<String, String>()
         headers["Authorization"] = "Bearer $API_KEY"
 
         every {
-            result.body!!.buildPurchaserInfo()
+            result.body.buildPurchaserInfo()
         } returns info
 
         val everyMockedCall = every {
@@ -213,13 +212,15 @@ class BackendTest {
     private fun getPurchaserInfo(
         responseCode: Int,
         clientException: Exception?,
-        resultBody: String?
+        resultBody: String?,
+        appInBackground: Boolean = false
     ): PurchaserInfo {
         val info =
             mockResponse("/subscribers/$appUserID", null, responseCode, clientException, resultBody)
 
         backend.getPurchaserInfo(
             appUserID,
+            appInBackground,
             onReceivePurchaserInfoSuccessHandler,
             onReceivePurchaserInfoErrorHandler
         )
@@ -305,7 +306,12 @@ class BackendTest {
 
         mockResponse("/subscribers/$appUserID/offerings", null, 200, null, noOfferingsResponse)
 
-        backend.getOfferings(appUserID, onReceiveOfferingsResponseSuccessHandler, onReceiveOfferingsErrorHandler)
+        backend.getOfferings(
+            appUserID,
+            appInBackground = false,
+            onSuccess = onReceiveOfferingsResponseSuccessHandler,
+            onError = onReceiveOfferingsErrorHandler
+        )
 
         assertThat(receivedOfferingsJSON).`as`("Received offerings response is not null").isNotNull
         assertThat(receivedOfferingsJSON!!.getJSONArray("offerings").length()).isZero()
@@ -427,12 +433,12 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getPurchaserInfo(appUserID, {
+        asyncBackend.getPurchaserInfo(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceivePurchaserInfoErrorHandler)
-        asyncBackend.getPurchaserInfo(appUserID, {
+        }, onError = onReceivePurchaserInfoErrorHandler)
+        asyncBackend.getPurchaserInfo(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceivePurchaserInfoErrorHandler)
+        }, onError = onReceivePurchaserInfoErrorHandler)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
@@ -514,12 +520,12 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, {
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, {
+        }, onError = onReceiveOfferingsErrorHandler)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceiveOfferingsErrorHandler)
+        }, onError = onReceiveOfferingsErrorHandler)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
@@ -542,12 +548,12 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, {
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings("anotherUser", {
+        }, onError = onReceiveOfferingsErrorHandler)
+        asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = {
             lock.countDown()
-        }, onReceiveOfferingsErrorHandler)
+        }, onError = onReceiveOfferingsErrorHandler)
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
@@ -889,21 +895,6 @@ class BackendTest {
         }
     }
 
-    private fun mockSkuDetails(
-        price: Long = 25000000,
-        duration: String = "P1M",
-        introDuration: String = "P1M",
-        trialDuration: String = "P1M"
-    ): SkuDetails {
-        val skuDetails = mockk<SkuDetails>()
-        every { skuDetails.priceAmountMicros } returns price
-        every { skuDetails.priceCurrencyCode } returns "USD"
-        every { skuDetails.subscriptionPeriod } returns duration
-        every { skuDetails.introductoryPricePeriod } returns introDuration
-        every { skuDetails.freeTrialPeriod } returns trialDuration
-        return skuDetails
-    }
-
     @Test
     fun `postReceipt passes durations`() {
         val skuDetails = mockSkuDetails(
@@ -927,4 +918,47 @@ class BackendTest {
         assertThat(receivedPurchaserInfo).`as`("Received purchaser info is not null").isNotNull
         assertThat(info).isEqualTo(receivedPurchaserInfo)
     }
+
+    @Test
+    fun `offerings call is enqueued with delay if on background`() {
+        mockResponse("/subscribers/$appUserID/offerings", null, 200, null, noOfferingsResponse)
+        dispatcher.calledWithRandomDelay = null
+        backend.getOfferings(
+            appUserID,
+            appInBackground = true,
+            onSuccess = onReceiveOfferingsResponseSuccessHandler,
+            onError = onReceiveOfferingsErrorHandler
+        )
+
+        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
+        assertThat(calledWithRandomDelay).isNotNull()
+        assertThat(calledWithRandomDelay).isTrue()
+    }
+
+    @Test
+    fun `purchaser info call is enqueued with delay if on background`() {
+        dispatcher.calledWithRandomDelay = null
+
+        getPurchaserInfo(200, clientException = null, resultBody = null, appInBackground = true)
+
+        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
+        assertThat(calledWithRandomDelay).isNotNull()
+        assertThat(calledWithRandomDelay).isTrue()
+    }
+
+    private fun mockSkuDetails(
+        price: Long = 25000000,
+        duration: String = "P1M",
+        introDuration: String = "P1M",
+        trialDuration: String = "P1M"
+    ): SkuDetails {
+        val skuDetails = mockk<SkuDetails>()
+        every { skuDetails.priceAmountMicros } returns price
+        every { skuDetails.priceCurrencyCode } returns "USD"
+        every { skuDetails.subscriptionPeriod } returns duration
+        every { skuDetails.introductoryPricePeriod } returns introDuration
+        every { skuDetails.freeTrialPeriod } returns trialDuration
+        return skuDetails
+    }
+
 }

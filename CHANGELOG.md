@@ -1,3 +1,53 @@
+## 4.0.2
+
+- Update lifecycle version to 2.3.0-rc01 and made sure addObserver is called from the main thread. Should fix #240.
+    https://github.com/RevenueCat/purchases-android/pull/241
+- Updates BillingClient to version 3.0.2
+    https://github.com/RevenueCat/purchases-android/pull/235
+- Fixes some exceptions being swallowed by ExecutorService
+    https://github.com/RevenueCat/purchases-android/pull/234
+- Revamped logging strings, makes log messages from Purchases easier to spot and understand.
+    https://github.com/RevenueCat/purchases-android/pull/238
+    https://github.com/RevenueCat/purchases-android/pull/237
+    https://github.com/RevenueCat/purchases-android/pull/236
+    https://github.com/RevenueCat/purchases-android/pull/244
+- Made `body` in the HttpResult not null
+    https://github.com/RevenueCat/purchases-android/pull/242
+
+
+## 4.0.1
+
+- Adds mapping for ITEM_ALREADY_OWNED
+    https://github.com/RevenueCat/purchases-android/pull/220
+- Fixes incompatibilities with Mockito 1.x.x
+    https://github.com/RevenueCat/purchases-android/pull/228
+   
+## 4.0.0
+
+- Removes Billing permission from AndroidManifest since it's added by the BillingClient.
+    https://github.com/RevenueCat/purchases-android/pull/211
+- Fixes Deferred downgrades. The Purchase object in the completion block of `purchaseProduct` and `purchasePackage` is now nullable when changing products.
+    https://github.com/RevenueCat/purchases-android/pull/200
+- Deprecated makePurchase and getEntitlements have been removed. Use purchaseProduct/purchasePackage and getOfferings instead.
+   
+## 3.5.3
+
+- More aggressive caches and jittering for apps in background 
+    https://github.com/RevenueCat/purchases-android/pull/201
+   
+## 3.5.2
+
+- Catch IOException when getAdvertisingIdInfo 
+    https://github.com/RevenueCat/purchases-android/pull/197
+- Updates BillingClient to 3.0.1
+    https://github.com/RevenueCat/purchases-android/pull/199
+- Changes the way we deserialize the JSON "management_url" to prevent weird behavior 
+    https://github.com/RevenueCat/purchases-android/pull/203
+- Moved strings to their own module 
+    https://github.com/RevenueCat/purchases-android/pull/202
+- Fixes dokka
+    https://github.com/RevenueCat/purchases-android/pull/205
+   
 ## 3.5.1
 
 - Fixes an issue where after calling invalidatePurchaserInfoCache and then purchaserInfoWithCompletion, the invalidated 

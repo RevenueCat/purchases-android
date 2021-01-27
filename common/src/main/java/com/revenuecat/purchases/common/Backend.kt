@@ -29,13 +29,9 @@ typealias CallbackCacheKey = List<String>
 /** @suppress */
 typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
 /** @suppress */
-typealias PostReceiptDataSuccessCallback = (PurchaserInfo, body: JSONObject?) -> Unit
+typealias PostReceiptDataSuccessCallback = (PurchaserInfo, body: JSONObject) -> Unit
 /** @suppress */
-typealias PostReceiptDataErrorCallback = (
-    PurchasesError,
-    shouldConsumePurchase: Boolean,
-    body: JSONObject?
-) -> Unit
+typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, body: JSONObject?) -> Unit
 
 class Backend(
     private val apiKey: String,
@@ -63,7 +59,7 @@ class Backend(
         body: Map<String, Any?>?,
         onError: (PurchasesError) -> Unit,
         onCompletedSuccessfully: () -> Unit,
-        onCompletedWithErrors: (PurchasesError, Int, JSONObject?) -> Unit
+        onCompletedWithErrors: (PurchasesError, Int, JSONObject) -> Unit
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
@@ -89,14 +85,18 @@ class Backend(
         })
     }
 
-    private fun enqueue(call: Dispatcher.AsyncCall) {
+    private fun enqueue(
+        call: Dispatcher.AsyncCall,
+        randomDelay: Boolean = false
+    ) {
         if (!dispatcher.isClosed()) {
-            dispatcher.enqueue(call)
+            dispatcher.enqueue(call, randomDelay)
         }
     }
 
     fun getPurchaserInfo(
         appUserID: String,
+        appInBackground: Boolean,
         onSuccess: (PurchaserInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
@@ -118,7 +118,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     try {
                         if (result.isSuccessful()) {
-                            onSuccess(result.body!!.buildPurchaserInfo())
+                            onSuccess(result.body.buildPurchaserInfo())
                         } else {
                             onError(result.toPurchasesError().also { errorLog(it) })
                         }
@@ -137,7 +137,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            callbacks.addCallback(call, cacheKey, onSuccess to onError)
+            callbacks.addCallback(call, cacheKey, onSuccess to onError, randomDelay = appInBackground)
         }
     }
 
@@ -191,7 +191,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     try {
                         if (result.isSuccessful()) {
-                            onSuccess(result.body!!.buildPurchaserInfo(), result.body)
+                            onSuccess(result.body.buildPurchaserInfo(), result.body)
                         } else {
                             onError(
                                 result.toPurchasesError().also { errorLog(it) },
@@ -224,6 +224,7 @@ class Backend(
 
     fun getOfferings(
         appUserID: String,
+        appInBackground: Boolean,
         onSuccess: (JSONObject) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
@@ -251,7 +252,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(result.body!!)
+                            onSuccess(result.body)
                         } catch (e: JSONException) {
                             onError(e.toPurchasesError().also { errorLog(it) })
                         }
@@ -262,7 +263,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            offeringsCallbacks.addCallback(call, path, onSuccess to onError)
+            offeringsCallbacks.addCallback(call, path, onSuccess to onError, randomDelay = appInBackground)
         }
     }
 
@@ -336,11 +337,12 @@ class Backend(
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
         call: Dispatcher.AsyncCall,
         cacheKey: K,
-        functions: Pair<S, E>
+        functions: Pair<S, E>,
+        randomDelay: Boolean = false
     ) {
         if (!containsKey(cacheKey)) {
             this[cacheKey] = mutableListOf(functions)
-            enqueue(call)
+            enqueue(call, randomDelay)
         } else {
             this[cacheKey]!!.add(functions)
         }

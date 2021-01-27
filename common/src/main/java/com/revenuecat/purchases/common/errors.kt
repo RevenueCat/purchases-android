@@ -51,12 +51,8 @@ fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
     PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
 
 fun HTTPClient.Result.toPurchasesError(): PurchasesError {
-    var errorCode: Int? = null
-    var errorMessage = ""
-    body?.let { body ->
-        errorCode = if (body.has("code")) body.get("code") as Int else null
-        errorMessage = if (body.has("message")) body.get("message") as String else ""
-    }
+    val errorCode = if (body.has("code")) body.get("code") as Int else null
+    val errorMessage = if (body.has("message")) body.get("message") as String else ""
 
     return errorCode?.let { BackendErrorCode.valueOf(it) }?.toPurchasesError(errorMessage)
         ?: PurchasesError(
@@ -70,7 +66,7 @@ fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
     return when (this) {
         BackendErrorCode.BackendInvalidPlatform -> PurchasesErrorCode.UnknownError
         BackendErrorCode.BackendStoreProblem -> PurchasesErrorCode.StoreProblemError
-        BackendErrorCode.BackendCannotTransferPurchase -> PurchasesErrorCode.ReceiptInUseByOtherSubscriberError
+        BackendErrorCode.BackendCannotTransferPurchase -> PurchasesErrorCode.ReceiptAlreadyInUseError
         BackendErrorCode.BackendInvalidReceiptToken -> PurchasesErrorCode.InvalidReceiptError
         BackendErrorCode.BackendInvalidAppStoreSharedSecret,
         BackendErrorCode.BackendInvalidPlayStoreCredentials,
@@ -92,21 +88,11 @@ fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
 }
 
 fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseCodeName(): String {
-    return when (this) {
-        BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED -> "FEATURE_NOT_SUPPORTED"
-        BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> "SERVICE_DISCONNECTED"
-        BillingClient.BillingResponseCode.OK -> "OK"
-        BillingClient.BillingResponseCode.USER_CANCELED -> "USER_CANCELED"
-        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE -> "SERVICE_UNAVAILABLE"
-        BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> "BILLING_UNAVAILABLE"
-        BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> "ITEM_UNAVAILABLE"
-        BillingClient.BillingResponseCode.DEVELOPER_ERROR -> "DEVELOPER_ERROR"
-        BillingClient.BillingResponseCode.ERROR -> "ERROR"
-        BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> "ITEM_ALREADY_OWNED"
-        BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> "ITEM_NOT_OWNED"
-        BillingClient.BillingResponseCode.SERVICE_TIMEOUT -> "SERVICE_TIMEOUT"
-        else -> "$this"
-    }
+    val allPossibleBillingResponseCodes = BillingClient.BillingResponseCode::class.java.declaredFields
+    return allPossibleBillingResponseCodes
+        .firstOrNull { it.getInt(it) == this }
+        ?.name
+        ?: "$this"
 }
 
 fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): PurchasesError {
@@ -122,6 +108,7 @@ fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): Purchas
         BillingClient.BillingResponseCode.USER_CANCELED -> PurchasesErrorCode.PurchaseCancelledError
         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> PurchasesErrorCode.ProductNotAvailableForPurchaseError
         BillingClient.BillingResponseCode.DEVELOPER_ERROR -> PurchasesErrorCode.PurchaseInvalidError
+        BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> PurchasesErrorCode.ProductAlreadyPurchasedError
         else -> PurchasesErrorCode.UnknownError
     }
     return PurchasesError(errorCode, underlyingErrorMessage)

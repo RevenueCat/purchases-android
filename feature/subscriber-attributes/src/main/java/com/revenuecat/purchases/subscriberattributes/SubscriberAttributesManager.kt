@@ -1,12 +1,12 @@
 package com.revenuecat.purchases.subscriberattributes
 
 import android.app.Application
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.debugLog
-import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
-import com.revenuecat.purchases.subscriberattributes.logging.AttributionStrings
 
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
@@ -52,7 +52,7 @@ class SubscriberAttributesManager(
         val unsyncedStoredAttributesForAllUsers =
             deviceCache.getUnsyncedSubscriberAttributes()
         if (unsyncedStoredAttributesForAllUsers.isEmpty()) {
-            debugLog(AttributionStrings.NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE)
+            log(LogIntent.DEBUG, AttributionStrings.NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE)
             return
         }
 
@@ -62,7 +62,7 @@ class SubscriberAttributesManager(
                 syncingAppUserID,
                 {
                     markAsSynced(syncingAppUserID, unsyncedAttributesForUser, emptyList())
-                    debugLog("Subscriber attributes synced successfully for appUserID: $syncingAppUserID.")
+                    log(LogIntent.RC_SUCCESS, AttributionStrings.ATTRIBUTES_SYNC_SUCCESS.format(syncingAppUserID))
                     if (currentAppUserID != syncingAppUserID) {
                         deviceCache.clearSubscriberAttributesIfSyncedForSubscriber(syncingAppUserID)
                     }
@@ -71,10 +71,7 @@ class SubscriberAttributesManager(
                     if (didBackendGetAttributes) {
                         markAsSynced(syncingAppUserID, unsyncedAttributesForUser, attributeErrors)
                     }
-                    errorLog(
-                        "There was an error syncing subscriber attributes for " +
-                            "appUserID: $syncingAppUserID. Error: $error"
-                    )
+                    log(LogIntent.RC_ERROR, AttributionStrings.ATTRIBUTES_SYNC_ERROR.format(syncingAppUserID, error))
                 }
             )
         }
@@ -91,13 +88,12 @@ class SubscriberAttributesManager(
         attributeErrors: List<SubscriberAttributeError>
     ) {
         if (attributeErrors.isNotEmpty()) {
-            errorLog("There were some subscriber attributes errors: $attributeErrors")
+            log(LogIntent.RC_ERROR, AttributionStrings.SUBSCRIBER_ATTRIBUTES_ERROR.format(attributeErrors))
         }
         if (attributesToMarkAsSynced.isEmpty()) {
             return
         }
-        debugLog(
-            "Marking the following attributes as synced for appUserID: $appUserID: \n" +
+        log(LogIntent.INFO, AttributionStrings.MARKING_ATTRIBUTES_SYNCED.format(appUserID) +
                 attributesToMarkAsSynced.values.joinToString("\n")
         )
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)

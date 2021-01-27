@@ -32,7 +32,6 @@ enum class PurchasesErrorCode(val description: String) {
     NetworkError("Error performing request."),
     InvalidCredentialsError("There was a credentials issue. Check the underlying error for more details."),
     UnexpectedBackendResponseError("Received malformed response from the backend."),
-    ReceiptInUseByOtherSubscriberError("The receipt is in use by other subscriber."),
     InvalidAppUserIdError("The app user id is not valid."),
     OperationAlreadyInProgressError("The operation is already in progress."),
     UnknownBackendError("There was an unknown backend error."),
