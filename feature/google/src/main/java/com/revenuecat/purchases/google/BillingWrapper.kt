@@ -282,7 +282,7 @@ class BillingWrapper(
             return
         }
         if (purchase.purchaseState == RevenueCatPurchaseState.PENDING) {
-            // Only PURCHASED purchases should be fulfilled
+            // PENDING purchases should not be fulfilled
             return
         }
 
