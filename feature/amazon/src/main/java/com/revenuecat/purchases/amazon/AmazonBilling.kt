@@ -5,15 +5,12 @@ import android.content.Context
 import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductDataResponse
-import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataResponse
 import com.android.billingclient.api.BillingResult
-import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
@@ -84,6 +81,8 @@ internal class AmazonBilling constructor(
                     userData.userId,
                     receipts,
                     onCompletion = { termSkus, errors ->
+                        logErrorsIfAny(errors)
+
                         if (termSkus.isEmpty()) {
                             val error = PurchasesError(
                                 PurchasesErrorCode.InvalidReceiptError,
@@ -91,24 +90,16 @@ internal class AmazonBilling constructor(
                             )
                             onReceivePurchaseHistoryError(error)
                         } else {
-                            if (errors.isNotEmpty()) {
-                                val receiptsWithErrors = errors.keys.joinToString()
-                                log(
-                                    LogIntent.AMAZON_ERROR,
-                                    AmazonStrings.ERROR_FETCHING_RECEIPTS.format(receiptsWithErrors)
-                                )
-                            }
-
                             val purchaseHistoryRecordWrappers = mutableListOf<PurchaseHistoryRecordWrapper>()
 
                             receipts.forEach { receipt ->
                                 termSkus[receipt.receiptId]?.let { termSku ->
                                     val purchaseHistoryRecordWrapper = PurchaseHistoryRecordWrapper(
-                                        isConsumable = receipt.productType == ProductType.CONSUMABLE,
+                                        type = receipt.productType.toRevenueCatProductType(),
                                         purchaseToken = receipt.receiptId,
                                         purchaseTime = receipt.purchaseDate.time,
                                         sku = termSku,
-                                        type = receipt.productType.toRevenueCatProductType()
+                                        purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE
                                     )
                                     purchaseHistoryRecordWrappers.add(purchaseHistoryRecordWrapper)
                                 }
@@ -121,55 +112,6 @@ internal class AmazonBilling constructor(
             },
             onReceivePurchaseHistoryError
         )
-    }
-
-    private fun getTermSkusForReceipts(
-        appUserID: String,
-        amazonUserID: String,
-        receipts: List<Receipt>,
-        onCompletion: (termSkus: Map<String, String>, errors: Map<String, PurchasesError>) -> Unit
-    ) {
-        val currentlyCachedTermSkus: Map<String, String> = cache.getReceiptTermSkus()
-
-        val successMap: MutableMap<String, String> = currentlyCachedTermSkus.toMutableMap()
-        val errorMap: MutableMap<String, PurchasesError> = mutableMapOf()
-
-        val receiptsToFetchTermSku: List<Receipt> =
-            receipts.filterNot { currentlyCachedTermSkus.containsKey(it.receiptId) }
-
-        if (receiptsToFetchTermSku.isEmpty()) {
-            onCompletion(successMap, errorMap)
-            return
-        }
-
-        var receiptsLeft = receiptsToFetchTermSku.count()
-        receiptsToFetchTermSku.forEach { receipt ->
-            backend.postAmazonReceiptData(
-                receipt.receiptId,
-                appUserID,
-                amazonUserID,
-                receipt.sku,
-                onSuccessHandler = { response ->
-                    log(LogIntent.DEBUG, AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()))
-
-                    successMap[receipt.receiptId] = response["termSku"] as String
-
-                    receiptsLeft--
-                    if (receiptsLeft == 0) {
-                        onCompletion(successMap, errorMap)
-                    }
-                },
-                onErrorHandler = { error ->
-                    log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FETCHING_RECEIPT_INFO.format(error))
-
-                    errorMap[receipt.receiptId] = error
-
-                    receiptsLeft--
-                    if (receiptsLeft == 0) {
-                        onCompletion(successMap, errorMap)
-                    }
-                })
-        }
     }
 
     // region Product Data
@@ -195,14 +137,14 @@ internal class AmazonBilling constructor(
 
         if (purchase.type == RevenueCatProductType.UNKNOWN) return
 
-        // Only PURCHASED purchases should be fulfilled
-        if (purchase.purchaseState != RevenueCatPurchaseState.PURCHASED) return
+        // PENDING purchases should not be fulfilled
+        if (purchase.purchaseState == RevenueCatPurchaseState.PENDING) return
 
         if (shouldTryToConsume) {
             PurchasingService.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
         }
 
-        cache.addSuccessfullyPostedToken(purchaseToken)
+        cache.addSuccessfullyPostedToken(purchase.purchaseToken)
     }
 
     override fun findPurchaseInPurchaseHistory(
@@ -235,36 +177,6 @@ internal class AmazonBilling constructor(
         )
     }
 
-    private fun handleReceipt(
-        receipt: Receipt,
-        appUserID: String,
-        userData: UserData,
-        productDetails: ProductDetails,
-        presentedOfferingIdentifier: String?
-    ) {
-        amazonBackend.getAmazonReceiptData(
-            receipt.receiptId,
-            appUserID,
-            userData.userId,
-            productDetails,
-            onSuccess = { response ->
-                val termSku = response["termSku"] as String
-                val amazonPurchaseWrapper = AmazonPurchaseWrapper(
-                    sku = termSku,
-                    containedReceipt = receipt,
-                    presentedOfferingIdentifier = presentedOfferingIdentifier,
-                    purchaseState = RevenueCatPurchaseState.PURCHASED
-                )
-                purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
-            },
-            onError = ::onPurchaseError
-        )
-    }
-
-    private fun onPurchaseError(error: PurchasesError) {
-        purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
-    }
-
     override fun isConnected(): Boolean = connected
 
     override fun queryPurchases(
@@ -281,13 +193,7 @@ internal class AmazonBilling constructor(
                         userData.userId,
                         receipts,
                         onCompletion = { termSkus, errors ->
-                            if (errors.isNotEmpty()) {
-                                val receiptsWithErrors = errors.keys.joinToString()
-                                log(
-                                    LogIntent.AMAZON_ERROR,
-                                    AmazonStrings.ERROR_FETCHING_RECEIPTS.format(receiptsWithErrors)
-                                )
-                            }
+                            logErrorsIfAny(errors)
                             val result: AmazonQueryPurchasesResult
                             if (termSkus.isEmpty()) {
                                 log(
@@ -299,20 +205,7 @@ internal class AmazonBilling constructor(
                                     purchasesByHashedToken = emptyMap()
                                 )
                             } else {
-                                val purchases = mutableMapOf<String, AmazonPurchaseWrapper>()
-
-                                receipts.forEach { receipt ->
-                                    termSkus[receipt.receiptId]?.let { termSku ->
-                                        val amazonPurchaseWrapper = AmazonPurchaseWrapper(
-                                            sku = termSku,
-                                            containedReceipt = receipt,
-                                            presentedOfferingIdentifier = null,
-                                            purchaseState = RevenueCatPurchaseState.PURCHASED
-                                        )
-                                        val hash = receipt.receiptId.sha1()
-                                        purchases[hash] = amazonPurchaseWrapper
-                                    }
-                                }
+                                val purchases = getPurchasesFromReceipts(receipts, termSkus)
                                 result = AmazonQueryPurchasesResult(
                                     isSuccessful = true,
                                     purchasesByHashedToken = purchases
@@ -346,6 +239,116 @@ internal class AmazonBilling constructor(
 
     override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
         purchaseUpdatesHandler.onPurchaseUpdatesResponse(response)
+    }
+
+    private fun logErrorsIfAny(errors: Map<String, PurchasesError>) {
+        if (errors.isNotEmpty()) {
+            val receiptsWithErrors = errors.keys.joinToString()
+            log(
+                LogIntent.AMAZON_ERROR,
+                AmazonStrings.ERROR_FETCHING_RECEIPTS.format(receiptsWithErrors)
+            )
+        }
+    }
+
+    private fun getPurchasesFromReceipts(
+        receipts: List<Receipt>,
+        termSkus: Map<String, String>
+    ): MutableMap<String, AmazonPurchaseWrapper> {
+        val purchases = mutableMapOf<String, AmazonPurchaseWrapper>()
+
+        receipts.forEach { receipt ->
+            termSkus[receipt.receiptId]?.let { termSku ->
+                val amazonPurchaseWrapper = AmazonPurchaseWrapper(
+                    sku = termSku,
+                    containedReceipt = receipt,
+                    presentedOfferingIdentifier = null,
+                    purchaseState = RevenueCatPurchaseState.PURCHASED
+                )
+                val hash = receipt.receiptId.sha1()
+                purchases[hash] = amazonPurchaseWrapper
+            }
+        }
+        return purchases
+    }
+
+    private fun getTermSkusForReceipts(
+        appUserID: String,
+        amazonUserID: String,
+        receipts: List<Receipt>,
+        onCompletion: (termSkus: Map<String, String>, errors: Map<String, PurchasesError>) -> Unit
+    ) {
+        val currentlyCachedTermSkus: Map<String, String> = cache.getReceiptTermSkus()
+
+        val successMap: MutableMap<String, String> = currentlyCachedTermSkus.toMutableMap()
+        val errorMap: MutableMap<String, PurchasesError> = mutableMapOf()
+
+        val receiptsToFetchTermSku: List<Receipt> =
+            receipts.filterNot { currentlyCachedTermSkus.containsKey(it.receiptId) }
+
+        if (receiptsToFetchTermSku.isEmpty()) {
+            onCompletion(successMap, errorMap)
+            return
+        }
+
+        var receiptsLeft = receiptsToFetchTermSku.count()
+        receiptsToFetchTermSku.forEach { receipt ->
+            amazonBackend.getAmazonReceiptData(
+                receipt.receiptId,
+                appUserID,
+                amazonUserID,
+                receipt.sku,
+                onSuccess = { response ->
+                    log(LogIntent.DEBUG, AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()))
+
+                    successMap[receipt.receiptId] = response["termSku"] as String
+
+                    receiptsLeft--
+                    if (receiptsLeft == 0) {
+                        onCompletion(successMap, errorMap)
+                    }
+                },
+                onError = { error ->
+                    log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FETCHING_RECEIPT_INFO.format(error))
+
+                    errorMap[receipt.receiptId] = error
+
+                    receiptsLeft--
+                    if (receiptsLeft == 0) {
+                        onCompletion(successMap, errorMap)
+                    }
+                })
+        }
+    }
+
+    private fun handleReceipt(
+        receipt: Receipt,
+        appUserID: String,
+        userData: UserData,
+        productDetails: ProductDetails,
+        presentedOfferingIdentifier: String?
+    ) {
+        amazonBackend.getAmazonReceiptData(
+            receipt.receiptId,
+            appUserID,
+            userData.userId,
+            productDetails.sku,
+            onSuccess = { response ->
+                val termSku = response["termSku"] as String
+                val amazonPurchaseWrapper = AmazonPurchaseWrapper(
+                    sku = termSku,
+                    containedReceipt = receipt,
+                    presentedOfferingIdentifier = presentedOfferingIdentifier,
+                    purchaseState = RevenueCatPurchaseState.PURCHASED
+                )
+                purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
+            },
+            onError = ::onPurchaseError
+        )
+    }
+
+    private fun onPurchaseError(error: PurchasesError) {
+        purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
     }
 
     class AmazonQueryPurchasesResult(

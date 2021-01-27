@@ -315,7 +315,7 @@ class BillingWrapper(
         }
     }
 
-    override fun consumePurchase(
+    internal fun consumePurchase(
         token: String,
         onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
@@ -331,7 +331,7 @@ class BillingWrapper(
         }
     }
 
-    override fun acknowledge(
+    internal fun acknowledge(
         token: String,
         onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
@@ -375,11 +375,16 @@ class BillingWrapper(
             val unconsumedInAppsList = queryUnconsumedInAppsRequest.purchasesList ?: emptyList<Purchase>()
             val mapOfUnconsumedInApps = unconsumedInAppsList.toMapOfGooglePurchaseWrapper(SkuType.INAPP)
 
-            GoogleQueryPurchasesResult(isSuccessful, mapOfActiveSubscriptions + mapOfUnconsumedInApps)
+            completion(GoogleQueryPurchasesResult(
+                isSuccessful,
+                mapOfActiveSubscriptions + mapOfUnconsumedInApps
+            ))
         } ?: completion(GoogleQueryPurchasesResult(isSuccessful = false, emptyMap()))
     }
 
-    private fun List<Purchase>.toMapOfGooglePurchaseWrapper(@SkuType skuType: String): Map<String, GooglePurchaseWrapper> {
+    private fun List<Purchase>.toMapOfGooglePurchaseWrapper(
+        @SkuType skuType: String
+    ): Map<String, GooglePurchaseWrapper> {
         return this.map { purchase ->
             val hash = purchase.purchaseToken.sha1()
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(skuType, hash))

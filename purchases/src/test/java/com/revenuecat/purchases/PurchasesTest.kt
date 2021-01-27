@@ -671,6 +671,7 @@ class PurchasesTest {
         var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
+                appUserId,
                 captureLambda(),
                 any()
             )
@@ -685,6 +686,7 @@ class PurchasesTest {
         assertThat(capturedLambda).isNotNull
         verify {
             mockBillingAbstract.queryAllPurchases(
+                appUserId,
                 any(),
                 any()
             )
@@ -702,6 +704,7 @@ class PurchasesTest {
         var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
+                appUserId,
                 captureLambda(),
                 any()
             )
@@ -760,7 +763,7 @@ class PurchasesTest {
         setup()
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         every {
-            mockBillingAbstract.queryAllPurchases(any(), captureLambda())
+            mockBillingAbstract.queryAllPurchases(appUserId, any(), captureLambda())
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(purchasesError)
         }
@@ -788,6 +791,7 @@ class PurchasesTest {
         var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
+                appUserId,
                 captureLambda(),
                 any()
             )
@@ -826,7 +830,7 @@ class PurchasesTest {
 
         assertThat(capturedLambda).isNotNull
         verify(exactly = 1) {
-            mockBillingAbstract.queryAllPurchases(any(), any())
+            mockBillingAbstract.queryAllPurchases(appUserId, any(), any())
         }
 
         assertThat(callbackCalled).isTrue()
@@ -1302,6 +1306,7 @@ class PurchasesTest {
         var capturedRestoreLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
+                    appUserId,
                 captureLambda(),
                 any()
             )
@@ -1382,6 +1387,7 @@ class PurchasesTest {
         var capturedRestoreLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
+                    appUserId,
                 captureLambda(),
                 any()
             )
@@ -1444,6 +1450,7 @@ class PurchasesTest {
 
         every {
             mockBillingAbstract.queryAllPurchases(
+                appUserId,
                 captureLambda(),
                 any()
             )
@@ -2323,6 +2330,7 @@ class PurchasesTest {
         var capturedRestoreLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
+                appUserId,
                 captureLambda(),
                 any()
             )
@@ -2360,6 +2368,7 @@ class PurchasesTest {
         var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
+                appUserId,
                 captureLambda(),
                 any()
             )
@@ -2421,6 +2430,7 @@ class PurchasesTest {
         var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
+                appUserId,
                 captureLambda(),
                 any()
             )
@@ -2480,6 +2490,7 @@ class PurchasesTest {
         var capturedLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
+                appUserId,
                 captureLambda(),
                 any()
             )
@@ -2507,7 +2518,7 @@ class PurchasesTest {
             )
         }
         verify(exactly = 0) {
-            mockBillingAbstract.consumePurchase(eq(purchaseToken), any())
+            mockBillingAbstract.consumeAndSave(any(), any())
         }
         assertThat(capturedLambda).isNotNull
     }
@@ -2854,10 +2865,7 @@ class PurchasesTest {
         )
         purchases.updatePendingPurchaseQueue()
         verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!)
-        }
-        verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!)
+            mockBillingAbstract.queryPurchases(appUserId, any())
         }
     }
 
@@ -2932,41 +2940,20 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when updating pending purchases, if result from query SUBS is not positive skip`() {
+    fun `when updating pending purchases, if result from querying purchases is not positive skip`() {
         setup()
         every {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!)
-        } returns BillingWrapper.GoogleQueryPurchasesResult(
-            responseCode = -1,
-            purchasesByHashedToken = emptyMap()
-        )
-        every {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!)
-        } returns BillingWrapper.GoogleQueryPurchasesResult(
-            responseCode = 0,
-            purchasesByHashedToken = emptyMap()
-        )
-        purchases.updatePendingPurchaseQueue()
-        verify(exactly = 0) {
-            mockCache.getPreviouslySentHashedTokens()
+            mockBillingAbstract.queryPurchases(appUserId, captureLambda())
+        } answers {
+            lambda<(BillingAbstract.QueryPurchasesResult) -> Unit>()
+                .captured(
+                    BillingWrapper.GoogleQueryPurchasesResult(
+                        isSuccessful = false,
+                        purchasesByHashedToken = emptyMap()
+                    )
+                )
         }
-    }
 
-    @Test
-    fun `when updating pending purchases, if result from query INAPP is not positive skip`() {
-        setup()
-        every {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!)
-        } returns BillingWrapper.GoogleQueryPurchasesResult(
-            responseCode = 0,
-            purchasesByHashedToken = emptyMap()
-        )
-        every {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!)
-        } returns BillingWrapper.GoogleQueryPurchasesResult(
-            responseCode = -1,
-            purchasesByHashedToken = emptyMap()
-        )
         purchases.updatePendingPurchaseQueue()
         verify(exactly = 0) {
             mockCache.getPreviouslySentHashedTokens()
@@ -2983,10 +2970,7 @@ class PurchasesTest {
         )
         capturedBillingWrapperStateListener.captured.onConnected()
         verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!)
-        }
-        verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!)
+            mockBillingAbstract.queryPurchases(appUserId, any())
         }
     }
 
@@ -3001,10 +2985,7 @@ class PurchasesTest {
         mockSynchronizeSubscriberAttributesForAllUsers()
         purchases.onAppForegrounded()
         verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!)
-        }
-        verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!)
+            mockBillingAbstract.queryPurchases(appUserId, any())
         }
     }
 
@@ -3016,10 +2997,10 @@ class PurchasesTest {
         } returns false
         purchases.updatePendingPurchaseQueue()
         verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!)
+            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!, any())
         }
         verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!)
+            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!, any())
         }
     }
 
@@ -3081,11 +3062,7 @@ class PurchasesTest {
         }
 
         verify(exactly = 0) {
-            mockBillingAbstract.consumePurchase(any(), any())
-        }
-
-        verify(exactly = 0) {
-            mockBillingAbstract.acknowledge(any(), any())
+            mockBillingAbstract.consumeAndSave(any(), any())
         }
 
         verify(exactly = 0) {
@@ -3386,9 +3363,6 @@ class PurchasesTest {
             } just Runs
             every {
                 consumeAndSave(capture(capturedShouldTryToConsume), capture(capturedConsumePurchaseWrapper))
-            } just Runs
-            every {
-                consumeAndSave(capture(capturedShouldTryToConsume), capture(capturedConsumePurchaseHistoryRecordWrapper))
             } just Runs
             every {
                 purchasesUpdatedListener = null
@@ -4315,32 +4289,22 @@ class PurchasesTest {
         queriedINAPP: Map<String, PurchaseWrapper>,
         notInCache: List<PurchaseWrapper>
     ) {
-        val queryPurchasesResultSUBS = BillingWrapper.GoogleQueryPurchasesResult(
-            responseCode = 0,
-            purchasesByHashedToken = queriedSUBS
-        )
-        val queryPurchasesResultINAPP = BillingWrapper.GoogleQueryPurchasesResult(
-            responseCode = 0,
-            purchasesByHashedToken = queriedINAPP
+        val queryPurchasesResult = BillingWrapper.GoogleQueryPurchasesResult(
+            isSuccessful = true,
+            purchasesByHashedToken = queriedSUBS + queriedINAPP
         )
         every {
-            mockCache.cleanPreviouslySentTokens(
-                queryPurchasesResultSUBS.purchasesByHashedToken.keys,
-                queryPurchasesResultINAPP.purchasesByHashedToken.keys
-            )
+            mockCache.cleanPreviouslySentTokens(queryPurchasesResult.purchasesByHashedToken.keys)
         } just Runs
         every {
-            mockCache.getActivePurchasesNotInCache(
-                queryPurchasesResultSUBS.purchasesByHashedToken,
-                queryPurchasesResultINAPP.purchasesByHashedToken
-            )
+            mockCache.getActivePurchasesNotInCache(queryPurchasesResult.purchasesByHashedToken)
         } returns notInCache
+
         every {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!)
-        } returns queryPurchasesResultSUBS
-        every {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!)
-        } returns queryPurchasesResultINAPP
+            mockBillingAbstract.queryPurchases(appUserId, captureLambda())
+        } answers {
+            lambda<(BillingAbstract.QueryPurchasesResult) -> Unit>().captured(queryPurchasesResult)
+        }
     }
 
     private fun buildPurchases(anonymous: Boolean = false) {

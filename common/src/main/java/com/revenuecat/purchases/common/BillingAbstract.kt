@@ -58,16 +58,6 @@ abstract class BillingAbstract {
         purchase: PurchaseWrapper
     )
 
-    abstract fun consumePurchase(
-        token: String,
-        onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit
-    )
-
-    abstract fun acknowledge(
-        token: String,
-        onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit
-    )
-
     abstract fun findPurchaseInPurchaseHistory(
         skuType: ProductType,
         sku: String,

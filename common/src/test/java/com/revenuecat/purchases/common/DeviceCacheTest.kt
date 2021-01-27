@@ -230,10 +230,7 @@ class DeviceCacheTest {
         every {
             mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "token2", "token3")
-        cache.cleanPreviouslySentTokens(
-            setOf("token3"),
-            setOf("token4")
-        )
+        cache.cleanPreviouslySentTokens(setOf("token3", "token4"))
         verify {
             mockEditor.putStringSet(cache.tokensCacheKey, setOf("token3"))
         }
@@ -250,10 +247,7 @@ class DeviceCacheTest {
         every {
             mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "token2")
-        cache.cleanPreviouslySentTokens(
-            setOf("token1"),
-            setOf("token2")
-        )
+        cache.cleanPreviouslySentTokens(setOf("token1", "token2"))
         verify {
             mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2"))
         }
@@ -271,10 +265,7 @@ class DeviceCacheTest {
             every { it.type } returns ProductType.INAPP
         }
         val activePurchasesNotInCache =
-            cache.getActivePurchasesNotInCache(
-                mapOf("hash1" to activeSub),
-                mapOf("hash2" to inApp)
-            )
+            cache.getActivePurchasesNotInCache(mapOf("hash1" to activeSub, "hash2" to inApp))
         assertThat(activePurchasesNotInCache).contains(activeSub)
     }
 
