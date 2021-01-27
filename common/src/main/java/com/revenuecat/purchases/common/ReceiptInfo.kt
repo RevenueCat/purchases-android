@@ -8,7 +8,7 @@ class ReceiptInfo(
     val productDetails: ProductDetails? = null
 ) {
 
-    val price: Double? = productDetails?.priceAmountMicros?.div(MICROS_MULTIPLIER)
+    val price: Double? = productDetails?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble())
     val currency: String? = productDetails?.priceCurrencyCode
     val duration: String? = productDetails?.subscriptionPeriod?.takeUnless { it.isEmpty() }
     val introDuration: String? = productDetails?.introductoryPricePeriod?.takeUnless { it.isEmpty() }

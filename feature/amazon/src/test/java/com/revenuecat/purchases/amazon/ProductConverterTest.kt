@@ -23,6 +23,6 @@ class ProductConverterTest {
             .setTitle("title")
             .setCoinsRewardAmount(0).build()
         val productDetails = product.toProductDetails("US")
-        assertThat(productDetails.priceAmountMicros).isEqualTo(3_990_000)
+        assertThat(productDetails.priceAmountMicros).isEqualTo(39_990_000)
     }
 }

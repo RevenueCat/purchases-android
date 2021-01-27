@@ -15,7 +15,7 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import java.security.MessageDigest
 import java.util.Locale
 
-const val MICROS_MULTIPLIER = 1_000_000.0
+const val MICROS_MULTIPLIER = 1_000_000
 
 fun Purchase.toHumanReadableDescription() =
     "${this.sku} ${this.orderId} ${this.purchaseToken}"
