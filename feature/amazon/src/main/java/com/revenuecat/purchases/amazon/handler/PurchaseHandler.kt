@@ -92,7 +92,16 @@ class PurchaseHandler : PurchaseResponseListener {
     }
 
     private fun onFailed(onError: (PurchasesError) -> Unit) {
-        // Indicates that the purchase failed. Can simply mean user cancelled
+        // Indicates that the purchase failed. Can simply mean user cancelled.
+        //
+        // According to Amazon's EU MFA flow documentation, the flow would
+        // return a PurchaseResponse.RequestStatus.FAILED if cancelled and a
+        // PurchaseResponse.RequestStatus.SUCCESSFUL if the MFA flow is completed successfuly
+        //
+        // Amazon docs:
+        // https://developer.amazon.com/blogs/appstore/post/
+        // 72ee4001-9e54-49b1-83ad-f1cede9b40ce/
+        // ensuring-your-implementation-of-in-app-purchase-is-ready-for-eu-multi-factor-authentication
         onError(PurchasesError(PurchasesErrorCode.PurchaseCancelledError, AmazonStrings.ERROR_PURCHASE_FAILED))
     }
 }
