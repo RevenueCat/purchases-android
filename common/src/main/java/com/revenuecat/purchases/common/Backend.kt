@@ -330,6 +330,35 @@ class Backend(
         })
     }
 
+    fun logIn(
+        appUserID: String,
+        newAppUserID: String,
+        onSuccessHandler: (PurchaserInfo, Boolean) -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit
+    ) {
+        enqueue(object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPClient.Result {
+                return httpClient.performRequest(
+                    "/subscribers/" + encode(appUserID) + "/login",
+                    mapOf("new_app_user_id" to newAppUserID),
+                    authenticationHeaders
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                onErrorHandler(error)
+            }
+
+            override fun onCompletion(result: HTTPClient.Result) {
+                if (result.isSuccessful()) {
+//                    onSuccessHandler()
+                } else {
+                    onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                }
+            }
+        })
+    }
+
     private fun HTTPClient.Result.isSuccessful(): Boolean {
         return responseCode < UNSUCCESSFUL_HTTP_STATUS_CODE
     }

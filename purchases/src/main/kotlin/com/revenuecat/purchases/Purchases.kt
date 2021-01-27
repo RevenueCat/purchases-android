@@ -600,12 +600,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
             identityManager.logIn(newAppUserID,
-                    { purchaserInfo, created ->
+                    onSuccess = { purchaserInfo, created ->
                         debugLog("login success, purchaserInfo: $purchaserInfo \n created: $created")
-                        dispatch { listener?.onReceived(purchaserInfo, created) }
+                        dispatch {
+                            listener?.onReceived(purchaserInfo, created)
+                            sendUpdatedPurchaserInfoToDelegateIfChanged(purchaserInfo)
+                        }
                         fetchAndCacheOfferings(appUserID, state.appInBackground)
                     },
-                    { error ->
+                    onError = { error ->
                         debugLog("login error: $error")
                         dispatch { listener?.onError(error) }
                     })

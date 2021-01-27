@@ -51,11 +51,32 @@ class IdentityManager(
     }
 
     fun logIn(
-            appUserID: String,
+            newAppUserID: String,
             onSuccess: (PurchaserInfo, Boolean) -> Unit,
             onError: (PurchasesError) -> Unit
     ) {
-        onError(PurchasesError(PurchasesErrorCode.UnknownError, "the method hasn't been implemented yet"))
+        if (newAppUserID.isBlank()) {
+            onError(PurchasesError(PurchasesErrorCode.InvalidAppUserIdError, "appUserID can't be null, empty or blank"))
+        }
+
+        log(LogIntent.USER, IdentityStrings.LOGGING_IN.format(currentAppUserID, newAppUserID))
+        val oldAppUserID = currentAppUserID
+        backend.logIn(
+                oldAppUserID,
+                newAppUserID,
+                { purchaserInfo, created ->
+                    synchronized(this@IdentityManager) {
+                        log(LogIntent.USER, IdentityStrings.CREATING_ALIAS_SUCCESS)
+                        deviceCache.clearCachesForAppUserID(oldAppUserID)
+                        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+
+                        deviceCache.cacheAppUserID(newAppUserID)
+                        deviceCache.cachePurchaserInfo(newAppUserID, purchaserInfo)
+                    }
+                    onSuccess(purchaserInfo, created)
+                },
+                onError
+        )
     }
 
     fun createAlias(
