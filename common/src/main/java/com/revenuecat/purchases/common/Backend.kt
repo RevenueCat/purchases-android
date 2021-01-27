@@ -351,7 +351,9 @@ class Backend(
 
             override fun onCompletion(result: HTTPClient.Result) {
                 if (result.isSuccessful()) {
-//                    onSuccessHandler()
+                    val created = result.responseCode == 201
+                    val purchaserInfo = result.body.buildPurchaserInfo()
+                    onSuccessHandler(purchaserInfo, created)
                 } else {
                     onErrorHandler(result.toPurchasesError().also { errorLog(it) })
                 }
