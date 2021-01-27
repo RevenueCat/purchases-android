@@ -651,7 +651,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 ))
     }
 
-
     /**
      * Resets the Purchases client clearing the save appUserID. This will generate a random user
      * id and save it in the cache.
