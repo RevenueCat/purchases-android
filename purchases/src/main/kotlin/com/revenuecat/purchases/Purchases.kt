@@ -651,6 +651,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 ))
     }
 
+
+    /**
+     * Resets the Purchases client clearing the save appUserID. This will generate a random user
+     * id and save it in the cache.
+     * @param [listener] An optional listener to listen for successes or errors.
+     */
+    @JvmOverloads
+    fun logOut(listener: ReceivePurchaserInfoListener? = null) {
+        if (identityManager.currentUserIsAnonymous()) {
+            log(LogIntent.RC_ERROR, "Called logOut but the current user is anonymous")
+            listener?.onError(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
+        } else {
+            reset(listener)
+        }
+    }
+
     /**
      * Resets the Purchases client clearing the save appUserID. This will generate a random user
      * id and save it in the cache.

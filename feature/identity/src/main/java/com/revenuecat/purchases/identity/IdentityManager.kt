@@ -110,6 +110,18 @@ class IdentityManager(
     }
 
     @Synchronized
+    fun logOut(): PurchasesError? {
+        if (currentUserIsAnonymous()) {
+            log(LogIntent.RC_ERROR, "Called logOut but the current user is anonymous")
+            return PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError)
+        }
+        deviceCache.clearCachesForAppUserID(currentAppUserID)
+        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
+        deviceCache.cacheAppUserID(generateRandomID())
+        return null
+    }
+
+    @Synchronized
     fun currentUserIsAnonymous(): Boolean {
         val currentAppUserIDLooksAnonymous =
             "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
