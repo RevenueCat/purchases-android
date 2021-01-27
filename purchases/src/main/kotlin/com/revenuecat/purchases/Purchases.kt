@@ -631,7 +631,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @JvmOverloads
     @JvmSynthetic
-    internal fun logIn(
+    fun logIn(
         newAppUserID: String,
         callback: LogInCallback? = null
     ) {
@@ -665,7 +665,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @JvmOverloads
     @JvmSynthetic
-    internal fun logOut(listener: ReceivePurchaserInfoListener? = null) {
+    fun logOut(listener: ReceivePurchaserInfoListener? = null) {
         val error: PurchasesError? = identityManager.logOut()
         if (error != null) {
             listener?.onError(error)
