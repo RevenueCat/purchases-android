@@ -872,7 +872,9 @@ class BillingWrapperTest {
             listOf(purchaseHistoryRecord)
         )
         assertThat(recordFound).isNotNull
-        assertThat(recordFound!!.purchaseHistoryRecord).isEqualTo(purchaseHistoryRecord)
+        assertThat(recordFound!!.sku).isEqualTo(purchaseHistoryRecord.sku)
+        assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
+        assertThat(recordFound!!.purchaseToken).isEqualTo(purchaseHistoryRecord.purchaseToken)
     }
 
     @Test
@@ -1011,7 +1013,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `tokens are not save in cache if acknowledge fails`() {
+    fun `tokens are not saved in cache if acknowledge fails`() {
         setup()
         val sku = "sub"
         val token = "token_sub"

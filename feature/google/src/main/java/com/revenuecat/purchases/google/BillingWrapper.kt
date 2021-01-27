@@ -276,67 +276,37 @@ class BillingWrapper(
         shouldTryToConsume: Boolean,
         purchase: PurchaseWrapper
     ) {
-        if (purchase !is GooglePurchaseWrapper) return
-
         if (purchase.type == ProductType.UNKNOWN) {
             // Would only get here if the purchase was triggered from outside of the app and there was
             // an issue getting the purchase type
             return
         }
-        if (purchase.purchaseState != RevenueCatPurchaseState.PURCHASED) {
+        if (purchase.purchaseState == RevenueCatPurchaseState.PENDING) {
             // Only PURCHASED purchases should be fulfilled
             return
         }
-        if (shouldTryToConsume && purchase.isConsumable) {
-            consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
-                        .format(billingResult.toHumanReadableDescription()))
-                }
-            }
-        } else if (shouldTryToConsume && !purchase.containedPurchase.isAcknowledged) {
-            acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
-                        .format(billingResult.toHumanReadableDescription()))
-                }
-            }
-        } else {
-            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-        }
-    }
 
-    override fun consumeAndSave(
-        shouldTryToConsume: Boolean,
-        purchase: PurchaseHistoryRecordWrapper
-    ) {
-        if (purchase.type == ProductType.UNKNOWN) {
-            // Would only get here if the purchase was triggered from outside of the app and there was
-            // an issue getting the purchase type
-            return
-        }
-        if (shouldTryToConsume && purchase.isConsumable) {
+        val alreadyAcknowledged = purchase is GooglePurchaseWrapper && purchase.containedPurchase.isAcknowledged
+        if (shouldTryToConsume && purchase.type == ProductType.INAPP) {
             consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
                     log(
                         LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()))
+                            .format(billingResult.toHumanReadableDescription())
+                    )
                 }
             }
-        } else if (shouldTryToConsume) {
+        } else if (shouldTryToConsume && !alreadyAcknowledged) {
             acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
                     log(
                         LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()))
+                            .format(billingResult.toHumanReadableDescription())
+                    )
                 }
             }
         } else {

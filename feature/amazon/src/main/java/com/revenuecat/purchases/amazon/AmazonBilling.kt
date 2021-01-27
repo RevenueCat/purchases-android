@@ -102,14 +102,6 @@ class AmazonBilling constructor(
         }
     }
 
-    @SuppressWarnings("ForbiddenComment")
-    override fun consumeAndSave(
-        shouldTryToConsume: Boolean,
-        purchase: PurchaseHistoryRecordWrapper
-    ) {
-        // TODO
-    }
-
     override fun consumePurchase(
         token: String,
         onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit

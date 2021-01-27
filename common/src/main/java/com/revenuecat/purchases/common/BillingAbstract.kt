@@ -58,11 +58,6 @@ abstract class BillingAbstract {
         purchase: PurchaseWrapper
     )
 
-    abstract fun consumeAndSave(
-        shouldTryToConsume: Boolean,
-        purchase: PurchaseHistoryRecordWrapper
-    )
-
     abstract fun consumePurchase(
         token: String,
         onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit

@@ -3,23 +3,18 @@ package com.revenuecat.purchases.common
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
 
-data class PurchaseHistoryRecordWrapper(
-    val isConsumable: Boolean,
-    val purchaseToken: String,
-    val purchaseTime: Long,
-    val sku: String,
-    val purchaseHistoryRecord: PurchaseHistoryRecord,
-    val type: ProductType
-) {
-    constructor(
-        purchaseHistoryRecord: PurchaseHistoryRecord,
-        type: ProductType
-    ) : this(
-        isConsumable = type == ProductType.INAPP,
-        purchaseToken = purchaseHistoryRecord.purchaseToken,
-        purchaseTime = purchaseHistoryRecord.purchaseTime,
-        sku = purchaseHistoryRecord.sku,
-        purchaseHistoryRecord = purchaseHistoryRecord,
-        type = type
-    )
+class PurchaseHistoryRecordWrapper(
+    private val purchaseHistoryRecord: PurchaseHistoryRecord,
+    override val type: ProductType
+) : PurchaseWrapper {
+    override val purchaseToken: String
+        get() = purchaseHistoryRecord.purchaseToken
+    override val purchaseTime: Long
+        get() = purchaseHistoryRecord.purchaseTime
+    override val sku: String
+        get() = purchaseHistoryRecord.sku
+    override val presentedOfferingIdentifier: String?
+        get() = null
+    override val purchaseState: RevenueCatPurchaseState
+        get() = RevenueCatPurchaseState.UNSPECIFIED_STATE
 }
