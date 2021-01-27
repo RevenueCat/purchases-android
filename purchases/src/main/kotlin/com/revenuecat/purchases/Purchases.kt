@@ -21,44 +21,17 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.BillingWrapper
-import com.revenuecat.purchases.common.Config
-import com.revenuecat.purchases.common.Dispatcher
-import com.revenuecat.purchases.common.HTTPClient
-import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.PlatformInfo
-import com.revenuecat.purchases.common.ProductInfo
-import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
-import com.revenuecat.purchases.common.PurchaseType
-import com.revenuecat.purchases.common.PurchaseWrapper
-import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.*
 import com.revenuecat.purchases.common.attribution.AttributionData
-import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.createOfferings
-import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.getBillingResponseCodeName
-import com.revenuecat.purchases.common.isSuccessful
-import com.revenuecat.purchases.common.toHumanReadableDescription
-import com.revenuecat.purchases.common.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
-import com.revenuecat.purchases.interfaces.Callback
-import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.MakePurchaseListener
-import com.revenuecat.purchases.interfaces.ProductChangeListener
-import com.revenuecat.purchases.interfaces.PurchaseErrorListener
-import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
-import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
-import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
-import com.revenuecat.purchases.strings.OfferingStrings
-import com.revenuecat.purchases.strings.PurchaseStrings
-import com.revenuecat.purchases.strings.RestoreStrings
+import com.revenuecat.purchases.interfaces.*
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.strings.OfferingStrings
+import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.PurchaserInfoStrings
+import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.AttributionFetcher
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -70,8 +43,8 @@ import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
+import java.util.*
 import java.util.Collections.emptyMap
-import java.util.HashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
@@ -612,6 +585,39 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 }
             )
         } ?: retrievePurchaseInfo(identityManager.currentAppUserID, listener)
+    }
+
+    /**
+     * This function will change the current appUserID.
+     * Typically this would be used after a log out to identify a new user without calling configure
+     * @param newAppUserID The new appUserID that should be linked to the currently user
+     * @param [listener] An optional listener to listen for successes or errors.
+     */
+    @JvmOverloads
+    fun logIn(
+            newAppUserID: String,
+            listener: LogInListener? = null
+    ) {
+        identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
+            identityManager.logIn(newAppUserID,
+                    { purchaserInfo, created ->
+                        debugLog("login success, purchaserInfo: $purchaserInfo \n created: $created")
+                        dispatch { listener?.onReceived(purchaserInfo, created) }
+                        fetchAndCacheOfferings(appUserID, state.appInBackground)
+                    },
+                    { error ->
+                        debugLog("login error: $error")
+                        dispatch { listener?.onError(error) }
+                    })
+        }
+                ?: retrievePurchaseInfo(identityManager.currentAppUserID, receivePurchaserInfoListener(
+                        onSuccess = { purchaserInfo ->
+                            dispatch { listener?.onReceived(purchaserInfo, false) }
+                        },
+                        onError = { error ->
+                            dispatch { listener?.onError(error) }
+                        }
+                ))
     }
 
     /**

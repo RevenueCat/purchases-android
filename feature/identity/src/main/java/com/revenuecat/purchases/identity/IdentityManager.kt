@@ -1,14 +1,15 @@
 package com.revenuecat.purchases.identity
 
+import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
-import java.util.Locale
-import java.util.UUID
+import java.util.*
 
 class IdentityManager(
     private val deviceCache: DeviceCache,
@@ -47,6 +48,14 @@ class IdentityManager(
             }
             onSuccess()
         }
+    }
+
+    fun logIn(
+            appUserID: String,
+            onSuccess: (PurchaserInfo, Boolean) -> Unit,
+            onError: (PurchasesError) -> Unit
+    ) {
+        onError(PurchasesError(PurchasesErrorCode.UnknownError, "the method hasn't been implemented yet"))
     }
 
     fun createAlias(
