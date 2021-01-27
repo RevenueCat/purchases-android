@@ -115,6 +115,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     * default. If true treats all purchases as restores, aliasing together appUserIDs that share a
     * Play Store account.
     */
+
+    @Deprecated(
+            "Replaced with configuration in the RevenueCat dashboard",
+            ReplaceWith("configure through the RevenueCat dashboard")
+    )
     var allowSharingPlayStoreAccount: Boolean
         @Synchronized get() =
             state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
@@ -593,6 +598,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param newAppUserID The new appUserID that should be linked to the currently user
      * @param [listener] An optional listener to listen for successes or errors.
      */
+    @Deprecated(
+            "Use logIn instead",
+            ReplaceWith("logIn")
+    )
     @JvmOverloads
     fun identify(
         newAppUserID: String,
@@ -673,6 +682,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * id and save it in the cache.
      * @param [listener] An optional listener to listen for successes or errors.
      */
+    @Deprecated(
+            "Use logOut instead",
+            ReplaceWith("logOut")
+    )
     @JvmOverloads
     fun reset(
         listener: ReceivePurchaserInfoListener? = null
