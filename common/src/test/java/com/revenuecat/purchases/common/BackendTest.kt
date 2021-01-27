@@ -286,7 +286,7 @@ class BackendTest {
     }
 
     @Test
-    fun postReceiptCallsFailsFor40X() {
+    fun postReceiptCallsFailsFor4XX() {
         postReceipt(
             responseCode = 401,
             isRestore = false,

@@ -1218,7 +1218,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `tries to consume purchases on 40x`() {
+    fun `tries to consume purchases on 4xx`() {
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
         val skuSub = "sub"
@@ -1264,7 +1264,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `tries to consume restored purchases on 40x`() {
+    fun `tries to consume restored purchases on 4xx`() {
         setup()
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
@@ -1327,7 +1327,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `does not consume purchases on 50x`() {
+    fun `does not consume purchases on 5xx`() {
         setup()
 
         val sku = "onemonth_freetrial"
@@ -1369,7 +1369,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `does not consume restored purchases on 50x`() {
+    fun `does not consume restored purchases on 5xx`() {
         setup()
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
@@ -2202,7 +2202,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when finishTransactions is set to false, don't consume transactions on 40x`() {
+    fun `when finishTransactions is set to false, don't consume transactions on 4xx`() {
         setup()
 
         val sku = "onemonth_freetrial"
@@ -2250,7 +2250,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when finishTransactions is set to false, don't consume transactions on 50x`() {
+    fun `when finishTransactions is set to false, don't consume transactions on 5xx`() {
         setup()
 
         val sku = "onemonth_freetrial"
