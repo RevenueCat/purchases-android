@@ -9,6 +9,7 @@ interface PurchaseWrapper {
     val sku: String
     val presentedOfferingIdentifier: String?
     val purchaseState: RevenueCatPurchaseState
+    val storeUserID: String?
 }
 
 enum class RevenueCatPurchaseState {

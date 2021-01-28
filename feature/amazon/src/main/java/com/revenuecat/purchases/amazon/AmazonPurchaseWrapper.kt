@@ -9,7 +9,8 @@ class AmazonPurchaseWrapper(
     override val sku: String,
     val containedReceipt: Receipt,
     override val presentedOfferingIdentifier: String? = null,
-    override val purchaseState: RevenueCatPurchaseState
+    override val purchaseState: RevenueCatPurchaseState,
+    override val storeUserID: String
 ) : PurchaseWrapper {
     override val type: ProductType
         get() = containedReceipt.productType.toRevenueCatProductType()

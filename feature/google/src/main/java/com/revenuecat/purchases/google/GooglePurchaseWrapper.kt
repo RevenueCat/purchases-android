@@ -19,4 +19,6 @@ class GooglePurchaseWrapper(
         get() = containedPurchase.sku
     override val purchaseState: RevenueCatPurchaseState
         get() = containedPurchase.purchaseState.toRevenueCatPurchaseType()
+    override val storeUserID: String?
+        get() = null
 }

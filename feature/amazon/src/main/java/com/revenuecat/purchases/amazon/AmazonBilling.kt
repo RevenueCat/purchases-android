@@ -99,7 +99,8 @@ internal class AmazonBilling constructor(
                                         purchaseToken = receipt.receiptId,
                                         purchaseTime = receipt.purchaseDate.time,
                                         sku = sku,
-                                        purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE
+                                        purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
+                                        storeUserID = userData.userId
                                     )
                                 } else {
                                     log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
@@ -214,7 +215,8 @@ internal class AmazonBilling constructor(
                                             sku = sku,
                                             containedReceipt = receipt,
                                             presentedOfferingIdentifier = null,
-                                            purchaseState = RevenueCatPurchaseState.PURCHASED
+                                            purchaseState = RevenueCatPurchaseState.PURCHASED,
+                                            storeUserID = userData.userId
                                         )
                                         val hash = receipt.receiptId.sha1()
                                         hash to amazonPurchaseWrapper
@@ -338,7 +340,8 @@ internal class AmazonBilling constructor(
                 sku = productDetails.sku,
                 containedReceipt = receipt,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
-                purchaseState = RevenueCatPurchaseState.PURCHASED
+                purchaseState = RevenueCatPurchaseState.PURCHASED,
+                storeUserID = userData.userId
             )
             purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
             return
@@ -355,7 +358,8 @@ internal class AmazonBilling constructor(
                     sku = termSku,
                     containedReceipt = receipt,
                     presentedOfferingIdentifier = presentedOfferingIdentifier,
-                    purchaseState = RevenueCatPurchaseState.PURCHASED
+                    purchaseState = RevenueCatPurchaseState.PURCHASED,
+                    storeUserID = userData.userId
                 )
                 purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
             },

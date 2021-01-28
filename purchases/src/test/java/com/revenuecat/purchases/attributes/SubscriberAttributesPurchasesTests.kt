@@ -94,6 +94,7 @@ class SubscriberAttributesPurchasesTests {
                 observerMode = any(),
                 subscriberAttributes = capture(postedAttributesSlot),
                 receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
             )
@@ -251,6 +252,7 @@ class SubscriberAttributesPurchasesTests {
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -323,6 +325,7 @@ class SubscriberAttributesPurchasesTests {
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -414,6 +417,7 @@ class SubscriberAttributesPurchasesTests {
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = any(),
                 onError = any()
             )

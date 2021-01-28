@@ -28,6 +28,7 @@ import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
@@ -387,6 +388,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -400,6 +402,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo1,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -440,6 +443,7 @@ class PurchasesTest {
                     observerMode = false,
                     subscriberAttributes = emptyMap(),
                     receiptInfo = it,
+                    storeAppUserID = null,
                     onSuccess = any(),
                     onError = any()
                 )
@@ -459,6 +463,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
+                storeAppUserID = null,
                 receiptInfo = any(),
                 onSuccess = any(),
                 onError = any()
@@ -603,6 +608,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -630,6 +636,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -659,6 +666,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -711,8 +719,8 @@ class PurchasesTest {
         } answers {
             capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured
             capturedLambda?.invoke(
-                getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
-                    getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
+                getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP, "store_user_id") +
+                    getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS, storeUserID = null)
             )
         }
 
@@ -736,6 +744,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = "store_user_id",
                 onSuccess = any(),
                 onError = any()
             )
@@ -752,6 +761,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo1,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -798,8 +808,8 @@ class PurchasesTest {
         } answers {
             capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
-                        getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
+                    getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP, storeUserID = null) +
+                        getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS, storeUserID = null)
                 )
             }
         }
@@ -813,6 +823,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = any(),
+                storeAppUserID = null,
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -857,6 +868,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1300,8 +1312,8 @@ class PurchasesTest {
             },
             isRestore = true
         )
-        val purchaseRecords = getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
-            getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
+        val purchaseRecords = getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP, storeUserID = null) +
+            getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS, storeUserID = null)
 
         var capturedRestoreLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
@@ -1381,8 +1393,8 @@ class PurchasesTest {
         val skuSub = "sub"
         val purchaseTokenSub = "token_sub"
 
-        val purchaseRecords = getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
-            getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
+        val purchaseRecords = getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP, storeUserID = null) +
+            getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS, storeUserID = null)
 
         var capturedRestoreLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
@@ -1695,6 +1707,7 @@ class PurchasesTest {
                 observerMode = any(),
                 subscriberAttributes = any(),
                 receiptInfo = any(),
+                storeAppUserID = null,
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -2187,6 +2200,7 @@ class PurchasesTest {
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2200,6 +2214,7 @@ class PurchasesTest {
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo1,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2324,8 +2339,8 @@ class PurchasesTest {
             type = ProductType.SUBS,
             restore = true
         )
-        val purchaseRecords = getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
-            getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
+        val purchaseRecords = getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP, storeUserID = null) +
+            getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS, storeUserID = null)
 
         var capturedRestoreLambda: ((List<PurchaseHistoryRecordWrapper>) -> Unit)? = null
         every {
@@ -2375,8 +2390,8 @@ class PurchasesTest {
         } answers {
             capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
-                        getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
+                    getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP, storeUserID = "store_user_id") +
+                        getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS, storeUserID = null)
                 )
             }
         }
@@ -2395,6 +2410,7 @@ class PurchasesTest {
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = "store_user_id",
                 onSuccess = any(),
                 onError = any()
             )
@@ -2410,6 +2426,7 @@ class PurchasesTest {
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo1,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2437,8 +2454,8 @@ class PurchasesTest {
         } answers {
             capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
-                        getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
+                    getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP, storeUserID = null) +
+                        getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS, storeUserID = null)
                 )
             }
         }
@@ -2457,6 +2474,7 @@ class PurchasesTest {
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2473,6 +2491,7 @@ class PurchasesTest {
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo1,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2496,7 +2515,7 @@ class PurchasesTest {
             )
         } answers {
             capturedLambda = lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
-                it.invoke(getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP))
+                it.invoke(getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP, storeUserID = null))
             }
         }
 
@@ -2513,6 +2532,7 @@ class PurchasesTest {
                 observerMode = true,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2830,6 +2850,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2895,6 +2916,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = receiptInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2933,6 +2955,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3039,6 +3062,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3056,6 +3080,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo1,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3095,6 +3120,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3129,6 +3155,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -3198,6 +3225,7 @@ class PurchasesTest {
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = productInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -4086,6 +4114,7 @@ class PurchasesTest {
                     observerMode = any(),
                     subscriberAttributes = any(),
                     receiptInfo = any(),
+                    storeAppUserID = any(),
                     onSuccess = captureLambda(),
                     onError = any()
                 )
@@ -4238,8 +4267,9 @@ class PurchasesTest {
     private fun getMockedPurchaseHistoryList(
         sku: String,
         purchaseToken: String,
-        productType: ProductType
-    ): ArrayList<PurchaseHistoryRecordWrapper> {
+        productType: ProductType,
+        storeUserID: String?
+    ): List<PurchaseHistoryRecordWrapper> {
         val p: PurchaseHistoryRecord = mockk()
         every {
             p.sku
@@ -4250,9 +4280,15 @@ class PurchasesTest {
         every {
             p.purchaseTime
         } returns System.currentTimeMillis()
-        return ArrayList<PurchaseHistoryRecordWrapper>().also {
-            it.add(PurchaseHistoryRecordWrapper(p, productType))
-        }
+        val purchaseHistoryRecordWrapper = PurchaseHistoryRecordWrapper(
+            type = productType,
+            purchaseToken = p.purchaseToken,
+            purchaseTime = p.purchaseTime,
+            sku = p.sku,
+            purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
+            storeUserID = storeUserID
+        )
+        return listOf(purchaseHistoryRecordWrapper)
     }
 
     private fun getMockedPurchaseList(
@@ -4352,6 +4388,7 @@ class PurchasesTest {
                 observerMode = observerMode,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = if (isRestore) ReceiptInfo(productID = sku) else receiptInfo,
+                storeAppUserID = null,
                 onSuccess = any(),
                 onError = captureLambda()
             )
@@ -4377,6 +4414,7 @@ class PurchasesTest {
                 observerMode = observerMode,
                 subscriberAttributes = emptyMap(),
                 receiptInfo = if (restore) ReceiptInfo(productID = sku) else receiptInfo,
+                storeAppUserID = null,
                 onSuccess = captureLambda(),
                 onError = any()
             )

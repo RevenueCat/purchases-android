@@ -11,6 +11,7 @@ class PurchaseHistoryRecordWrapper : PurchaseWrapper {
     override val sku: String
     override val presentedOfferingIdentifier: String?
     override val purchaseState: RevenueCatPurchaseState
+    override val storeUserID: String?
 
     constructor(
         type: ProductType,
@@ -18,7 +19,8 @@ class PurchaseHistoryRecordWrapper : PurchaseWrapper {
         purchaseTime: Long,
         sku: String,
         presentedOfferingIdentifier: String? = null,
-        purchaseState: RevenueCatPurchaseState
+        purchaseState: RevenueCatPurchaseState,
+        storeUserID: String?
     ) {
         this.type = type
         this.purchaseToken = purchaseToken
@@ -26,6 +28,7 @@ class PurchaseHistoryRecordWrapper : PurchaseWrapper {
         this.sku = sku
         this.presentedOfferingIdentifier = presentedOfferingIdentifier
         this.purchaseState = purchaseState
+        this.storeUserID = storeUserID
     }
 
     constructor(
@@ -36,6 +39,7 @@ class PurchaseHistoryRecordWrapper : PurchaseWrapper {
         purchaseToken = purchaseHistoryRecord.purchaseToken,
         purchaseTime = purchaseHistoryRecord.purchaseTime,
         sku = purchaseHistoryRecord.sku,
-        purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE
+        purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
+        storeUserID = null
     )
 }

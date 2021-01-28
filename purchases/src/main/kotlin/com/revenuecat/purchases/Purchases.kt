@@ -242,6 +242,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             observerMode = !this.finishTransactions,
                             subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
                             receiptInfo = productInfo,
+                            storeAppUserID = purchase.storeUserID,
                             onSuccess = { info, body ->
                                 subscriberAttributesManager.markAsSynced(
                                     appUserID,
@@ -609,6 +610,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                     observerMode = !finishTransactions,
                                     subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
                                     receiptInfo = receiptInfo,
+                                    storeAppUserID = purchase.storeUserID,
                                     onSuccess = { info, body ->
                                         subscriberAttributesManager.markAsSynced(
                                             appUserID,
@@ -1277,7 +1279,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         val unsyncedSubscriberAttributesByKey =
             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-        val productInfo = ReceiptInfo(
+        val receiptInfo = ReceiptInfo(
             productID = purchase.sku,
             offeringIdentifier = purchase.presentedOfferingIdentifier,
             productDetails = productDetails
@@ -1288,7 +1290,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             isRestore = allowSharingPlayStoreAccount,
             observerMode = !consumeAllTransactions,
             subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-            receiptInfo = productInfo,
+            receiptInfo = receiptInfo,
+            storeAppUserID = purchase.storeUserID,
             onSuccess = { info, body ->
                 subscriberAttributesManager.markAsSynced(
                     appUserID,

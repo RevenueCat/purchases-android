@@ -140,6 +140,8 @@ class Backend(
         }
     }
 
+    // TODO: unify parameters into a data class
+    @SuppressWarnings("LongParameterList", "ForbiddenComment")
     fun postReceiptData(
         purchaseToken: String,
         appUserID: String,
@@ -147,6 +149,7 @@ class Backend(
         observerMode: Boolean,
         subscriberAttributes: Map<String, Map<String, Any?>>,
         receiptInfo: ReceiptInfo,
+        storeAppUserID: String?,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback
     ) {
@@ -156,7 +159,8 @@ class Backend(
             isRestore.toString(),
             observerMode.toString(),
             subscriberAttributes.toString(),
-            receiptInfo.toString()
+            receiptInfo.toString(),
+            storeAppUserID
         )
 
         val body = mapOf(
@@ -171,7 +175,8 @@ class Backend(
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
             "normal_duration" to receiptInfo.duration,
             "intro_duration" to receiptInfo.introDuration,
-            "trial_duration" to receiptInfo.trialDuration
+            "trial_duration" to receiptInfo.trialDuration,
+            "store_user_id" to storeAppUserID
         ).filterValues { value -> value != null }
 
         val call = object : Dispatcher.AsyncCall() {
