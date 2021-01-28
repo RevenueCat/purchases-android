@@ -82,7 +82,7 @@ class AmazonCacheTest {
         underTest.setReceiptSkus(expected)
 
         val actualStoredJSON = JSONObject(cache.stubCache[underTest.amazonPostedTokensKey])
-        val actualStoredMapAsJSON = actualStoredJSON["receiptsToTermSkus"] as JSONObject
+        val actualStoredMapAsJSON = actualStoredJSON["receiptsToSkus"] as JSONObject
 
         assertThat(actualStoredMapAsJSON).isNotNull
         assertThat(actualStoredMapAsJSON.keys().asSequence().count()).isEqualTo(expected.size)
@@ -108,7 +108,7 @@ class AmazonCacheTest {
         underTest.setReceiptSkus(newToCache)
 
         val actualStoredJSON = JSONObject(cache.stubCache[underTest.amazonPostedTokensKey])
-        val actualStoredMapAsJSON = actualStoredJSON["receiptsToTermSkus"] as JSONObject
+        val actualStoredMapAsJSON = actualStoredJSON["receiptsToSkus"] as JSONObject
 
         assertThat(actualStoredMapAsJSON).isNotNull
 
@@ -137,7 +137,7 @@ class AmazonCacheTest {
         underTest.setReceiptSkus(expected)
 
         val actualStoredJSON = JSONObject(cache.stubCache[underTest.amazonPostedTokensKey])
-        val actualStoredMapAsJSON = actualStoredJSON["receiptsToTermSkus"] as JSONObject
+        val actualStoredMapAsJSON = actualStoredJSON["receiptsToSkus"] as JSONObject
 
         assertThat(actualStoredMapAsJSON).isNotNull
         assertThat(actualStoredMapAsJSON.keys().asSequence().count()).isEqualTo(expected.size)
@@ -148,7 +148,7 @@ class AmazonCacheTest {
     }
 
     private fun getStoredJSONFromMap(expected: Map<String, String>) = """
-                { "receiptsToTermSkus": 
+                { "receiptsToSkus": 
                     {
                         ${expected.map { "\"${it.key}\": \"${it.value}\"" }.joinToString()}
                     }
