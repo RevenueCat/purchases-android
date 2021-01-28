@@ -58,6 +58,7 @@ class IdentityManager(
     ) {
         if (newAppUserID.isBlank()) {
             onError(PurchasesError(PurchasesErrorCode.InvalidAppUserIdError, "appUserID can't be null, empty or blank"))
+            return
         }
 
         log(LogIntent.USER, IdentityStrings.LOGGING_IN.format(currentAppUserID, newAppUserID))

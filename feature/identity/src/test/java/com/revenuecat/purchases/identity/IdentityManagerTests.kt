@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.identity
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
@@ -18,6 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import kotlin.random.Random
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -146,6 +148,126 @@ class IdentityManagerTests {
         var expectedError: PurchasesError? = null
         identityManager.createAlias("new", {}, { error -> expectedError = error })
         assertThat(expectedError).isNotNull
+    }
+
+    @Test
+    fun `login fails with error if the appUserID is empty`() {
+        every {
+            mockBackend.logIn(stubAnonymousID, "", any(), captureLambda())
+        } just Runs
+        var receivedError: PurchasesError? = null
+        mockCachedAnonymousUser()
+        identityManager.logIn("", { _, _ -> }, { error -> receivedError = error })
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidAppUserIdError)
+        verify(exactly = 0) {
+            mockBackend.logIn(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `login fails with error if the appUserID is blank`() {
+        every {
+            mockBackend.logIn(stubAnonymousID, "   ", any(), captureLambda())
+        } just Runs
+        var receivedError: PurchasesError? = null
+        mockCachedAnonymousUser()
+        identityManager.logIn("   ", { _, _ -> }, { error -> receivedError = error })
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidAppUserIdError)
+        verify(exactly = 0) {
+            mockBackend.logIn(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `login passes backend errors`() {
+        every {
+            mockBackend.logIn(stubAnonymousID, "new", any(), captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(
+                    PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
+            )
+        }
+        var receivedError: PurchasesError? = null
+        mockCachedAnonymousUser()
+        identityManager.logIn("new", { _, _ -> }, { error -> receivedError = error })
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidCredentialsError)
+    }
+
+    @Test
+    fun `login passes received created and purchaserInfo from backend`() {
+        val randomCreated: Boolean = Random.nextBoolean()
+        val mockPurchaserInfo: PurchaserInfo = mockk()
+        every {
+            mockBackend.logIn(stubAnonymousID, "new", captureLambda(), any())
+        } answers {
+            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(
+                    mockPurchaserInfo, randomCreated
+            )
+        }
+        every { mockDeviceCache.cachePurchaserInfo(any(), any()) } just Runs
+        var receivedError: PurchasesError? = null
+        var receivedPurchaserInfo: PurchaserInfo? = null
+        var receivedCreated: Boolean? = null
+        mockCachedAnonymousUser()
+
+        identityManager.logIn("new", {
+            purchaserInfo, created ->
+            receivedPurchaserInfo = purchaserInfo
+            receivedCreated = created
+        }, { error -> receivedError = error })
+
+        assertThat(receivedError).isNull()
+        assertThat(receivedPurchaserInfo).isNotNull
+        assertThat(receivedPurchaserInfo).isEqualTo(mockPurchaserInfo)
+        assertThat(receivedCreated).isEqualTo(randomCreated)
+    }
+
+    @Test
+    fun `login clears caches for old appUserID on successful completion`() {
+        val randomCreated: Boolean = Random.nextBoolean()
+        val mockPurchaserInfo: PurchaserInfo = mockk()
+        mockCachedAnonymousUser()
+        val oldAppUserID = stubAnonymousID
+        every {
+            mockBackend.logIn(oldAppUserID, "new", captureLambda(), any())
+        } answers {
+            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(
+                    mockPurchaserInfo, randomCreated
+            )
+        }
+        every { mockDeviceCache.cachePurchaserInfo(any(), any()) } just Runs
+
+        identityManager.logIn("new", { _, _ -> }, { _ -> })
+
+        verify(exactly = 1) { mockDeviceCache.clearCachesForAppUserID(oldAppUserID) }
+        verify(exactly = 1) {
+            mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+        }
+    }
+
+    @Test
+    fun `login caches purchaserInfo and appUserID for new user on successful completion`() {
+        val randomCreated: Boolean = Random.nextBoolean()
+        val mockPurchaserInfo: PurchaserInfo = mockk()
+        mockCachedAnonymousUser()
+        val oldAppUserID = stubAnonymousID
+        val newAppUserID = "new"
+        every {
+            mockBackend.logIn(oldAppUserID, newAppUserID, captureLambda(), any())
+        } answers {
+            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(
+                    mockPurchaserInfo, randomCreated
+            )
+        }
+        every { mockDeviceCache.cachePurchaserInfo(any(), any()) } just Runs
+
+        identityManager.logIn(newAppUserID, { _, _ -> }, { _ -> })
+
+        verify(exactly = 1) { mockDeviceCache.cacheAppUserID(newAppUserID) }
+        verify(exactly = 1) { mockDeviceCache.cachePurchaserInfo(newAppUserID, mockPurchaserInfo) }
     }
 
     @Test
