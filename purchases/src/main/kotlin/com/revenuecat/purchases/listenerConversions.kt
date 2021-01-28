@@ -4,7 +4,7 @@ import android.app.Activity
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.google.toProductDetails
-import com.revenuecat.purchases.interfaces.GetSkusResponseListener
+import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
@@ -47,11 +47,11 @@ internal fun productChangeCompletedListener(
     }
 }
 
-internal fun getSkusResponseListener(
-    onReceived: (skus: List<SkuDetails>) -> Unit,
+internal fun getProductDetailsCallback(
+    onReceived: (skus: List<ProductDetails>) -> Unit,
     onError: ErrorFunction
-) = object : GetSkusResponseListener {
-    override fun onReceived(skus: MutableList<SkuDetails>) {
+) = object : GetProductDetailsCallback {
+    override fun onReceived(skus: List<ProductDetails>) {
         onReceived(skus)
     }
 
@@ -297,9 +297,9 @@ fun Purchases.getPurchaserInfoWith(
 fun Purchases.getSubscriptionSkusWith(
     skus: List<String>,
     onError: ErrorFunction = ON_ERROR_STUB,
-    onReceiveSkus: (skus: List<SkuDetails>) -> Unit
+    onReceiveSkus: (skus: List<ProductDetails>) -> Unit
 ) {
-    getSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus, onError))
+    getSubscriptionSkus(skus, getProductDetailsCallback(onReceiveSkus, onError))
 }
 
 /**
@@ -311,7 +311,7 @@ fun Purchases.getSubscriptionSkusWith(
 fun Purchases.getNonSubscriptionSkusWith(
     skus: List<String>,
     onError: ErrorFunction,
-    onReceiveSkus: (skus: List<SkuDetails>) -> Unit
+    onReceiveSkus: (skus: List<ProductDetails>) -> Unit
 ) {
-    getNonSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus, onError))
+    getNonSubscriptionSkus(skus, getProductDetailsCallback(onReceiveSkus, onError))
 }
