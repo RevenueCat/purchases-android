@@ -58,8 +58,7 @@ class Backend(
         path: String,
         body: Map<String, Any?>?,
         onError: (PurchasesError) -> Unit,
-        onCompletedSuccessfully: () -> Unit,
-        onCompletedWithErrors: (PurchasesError, Int, JSONObject) -> Unit
+        onCompleted: (PurchasesError?, Int, JSONObject) -> Unit
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
@@ -75,12 +74,12 @@ class Backend(
             }
 
             override fun onCompletion(result: HTTPClient.Result) {
-                if (result.isSuccessful()) {
-                    onCompletedSuccessfully()
+                val error = if (!result.isSuccessful()) {
+                    result.toPurchasesError().also { errorLog(it) }
                 } else {
-                    val error = result.toPurchasesError().also { errorLog(it) }
-                    onCompletedWithErrors(error, result.responseCode, result.body)
+                    null
                 }
+                onCompleted(error, result.responseCode, result.body)
             }
         })
     }
@@ -147,7 +146,7 @@ class Backend(
         isRestore: Boolean,
         observerMode: Boolean,
         subscriberAttributes: Map<String, Map<String, Any?>>,
-        productInfo: ProductInfo,
+        receiptInfo: ReceiptInfo,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback
     ) {
@@ -157,22 +156,22 @@ class Backend(
             isRestore.toString(),
             observerMode.toString(),
             subscriberAttributes.toString(),
-            productInfo.toString()
+            receiptInfo.toString()
         )
 
         val body = mapOf(
             "fetch_token" to purchaseToken,
-            "product_id" to productInfo.productID,
+            "product_id" to receiptInfo.productID,
             "app_user_id" to appUserID,
             "is_restore" to isRestore,
-            "presented_offering_identifier" to productInfo.offeringIdentifier,
+            "presented_offering_identifier" to receiptInfo.offeringIdentifier,
             "observer_mode" to observerMode,
-            "price" to productInfo.price,
-            "currency" to productInfo.currency,
+            "price" to receiptInfo.price,
+            "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
-            "normal_duration" to productInfo.duration,
-            "intro_duration" to productInfo.introDuration,
-            "trial_duration" to productInfo.trialDuration
+            "normal_duration" to receiptInfo.duration,
+            "intro_duration" to receiptInfo.introDuration,
+            "trial_duration" to receiptInfo.trialDuration
         ).filterValues { value -> value != null }
 
         val call = object : Dispatcher.AsyncCall() {

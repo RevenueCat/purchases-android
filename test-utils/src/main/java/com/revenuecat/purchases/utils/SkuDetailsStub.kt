@@ -17,7 +17,7 @@ fun stubSkuDetails(
               "productId":"$productId",
               "type":"$type",
               "price":"${'$'}$price",
-              "price_amount_micros":${price.times(1000000)},
+              "price_amount_micros":${price.times(1_000_000)},
               "price_currency_code":"USD",
               "subscriptionPeriod":"$subscriptionPeriod",
               "freeTrialPeriod":"$freeTrialPeriod",

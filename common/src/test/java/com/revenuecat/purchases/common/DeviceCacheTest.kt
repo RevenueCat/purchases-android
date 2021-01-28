@@ -7,14 +7,15 @@ package com.revenuecat.purchases.common
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.PURCHASER_INFO_SCHEMA_VERSION
+import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
 import io.mockk.just
@@ -263,11 +264,16 @@ class DeviceCacheTest {
         every {
             mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "hash2", "token3")
-        val activeSub = PurchaseWrapper(mockk(relaxed = true), PurchaseType.SUBS, null)
+        val activeSub = mockk<PurchaseWrapper>(relaxed = true).also {
+            every { it.type } returns ProductType.SUBS
+        }
+        val inApp = mockk<PurchaseWrapper>(relaxed = true).also {
+            every { it.type } returns ProductType.INAPP
+        }
         val activePurchasesNotInCache =
             cache.getActivePurchasesNotInCache(
                 mapOf("hash1" to activeSub),
-                mapOf("hash2" to PurchaseWrapper(mockk(relaxed = true), PurchaseType.INAPP, null))
+                mapOf("hash2" to inApp)
             )
         assertThat(activePurchasesNotInCache).contains(activeSub)
     }
@@ -291,8 +297,9 @@ class DeviceCacheTest {
         mockString(cache.appUserIDCacheKey, "appUserID")
         mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
         mockString(cache.purchaserInfoCacheKey(appUserID), null)
-        mockString(cache.subscriberAttributesCacheKey, null)
+
         cache.clearCachesForAppUserID("appUserID")
+
         verify { mockEditor.remove(cache.appUserIDCacheKey) }
         verify { mockEditor.remove(cache.legacyAppUserIDCacheKey) }
         verify { mockEditor.remove(cache.purchaserInfoCacheKey("appUserID")) }
@@ -311,7 +318,6 @@ class DeviceCacheTest {
         mockString(cache.appUserIDCacheKey, "appUserID")
         mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
         mockString(cache.purchaserInfoCacheKey(appUserID), null)
-        mockString(cache.subscriberAttributesCacheKey, null)
 
         cache.clearCachesForAppUserID("appUserID")
         verify {
@@ -394,13 +400,13 @@ class DeviceCacheTest {
 
     @Test
     fun `caching offerings works`() {
-        val skuDetails = mockk<SkuDetails>().also {
+        val productDetails = mockk<ProductDetails>().also {
             every { it.sku } returns "onemonth_freetrial"
         }
         val packageObject = Package(
             "custom",
             PackageType.CUSTOM,
-            skuDetails,
+            productDetails,
             "offering_a"
         )
         val offering = Offering(

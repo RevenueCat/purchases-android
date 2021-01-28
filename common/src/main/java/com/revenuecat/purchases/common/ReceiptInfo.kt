@@ -1,24 +1,24 @@
 package com.revenuecat.purchases.common
 
-import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.models.ProductDetails
 
-class ProductInfo(
+class ReceiptInfo(
     val productID: String,
     val offeringIdentifier: String? = null,
-    val skuDetails: SkuDetails? = null
+    val productDetails: ProductDetails? = null
 ) {
 
-    val price: Double? = skuDetails?.priceAmount
-    val currency: String? = skuDetails?.priceCurrencyCode
-    val duration: String? = skuDetails?.subscriptionPeriod?.takeUnless { it.isEmpty() }
-    val introDuration: String? = skuDetails?.introductoryPricePeriod?.takeUnless { it.isEmpty() }
-    val trialDuration: String? = skuDetails?.freeTrialPeriod?.takeUnless { it.isEmpty() }
+    val price: Double? = productDetails?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble())
+    val currency: String? = productDetails?.priceCurrencyCode
+    val duration: String? = productDetails?.subscriptionPeriod?.takeUnless { it.isEmpty() }
+    val introDuration: String? = productDetails?.introductoryPricePeriod?.takeUnless { it.isEmpty() }
+    val trialDuration: String? = productDetails?.freeTrialPeriod?.takeUnless { it.isEmpty() }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ProductInfo
+        other as ReceiptInfo
 
         if (productID != other.productID) return false
         if (offeringIdentifier != other.offeringIdentifier) return false
@@ -34,12 +34,12 @@ class ProductInfo(
     override fun hashCode(): Int {
         var result = productID.hashCode()
         result = 31 * result + (offeringIdentifier?.hashCode() ?: 0)
-        result = 31 * result + (skuDetails?.hashCode() ?: 0)
+        result = 31 * result + (productDetails?.hashCode() ?: 0)
         return result
     }
 
     override fun toString(): String {
-        return "ProductInfo(" +
+        return "ReceiptInfo(" +
             "productID='$productID', " +
             "offeringIdentifier=$offeringIdentifier, " +
             "price=$price, " +

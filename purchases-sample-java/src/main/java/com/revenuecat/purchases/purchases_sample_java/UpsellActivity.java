@@ -21,6 +21,7 @@ import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.interfaces.MakePurchaseListener;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener;
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener;
+import com.revenuecat.purchases.models.ProductDetails;
 import com.revenuecat.sample.R;
 
 import static com.revenuecat.purchases.purchases_sample_java.MainApplication.PREMIUM_ENTITLEMENT_ID;
@@ -91,7 +92,7 @@ public class UpsellActivity extends AppCompatActivity {
 
     private void setupPackageButton(@Nullable final Package aPackage, final Button button) {
         if (aPackage != null) {
-            SkuDetails product = aPackage.getProduct();
+            ProductDetails product = aPackage.getProduct();
             String loadedText = "Buy " + aPackage.getPackageType() + " - " + product.getPriceCurrencyCode() + " " + product.getPrice();
             button.setTag(loadedText);
             showLoading(button, false);

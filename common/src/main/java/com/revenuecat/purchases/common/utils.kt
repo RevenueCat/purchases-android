@@ -12,9 +12,10 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.SkuDetails
 import java.security.MessageDigest
 import java.util.Locale
+
+const val MICROS_MULTIPLIER = 1_000_000
 
 fun Purchase.toHumanReadableDescription() =
     "${this.sku} ${this.orderId} ${this.purchaseToken}"
@@ -100,9 +101,6 @@ fun BillingResult.toHumanReadableDescription() =
 
 fun PurchaseHistoryRecord.toHumanReadableDescription() =
     "${this.sku} ${this.purchaseTime} ${this.purchaseToken}"
-
-val SkuDetails.priceAmount: Double
-    get() = this.priceAmountMicros.div(1000000.0)
 
 val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName

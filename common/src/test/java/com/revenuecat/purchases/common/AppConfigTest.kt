@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Store
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -25,7 +26,8 @@ class AppConfigTest {
             context = mockContext,
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -42,7 +44,8 @@ class AppConfigTest {
             context = mockContext,
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -61,7 +64,8 @@ class AppConfigTest {
             context = mockContext,
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -79,7 +83,8 @@ class AppConfigTest {
             context = mockContext,
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -90,7 +95,8 @@ class AppConfigTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         assertThat(appConfig.finishTransactions).isTrue()
     }
@@ -101,7 +107,8 @@ class AppConfigTest {
             context = mockk(relaxed = true),
             observerMode = true,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         assertThat(appConfig.finishTransactions).isFalse()
     }
@@ -113,7 +120,8 @@ class AppConfigTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = expected
+            proxyURL = expected,
+            store = Store.PLAY_STORE
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
@@ -125,7 +133,8 @@ class AppConfigTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
@@ -136,13 +145,15 @@ class AppConfigTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
 
         assertThat(x).isEqualTo(y)
@@ -154,13 +165,15 @@ class AppConfigTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         var y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = true,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -169,7 +182,8 @@ class AppConfigTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.1.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -178,7 +192,8 @@ class AppConfigTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = URL("https://a.com")
+            proxyURL = URL("https://a.com"),
+            store = Store.PLAY_STORE
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -190,13 +205,15 @@ class AppConfigTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         assertThat(x.hashCode() == y.hashCode())
     }
@@ -207,7 +224,8 @@ class AppConfigTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null
+            proxyURL = null,
+            store = Store.PLAY_STORE
         )
         assertThat(x.toString()).isNotNull()
     }

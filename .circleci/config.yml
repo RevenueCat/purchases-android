@@ -58,6 +58,12 @@ commands:
             echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
             --export-secret-keys > /home/circleci/.gnupg/secring.gpg
 
+  download-amazon-dependency:
+    steps:
+      - run:
+          name: Download Amazon Dependency
+          command: ./gradlew getAmazonLibrary
+
 jobs:
 
   test:
@@ -67,6 +73,7 @@ jobs:
       - android/accept-licenses
       - android-dependencies
       - android/restore-build-cache
+      - download-amazon-dependency
       - run:
           name: Run Tests
           command: ./gradlew lint test
@@ -155,6 +162,7 @@ jobs:
       - android/accept-licenses
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
+      - download-amazon-dependency
       - run:
           name: Replace API_KEY
           working_directory: purchases-sample

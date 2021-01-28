@@ -6,7 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.HTTPClient
-import com.revenuecat.purchases.common.ProductInfo
+import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.utils.Responses
@@ -244,7 +244,7 @@ class SubscriberAttributesPosterTests {
     fun `posting receipt with attributes works`() {
         mockPostReceiptResponse()
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = productID
         )
         backend.postReceiptData(
@@ -253,7 +253,7 @@ class SubscriberAttributesPosterTests {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = mapOfSubscriberAttributes,
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -268,7 +268,7 @@ class SubscriberAttributesPosterTests {
     fun `posting receipt without attributes skips them`() {
         mockPostReceiptResponse()
 
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = productID
         )
         backend.postReceiptData(
@@ -277,7 +277,7 @@ class SubscriberAttributesPosterTests {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -295,7 +295,7 @@ class SubscriberAttributesPosterTests {
             responseCode = 200,
             responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
         )
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = productID
         )
         backend.postReceiptData(
@@ -304,7 +304,7 @@ class SubscriberAttributesPosterTests {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -321,7 +321,7 @@ class SubscriberAttributesPosterTests {
             responseCode = 505,
             responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
         )
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = productID
         )
         backend.postReceiptData(
@@ -330,7 +330,7 @@ class SubscriberAttributesPosterTests {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )
@@ -347,7 +347,7 @@ class SubscriberAttributesPosterTests {
             responseCode = 304,
             responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
         )
-        val productInfo = ProductInfo(
+        val productInfo = ReceiptInfo(
             productID = productID
         )
         backend.postReceiptData(
@@ -356,7 +356,7 @@ class SubscriberAttributesPosterTests {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            productInfo = productInfo,
+            receiptInfo = productInfo,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )

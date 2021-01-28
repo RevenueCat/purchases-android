@@ -1,27 +1,16 @@
 package com.revenuecat.purchases.common
 
-import com.android.billingclient.api.Purchase
+import com.revenuecat.purchases.ProductType
 
-data class PurchaseWrapper(
-    val isConsumable: Boolean,
-    val purchaseToken: String,
-    val purchaseTime: Long,
-    val sku: String,
-    val containedPurchase: Purchase,
-    val type: PurchaseType,
-    val presentedOfferingIdentifier: String? = null
-) {
-    constructor(
-        purchase: Purchase,
-        type: PurchaseType,
-        presentedOfferingIdentifier: String?
-    ) : this(
-        isConsumable = type == PurchaseType.INAPP,
-        purchaseToken = purchase.purchaseToken,
-        purchaseTime = purchase.purchaseTime,
-        sku = purchase.sku,
-        containedPurchase = purchase,
-        type = type,
-        presentedOfferingIdentifier = presentedOfferingIdentifier
-    )
+interface PurchaseWrapper {
+    val type: ProductType
+    val purchaseToken: String
+    val purchaseTime: Long
+    val sku: String
+    val presentedOfferingIdentifier: String?
+    val purchaseState: RevenueCatPurchaseState
+}
+
+enum class RevenueCatPurchaseState {
+    UNSPECIFIED_STATE, PURCHASED, PENDING
 }
