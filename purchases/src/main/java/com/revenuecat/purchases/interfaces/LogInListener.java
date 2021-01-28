@@ -18,6 +18,8 @@ public interface LogInListener {
     /**
      * Will be called after the call has completed.
      * @param purchaserInfo [PurchaserInfo] class sent back when the call has completed
+     * @param created [Boolean] true if a new user has been registered in the backend,
+     *                false if the user had already been registered.
      */
     void onReceived(@NonNull PurchaserInfo purchaserInfo, Boolean created);
 
