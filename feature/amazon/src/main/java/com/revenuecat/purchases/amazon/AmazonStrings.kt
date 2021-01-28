@@ -15,7 +15,7 @@ object AmazonStrings {
     const val ERROR_PURCHASE_FAILED = "Failed to make purchase. " +
         "This error normally means that the purchase was cancelled"
     const val ERROR_FETCHING_RECEIPT_INFO = "There was an error fetching receipt information: %s"
-    const val ERROR_FETCHING_RECEIPTS = "Couldn't fetch information for the following receipts: %s"
+    const val ERROR_FETCHING_RECEIPTS = "Couldn't fetch information for the following receipts: \n %s"
     const val ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID =
         "Error fetching purchase history. All receipts are invalid."
     const val CACHING_RECEIPT_TERM_SKUS = "Caching term skus for receipts: \n %s"
