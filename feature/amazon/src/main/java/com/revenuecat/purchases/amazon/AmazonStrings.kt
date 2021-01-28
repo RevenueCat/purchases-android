@@ -20,4 +20,5 @@ object AmazonStrings {
         "Error fetching purchase history. All receipts are invalid."
     const val CACHING_RECEIPT_TERM_SKUS = "Caching term skus for receipts: \n %s"
     const val RECEIPT_DATA_RECEIVED = "Received receipt data: \n %s"
+    const val ERROR_FINDING_RECEIPT_SKU = "Couldn't find sku for token %s"
 }

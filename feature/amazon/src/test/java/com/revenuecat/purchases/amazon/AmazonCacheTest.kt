@@ -46,7 +46,7 @@ class AmazonCacheTest {
 
     @Test
     fun `getting cached term skus when there is nothing cached`() {
-        val receiptTermSkus = underTest.getReceiptTermSkus()
+        val receiptTermSkus = underTest.getReceiptSkus()
 
         assertThat(receiptTermSkus).isEmpty()
     }
@@ -62,7 +62,7 @@ class AmazonCacheTest {
 
         cache.stubCache[underTest.amazonPostedTokensKey] = cachedReceiptsToTermSkusJSON
 
-        val receiptTermSkus = underTest.getReceiptTermSkus()
+        val receiptTermSkus = underTest.getReceiptSkus()
 
         assertThat(receiptTermSkus).isEqualTo(
             mapOf(
@@ -79,7 +79,7 @@ class AmazonCacheTest {
             "4321abcdreceiptid" to "com.revenuecat.subscription.monthly"
         )
 
-        underTest.setReceiptTermSkus(expected)
+        underTest.setReceiptSkus(expected)
 
         val actualStoredJSON = JSONObject(cache.stubCache[underTest.amazonPostedTokensKey])
         val actualStoredMapAsJSON = actualStoredJSON["receiptsToTermSkus"] as JSONObject
@@ -105,7 +105,7 @@ class AmazonCacheTest {
             "4321abcdreceiptid" to "com.revenuecat.subscription.monthly"
         )
 
-        underTest.setReceiptTermSkus(newToCache)
+        underTest.setReceiptSkus(newToCache)
 
         val actualStoredJSON = JSONObject(cache.stubCache[underTest.amazonPostedTokensKey])
         val actualStoredMapAsJSON = actualStoredJSON["receiptsToTermSkus"] as JSONObject
@@ -134,7 +134,7 @@ class AmazonCacheTest {
             "1234abcdreceiptid" to "com.revenuecat.subscription.monthly"
         )
 
-        underTest.setReceiptTermSkus(expected)
+        underTest.setReceiptSkus(expected)
 
         val actualStoredJSON = JSONObject(cache.stubCache[underTest.amazonPostedTokensKey])
         val actualStoredMapAsJSON = actualStoredJSON["receiptsToTermSkus"] as JSONObject
