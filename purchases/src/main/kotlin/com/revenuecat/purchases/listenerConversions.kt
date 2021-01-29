@@ -240,7 +240,7 @@ fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
     onError: PurchaseErrorFunction = ON_PURCHASE_ERROR_STUB,
-    onSuccess: ProductChangeCompletedFunction
+    onSuccess: PurchaseCompletedFunction
 ) {
     purchasePackage(activity, packageToPurchase, purchaseCompletedCallback(onSuccess, onError))
 }
