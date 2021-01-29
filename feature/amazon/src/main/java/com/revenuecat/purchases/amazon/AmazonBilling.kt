@@ -183,7 +183,7 @@ internal class AmazonBilling constructor(
             productDetails,
             presentedOfferingIdentifier,
             onSuccess = { receipt, userData ->
-                handleReceipt(receipt, appUserID, userData, productDetails, presentedOfferingIdentifier)
+                handleReceipt(receipt, userData, productDetails, presentedOfferingIdentifier)
             },
             onError = ::onPurchaseError
         )
@@ -337,7 +337,6 @@ internal class AmazonBilling constructor(
 
     private fun handleReceipt(
         receipt: Receipt,
-        appUserID: String,
         userData: UserData,
         productDetails: ProductDetails,
         presentedOfferingIdentifier: String?
