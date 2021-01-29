@@ -266,9 +266,10 @@ workflows:
   deploy:
     jobs:
       - deploy: *release-tags
-      - deploy-snapshot:
-          filters:
-            branches:
-              only:
-                - develop
+#      TODO: change back
+      - deploy-snapshot
+#          filters:
+#            branches:
+#              only:
+#                - develop
       - docs-deploy: *release-tags
