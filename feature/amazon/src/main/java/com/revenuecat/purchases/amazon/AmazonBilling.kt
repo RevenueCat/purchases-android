@@ -77,6 +77,10 @@ internal class AmazonBilling constructor(
     ) {
         purchaseUpdatesHandler.queryPurchases(
             onSuccess = { receipts, userData ->
+                if (receipts.isEmpty()) {
+                    onReceivePurchaseHistory(emptyList())
+                    return@queryPurchases
+                }
                 getMissingSkusForReceipts(
                     appUserID,
                     userData.userId,
