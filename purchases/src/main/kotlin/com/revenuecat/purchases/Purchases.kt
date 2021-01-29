@@ -1174,7 +1174,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         PurchasesError(
                             PurchasesErrorCode.UnexpectedBackendResponseError,
                             error.localizedMessage
-                        ).also { errorLog(it) },
+                        ),
                         completion
                     )
                 }
