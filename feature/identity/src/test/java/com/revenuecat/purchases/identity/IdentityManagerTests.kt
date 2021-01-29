@@ -271,6 +271,38 @@ class IdentityManagerTests {
     }
 
     @Test
+    fun `logOut returns an error if the current user is anonymous`() {
+        mockCachedAnonymousUser()
+
+        val error = identityManager.logOut()
+
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.LogOutWithAnonymousUserError)
+    }
+
+    @Test
+    fun `logOut clears old caches`() {
+        val identifiedUserID = "Waldo"
+        mockIdentifiedUser(identifiedUserID)
+
+        val error = identityManager.logOut()
+
+        assertThat(error).isNull()
+        verify { mockDeviceCache.clearCachesForAppUserID(identifiedUserID) }
+        verify { mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(identifiedUserID) }
+    }
+
+    @Test
+    fun `logOut creates random ID and caches it`() {
+        mockIdentifiedUser("Waldo")
+
+        val error = identityManager.logOut()
+
+        assertThat(error).isNull()
+        assertCorrectlyIdentifiedWithAnonymous()
+    }
+
+    @Test
     fun testResetClearsOldCaches() {
         mockCachedAnonymousUser()
         identityManager.reset()
