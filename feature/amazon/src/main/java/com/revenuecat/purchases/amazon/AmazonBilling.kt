@@ -301,9 +301,7 @@ internal class AmazonBilling constructor(
         subscriptionReceiptsToFetchTermSku.forEach { receipt ->
             amazonBackend.getAmazonReceiptData(
                 receipt.receiptId,
-                appUserID,
                 amazonUserID,
-                receipt.sku,
                 onSuccess = { response ->
                     log(LogIntent.DEBUG, AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()))
 
@@ -349,9 +347,7 @@ internal class AmazonBilling constructor(
 
         amazonBackend.getAmazonReceiptData(
             receipt.receiptId,
-            appUserID,
             userData.userId,
-            productDetails.sku,
             onSuccess = { response ->
                 val termSku = response["termSku"] as String
                 val amazonPurchaseWrapper = AmazonPurchaseWrapper(

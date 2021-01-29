@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.amazon
 
+import android.net.Uri
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.errorLog
@@ -21,30 +22,19 @@ class AmazonBackend(
 
     fun getAmazonReceiptData(
         receiptId: String,
-        appUserID: String,
         storeUserID: String,
-        sku: String,
         onSuccess: (JSONObject) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         val cacheKey = listOfNotNull(
             receiptId,
-            appUserID,
-            storeUserID,
-            sku
-        )
-
-        val body = mapOf(
-            "fetch_token" to receiptId,
-            "product_id" to sku,
-            "app_user_id" to appUserID,
-            "store_user_id" to storeUserID
+            storeUserID
         )
 
         val call = {
             backend.performRequest(
-                "/receipts/amazon",
-                body,
+                "/receipts/amazon/${Uri.encode(storeUserID)}/$receiptId",
+                null,
                 { error ->
                     synchronized(this@AmazonBackend) {
                         postAmazonReceiptCallbacks.remove(cacheKey)
