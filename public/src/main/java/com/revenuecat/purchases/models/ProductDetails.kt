@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.android.parcel.Parcelize
@@ -49,3 +50,7 @@ open class ProductDetails(
 
     val originalJson: JSONObject
 ) : Parcelable
+
+// TODO: add JvmName
+val ProductDetails.skuDetails: SkuDetails
+    get() = SkuDetails(this.originalJson.toString())

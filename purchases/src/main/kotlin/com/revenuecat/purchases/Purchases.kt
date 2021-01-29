@@ -20,7 +20,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -33,7 +32,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -42,8 +41,8 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.getBillingResponseCodeName
 import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.toPurchaseDetails
 import com.revenuecat.purchases.google.BillingWrapper
-import com.revenuecat.purchases.google.GooglePurchaseWrapper
 import com.revenuecat.purchases.google.toProductDetails
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.identity.IdentityManager
@@ -51,11 +50,15 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
+import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.ProductChangeListener
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.interfaces.toProductChangeCallback
+import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.AttributionStrings
@@ -392,10 +395,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         message = "The listener has changed to accept a null Purchase on the onCompleted",
         replaceWith = ReplaceWith(
             expression = """
-                Purchases.sharedInstance.purchasePackage(activity, skuDetails, upgradeInfo, ProductChangeListener)
+                Purchases.sharedInstance.purchaseProduct(activity, skuDetails, upgradeInfo, ProductChangeListener)
             """
-        ),
-        level = DeprecationLevel.WARNING
+        )
     )
     fun purchaseProduct(
         activity: Activity,
@@ -403,28 +405,34 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         upgradeInfo: UpgradeInfo,
         listener: MakePurchaseListener
     ) {
-        startProductChange(
+        purchaseProduct(
             activity,
             skuDetails.toProductDetails(),
-            null,
             upgradeInfo,
-            listener.toProductChangeListener()
+            listener.toProductChangeCallback()
         )
     }
 
-    @Deprecated("SkuDetails replaced with ProductDetails")
+    @Deprecated(
+        message = "SkuDetails replaced with ProductDetails and ProductChangeListener " +
+            "replaced with ProductChangeCallback",
+        ReplaceWith(
+            "purchaseProduct(activity, skuDetails.toProductDetails(), upgradeInfo, listener.toProductChangeCallback())",
+            "com.revenuecat.purchases.google.toProductDetails",
+            "com.revenuecat.purchases.interfaces.toProductChangeCallback"
+        )
+    )
     fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeListener
     ) {
-        startProductChange(
+        purchaseProduct(
             activity,
             skuDetails.toProductDetails(),
-            null,
             upgradeInfo,
-            listener
+            listener.toProductChangeCallback()
         )
     }
 
@@ -432,7 +440,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         activity: Activity,
         productDetails: ProductDetails,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeListener
+        listener: ProductChangeCallback
     ) {
         startProductChange(
             activity,
@@ -449,13 +457,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skuDetails] The skuDetails of the product you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
      */
-    @Deprecated("SkuDetails replaced with ProductDetails")
+    @Deprecated(
+        "SkuDetails replaced with ProductDetails and ProductChangeListener " +
+            "replaced with ProductChangeCallback",
+        ReplaceWith(
+            "purchaseProduct(activity, skuDetails.toProductDetails(), listener.toPurchaseCallback())",
+            "com.revenuecat.purchases.google.toProductDetails",
+            "com.revenuecat.purchases.interfaces.toPurchaseCallback"
+        )
+    )
     fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, skuDetails.toProductDetails(), null, listener)
+        purchaseProduct(
+            activity,
+            skuDetails.toProductDetails(),
+            listener.toPurchaseCallback()
+        )
     }
 
     /**
@@ -467,9 +487,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun purchaseProduct(
         activity: Activity,
         productDetails: ProductDetails,
-        listener: MakePurchaseListener
+        callback: PurchaseCallback
     ) {
-        startPurchase(activity, productDetails, null, listener)
+        startPurchase(activity, productDetails, null, callback)
     }
 
     /**
@@ -499,29 +519,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             packageToPurchase.product,
             packageToPurchase.offering,
             upgradeInfo,
-            listener.toProductChangeListener()
+            listener.toProductChangeCallback()
         )
-    }
-
-    private fun MakePurchaseListener.toProductChangeListener(): ProductChangeListener {
-        return object : ProductChangeListener {
-            override fun onCompleted(purchase: Purchase?, purchaserInfo: PurchaserInfo) {
-                if (purchase == null) {
-                    this@toProductChangeListener.onError(
-                        PurchasesError(
-                            PurchasesErrorCode.PaymentPendingError,
-                            "The product change has been deferred."
-                        ), false
-                    )
-                } else {
-                    this@toProductChangeListener.onCompleted(purchase, purchaserInfo)
-                }
-            }
-
-            override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                this@toProductChangeListener.onError(error, userCancelled)
-            }
-        }
     }
 
     /**
@@ -533,18 +532,59 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * An optional [BillingFlowParams.ProrationMode] can also be specified.
      * @param [listener] The listener that will be called when the purchase of the new product completes.
      */
+    @Deprecated(
+        message = "The listener has changed to receive a PurchaseDetails on the onCompleted",
+        replaceWith = ReplaceWith(
+            expression = "Purchases.sharedInstance.purchasePackage(" +
+                "activity, packageToPurchase, upgradeInfo, ProductChangeCallback)"
+        ),
+        level = DeprecationLevel.WARNING
+    )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeListener
     ) {
+        purchasePackage(
+            activity,
+            packageToPurchase,
+            upgradeInfo,
+            listener.toProductChangeCallback()
+        )
+    }
+
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        upgradeInfo: UpgradeInfo,
+        callback: ProductChangeCallback
+    ) {
         startProductChange(
             activity,
             packageToPurchase.product,
             packageToPurchase.offering,
             upgradeInfo,
-            listener
+            callback
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    @Deprecated("The callback now returns a PurchaseDetails object")
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        listener: MakePurchaseListener
+    ) {
+        purchasePackage(
+            activity,
+            packageToPurchase,
+            listener.toPurchaseCallback()
         )
     }
 
@@ -557,7 +597,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
-        listener: MakePurchaseListener
+        listener: PurchaseCallback
     ) {
         startPurchase(
             activity,
@@ -1387,14 +1427,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun getPurchaseCallback(sku: String): MakePurchaseListener? {
+    private fun getPurchaseCallback(sku: String): PurchaseCallback? {
         return state.purchaseCallbacks[sku].also {
             state =
                 state.copy(purchaseCallbacks = state.purchaseCallbacks.filterNot { it.key == sku })
         }
     }
 
-    private fun getAndClearProductChangeCallback(): ProductChangeListener? {
+    private fun getAndClearProductChangeCallback(): ProductChangeCallback? {
         return state.productChangeCallback.also {
             state = state.copy(productChangeCallback = null)
         }
@@ -1405,7 +1445,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards PurchaseWrapper>) {
                 val productChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
-                val productChangeListener: ProductChangeListener?
+                val productChangeListener: ProductChangeCallback?
 
                 synchronized(this@Purchases) {
                     productChangeInProgress = state.productChangeCallback != null
@@ -1459,7 +1499,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val onSuccess: SuccessfulPurchaseCallback = { purchaseWrapper, info ->
             getPurchaseCallback(purchaseWrapper.sku)?.let { purchaseCallback ->
                 dispatch {
-                    purchaseCallback.onCompleted((purchaseWrapper as GooglePurchaseWrapper).containedPurchase, info)
+                    purchaseCallback.onCompleted(purchaseWrapper.toPurchaseDetails(), info)
                 }
             }
         }
@@ -1471,13 +1511,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun getProductChangeCompletedCallbacks(
-        productChangeListener: ProductChangeListener?
+        productChangeListener: ProductChangeCallback?
     ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { purchaseWrapper, info ->
             productChangeListener?.let { productChangeCallback ->
                 dispatch {
                     productChangeCallback.onCompleted(
-                        (purchaseWrapper as GooglePurchaseWrapper).containedPurchase,
+                        purchaseWrapper.toPurchaseDetails(),
                         info
                     )
                 }
@@ -1502,7 +1542,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         activity: Activity,
         product: ProductDetails,
         presentedOfferingIdentifier: String?,
-        listener: MakePurchaseListener
+        listener: PurchaseCallback
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
                 " $product ${presentedOfferingIdentifier?.let {
@@ -1537,7 +1577,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         productDetails: ProductDetails,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeListener
+        listener: ProductChangeCallback
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $productDetails ${offeringIdentifier?.let {

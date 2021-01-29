@@ -28,7 +28,7 @@ import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings

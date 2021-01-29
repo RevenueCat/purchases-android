@@ -13,6 +13,7 @@ import com.revenuecat.purchases.PurchaserInfo;
 /**
  * Interface to be implemented when making purchases.
  */
+@Deprecated
 public interface MakePurchaseListener extends PurchaseErrorListener {
     /**
      * Will be called after the purchase has completed

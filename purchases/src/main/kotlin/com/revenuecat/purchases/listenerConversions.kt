@@ -3,16 +3,22 @@ package com.revenuecat.purchases
 import android.app.Activity
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.google.toProductDetails
 import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
+import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.ProductChangeListener
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.PurchaseDetails
 
-private typealias PurchaseCompletedFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
-private typealias ProductChangeCompletedFunction = (purchase: Purchase?, purchaserInfo: PurchaserInfo) -> Unit
+@Deprecated("Purchase replaced with PurchaseDetails")
+private typealias DeprecatedPurchaseCompletedFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
+private typealias PurchaseCompletedFunction = (purchase: PurchaseDetails, purchaserInfo: PurchaserInfo) -> Unit
+@Deprecated("Purchase replaced with PurchaseDetails")
+private typealias DeprecatedProductChangeCompletedFunction = (purchase: Purchase?, purchaserInfo: PurchaserInfo) -> Unit
+private typealias ProductChangeCompletedFunction = (purchase: PurchaseDetails?, purchaserInfo: PurchaserInfo) -> Unit
 private typealias ReceiveOfferingsSuccessFunction = (offerings: Offerings) -> Unit
 private typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: PurchaserInfo) -> Unit
 private typealias ErrorFunction = (error: PurchasesError) -> Unit
@@ -21,8 +27,9 @@ private typealias PurchaseErrorFunction = (error: PurchasesError, userCancelled:
 private val ON_ERROR_STUB: ErrorFunction = {}
 private val ON_PURCHASE_ERROR_STUB: PurchaseErrorFunction = { _, _ -> }
 
-internal fun purchaseCompletedListener(
-    onSuccess: PurchaseCompletedFunction,
+@Deprecated("onCompleted Purchase changed with PurchaseDetails")
+internal fun deprecatedPurchaseCompletedListener(
+    onSuccess: DeprecatedPurchaseCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : MakePurchaseListener {
     override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
@@ -34,11 +41,38 @@ internal fun purchaseCompletedListener(
     }
 }
 
-internal fun productChangeCompletedListener(
-    onSuccess: ProductChangeCompletedFunction,
+internal fun purchaseCompletedCallback(
+    onSuccess: PurchaseCompletedFunction,
+    onError: PurchaseErrorFunction
+) = object : PurchaseCallback {
+    override fun onCompleted(purchase: PurchaseDetails, purchaserInfo: PurchaserInfo) {
+        onSuccess(purchase, purchaserInfo)
+    }
+
+    override fun onError(error: PurchasesError, userCancelled: Boolean) {
+        onError(error, userCancelled)
+    }
+}
+
+@Deprecated("onCompleted Purchase changed with PurchaseDetails")
+internal fun deprecatedProductChangeCompletedListener(
+    onSuccess: DeprecatedProductChangeCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : ProductChangeListener {
     override fun onCompleted(purchase: Purchase?, purchaserInfo: PurchaserInfo) {
+        onSuccess(purchase, purchaserInfo)
+    }
+
+    override fun onError(error: PurchasesError, userCancelled: Boolean) {
+        onError(error, userCancelled)
+    }
+}
+
+internal fun productChangeCompletedListener(
+    onSuccess: ProductChangeCompletedFunction,
+    onError: PurchaseErrorFunction
+) = object : ProductChangeCallback {
+    override fun onCompleted(purchase: PurchaseDetails?, purchaserInfo: PurchaserInfo) {
         onSuccess(purchase, purchaserInfo)
     }
 
@@ -112,14 +146,14 @@ fun Purchases.getOfferingsWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
-@Deprecated("SkuDetails replaced with ProductDetails")
+@Deprecated("SkuDetails replaced with ProductDetails. The callback now returns a PurchaseDetails.")
 fun Purchases.purchaseProductWith(
     activity: Activity,
     skuDetails: SkuDetails,
     onError: PurchaseErrorFunction = ON_PURCHASE_ERROR_STUB,
-    onSuccess: PurchaseCompletedFunction
+    onSuccess: DeprecatedPurchaseCompletedFunction
 ) {
-    purchaseProduct(activity, skuDetails.toProductDetails(), purchaseCompletedListener(onSuccess, onError))
+    purchaseProduct(activity, skuDetails, deprecatedPurchaseCompletedListener(onSuccess, onError))
 }
 
 /**
@@ -135,7 +169,7 @@ fun Purchases.purchaseProductWith(
     onError: PurchaseErrorFunction = ON_PURCHASE_ERROR_STUB,
     onSuccess: PurchaseCompletedFunction
 ) {
-    purchaseProduct(activity, productDetails, purchaseCompletedListener(onSuccess, onError))
+    purchaseProduct(activity, productDetails, purchaseCompletedCallback(onSuccess, onError))
 }
 
 /**
@@ -146,15 +180,17 @@ fun Purchases.purchaseProductWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
-@Deprecated("SkuDetails replaced with ProductDetails")
+@Deprecated("SkuDetails replaced with ProductDetails. The callback now returns a PurchaseDetails.")
 fun Purchases.purchaseProductWith(
     activity: Activity,
     skuDetails: SkuDetails,
     upgradeInfo: UpgradeInfo,
     onError: PurchaseErrorFunction = ON_PURCHASE_ERROR_STUB,
-    onSuccess: ProductChangeCompletedFunction
+    onSuccess: DeprecatedProductChangeCompletedFunction
 ) {
-    purchaseProduct(activity, skuDetails, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
+    purchaseProduct(activity, skuDetails, upgradeInfo,
+        deprecatedProductChangeCompletedListener(onSuccess, onError)
+    )
 }
 
 /**
@@ -204,9 +240,9 @@ fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
     onError: PurchaseErrorFunction = ON_PURCHASE_ERROR_STUB,
-    onSuccess: PurchaseCompletedFunction
+    onSuccess: ProductChangeCompletedFunction
 ) {
-    purchasePackage(activity, packageToPurchase, purchaseCompletedListener(onSuccess, onError))
+    purchasePackage(activity, packageToPurchase, purchaseCompletedCallback(onSuccess, onError))
 }
 
 /**

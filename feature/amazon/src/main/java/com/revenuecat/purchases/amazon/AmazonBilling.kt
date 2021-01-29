@@ -30,11 +30,11 @@ import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.PurchasesErrorCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 @SuppressWarnings("LongParameterList")
@@ -94,13 +94,22 @@ internal class AmazonBilling constructor(
                             val purchaseHistoryRecordWrappers = receipts.mapNotNull { receipt ->
                                 val sku = tokensToSkusMap[receipt.receiptId]
                                 if (sku != null) {
+                                    val type = receipt.productType.toRevenueCatProductType()
+                                    val isAutoRenewing =
+                                        if (type == com.revenuecat.purchases.ProductType.SUBS) !receipt.isCanceled
+                                        else false
                                     PurchaseHistoryRecordWrapper(
-                                        type = receipt.productType.toRevenueCatProductType(),
+                                        type = type,
                                         purchaseToken = receipt.receiptId,
                                         purchaseTime = receipt.purchaseDate.time,
                                         sku = sku,
+                                        presentedOfferingIdentifier = null,
                                         purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
-                                        storeUserID = userData.userId
+                                        storeUserID = userData.userId,
+                                        isAutoRenewing = isAutoRenewing,
+                                        signature = null,
+                                        orderId = receipt.receiptId,
+                                        originalJson = receipt.toJSON()
                                     )
                                 } else {
                                     log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
@@ -312,17 +321,17 @@ internal class AmazonBilling constructor(
                         cache.setReceiptSkus(successMap)
                         onCompletion(successMap, errorMap)
                     }
-                },
-                onError = { error ->
-                    log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FETCHING_RECEIPT_INFO.format(error))
+                }
+            ) { error ->
+                log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FETCHING_RECEIPT_INFO.format(error))
 
-                    errorMap[receipt.receiptId] = error
+                errorMap[receipt.receiptId] = error
 
-                    receiptsLeft--
-                    if (receiptsLeft == 0) {
-                        onCompletion(successMap, errorMap)
-                    }
-                })
+                receiptsLeft--
+                if (receiptsLeft == 0) {
+                    onCompletion(successMap, errorMap)
+                }
+            }
         }
     }
 

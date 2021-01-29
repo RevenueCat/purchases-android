@@ -29,7 +29,7 @@ import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.PurchasesErrorCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
