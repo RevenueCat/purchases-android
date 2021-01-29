@@ -66,6 +66,7 @@ class BackendTest {
     private val appUserID = "jerry"
 
     private var receivedPurchaserInfo: PurchaserInfo? = null
+    private var receivedCreated: Boolean? = null
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
 
@@ -93,6 +94,11 @@ class BackendTest {
 
     private val onReceiveOfferingsErrorHandler: (PurchasesError) -> Unit = {
         this@BackendTest.receivedError = it
+    }
+
+    private val onLoginSuccessHandler: (PurchaserInfo, Boolean) -> Unit = { purchaserInfo, created ->
+        this@BackendTest.receivedPurchaserInfo = purchaserInfo
+        this@BackendTest.receivedCreated = created
     }
 
     @Test
@@ -944,6 +950,49 @@ class BackendTest {
         val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
         assertThat(calledWithRandomDelay).isNotNull()
         assertThat(calledWithRandomDelay).isTrue()
+    }
+
+    @Test
+    fun `logIn makes the right calls`() {
+        val body = mapOf(
+                "new_app_user_id" to "newId"
+        )
+        mockResponse(
+                "/subscribers/$appUserID/login",
+                body,
+                201,
+                null,
+                null
+        )
+
+        val onSuccess = mockk<() -> Unit>(relaxed = true)
+        backend.logIn(
+                appUserID,
+                "newId",
+                onLoginSuccessHandler,
+                {
+                    fail<String>("Should have called success")
+                }
+        )
+
+        verify {
+            onSuccess.invoke()
+        }
+    }
+    @Test
+    fun `logIn correctly parses purchaserInfo`() {
+    }
+
+    @Test
+    fun `logIn calls OnError if purchaserInfo can't be parsed`() {
+    }
+
+    @Test
+    fun `logIn returns created true if status is 201`() {
+    }
+
+    @Test
+    fun `logIn returns created false if status isn't 201`() {
     }
 
     private fun mockSkuDetails(

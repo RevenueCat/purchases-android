@@ -8,6 +8,7 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import org.json.JSONException
 import org.json.JSONObject
@@ -353,8 +354,12 @@ class Backend(
             override fun onCompletion(result: HTTPClient.Result) {
                 if (result.isSuccessful()) {
                     val created = result.responseCode == HTTP_STATUS_CREATED
-                    val purchaserInfo = result.body.buildPurchaserInfo()
-                    onSuccessHandler(purchaserInfo, created)
+                    if (result.body.length() > 0) {
+                        val purchaserInfo = result.body.buildPurchaserInfo()
+                        onSuccessHandler(purchaserInfo, created)
+                    } else {
+                        onErrorHandler(PurchasesError(PurchasesErrorCode.UnknownError))
+                    }
                 } else {
                     onErrorHandler(result.toPurchasesError().also { errorLog(it) })
                 }
