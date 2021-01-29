@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common
 
 import android.os.Build
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONException
 import org.json.JSONObject
@@ -137,7 +138,7 @@ class HTTPClient(
         return (fullURL.openConnection() as HttpURLConnection).apply {
             mapOf(
                 "Content-Type" to "application/json",
-                "X-Platform" to "android",
+                "X-Platform" to if (appConfig.store == Store.AMAZON) "amazon" else "android",
                 "X-Platform-Flavor" to appConfig.platformInfo.flavor,
                 "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
                 "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
