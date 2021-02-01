@@ -5,22 +5,20 @@ ext {
 }
 
 dependencies {
-    implementation fileTree(dir: "libs", include: ["*.jar"])
-
     implementation project(":purchases")
     implementation project(":common")
     implementation project(":strings")
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
 
-    compileOnly files("in-app-purchasing-${iapVersion}.jar")
+    compileOnly files("libs/in-app-purchasing-${iapVersion}.jar")
 }
 
 task getAmazonLibrary {
     ext {
         downloadURL = "https://amzndevresources.com/iap/sdk/AmazonInAppPurchasing_Android.zip"
         fileToExtract = "in-app-purchasing-${iapVersion}.jar"
-        destFile = new File( projectDir, "$fileToExtract" )
+        destFile = new File( projectDir, "libs/$fileToExtract" )
     }
 
     inputs.property( 'downloadURL', downloadURL )
