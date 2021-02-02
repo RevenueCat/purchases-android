@@ -18,7 +18,7 @@ fun stubGooglePurchase(
         "packageName":"com.revenuecat.purchases_sample",
         "productId":"$productId",
         "purchaseTime":$purchaseTime,
-        "purchaseState":$purchaseState,
+        "purchaseState":${if (purchaseState == 2) 4 else 1},
         "purchaseToken":"$purchaseToken",
         "acknowledged":$acknowledged
     }

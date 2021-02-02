@@ -28,6 +28,8 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.utils.stubGooglePurchase
+import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubSkuDetails
 import io.mockk.Runs
 import io.mockk.every
@@ -1456,10 +1458,15 @@ class BillingWrapperTest {
     }
 
     private fun mockPurchaseHistoryRecordWrapper(): PurchaseHistoryRecordWrapper {
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "product_b"
-        every { oldPurchase.purchaseToken } returns "atoken"
-        return oldPurchase
+        val oldPurchase = stubPurchaseHistoryRecord(
+            productId = "product_b",
+            purchaseToken = "atoken"
+        )
+
+        return PurchaseHistoryRecordWrapper(
+            purchaseHistoryRecord = oldPurchase,
+            type = ProductType.SUBS
+        )
     }
 
     private fun mockReplaceSkuInfo(): ReplaceSkuInfo {
@@ -1475,22 +1482,13 @@ class BillingWrapperTest {
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
         acknowledged: Boolean = false
     ): PurchaseWrapper {
-        val p: Purchase = mockk()
-        every {
-            p.sku
-        } returns sku
-        every {
-            p.purchaseToken
-        } returns purchaseToken
-        every {
-            p.purchaseTime
-        } returns System.currentTimeMillis()
-        every {
-            p.purchaseState
-        } returns purchaseState
-        every {
-            p.isAcknowledged
-        } returns acknowledged
+        val p = stubGooglePurchase(
+            productId = sku,
+            purchaseToken = purchaseToken,
+            purchaseState = purchaseState,
+            acknowledged = acknowledged
+        )
+
         return GooglePurchaseWrapper(p, productType, offeringIdentifier)
     }
 
@@ -1499,17 +1497,15 @@ class BillingWrapperTest {
         purchaseToken: String,
         productType: ProductType
     ): PurchaseHistoryRecordWrapper {
-        val p: PurchaseHistoryRecord = mockk()
-        every {
-            p.sku
-        } returns sku
-        every {
-            p.purchaseToken
-        } returns purchaseToken
-        every {
-            p.purchaseTime
-        } returns System.currentTimeMillis()
-        return PurchaseHistoryRecordWrapper(p, productType)
+        val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
+            productId = sku,
+            purchaseToken = purchaseToken
+        )
+
+        return PurchaseHistoryRecordWrapper(
+            purchaseHistoryRecord = p,
+            type = productType
+        )
     }
 
 }
