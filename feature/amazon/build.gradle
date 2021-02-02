@@ -12,6 +12,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
 
     compileOnly files("libs/in-app-purchasing-${iapVersion}.jar")
+    testCompileOnly files("libs/in-app-purchasing-${iapVersion}.jar")
 }
 
 task getAmazonLibrary {
