@@ -1822,6 +1822,16 @@ class PurchasesTest {
     }
 
     @Test
+    fun `logout called with anonymous ID returns error`() {
+
+    }
+
+    @Test
+    fun `logout called with identified user makes right calls`() {
+
+    }
+
+    @Test
     fun `when checking if Billing is supported, an OK response when starting connection means it's supported`() {
         setup()
         var receivedIsBillingSupported = false
