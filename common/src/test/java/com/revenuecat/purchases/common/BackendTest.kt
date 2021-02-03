@@ -11,8 +11,10 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
+import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
 import io.mockk.Called
+import io.mockk.Runs
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -112,7 +114,8 @@ class BackendTest {
         responseCode: Int,
         clientException: Exception?,
         resultBody: String?,
-        delayed: Boolean = false
+        delayed: Boolean = false,
+        shouldMockPurchaserInfo: Boolean = true
     ): PurchaserInfo {
         val info: PurchaserInfo = mockk()
 
@@ -121,10 +124,11 @@ class BackendTest {
         val headers = HashMap<String, String>()
         headers["Authorization"] = "Bearer $API_KEY"
 
-        every {
-            result.body.buildPurchaserInfo()
-        } returns info
-
+        if (shouldMockPurchaserInfo) {
+            every {
+                result.body.buildPurchaserInfo()
+            } returns info
+        }
         val everyMockedCall = every {
             mockClient.performRequest(
                 eq(path),
@@ -953,34 +957,64 @@ class BackendTest {
     }
 
     @Test
-    fun `logIn makes the right calls`() {
+    fun `logIn makes the right http call`() {
+        val newAppUserID = "newId"
         val body = mapOf(
-                "new_app_user_id" to "newId"
+                "new_app_user_id" to newAppUserID
         )
         mockResponse(
                 "/subscribers/$appUserID/login",
                 body,
                 201,
                 null,
-                null
+                Responses.validFullPurchaserResponse
         )
 
-        val onSuccess = mockk<() -> Unit>(relaxed = true)
         backend.logIn(
                 appUserID,
-                "newId",
+                newAppUserID,
                 onLoginSuccessHandler,
                 {
                     fail<String>("Should have called success")
                 }
         )
-
-        verify {
-            onSuccess.invoke()
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                    "/subscribers/$appUserID/login",
+                    body,
+                    any()
+            )
         }
     }
+
     @Test
     fun `logIn correctly parses purchaserInfo`() {
+        val newAppUserID = "newId"
+        val requestBody = mapOf(
+                "new_app_user_id" to newAppUserID
+        )
+        val resultBody = Responses.validFullPurchaserResponse
+        mockResponse(
+                "/subscribers/$appUserID/login",
+                requestBody,
+                responseCode = 201,
+                clientException = null,
+                resultBody = resultBody,
+                delayed = false,
+                shouldMockPurchaserInfo = false
+        )
+        val expectedPurchaserInfo = JSONObject(resultBody).buildPurchaserInfo()
+
+        backend.logIn(
+                appUserID,
+                newAppUserID,
+                onLoginSuccessHandler,
+                {
+                    fail<String>("Should have called success")
+                }
+        )
+        assertThat(receivedPurchaserInfo).isEqualTo(expectedPurchaserInfo)
+        assertThat(receivedCreated).isEqualTo(true)
     }
 
     @Test
