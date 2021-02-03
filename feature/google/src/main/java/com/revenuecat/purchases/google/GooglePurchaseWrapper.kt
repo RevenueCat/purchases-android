@@ -2,32 +2,30 @@ package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.common.PurchaseWrapper
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PurchaseType
 import org.json.JSONObject
 
-// TODO: replace with PurchaseDetails
-class GooglePurchaseWrapper(
-    val containedPurchase: Purchase,
-    override val type: ProductType,
-    override val presentedOfferingIdentifier: String? = null
-) : PurchaseWrapper {
-    override val purchaseToken: String
-        get() = containedPurchase.purchaseToken
-    override val purchaseTime: Long
-        get() = containedPurchase.purchaseTime
-    override val sku: String
-        get() = containedPurchase.sku
-    override val purchaseState: RevenueCatPurchaseState
-        get() = containedPurchase.purchaseState.toRevenueCatPurchaseType()
-    override val storeUserID: String?
-        get() = null
-    override val orderId: String
-        get() = containedPurchase.orderId
-    override val isAutoRenewing: Boolean?
-        get() = containedPurchase.isAutoRenewing
-    override val signature: String?
-        get() = containedPurchase.signature
-    override val originalJson: JSONObject?
-        get() = JSONObject(containedPurchase.originalJson)
-}
+fun Purchase.toRevenueCatPurchaseDetails(
+    productType: ProductType,
+    presentedOfferingIdentifier: String?
+): PurchaseDetails = PurchaseDetails(
+    orderId = this.orderId,
+    sku = this.sku,
+    type = productType,
+    purchaseTime = this.purchaseTime,
+    purchaseToken = this.purchaseToken,
+    purchaseState = this.purchaseState.toRevenueCatPurchaseState(),
+    isAutoRenewing = this.isAutoRenewing,
+    signature = this.signature,
+    originalJson = JSONObject(this.originalJson),
+    presentedOfferingIdentifier = presentedOfferingIdentifier,
+    storeUserID = null,
+    purchaseType = PurchaseType.GOOGLE_PURCHASE
+)
+
+// TODO: should this be nullable or just throw
+val PurchaseDetails.originalGooglePurchase: Purchase?
+    get() = this.signature?.let { signature ->
+        Purchase(this.originalJson.toString(), signature)
+    }

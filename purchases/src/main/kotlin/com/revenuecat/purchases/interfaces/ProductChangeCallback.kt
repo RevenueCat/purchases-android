@@ -9,8 +9,8 @@ import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.google.originalGooglePurchase
 import com.revenuecat.purchases.models.PurchaseDetails
-import com.revenuecat.purchases.models.originalGooglePurchase
 
 /**
  * Interface to be implemented when upgrading or downgrading a purchase.

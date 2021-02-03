@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
-import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.android.parcel.Parcelize
@@ -12,7 +11,7 @@ import org.json.JSONObject
 @TypeParceler<JSONObject, JSONObjectParceler>()
 // TODO: docs
 data class PurchaseDetails(
-    val orderId: String,
+    val orderId: String?,
     val sku: String,
     val type: ProductType,
     val purchaseTime: Long,
@@ -29,11 +28,17 @@ data class PurchaseDetails(
      */
     val signature: String?,
 
-    val originalJson: JSONObject
+    val originalJson: JSONObject,
+
+    val presentedOfferingIdentifier: String?,
+
+    val storeUserID: String?,
+
+    val purchaseType: PurchaseType
 ) : Parcelable
 
-// TODO: should this be nullable or just throw
-val PurchaseDetails.originalGooglePurchase: Purchase?
-    get() = this.signature?.let { signature ->
-        Purchase(this.originalJson.toString(), signature)
-    }
+enum class PurchaseType {
+    GOOGLE_PURCHASE,
+    GOOGLE_RESTORED_PURCHASE,
+    AMAZON_PURCHASE
+}

@@ -11,11 +11,11 @@ import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.strings.ReceiptStrings
 import org.json.JSONException
 import org.json.JSONObject
@@ -230,8 +230,8 @@ open class DeviceCache(
      */
     @Synchronized
     fun getActivePurchasesNotInCache(
-        hashedTokens: Map<String, PurchaseWrapper>,
-    ): List<PurchaseWrapper> {
+        hashedTokens: Map<String, PurchaseDetails>,
+    ): List<PurchaseDetails> {
         return hashedTokens
             .minus(getPreviouslySentHashedTokens())
             .values.toList()
