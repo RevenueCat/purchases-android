@@ -42,7 +42,8 @@ internal class AmazonBilling constructor(
     private val applicationContext: Context,
     private val amazonBackend: AmazonBackend,
     private val cache: AmazonCache,
-    private val productDataHandler: ProductDataResponseListener = ProductDataHandler(),
+    private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
+    private val productDataHandler: ProductDataResponseListener = ProductDataHandler(purchasingServiceProvider),
     private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(),
     private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(),
     private val userDataHandler: UserDataResponseListener = UserDataHandler()

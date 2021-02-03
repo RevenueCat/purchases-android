@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.amazon.handler
 
-import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.RequestId
@@ -8,6 +7,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
+import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.ProductDataResponseListener
 import com.revenuecat.purchases.amazon.toProductDetails
 import com.revenuecat.purchases.common.LogIntent
@@ -15,7 +15,9 @@ import com.revenuecat.purchases.common.ProductDetailsListCallback
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.ProductDetails
 
-class ProductDataHandler : ProductDataResponseListener {
+class ProductDataHandler(
+    private val purchasingServiceProvider: PurchasingServiceProvider
+) : ProductDataResponseListener {
 
     data class Request(
         val skuList: List<String>,
@@ -43,7 +45,7 @@ class ProductDataHandler : ProductDataResponseListener {
                 val cachedProducts: Map<String, Product> = productDataCache.filterKeys { skus.contains(it) }
                 handleSuccessfulProductDataResponse(cachedProducts, marketplace, onReceive)
             } else {
-                val productDataRequestId = PurchasingService.getProductData(skus)
+                val productDataRequestId = purchasingServiceProvider.getProductData(skus)
                 synchronized(this) {
                     productDataRequests[productDataRequestId] = Request(skus.toList(), marketplace, onReceive, onError)
                 }
