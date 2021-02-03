@@ -24,8 +24,8 @@ fun Purchase.toRevenueCatPurchaseDetails(
     purchaseType = PurchaseType.GOOGLE_PURCHASE
 )
 
-// TODO: should this be nullable or just throw
 val PurchaseDetails.originalGooglePurchase: Purchase?
-    get() = this.signature?.let { signature ->
-        Purchase(this.originalJson.toString(), signature)
-    }
+    get() =
+        this.signature
+            ?.takeIf { this.purchaseType == PurchaseType.GOOGLE_PURCHASE }
+            ?.let { signature -> Purchase(this.originalJson.toString(), signature) }

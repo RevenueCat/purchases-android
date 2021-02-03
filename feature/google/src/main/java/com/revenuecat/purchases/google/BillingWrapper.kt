@@ -286,7 +286,7 @@ class BillingWrapper(
         }
 
         val originalGooglePurchase = purchase.originalGooglePurchase
-        val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: true
+        val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: false
         if (shouldTryToConsume && purchase.type == ProductType.INAPP) {
             consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {

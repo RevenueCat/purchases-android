@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.PURCHASER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
 import io.mockk.just
@@ -258,10 +259,10 @@ class DeviceCacheTest {
         every {
             mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "hash2", "token3")
-        val activeSub = mockk<PurchaseWrapper>(relaxed = true).also {
+        val activeSub = mockk<PurchaseDetails>(relaxed = true).also {
             every { it.type } returns ProductType.SUBS
         }
-        val inApp = mockk<PurchaseWrapper>(relaxed = true).also {
+        val inApp = mockk<PurchaseDetails>(relaxed = true).also {
             every { it.type } returns ProductType.INAPP
         }
         val activePurchasesNotInCache =
