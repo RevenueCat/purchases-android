@@ -1782,6 +1782,46 @@ class PurchasesTest {
     }
 
     @Test
+    fun `login with the same appUserID as the current, fetches purchaserInfo and calls onSuccess if successful`() {
+
+    }
+
+    @Test
+    fun `login with the same appUserID as the current, calls onSuccess with created false if successful`() {
+
+    }
+
+    @Test
+    fun `login with the same appUserID as the current, fetches purchaserInfo and calls onError if failed`() {
+
+    }
+
+    @Test
+    fun `login called with different appUserID makes correct identityManager call`() {
+
+    }
+
+    @Test
+    fun `login called with different appUserID passes errors to caller`() {
+
+    }
+
+    @Test
+    fun `login called with different appUserID calls listener with correct values`() {
+
+    }
+
+    @Test
+    fun `login called with different appUserID calls delegate if purchaserInfo changed`() {
+
+    }
+
+    @Test
+    fun `login called with different appUserID doesn't call delegate if purchaserInfo hasn't changed`() {
+
+    }
+
+    @Test
     fun `when checking if Billing is supported, an OK response when starting connection means it's supported`() {
         setup()
         var receivedIsBillingSupported = false
