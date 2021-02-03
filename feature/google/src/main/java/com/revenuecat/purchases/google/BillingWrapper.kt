@@ -37,7 +37,10 @@ import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.common.toRevenueCatPurchaseDetails
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.BillingStrings
@@ -244,7 +247,7 @@ class BillingWrapper(
 
     override fun queryAllPurchases(
         appUserID: String,
-        onReceivePurchaseHistory: (List<PurchaseHistoryRecordWrapper>) -> Unit,
+        onReceivePurchaseHistory: (List<PurchaseDetails>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
         queryPurchaseHistoryAsync(
@@ -255,17 +258,10 @@ class BillingWrapper(
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
                             subsPurchasesList.map {
-                                PurchaseHistoryRecordWrapper(
-                                    it,
-                                    ProductType.SUBS
-                                )
-                            } +
-                                inAppPurchasesList.map {
-                                    PurchaseHistoryRecordWrapper(
-                                        it,
-                                        ProductType.INAPP
-                                    )
-                                }
+                                it.toRevenueCatPurchaseDetails(ProductType.SUBS)
+                            } + inAppPurchasesList.map {
+                                it.toRevenueCatPurchaseDetails(ProductType.INAPP)
+                            }
                         )
                     },
                     onReceivePurchaseHistoryError
@@ -277,7 +273,7 @@ class BillingWrapper(
 
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
-        purchase: PurchaseWrapper
+        purchase: PurchaseDetails
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
             // Would only get here if the purchase was triggered from outside of the app and there was
@@ -289,7 +285,8 @@ class BillingWrapper(
             return
         }
 
-        val alreadyAcknowledged = purchase is GooglePurchaseWrapper && purchase.containedPurchase.isAcknowledged
+        val originalGooglePurchase = purchase.originalGooglePurchase
+        val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: true
         if (shouldTryToConsume && purchase.type == ProductType.INAPP) {
             consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
@@ -393,10 +390,10 @@ class BillingWrapper(
 
     private fun List<Purchase>.toMapOfGooglePurchaseWrapper(
         @SkuType skuType: String
-    ): Map<String, GooglePurchaseWrapper> {
+    ): Map<String, PurchaseDetails> {
         return this.map { purchase ->
             val hash = purchase.purchaseToken.sha1()
-            hash to GooglePurchaseWrapper(purchase, skuType.toProductType(), presentedOfferingIdentifier = null)
+            hash to purchase.toRevenueCatPurchaseDetails(skuType.toProductType(), presentedOfferingIdentifier = null)
         }.toMap()
     }
 
@@ -404,7 +401,7 @@ class BillingWrapper(
         appUserID: String,
         productType: ProductType,
         sku: String,
-        onCompletion: (PurchaseHistoryRecordWrapper) -> Unit,
+        onCompletion: (PurchaseDetails) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         withConnectedClient {
@@ -414,7 +411,7 @@ class BillingWrapper(
                     if (result.isSuccessful()) {
                         val purchaseHistoryRecordWrapper =
                             purchasesList?.firstOrNull { sku == it.sku }?.let { purchaseHistoryRecord ->
-                                PurchaseHistoryRecordWrapper(purchaseHistoryRecord, productType)
+                                purchaseHistoryRecord.toRevenueCatPurchaseDetails(productType)
                             }
 
                         if (purchaseHistoryRecordWrapper != null) {
@@ -470,8 +467,7 @@ class BillingWrapper(
                     type = productTypes[purchase.sku]
                     presentedOffering = presentedOfferingsByProductIdentifier[purchase.sku]
                 }
-                GooglePurchaseWrapper(
-                    purchase,
+                purchase.toRevenueCatPurchaseDetails(
                     type ?: getPurchaseType(purchase.purchaseToken),
                     presentedOffering
                 )

@@ -2,35 +2,26 @@ package com.revenuecat.purchases.common
 
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import org.json.JSONObject
 
-class PurchaseHistoryRecordWrapper(
-    override val type: ProductType,
-    override val purchaseToken: String,
-    override val purchaseTime: Long,
-    override val sku: String,
-    override val presentedOfferingIdentifier: String? = null,
-    override val purchaseState: RevenueCatPurchaseState,
-    override val storeUserID: String?,
-    override val isAutoRenewing: Boolean?,
-    override val signature: String?,
-    override val orderId: String = purchaseToken,
-    override val originalJson: JSONObject?
-) : PurchaseWrapper {
-
-    constructor(
-        purchaseHistoryRecord: PurchaseHistoryRecord,
-        type: ProductType
-    ) : this(
+fun PurchaseHistoryRecord.toRevenueCatPurchaseDetails(
+    type: ProductType
+): PurchaseDetails {
+    return PurchaseDetails(
+        orderId = null,
+        sku = this.sku,
         type = type,
-        purchaseToken = purchaseHistoryRecord.purchaseToken,
-        purchaseTime = purchaseHistoryRecord.purchaseTime,
-        sku = purchaseHistoryRecord.sku,
+        purchaseTime = this.purchaseTime,
+        purchaseToken = this.purchaseToken,
         purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
-        storeUserID = null,
         isAutoRenewing = null,
-        signature = purchaseHistoryRecord.signature,
-        originalJson = null
+        signature = this.signature,
+        originalJson = JSONObject(this.originalJson),
+        presentedOfferingIdentifier = null,
+        storeUserID = null,
+        purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE
     )
 }

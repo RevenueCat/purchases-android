@@ -2,30 +2,29 @@ package com.revenuecat.purchases.amazon
 
 import com.amazon.device.iap.model.Receipt
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.common.PurchaseWrapper
+import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
-import org.json.JSONObject
 
-// TODO: replace with PurchaseDetails
-class AmazonPurchaseWrapper(
-    override val sku: String,
-    val containedReceipt: Receipt,
-    override val presentedOfferingIdentifier: String? = null,
-    override val purchaseState: RevenueCatPurchaseState,
-    override val storeUserID: String
-) : PurchaseWrapper {
-    override val type: ProductType
-        get() = containedReceipt.productType.toRevenueCatProductType()
-    override val purchaseToken: String
-        get() = containedReceipt.receiptId
-    override val purchaseTime: Long
-        get() = containedReceipt.purchaseDate.time
-    override val orderId: String
-        get() = purchaseToken
-    override val isAutoRenewing: Boolean
-        get() = if (type == ProductType.SUBS) !containedReceipt.isCanceled else false
-    override val signature: String?
-        get() = null
-    override val originalJson: JSONObject?
-        get() = containedReceipt.toJSON()
+fun Receipt.toRevenueCatPurchaseDetails(
+    sku: String,
+    presentedOfferingIdentifier: String?,
+    purchaseState: RevenueCatPurchaseState,
+    storeUserID: String?
+): PurchaseDetails {
+    val type = this.productType.toRevenueCatProductType()
+    return PurchaseDetails(
+        orderId = null,
+        sku = sku,
+        type = type,
+        purchaseTime = this.purchaseDate.time,
+        purchaseToken = this.receiptId,
+        purchaseState = purchaseState,
+        isAutoRenewing = if (type == ProductType.SUBS) !this.isCanceled else false,
+        signature = null,
+        originalJson = this.toJSON(),
+        presentedOfferingIdentifier = presentedOfferingIdentifier,
+        storeUserID = storeUserID,
+        purchaseType = PurchaseType.AMAZON_PURCHASE
+    )
 }

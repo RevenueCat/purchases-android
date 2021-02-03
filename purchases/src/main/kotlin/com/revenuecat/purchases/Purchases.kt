@@ -6,6 +6,7 @@
 package com.revenuecat.purchases
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.content.Context
@@ -29,7 +30,6 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
-import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.attribution.AttributionData
@@ -38,6 +38,7 @@ import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.toPurchaseDetails
+import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.toProductDetails
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.identity.IdentityManager
@@ -56,6 +57,7 @@ import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -80,8 +82,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
-typealias SuccessfulPurchaseCallback = (PurchaseWrapper, PurchaserInfo) -> Unit
-typealias ErrorPurchaseCallback = (PurchaseWrapper, PurchasesError) -> Unit
+typealias SuccessfulPurchaseCallback = (PurchaseDetails, PurchaserInfo) -> Unit
+typealias ErrorPurchaseCallback = (PurchaseDetails, PurchasesError) -> Unit
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -1257,7 +1259,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun postPurchases(
-        purchases: List<PurchaseWrapper>,
+        purchases: List<PurchaseDetails>,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
@@ -1303,7 +1305,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     @JvmSynthetic
     internal fun postToBackend(
-        purchase: PurchaseWrapper,
+        purchase: PurchaseDetails,
         productDetails: ProductDetails?,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
@@ -1436,7 +1438,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getPurchasesUpdatedListener(): BillingAbstract.PurchasesUpdatedListener {
         return object : BillingAbstract.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards PurchaseWrapper>) {
+            override fun onPurchasesUpdated(purchases: List<PurchaseDetails>) {
                 val productChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
                 val productChangeListener: ProductChangeCallback?
@@ -1490,10 +1492,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
-        val onSuccess: SuccessfulPurchaseCallback = { purchaseWrapper, info ->
-            getPurchaseCallback(purchaseWrapper.sku)?.let { purchaseCallback ->
+        val onSuccess: SuccessfulPurchaseCallback = { purchaseDetails, info ->
+            getPurchaseCallback(purchaseDetails.sku)?.let { purchaseCallback ->
                 dispatch {
-                    purchaseCallback.onCompleted(purchaseWrapper.toPurchaseDetails(), info)
+                    purchaseCallback.onCompleted(purchaseDetails, info)
                 }
             }
         }
@@ -1507,13 +1509,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun getProductChangeCompletedCallbacks(
         productChangeListener: ProductChangeCallback?
     ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
-        val onSuccess: SuccessfulPurchaseCallback = { purchaseWrapper, info ->
+        val onSuccess: SuccessfulPurchaseCallback = { purchaseDetails, info ->
             productChangeListener?.let { productChangeCallback ->
                 dispatch {
-                    productChangeCallback.onCompleted(
-                        purchaseWrapper.toPurchaseDetails(),
-                        info
-                    )
+                    productChangeCallback.onCompleted(purchaseDetails, info)
                 }
             }
         }
@@ -1815,7 +1814,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         subscriberAttributesCache, subscriberAttributesPoster, attributionFetcher
                     ),
                     appConfig
-                ).also { sharedInstance = it }
+                ).also {
+                    @SuppressLint("RestrictedApi")
+                    sharedInstance = it
+                }
             }
         }
 

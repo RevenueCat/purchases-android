@@ -3,7 +3,7 @@ package com.revenuecat.purchases.google
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.android.billingclient.api.Purchase.PurchaseState as GooglePurchaseState
 
-fun Int.toRevenueCatPurchaseType(): RevenueCatPurchaseState {
+fun Int.toRevenueCatPurchaseState(): RevenueCatPurchaseState {
     return when (this) {
         GooglePurchaseState.UNSPECIFIED_STATE -> RevenueCatPurchaseState.UNSPECIFIED_STATE
         GooglePurchaseState.PURCHASED -> RevenueCatPurchaseState.PURCHASED
@@ -12,7 +12,7 @@ fun Int.toRevenueCatPurchaseType(): RevenueCatPurchaseState {
     }
 }
 
-fun RevenueCatPurchaseState.toPurchaseType(): Int {
+fun RevenueCatPurchaseState.toGooglePurchaseState(): Int {
     return when (this) {
         RevenueCatPurchaseState.UNSPECIFIED_STATE -> GooglePurchaseState.UNSPECIFIED_STATE
         RevenueCatPurchaseState.PURCHASED -> GooglePurchaseState.PURCHASED

@@ -5,6 +5,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.PurchaseDetails
 
 typealias ProductDetailsListCallback = (List<ProductDetails>) -> Unit
 
@@ -40,7 +41,7 @@ abstract class BillingAbstract {
 
     abstract fun queryAllPurchases(
         appUserID: String,
-        onReceivePurchaseHistory: (List<PurchaseHistoryRecordWrapper>) -> Unit,
+        onReceivePurchaseHistory: (List<PurchaseDetails>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     )
 
@@ -53,14 +54,13 @@ abstract class BillingAbstract {
 
     abstract fun consumeAndSave(
         shouldTryToConsume: Boolean,
-        purchase: PurchaseWrapper
+        purchase: PurchaseDetails
     )
 
     abstract fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: ProductType,
         sku: String,
-        onCompletion: (PurchaseHistoryRecordWrapper) -> Unit,
         onError: (PurchasesError) -> Unit
     )
 
@@ -77,12 +77,12 @@ abstract class BillingAbstract {
     @SuppressWarnings("ForbiddenComment")
     abstract fun queryPurchases(
         appUserID: String,
-        onSuccess: (Map<String, PurchaseWrapper>) -> Unit,
+        onSuccess: (Map<String, PurchaseDetails>) -> Unit,
         onError: (PurchasesError) -> Unit
     )
 
     interface PurchasesUpdatedListener {
-        fun onPurchasesUpdated(purchases: List<PurchaseWrapper>)
+        fun onPurchasesUpdated(purchases: List<PurchaseDetails>)
         fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
     }
 }

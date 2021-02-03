@@ -2,8 +2,8 @@ package com.revenuecat.purchases.interfaces
 
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.google.originalGooglePurchase
 import com.revenuecat.purchases.models.PurchaseDetails
-import com.revenuecat.purchases.models.originalGooglePurchase
 
 interface PurchaseCallback : PurchaseErrorListener {
     /**
