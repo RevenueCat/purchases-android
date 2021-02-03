@@ -15,11 +15,11 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
-import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
@@ -80,7 +80,7 @@ class SubscriberAttributesPurchasesTests {
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
-            lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
+            lambda<(List<PurchaseDetails>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
             }
         }

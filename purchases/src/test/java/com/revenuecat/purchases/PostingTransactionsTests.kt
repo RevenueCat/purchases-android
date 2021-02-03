@@ -6,13 +6,12 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
-import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
-import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
@@ -67,7 +66,7 @@ class PostingTransactionsTests {
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
-            lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
+            lambda<(List<PurchaseDetails>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
             }
         }
@@ -225,7 +224,7 @@ class PostingTransactionsTests {
             every { it.introductoryPricePeriod } returns ""
             every { it.freeTrialPeriod } returns ""
         }
-        val purchase: PurchaseWrapper = mockk(relaxed = true)
+        val purchase: PurchaseDetails = mockk(relaxed = true)
         val expectedStoreUserID = "a_store_user_id"
         every {
             purchase.storeUserID

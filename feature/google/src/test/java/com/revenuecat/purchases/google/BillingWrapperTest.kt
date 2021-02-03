@@ -23,12 +23,12 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
-import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
-import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.common.toRevenueCatPurchaseDetails
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubSkuDetails
@@ -391,8 +391,8 @@ class BillingWrapperTest {
     @Test
     fun purchasesUpdatedCallsAreForwarded() {
         setup()
-        val purchases = listOf(mockk<Purchase>(relaxed = true))
-        val slot = slot<List<PurchaseWrapper>>()
+        val purchases = listOf(stubGooglePurchase())
+        val slot = slot<List<PurchaseDetails>>()
         every {
             mockPurchasesListener.onPurchasesUpdated(capture(slot))
         } just Runs
@@ -410,7 +410,7 @@ class BillingWrapperTest {
     fun `purchasesUpdatedCalls are forwarded with empty list if result is ok but with a null purchase`() {
         setup()
 
-        val slot = slot<List<PurchaseWrapper>>()
+        val slot = slot<List<PurchaseDetails>>()
         every {
             mockPurchasesListener.onPurchasesUpdated(capture(slot))
         } just Runs
@@ -638,11 +638,11 @@ class BillingWrapperTest {
         } answers {
             billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
                 BillingClient.BillingResponseCode.OK.buildResult(),
-                listOf(mockk(relaxed = true))
+                listOf(stubPurchaseHistoryRecord())
             )
         }
 
-        var receivedPurchases = listOf<PurchaseHistoryRecordWrapper>()
+        var receivedPurchases = listOf<PurchaseDetails>()
         wrapper.queryAllPurchases("appUserID", {
             receivedPurchases = it
         }, { fail("Shouldn't be error") })
@@ -697,11 +697,13 @@ class BillingWrapperTest {
         val type = BillingClient.SkuType.INAPP
         val time = System.currentTimeMillis()
         val sku = "sku"
-        val purchase = mockk<Purchase>().also {
-            every { it.purchaseToken } returns token
-            every { it.purchaseTime } returns time
-            every { it.sku } returns sku
-        }
+
+        val purchase = stubGooglePurchase(
+            purchaseToken = token,
+            purchaseTime = time,
+            productId = sku
+        )
+
         every {
             mockClient.queryPurchases(BillingClient.SkuType.INAPP)
         } returns Purchase.PurchasesResult(resultCode.buildResult(), listOf(purchase))
@@ -740,11 +742,12 @@ class BillingWrapperTest {
         val type = BillingClient.SkuType.SUBS
         val time = System.currentTimeMillis()
         val sku = "sku"
-        val purchase = mockk<Purchase>().also {
-            every { it.purchaseToken } returns token
-            every { it.purchaseTime } returns time
-            every { it.sku } returns sku
-        }
+
+        val purchase = stubGooglePurchase(
+            purchaseToken = token,
+            purchaseTime = time,
+            productId = sku
+        )
 
         every {
             mockClient.queryPurchases(BillingClient.SkuType.SUBS)
@@ -795,10 +798,10 @@ class BillingWrapperTest {
             mockReplaceSkuInfo(),
             "offering_a"
         )
-        val purchases = listOf(mockk<Purchase>(relaxed = true).also {
-            every { it.sku } returns "product_a"
-        })
-        val slot = slot<List<PurchaseWrapper>>()
+
+        val purchases = listOf(stubGooglePurchase(productId = "product_a"))
+
+        val slot = slot<List<PurchaseDetails>>()
         every {
             mockPurchasesListener.onPurchasesUpdated(capture(slot))
         } just Runs
@@ -890,11 +893,9 @@ class BillingWrapperTest {
     fun `findPurchaseInPurchaseHistory works`() {
         setup()
         val sku = "aPurchase"
-        val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
-            every { it.sku } returns sku
-        }
+        val purchaseHistoryRecord = stubPurchaseHistoryRecord(productId = sku)
 
-        var recordFound: PurchaseHistoryRecordWrapper? = null
+        var recordFound: PurchaseDetails? = null
         wrapper.findPurchaseInPurchaseHistory(
             "jerry",
             ProductType.SUBS,
@@ -1479,16 +1480,13 @@ class BillingWrapperTest {
         return BillingResult.newBuilder().setResponseCode(this).build()
     }
 
-    private fun mockPurchaseHistoryRecordWrapper(): PurchaseHistoryRecordWrapper {
+    private fun mockPurchaseHistoryRecordWrapper(): PurchaseDetails {
         val oldPurchase = stubPurchaseHistoryRecord(
             productId = "product_b",
             purchaseToken = "atoken"
         )
 
-        return PurchaseHistoryRecordWrapper(
-            purchaseHistoryRecord = oldPurchase,
-            type = ProductType.SUBS
-        )
+        return oldPurchase.toRevenueCatPurchaseDetails(type = ProductType.SUBS)
     }
 
     private fun mockReplaceSkuInfo(): ReplaceSkuInfo {
@@ -1503,7 +1501,7 @@ class BillingWrapperTest {
         offeringIdentifier: String? = null,
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
         acknowledged: Boolean = false
-    ): PurchaseWrapper {
+    ): PurchaseDetails {
         val p = stubGooglePurchase(
             productId = sku,
             purchaseToken = purchaseToken,
@@ -1511,21 +1509,20 @@ class BillingWrapperTest {
             acknowledged = acknowledged
         )
 
-        return GooglePurchaseWrapper(p, productType, offeringIdentifier)
+        return p.toRevenueCatPurchaseDetails(productType, offeringIdentifier)
     }
 
     private fun getMockedPurchaseHistoryRecordWrapper(
         sku: String,
         purchaseToken: String,
         productType: ProductType
-    ): PurchaseHistoryRecordWrapper {
+    ): PurchaseDetails {
         val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
             productId = sku,
             purchaseToken = purchaseToken
         )
 
-        return PurchaseHistoryRecordWrapper(
-            purchaseHistoryRecord = p,
+        return p.toRevenueCatPurchaseDetails(
             type = productType
         )
     }
