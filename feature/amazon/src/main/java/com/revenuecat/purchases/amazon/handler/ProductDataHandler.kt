@@ -24,9 +24,11 @@ class ProductDataHandler : ProductDataResponseListener {
         val onError: PurchasesErrorCallback
     )
 
+    @get:Synchronized
     private val productDataRequests = mutableMapOf<RequestId, Request>()
 
-    private val productDataCache = mutableMapOf<String, Product>()
+    @get:Synchronized
+    internal val productDataCache = mutableMapOf<String, Product>()
 
     override fun getProductData(
         skus: Set<String>,
@@ -36,12 +38,16 @@ class ProductDataHandler : ProductDataResponseListener {
     ) {
         log(LogIntent.DEBUG, AmazonStrings.REQUESTING_PRODUCTS.format(skus.joinToString()))
 
-        if (productDataCache.keys.containsAll(skus)) {
-            val cachedProducts: Map<String, Product> = productDataCache.filterKeys { skus.contains(it) }
-            handleSuccessfulProductDataResponse(cachedProducts, marketplace, onReceive)
-        } else {
-            val productDataRequestId = PurchasingService.getProductData(skus)
-            productDataRequests[productDataRequestId] = Request(skus.toList(), marketplace, onReceive, onError)
+        synchronized(this) { productDataCache.toMap() }.let { productDataCache ->
+            if (productDataCache.keys.containsAll(skus)) {
+                val cachedProducts: Map<String, Product> = productDataCache.filterKeys { skus.contains(it) }
+                handleSuccessfulProductDataResponse(cachedProducts, marketplace, onReceive)
+            } else {
+                val productDataRequestId = PurchasingService.getProductData(skus)
+                synchronized(this) {
+                    productDataRequests[productDataRequestId] = Request(skus.toList(), marketplace, onReceive, onError)
+                }
+            }
         }
     }
 
@@ -53,13 +59,15 @@ class ProductDataHandler : ProductDataResponseListener {
         }
 
         val requestId = response.requestId
-        val request = productDataRequests[requestId]
+        val request = synchronized(this) { productDataRequests[requestId] }
 
         if (request != null) {
             val responseIsSuccessful = response.requestStatus == ProductDataResponse.RequestStatus.SUCCESSFUL
 
             if (responseIsSuccessful) {
-                productDataCache.putAll(response.productData)
+                synchronized(this) {
+                    productDataCache.putAll(response.productData)
+                }
                 handleSuccessfulProductDataResponse(response.productData, request.marketplace, request.onReceive)
             } else {
                 handleUnsuccessfulProductDataResponse(response, request.onError)
