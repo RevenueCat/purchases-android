@@ -116,6 +116,7 @@ class IdentityManager(
             log(LogIntent.RC_ERROR, "Called logOut but the current user is anonymous")
             return PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError)
         }
+        deviceCache.clearLatestAttributionData(currentAppUserID)
         reset()
         return null
     }

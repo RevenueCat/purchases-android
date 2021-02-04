@@ -658,11 +658,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @JvmOverloads
     internal fun logOut(listener: ReceivePurchaserInfoListener? = null) {
-        if (identityManager.currentUserIsAnonymous()) {
-            log(LogIntent.RC_ERROR, "Called logOut but the current user is anonymous")
-            listener?.onError(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
+        val error: PurchasesError? = identityManager.logOut()
+        if (error != null) {
+            listener?.onError(error)
         } else {
-            reset(listener)
+            synchronized(this@Purchases) {
+                state = state.copy(purchaseCallbacks = emptyMap())
+            }
+            updateAllCaches(identityManager.currentAppUserID, listener)
         }
     }
 

@@ -1931,7 +1931,6 @@ class PurchasesTest {
 
     @Test
     fun `login successful with new appUserID refreshes offerings`() {
-        setup()
         val mockInfo = mockk<PurchaserInfo>()
         val mockCreated = Random.nextBoolean()
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
@@ -1952,13 +1951,93 @@ class PurchasesTest {
     }
 
     @Test
-    fun `logout called with anonymous ID returns error`() {
+    fun `logout called with identified user makes right calls`() {
+        setup()
+        val appUserID = "fakeUserID"
+        every {
+            mockCache.clearLatestAttributionData(appUserID)
+        } just Runs
+        every {
+            mockIdentityManager.reset()
+        } just Runs
+        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        purchases.logOut(mockCompletion)
 
+        verify(exactly = 1) {
+            mockCache.setPurchaserInfoCacheTimestampToNow(appUserID)
+        }
+        verify(exactly = 1) {
+            mockCache.setOfferingsCacheTimestampToNow()
+        }
+        verify(exactly = 1) {
+            mockBackend.getPurchaserInfo(appUserID, any(), any(), any())
+        }
+        verify(exactly = 1) {
+            mockBackend.getOfferings(appUserID, any(), any(), any())
+        }
     }
 
     @Test
-    fun `logout called with identified user makes right calls`() {
+    fun `when logging out, identity manager is called`() {
+        setup()
 
+        every {
+            mockCache.clearLatestAttributionData(appUserId)
+        } just Runs
+        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        every {
+            mockIdentityManager.logOut()
+        } returns null
+
+        purchases.logOut(mockCompletion)
+        verify {
+            mockIdentityManager.logOut()
+        }
+    }
+
+    @Test
+    fun `if there's an error on logOut, the error is passed`() {
+        setup()
+
+        every {
+            mockCache.clearLatestAttributionData(appUserId)
+        } just Runs
+        val mockError = mockk<PurchasesError>(relaxed = true)
+        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        every {
+            mockIdentityManager.logOut()
+        } returns mockError
+
+        purchases.logOut(mockCompletion)
+        verify {
+            mockCompletion.onError(mockError)
+        }
+    }
+
+    @Test
+    fun `logOut calls completion with new purchaserInfo when successful`() {
+        setup()
+        val mockInfo = mockk<PurchaserInfo>()
+
+        every {
+            mockCache.clearLatestAttributionData(appUserId)
+        } just Runs
+
+        every {
+            mockBackend.getPurchaserInfo(any(), any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+        }
+
+        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        every {
+            mockIdentityManager.logOut()
+        } returns null
+
+        purchases.logOut(mockCompletion)
+        verify {
+            mockCompletion.onReceived(mockInfo)
+        }
     }
 
     @Test
