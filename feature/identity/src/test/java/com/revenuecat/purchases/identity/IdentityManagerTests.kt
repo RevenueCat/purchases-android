@@ -283,6 +283,7 @@ class IdentityManagerTests {
     @Test
     fun `logOut clears old caches`() {
         val identifiedUserID = "Waldo"
+        every { mockDeviceCache.clearLatestAttributionData(identifiedUserID) } just Runs
         mockIdentifiedUser(identifiedUserID)
 
         val error = identityManager.logOut()
@@ -294,7 +295,9 @@ class IdentityManagerTests {
 
     @Test
     fun `logOut creates random ID and caches it`() {
-        mockIdentifiedUser("Waldo")
+        val identifiedUserID = "Waldo"
+        mockIdentifiedUser(identifiedUserID)
+        every { mockDeviceCache.clearLatestAttributionData(identifiedUserID) } just Runs
 
         val error = identityManager.logOut()
 
