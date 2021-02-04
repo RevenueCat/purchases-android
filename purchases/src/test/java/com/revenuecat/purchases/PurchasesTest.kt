@@ -37,6 +37,7 @@ import com.revenuecat.purchases.common.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
+import com.revenuecat.purchases.interfaces.LogInListener
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
@@ -71,6 +72,7 @@ import java.util.Collections.emptyList
 import java.util.ConcurrentModificationException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
 @RunWith(AndroidJUnit4::class)
@@ -1783,22 +1785,84 @@ class PurchasesTest {
 
     @Test
     fun `login with the same appUserID as the current, fetches purchaserInfo and calls onSuccess if successful`() {
+        setup()
+        val appUserID = "myUser"
+        every { mockCache.isPurchaserInfoCacheStale(appUserID, any()) } returns true
+        every { mockCache.setPurchaserInfoCacheTimestampToNow(appUserID) } just Runs
+        every { mockIdentityManager.currentAppUserID } returns appUserID
 
+        val mockCompletion = mockk<LogInListener>(relaxed = true)
+
+        purchases.logIn(appUserID, mockCompletion)
+
+        verify {
+            mockCompletion.onReceived(any(), any())
+            mockBackend.getPurchaserInfo(appUserID, any(), any(), any())
+        }
     }
 
     @Test
     fun `login with the same appUserID as the current, calls onSuccess with created false if successful`() {
+        setup()
+        val appUserID = "myUser"
+        every { mockCache.isPurchaserInfoCacheStale(appUserID, any()) } returns true
+        every { mockCache.setPurchaserInfoCacheTimestampToNow(appUserID) } just Runs
+        every { mockIdentityManager.currentAppUserID } returns appUserID
 
+        val mockCompletion = mockk<LogInListener>(relaxed = true)
+
+        purchases.logIn(appUserID, mockCompletion)
+
+        verify {
+            mockCompletion.onReceived(any(), false)
+        }
     }
 
     @Test
     fun `login with the same appUserID as the current, fetches purchaserInfo and calls onError if failed`() {
+        setup()
+        val appUserID = "myUser"
+        every { mockCache.getCachedPurchaserInfo(appUserID) } returns null
+        every { mockCache.isPurchaserInfoCacheStale(appUserID, any()) } returns true
+        every { mockCache.setPurchaserInfoCacheTimestampToNow(appUserID) } just Runs
+        every { mockCache.clearPurchaserInfoCacheTimestamp(appUserID) } just Runs
+        every { mockIdentityManager.currentAppUserID } returns appUserID
 
+        val mockInfo = mockk<PurchaserInfo>()
+        val purchasesError = PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
+        mockBackend(mockInfo, errorGettingPurchaserInfo = purchasesError)
+
+        val mockCompletion = mockk<LogInListener>(relaxed = true)
+
+        purchases.logIn(appUserID, mockCompletion)
+
+        verify {
+            mockCompletion.onError(purchasesError)
+        }
     }
 
     @Test
     fun `login called with different appUserID makes correct identityManager call`() {
+        setup()
+        val mockInfo = mockk<PurchaserInfo>()
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
+        every {
+            mockIdentityManager.logIn(any(), captureLambda(), any())
+        } answers {
+            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
 
+        val purchasesError = PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
+        mockBackend(mockInfo, errorGettingPurchaserInfo = purchasesError)
+
+        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify {
+            mockIdentityManager.logIn(newAppUserID, any(), any())
+        }
     }
 
     @Test
