@@ -1931,6 +1931,7 @@ class PurchasesTest {
 
     @Test
     fun `login successful with new appUserID refreshes offerings`() {
+        setup()
         val mockInfo = mockk<PurchaserInfo>()
         val mockCreated = Random.nextBoolean()
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
@@ -1958,8 +1959,8 @@ class PurchasesTest {
             mockCache.clearLatestAttributionData(appUserID)
         } just Runs
         every {
-            mockIdentityManager.reset()
-        } just Runs
+            mockIdentityManager.logOut()
+        } returns null
         val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
         purchases.logOut(mockCompletion)
 
