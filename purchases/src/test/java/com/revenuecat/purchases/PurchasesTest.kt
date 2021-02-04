@@ -1848,13 +1848,10 @@ class PurchasesTest {
         val mockCreated = Random.nextBoolean()
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
         every {
-            mockIdentityManager.logIn(any(), captureLambda(), any())
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
         } answers {
             lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
-
-        val purchasesError = PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
-        mockBackend(mockInfo, errorGettingPurchaserInfo = purchasesError)
 
         val mockCompletion = mockk<LogInListener>(relaxed = true)
         val newAppUserID = "newAppUserID"
@@ -1866,23 +1863,92 @@ class PurchasesTest {
     }
 
     @Test
-    fun `login called with different appUserID passes errors to caller`() {
+    fun `login called with different appUserID passes errors to caller if call fails`() {
+        setup()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
+        val purchasesError = PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
 
+        every {
+            mockIdentityManager.logIn(any(), any(), onError = captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(purchasesError)
+        }
+
+        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            mockCompletion.onError(purchasesError)
+        }
     }
 
     @Test
     fun `login called with different appUserID calls listener with correct values`() {
+        setup()
+        val mockInfo = mockk<PurchaserInfo>()
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
+        every {
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+
+        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            mockCompletion.onReceived(mockInfo, mockCreated)
+        }
     }
 
     @Test
-    fun `login called with different appUserID calls delegate if purchaserInfo changed`() {
+    fun `login successful with new appUserID calls delegate if purchaserInfo changed`() {
+        setup()
+        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
 
+        val mockInfo = mockk<PurchaserInfo>()
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
+
+        every {
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+
+        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            updatedPurchaserInfoListener.onReceived(mockInfo)
+        }
     }
 
     @Test
-    fun `login called with different appUserID doesn't call delegate if purchaserInfo hasn't changed`() {
+    fun `login successful with new appUserID refreshes offerings`() {
+        setup()
+        val mockInfo = mockk<PurchaserInfo>()
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
 
+        every {
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+
+        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            mockBackend.getOfferings(newAppUserID, any(), any(), any())
+        }
     }
 
     @Test

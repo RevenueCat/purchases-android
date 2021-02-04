@@ -634,7 +634,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             listener?.onReceived(purchaserInfo, created)
                             sendUpdatedPurchaserInfoToDelegateIfChanged(purchaserInfo)
                         }
-                        fetchAndCacheOfferings(appUserID, state.appInBackground)
+                        fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                     },
                     onError = { error ->
                         debugLog("login error: $error")
