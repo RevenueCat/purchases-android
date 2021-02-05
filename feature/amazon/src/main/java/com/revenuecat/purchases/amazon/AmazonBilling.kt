@@ -346,6 +346,12 @@ internal class AmazonBilling constructor(
         presentedOfferingIdentifier: String?
     ) {
         if (receipt.productType != ProductType.SUBSCRIPTION) {
+            /**
+             * For subscriptions we need to get the termSku of the receipt.
+             * We have to hit our backend for that, since the only way to get it is using Amazon RVS.
+             * For consumables and entitlements, we don't need to fetch de termSku,
+             * since there's no terms and we can just use the sku
+             */
             val amazonPurchaseWrapper = AmazonPurchaseWrapper(
                 sku = productDetails.sku,
                 containedReceipt = receipt,
