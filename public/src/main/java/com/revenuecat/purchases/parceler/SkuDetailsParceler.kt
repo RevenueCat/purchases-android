@@ -13,9 +13,6 @@ internal object SkuDetailsParceler :
     }
 
     override fun SkuDetails.write(parcel: Parcel, flags: Int) {
-        val field = SkuDetails::class.java.getDeclaredField("mOriginalJson")
-        field.isAccessible = true
-        val value = field.get(this) as String
-        parcel.writeString(value)
+        parcel.writeString(originalJson)
     }
 }
