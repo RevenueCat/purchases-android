@@ -8,6 +8,7 @@ dependencies {
     implementation project(":purchases")
     implementation project(":common")
     implementation project(":strings")
+    implementation project(":utils")
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
 

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.amazon
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.utils.toMap
 import org.json.JSONObject
 
 const val RECEIPTS_TO_SKUS_KEY = "receiptsToSkus"
@@ -33,9 +34,7 @@ internal class AmazonCache(
         val receiptToSkusJSONObject =
             deviceCache.getJSONObjectOrNull(amazonPostedTokensKey)?.getJSONObject(RECEIPTS_TO_SKUS_KEY)
 
-        return receiptToSkusJSONObject?.keys()?.asSequence()?.map { jsonKey ->
-            jsonKey to receiptToSkusJSONObject[jsonKey] as String
-        }?.toMap() ?: emptyMap()
+        return receiptToSkusJSONObject?.toMap() ?: emptyMap()
     }
 
     @Synchronized
