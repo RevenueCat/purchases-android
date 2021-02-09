@@ -389,7 +389,6 @@ class BillingWrapper(
     ): Map<String, GooglePurchaseWrapper> {
         return this.map { purchase ->
             val hash = purchase.purchaseToken.sha1()
-            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(skuType, hash))
             hash to GooglePurchaseWrapper(purchase, skuType.toProductType(), presentedOfferingIdentifier = null)
         }.toMap()
     }

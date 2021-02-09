@@ -1640,6 +1640,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 appUserID.let { appUserID ->
                     billing.queryPurchases(appUserID) { queryResult ->
                         if (queryResult.isSuccessful) {
+                            queryResult.purchasesByHashedToken.forEach { (hash, purchase) ->
+                                log(LogIntent.DEBUG,
+                                    RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash))
+                            }
                             deviceCache.cleanPreviouslySentTokens(queryResult.purchasesByHashedToken.keys)
                             postPurchases(
                                 deviceCache.getActivePurchasesNotInCache(queryResult.purchasesByHashedToken),
