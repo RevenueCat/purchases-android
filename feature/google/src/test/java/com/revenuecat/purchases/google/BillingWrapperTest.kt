@@ -20,6 +20,7 @@ import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
@@ -889,9 +890,17 @@ class BillingWrapperTest {
         }
 
         var recordFound: PurchaseHistoryRecordWrapper? = null
-        wrapper.findPurchaseInPurchaseHistory(ProductType.SUBS, sku) { result, record ->
-            recordFound = record
-        }
+        wrapper.findPurchaseInPurchaseHistory(
+            "jerry",
+            ProductType.SUBS,
+            sku,
+            onCompletion = {
+                recordFound = it
+            },
+            onError = {
+                fail("should be success")
+            }
+        )
         billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
             BillingClient.BillingResponseCode.OK.buildResult(),
             listOf(purchaseHistoryRecord)
@@ -903,25 +912,33 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `findPurchaseInPurchaseHistory returns null if not found`() {
+    fun `findPurchaseInPurchaseHistory returns error if not found`() {
         setup()
         val sku = "aPurchase"
         val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
             every { it.sku } returns sku + "somethingrandom"
         }
 
-        var recordFound: PurchaseHistoryRecordWrapper? = null
-        var completionCalled = false
-        wrapper.findPurchaseInPurchaseHistory(ProductType.SUBS, sku) { result, record ->
-            recordFound = record
-            completionCalled = true
-        }
+        var errorReturned: PurchasesError? = null
+
+        wrapper.findPurchaseInPurchaseHistory(
+            "jerry",
+            ProductType.SUBS,
+            sku,
+            onCompletion = {
+                fail("should be error")
+            },
+            onError = {
+                errorReturned = it
+            }
+        )
+
         billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
             BillingClient.BillingResponseCode.OK.buildResult(),
             listOf(purchaseHistoryRecord)
         )
-        assertThat(completionCalled).isTrue()
-        assertThat(recordFound).isNull()
+        assertThat(errorReturned).isNotNull
+        assertThat(errorReturned!!.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
     }
 
     @Test

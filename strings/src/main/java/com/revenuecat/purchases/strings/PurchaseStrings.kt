@@ -9,6 +9,7 @@ object PurchaseStrings {
     const val CONSUMING_PURCHASE_ERROR = "Error consuming purchase. Will retry next queryPurchases. %s"
     const val FOUND_EXISTING_PURCHASE = "Found existing purchase for SKU: %s"
     const val NO_EXISTING_PURCHASE = "Couldn't find existing purchase for SKU: %s"
+    const val ERROR_FINDING_PURCHASE = "Error finding existing purchase for SKU: %s"
     const val OFFERING = " - offering: "
     const val PRODUCT_CHANGE_STARTED = "Product change started: %s"
     const val PURCHASE_FINISH_TRANSACTION_FALSE = "finishTransactions is set to false " +

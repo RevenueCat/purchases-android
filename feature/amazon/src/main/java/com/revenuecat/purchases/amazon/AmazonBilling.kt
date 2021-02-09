@@ -11,7 +11,6 @@ import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataResponse
-import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
@@ -35,6 +34,8 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.strings.PurchaseStrings
+import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 @SuppressWarnings("LongParameterList")
@@ -164,11 +165,27 @@ internal class AmazonBilling constructor(
     }
 
     override fun findPurchaseInPurchaseHistory(
-        skuType: RevenueCatProductType,
+        appUserID: String,
+        productType: RevenueCatProductType,
         sku: String,
-        completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
+        onCompletion: (PurchaseHistoryRecordWrapper) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
-        // TODO
+        log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
+        queryAllPurchases(
+            appUserID,
+            onReceivePurchaseHistory = {
+                val record: PurchaseHistoryRecordWrapper? = it.firstOrNull { record -> sku == record.sku }
+                if (record != null) {
+                    onCompletion(record)
+                } else {
+                    val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(sku)
+                    val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
+                    onError(error)
+                }
+            },
+            onError
+        )
     }
 
     override fun makePurchaseAsync(

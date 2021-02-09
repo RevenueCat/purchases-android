@@ -28,6 +28,7 @@ import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
@@ -44,6 +45,7 @@ import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.skuDetails
+import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.util.AdvertisingIdClient
 import com.revenuecat.purchases.utils.Responses
@@ -321,18 +323,7 @@ class PurchasesTest {
         val activity: Activity = mockk()
         val (skuDetails, offerings) = stubOfferings("onemonth_freetrial")
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
-            )
-        }
+        val oldPurchase = mockPurchaseFound()
 
         purchases.purchasePackageWith(
             activity,
@@ -3199,15 +3190,10 @@ class PurchasesTest {
         val activity: Activity = mockk()
         val (skuDetails, offerings) = stubOfferings("onemonth_freetrial")
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
+        val message = PurchaseStrings.NO_EXISTING_PURCHASE
+        val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
 
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(BillingResult(), null)
-        }
+        val oldPurchase = mockPurchaseFound(error)
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
@@ -3243,16 +3229,28 @@ class PurchasesTest {
         val activity: Activity = mockk()
         val (skuDetails, offerings) = stubOfferings("onemonth_freetrial")
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
         val stubBillingResult = mockk<BillingResult>()
         every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
+
+        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format("oldSku")
+        val error =
+            stubBillingResult.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
+
+        val oldPurchase = mockPurchaseFound(error)
+
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                "oldSku",
+                any(),
+                captureLambda()
+            )
         } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(stubBillingResult, null)
+            val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format("oldSku")
+            val error =
+                stubBillingResult.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
+            lambda<(PurchasesError) -> Unit>().captured.invoke(error)
         }
 
         var receivedError: PurchasesError? = null
@@ -3287,19 +3285,22 @@ class PurchasesTest {
         setup()
 
         val activity: Activity = mockk()
-        val (skuDetails, offerings) = stubOfferings("onemonth_freetrial")
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
 
         val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
         every { oldPurchase.sku } returns "oldSku"
         every { oldPurchase.type } returns ProductType.SUBS
 
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                "oldSku",
+                captureLambda(),
+                any()
             )
+        } answers {
+            lambda<(PurchaseHistoryRecordWrapper) -> Unit>().captured.invoke(oldPurchase)
         }
 
         purchases.purchasePackageWith(
@@ -3435,12 +3436,15 @@ class PurchasesTest {
         every { oldPurchase.type } returns ProductType.SUBS
 
         every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                "oldSku",
+                captureLambda(),
+                any()
             )
+        } answers {
+            lambda<(PurchaseHistoryRecordWrapper) -> Unit>().captured.invoke(oldPurchase)
         }
 
         var callCount = 0
@@ -3474,18 +3478,7 @@ class PurchasesTest {
 
         val receiptInfo = mockQueryingSkuDetails(sku, ProductType.SUBS, null)
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
-            )
-        }
+        val oldPurchase = mockPurchaseFound()
 
         var callCount = 0
 
@@ -3518,17 +3511,14 @@ class PurchasesTest {
 
         val receiptInfo = mockQueryingSkuDetails(sku, ProductType.SUBS, null)
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
         val stubBillingResult = mockk<BillingResult>()
         every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(stubBillingResult, null)
-        }
+
+        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format(sku)
+        val error =
+            stubBillingResult.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
+
+        val oldPurchase = mockPurchaseFound(error)
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
@@ -3564,22 +3554,7 @@ class PurchasesTest {
 
         val purchaseToken = "crazy_purchase_token"
 
-        val oldSku = "oldSku"
-
-        val oldPurchase = getMockedPurchaseHistoryRecordWrapper(
-            sku = oldSku,
-            purchaseToken = "another_purchase_token",
-            productType = ProductType.SUBS
-        )
-
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, oldSku, captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
-            )
-        }
+        val oldPurchase = mockPurchaseFound()
 
         var callCount = 0
 
@@ -3611,18 +3586,7 @@ class PurchasesTest {
         val sku = "onemonth_freetrial"
         val (_, offerings) = stubOfferings(sku)
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
-            )
-        }
+        val oldPurchase = mockPurchaseFound()
 
         var callCount = 0
 
@@ -3654,17 +3618,14 @@ class PurchasesTest {
         val sku = "onemonth_freetrial"
         val (_, offerings) = stubOfferings(sku)
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
         val stubBillingResult = mockk<BillingResult>()
         every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(stubBillingResult, null)
-        }
+
+        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format("oldSku")
+        val error =
+            stubBillingResult.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
+
+        val oldPurchase = mockPurchaseFound(error)
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
@@ -3698,18 +3659,7 @@ class PurchasesTest {
 
         val receiptInfo = mockQueryingSkuDetails(sku, ProductType.SUBS, null)
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
-            )
-        }
+        val oldPurchase = mockPurchaseFound()
 
         var callCount = 0
 
@@ -3738,18 +3688,7 @@ class PurchasesTest {
 
         val receiptInfo = mockQueryingSkuDetails(sku, ProductType.SUBS, null)
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
-            )
-        }
+        val oldPurchase = mockPurchaseFound()
 
         var callCount = 0
         purchases.purchaseProductWith(
@@ -3776,17 +3715,14 @@ class PurchasesTest {
 
         val receiptInfo = mockQueryingSkuDetails(sku, ProductType.SUBS, null)
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
         val stubBillingResult = mockk<BillingResult>()
         every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(stubBillingResult, null)
-        }
+
+        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format("oldSku")
+        val error =
+            stubBillingResult.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
+
+        val oldPurchase = mockPurchaseFound(error)
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
@@ -3816,18 +3752,8 @@ class PurchasesTest {
 
         val receiptInfo = mockQueryingSkuDetails(sku, ProductType.SUBS, null)
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
 
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
-            )
-        }
+        val oldPurchase = mockPurchaseFound()
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
@@ -3868,18 +3794,7 @@ class PurchasesTest {
 
         val purchaseToken = "crazy_purchase_token"
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
-            )
-        }
+        val oldPurchase = mockPurchaseFound()
 
         var callCount = 0
 
@@ -3907,18 +3822,7 @@ class PurchasesTest {
         val sku = "onemonth_freetrial"
         val (_, offerings) = stubOfferings(sku)
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
-            )
-        }
+        val oldPurchase = mockPurchaseFound()
 
         var callCount = 0
 
@@ -3945,19 +3849,16 @@ class PurchasesTest {
         val sku = "onemonth_freetrial"
         val (_, offerings) = stubOfferings(sku)
 
-        val productInfo = mockQueryingSkuDetails(sku, ProductType.SUBS, null)
-
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
+        mockQueryingSkuDetails(sku, ProductType.SUBS, null)
 
         val stubBillingResult = mockk<BillingResult>()
         every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(stubBillingResult, null)
-        }
+
+        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format("oldSku")
+        val error =
+            stubBillingResult.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
+
+        val oldPurchase = mockPurchaseFound(error)
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
@@ -3985,18 +3886,7 @@ class PurchasesTest {
         val sku = "onemonth_freetrial"
         val (_, offerings) = stubOfferings(sku)
 
-        val oldPurchase = mockk<PurchaseHistoryRecordWrapper>()
-        every { oldPurchase.sku } returns "oldSku"
-        every { oldPurchase.type } returns ProductType.SUBS
-
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(ProductType.SUBS, "oldSku", captureLambda())
-        } answers {
-            lambda<(BillingResult, PurchaseHistoryRecordWrapper?) -> Unit>().captured.invoke(
-                BillingResult(),
-                oldPurchase
-            )
-        }
+        val oldPurchase = mockPurchaseFound()
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
@@ -4424,5 +4314,29 @@ class PurchasesTest {
         )
     }
 
+    private fun mockPurchaseFound(error: PurchasesError? = null): PurchaseHistoryRecordWrapper {
+        val oldPurchase = getMockedPurchaseHistoryRecordWrapper(
+            sku = "oldSku",
+            purchaseToken = "another_purchase_token",
+            productType = ProductType.SUBS
+        )
+
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                "oldSku",
+                if (error == null) captureLambda() else any(),
+                if (error != null) captureLambda() else any()
+            )
+        } answers {
+            if (error != null) {
+                lambda<(PurchasesError) -> Unit>().captured.invoke(error)
+            } else {
+                lambda<(PurchaseHistoryRecordWrapper) -> Unit>().captured.invoke(oldPurchase)
+            }
+        }
+        return oldPurchase
+    }
     // endregion
 }

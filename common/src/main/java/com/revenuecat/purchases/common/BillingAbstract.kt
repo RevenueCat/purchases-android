@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common
 
 import android.app.Activity
-import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.ProductDetails
@@ -59,9 +58,11 @@ abstract class BillingAbstract {
     )
 
     abstract fun findPurchaseInPurchaseHistory(
-        skuType: ProductType,
+        appUserID: String,
+        productType: ProductType,
         sku: String,
-        completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
+        onCompletion: (PurchaseHistoryRecordWrapper) -> Unit,
+        onError: (PurchasesError) -> Unit
     )
 
     abstract fun makePurchaseAsync(

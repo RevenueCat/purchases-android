@@ -34,11 +34,9 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.attribution.AttributionData
-import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.getBillingResponseCodeName
 import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.toPurchaseDetails
@@ -1615,38 +1613,27 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         presentedOfferingIdentifier: String?,
         listener: PurchaseErrorListener
     ) {
-        billing.findPurchaseInPurchaseHistory(product.type, upgradeInfo.oldSku) { result, purchaseRecord ->
-            if (result.isSuccessful()) {
-                if (purchaseRecord != null) {
-                    log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
-                    billing.makePurchaseAsync(
-                        activity,
-                        appUserID,
-                        product,
-                        ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
-                        presentedOfferingIdentifier
-                    )
-                } else {
-                    log(LogIntent.GOOGLE_WARNING, PurchaseStrings.NO_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
-                    dispatch {
-                        listener.onError(
-                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError).also { errorLog(it) },
-                            false
-                        )
-                    }
-                }
-            } else {
-                val message = PurchaseStrings.UPGRADING_SKU_ERROR
-                        .format(result.responseCode.getBillingResponseCodeName())
-                log(LogIntent.GOOGLE_ERROR, message)
+        billing.findPurchaseInPurchaseHistory(
+            appUserID,
+            product.type,
+            upgradeInfo.oldSku,
+            onCompletion = { purchaseRecord ->
+                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
+
+                billing.makePurchaseAsync(
+                    activity,
+                    appUserID,
+                    product,
+                    ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
+                    presentedOfferingIdentifier
+                )
+            },
+            onError = { error ->
+                log(LogIntent.GOOGLE_ERROR, error.message)
                 dispatch {
-                    listener.onError(
-                        result.responseCode.billingResponseToPurchasesError(message).also { errorLog(it) },
-                        false
-                    )
+                    listener.onError(error, false)
                 }
-            }
-        }
+            })
     }
 
     @JvmSynthetic

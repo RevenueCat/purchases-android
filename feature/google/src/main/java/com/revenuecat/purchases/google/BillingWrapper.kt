@@ -22,6 +22,7 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetailsParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ProductDetailsListCallback
@@ -29,14 +30,15 @@ import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.PurchasesErrorCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -393,22 +395,39 @@ class BillingWrapper(
     }
 
     override fun findPurchaseInPurchaseHistory(
+        appUserID: String,
         productType: ProductType,
         sku: String,
-        completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
+        onCompletion: (PurchaseHistoryRecordWrapper) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
         withConnectedClient {
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
             productType.toSKUType()?.let { skuType ->
                 queryPurchaseHistoryAsync(skuType) { result, purchasesList ->
-                    completion(
-                        result,
-                        purchasesList?.firstOrNull { sku == it.sku }?.let {
-                            PurchaseHistoryRecordWrapper(it, productType)
+                    if (result.isSuccessful()) {
+                        val purchaseHistoryRecordWrapper =
+                            purchasesList?.firstOrNull { sku == it.sku }?.let { purchaseHistoryRecord ->
+                                PurchaseHistoryRecordWrapper(purchaseHistoryRecord, productType)
+                            }
+
+                        if (purchaseHistoryRecordWrapper != null) {
+                            onCompletion(purchaseHistoryRecordWrapper)
+                        } else {
+                            val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(sku)
+                            val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
+                            onError(error)
                         }
-                    )
+                    } else {
+                        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format(sku)
+                        val error =
+                            result.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
+                        onError(error)
+                    }
                 }
-            } ?: log(LogIntent.GOOGLE_ERROR, PurchaseStrings.NOT_RECOGNIZED_PRODUCT_TYPE)
+            } ?: onError(
+                PurchasesError(PurchasesErrorCode.PurchaseInvalidError, PurchaseStrings.NOT_RECOGNIZED_PRODUCT_TYPE)
+            )
         }
     }
 
