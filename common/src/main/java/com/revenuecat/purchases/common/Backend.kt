@@ -358,7 +358,8 @@ class Backend(
                         val purchaserInfo = result.body.buildPurchaserInfo()
                         onSuccessHandler(purchaserInfo, created)
                     } else {
-                        onErrorHandler(PurchasesError(PurchasesErrorCode.UnknownError))
+                        onErrorHandler(PurchasesError(PurchasesErrorCode.UnknownError)
+                            .also { errorLog(it) })
                     }
                 } else {
                     onErrorHandler(result.toPurchasesError().also { errorLog(it) })
