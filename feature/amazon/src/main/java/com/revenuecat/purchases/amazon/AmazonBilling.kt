@@ -94,39 +94,47 @@ internal class AmazonBilling constructor(
                             AmazonStrings.ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID
                         )
                         onReceivePurchaseHistoryError(error)
-                    } else {
-                        val purchaseHistoryRecordWrappers = receipts.mapNotNull { receipt ->
-                            val sku = tokensToSkusMap[receipt.receiptId]
-                            if (sku != null) {
-                                val type = receipt.productType.toRevenueCatProductType()
-                                val isAutoRenewing =
-                                    if (type == com.revenuecat.purchases.ProductType.SUBS) !receipt.isCanceled
-                                    else false
-                                PurchaseHistoryRecordWrapper(
-                                    type = type,
-                                    purchaseToken = receipt.receiptId,
-                                    purchaseTime = receipt.purchaseDate.time,
-                                    sku = sku,
-                                    presentedOfferingIdentifier = null,
-                                    purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
-                                    storeUserID = userData.userId,
-                                    isAutoRenewing = isAutoRenewing,
-                                    signature = null,
-                                    orderId = receipt.receiptId,
-                                    originalJson = receipt.toJSON()
-                                )
-                            } else {
-                                log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
-                                null
-                            }
-                        }
-
-                        onReceivePurchaseHistory(purchaseHistoryRecordWrappers)
+                        return@getMissingSkusForReceipts
                     }
+
+                    val purchaseHistoryRecordWrappers =
+                        receipts.toPurchaseHistoryRecordWrappers(tokensToSkusMap, userData)
+
+                    onReceivePurchaseHistory(purchaseHistoryRecordWrappers)
                 }
             },
             onReceivePurchaseHistoryError
         )
+    }
+
+    private fun List<Receipt>.toPurchaseHistoryRecordWrappers(
+        tokensToSkusMap: Map<String, String>,
+        userData: UserData
+    ): List<PurchaseHistoryRecordWrapper> {
+        return this.mapNotNull { receipt ->
+            val sku = tokensToSkusMap[receipt.receiptId]
+            if (sku == null) {
+                log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
+                return@mapNotNull null
+            }
+            val type = receipt.productType.toRevenueCatProductType()
+            val isAutoRenewing =
+                if (type == com.revenuecat.purchases.ProductType.SUBS) !receipt.isCanceled
+                else false
+            PurchaseHistoryRecordWrapper(
+                type = type,
+                purchaseToken = receipt.receiptId,
+                purchaseTime = receipt.purchaseDate.time,
+                sku = sku,
+                presentedOfferingIdentifier = null,
+                purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
+                storeUserID = userData.userId,
+                isAutoRenewing = isAutoRenewing,
+                signature = null,
+                orderId = receipt.receiptId,
+                originalJson = receipt.toJSON()
+            )
+        }
     }
 
     // region Product Data
