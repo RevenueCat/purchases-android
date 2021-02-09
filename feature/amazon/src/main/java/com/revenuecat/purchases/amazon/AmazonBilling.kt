@@ -222,47 +222,55 @@ internal class AmazonBilling constructor(
         onError: (PurchasesError) -> Unit
     ) {
         purchaseUpdatesHandler.queryPurchases(
-            onSuccess = { receipts, userData ->
+            onSuccess = onSuccess@{ receipts, userData ->
                 if (receipts.isEmpty()) {
                     onSuccess(emptyMap())
-                } else {
-                    getMissingSkusForReceipts(
-                        userData.userId,
-                        receipts
-                    ) { tokensToSkusMap, errors ->
-                        logErrorsIfAny(errors)
-                        if (tokensToSkusMap.isEmpty()) {
-                            val error = PurchasesError(
-                                PurchasesErrorCode.InvalidReceiptError,
-                                AmazonStrings.ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID
-                            )
-                            onError(error)
-                            return@getMissingSkusForReceipts
-                        }
-                        val purchasesByHashedToken = receipts.mapNotNull { receipt ->
-                            val sku = tokensToSkusMap[receipt.receiptId]
-                            if (sku != null) {
-                                val amazonPurchaseWrapper = AmazonPurchaseWrapper(
-                                    sku = sku,
-                                    containedReceipt = receipt,
-                                    presentedOfferingIdentifier = null,
-                                    purchaseState = RevenueCatPurchaseState.PURCHASED,
-                                    storeUserID = userData.userId
-                                )
-                                val hash = receipt.receiptId.sha1()
-                                hash to amazonPurchaseWrapper
-                            } else {
-                                log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
-                                null
-                            }
-                        }.toMap()
-                        onSuccess(purchasesByHashedToken)
+                    return@onSuccess
+                }
+
+                getMissingSkusForReceipts(
+                    userData.userId,
+                    receipts
+                ) { tokensToSkusMap, errors ->
+                    logErrorsIfAny(errors)
+
+                    if (tokensToSkusMap.isEmpty()) {
+                        val error = PurchasesError(
+                            PurchasesErrorCode.InvalidReceiptError,
+                            AmazonStrings.ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID
+                        )
+                        onError(error)
+                        return@getMissingSkusForReceipts
                     }
+
+                    val purchasesByHashedToken = receipts.toHashMapOfPurchases(tokensToSkusMap, userData)
+
+                    onSuccess(purchasesByHashedToken)
                 }
             },
             onError
         )
     }
+
+    private fun List<Receipt>.toHashMapOfPurchases(
+        tokensToSkusMap: Map<String, String>,
+        userData: UserData
+    ) = mapNotNull { receipt ->
+        val sku = tokensToSkusMap[receipt.receiptId]
+        if (sku == null) {
+            log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
+            return@mapNotNull null
+        }
+        val amazonPurchaseWrapper = AmazonPurchaseWrapper(
+            sku = sku,
+            containedReceipt = receipt,
+            presentedOfferingIdentifier = null,
+            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            storeUserID = userData.userId
+        )
+        val hash = receipt.receiptId.sha1()
+        hash to amazonPurchaseWrapper
+    }.toMap()
 
     // AmazonBilling delegates functionality to interfaces that have a common parent interface, it will only
     // compile as long as all of the functions are implemented, otherwise it doesn't know which delegated
