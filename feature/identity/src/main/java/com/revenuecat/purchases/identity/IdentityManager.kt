@@ -6,8 +6,11 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.IdentityStrings
+import com.revenuecat.purchases.strings.IdentityStrings.LOGGING_IN
+import com.revenuecat.purchases.strings.IdentityStrings.LOG_OUT_SUCCESSFUL
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import java.util.Locale
 import java.util.UUID
@@ -57,7 +60,8 @@ class IdentityManager(
         onError: (PurchasesError) -> Unit
     ) {
         if (newAppUserID.isBlank()) {
-            onError(PurchasesError(PurchasesErrorCode.InvalidAppUserIdError, "appUserID can't be null, empty or blank"))
+            onError(PurchasesError(PurchasesErrorCode.InvalidAppUserIdError,
+                "appUserID can't be null, empty or blank").also { errorLog(it) })
             return
         }
 
@@ -68,7 +72,7 @@ class IdentityManager(
                 newAppUserID,
                 { purchaserInfo, created ->
                     synchronized(this@IdentityManager) {
-                        log(LogIntent.USER, IdentityStrings.CREATING_ALIAS_SUCCESS)
+                        log(LogIntent.USER, IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created))
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
@@ -113,11 +117,12 @@ class IdentityManager(
     @Synchronized
     fun logOut(): PurchasesError? {
         if (currentUserIsAnonymous()) {
-            log(LogIntent.RC_ERROR, "Called logOut but the current user is anonymous")
+            log(LogIntent.RC_ERROR, LOGGING_IN)
             return PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError)
         }
         deviceCache.clearLatestAttributionData(currentAppUserID)
         reset()
+        log(LogIntent.USER, LOG_OUT_SUCCESSFUL)
         return null
     }
 
