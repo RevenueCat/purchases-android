@@ -118,9 +118,7 @@ internal class AmazonBilling constructor(
                 return@mapNotNull null
             }
             val type = receipt.productType.toRevenueCatProductType()
-            val isAutoRenewing =
-                if (type == com.revenuecat.purchases.ProductType.SUBS) !receipt.isCanceled
-                else false
+            val isAutoRenewing = (type == com.revenuecat.purchases.ProductType.SUBS && !receipt.isCanceled)
             PurchaseHistoryRecordWrapper(
                 type = type,
                 purchaseToken = receipt.receiptId,
