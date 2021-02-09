@@ -14,7 +14,6 @@
     <ID>ForbiddenComment:PurchaseWrapper.kt$PurchaseWrapper$// TODO: replace with PurchaseDetails</ID>
     <ID>LargeClass:Purchases.kt$Purchases$Purchases</ID>
     <ID>LongMethod:Purchases.kt$Purchases$restorePurchases</ID>
-    <ID>LongMethod:Purchases.kt$Purchases.Companion$configure</ID>
     <ID>LongParameterList:EntitlementInfo.kt$EntitlementInfo$( val identifier: String, val isActive: Boolean, val willRenew: Boolean, val periodType: PeriodType, val latestPurchaseDate: Date, val originalPurchaseDate: Date, val expirationDate: Date?, val store: Store, val productIdentifier: String, val isSandbox: Boolean, val unsubscribeDetectedAt: Date?, val billingIssueDetectedAt: Date? )</ID>
     <ID>LongParameterList:ProductDetails.kt$ProductDetails$( val sku: String, val type: ProductType, val price: String, // For example $3.00 val priceAmountMicros: Long, val priceCurrencyCode: String, // Null for amazon val originalPrice: String?, // 0 for amazon val originalPriceAmountMicros: Long, val title: String, val description: String, // Null if no subscriptionPeriod. Null for amazon val subscriptionPeriod: String?, // Null if no freeTrialPeriod. Null for amazon val freeTrialPeriod: String?, // Null if no introductoryPrice. Null for amazon val introductoryPrice: String?, // 0 for no intro price and amazon val introductoryPriceAmountMicros: Long, // Null if no introductoryPricePeriod. Null for amazon val introductoryPricePeriod: String?, // Null if no introductoryPriceCycles. 0 for amazon val introductoryPriceCycles: Int, val iconUrl: String, val originalJson: JSONObject )</ID>
     <ID>LongParameterList:PurchaseHistoryRecordWrapper.kt$PurchaseHistoryRecordWrapper$( override val type: ProductType, override val purchaseToken: String, override val purchaseTime: Long, override val sku: String, override val presentedOfferingIdentifier: String? = null, override val purchaseState: RevenueCatPurchaseState, override val storeUserID: String?, override val isAutoRenewing: Boolean?, override val signature: String?, override val orderId: String = purchaseToken, override val originalJson: JSONObject? )</ID>
@@ -47,6 +46,7 @@
     <ID>TooManyFunctions:Backend.kt$Backend$Backend</ID>
     <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper$BillingWrapper</ID>
     <ID>TooManyFunctions:DeviceCache.kt$DeviceCache$DeviceCache</ID>
+    <ID>TooManyFunctions:HTTPClient.kt$HTTPClient$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases$Purchases</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
   </Whitelist>
