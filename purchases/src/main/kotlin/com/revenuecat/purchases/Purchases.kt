@@ -38,7 +38,6 @@ import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
-import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.getBillingResponseCodeName
 import com.revenuecat.purchases.common.isSuccessful
