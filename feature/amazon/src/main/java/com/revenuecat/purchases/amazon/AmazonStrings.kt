@@ -21,4 +21,9 @@ object AmazonStrings {
     const val CACHING_RECEIPT_TERM_SKUS = "Caching term skus for receipts: \n %s"
     const val RECEIPT_DATA_RECEIVED = "Received receipt data: \n %s"
     const val ERROR_FINDING_RECEIPT_SKU = "Couldn't find sku for token %s"
+    const val ERROR_FAILED_PURCHASES_UPDATES = "Failed to get purchase updates."
+    const val ERROR_UNSUPPORTED_PURCHASES_UPDATES =
+        "Failed to get purchase updates. Call is not supported. Request will retry."
+    const val ERROR_PURCHASES_UPDATES_STORE_PROBLEM =
+        "Failed to get purchase updates. There was an Amazon store problem."
 }

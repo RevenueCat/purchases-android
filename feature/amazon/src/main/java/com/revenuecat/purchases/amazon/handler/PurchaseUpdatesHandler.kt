@@ -43,38 +43,19 @@ class PurchaseUpdatesHandler : PurchaseUpdatesResponseListener {
 
         callbacks?.let { (onSuccess, onError) ->
             when (response.requestStatus) {
-                PurchaseUpdatesResponse.RequestStatus.SUCCESSFUL -> onSuccess(response.receipts, response.userData)
-                PurchaseUpdatesResponse.RequestStatus.FAILED -> onFailedPurchaseUpdates(onError)
-                PurchaseUpdatesResponse.RequestStatus.NOT_SUPPORTED -> onNotSupportedPurchaseUpdates(onError)
-                null -> onUnknownError(onError)
+                PurchaseUpdatesResponse.RequestStatus.SUCCESSFUL ->
+                    onSuccess(response.receipts, response.userData)
+                PurchaseUpdatesResponse.RequestStatus.FAILED ->
+                    onError.invokeWithStoreProblem(AmazonStrings.ERROR_FAILED_PURCHASES_UPDATES)
+                PurchaseUpdatesResponse.RequestStatus.NOT_SUPPORTED ->
+                    onError.invokeWithStoreProblem(AmazonStrings.ERROR_UNSUPPORTED_PURCHASES_UPDATES)
+                null ->
+                    onError.invokeWithStoreProblem(AmazonStrings.ERROR_PURCHASES_UPDATES_STORE_PROBLEM)
             }
         }
     }
+}
 
-    private fun onFailedPurchaseUpdates(onError: PurchasesErrorCallback) {
-        PurchasesError(
-            PurchasesErrorCode.StoreProblemError,
-            "Failed to get purchase updates."
-        ).let {
-            onError(it)
-        }
-    }
-
-    private fun onNotSupportedPurchaseUpdates(onError: PurchasesErrorCallback) {
-        PurchasesError(
-            PurchasesErrorCode.StoreProblemError,
-            "Failed to get purchase updates. Call is not supported. Request will retry."
-        ).let {
-            onError(it)
-        }
-    }
-
-    private fun onUnknownError(onError: PurchasesErrorCallback) {
-        PurchasesError(
-            PurchasesErrorCode.StoreProblemError,
-            "Failed to get purchase updates. There was an Amazon store problem"
-        ).let {
-            onError(it)
-        }
-    }
+private fun PurchasesErrorCallback.invokeWithStoreProblem(message: String) {
+    this(PurchasesError(PurchasesErrorCode.StoreProblemError, message))
 }
