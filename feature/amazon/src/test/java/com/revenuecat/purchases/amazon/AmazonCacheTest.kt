@@ -3,6 +3,7 @@ package com.revenuecat.purchases.amazon
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.utils.JSONObjectAssert
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -64,12 +65,7 @@ class AmazonCacheTest {
 
         val receiptTermSkus = underTest.getReceiptSkus()
 
-        assertThat(receiptTermSkus).isEqualTo(
-            mapOf(
-                "1234abcdreceiptid" to "com.revenuecat.subscription.weekly",
-                "4321abcdreceiptid" to "com.revenuecat.subscription.monthly"
-            )
-        )
+        assertThat(receiptTermSkus).isEqualTo(expected)
     }
 
     @Test
@@ -85,11 +81,7 @@ class AmazonCacheTest {
         val actualStoredMapAsJSON = actualStoredJSON["receiptsToSkus"] as JSONObject
 
         assertThat(actualStoredMapAsJSON).isNotNull
-        assertThat(actualStoredMapAsJSON.keys().asSequence().count()).isEqualTo(expected.size)
-
-        expected.forEach { (key, value) ->
-            assertThat(actualStoredMapAsJSON[key]).isEqualTo(value)
-        }
+        JSONObjectAssert.assertThat(actualStoredMapAsJSON).isEqualToMap(expected)
     }
 
     @Test
@@ -114,11 +106,7 @@ class AmazonCacheTest {
 
         val expected = alreadyCached + newToCache
 
-        assertThat(actualStoredMapAsJSON.keys().asSequence().count()).isEqualTo(expected.size)
-
-        expected.forEach { (key, value) ->
-            assertThat(actualStoredMapAsJSON[key]).isEqualTo(value)
-        }
+        JSONObjectAssert.assertThat(actualStoredMapAsJSON).isEqualToMap(expected)
     }
 
     @Test
@@ -140,11 +128,7 @@ class AmazonCacheTest {
         val actualStoredMapAsJSON = actualStoredJSON["receiptsToSkus"] as JSONObject
 
         assertThat(actualStoredMapAsJSON).isNotNull
-        assertThat(actualStoredMapAsJSON.keys().asSequence().count()).isEqualTo(expected.size)
-
-        expected.forEach { (key, value) ->
-            assertThat(actualStoredMapAsJSON[key]).isEqualTo(value)
-        }
+        JSONObjectAssert.assertThat(actualStoredMapAsJSON).isEqualToMap(expected)
     }
 
     private fun getStoredJSONFromMap(expected: Map<String, String>) = """
