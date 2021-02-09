@@ -262,10 +262,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                     )
                                     deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                                 }
-                                log(
-                                    LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                        .format(purchase, error)
-                                )
+                                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
+                                        .format(purchase, error))
                             }
                         )
                     }
