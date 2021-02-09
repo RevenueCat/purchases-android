@@ -342,17 +342,17 @@ internal class AmazonBilling constructor(
                         cache.setReceiptSkus(successMap)
                         onCompletion(successMap, errorMap)
                     }
-                }
-            ) { error ->
-                log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FETCHING_RECEIPT_INFO.format(error))
+                }, onError = { error ->
+                    log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FETCHING_RECEIPT_INFO.format(error))
 
-                errorMap[receipt.receiptId] = error
+                    errorMap[receipt.receiptId] = error
 
-                receiptsLeft--
-                if (receiptsLeft == 0) {
-                    onCompletion(successMap, errorMap)
+                    receiptsLeft--
+                    if (receiptsLeft == 0) {
+                        onCompletion(successMap, errorMap)
+                    }
                 }
-            }
+            )
         }
     }
 
