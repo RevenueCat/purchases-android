@@ -6,19 +6,24 @@ import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
 import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.amazon.listener.PurchaseUpdatesResponseListener
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 
+private typealias QueryPurchasesSuccessCallback = (List<Receipt>, UserData) -> Unit
+
+private typealias QueryPurchasesCallbacks = Pair<QueryPurchasesSuccessCallback, PurchasesErrorCallback>
+
 class PurchaseUpdatesHandler : PurchaseUpdatesResponseListener {
 
-    private val requests = mutableMapOf<RequestId, Pair<(List<Receipt>, UserData) -> Unit, (PurchasesError) -> Unit>>()
+    private val requests = mutableMapOf<RequestId, QueryPurchasesCallbacks>()
 
     override fun queryPurchases(
-        onSuccess: (List<Receipt>, UserData) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onSuccess: QueryPurchasesSuccessCallback,
+        onError: PurchasesErrorCallback
     ) {
         val reset = true
         val requestId = PurchasingService.getPurchaseUpdates(reset)
@@ -46,7 +51,7 @@ class PurchaseUpdatesHandler : PurchaseUpdatesResponseListener {
         }
     }
 
-    private fun onFailedPurchaseUpdates(onError: (PurchasesError) -> Unit) {
+    private fun onFailedPurchaseUpdates(onError: PurchasesErrorCallback) {
         PurchasesError(
             PurchasesErrorCode.StoreProblemError,
             "Failed to get purchase updates."
@@ -55,7 +60,7 @@ class PurchaseUpdatesHandler : PurchaseUpdatesResponseListener {
         }
     }
 
-    private fun onNotSupportedPurchaseUpdates(onError: (PurchasesError) -> Unit) {
+    private fun onNotSupportedPurchaseUpdates(onError: PurchasesErrorCallback) {
         PurchasesError(
             PurchasesErrorCode.StoreProblemError,
             "Failed to get purchase updates. Call is not supported. Request will retry."
@@ -64,7 +69,7 @@ class PurchaseUpdatesHandler : PurchaseUpdatesResponseListener {
         }
     }
 
-    private fun onUnknownError(onError: (PurchasesError) -> Unit) {
+    private fun onUnknownError(onError: PurchasesErrorCallback) {
         PurchasesError(
             PurchasesErrorCode.StoreProblemError,
             "Failed to get purchase updates. There was an Amazon store problem"

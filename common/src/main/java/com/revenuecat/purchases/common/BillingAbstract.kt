@@ -3,11 +3,10 @@ package com.revenuecat.purchases.common
 import android.app.Activity
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.models.ProductDetails
 
 typealias ProductDetailsListCallback = (List<ProductDetails>) -> Unit
-
-typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 
 @SuppressWarnings("TooManyFunctions")
 abstract class BillingAbstract {
