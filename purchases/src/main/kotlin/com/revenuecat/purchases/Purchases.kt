@@ -32,15 +32,12 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.toPurchaseDetails
-import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.toProductDetails
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.identity.IdentityManager
@@ -58,6 +55,7 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -1796,27 +1794,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 val prefs = PreferenceManager.getDefaultSharedPreferences(application)
                 val cache = DeviceCache(prefs, apiKey)
 
-                val billing: BillingAbstract = when (store) {
-                    Store.PLAY_STORE -> BillingWrapper(
-                        BillingWrapper.ClientFactory(application),
-                        Handler(application.mainLooper),
-                        cache
-                    )
-                    Store.AMAZON -> {
-                        try {
-                            Class.forName("com.revenuecat.purchases.amazon.AmazonBilling")
-                                .getConstructor(Context::class.java, Backend::class.java, DeviceCache::class.java)
-                                .newInstance(application.applicationContext, backend, cache) as BillingAbstract
-                        } catch (e: ClassNotFoundException) {
-                            errorLog("Make sure purchases-amazon is added as dependency")
-                            throw e
-                        }
-                    }
-                    else -> {
-                        errorLog("Incompatible store ($store) used")
-                        throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")
-                    }
-                }
+                val billing: BillingAbstract = BillingFactory.createBilling(store, application, backend, cache)
 
                 val subscriberAttributesCache = SubscriberAttributesCache(cache)
                 val attributionFetcher = AttributionFetcher(dispatcher)
