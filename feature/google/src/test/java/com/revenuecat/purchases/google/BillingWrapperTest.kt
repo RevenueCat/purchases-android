@@ -40,7 +40,7 @@ import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
-import org.assertj.core.api.AssertionsForClassTypes.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -667,7 +667,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `when querying purchases and there is no billing client, don't return anything`() {
+    fun `when querying purchases and there is no billing client, return an unsuccessful result`() {
         wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache)
         var result: BillingAbstract.QueryPurchasesResult? = null
         wrapper.queryPurchases("appUserID") {
@@ -675,6 +675,7 @@ class BillingWrapperTest {
         }
         assertThat(result).isNotNull
         assertThat(result!!.isSuccessful).isFalse()
+        assertThat(result!!.purchasesByHashedToken).isEmpty()
     }
 
     @Test
@@ -692,6 +693,7 @@ class BillingWrapperTest {
 
         assertThat(result).isNotNull
         assertThat(result!!.purchasesByHashedToken).isNotNull
+        assertThat(result!!.purchasesByHashedToken).isEmpty()
     }
 
     @Test
@@ -722,7 +724,7 @@ class BillingWrapperTest {
 
         assertThat(queryPurchasesResult).isNotNull
         assertThat(queryPurchasesResult!!.isSuccessful).isTrue()
-        assertThat(queryPurchasesResult!!.purchasesByHashedToken.isNotEmpty()).isTrue()
+        assertThat(queryPurchasesResult!!.purchasesByHashedToken).isNotEmpty()
 
         val purchaseWrapper = queryPurchasesResult!!.purchasesByHashedToken[token.sha1()]
         assertThat(purchaseWrapper).isNotNull
