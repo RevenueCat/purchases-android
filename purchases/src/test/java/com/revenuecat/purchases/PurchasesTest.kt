@@ -33,7 +33,6 @@ import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.GooglePurchaseWrapper
 import com.revenuecat.purchases.google.toProductDetails
 import com.revenuecat.purchases.google.toSKUType
@@ -2877,7 +2876,7 @@ class PurchasesTest {
         )
         purchases.updatePendingPurchaseQueue()
         verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(appUserId, any())
+            mockBillingAbstract.queryPurchases(appUserId, any(), any())
         }
     }
 
@@ -2957,15 +2956,10 @@ class PurchasesTest {
     fun `when updating pending purchases, if result from querying purchases is not successful skip`() {
         setup()
         every {
-            mockBillingAbstract.queryPurchases(appUserId, captureLambda())
+            mockBillingAbstract.queryPurchases(appUserId, any(), captureLambda())
         } answers {
-            lambda<(BillingAbstract.QueryPurchasesResult) -> Unit>()
-                .captured(
-                    BillingWrapper.GoogleQueryPurchasesResult(
-                        isSuccessful = false,
-                        purchasesByHashedToken = emptyMap()
-                    )
-                )
+            lambda<(PurchasesError) -> Unit>()
+                .captured(PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"))
         }
 
         purchases.updatePendingPurchaseQueue()
@@ -2984,7 +2978,7 @@ class PurchasesTest {
         )
         capturedBillingWrapperStateListener.captured.onConnected()
         verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(appUserId, any())
+            mockBillingAbstract.queryPurchases(appUserId, any(), any())
         }
     }
 
@@ -2999,7 +2993,7 @@ class PurchasesTest {
         mockSynchronizeSubscriberAttributesForAllUsers()
         purchases.onAppForegrounded()
         verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(appUserId, any())
+            mockBillingAbstract.queryPurchases(appUserId, any(), any())
         }
     }
 
@@ -3011,10 +3005,10 @@ class PurchasesTest {
         } returns false
         purchases.updatePendingPurchaseQueue()
         verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!, any())
+            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!, any(), any())
         }
         verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!, any())
+            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!, any(), any())
         }
     }
 
@@ -4137,21 +4131,18 @@ class PurchasesTest {
         queriedINAPP: Map<String, PurchaseWrapper>,
         notInCache: List<PurchaseWrapper>
     ) {
-        val queryPurchasesResult = BillingWrapper.GoogleQueryPurchasesResult(
-            isSuccessful = true,
-            purchasesByHashedToken = queriedSUBS + queriedINAPP
-        )
+        val purchasesByHashedToken = queriedSUBS + queriedINAPP
         every {
-            mockCache.cleanPreviouslySentTokens(queryPurchasesResult.purchasesByHashedToken.keys)
+            mockCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
         } just Runs
         every {
-            mockCache.getActivePurchasesNotInCache(queryPurchasesResult.purchasesByHashedToken)
+            mockCache.getActivePurchasesNotInCache(purchasesByHashedToken)
         } returns notInCache
 
         every {
-            mockBillingAbstract.queryPurchases(appUserId, captureLambda())
+            mockBillingAbstract.queryPurchases(appUserId, captureLambda(), any())
         } answers {
-            lambda<(BillingAbstract.QueryPurchasesResult) -> Unit>().captured(queryPurchasesResult)
+            lambda<(Map<String, PurchaseWrapper>) -> Unit>().captured(purchasesByHashedToken)
         }
     }
 

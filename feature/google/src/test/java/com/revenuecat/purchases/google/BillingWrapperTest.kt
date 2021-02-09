@@ -667,18 +667,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `when querying purchases and there is no billing client, return an unsuccessful result`() {
-        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache)
-        var result: BillingAbstract.QueryPurchasesResult? = null
-        wrapper.queryPurchases("appUserID") {
-            result = it
-        }
-        assertThat(result).isNotNull
-        assertThat(result!!.isSuccessful).isFalse()
-        assertThat(result!!.purchasesByHashedToken).isEmpty()
-    }
-
-    @Test
     fun `when querying anything and billing client returns a null list, returns an empty list`() {
         setup()
 
@@ -686,14 +674,19 @@ class BillingWrapperTest {
             mockClient.queryPurchases(any())
         } returns Purchase.PurchasesResult(BillingClient.BillingResponseCode.OK.buildResult(), null)
 
-        var result: BillingAbstract.QueryPurchasesResult? = null
-        wrapper.queryPurchases("appUserID") {
-            result = it
-        }
+        var purchasesByHashedToken: Map<String, PurchaseWrapper>? = null
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = {
+                purchasesByHashedToken = it
+            },
+            onError = {
+                fail("should be a success)")
+            }
+        )
 
-        assertThat(result).isNotNull
-        assertThat(result!!.purchasesByHashedToken).isNotNull
-        assertThat(result!!.purchasesByHashedToken).isEmpty()
+        assertThat(purchasesByHashedToken).isNotNull
+        assertThat(purchasesByHashedToken).isEmpty()
     }
 
     @Test
@@ -717,16 +710,21 @@ class BillingWrapperTest {
             mockClient.queryPurchases(BillingClient.SkuType.SUBS)
         } returns Purchase.PurchasesResult(resultCode.buildResult(), emptyList())
 
-        var queryPurchasesResult: BillingAbstract.QueryPurchasesResult? = null
-        wrapper.queryPurchases("appUserID") {
-            queryPurchasesResult = it
-        }
+        var purchasesByHashedToken: Map<String, PurchaseWrapper>? = null
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = {
+                purchasesByHashedToken = it
+            },
+            onError = {
+                fail("should be a success)")
+            }
+        )
 
-        assertThat(queryPurchasesResult).isNotNull
-        assertThat(queryPurchasesResult!!.isSuccessful).isTrue()
-        assertThat(queryPurchasesResult!!.purchasesByHashedToken).isNotEmpty()
+        assertThat(purchasesByHashedToken).isNotNull
+        assertThat(purchasesByHashedToken).isNotEmpty
 
-        val purchaseWrapper = queryPurchasesResult!!.purchasesByHashedToken[token.sha1()]
+        val purchaseWrapper = purchasesByHashedToken?.get(token.sha1())
         assertThat(purchaseWrapper).isNotNull
         assertThat(purchaseWrapper!!.type).isEqualTo(type.toProductType())
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
@@ -756,16 +754,21 @@ class BillingWrapperTest {
             mockClient.queryPurchases(BillingClient.SkuType.INAPP)
         } returns Purchase.PurchasesResult(resultCode.buildResult(), emptyList())
 
-        var queryPurchasesResult: BillingAbstract.QueryPurchasesResult? = null
-        wrapper.queryPurchases("appUserID") {
-            queryPurchasesResult = it
-        }
+        var purchasesByHashedToken: Map<String, PurchaseWrapper>? = null
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = {
+                purchasesByHashedToken = it
+            },
+            onError = {
+                fail("should be a success)")
+            }
+        )
 
-        assertThat(queryPurchasesResult).isNotNull
-        assertThat(queryPurchasesResult!!.isSuccessful).isTrue()
-        assertThat(queryPurchasesResult!!.purchasesByHashedToken.isNotEmpty()).isTrue()
+        assertThat(purchasesByHashedToken).isNotNull
+        assertThat(purchasesByHashedToken).isNotEmpty
 
-        val purchaseWrapper = queryPurchasesResult!!.purchasesByHashedToken[token.sha1()]
+        val purchaseWrapper = purchasesByHashedToken?.get(token.sha1())
         assertThat(purchaseWrapper).isNotNull
         assertThat(purchaseWrapper!!.type).isEqualTo(type.toProductType())
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)

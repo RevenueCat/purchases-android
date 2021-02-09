@@ -1638,21 +1638,24 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
             dispatcher.enqueue({
                 appUserID.let { appUserID ->
-                    billing.queryPurchases(appUserID) { queryResult ->
-                        if (queryResult.isSuccessful) {
-                            queryResult.purchasesByHashedToken.forEach { (hash, purchase) ->
+                    billing.queryPurchases(
+                        appUserID,
+                        onSuccess = { purchasesByHashedToken ->
+                            purchasesByHashedToken.forEach { (hash, purchase) ->
                                 log(LogIntent.DEBUG,
                                     RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash))
                             }
-                            deviceCache.cleanPreviouslySentTokens(queryResult.purchasesByHashedToken.keys)
+                            deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
                             postPurchases(
-                                deviceCache.getActivePurchasesNotInCache(queryResult.purchasesByHashedToken),
+                                deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken),
                                 allowSharingPlayStoreAccount,
                                 finishTransactions,
                                 appUserID
                             )
-                        }
-                    }
+                        },
+                        onError = { error ->
+                            log(LogIntent.GOOGLE_ERROR, error.message)
+                        })
                 }
             })
         } else {

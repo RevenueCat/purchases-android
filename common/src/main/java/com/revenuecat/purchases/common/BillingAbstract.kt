@@ -78,12 +78,8 @@ abstract class BillingAbstract {
     @SuppressWarnings("ForbiddenComment")
     abstract fun queryPurchases(
         appUserID: String,
-        completion: (QueryPurchasesResult) -> Unit
-    )
-
-    open class QueryPurchasesResult(
-        val isSuccessful: Boolean,
-        val purchasesByHashedToken: Map<String, PurchaseWrapper>
+        onSuccess: (Map<String, PurchaseWrapper>) -> Unit,
+        onError: (PurchasesError) -> Unit
     )
 
     interface PurchasesUpdatedListener {

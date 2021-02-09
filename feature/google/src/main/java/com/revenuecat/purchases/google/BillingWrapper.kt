@@ -351,37 +351,44 @@ class BillingWrapper(
         }
     }
 
-    class GoogleQueryPurchasesResult(
-        isSuccessful: Boolean,
-        purchasesByHashedToken: Map<String, PurchaseWrapper>
-    ) : QueryPurchasesResult(isSuccessful, purchasesByHashedToken)
-
     private fun Purchase.PurchasesResult.isSuccessful() = responseCode == BillingClient.BillingResponseCode.OK
 
     override fun queryPurchases(
         appUserID: String,
-        completion: (QueryPurchasesResult) -> Unit
+        onSuccess: (Map<String, PurchaseWrapper>) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
-        billingClient?.let { billingClient ->
+        withConnectedClient {
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
 
-            val queryActiveSubscriptionsResult = billingClient.queryPurchases(SkuType.SUBS)
-            val queryUnconsumedInAppsRequest = billingClient.queryPurchases(SkuType.INAPP)
+            val queryActiveSubscriptionsResult = this.queryPurchases(SkuType.SUBS)
+            if (!queryActiveSubscriptionsResult.isSuccessful()) {
+                val billingResult = queryActiveSubscriptionsResult.billingResult
+                val purchasesError = billingResult.responseCode.billingResponseToPurchasesError(
+                    RestoreStrings.QUERYING_SUBS_ERROR.format(billingResult.toHumanReadableDescription())
+                )
+                onError(purchasesError)
+                return@withConnectedClient
+            }
 
-            val isSuccessful =
-                queryActiveSubscriptionsResult.isSuccessful() && queryUnconsumedInAppsRequest.isSuccessful()
+            val queryUnconsumedInAppsResult = this.queryPurchases(SkuType.INAPP)
+            if (!queryUnconsumedInAppsResult.isSuccessful()) {
+                val billingResult = queryUnconsumedInAppsResult.billingResult
+                val purchasesError = billingResult.responseCode.billingResponseToPurchasesError(
+                    RestoreStrings.QUERYING_INAPP_ERROR.format(billingResult.toHumanReadableDescription())
+                )
+                onError(purchasesError)
+                return@withConnectedClient
+            }
 
             val activeSubscriptionsList = queryActiveSubscriptionsResult.purchasesList ?: emptyList<Purchase>()
             val mapOfActiveSubscriptions = activeSubscriptionsList.toMapOfGooglePurchaseWrapper(SkuType.SUBS)
 
-            val unconsumedInAppsList = queryUnconsumedInAppsRequest.purchasesList ?: emptyList<Purchase>()
+            val unconsumedInAppsList = queryUnconsumedInAppsResult.purchasesList ?: emptyList<Purchase>()
             val mapOfUnconsumedInApps = unconsumedInAppsList.toMapOfGooglePurchaseWrapper(SkuType.INAPP)
 
-            completion(GoogleQueryPurchasesResult(
-                isSuccessful,
-                mapOfActiveSubscriptions + mapOfUnconsumedInApps
-            ))
-        } ?: completion(GoogleQueryPurchasesResult(isSuccessful = false, emptyMap()))
+            onSuccess(mapOfActiveSubscriptions + mapOfUnconsumedInApps)
+        }
     }
 
     private fun List<Purchase>.toMapOfGooglePurchaseWrapper(
