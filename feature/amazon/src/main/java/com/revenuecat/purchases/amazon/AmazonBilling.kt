@@ -83,7 +83,7 @@ internal class AmazonBilling constructor(
                     return@queryPurchases
                 }
                 getMissingSkusForReceipts(
-                    userData.userId,
+                    amazonUserID = userData.userId,
                     receipts
                 ) { tokensToSkusMap, errors ->
                     logErrorsIfAny(errors)
