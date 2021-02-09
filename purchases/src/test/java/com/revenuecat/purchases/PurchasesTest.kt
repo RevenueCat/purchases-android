@@ -2954,7 +2954,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when updating pending purchases, if result from querying purchases is not positive skip`() {
+    fun `when updating pending purchases, if result from querying purchases is not successful skip`() {
         setup()
         every {
             mockBillingAbstract.queryPurchases(appUserId, captureLambda())
