@@ -2,7 +2,6 @@ package com.revenuecat.purchases.amazon
 
 import android.app.Activity
 import android.content.Context
-import android.service.autofill.UserData
 import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductDataResponse
@@ -27,9 +26,6 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ProductDetailsListCallback
-import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
-import com.revenuecat.purchases.common.PurchaseWrapper
-import com.revenuecat.purchases.common.PurchasesErrorCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
@@ -113,7 +109,7 @@ internal class AmazonBilling constructor(
     private fun List<Receipt>.toPurchaseHistoryRecordWrappers(
         tokensToSkusMap: Map<String, String>,
         userData: UserData
-    ): List<PurchaseHistoryRecordWrapper> {
+    ): List<PurchaseDetails> {
         return this.mapNotNull { receipt ->
             val sku = tokensToSkusMap[receipt.receiptId]
             if (sku == null) {
@@ -171,7 +167,7 @@ internal class AmazonBilling constructor(
         queryAllPurchases(
             appUserID,
             onReceivePurchaseHistory = {
-                val record: PurchaseHistoryRecordWrapper? = it.firstOrNull { record -> sku == record.sku }
+                val record: PurchaseDetails? = it.firstOrNull { record -> sku == record.sku }
                 if (record != null) {
                     onCompletion(record)
                 } else {
@@ -303,14 +299,14 @@ internal class AmazonBilling constructor(
         val errorMap: MutableMap<String, PurchasesError> = mutableMapOf()
 
         val nonSubscriptionReceiptsToSku =
-            receipts.filterNot { it.productType == RevenueCatProductType.SUBSCRIPTION }
+            receipts.filterNot { it.productType == ProductType.SUBSCRIPTION }
                 .map { it.receiptId to it.sku }
 
         successMap.putAll(nonSubscriptionReceiptsToSku)
 
         val subscriptionReceiptsToFetchTermSku: List<Receipt> =
             receipts
-                .filter { it.productType == RevenueCatProductType.SUBSCRIPTION }
+                .filter { it.productType == ProductType.SUBSCRIPTION }
                 .filterNot { currentlyCachedTokensToSkus.containsKey(it.receiptId) }
 
         if (subscriptionReceiptsToFetchTermSku.isEmpty()) {
@@ -353,7 +349,7 @@ internal class AmazonBilling constructor(
         productDetails: ProductDetails,
         presentedOfferingIdentifier: String?
     ) {
-        if (receipt.productType != RevenueCatProductType.SUBSCRIPTION) {
+        if (receipt.productType != ProductType.SUBSCRIPTION) {
             /**
              * For subscriptions we need to get the termSku of the receipt.
              * We have to hit our backend for that, since the only way to get it is using Amazon RVS.

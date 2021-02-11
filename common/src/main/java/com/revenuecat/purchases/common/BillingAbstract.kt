@@ -61,6 +61,7 @@ abstract class BillingAbstract {
         appUserID: String,
         productType: ProductType,
         sku: String,
+        onCompletion: (PurchaseDetails) -> Unit,
         onError: (PurchasesError) -> Unit
     )
 

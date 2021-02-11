@@ -27,8 +27,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ProductDetailsListCallback
-import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
-import com.revenuecat.purchases.common.PurchaseWrapper
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -40,7 +38,6 @@ import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.toRevenueCatPurchaseDetails
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.PurchaseDetails
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.BillingStrings
@@ -352,7 +349,7 @@ class BillingWrapper(
 
     override fun queryPurchases(
         appUserID: String,
-        onSuccess: (Map<String, PurchaseWrapper>) -> Unit,
+        onSuccess: (Map<String, PurchaseDetails>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         withConnectedClient {
