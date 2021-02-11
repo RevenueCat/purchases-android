@@ -37,8 +37,6 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.toPurchaseDetails
-import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.toProductDetails
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.identity.IdentityManager
@@ -56,8 +54,8 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
