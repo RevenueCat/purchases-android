@@ -31,9 +31,7 @@ import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.google.GooglePurchaseWrapper
 import com.revenuecat.purchases.common.toRevenueCatPurchaseDetails
-import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.toProductDetails
 import com.revenuecat.purchases.google.toRevenueCatPurchaseDetails
 import com.revenuecat.purchases.google.toSKUType
@@ -4141,7 +4139,7 @@ class PurchasesTest {
         every {
             mockBillingAbstract.queryPurchases(appUserId, captureLambda(), any())
         } answers {
-            lambda<(Map<String, PurchaseWrapper>) -> Unit>().captured(purchasesByHashedToken)
+            lambda<(Map<String, PurchaseDetails>) -> Unit>().captured(purchasesByHashedToken)
         }
     }
 
@@ -4304,8 +4302,8 @@ class PurchasesTest {
         )
     }
 
-    private fun mockPurchaseFound(error: PurchasesError? = null): PurchaseHistoryRecordWrapper {
-        val oldPurchase = getMockedPurchaseHistoryRecordWrapper(
+    private fun mockPurchaseFound(error: PurchasesError? = null): PurchaseDetails {
+        val oldPurchase = getMockedPurchaseDetails(
             sku = "oldSku",
             purchaseToken = "another_purchase_token",
             productType = ProductType.SUBS
@@ -4323,7 +4321,7 @@ class PurchasesTest {
             if (error != null) {
                 lambda<(PurchasesError) -> Unit>().captured.invoke(error)
             } else {
-                lambda<(PurchaseHistoryRecordWrapper) -> Unit>().captured.invoke(oldPurchase)
+                lambda<(PurchaseDetails) -> Unit>().captured.invoke(oldPurchase)
             }
         }
         return oldPurchase
