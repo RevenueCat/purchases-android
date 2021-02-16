@@ -964,29 +964,29 @@ class BackendTest {
     fun `logIn makes the right http call`() {
         val newAppUserID = "newId"
         val body = mapOf(
-                "new_app_user_id" to newAppUserID
+            "new_app_user_id" to newAppUserID
         )
         mockResponse(
-                "/subscribers/$appUserID/login",
-                body,
-                201,
-                null,
-                Responses.validFullPurchaserResponse
+            "/subscribers/$appUserID/login",
+            body,
+            201,
+            null,
+            Responses.validFullPurchaserResponse
         )
 
         backend.logIn(
-                appUserID,
-                newAppUserID,
-                onLoginSuccessHandler,
-                {
-                    fail<String>("Should have called success")
-                }
+            appUserID,
+            newAppUserID,
+            onLoginSuccessHandler,
+            {
+                fail("Should have called success")
+            }
         )
         verify(exactly = 1) {
             mockClient.performRequest(
-                    "/subscribers/$appUserID/login",
-                    body,
-                    any()
+                "/subscribers/$appUserID/login",
+                body,
+                any()
             )
         }
     }
@@ -995,27 +995,27 @@ class BackendTest {
     fun `logIn correctly parses purchaserInfo`() {
         val newAppUserID = "newId"
         val requestBody = mapOf(
-                "new_app_user_id" to newAppUserID
+            "new_app_user_id" to newAppUserID
         )
         val resultBody = Responses.validFullPurchaserResponse
         mockResponse(
-                "/subscribers/$appUserID/login",
-                requestBody,
-                responseCode = 201,
-                clientException = null,
-                resultBody = resultBody,
-                delayed = false,
-                shouldMockPurchaserInfo = false
+            "/subscribers/$appUserID/login",
+            requestBody,
+            responseCode = 201,
+            clientException = null,
+            resultBody = resultBody,
+            delayed = false,
+            shouldMockPurchaserInfo = false
         )
         val expectedPurchaserInfo = JSONObject(resultBody).buildPurchaserInfo()
 
         backend.logIn(
-                appUserID,
-                newAppUserID,
-                onLoginSuccessHandler,
-                {
-                    fail<String>("Should have called success")
-                }
+            appUserID,
+            newAppUserID,
+            onLoginSuccessHandler,
+            {
+                fail<String>("Should have called success")
+            }
         )
         assertThat(receivedPurchaserInfo).isEqualTo(expectedPurchaserInfo)
         assertThat(receivedCreated).isEqualTo(true)
@@ -1073,7 +1073,7 @@ class BackendTest {
                 fail<String>("Should have called success")
             }
         )
-        assertThat(receivedCreated).isEqualTo(true)
+        assertThat(receivedCreated).isTrue()
     }
 
     @Test

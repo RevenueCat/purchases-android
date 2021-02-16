@@ -60,28 +60,35 @@ class IdentityManager(
         onError: (PurchasesError) -> Unit
     ) {
         if (newAppUserID.isBlank()) {
-            onError(PurchasesError(PurchasesErrorCode.InvalidAppUserIdError,
-                "appUserID can't be null, empty or blank").also { errorLog(it) })
+            onError(PurchasesError(
+                PurchasesErrorCode.InvalidAppUserIdError,
+                "appUserID can't be null, empty or blank"
+            ).also { errorLog(it) })
             return
         }
 
         log(LogIntent.USER, IdentityStrings.LOGGING_IN.format(currentAppUserID, newAppUserID))
         val oldAppUserID = currentAppUserID
         backend.logIn(
-                oldAppUserID,
-                newAppUserID,
-                { purchaserInfo, created ->
-                    synchronized(this@IdentityManager) {
-                        log(LogIntent.USER, IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created))
-                        deviceCache.clearCachesForAppUserID(oldAppUserID)
-                        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+            oldAppUserID,
+            newAppUserID,
+            { purchaserInfo, created ->
+                synchronized(this@IdentityManager) {
+                    log(
+                        LogIntent.USER,
+                        IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
+                    )
+                    deviceCache.clearCachesForAppUserID(oldAppUserID)
+                    subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(
+                        oldAppUserID
+                    )
 
-                        deviceCache.cacheAppUserID(newAppUserID)
-                        deviceCache.cachePurchaserInfo(newAppUserID, purchaserInfo)
-                    }
-                    onSuccess(purchaserInfo, created)
-                },
-                onError
+                    deviceCache.cacheAppUserID(newAppUserID)
+                    deviceCache.cachePurchaserInfo(newAppUserID, purchaserInfo)
+                }
+                onSuccess(purchaserInfo, created)
+            },
+            onError
         )
     }
 
