@@ -627,25 +627,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
             identityManager.logIn(newAppUserID,
-                    onSuccess = { purchaserInfo, created ->
-                        dispatch {
-                            listener?.onReceived(purchaserInfo, created)
-                            sendUpdatedPurchaserInfoToDelegateIfChanged(purchaserInfo)
-                        }
-                        fetchAndCacheOfferings(newAppUserID, state.appInBackground)
-                    },
-                    onError = { error ->
-                        dispatch { listener?.onError(error) }
-                    })
+                onSuccess = { purchaserInfo, created ->
+                    dispatch {
+                        listener?.onReceived(purchaserInfo, created)
+                        sendUpdatedPurchaserInfoToDelegateIfChanged(purchaserInfo)
+                    }
+                    fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+                },
+                onError = { error ->
+                    dispatch { listener?.onError(error) }
+                })
         }
-                ?: retrievePurchaseInfo(identityManager.currentAppUserID, receivePurchaserInfoListener(
-                        onSuccess = { purchaserInfo ->
-                            dispatch { listener?.onReceived(purchaserInfo, false) }
-                        },
-                        onError = { error ->
-                            dispatch { listener?.onError(error) }
-                        }
-                ))
+            ?: retrievePurchaseInfo(identityManager.currentAppUserID, receivePurchaserInfoListener(
+                onSuccess = { purchaserInfo ->
+                    dispatch { listener?.onReceived(purchaserInfo, false) }
+                },
+                onError = { error ->
+                    dispatch { listener?.onError(error) }
+                }
+            ))
     }
 
     /**
