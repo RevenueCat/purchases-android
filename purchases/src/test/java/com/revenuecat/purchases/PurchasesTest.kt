@@ -37,7 +37,7 @@ import com.revenuecat.purchases.common.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.LogInListener
+import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
@@ -1791,7 +1791,7 @@ class PurchasesTest {
         every { mockCache.setPurchaserInfoCacheTimestampToNow(appUserID) } just Runs
         every { mockIdentityManager.currentAppUserID } returns appUserID
 
-        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
 
         purchases.logIn(appUserID, mockCompletion)
 
@@ -1809,7 +1809,7 @@ class PurchasesTest {
         every { mockCache.setPurchaserInfoCacheTimestampToNow(appUserID) } just Runs
         every { mockIdentityManager.currentAppUserID } returns appUserID
 
-        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
 
         purchases.logIn(appUserID, mockCompletion)
 
@@ -1832,7 +1832,7 @@ class PurchasesTest {
         val purchasesError = PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
         mockBackend(mockInfo, errorGettingPurchaserInfo = purchasesError)
 
-        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
 
         purchases.logIn(appUserID, mockCompletion)
 
@@ -1853,7 +1853,7 @@ class PurchasesTest {
             lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
 
-        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
         val newAppUserID = "newAppUserID"
         purchases.logIn(newAppUserID, mockCompletion)
 
@@ -1874,7 +1874,7 @@ class PurchasesTest {
             lambda<(PurchasesError) -> Unit>().captured.invoke(purchasesError)
         }
 
-        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
         val newAppUserID = "newAppUserID"
         purchases.logIn(newAppUserID, mockCompletion)
 
@@ -1896,7 +1896,7 @@ class PurchasesTest {
             lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
 
-        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
         val newAppUserID = "newAppUserID"
         purchases.logIn(newAppUserID, mockCompletion)
 
@@ -1920,7 +1920,7 @@ class PurchasesTest {
             lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
 
-        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
         val newAppUserID = "newAppUserID"
         purchases.logIn(newAppUserID, mockCompletion)
 
@@ -1942,7 +1942,7 @@ class PurchasesTest {
             lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
 
-        val mockCompletion = mockk<LogInListener>(relaxed = true)
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
         val newAppUserID = "newAppUserID"
         purchases.logIn(newAppUserID, mockCompletion)
 

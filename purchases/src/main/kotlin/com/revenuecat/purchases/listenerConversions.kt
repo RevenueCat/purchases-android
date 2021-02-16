@@ -4,7 +4,7 @@ import android.app.Activity
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.LogInListener
+import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
@@ -89,7 +89,7 @@ internal fun receivePurchaserInfoListener(
 internal fun logInSuccessListener(
     onSuccess: ReceiveLogInSuccessFunction?,
     onError: ErrorFunction?
-) = object : LogInListener {
+) = object : LogInCallback {
     override fun onReceived(purchaserInfo: PurchaserInfo, created: Boolean) {
         onSuccess?.invoke(purchaserInfo, created)
     }

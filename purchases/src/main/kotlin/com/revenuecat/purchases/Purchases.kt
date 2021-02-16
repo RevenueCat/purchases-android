@@ -47,7 +47,7 @@ import com.revenuecat.purchases.common.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.LogInListener
+import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.PurchaseErrorListener
@@ -618,33 +618,33 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * This function will change the current appUserID.
      * Typically this would be used after a log out to identify a new user without calling configure
      * @param newAppUserID The new appUserID that should be linked to the currently user
-     * @param [listener] An optional listener to listen for successes or errors.
+     * @param [callback] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
     @JvmSynthetic
     internal fun logIn(
         newAppUserID: String,
-        listener: LogInListener? = null
+        callback: LogInCallback? = null
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
             identityManager.logIn(newAppUserID,
                 onSuccess = { purchaserInfo, created ->
                     dispatch {
-                        listener?.onReceived(purchaserInfo, created)
+                        callback?.onReceived(purchaserInfo, created)
                         sendUpdatedPurchaserInfoToDelegateIfChanged(purchaserInfo)
                     }
                     fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                 },
                 onError = { error ->
-                    dispatch { listener?.onError(error) }
+                    dispatch { callback?.onError(error) }
                 })
         }
             ?: retrievePurchaseInfo(identityManager.currentAppUserID, receivePurchaserInfoListener(
                 onSuccess = { purchaserInfo ->
-                    dispatch { listener?.onReceived(purchaserInfo, false) }
+                    dispatch { callback?.onReceived(purchaserInfo, false) }
                 },
                 onError = { error ->
-                    dispatch { listener?.onError(error) }
+                    dispatch { callback?.onError(error) }
                 }
             ))
     }
