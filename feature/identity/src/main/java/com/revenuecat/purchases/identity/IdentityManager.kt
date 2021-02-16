@@ -9,8 +9,6 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.IdentityStrings
-import com.revenuecat.purchases.strings.IdentityStrings.LOGGING_IN
-import com.revenuecat.purchases.strings.IdentityStrings.LOG_OUT_SUCCESSFUL
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import java.util.Locale
 import java.util.UUID
@@ -124,12 +122,12 @@ class IdentityManager(
     @Synchronized
     fun logOut(): PurchasesError? {
         if (currentUserIsAnonymous()) {
-            log(LogIntent.RC_ERROR, LOGGING_IN)
+            log(LogIntent.RC_ERROR, IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER)
             return PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError)
         }
         deviceCache.clearLatestAttributionData(currentAppUserID)
         reset()
-        log(LogIntent.USER, LOG_OUT_SUCCESSFUL)
+        log(LogIntent.USER, IdentityStrings.LOG_OUT_SUCCESSFUL)
         return null
     }
 
