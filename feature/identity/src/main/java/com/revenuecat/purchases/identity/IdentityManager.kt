@@ -77,9 +77,7 @@ class IdentityManager(
                         IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
                     )
                     deviceCache.clearCachesForAppUserID(oldAppUserID)
-                    subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(
-                        oldAppUserID
-                    )
+                    subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                     deviceCache.cacheAppUserID(newAppUserID)
                     deviceCache.cachePurchaserInfo(newAppUserID, purchaserInfo)
