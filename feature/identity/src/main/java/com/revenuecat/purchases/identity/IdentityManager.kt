@@ -60,7 +60,7 @@ class IdentityManager(
         if (newAppUserID.isBlank()) {
             onError(PurchasesError(
                 PurchasesErrorCode.InvalidAppUserIdError,
-                "appUserID can't be null, empty or blank"
+                IdentityStrings.LOG_IN_ERROR_MISSING_APP_USER_ID
             ).also { errorLog(it) })
             return
         }
