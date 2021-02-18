@@ -97,7 +97,7 @@ internal class AmazonBilling constructor(
                     }
 
                     val purchaseHistoryRecordWrappers =
-                    receipts.toPurchaseHistoryRecordWrappers(tokensToSkusMap, userData)
+                        receipts.toPurchaseHistoryRecordWrappers(tokensToSkusMap, userData)
 
                     onReceivePurchaseHistory(purchaseHistoryRecordWrappers)
                 }
