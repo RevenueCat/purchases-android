@@ -674,7 +674,7 @@ class BillingWrapperTest {
             mockClient.queryPurchases(any())
         } returns Purchase.PurchasesResult(BillingClient.BillingResponseCode.OK.buildResult(), null)
 
-        var purchasesByHashedToken: Map<String, PurchaseWrapper>? = null
+        var purchasesByHashedToken: Map<String, PurchaseDetails>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
             onSuccess = {
@@ -712,7 +712,7 @@ class BillingWrapperTest {
             mockClient.queryPurchases(BillingClient.SkuType.SUBS)
         } returns Purchase.PurchasesResult(resultCode.buildResult(), emptyList())
 
-        var purchasesByHashedToken: Map<String, PurchaseWrapper>? = null
+        var purchasesByHashedToken: Map<String, PurchaseDetails>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
             onSuccess = {
@@ -757,7 +757,7 @@ class BillingWrapperTest {
             mockClient.queryPurchases(BillingClient.SkuType.INAPP)
         } returns Purchase.PurchasesResult(resultCode.buildResult(), emptyList())
 
-        var purchasesByHashedToken: Map<String, PurchaseWrapper>? = null
+        var purchasesByHashedToken: Map<String, PurchaseDetails>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
             onSuccess = {
