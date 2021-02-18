@@ -1,15 +1,12 @@
 package com.revenuecat.purchases.common
 
 import android.app.Activity
-import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.models.ProductDetails
 
 typealias ProductDetailsListCallback = (List<ProductDetails>) -> Unit
-
-typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 
 @SuppressWarnings("TooManyFunctions")
 abstract class BillingAbstract {
@@ -42,6 +39,7 @@ abstract class BillingAbstract {
     abstract fun endConnection()
 
     abstract fun queryAllPurchases(
+        appUserID: String,
         onReceivePurchaseHistory: (List<PurchaseHistoryRecordWrapper>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     )
@@ -58,20 +56,12 @@ abstract class BillingAbstract {
         purchase: PurchaseWrapper
     )
 
-    abstract fun consumePurchase(
-        token: String,
-        onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit
-    )
-
-    abstract fun acknowledge(
-        token: String,
-        onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit
-    )
-
     abstract fun findPurchaseInPurchaseHistory(
-        skuType: ProductType,
+        appUserID: String,
+        productType: ProductType,
         sku: String,
-        completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
+        onCompletion: (PurchaseHistoryRecordWrapper) -> Unit,
+        onError: (PurchasesError) -> Unit
     )
 
     abstract fun makePurchaseAsync(
@@ -86,16 +76,10 @@ abstract class BillingAbstract {
 
     @SuppressWarnings("ForbiddenComment")
     abstract fun queryPurchases(
-        @BillingClient.SkuType skuType: String // TODO: change
-    ): QueryPurchasesResult?
-
-    abstract class QueryPurchasesResult(
-        val responseCode: Int,
-        val purchasesByHashedToken: Map<String, PurchaseWrapper>
-    ) {
-
-        abstract fun isSuccessful(): Boolean
-    }
+        appUserID: String,
+        onSuccess: (Map<String, PurchaseWrapper>) -> Unit,
+        onError: (PurchasesError) -> Unit
+    )
 
     interface PurchasesUpdatedListener {
         fun onPurchasesUpdated(purchases: List<PurchaseWrapper>)

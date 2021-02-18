@@ -1,21 +1,27 @@
 apply from: "$rootProject.projectDir/library.gradle"
 
-dependencies {
-    implementation fileTree(dir: "libs", include: ["*.jar"])
+ext {
+    iapVersion = "2.0.76"
+}
 
+dependencies {
     implementation project(":purchases")
     implementation project(":common")
     implementation project(":strings")
+    implementation project(":utils")
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+
+    compileOnly files("libs/in-app-purchasing-${iapVersion}.jar")
+
+    testImplementation files("libs/in-app-purchasing-${iapVersion}.jar")
+    testImplementation project(":test-utils")
 }
 
 task getAmazonLibrary {
     ext {
         downloadURL = "https://amzndevresources.com/iap/sdk/AmazonInAppPurchasing_Android.zip"
-        iapVersion = "2.0.76"
-        extension = ".jar"
-        fileToExtract = "in-app-purchasing-$iapVersion$extension"
+        fileToExtract = "in-app-purchasing-${iapVersion}.jar"
         destFile = new File( projectDir, "libs/$fileToExtract" )
     }
 

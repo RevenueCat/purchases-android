@@ -26,7 +26,7 @@ private const val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 60000 * 60 * 24
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 internal const val PURCHASER_INFO_SCHEMA_VERSION = 3
 
-class DeviceCache(
+open class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
     private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(),
@@ -36,7 +36,7 @@ class DeviceCache(
     val appUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.new" }
     val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.tokens" }
-    val subscriberAttributesCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.subscriberAttributes" }
+
     private val purchaserInfoCachesLastUpdatedCacheBaseKey: String by lazy {
         "$SHARED_PREFERENCES_PREFIX$apiKey.purchaserInfoLastUpdated"
     }
@@ -214,30 +214,25 @@ class DeviceCache(
      */
     @Synchronized
     fun cleanPreviouslySentTokens(
-        activeSubsHashedTokens: Set<String>,
-        unconsumedInAppsHashedTokens: Set<String>
+        hashedTokens: Set<String>
     ) {
         log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
         setSavedTokenHashes(
-            (activeSubsHashedTokens + unconsumedInAppsHashedTokens).intersect(
-                getPreviouslySentHashedTokens()
-            )
+            hashedTokens.intersect(getPreviouslySentHashedTokens())
         )
     }
 
     /**
-     * Returns a list containing all tokens that are in [activeSubsByTheirHashedToken] and
-     * [activeInAppsByTheirHashedToken] map that are not present in the device cache.
+     * Returns a list containing all tokens that are in [hashedTokens]
+     * that are not present in the device cache.
      * In other words, returns all hashed tokens that are active and have not
      * been posted to our backend yet.
      */
     @Synchronized
     fun getActivePurchasesNotInCache(
-        activeSubsByTheirHashedToken: Map<String, PurchaseWrapper>,
-        activeInAppsByTheirHashedToken: Map<String, PurchaseWrapper>
+        hashedTokens: Map<String, PurchaseWrapper>,
     ): List<PurchaseWrapper> {
-        return activeSubsByTheirHashedToken
-            .plus(activeInAppsByTheirHashedToken)
+        return hashedTokens
             .minus(getPreviouslySentHashedTokens())
             .values.toList()
     }
@@ -292,7 +287,7 @@ class DeviceCache(
 
     // region utils
 
-    fun getJSONObjectOrNull(key: String): JSONObject? {
+    open fun getJSONObjectOrNull(key: String): JSONObject? {
         return preferences.getString(key, null)?.let { json ->
             try {
                 JSONObject(json)
@@ -302,7 +297,7 @@ class DeviceCache(
         }
     }
 
-    fun putString(
+    open fun putString(
         cacheKey: String,
         value: String
     ) {

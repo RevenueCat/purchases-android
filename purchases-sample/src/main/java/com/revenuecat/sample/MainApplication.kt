@@ -23,7 +23,6 @@ class MainApplication : Application() {
         Purchases.debugLogsEnabled = true
         val configuration =
             AmazonConfiguration.Builder(context = this, apiKey = "api_key")
-                .appUserID("appUserID")
                 .build()
 
         Purchases.configure(configuration)

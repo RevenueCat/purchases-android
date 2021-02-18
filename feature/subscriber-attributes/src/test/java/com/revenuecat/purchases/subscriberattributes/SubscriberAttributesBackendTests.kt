@@ -254,6 +254,7 @@ class SubscriberAttributesPosterTests {
             observerMode = false,
             subscriberAttributes = mapOfSubscriberAttributes,
             receiptInfo = productInfo,
+            storeAppUserID = null,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -278,6 +279,7 @@ class SubscriberAttributesPosterTests {
             observerMode = false,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
+            storeAppUserID = null,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -305,6 +307,7 @@ class SubscriberAttributesPosterTests {
             observerMode = false,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
+            storeAppUserID = null,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -331,6 +334,7 @@ class SubscriberAttributesPosterTests {
             observerMode = false,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
+            storeAppUserID = null,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )
@@ -357,6 +361,7 @@ class SubscriberAttributesPosterTests {
             observerMode = false,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
+            storeAppUserID = null,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )

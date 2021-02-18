@@ -22,21 +22,23 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetailsParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCallback
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ProductDetailsListCallback
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.PurchaseWrapper
-import com.revenuecat.purchases.common.PurchasesErrorCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.RevenueCatPurchaseState
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -241,6 +243,7 @@ class BillingWrapper(
     }
 
     override fun queryAllPurchases(
+        appUserID: String,
         onReceivePurchaseHistory: (List<PurchaseHistoryRecordWrapper>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
@@ -314,7 +317,7 @@ class BillingWrapper(
         }
     }
 
-    override fun consumePurchase(
+    internal fun consumePurchase(
         token: String,
         onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
@@ -330,7 +333,7 @@ class BillingWrapper(
         }
     }
 
-    override fun acknowledge(
+    internal fun acknowledge(
         token: String,
         onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit
     ) {
@@ -348,49 +351,89 @@ class BillingWrapper(
         }
     }
 
-    class GoogleQueryPurchasesResult(
-        @BillingClient.BillingResponseCode responseCode: Int,
-        purchasesByHashedToken: Map<String, PurchaseWrapper>
-    ) : QueryPurchasesResult(responseCode, purchasesByHashedToken) {
+    private fun Purchase.PurchasesResult.isSuccessful() = responseCode == BillingClient.BillingResponseCode.OK
 
-        override fun isSuccessful(): Boolean = responseCode == BillingClient.BillingResponseCode.OK
-    }
+    override fun queryPurchases(
+        appUserID: String,
+        onSuccess: (Map<String, PurchaseWrapper>) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        withConnectedClient {
+            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
 
-    override fun queryPurchases(@SkuType skuType: String): QueryPurchasesResult? {
-        return billingClient?.let { billingClient ->
-            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE.format(skuType))
-            val result = billingClient.queryPurchases(skuType)
+            val queryActiveSubscriptionsResult = this.queryPurchases(SkuType.SUBS)
+            if (!queryActiveSubscriptionsResult.isSuccessful()) {
+                val billingResult = queryActiveSubscriptionsResult.billingResult
+                val purchasesError = billingResult.responseCode.billingResponseToPurchasesError(
+                    RestoreStrings.QUERYING_SUBS_ERROR.format(billingResult.toHumanReadableDescription())
+                )
+                onError(purchasesError)
+                return@withConnectedClient
+            }
 
-            val purchasesList = result.purchasesList ?: emptyList<Purchase>()
+            val queryUnconsumedInAppsResult = this.queryPurchases(SkuType.INAPP)
+            if (!queryUnconsumedInAppsResult.isSuccessful()) {
+                val billingResult = queryUnconsumedInAppsResult.billingResult
+                val purchasesError = billingResult.responseCode.billingResponseToPurchasesError(
+                    RestoreStrings.QUERYING_INAPP_ERROR.format(billingResult.toHumanReadableDescription())
+                )
+                onError(purchasesError)
+                return@withConnectedClient
+            }
 
-            GoogleQueryPurchasesResult(
-                result.responseCode,
-                purchasesList.map { purchase ->
-                    val hash = purchase.purchaseToken.sha1()
-                    log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(skuType, hash))
-                    hash to GooglePurchaseWrapper(purchase, skuType.toProductType(), presentedOfferingIdentifier = null)
-                }.toMap()
-            )
+            val activeSubscriptionsList = queryActiveSubscriptionsResult.purchasesList ?: emptyList<Purchase>()
+            val mapOfActiveSubscriptions = activeSubscriptionsList.toMapOfGooglePurchaseWrapper(SkuType.SUBS)
+
+            val unconsumedInAppsList = queryUnconsumedInAppsResult.purchasesList ?: emptyList<Purchase>()
+            val mapOfUnconsumedInApps = unconsumedInAppsList.toMapOfGooglePurchaseWrapper(SkuType.INAPP)
+
+            onSuccess(mapOfActiveSubscriptions + mapOfUnconsumedInApps)
         }
     }
 
+    private fun List<Purchase>.toMapOfGooglePurchaseWrapper(
+        @SkuType skuType: String
+    ): Map<String, GooglePurchaseWrapper> {
+        return this.map { purchase ->
+            val hash = purchase.purchaseToken.sha1()
+            hash to GooglePurchaseWrapper(purchase, skuType.toProductType(), presentedOfferingIdentifier = null)
+        }.toMap()
+    }
+
     override fun findPurchaseInPurchaseHistory(
+        appUserID: String,
         productType: ProductType,
         sku: String,
-        completion: (BillingResult, PurchaseHistoryRecordWrapper?) -> Unit
+        onCompletion: (PurchaseHistoryRecordWrapper) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
         withConnectedClient {
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
             productType.toSKUType()?.let { skuType ->
                 queryPurchaseHistoryAsync(skuType) { result, purchasesList ->
-                    completion(
-                        result,
-                        purchasesList?.firstOrNull { sku == it.sku }?.let {
-                            PurchaseHistoryRecordWrapper(it, productType)
+                    if (result.isSuccessful()) {
+                        val purchaseHistoryRecordWrapper =
+                            purchasesList?.firstOrNull { sku == it.sku }?.let { purchaseHistoryRecord ->
+                                PurchaseHistoryRecordWrapper(purchaseHistoryRecord, productType)
+                            }
+
+                        if (purchaseHistoryRecordWrapper != null) {
+                            onCompletion(purchaseHistoryRecordWrapper)
+                        } else {
+                            val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(sku)
+                            val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
+                            onError(error)
                         }
-                    )
+                    } else {
+                        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format(sku)
+                        val error =
+                            result.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
+                        onError(error)
+                    }
                 }
-            } ?: log(LogIntent.GOOGLE_ERROR, PurchaseStrings.NOT_RECOGNIZED_PRODUCT_TYPE)
+            } ?: onError(
+                PurchasesError(PurchasesErrorCode.PurchaseInvalidError, PurchaseStrings.NOT_RECOGNIZED_PRODUCT_TYPE)
+            )
         }
     }
 

@@ -5,13 +5,13 @@ import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.RequestId
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.amazon.listener.ProductDataResponseListener
 import com.revenuecat.purchases.amazon.toProductDetails
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ProductDetailsListCallback
-import com.revenuecat.purchases.common.PurchasesErrorCallback
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.ProductDetails
 

@@ -6,13 +6,19 @@
     <ID>EmptyCatchBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${ }</ID>
     <ID>EmptyCatchBlock:Purchases.kt$Purchases.Companion.&lt;no name provided&gt;${ }</ID>
     <ID>EmptyFunctionBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${}</ID>
+    <ID>ForbiddenComment:AmazonPurchaseWrapper.kt$AmazonPurchaseWrapper$// TODO: replace with PurchaseDetails</ID>
+    <ID>ForbiddenComment:GooglePurchaseWrapper.kt$GooglePurchaseWrapper$// TODO: replace with PurchaseDetails</ID>
+    <ID>ForbiddenComment:ProductDetails.kt$// TODO: add JvmName</ID>
+    <ID>ForbiddenComment:PurchaseDetails.kt$// TODO: should this be nullable or just throw</ID>
+    <ID>ForbiddenComment:PurchaseDetails.kt$PurchaseDetails$// TODO: docs</ID>
+    <ID>ForbiddenComment:PurchaseWrapper.kt$PurchaseWrapper$// TODO: replace with PurchaseDetails</ID>
     <ID>LargeClass:Purchases.kt$Purchases$Purchases</ID>
     <ID>LongMethod:Purchases.kt$Purchases$restorePurchases</ID>
-    <ID>LongMethod:Purchases.kt$Purchases.Companion$configure</ID>
-    <ID>LongParameterList:AmazonBackend.kt$AmazonBackend$( receiptId: String, appUserID: String, storeUserID: String, productDetails: ProductDetails, onSuccess: (JSONObject) -&gt; Unit, onError: (PurchasesError) -&gt; Unit )</ID>
-    <ID>LongParameterList:Backend.kt$Backend$( purchaseToken: String, appUserID: String, isRestore: Boolean, observerMode: Boolean, subscriberAttributes: Map&lt;String, Map&lt;String, Any?&gt;&gt;, receiptInfo: ReceiptInfo, onSuccess: PostReceiptDataSuccessCallback, onError: PostReceiptDataErrorCallback )</ID>
     <ID>LongParameterList:EntitlementInfo.kt$EntitlementInfo$( val identifier: String, val isActive: Boolean, val willRenew: Boolean, val periodType: PeriodType, val latestPurchaseDate: Date, val originalPurchaseDate: Date, val expirationDate: Date?, val store: Store, val productIdentifier: String, val isSandbox: Boolean, val unsubscribeDetectedAt: Date?, val billingIssueDetectedAt: Date? )</ID>
     <ID>LongParameterList:ProductDetails.kt$ProductDetails$( val sku: String, val type: ProductType, val price: String, // For example $3.00 val priceAmountMicros: Long, val priceCurrencyCode: String, // Null for amazon val originalPrice: String?, // 0 for amazon val originalPriceAmountMicros: Long, val title: String, val description: String, // Null if no subscriptionPeriod. Null for amazon val subscriptionPeriod: String?, // Null if no freeTrialPeriod. Null for amazon val freeTrialPeriod: String?, // Null if no introductoryPrice. Null for amazon val introductoryPrice: String?, // 0 for no intro price and amazon val introductoryPriceAmountMicros: Long, // Null if no introductoryPricePeriod. Null for amazon val introductoryPricePeriod: String?, // Null if no introductoryPriceCycles. 0 for amazon val introductoryPriceCycles: Int, val iconUrl: String, val originalJson: JSONObject )</ID>
+    <ID>LongParameterList:PurchaseHistoryRecordWrapper.kt$PurchaseHistoryRecordWrapper$( override val type: ProductType, override val purchaseToken: String, override val purchaseTime: Long, override val sku: String, override val presentedOfferingIdentifier: String? = null, override val purchaseState: RevenueCatPurchaseState, override val storeUserID: String?, override val isAutoRenewing: Boolean?, override val signature: String?, override val orderId: String = purchaseToken, override val originalJson: JSONObject? )</ID>
+    <ID>LongParameterList:StubGooglePurchase.kt$( productId: String = "com.revenuecat.lifetime", purchaseTime: Long = System.currentTimeMillis(), purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" + "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg", signature: String = "signature${System.currentTimeMillis()}", purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = true, orderId: String = "GPA.3372-4150-8203-17209" )</ID>
+    <ID>MagicNumber:StubGooglePurchase.kt$4</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendBadRequest$7226</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendCannotTransferPurchase$7102</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendEmptyAppUserId$7220</ID>
@@ -34,13 +40,13 @@
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendStoreProblem$7101</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendUserIneligibleForPromoOffer$7232</ID>
     <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): ProductType</ID>
-    <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$override fun consumeAndSave( shouldTryToConsume: Boolean, purchase: PurchaseWrapper )</ID>
     <ID>TooGenericExceptionCaught:AdvertisingIdClient.kt$AdvertisingIdClient$e: Exception</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
     <ID>TooManyFunctions:AmazonBilling.kt$AmazonBilling$AmazonBilling</ID>
     <ID>TooManyFunctions:Backend.kt$Backend$Backend</ID>
     <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper$BillingWrapper</ID>
     <ID>TooManyFunctions:DeviceCache.kt$DeviceCache$DeviceCache</ID>
+    <ID>TooManyFunctions:HTTPClient.kt$HTTPClient$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases$Purchases</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
   </Whitelist>

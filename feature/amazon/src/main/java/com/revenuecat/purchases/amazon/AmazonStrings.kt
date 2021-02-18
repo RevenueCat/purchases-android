@@ -14,4 +14,16 @@ object AmazonStrings {
     const val ERROR_PURCHASE_INVALID_SKU = "Failed to make purchase. SKU is invalid"
     const val ERROR_PURCHASE_FAILED = "Failed to make purchase. " +
         "This error normally means that the purchase was cancelled"
+    const val ERROR_FETCHING_RECEIPT_INFO = "There was an error fetching receipt information: %s"
+    const val ERROR_FETCHING_RECEIPTS = "Couldn't fetch information for the following receipts: \n %s"
+    const val ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID =
+        "Error fetching purchase history. All receipts are invalid."
+    const val CACHING_RECEIPT_TERM_SKUS = "Caching term skus for receipts: \n %s"
+    const val RECEIPT_DATA_RECEIVED = "Received receipt data: \n %s"
+    const val ERROR_FINDING_RECEIPT_SKU = "Couldn't find sku for token %s"
+    const val ERROR_FAILED_PURCHASES_UPDATES = "Failed to get purchase updates."
+    const val ERROR_UNSUPPORTED_PURCHASES_UPDATES =
+        "Failed to get purchase updates. Call is not supported. Request will retry."
+    const val ERROR_PURCHASES_UPDATES_STORE_PROBLEM =
+        "Failed to get purchase updates. There was an Amazon store problem."
 }

@@ -78,7 +78,7 @@ class SubscriberAttributesPurchasesTests {
         postReceiptCompletion = null
 
         every {
-            billingWrapperMock.queryAllPurchases(captureLambda(), any())
+            billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
             lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
@@ -94,6 +94,7 @@ class SubscriberAttributesPurchasesTests {
                 observerMode = any(),
                 subscriberAttributes = capture(postedAttributesSlot),
                 receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
             )
@@ -251,6 +252,7 @@ class SubscriberAttributesPurchasesTests {
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -323,6 +325,7 @@ class SubscriberAttributesPurchasesTests {
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -414,6 +417,7 @@ class SubscriberAttributesPurchasesTests {
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = any(),
                 onError = any()
             )

@@ -1,14 +1,14 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
-import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
+import com.revenuecat.purchases.common.PurchaseWrapper
+import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.google.BillingWrapper
@@ -65,7 +65,7 @@ class PostingTransactionsTests {
         postReceiptSuccess = null
 
         every {
-            billingWrapperMock.queryAllPurchases(captureLambda(), any())
+            billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
             lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
@@ -81,6 +81,7 @@ class PostingTransactionsTests {
                 observerMode = any(),
                 subscriberAttributes = any(),
                 receiptInfo = capture(postedProductInfoSlot),
+                storeAppUserID = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
             )
@@ -164,6 +165,7 @@ class PostingTransactionsTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
+                storeAppUserID = any(),
                 receiptInfo = any(),
                 onSuccess = any(),
                 onError = any()
@@ -204,6 +206,53 @@ class PostingTransactionsTests {
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
+                storeAppUserID = any(),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `store user id is sent when posting to backend`() {
+        postReceiptSuccess = PostReceiptCompletionContainer()
+
+        val mockProductDetails = mockk<ProductDetails>().also {
+            every { it.sku } returns "product_id"
+            every { it.priceAmountMicros } returns 2000000
+            every { it.priceCurrencyCode } returns "USD"
+            every { it.subscriptionPeriod } returns ""
+            every { it.introductoryPricePeriod } returns ""
+            every { it.freeTrialPeriod } returns ""
+        }
+        val purchase: PurchaseWrapper = mockk(relaxed = true)
+        val expectedStoreUserID = "a_store_user_id"
+        every {
+            purchase.storeUserID
+        } returns expectedStoreUserID
+
+        underTest.postToBackend(
+            purchase = purchase,
+            productDetails = mockProductDetails,
+            allowSharingPlayStoreAccount = true,
+            consumeAllTransactions = true,
+            appUserID = appUserId,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
+        )
+        assertThat(postedProductInfoSlot.isCaptured).isTrue()
+        assertThat(postedProductInfoSlot.captured.duration).isNull()
+        assertThat(postedProductInfoSlot.captured.introDuration).isNull()
+        assertThat(postedProductInfoSlot.captured.trialDuration).isNull()
+        verify(exactly = 1) {
+            backendMock.postReceiptData(
+                purchaseToken = any(),
+                appUserID = appUserId,
+                isRestore = any(),
+                observerMode = any(),
+                subscriberAttributes = expectedAttributes.toBackendMap(),
+                receiptInfo = any(),
+                storeAppUserID = expectedStoreUserID,
                 onSuccess = any(),
                 onError = any()
             )
