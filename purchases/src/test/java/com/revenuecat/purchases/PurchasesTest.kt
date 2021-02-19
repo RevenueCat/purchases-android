@@ -1795,7 +1795,7 @@ class PurchasesTest {
 
         purchases.logIn(appUserID, mockCompletion)
 
-        verify {
+        verify(exactly = 1) {
             mockCompletion.onReceived(any(), any())
             mockBackend.getPurchaserInfo(appUserID, any(), any(), any())
         }
@@ -1813,7 +1813,7 @@ class PurchasesTest {
 
         purchases.logIn(appUserID, mockCompletion)
 
-        verify {
+        verify(exactly = 1) {
             mockCompletion.onReceived(any(), false)
         }
     }
@@ -1836,7 +1836,7 @@ class PurchasesTest {
 
         purchases.logIn(appUserID, mockCompletion)
 
-        verify {
+        verify(exactly = 1) {
             mockCompletion.onError(purchasesError)
         }
     }
@@ -1857,7 +1857,7 @@ class PurchasesTest {
         val newAppUserID = "newAppUserID"
         purchases.logIn(newAppUserID, mockCompletion)
 
-        verify {
+        verify(exactly = 1) {
             mockIdentityManager.logIn(newAppUserID, any(), any())
         }
     }
@@ -1990,7 +1990,7 @@ class PurchasesTest {
         } returns null
 
         purchases.logOut()
-        verify {
+        verify(exactly = 1) {
             mockIdentityManager.logOut()
         }
     }
@@ -2009,7 +2009,7 @@ class PurchasesTest {
         } returns mockError
 
         purchases.logOut(mockCompletion)
-        verify {
+        verify(exactly = 1) {
             mockCompletion.onError(mockError)
         }
     }
@@ -2035,7 +2035,7 @@ class PurchasesTest {
         } returns null
 
         purchases.logOut(mockCompletion)
-        verify {
+        verify(exactly = 1) {
             mockCompletion.onReceived(mockInfo)
         }
     }

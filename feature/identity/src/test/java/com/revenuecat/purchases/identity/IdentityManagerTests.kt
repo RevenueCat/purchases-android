@@ -288,8 +288,12 @@ class IdentityManagerTests {
         val error = identityManager.logOut()
 
         assertThat(error).isNull()
-        verify { mockDeviceCache.clearCachesForAppUserID(identifiedUserID) }
-        verify { mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(identifiedUserID) }
+        verify(exactly = 1) { mockDeviceCache.clearCachesForAppUserID(identifiedUserID) }
+        verify(exactly = 1) {
+            mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(
+                identifiedUserID
+            )
+        }
     }
 
     @Test
