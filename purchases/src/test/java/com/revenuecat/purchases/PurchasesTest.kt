@@ -1985,12 +1985,11 @@ class PurchasesTest {
         every {
             mockCache.clearLatestAttributionData(appUserId)
         } just Runs
-        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
         every {
             mockIdentityManager.logOut()
         } returns null
 
-        purchases.logOut(mockCompletion)
+        purchases.logOut()
         verify {
             mockIdentityManager.logOut()
         }
