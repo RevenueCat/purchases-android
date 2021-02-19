@@ -599,8 +599,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] An optional listener to listen for successes or errors.
      */
     @Deprecated(
-            "Use logIn instead",
-            ReplaceWith("logIn")
+        "Use logIn instead",
+        ReplaceWith("Purchases.sharedInstance.logIn(newAppUserID, LogInCallback?")
     )
     @JvmOverloads
     fun identify(
@@ -683,8 +683,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] An optional listener to listen for successes or errors.
      */
     @Deprecated(
-            "Use logOut instead",
-            ReplaceWith("logOut")
+        "Use logOut instead",
+        ReplaceWith("Purchases.sharedInstance.logOut(ReceivePurchaserInfoListener")
     )
     @JvmOverloads
     fun reset(
