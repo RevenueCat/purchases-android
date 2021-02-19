@@ -43,5 +43,6 @@ enum class PurchasesErrorCode(val description: String) {
     IneligibleError("The User is ineligible for that action."),
     InsufficientPermissionsError("App does not have sufficient permissions to make purchases."),
     PaymentPendingError("The payment is pending."),
-    InvalidSubscriberAttributesError("One or more of the attributes sent could not be saved.")
+    InvalidSubscriberAttributesError("One or more of the attributes sent could not be saved."),
+    LogOutWithAnonymousUserError("Called logOut but the current user is anonymous."),
 }

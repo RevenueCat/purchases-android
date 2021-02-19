@@ -39,26 +39,27 @@ import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.getBillingResponseCodeName
 import com.revenuecat.purchases.common.isSuccessful
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
+import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.PurchaseErrorListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
-import com.revenuecat.purchases.strings.OfferingStrings
-import com.revenuecat.purchases.strings.PurchaseStrings
-import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.strings.OfferingStrings
+import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.PurchaserInfoStrings
+import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.AttributionFetcher
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -71,7 +72,6 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
 import java.util.Collections.emptyMap
-import java.util.HashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
@@ -612,6 +612,60 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 }
             )
         } ?: retrievePurchaseInfo(identityManager.currentAppUserID, listener)
+    }
+
+    /**
+     * This function will change the current appUserID.
+     * Typically this would be used after a log out to identify a new user without calling configure
+     * @param newAppUserID The new appUserID that should be linked to the currently user
+     * @param [callback] An optional listener to listen for successes or errors.
+     */
+    @JvmOverloads
+    @JvmSynthetic
+    internal fun logIn(
+        newAppUserID: String,
+        callback: LogInCallback? = null
+    ) {
+        identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
+            identityManager.logIn(newAppUserID,
+                onSuccess = { purchaserInfo, created ->
+                    dispatch {
+                        callback?.onReceived(purchaserInfo, created)
+                        sendUpdatedPurchaserInfoToDelegateIfChanged(purchaserInfo)
+                    }
+                    fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+                },
+                onError = { error ->
+                    dispatch { callback?.onError(error) }
+                })
+        }
+            ?: retrievePurchaseInfo(identityManager.currentAppUserID, receivePurchaserInfoListener(
+                onSuccess = { purchaserInfo ->
+                    dispatch { callback?.onReceived(purchaserInfo, false) }
+                },
+                onError = { error ->
+                    dispatch { callback?.onError(error) }
+                }
+            ))
+    }
+
+    /**
+     * Resets the Purchases client clearing the save appUserID. This will generate a random user
+     * id and save it in the cache.
+     * @param [listener] An optional listener to listen for successes or errors.
+     */
+    @JvmOverloads
+    @JvmSynthetic
+    internal fun logOut(listener: ReceivePurchaserInfoListener? = null) {
+        val error: PurchasesError? = identityManager.logOut()
+        if (error != null) {
+            listener?.onError(error)
+        } else {
+            synchronized(this@Purchases) {
+                state = state.copy(purchaseCallbacks = emptyMap())
+            }
+            updateAllCaches(identityManager.currentAppUserID, listener)
+        }
     }
 
     /**

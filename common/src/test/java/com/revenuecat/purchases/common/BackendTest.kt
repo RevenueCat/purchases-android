@@ -10,7 +10,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
+import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
 import io.mockk.Called
 import io.mockk.every
@@ -66,6 +68,7 @@ class BackendTest {
     private val appUserID = "jerry"
 
     private var receivedPurchaserInfo: PurchaserInfo? = null
+    private var receivedCreated: Boolean? = null
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
 
@@ -95,6 +98,15 @@ class BackendTest {
         this@BackendTest.receivedError = it
     }
 
+    private val onLoginSuccessHandler: (PurchaserInfo, Boolean) -> Unit = { purchaserInfo, created ->
+        this@BackendTest.receivedPurchaserInfo = purchaserInfo
+        this@BackendTest.receivedCreated = created
+    }
+
+    private val onReceiveLoginErrorHandler: (PurchasesError) -> Unit = {
+        this@BackendTest.receivedError = it
+    }
+
     @Test
     fun canBeCreated() {
         assertThat(backend).isNotNull
@@ -106,7 +118,8 @@ class BackendTest {
         responseCode: Int,
         clientException: Exception?,
         resultBody: String?,
-        delayed: Boolean = false
+        delayed: Boolean = false,
+        shouldMockPurchaserInfo: Boolean = true
     ): PurchaserInfo {
         val info: PurchaserInfo = mockk()
 
@@ -115,10 +128,11 @@ class BackendTest {
         val headers = HashMap<String, String>()
         headers["Authorization"] = "Bearer $API_KEY"
 
-        every {
-            result.body.buildPurchaserInfo()
-        } returns info
-
+        if (shouldMockPurchaserInfo) {
+            every {
+                result.body.buildPurchaserInfo()
+            } returns info
+        }
         val everyMockedCall = every {
             mockClient.performRequest(
                 eq(path),
@@ -944,6 +958,148 @@ class BackendTest {
         val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
         assertThat(calledWithRandomDelay).isNotNull()
         assertThat(calledWithRandomDelay).isTrue()
+    }
+
+    @Test
+    fun `logIn makes the right http call`() {
+        val newAppUserID = "newId"
+        val body = mapOf(
+            "new_app_user_id" to newAppUserID
+        )
+        mockResponse(
+            "/subscribers/$appUserID/login",
+            body,
+            201,
+            null,
+            Responses.validFullPurchaserResponse
+        )
+
+        backend.logIn(
+            appUserID,
+            newAppUserID,
+            onLoginSuccessHandler,
+            {
+                fail("Should have called success")
+            }
+        )
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/$appUserID/login",
+                body,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `logIn correctly parses purchaserInfo`() {
+        val newAppUserID = "newId"
+        val requestBody = mapOf(
+            "new_app_user_id" to newAppUserID
+        )
+        val resultBody = Responses.validFullPurchaserResponse
+        mockResponse(
+            "/subscribers/$appUserID/login",
+            requestBody,
+            responseCode = 201,
+            clientException = null,
+            resultBody = resultBody,
+            delayed = false,
+            shouldMockPurchaserInfo = false
+        )
+        val expectedPurchaserInfo = JSONObject(resultBody).buildPurchaserInfo()
+
+        backend.logIn(
+            appUserID,
+            newAppUserID,
+            onLoginSuccessHandler,
+            {
+                fail("Should have called success")
+            }
+        )
+        assertThat(receivedPurchaserInfo).isEqualTo(expectedPurchaserInfo)
+        assertThat(receivedCreated).isEqualTo(true)
+    }
+
+    @Test
+    fun `logIn calls OnError if purchaserInfo can't be parsed`() {
+        val newAppUserID = "newId"
+        val requestBody = mapOf(
+            "new_app_user_id" to newAppUserID
+        )
+        val resultBody = "{}"
+        mockResponse(
+            "/subscribers/$appUserID/login",
+            requestBody,
+            responseCode = 201,
+            clientException = null,
+            resultBody = resultBody,
+            delayed = false,
+            shouldMockPurchaserInfo = false
+        )
+
+        backend.logIn(
+            appUserID,
+            newAppUserID,
+            { _, _ ->
+                fail("Should have called success")
+            },
+            onReceiveLoginErrorHandler
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `logIn returns created true if status is 201`() {
+        val newAppUserID = "newId"
+        val requestBody = mapOf(
+            "new_app_user_id" to newAppUserID
+        )
+        val resultBody = Responses.validFullPurchaserResponse
+        mockResponse(
+            "/subscribers/$appUserID/login",
+            requestBody,
+            responseCode = 201,
+            clientException = null,
+            resultBody = resultBody
+        )
+
+        backend.logIn(
+            appUserID,
+            newAppUserID,
+            onLoginSuccessHandler,
+            {
+                fail("Should have called success")
+            }
+        )
+        assertThat(receivedCreated).isTrue()
+    }
+
+    @Test
+    fun `logIn returns created false if status isn't 201`() {
+        val newAppUserID = "newId"
+        val requestBody = mapOf(
+            "new_app_user_id" to newAppUserID
+        )
+        val resultBody = Responses.validFullPurchaserResponse
+        mockResponse(
+            "/subscribers/$appUserID/login",
+            requestBody,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody
+        )
+
+        backend.logIn(
+            appUserID,
+            newAppUserID,
+            onLoginSuccessHandler,
+            {
+                fail("Should have called success")
+            }
+        )
+        assertThat(receivedCreated).isFalse
     }
 
     private fun mockSkuDetails(

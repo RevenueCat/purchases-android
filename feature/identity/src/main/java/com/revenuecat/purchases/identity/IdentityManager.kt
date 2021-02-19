@@ -1,9 +1,12 @@
 package com.revenuecat.purchases.identity
 
+import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -49,6 +52,42 @@ class IdentityManager(
         }
     }
 
+    fun logIn(
+        newAppUserID: String,
+        onSuccess: (PurchaserInfo, Boolean) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        if (newAppUserID.isBlank()) {
+            onError(PurchasesError(
+                PurchasesErrorCode.InvalidAppUserIdError,
+                IdentityStrings.LOG_IN_ERROR_MISSING_APP_USER_ID
+            ).also { errorLog(it) })
+            return
+        }
+
+        log(LogIntent.USER, IdentityStrings.LOGGING_IN.format(currentAppUserID, newAppUserID))
+        val oldAppUserID = currentAppUserID
+        backend.logIn(
+            oldAppUserID,
+            newAppUserID,
+            { purchaserInfo, created ->
+                synchronized(this@IdentityManager) {
+                    log(
+                        LogIntent.USER,
+                        IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
+                    )
+                    deviceCache.clearCachesForAppUserID(oldAppUserID)
+                    subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+
+                    deviceCache.cacheAppUserID(newAppUserID)
+                    deviceCache.cachePurchaserInfo(newAppUserID, purchaserInfo)
+                }
+                onSuccess(purchaserInfo, created)
+            },
+            onError
+        )
+    }
+
     fun createAlias(
         newAppUserID: String,
         onSuccess: () -> Unit,
@@ -76,6 +115,18 @@ class IdentityManager(
         deviceCache.clearCachesForAppUserID(currentAppUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         deviceCache.cacheAppUserID(generateRandomID())
+    }
+
+    @Synchronized
+    fun logOut(): PurchasesError? {
+        if (currentUserIsAnonymous()) {
+            log(LogIntent.RC_ERROR, IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER)
+            return PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError)
+        }
+        deviceCache.clearLatestAttributionData(currentAppUserID)
+        reset()
+        log(LogIntent.USER, IdentityStrings.LOG_OUT_SUCCESSFUL)
+        return null
     }
 
     @Synchronized
