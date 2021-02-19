@@ -1014,7 +1014,7 @@ class BackendTest {
             newAppUserID,
             onLoginSuccessHandler,
             {
-                fail<String>("Should have called success")
+                fail("Should have called success")
             }
         )
         assertThat(receivedPurchaserInfo).isEqualTo(expectedPurchaserInfo)
@@ -1042,7 +1042,7 @@ class BackendTest {
             appUserID,
             newAppUserID,
             { _, _ ->
-                fail<String>("Should have called success")
+                fail("Should have called success")
             },
             onReceiveLoginErrorHandler
         )
@@ -1070,7 +1070,7 @@ class BackendTest {
             newAppUserID,
             onLoginSuccessHandler,
             {
-                fail<String>("Should have called success")
+                fail("Should have called success")
             }
         )
         assertThat(receivedCreated).isTrue()
@@ -1096,10 +1096,10 @@ class BackendTest {
             newAppUserID,
             onLoginSuccessHandler,
             {
-                fail<String>("Should have called success")
+                fail("Should have called success")
             }
         )
-        assertThat(receivedCreated).isEqualTo(false)
+        assertThat(receivedCreated).isFalse
     }
 
     private fun mockSkuDetails(
