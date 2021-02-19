@@ -35,7 +35,6 @@ import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.toHumanReadableDescription
-import com.revenuecat.purchases.common.toRevenueCatPurchaseDetails
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
