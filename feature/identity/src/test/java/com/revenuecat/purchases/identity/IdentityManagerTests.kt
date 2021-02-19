@@ -213,8 +213,7 @@ class IdentityManagerTests {
         var receivedCreated: Boolean? = null
         mockCachedAnonymousUser()
 
-        identityManager.logIn("new", {
-            purchaserInfo, created ->
+        identityManager.logIn("new", { purchaserInfo, created ->
             receivedPurchaserInfo = purchaserInfo
             receivedCreated = created
         }, { error -> receivedError = error })
