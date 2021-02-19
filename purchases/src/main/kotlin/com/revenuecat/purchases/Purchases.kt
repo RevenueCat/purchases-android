@@ -740,7 +740,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @Deprecated(
         "Use logIn instead",
-        ReplaceWith("Purchases.sharedInstance.logIn(newAppUserID, LogInCallback?")
+        ReplaceWith("Purchases.sharedInstance.logIn(newAppUserID, LogInCallback?)")
     )
     @JvmOverloads
     fun identify(
@@ -824,7 +824,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @Deprecated(
         "Use logOut instead",
-        ReplaceWith("Purchases.sharedInstance.logOut(ReceivePurchaserInfoListener")
+        ReplaceWith("Purchases.sharedInstance.logOut(ReceivePurchaserInfoListener?)")
     )
     @JvmOverloads
     fun reset(
