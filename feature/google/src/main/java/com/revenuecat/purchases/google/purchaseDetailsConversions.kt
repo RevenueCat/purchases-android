@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import org.json.JSONObject
 
 fun Purchase.toRevenueCatPurchaseDetails(
@@ -29,3 +31,22 @@ val PurchaseDetails.originalGooglePurchase: Purchase?
         this.signature
             ?.takeIf { this.purchaseType == PurchaseType.GOOGLE_PURCHASE }
             ?.let { signature -> Purchase(this.originalJson.toString(), signature) }
+
+fun PurchaseHistoryRecord.toRevenueCatPurchaseDetails(
+    type: ProductType
+): PurchaseDetails {
+    return PurchaseDetails(
+        orderId = null,
+        sku = this.sku,
+        type = type,
+        purchaseTime = this.purchaseTime,
+        purchaseToken = this.purchaseToken,
+        purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
+        isAutoRenewing = null,
+        signature = this.signature,
+        originalJson = JSONObject(this.originalJson),
+        presentedOfferingIdentifier = null,
+        storeUserID = null,
+        purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE
+    )
+}
