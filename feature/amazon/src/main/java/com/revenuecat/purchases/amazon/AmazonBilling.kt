@@ -195,7 +195,8 @@ internal class AmazonBilling constructor(
                         return@getMissingSkusForReceipts
                     }
 
-                    val purchasesByHashedToken = receipts.toHashMapOfPurchases(tokensToSkusMap, userData)
+                    val purchasesByHashedToken =
+                        receipts.toMapOfReceiptHashesToRestoredPurchases(tokensToSkusMap, userData)
 
                     onSuccess(purchasesByHashedToken)
                 }
@@ -204,7 +205,7 @@ internal class AmazonBilling constructor(
         )
     }
 
-    private fun List<Receipt>.toHashMapOfPurchases(
+    private fun List<Receipt>.toMapOfReceiptHashesToRestoredPurchases(
         tokensToSkusMap: Map<String, String>,
         userData: UserData
     ) = mapNotNull { receipt ->
