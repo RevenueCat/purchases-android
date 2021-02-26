@@ -61,7 +61,7 @@ class ProductDataHandler(
         }
 
         val requestId = response.requestId
-        val request = synchronized(this) { productDataRequests[requestId] }
+        val request = synchronized(this) { productDataRequests.remove(requestId) }
 
         if (request != null) {
             val responseIsSuccessful = response.requestStatus == ProductDataResponse.RequestStatus.SUCCESSFUL

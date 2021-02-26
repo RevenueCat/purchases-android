@@ -56,8 +56,8 @@ class PurchaseUpdatesHandler(
             }
         }
     }
-}
 
-private fun PurchasesErrorCallback.invokeWithStoreProblem(message: String) {
-    this(PurchasesError(PurchasesErrorCode.StoreProblemError, message))
+    private fun PurchasesErrorCallback.invokeWithStoreProblem(message: String) {
+        this(PurchasesError(PurchasesErrorCode.StoreProblemError, message))
+    }
 }

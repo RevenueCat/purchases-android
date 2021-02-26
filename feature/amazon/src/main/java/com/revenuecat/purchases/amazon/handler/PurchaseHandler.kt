@@ -38,15 +38,17 @@ class PurchaseHandler(
             presentedOfferingsByProductIdentifier[productDetails.sku] = presentedOfferingIdentifier
         }
 
-        val requestId = PurchasingService.purchase(productDetails.sku)
-        purchaseCallbacks[requestId] = onSuccess to onError
+        val requestId = purchasingServiceProvider.purchase(productDetails.sku)
+        synchronized(this) {
+            purchaseCallbacks[requestId] = onSuccess to onError
+        }
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
         log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
 
         val requestId = response.requestId
-        val callbacks = purchaseCallbacks.remove(requestId)
+        val callbacks = synchronized(this) { purchaseCallbacks.remove(requestId) }
 
         callbacks?.let { (onSuccess, onError) ->
             when (response.requestStatus) {
@@ -56,7 +58,7 @@ class PurchaseHandler(
                 PurchaseResponse.RequestStatus.INVALID_SKU -> onInvalidSku(onError)
                 PurchaseResponse.RequestStatus.ALREADY_PURCHASED -> onAlreadyPurchased(onError)
                 PurchaseResponse.RequestStatus.NOT_SUPPORTED -> onNotSupported(onError)
-                null -> onUnknownError(onError)
+                else -> onUnknownError(onError)
             }
         }
     }
