@@ -3,9 +3,6 @@ package com.revenuecat.purchases.amazon
 import android.net.Uri
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.toPurchasesError
-import org.json.JSONException
 import org.json.JSONObject
 
 /** @suppress */
@@ -49,11 +46,7 @@ class AmazonBackend(
                         if (error != null) {
                             onError(error)
                         } else {
-                            try {
-                                onSuccess(body)
-                            } catch (e: JSONException) {
-                                onError(e.toPurchasesError().also { errorLog(it) })
-                            }
+                            onSuccess(body)
                         }
                     }
                 }
