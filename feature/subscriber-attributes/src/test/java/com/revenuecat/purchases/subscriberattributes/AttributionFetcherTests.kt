@@ -6,6 +6,7 @@ import android.provider.Settings
 import android.util.Log
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import com.google.android.gms.common.GooglePlayServicesRepairableException
+import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic

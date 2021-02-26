@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.amazon.mocks
+package com.revenuecat.purchases.amazon.helpers
 
 import android.content.SharedPreferences
 import com.revenuecat.purchases.common.caching.DeviceCache

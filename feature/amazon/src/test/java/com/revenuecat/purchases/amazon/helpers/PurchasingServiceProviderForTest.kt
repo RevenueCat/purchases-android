@@ -1,9 +1,10 @@
-package com.revenuecat.purchases.amazon
+package com.revenuecat.purchases.amazon.helpers
 
 import android.content.Context
 import com.amazon.device.iap.PurchasingListener
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.RequestId
+import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 
 class PurchasingServiceProviderForTest : PurchasingServiceProvider {
 

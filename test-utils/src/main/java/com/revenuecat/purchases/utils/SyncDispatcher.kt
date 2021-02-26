@@ -1,4 +1,4 @@
-package com.revenuecat.purchases
+package com.revenuecat.purchases.utils
 
 import com.revenuecat.purchases.common.Dispatcher
 import io.mockk.mockk

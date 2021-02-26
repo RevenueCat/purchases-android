@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.amazon
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.amazon.mocks.MockDeviceCache
+import com.revenuecat.purchases.amazon.helpers.MockDeviceCache
 import com.revenuecat.purchases.utils.JSONObjectAssert
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
