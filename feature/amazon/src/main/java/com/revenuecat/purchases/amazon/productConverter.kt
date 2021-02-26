@@ -57,7 +57,7 @@ fun Product.toProductDetails(marketplace: String): ProductDetails {
         introductoryPricePeriod = null,
         introductoryPriceCycles = 0,
         iconUrl = smallIconUrl,
-        toJSON()
+        originalJson = toJSON()
     )
 }
 
