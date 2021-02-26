@@ -6,9 +6,9 @@ import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.RequestId
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.amazon.PurchasingServiceProviderForTest
-import com.revenuecat.purchases.amazon.dummyAmazonProduct
-import com.revenuecat.purchases.amazon.mocks.MockDeviceCache
+import com.revenuecat.purchases.amazon.helpers.MockDeviceCache
+import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
+import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.models.ProductDetails
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -217,6 +217,40 @@ class ProductDataHandlerTest {
 
         assertThat(receivedError).isNotNull
         assertThat(underTest.productDataCache).isEmpty()
+    }
+
+    @Test
+    fun `callbacks are invoked just once`() {
+        assertThat(underTest.productDataCache).isEmpty()
+
+        val marketPlace = "ES"
+
+        val expectedProductData = mapOf(
+            "sku_a" to dummyAmazonProduct(sku = "sku_a", price = "€3.00")
+        )
+
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getProductDataRequestId = dummyRequestId
+
+        var receivedCount = 0
+
+        underTest.getProductData(
+            expectedProductData.keys,
+            marketPlace,
+            onReceive = {
+                receivedCount++
+            },
+            onError = {
+                fail("should be success")
+            }
+        )
+
+        val response = getDummyProductDataResponse(dummyRequestId, productData = expectedProductData)
+
+        underTest.onProductDataResponse(response)
+        underTest.onProductDataResponse(response)
+
+        assertThat(receivedCount).isOne
     }
 }
 
