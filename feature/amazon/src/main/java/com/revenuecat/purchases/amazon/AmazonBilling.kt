@@ -2,7 +2,6 @@ package com.revenuecat.purchases.amazon
 
 import android.app.Activity
 import android.content.Context
-import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.ProductType
@@ -44,9 +43,11 @@ internal class AmazonBilling constructor(
     private val cache: AmazonCache,
     private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
     private val productDataHandler: ProductDataResponseListener = ProductDataHandler(purchasingServiceProvider),
-    private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(),
-    private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(),
-    private val userDataHandler: UserDataResponseListener = UserDataHandler()
+    private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(purchasingServiceProvider),
+    private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(
+        purchasingServiceProvider
+    ),
+    private val userDataHandler: UserDataResponseListener = UserDataHandler(purchasingServiceProvider)
 ) : BillingAbstract(),
     ProductDataResponseListener by productDataHandler,
     PurchaseResponseListener by purchaseHandler,
@@ -64,7 +65,7 @@ internal class AmazonBilling constructor(
     var connected = false
 
     override fun startConnection() {
-        PurchasingService.registerListener(applicationContext, this)
+        purchasingServiceProvider.registerListener(applicationContext, this)
         connected = true
     }
 
@@ -93,9 +94,12 @@ internal class AmazonBilling constructor(
         onReceive: ProductDetailsListCallback,
         onError: PurchasesErrorCallback
     ) {
-        userDataHandler.getUserData { userData ->
-            productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
-        }
+        userDataHandler.getUserData(
+            onSuccess = { userData ->
+                productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
+            },
+            onError
+        )
     }
 
     // endregion
@@ -110,7 +114,7 @@ internal class AmazonBilling constructor(
         if (purchase.purchaseState == RevenueCatPurchaseState.PENDING) return
 
         if (shouldTryToConsume) {
-            PurchasingService.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
+            purchasingServiceProvider.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
         }
 
         cache.addSuccessfullyPostedToken(purchase.purchaseToken)

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.amazon.handler
 
-import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
@@ -9,13 +8,16 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
+import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.strings.PurchaseStrings
 
-class PurchaseHandler : PurchaseResponseListener {
+class PurchaseHandler(
+    private val purchasingServiceProvider: PurchasingServiceProvider
+) : PurchaseResponseListener {
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
