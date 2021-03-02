@@ -18,31 +18,32 @@ class PurchasesError(
     }
 }
 
-enum class PurchasesErrorCode(val description: String) {
-    UnknownError("Unknown error."),
-    PurchaseCancelledError("Purchase was cancelled."),
-    StoreProblemError("There was a problem with the Play Store."),
-    PurchaseNotAllowedError("The device or user is not allowed to make the purchase."),
-    PurchaseInvalidError("One or more of the arguments provided are invalid."),
-    ProductNotAvailableForPurchaseError("The product is not available for purchase."),
-    ProductAlreadyPurchasedError("This product is already active for the user."),
-    ReceiptAlreadyInUseError("There is already another active subscriber using the same receipt."),
-    InvalidReceiptError("The receipt is not valid."),
-    MissingReceiptFileError("The receipt is missing."),
-    NetworkError("Error performing request."),
-    InvalidCredentialsError("There was a credentials issue. Check the underlying error for more details."),
-    UnexpectedBackendResponseError("Received malformed response from the backend."),
-    InvalidAppUserIdError("The app user id is not valid."),
-    OperationAlreadyInProgressError("The operation is already in progress."),
-    UnknownBackendError("There was an unknown backend error."),
-    InvalidAppleSubscriptionKeyError(
+@SuppressWarnings("MagicNumber")
+enum class PurchasesErrorCode(val code: Int, val description: String) {
+    UnknownError(0, "Unknown error."),
+    PurchaseCancelledError(1, "Purchase was cancelled."),
+    StoreProblemError(2, "There was a problem with the Play Store."),
+    PurchaseNotAllowedError(3, "The device or user is not allowed to make the purchase."),
+    PurchaseInvalidError(4, "One or more of the arguments provided are invalid."),
+    ProductNotAvailableForPurchaseError(5, "The product is not available for purchase."),
+    ProductAlreadyPurchasedError(6, "This product is already active for the user."),
+    ReceiptAlreadyInUseError(7, "There is already another active subscriber using the same receipt."),
+    InvalidReceiptError(8, "The receipt is not valid."),
+    MissingReceiptFileError(9, "The receipt is missing."),
+    NetworkError(10, "Error performing request."),
+    InvalidCredentialsError(11, "There was a credentials issue. Check the underlying error for more details."),
+    UnexpectedBackendResponseError(12, "Received malformed response from the backend."),
+    InvalidAppUserIdError(14, "The app user id is not valid."),
+    OperationAlreadyInProgressError(15, "The operation is already in progress."),
+    UnknownBackendError(16, "There was an unknown backend error."),
+    InvalidAppleSubscriptionKeyError(17,
         "Apple Subscription Key is invalid or not present. " +
             "In order to provide subscription offers, you must first generate a subscription key. " +
             "Please see https://docs.revenuecat.com/docs/ios-subscription-offers for more info."
     ),
-    IneligibleError("The User is ineligible for that action."),
-    InsufficientPermissionsError("App does not have sufficient permissions to make purchases."),
-    PaymentPendingError("The payment is pending."),
-    InvalidSubscriberAttributesError("One or more of the attributes sent could not be saved."),
-    LogOutWithAnonymousUserError("Called logOut but the current user is anonymous."),
+    IneligibleError(18, "The User is ineligible for that action."),
+    InsufficientPermissionsError(19, "App does not have sufficient permissions to make purchases."),
+    PaymentPendingError(20, "The payment is pending."),
+    InvalidSubscriberAttributesError(21, "One or more of the attributes sent could not be saved."),
+    LogOutWithAnonymousUserError(22, "Called logOut but the current user is anonymous."),
 }
