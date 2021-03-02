@@ -254,6 +254,20 @@ internal fun Purchases.logInWith(
 }
 
 /**
+ * This function will change the current appUserID.
+ * Typically this would be used after a log out to identify a new user without calling configure
+ * @param [onSuccess] Will be called after the call has completed.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+internal fun Purchases.logOutWith(
+    onError: ErrorFunction = ON_ERROR_STUB,
+    onSuccess: ReceivePurchaserInfoSuccessFunction
+) {
+    logOut(receivePurchaserInfoListener(onSuccess, onError))
+}
+
+/**
  * Resets the Purchases client clearing the save appUserID. This will generate a random user
  * id and save it in the cache.
  * @param [onSuccess] Will be called after the call has completed.
