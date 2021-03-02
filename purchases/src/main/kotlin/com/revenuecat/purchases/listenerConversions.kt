@@ -245,7 +245,7 @@ fun Purchases.identifyWith(
  * @param [onError] Will be called after the call has completed with an error.
  */
 @Suppress("unused")
-internal fun Purchases.logInWith(
+fun Purchases.logInWith(
     appUserID: String,
     onError: ErrorFunction = ON_ERROR_STUB,
     onSuccess: ReceiveLogInSuccessFunction
@@ -260,7 +260,7 @@ internal fun Purchases.logInWith(
  * @param [onError] Will be called after the call has completed with an error.
  */
 @Suppress("unused")
-internal fun Purchases.logOutWith(
+fun Purchases.logOutWith(
     onError: ErrorFunction = ON_ERROR_STUB,
     onSuccess: ReceivePurchaserInfoSuccessFunction
 ) {
