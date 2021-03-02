@@ -967,7 +967,7 @@ class BackendTest {
             "new_app_user_id" to newAppUserID
         )
         mockResponse(
-            "/subscribers/$appUserID/login",
+            "/subscribers/$appUserID/identify",
             body,
             201,
             null,
@@ -984,7 +984,7 @@ class BackendTest {
         )
         verify(exactly = 1) {
             mockClient.performRequest(
-                "/subscribers/$appUserID/login",
+                "/subscribers/$appUserID/identify",
                 body,
                 any()
             )
@@ -999,7 +999,7 @@ class BackendTest {
         )
         val resultBody = Responses.validFullPurchaserResponse
         mockResponse(
-            "/subscribers/$appUserID/login",
+            "/subscribers/$appUserID/identify",
             requestBody,
             responseCode = 201,
             clientException = null,
@@ -1029,7 +1029,7 @@ class BackendTest {
         )
         val resultBody = "{}"
         mockResponse(
-            "/subscribers/$appUserID/login",
+            "/subscribers/$appUserID/identify",
             requestBody,
             responseCode = 201,
             clientException = null,
@@ -1058,7 +1058,7 @@ class BackendTest {
         )
         val resultBody = Responses.validFullPurchaserResponse
         mockResponse(
-            "/subscribers/$appUserID/login",
+            "/subscribers/$appUserID/identify",
             requestBody,
             responseCode = 201,
             clientException = null,
@@ -1084,7 +1084,7 @@ class BackendTest {
         )
         val resultBody = Responses.validFullPurchaserResponse
         mockResponse(
-            "/subscribers/$appUserID/login",
+            "/subscribers/$appUserID/identify",
             requestBody,
             responseCode = 200,
             clientException = null,
