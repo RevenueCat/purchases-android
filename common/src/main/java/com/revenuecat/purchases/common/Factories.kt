@@ -130,20 +130,37 @@ private fun JSONObject.buildEntitlementInfo(
     val expirationDate = optDate("expires_date")
     val unsubscribeDetectedAt = productData.optDate("unsubscribe_detected_at")
     val billingIssueDetectedAt = productData.optDate("billing_issues_detected_at")
+
+    val store = productData.getStore("store")
+
     return EntitlementInfo(
         identifier = identifier,
         isActive = expirationDate == null || expirationDate.after(requestDate ?: Date()),
-        willRenew = expirationDate == null || (unsubscribeDetectedAt == null && billingIssueDetectedAt == null),
+        willRenew = getWillRenew(store, expirationDate, unsubscribeDetectedAt,
+            billingIssueDetectedAt),
         periodType = productData.optPeriodType("period_type"),
         latestPurchaseDate = getDate("purchase_date"),
         originalPurchaseDate = productData.getDate("original_purchase_date"),
         expirationDate = expirationDate,
-        store = productData.getStore("store"),
+        store = store,
         productIdentifier = getString("product_identifier"),
         isSandbox = productData.getBoolean("is_sandbox"),
         unsubscribeDetectedAt = unsubscribeDetectedAt,
         billingIssueDetectedAt = billingIssueDetectedAt
     )
+}
+
+private fun getWillRenew(
+    store: Store,
+    expirationDate: Date?,
+    unsubscribeDetectedAt: Date?,
+    billingIssueDetectedAt: Date?
+): Boolean {
+    val isPromo = store == Store.PROMOTIONAL
+    val isLifetime = expirationDate == null
+    val hasUnsubscribed = unsubscribeDetectedAt != null
+    val hasBillingIssues = billingIssueDetectedAt != null
+    return !(isPromo || isLifetime || hasUnsubscribed || hasBillingIssues)
 }
 
 fun JSONObject.createOfferings(products: Map<String, SkuDetails>): Offerings {
