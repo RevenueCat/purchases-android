@@ -96,7 +96,7 @@ class EntitlementInfosTests {
         verifyProduct()
 
         verifyEntitlementActive(entitlement = "lifetime_cat")
-        verifyRenewal(entitlement = "lifetime_cat")
+        verifyRenewal(willRenew = false, entitlement = "lifetime_cat")
         verifyPeriodType(entitlement = "lifetime_cat")
         verifyStore(entitlement = "lifetime_cat")
         verifySandbox(entitlement = "lifetime_cat")
@@ -279,7 +279,7 @@ class EntitlementInfosTests {
 
         verifySubscriberInfo()
         verifyEntitlementActive()
-        verifyRenewal()
+        verifyRenewal(willRenew = false)
         verifyPeriodType()
         verifyStore()
         verifySandbox()
@@ -493,7 +493,7 @@ class EntitlementInfosTests {
 
         verifySubscriberInfo()
         verifyEntitlementActive()
-        verifyRenewal()
+        verifyRenewal(willRenew = false)
         verifyPeriodType()
         verifyStore()
         verifySandbox()
@@ -986,6 +986,33 @@ class EntitlementInfosTests {
         assertThat(x.hashCode() == y.hashCode())
     }
 
+    @Test
+    fun `promos won't renew`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2221-01-10T02:35:25Z")
+                    put("product_identifier", "rc_promo_pro_cat_lifetime")
+                    put("purchase_date", "2021-02-27T02:35:25Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("rc_promo_pro_cat_lifetime", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2221-01-10T02:35:25Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2021-02-27T02:35:25Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2021-02-27T02:35:25Z")
+                    put("store", "promotional")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            }
+        )
+
+        verifyRenewal(willRenew = false)
+    }
+
     private fun verifySubscriberInfo() {
         val subscriberInfo = response.buildPurchaserInfo()
 
@@ -1008,7 +1035,7 @@ class EntitlementInfosTests {
     }
 
     private fun verifyRenewal(
-        matcher: Boolean = true,
+        willRenew: Boolean = true,
         unsubscribeDetectedAt: Date? = null,
         billingIssueDetectedAt: Date? = null,
         entitlement: String = "pro_cat"
@@ -1016,7 +1043,7 @@ class EntitlementInfosTests {
         val subscriberInfo = response.buildPurchaserInfo()
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
-        assertThat(proCat.willRenew).isEqualTo(matcher)
+        assertThat(proCat.willRenew).isEqualTo(willRenew)
         assertThat(proCat.unsubscribeDetectedAt).isEqualTo(unsubscribeDetectedAt)
         assertThat(proCat.billingIssueDetectedAt).isEqualTo(billingIssueDetectedAt)
     }
