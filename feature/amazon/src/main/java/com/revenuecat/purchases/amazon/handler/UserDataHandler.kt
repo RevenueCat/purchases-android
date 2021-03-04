@@ -42,7 +42,6 @@ class UserDataHandler(
         onSuccess: (UserData) -> Unit,
         onError: PurchasesErrorCallback
     ) {
-        // TODO: add cache
         val userDataRequestId = purchasingServiceProvider.getUserData()
         requests[userDataRequestId] = onSuccess to onError
     }

@@ -93,7 +93,7 @@ class PurchaseUpdatesHandlerTest {
     }
 
     @Test
-    fun `successfully queries purchases and there are no receipts`() {
+    fun `if there are no receipts when successfully querying purchases, it returns an emtpy list`() {
         val dummyRequestId = "a_request_id"
         purchasingServiceProvider.getPurchaseUpdatesRequestId = dummyRequestId
 
@@ -113,7 +113,7 @@ class PurchaseUpdatesHandlerTest {
     }
 
     @Test
-    fun `FAILED response status when querying purchases`() {
+    fun `FAILED response status when querying purchases returns a store problem error`() {
         val dummyRequestId = "a_request_id"
         purchasingServiceProvider.getPurchaseUpdatesRequestId = dummyRequestId
 
@@ -135,7 +135,7 @@ class PurchaseUpdatesHandlerTest {
     }
 
     @Test
-    fun `NOT_SUPPORTED response status when querying purchases`() {
+    fun `NOT_SUPPORTED response status when querying purchases returns a store problem error`() {
         val dummyRequestId = "a_request_id"
         purchasingServiceProvider.getPurchaseUpdatesRequestId = dummyRequestId
 

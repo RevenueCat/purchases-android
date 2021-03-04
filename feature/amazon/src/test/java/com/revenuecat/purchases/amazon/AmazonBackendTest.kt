@@ -67,13 +67,8 @@ class AmazonBackendTest {
         )
     )
 
-    @Before
-    fun setup() {
-        receivedOnSuccess = null
-    }
-
     @Test
-    fun `successfully getting Amazon receipt data`() {
+    fun `When getting Amazon receipt data is successful, onSuccess is called`() {
         every {
             mockClient.performRequest(
                 path = "/receipts/amazon/store_user_id/receipt_id",
@@ -85,15 +80,15 @@ class AmazonBackendTest {
         underTest.getAmazonReceiptData(
             receiptId = "receipt_id",
             storeUserID = "store_user_id",
-            expectedOnSuccess,
-            unexpectedOnError
+            onSuccess = expectedOnSuccess,
+            onError = unexpectedOnError
         )
 
         assertThat(receivedOnSuccess!!).isNotNull
     }
 
     @Test
-    fun `unsuccessful result getting Amazon receipt data`() {
+    fun `when Amazon receipt data call returns an error, errors are passed along`() {
         every {
             mockClient.performRequest(
                 path = "/receipts/amazon/store_user_id/receipt_id",
@@ -105,8 +100,8 @@ class AmazonBackendTest {
         underTest.getAmazonReceiptData(
             receiptId = "receipt_id",
             storeUserID = "store_user_id",
-            unexpectedOnSuccess,
-            expectedOnError
+            onSuccess = unexpectedOnSuccess,
+            onError = expectedOnError
         )
 
         assertThat(receivedError!!).isNotNull
@@ -114,7 +109,7 @@ class AmazonBackendTest {
     }
 
     @Test
-    fun `error when performing Amazon receipt data call`() {
+    fun `when Amazon receipt data call fails, errors are passed along`() {
         every {
             mockClient.performRequest(
                 path = "/receipts/amazon/store_user_id/receipt_id",
@@ -126,8 +121,8 @@ class AmazonBackendTest {
         underTest.getAmazonReceiptData(
             receiptId = "receipt_id",
             storeUserID = "store_user_id",
-            unexpectedOnSuccess,
-            expectedOnError
+            onSuccess = unexpectedOnSuccess,
+            onError = expectedOnError
         )
 
         assertThat(receivedError!!).isNotNull

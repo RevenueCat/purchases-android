@@ -110,9 +110,13 @@ class ProductConverterTest {
     fun `originalJSON is correctly assigned`() {
         val product = dummyAmazonProduct()
         val productDetails = product.toProductDetails("US")
-        assertThat(productDetails.originalJson.length()).isEqualTo(product.toJSON().length())
-        productDetails.originalJson.keys().forEach {
-            assertThat(productDetails.originalJson[it]).isEqualTo(product.toJSON()[it])
+
+        val receivedJSON = productDetails.originalJson
+        val expectedJSON = product.toJSON()
+
+        assertThat(receivedJSON.length()).isEqualTo(expectedJSON.length())
+        receivedJSON.keys().forEach {
+            assertThat(receivedJSON[it]).isEqualTo(expectedJSON[it])
         }
     }
 

@@ -56,9 +56,9 @@ class ProductDataHandlerTest {
         )
 
         assertThat(receivedProductList).isNotNull
-        expectedSkus.forEach { expectedSku ->
-            assertThat(receivedProductList!!.firstOrNull { expectedSku == it.sku }).isNotNull
-        }
+
+        val receivedSkus = receivedProductList!!.map { it.sku }
+        assertThat(receivedSkus).isEqualTo(expectedSkus)
 
         assertThat(purchasingServiceProvider.getProductDataCalled).isFalse
     }
@@ -91,15 +91,16 @@ class ProductDataHandlerTest {
 
         underTest.onProductDataResponse(
             getDummyProductDataResponse(
-                dummyRequestId,
+                requestId = dummyRequestId,
                 productData = expectedProductData
             )
         )
 
         assertThat(receivedProductList).isNotNull
-        expectedProductData.keys.forEach { expectedSku ->
-            assertThat(receivedProductList!!.firstOrNull { expectedSku == it.sku }).isNotNull
-        }
+
+        val expectedSkus = expectedProductData.keys
+        val receivedSkus = receivedProductList!!.map { it.sku }
+        assertThat(receivedSkus).isEqualTo(expectedSkus)
 
         assertThat(purchasingServiceProvider.getProductDataCalled).isTrue
     }
@@ -131,18 +132,75 @@ class ProductDataHandlerTest {
 
         underTest.onProductDataResponse(
             getDummyProductDataResponse(
-                dummyRequestId,
+                requestId = dummyRequestId,
                 productData = expectedProductData
             )
         )
 
-        assertThat(receivedProductList).isNotNull
-        expectedProductData.keys.forEach { expectedSku ->
-            assertThat(receivedProductList!!.firstOrNull { expectedSku == it.sku }).isNotNull
-        }
+        val expectedSkus = expectedProductData.keys
+        val receivedSkus = receivedProductList!!.map { it.sku }
+        assertThat(receivedSkus).isEqualTo(expectedSkus)
 
         assertThat(underTest.productDataCache).isNotEmpty
         assertThat(underTest.productDataCache).isEqualTo(expectedProductData)
+    }
+
+    @Test
+    fun `Product data cache works and a second call to get the same data hits the cache`() {
+        assertThat(underTest.productDataCache).isEmpty()
+
+        val expectedProductData = mapOf(
+            "sku_a" to dummyAmazonProduct(sku = "sku_a"),
+            "sku_b" to dummyAmazonProduct(sku = "sku_b")
+        )
+
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getProductDataRequestId = dummyRequestId
+
+        var receivedProductList: List<ProductDetails>? = null
+
+        underTest.getProductData(
+            expectedProductData.keys,
+            "US",
+            onReceive = {
+                receivedProductList = it
+            },
+            onError = {
+                fail("should be success")
+            }
+        )
+
+        underTest.onProductDataResponse(
+            getDummyProductDataResponse(
+                requestId = dummyRequestId,
+                productData = expectedProductData
+            )
+        )
+
+        val secondDummyRequestId = "a_second_request_id"
+        purchasingServiceProvider.getProductDataRequestId = secondDummyRequestId
+
+        var secondReceivedProductList: List<ProductDetails>? = null
+
+        underTest.getProductData(expectedProductData.keys, "US",
+            onReceive = {
+                secondReceivedProductList = it
+            },
+            onError = {
+                fail("should be success")
+            }
+        )
+
+        underTest.onProductDataResponse(
+            getDummyProductDataResponse(
+                requestId = secondDummyRequestId,
+                productData = expectedProductData
+            )
+        )
+
+        assertThat(secondReceivedProductList).isEqualTo(receivedProductList)
+
+        assertThat(purchasingServiceProvider.getProductDataCalled).isEqualTo(1)
     }
 
     @Test
@@ -173,7 +231,7 @@ class ProductDataHandlerTest {
 
         underTest.onProductDataResponse(
             getDummyProductDataResponse(
-                dummyRequestId,
+                requestId = dummyRequestId,
                 productData = expectedProductData
             )
         )
@@ -209,7 +267,7 @@ class ProductDataHandlerTest {
 
         underTest.onProductDataResponse(
             getDummyProductDataResponse(
-                dummyRequestId,
+                requestId = dummyRequestId,
                 productData = emptyMap(),
                 requestStatus = ProductDataResponse.RequestStatus.FAILED
             )
@@ -245,7 +303,10 @@ class ProductDataHandlerTest {
             }
         )
 
-        val response = getDummyProductDataResponse(dummyRequestId, productData = expectedProductData)
+        val response = getDummyProductDataResponse(
+            requestId = dummyRequestId,
+            productData = expectedProductData
+        )
 
         underTest.onProductDataResponse(response)
         underTest.onProductDataResponse(response)
@@ -255,13 +316,13 @@ class ProductDataHandlerTest {
 }
 
 private fun getDummyProductDataResponse(
-    expectedRequestId: String = "${System.currentTimeMillis()}",
+    requestId: String = "${System.currentTimeMillis()}",
     unavailableSkus: Set<String> = emptySet(),
     requestStatus: ProductDataResponse.RequestStatus = ProductDataResponse.RequestStatus.SUCCESSFUL,
     productData: Map<String, Product> = mapOf("sku_a" to dummyAmazonProduct())
 ): ProductDataResponse {
     val builder = ProductDataResponseBuilder()
-        .setRequestId(RequestId.fromString(expectedRequestId))
+        .setRequestId(RequestId.fromString(requestId))
         .setUnavailableSkus(unavailableSkus)
         .setRequestStatus(requestStatus)
         .setProductData(productData)

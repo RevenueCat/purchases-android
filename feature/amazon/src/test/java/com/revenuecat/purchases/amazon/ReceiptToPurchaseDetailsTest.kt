@@ -206,10 +206,12 @@ class ReceiptToPurchaseDetailsTest {
             storeUserID = "store_user_id"
         )
 
-        assertThat(purchaseDetails.originalJson.length()).isEqualTo(receipt.toJSON().length())
+        val receivedJSON = purchaseDetails.originalJson
+        val expectedJSON = receipt.toJSON()
+        assertThat(receivedJSON.length()).isEqualTo(expectedJSON.length())
 
-        purchaseDetails.originalJson.keys().forEach {
-            assertThat(purchaseDetails.originalJson[it]).isEqualTo(receipt.toJSON()[it])
+        receivedJSON.keys().forEach {
+            assertThat(receivedJSON[it]).isEqualTo(expectedJSON[it])
         }
     }
 

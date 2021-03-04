@@ -15,7 +15,7 @@ class PurchasingServiceProviderForTest : PurchasingServiceProvider {
     internal var getPurchaseRequestId: String? = null
     internal var getPurchaseUpdatesRequestId: String? = null
 
-    internal var getProductDataCalled: Boolean = false
+    internal var getProductDataCalled: Int = 0
     internal var getUserDataCalled: Boolean = false
     internal var purchaseCalled: Boolean = false
     internal var getPurchaseUpdatesCalled: Boolean = false
@@ -31,7 +31,7 @@ class PurchasingServiceProviderForTest : PurchasingServiceProvider {
     override fun getProductData(
         skus: Set<String>
     ): RequestId {
-        getProductDataCalled = true
+        getProductDataCalled++
         return RequestId.fromString(getProductDataRequestId ?: "${System.currentTimeMillis()}")
     }
 

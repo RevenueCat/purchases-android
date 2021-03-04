@@ -39,9 +39,7 @@ class PurchaseHandler(
         }
 
         val requestId = purchasingServiceProvider.purchase(productDetails.sku)
-        synchronized(this) {
-            purchaseCallbacks[requestId] = onSuccess to onError
-        }
+        purchaseCallbacks[requestId] = onSuccess to onError
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {

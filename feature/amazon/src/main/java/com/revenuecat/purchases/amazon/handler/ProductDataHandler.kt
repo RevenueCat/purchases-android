@@ -46,9 +46,7 @@ class ProductDataHandler(
                 handleSuccessfulProductDataResponse(cachedProducts, marketplace, onReceive)
             } else {
                 val productDataRequestId = purchasingServiceProvider.getProductData(skus)
-                synchronized(this) {
-                    productDataRequests[productDataRequestId] = Request(skus.toList(), marketplace, onReceive, onError)
-                }
+                productDataRequests[productDataRequestId] = Request(skus.toList(), marketplace, onReceive, onError)
             }
         }
     }

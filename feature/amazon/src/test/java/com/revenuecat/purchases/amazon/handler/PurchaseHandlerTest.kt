@@ -54,7 +54,7 @@ class PurchaseHandlerTest {
     }
 
     @Test
-    fun `making a successful purchase`() {
+    fun `making a successful purchase returns the right values`() {
         val dummyRequestId = "a_request_id"
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
