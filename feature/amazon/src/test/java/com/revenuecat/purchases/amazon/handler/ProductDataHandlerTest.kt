@@ -58,7 +58,7 @@ class ProductDataHandlerTest {
         assertThat(receivedProductList).isNotNull
 
         val receivedSkus = receivedProductList!!.map { it.sku }
-        assertThat(receivedSkus).isEqualTo(expectedSkus)
+        assertThat(receivedSkus).hasSameElementsAs(expectedSkus)
 
         assertThat(purchasingServiceProvider.getProductDataCalledTimes).isZero()
     }
@@ -100,7 +100,7 @@ class ProductDataHandlerTest {
 
         val expectedSkus = expectedProductData.keys
         val receivedSkus = receivedProductList!!.map { it.sku }
-        assertThat(receivedSkus).isEqualTo(expectedSkus)
+        assertThat(receivedSkus).hasSameElementsAs(expectedSkus)
 
         assertThat(purchasingServiceProvider.getProductDataCalledTimes).isOne()
     }
@@ -139,7 +139,7 @@ class ProductDataHandlerTest {
 
         val expectedSkus = expectedProductData.keys
         val receivedSkus = receivedProductList!!.map { it.sku }
-        assertThat(receivedSkus).isEqualTo(expectedSkus)
+        assertThat(receivedSkus).hasSameElementsAs(expectedSkus)
 
         assertThat(underTest.productDataCache).isNotEmpty
         assertThat(underTest.productDataCache).isEqualTo(expectedProductData)
@@ -198,7 +198,7 @@ class ProductDataHandlerTest {
             )
         )
 
-        assertThat(secondReceivedProductList).isEqualTo(receivedProductList)
+        assertThat(secondReceivedProductList).hasSameElementsAs(receivedProductList)
 
         assertThat(purchasingServiceProvider.getProductDataCalledTimes).isEqualTo(1)
     }
