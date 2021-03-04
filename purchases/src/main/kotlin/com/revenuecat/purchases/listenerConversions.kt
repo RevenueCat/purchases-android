@@ -245,12 +245,26 @@ fun Purchases.identifyWith(
  * @param [onError] Will be called after the call has completed with an error.
  */
 @Suppress("unused")
-fun Purchases.logInWith(
+internal fun Purchases.logInWith(
     appUserID: String,
     onError: ErrorFunction = ON_ERROR_STUB,
     onSuccess: ReceiveLogInSuccessFunction
 ) {
     logIn(appUserID, logInSuccessListener(onSuccess, onError))
+}
+
+/**
+ * Logs out the Purchases client clearing the save appUserID. This will generate a random user
+ * id and save it in the cache.
+ * @param [onSuccess] Will be called after the call has completed.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+internal fun Purchases.logOutWith(
+    onError: ErrorFunction = ON_ERROR_STUB,
+    onSuccess: ReceivePurchaserInfoSuccessFunction
+) {
+    logOut(receivePurchaserInfoListener(onSuccess, onError))
 }
 
 /**
