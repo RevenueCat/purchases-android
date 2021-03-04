@@ -341,7 +341,7 @@ class Backend(
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPClient.Result {
                 return httpClient.performRequest(
-                    "/subscribers/" + encode(appUserID) + "/login",
+                    "/subscribers/" + encode(appUserID) + "/identify",
                     mapOf("new_app_user_id" to newAppUserID),
                     authenticationHeaders
                 )
