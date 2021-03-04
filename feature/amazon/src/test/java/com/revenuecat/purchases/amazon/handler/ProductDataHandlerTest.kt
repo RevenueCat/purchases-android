@@ -60,7 +60,7 @@ class ProductDataHandlerTest {
         val receivedSkus = receivedProductList!!.map { it.sku }
         assertThat(receivedSkus).isEqualTo(expectedSkus)
 
-        assertThat(purchasingServiceProvider.getProductDataCalled).isFalse
+        assertThat(purchasingServiceProvider.getProductDataCalledTimes).isZero()
     }
 
     @Test
@@ -102,7 +102,7 @@ class ProductDataHandlerTest {
         val receivedSkus = receivedProductList!!.map { it.sku }
         assertThat(receivedSkus).isEqualTo(expectedSkus)
 
-        assertThat(purchasingServiceProvider.getProductDataCalled).isTrue
+        assertThat(purchasingServiceProvider.getProductDataCalledTimes).isOne()
     }
 
     @Test
@@ -200,7 +200,7 @@ class ProductDataHandlerTest {
 
         assertThat(secondReceivedProductList).isEqualTo(receivedProductList)
 
-        assertThat(purchasingServiceProvider.getProductDataCalled).isEqualTo(1)
+        assertThat(purchasingServiceProvider.getProductDataCalledTimes).isEqualTo(1)
     }
 
     @Test
