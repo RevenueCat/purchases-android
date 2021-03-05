@@ -62,7 +62,7 @@ commands:
     steps:
       - run:
           name: Setup Git config
-          comman: |
+          command: |
             git config user.email "ops@revenuecat.com"
             git config user.name "revenuecat-ops"
 
