@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/navigation_weather"
+        android:icon="@drawable/ic_weather_black_24dp"
+        android:title="@string/tab_weather" />
+
+    <item
+        android:id="@+id/navigation_user"
+        android:icon="@drawable/ic_user_black_24dp"
+        android:title="@string/tab_user" />
+
+</menu>
