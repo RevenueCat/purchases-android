@@ -58,6 +58,26 @@ commands:
             echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
             --export-secret-keys > /home/circleci/.gnupg/secring.gpg
 
+  trust-github-key:
+    steps:
+      - run:
+          name: Trust GitHub key
+          command: |
+            for ip in $(dig @8.8.8.8 github.com +short); \
+            do ssh-keyscan github.com,$ip; \
+            ssh-keyscan $ip; \
+            done 2>/dev/null >> ~/.ssh/known_hosts
+
+ install-gems:
+    steps:
+      - restore_cache:
+          key: 1-gems-{{ checksum "Gemfile.lock" }}
+      - run: bundle check || bundle install --path vendor/bundle
+      - save_cache:
+          key: 1-gems-{{ checksum "Gemfile.lock" }}
+          paths:
+            - vendor/bundle
+
 jobs:
 
   test:
@@ -100,17 +120,12 @@ jobs:
           name: Invalidate CloudFront caches
           command: aws cloudfront create-invalidation --distribution-id EPTW7F3CB566V --paths "/*"
 
-  deploy:
+  make-release:
     executor: android-executor
     steps:
       - checkout
-      - restore_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-      - run: bundle check || bundle install --path vendor/bundle
-      - save_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-          paths:
-            - vendor/bundle
+      - trust-github-key
+      - install-gems
       - prepare-signing-key
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
@@ -124,6 +139,16 @@ jobs:
             fi
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
+
+  prepare-next-version:
+    executor: android-executor
+    steps:
+      - checkout
+      - install-gems
+      - trust-github-key
+      - run:
+          name: Prepare next version
+          command: bundle exec fastlane prepare_next_version
 
   deploy-snapshot:
     executor: android-executor
@@ -257,7 +282,8 @@ workflows:
 
   deploy:
     jobs:
-      - deploy: *release-tags
+      - make-release: *release-tags
+      - prepare-next-version: *release-tags
       - deploy-snapshot:
           filters:
             branches:
