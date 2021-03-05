@@ -33,13 +33,12 @@ class PurchaseHandler(
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(productDetails.sku))
 
+        val requestId = purchasingServiceProvider.purchase(productDetails.sku)
         synchronized(this@PurchaseHandler) {
+            purchaseCallbacks[requestId] = onSuccess to onError
             productTypes[productDetails.sku] = productDetails.type
             presentedOfferingsByProductIdentifier[productDetails.sku] = presentedOfferingIdentifier
         }
-
-        val requestId = purchasingServiceProvider.purchase(productDetails.sku)
-        purchaseCallbacks[requestId] = onSuccess to onError
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
