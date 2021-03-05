@@ -68,7 +68,7 @@ commands:
             ssh-keyscan $ip; \
             done 2>/dev/null >> ~/.ssh/known_hosts
 
- install-gems:
+  install-gems:
     steps:
       - restore_cache:
           key: 1-gems-{{ checksum "Gemfile.lock" }}
