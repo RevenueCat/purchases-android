@@ -72,19 +72,19 @@ platform :android do
   lane :deploy do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
     puts "Deploying #{version}"
-#     gradle(
-#       tasks: [
-#           "androidSourcesJar", "androidJavadocsJar", "uploadArchives"
-#       ],
-#       properties: {
-#         "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
-#         "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
-#         "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
-#         "SONATYPE_NEXUS_USERNAME" => ENV['SONATYPE_NEXUS_USERNAME'],
-#         "SONATYPE_NEXUS_PASSWORD" => ENV['SONATYPE_NEXUS_PASSWORD'],
-#         "RELEASE_SIGNING_ENABLED" => true,
-#       }
-#     )
+    gradle(
+      tasks: [
+          "androidSourcesJar", "androidJavadocsJar", "uploadArchives"
+      ],
+      properties: {
+        "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
+        "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
+        "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
+        "SONATYPE_NEXUS_USERNAME" => ENV['SONATYPE_NEXUS_USERNAME'],
+        "SONATYPE_NEXUS_PASSWORD" => ENV['SONATYPE_NEXUS_PASSWORD'],
+        "RELEASE_SIGNING_ENABLED" => true,
+      }
+    )
     github_release(version: version)
   end
 

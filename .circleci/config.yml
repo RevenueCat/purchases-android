@@ -292,10 +292,8 @@ workflows:
 
   deploy:
     jobs:
-#      - make-release: *release-tags
-      - make-release
-#      - prepare-next-version: *release-tags
-      - prepare-next-version
+      - make-release: *release-tags
+      - prepare-next-version: *release-tags
       - deploy-snapshot:
           filters:
             branches:
