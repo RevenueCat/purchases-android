@@ -46,6 +46,11 @@ Deploy a Snapshot release
 fastlane android deploy
 ```
 Deploy a release
+### android prepare_next_version
+```
+fastlane android prepare_next_version
+```
+Prepare next version
 
 ----
 
