@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">MagicWeatherKotlin</string>
+
+    <string name="title_weather">✨ Magic Weather</string>
+    <string name="tab_weather">Weather</string>
+
+    <string name="title_user">User</string>
+    <string name="tab_user">User</string>
+
+    <string name="title_paywall">Paywall</string>
+
+</resources>
