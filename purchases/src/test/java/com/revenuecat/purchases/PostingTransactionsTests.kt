@@ -16,6 +16,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk

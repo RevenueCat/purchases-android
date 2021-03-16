@@ -4,6 +4,7 @@ object AmazonStrings {
     const val REQUESTING_PRODUCTS = "Requesting Amazon products with identifiers: %s"
     const val PRODUCT_CHANGES_NOT_SUPPORTED = "Amazon doesn't support product changes"
     const val PRODUCTS_REQUEST_FINISHED = "Products request finished with result %s"
+    const val USER_DATA_REQUEST_FINISHED = "User data request finished with result %s"
     const val PRODUCTS_REQUEST_UNAVAILABLE = "Unavailable products: %s"
     const val RETRIEVED_PRODUCT_DATA = "Retrieved productData: %s"
     const val RETRIEVED_PRODUCT_DATA_EMPTY = "Product data is empty"
@@ -23,7 +24,12 @@ object AmazonStrings {
     const val ERROR_FINDING_RECEIPT_SKU = "Couldn't find sku for token %s"
     const val ERROR_FAILED_PURCHASES_UPDATES = "Failed to get purchase updates."
     const val ERROR_UNSUPPORTED_PURCHASES_UPDATES =
-        "Failed to get purchase updates. Call is not supported. Request will retry."
+        "Failed to get purchase updates. Call is not supported."
     const val ERROR_PURCHASES_UPDATES_STORE_PROBLEM =
         "Failed to get purchase updates. There was an Amazon store problem."
+    const val ERROR_FAILED_USER_DATA = "Failed to get user data."
+    const val ERROR_UNSUPPORTED_USER_DATA =
+        "Failed to get user data. Call is not supported."
+    const val ERROR_USER_DATA_STORE_PROBLEM =
+        "Failed to get user data. There was an Amazon store problem."
 }

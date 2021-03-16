@@ -2,7 +2,6 @@ package com.revenuecat.purchases.amazon
 
 import android.app.Activity
 import android.content.Context
-import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.ProductType
@@ -42,10 +41,13 @@ internal class AmazonBilling constructor(
     private val applicationContext: Context,
     private val amazonBackend: AmazonBackend,
     private val cache: AmazonCache,
-    private val productDataHandler: ProductDataResponseListener = ProductDataHandler(),
-    private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(),
-    private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(),
-    private val userDataHandler: UserDataResponseListener = UserDataHandler()
+    private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
+    private val productDataHandler: ProductDataResponseListener = ProductDataHandler(purchasingServiceProvider),
+    private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(purchasingServiceProvider),
+    private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(
+        purchasingServiceProvider
+    ),
+    private val userDataHandler: UserDataResponseListener = UserDataHandler(purchasingServiceProvider)
 ) : BillingAbstract(),
     ProductDataResponseListener by productDataHandler,
     PurchaseResponseListener by purchaseHandler,
@@ -63,7 +65,7 @@ internal class AmazonBilling constructor(
     var connected = false
 
     override fun startConnection() {
-        PurchasingService.registerListener(applicationContext, this)
+        purchasingServiceProvider.registerListener(applicationContext, this)
         connected = true
     }
 
@@ -75,54 +77,13 @@ internal class AmazonBilling constructor(
         onReceivePurchaseHistory: (List<PurchaseDetails>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     ) {
-        purchaseUpdatesHandler.queryPurchases(
-            onSuccess = { receipts, userData ->
-                if (receipts.isEmpty()) {
-                    onReceivePurchaseHistory(emptyList())
-                    return@queryPurchases
-                }
-                getMissingSkusForReceipts(
-                    amazonUserID = userData.userId,
-                    receipts
-                ) { tokensToSkusMap, errors ->
-                    logErrorsIfAny(errors)
-
-                    if (tokensToSkusMap.isEmpty()) {
-                        val error = PurchasesError(
-                            PurchasesErrorCode.InvalidReceiptError,
-                            AmazonStrings.ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID
-                        )
-                        onReceivePurchaseHistoryError(error)
-                        return@getMissingSkusForReceipts
-                    }
-
-                    val purchaseHistoryRecordWrappers =
-                        receipts.toPurchaseHistoryRecordWrappers(tokensToSkusMap, userData)
-
-                    onReceivePurchaseHistory(purchaseHistoryRecordWrappers)
-                }
+        queryPurchases(
+            appUserID,
+            onSuccess = {
+                onReceivePurchaseHistory(it.values.toList())
             },
             onReceivePurchaseHistoryError
         )
-    }
-
-    private fun List<Receipt>.toPurchaseHistoryRecordWrappers(
-        tokensToSkusMap: Map<String, String>,
-        userData: UserData
-    ): List<PurchaseDetails> {
-        return this.mapNotNull { receipt ->
-            val sku = tokensToSkusMap[receipt.receiptId]
-            if (sku == null) {
-                log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
-                return@mapNotNull null
-            }
-            receipt.toRevenueCatPurchaseDetails(
-                sku = sku,
-                presentedOfferingIdentifier = null,
-                purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
-                storeUserID = userData.userId
-            )
-        }
     }
 
     // region Product Data
@@ -133,9 +94,12 @@ internal class AmazonBilling constructor(
         onReceive: ProductDetailsListCallback,
         onError: PurchasesErrorCallback
     ) {
-        userDataHandler.getUserData { userData ->
-            productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
-        }
+        userDataHandler.getUserData(
+            onSuccess = { userData ->
+                productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
+            },
+            onError
+        )
     }
 
     // endregion
@@ -150,7 +114,7 @@ internal class AmazonBilling constructor(
         if (purchase.purchaseState == RevenueCatPurchaseState.PENDING) return
 
         if (shouldTryToConsume) {
-            PurchasingService.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
+            purchasingServiceProvider.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
         }
 
         cache.addSuccessfullyPostedToken(purchase.purchaseToken)
@@ -231,7 +195,8 @@ internal class AmazonBilling constructor(
                         return@getMissingSkusForReceipts
                     }
 
-                    val purchasesByHashedToken = receipts.toHashMapOfPurchases(tokensToSkusMap, userData)
+                    val purchasesByHashedToken =
+                        receipts.toMapOfReceiptHashesToRestoredPurchases(tokensToSkusMap, userData)
 
                     onSuccess(purchasesByHashedToken)
                 }
@@ -240,7 +205,7 @@ internal class AmazonBilling constructor(
         )
     }
 
-    private fun List<Receipt>.toHashMapOfPurchases(
+    private fun List<Receipt>.toMapOfReceiptHashesToRestoredPurchases(
         tokensToSkusMap: Map<String, String>,
         userData: UserData
     ) = mapNotNull { receipt ->
@@ -252,7 +217,7 @@ internal class AmazonBilling constructor(
         val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
             sku = sku,
             presentedOfferingIdentifier = null,
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
             storeUserID = userData.userId
         )
         val hash = receipt.receiptId.sha1()

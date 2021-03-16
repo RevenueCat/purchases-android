@@ -47,6 +47,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.util.AdvertisingIdClient
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubSkuDetails

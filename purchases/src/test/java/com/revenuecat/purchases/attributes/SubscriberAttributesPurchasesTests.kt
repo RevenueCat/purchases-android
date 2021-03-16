@@ -7,7 +7,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.SyncDispatcher
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -26,6 +25,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just

@@ -1,8 +1,7 @@
 package com.revenuecat.purchases.amazon
 
-import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.amazon.helpers.MockDeviceCache
 import com.revenuecat.purchases.utils.JSONObjectAssert
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -17,27 +16,6 @@ class AmazonCacheTest {
     private lateinit var cache: MockDeviceCache
 
     private lateinit var underTest: AmazonCache
-
-    class MockDeviceCache(
-        preferences: SharedPreferences,
-        apiKey: String
-    ) : DeviceCache(preferences, apiKey) {
-
-        var stubCache = mutableMapOf<String, String>()
-
-        override fun getJSONObjectOrNull(key: String): JSONObject? {
-            return stubCache[key]?.let {
-                JSONObject(it)
-            }
-        }
-
-        override fun putString(
-            cacheKey: String,
-            value: String
-        ) {
-            stubCache[cacheKey] = value
-        }
-    }
 
     @Before
     fun setup() {

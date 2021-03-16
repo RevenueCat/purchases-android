@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.amazon.handler
 
-import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.RequestId
@@ -8,6 +7,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
+import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.ProductDataResponseListener
 import com.revenuecat.purchases.amazon.toProductDetails
 import com.revenuecat.purchases.common.LogIntent
@@ -15,7 +15,9 @@ import com.revenuecat.purchases.common.ProductDetailsListCallback
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.ProductDetails
 
-class ProductDataHandler : ProductDataResponseListener {
+class ProductDataHandler(
+    private val purchasingServiceProvider: PurchasingServiceProvider
+) : ProductDataResponseListener {
 
     data class Request(
         val skuList: List<String>,
@@ -24,9 +26,11 @@ class ProductDataHandler : ProductDataResponseListener {
         val onError: PurchasesErrorCallback
     )
 
+    @get:Synchronized
     private val productDataRequests = mutableMapOf<RequestId, Request>()
 
-    private val productDataCache = mutableMapOf<String, Product>()
+    @get:Synchronized
+    internal val productDataCache = mutableMapOf<String, Product>()
 
     override fun getProductData(
         skus: Set<String>,
@@ -36,12 +40,16 @@ class ProductDataHandler : ProductDataResponseListener {
     ) {
         log(LogIntent.DEBUG, AmazonStrings.REQUESTING_PRODUCTS.format(skus.joinToString()))
 
-        if (productDataCache.keys.containsAll(skus)) {
-            val cachedProducts: Map<String, Product> = productDataCache.filterKeys { skus.contains(it) }
-            handleSuccessfulProductDataResponse(cachedProducts, marketplace, onReceive)
-        } else {
-            val productDataRequestId = PurchasingService.getProductData(skus)
-            productDataRequests[productDataRequestId] = Request(skus.toList(), marketplace, onReceive, onError)
+        synchronized(this) { productDataCache.toMap() }.let { productDataCache ->
+            if (productDataCache.keys.containsAll(skus)) {
+                val cachedProducts: Map<String, Product> = productDataCache.filterKeys { skus.contains(it) }
+                handleSuccessfulProductDataResponse(cachedProducts, marketplace, onReceive)
+            } else {
+                val productDataRequestId = purchasingServiceProvider.getProductData(skus)
+                synchronized(this) {
+                    productDataRequests[productDataRequestId] = Request(skus.toList(), marketplace, onReceive, onError)
+                }
+            }
         }
     }
 
@@ -53,13 +61,15 @@ class ProductDataHandler : ProductDataResponseListener {
         }
 
         val requestId = response.requestId
-        val request = productDataRequests[requestId]
+        val request = synchronized(this) { productDataRequests.remove(requestId) }
 
         if (request != null) {
             val responseIsSuccessful = response.requestStatus == ProductDataResponse.RequestStatus.SUCCESSFUL
 
             if (responseIsSuccessful) {
-                productDataCache.putAll(response.productData)
+                synchronized(this) {
+                    productDataCache.putAll(response.productData)
+                }
                 handleSuccessfulProductDataResponse(response.productData, request.marketplace, request.onReceive)
             } else {
                 handleUnsuccessfulProductDataResponse(response, request.onError)

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.amazon.handler
 
-import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
@@ -9,13 +8,16 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
+import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.strings.PurchaseStrings
 
-class PurchaseHandler : PurchaseResponseListener {
+class PurchaseHandler(
+    private val purchasingServiceProvider: PurchasingServiceProvider
+) : PurchaseResponseListener {
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
@@ -31,20 +33,19 @@ class PurchaseHandler : PurchaseResponseListener {
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(productDetails.sku))
 
+        val requestId = purchasingServiceProvider.purchase(productDetails.sku)
         synchronized(this@PurchaseHandler) {
+            purchaseCallbacks[requestId] = onSuccess to onError
             productTypes[productDetails.sku] = productDetails.type
             presentedOfferingsByProductIdentifier[productDetails.sku] = presentedOfferingIdentifier
         }
-
-        val requestId = PurchasingService.purchase(productDetails.sku)
-        purchaseCallbacks[requestId] = onSuccess to onError
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
         log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
 
         val requestId = response.requestId
-        val callbacks = purchaseCallbacks.remove(requestId)
+        val callbacks = synchronized(this) { purchaseCallbacks.remove(requestId) }
 
         callbacks?.let { (onSuccess, onError) ->
             when (response.requestStatus) {
@@ -54,7 +55,7 @@ class PurchaseHandler : PurchaseResponseListener {
                 PurchaseResponse.RequestStatus.INVALID_SKU -> onInvalidSku(onError)
                 PurchaseResponse.RequestStatus.ALREADY_PURCHASED -> onAlreadyPurchased(onError)
                 PurchaseResponse.RequestStatus.NOT_SUPPORTED -> onNotSupported(onError)
-                null -> onUnknownError(onError)
+                else -> onUnknownError(onError)
             }
         }
     }

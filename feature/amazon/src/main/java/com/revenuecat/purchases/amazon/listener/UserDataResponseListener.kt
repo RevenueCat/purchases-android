@@ -5,6 +5,7 @@ import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.UserData
+import com.revenuecat.purchases.PurchasesError
 
 interface UserDataResponseListener : PurchasingListener {
     override fun onProductDataResponse(response: ProductDataResponse) {
@@ -19,5 +20,5 @@ interface UserDataResponseListener : PurchasingListener {
         /* intentionally ignored. Use PurchaseUpdatesResponseListener instead */
     }
 
-    fun getUserData(onCompletion: (UserData) -> Unit)
+    fun getUserData(onSuccess: (UserData) -> Unit, onError: (PurchasesError) -> Unit)
 }

@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic

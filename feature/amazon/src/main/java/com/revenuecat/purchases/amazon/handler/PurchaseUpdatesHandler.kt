@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.amazon.handler
 
-import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
@@ -9,6 +8,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
+import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.PurchaseUpdatesResponseListener
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
@@ -17,7 +17,9 @@ private typealias QueryPurchasesSuccessCallback = (List<Receipt>, UserData) -> U
 
 private typealias QueryPurchasesCallbacks = Pair<QueryPurchasesSuccessCallback, PurchasesErrorCallback>
 
-class PurchaseUpdatesHandler : PurchaseUpdatesResponseListener {
+class PurchaseUpdatesHandler(
+    private val purchasingServiceProvider: PurchasingServiceProvider
+) : PurchaseUpdatesResponseListener {
 
     private val requests = mutableMapOf<RequestId, QueryPurchasesCallbacks>()
 
@@ -26,7 +28,7 @@ class PurchaseUpdatesHandler : PurchaseUpdatesResponseListener {
         onError: PurchasesErrorCallback
     ) {
         val reset = true
-        val requestId = PurchasingService.getPurchaseUpdates(reset)
+        val requestId = purchasingServiceProvider.getPurchaseUpdates(reset)
         synchronized(this) {
             requests[requestId] = onSuccess to onError
         }
@@ -54,8 +56,8 @@ class PurchaseUpdatesHandler : PurchaseUpdatesResponseListener {
             }
         }
     }
-}
 
-private fun PurchasesErrorCallback.invokeWithStoreProblem(message: String) {
-    this(PurchasesError(PurchasesErrorCode.StoreProblemError, message))
+    private fun PurchasesErrorCallback.invokeWithStoreProblem(message: String) {
+        this(PurchasesError(PurchasesErrorCode.StoreProblemError, message))
+    }
 }
