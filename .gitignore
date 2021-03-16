@@ -116,3 +116,10 @@ fastlane/report.xml
 /docs/*
 !/docs/index.html
 integration-tests/keystore
+
+# share settings
+!/.idea/inspectionProfiles/
+!/.idea/scopes/
+!/.idea/codeStyleSettings.xml
+!/.idea/encodings.xml
+!/.idea/copyright/
