@@ -142,7 +142,6 @@ class Backend(
         }
     }
 
-    // TODO: unify parameters into a data class
     @SuppressWarnings("LongParameterList", "ForbiddenComment")
     fun postReceiptData(
         purchaseToken: String,

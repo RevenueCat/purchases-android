@@ -61,8 +61,6 @@ data class PurchaseDetails(
     /*
      * Returns a JSONObject format that contains details about the purchase.
      */
-    @SuppressWarnings("ForbiddenComment")
-    // TODO: change to String
     val originalJson: JSONObject,
 
     /*
