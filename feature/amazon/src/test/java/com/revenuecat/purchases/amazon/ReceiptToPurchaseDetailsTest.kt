@@ -80,7 +80,7 @@ class ReceiptToPurchaseDetailsTest {
             storeUserID = "store_user_id"
         )
 
-        assertThat(purchaseDetails.type).isEqualTo(ProductType.ENTITLED)
+        assertThat(purchaseDetails.type).isEqualTo(ProductType.INAPP)
     }
 
     @Test
