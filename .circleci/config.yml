@@ -304,10 +304,9 @@ workflows:
     jobs:
       - make-release: *release-tags
       - prepare-next-version: *release-tags
-      #      TODO: change back
-      - deploy-snapshot
-#          filters:
-#            branches:
-#              only:
-#                - develop
+      - deploy-snapshot:
+          filters:
+            branches:
+              only:
+                - develop
       - docs-deploy: *release-tags
