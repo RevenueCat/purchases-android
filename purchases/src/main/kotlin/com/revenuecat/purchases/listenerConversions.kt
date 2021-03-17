@@ -4,6 +4,7 @@ import android.app.Activity
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
+import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.ProductChangeListener
@@ -21,6 +22,7 @@ private typealias DeprecatedProductChangeCompletedFunction = (purchase: Purchase
 private typealias ProductChangeCompletedFunction = (purchase: PurchaseDetails?, purchaserInfo: PurchaserInfo) -> Unit
 private typealias ReceiveOfferingsSuccessFunction = (offerings: Offerings) -> Unit
 private typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: PurchaserInfo) -> Unit
+private typealias ReceiveLogInSuccessFunction = (purchaserInfo: PurchaserInfo, created: Boolean) -> Unit
 private typealias ErrorFunction = (error: PurchasesError) -> Unit
 private typealias PurchaseErrorFunction = (error: PurchasesError, userCancelled: Boolean) -> Unit
 
@@ -113,6 +115,19 @@ internal fun receivePurchaserInfoListener(
 ) = object : ReceivePurchaserInfoListener {
     override fun onReceived(purchaserInfo: PurchaserInfo) {
         onSuccess?.invoke(purchaserInfo)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError?.invoke(error)
+    }
+}
+
+internal fun logInSuccessListener(
+    onSuccess: ReceiveLogInSuccessFunction?,
+    onError: ErrorFunction?
+) = object : LogInCallback {
+    override fun onReceived(purchaserInfo: PurchaserInfo, created: Boolean) {
+        onSuccess?.invoke(purchaserInfo, created)
     }
 
     override fun onError(error: PurchasesError) {
@@ -294,6 +309,36 @@ fun Purchases.identifyWith(
     onSuccess: ReceivePurchaserInfoSuccessFunction
 ) {
     identify(appUserID, receivePurchaserInfoListener(onSuccess, onError))
+}
+
+/**
+ * This function will change the current appUserID.
+ * Typically this would be used after a log out to identify a new user without calling configure
+ * @param appUserID The new appUserID that should be linked to the currently user
+ * @param [onSuccess] Will be called after the call has completed.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+internal fun Purchases.logInWith(
+    appUserID: String,
+    onError: ErrorFunction = ON_ERROR_STUB,
+    onSuccess: ReceiveLogInSuccessFunction
+) {
+    logIn(appUserID, logInSuccessListener(onSuccess, onError))
+}
+
+/**
+ * Logs out the Purchases client clearing the save appUserID. This will generate a random user
+ * id and save it in the cache.
+ * @param [onSuccess] Will be called after the call has completed.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+internal fun Purchases.logOutWith(
+    onError: ErrorFunction = ON_ERROR_STUB,
+    onSuccess: ReceivePurchaserInfoSuccessFunction
+) {
+    logOut(receivePurchaserInfoListener(onSuccess, onError))
 }
 
 /**

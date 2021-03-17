@@ -8,10 +8,12 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import org.json.JSONException
 import org.json.JSONObject
 
+private const val HTTP_STATUS_CREATED = 201
 private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
 const val HTTP_SERVER_ERROR_CODE = 500
 const val HTTP_NOT_FOUND_ERROR_CODE = 404
@@ -327,6 +329,42 @@ class Backend(
             override fun onCompletion(result: HTTPClient.Result) {
                 if (result.isSuccessful()) {
                     onSuccessHandler()
+                } else {
+                    onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                }
+            }
+        })
+    }
+
+    fun logIn(
+        appUserID: String,
+        newAppUserID: String,
+        onSuccessHandler: (PurchaserInfo, Boolean) -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit
+    ) {
+        enqueue(object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPClient.Result {
+                return httpClient.performRequest(
+                    "/subscribers/" + encode(appUserID) + "/identify",
+                    mapOf("new_app_user_id" to newAppUserID),
+                    authenticationHeaders
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                onErrorHandler(error)
+            }
+
+            override fun onCompletion(result: HTTPClient.Result) {
+                if (result.isSuccessful()) {
+                    val created = result.responseCode == HTTP_STATUS_CREATED
+                    if (result.body.length() > 0) {
+                        val purchaserInfo = result.body.buildPurchaserInfo()
+                        onSuccessHandler(purchaserInfo, created)
+                    } else {
+                        onErrorHandler(PurchasesError(PurchasesErrorCode.UnknownError)
+                            .also { errorLog(it) })
+                    }
                 } else {
                     onErrorHandler(result.toPurchasesError().also { errorLog(it) })
                 }

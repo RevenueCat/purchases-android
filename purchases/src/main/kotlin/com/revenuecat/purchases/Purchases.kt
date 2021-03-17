@@ -43,6 +43,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
+import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.ProductChangeListener
@@ -75,7 +76,6 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
 import java.util.Collections.emptyMap
-import java.util.HashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
@@ -739,6 +739,60 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 }
             )
         } ?: retrievePurchaseInfo(identityManager.currentAppUserID, listener)
+    }
+
+    /**
+     * This function will change the current appUserID.
+     * Typically this would be used after a log out to identify a new user without calling configure
+     * @param newAppUserID The new appUserID that should be linked to the currently user
+     * @param [callback] An optional listener to listen for successes or errors.
+     */
+    @JvmOverloads
+    @JvmSynthetic
+    internal fun logIn(
+        newAppUserID: String,
+        callback: LogInCallback? = null
+    ) {
+        identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
+            identityManager.logIn(newAppUserID,
+                onSuccess = { purchaserInfo, created ->
+                    dispatch {
+                        callback?.onReceived(purchaserInfo, created)
+                        sendUpdatedPurchaserInfoToDelegateIfChanged(purchaserInfo)
+                    }
+                    fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+                },
+                onError = { error ->
+                    dispatch { callback?.onError(error) }
+                })
+        }
+            ?: retrievePurchaseInfo(identityManager.currentAppUserID, receivePurchaserInfoListener(
+                onSuccess = { purchaserInfo ->
+                    dispatch { callback?.onReceived(purchaserInfo, false) }
+                },
+                onError = { error ->
+                    dispatch { callback?.onError(error) }
+                }
+            ))
+    }
+
+    /**
+     * Resets the Purchases client clearing the save appUserID. This will generate a random user
+     * id and save it in the cache.
+     * @param [listener] An optional listener to listen for successes or errors.
+     */
+    @JvmOverloads
+    @JvmSynthetic
+    internal fun logOut(listener: ReceivePurchaserInfoListener? = null) {
+        val error: PurchasesError? = identityManager.logOut()
+        if (error != null) {
+            listener?.onError(error)
+        } else {
+            synchronized(this@Purchases) {
+                state = state.copy(purchaseCallbacks = emptyMap())
+            }
+            updateAllCaches(identityManager.currentAppUserID, listener)
+        }
     }
 
     /**

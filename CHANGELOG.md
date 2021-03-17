@@ -1,3 +1,19 @@
+## 4.0.4
+
+- Updated willRenew property in the PurchaserInfo to be false also for Consumabled and Promotionals.
+    https://github.com/RevenueCat/purchases-android/pull/259
+- Added a numeric code to PurchasesErrorCode so that the code numbers are consistent between platforms.
+    https://github.com/RevenueCat/purchases-android/pull/261
+
+## 4.0.3
+
+- Fixes JSONObjectParceler, SkuDetailsParceler and adds unit tests for other Parcelable classes.
+    https://github.com/RevenueCat/purchases-android/pull/249
+    https://github.com/RevenueCat/purchases-android/pull/253
+    https://github.com/RevenueCat/purchases-android/pull/254
+- Changes cache refresh period on background to 25 hours.
+    https://github.com/RevenueCat/purchases-android/pull/255
+
 ## 4.0.2
 
 - Update lifecycle version to 2.3.0-rc01 and made sure addObserver is called from the main thread. Should fix #240.

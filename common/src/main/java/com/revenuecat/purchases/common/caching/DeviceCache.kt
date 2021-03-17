@@ -22,7 +22,7 @@ import org.json.JSONObject
 import java.util.Date
 
 private const val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 60000 * 5
-private const val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 60000 * 60 * 24
+private const val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 60000 * 60 * 25
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 internal const val PURCHASER_INFO_SCHEMA_VERSION = 3
 

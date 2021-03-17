@@ -17,4 +17,5 @@ dependencies {
     testImplementation "com.android.billingclient:billing:$billingVersion"
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
+    testImplementation project(":test-utils")
 }
