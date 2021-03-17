@@ -161,7 +161,12 @@ fun Purchases.getOfferingsWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
-@Deprecated("SkuDetails replaced with ProductDetails. The callback now returns a PurchaseDetails.")
+@Deprecated(
+    message = "SkuDetails replaced with ProductDetails. The callback now returns a PurchaseDetails.",
+    replaceWith = ReplaceWith(
+        "purchaseProduct(activity, ProductDetails, onError, onSuccess)"
+    )
+)
 fun Purchases.purchaseProductWith(
     activity: Activity,
     skuDetails: SkuDetails,
@@ -195,7 +200,12 @@ fun Purchases.purchaseProductWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
-@Deprecated("SkuDetails replaced with ProductDetails. The callback now returns a PurchaseDetails.")
+@Deprecated(
+    message = "SkuDetails replaced with ProductDetails. The callback now returns a PurchaseDetails.",
+    replaceWith = ReplaceWith(
+        "purchaseProduct(activity, ProductDetails, onError, onSuccess)"
+    )
+)
 fun Purchases.purchaseProductWith(
     activity: Activity,
     skuDetails: SkuDetails,

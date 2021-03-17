@@ -316,7 +316,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skus] List of skus
      * @param [listener] Response listener
      */
-    @Deprecated("GetSkusResponseListener replaced with GetProductDetailsCallback")
+    @Deprecated(
+        message = "GetSkusResponseListener replaced with GetProductDetailsCallback",
+        replaceWith = ReplaceWith(
+            expression = """
+                Purchases.sharedInstance.getSubscriptionSkus(skus, GetProductDetailsCallback)
+            """
+        )
+    )
     fun getSubscriptionSkus(
         skus: List<String>,
         listener: GetSkusResponseListener
@@ -349,7 +356,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skus] List of skus
      * @param [listener] Response listener
      */
-    @Deprecated("GetSkusResponseListener replaced with GetProductDetailsCallback")
+    @Deprecated(
+        message = "GetSkusResponseListener replaced with GetProductDetailsCallback",
+        replaceWith = ReplaceWith("getNonSubscriptionSkus(skus, GetProductDetailsCallback)")
+    )
     fun getNonSubscriptionSkus(
         skus: List<String>,
         listener: GetSkusResponseListener
@@ -386,10 +396,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        message = "The listener has changed to accept a null Purchase on the onCompleted",
+        message = "SkuDetails replaced with ProductDetails and " +
+            "the listener has changed to accept a null Purchase on the onCompleted",
         replaceWith = ReplaceWith(
             expression = """
-                Purchases.sharedInstance.purchaseProduct(activity, skuDetails, upgradeInfo, ProductChangeListener)
+                Purchases.sharedInstance.purchaseProduct(activity, ProductDetails, upgradeInfo, 
+                    ProductChangeListener)
             """
         )
     )
@@ -410,10 +422,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @Deprecated(
         message = "SkuDetails replaced with ProductDetails and ProductChangeListener " +
             "replaced with ProductChangeCallback",
-        ReplaceWith(
-            "purchaseProduct(activity, skuDetails.toProductDetails(), upgradeInfo, listener.toProductChangeCallback())",
-            "com.revenuecat.purchases.google.toProductDetails",
-            "com.revenuecat.purchases.interfaces.toProductChangeCallback"
+        replaceWith = ReplaceWith(
+            expression = "purchaseProduct(activity, ProductDetails, " +
+                "upgradeInfo, ProductChangeCallback)"
         )
     )
     fun purchaseProduct(
@@ -452,12 +463,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        "SkuDetails replaced with ProductDetails and ProductChangeListener " +
+        message = "SkuDetails replaced with ProductDetails and ProductChangeListener " +
             "replaced with ProductChangeCallback",
-        ReplaceWith(
-            "purchaseProduct(activity, skuDetails.toProductDetails(), listener.toPurchaseCallback())",
-            "com.revenuecat.purchases.google.toProductDetails",
-            "com.revenuecat.purchases.interfaces.toPurchaseCallback"
+        replaceWith = ReplaceWith(
+            expression = """
+                purchaseProduct(activity, ProductDetails, PurchaseCallback)
+            """
         )
     )
     fun purchaseProduct(
@@ -475,8 +486,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Make a purchase.
      * @param [activity] Current activity
-     * @param [skuDetails] The skuDetails of the product you wish to purchase
-     * @param [listener] The listener that will be called when purchase completes.
+     * @param [productDetails] The ProductDetails of the product you wish to purchase
+     * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
     fun purchaseProduct(
         activity: Activity,
@@ -499,8 +510,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         replaceWith = ReplaceWith(
             expression = "Purchases.sharedInstance.purchasePackage(" +
                 "activity, packageToPurchase, upgradeInfo, ProductChangeListener)"
-        ),
-        level = DeprecationLevel.WARNING
+        )
     )
     fun purchasePackage(
         activity: Activity,
@@ -531,8 +541,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         replaceWith = ReplaceWith(
             expression = "Purchases.sharedInstance.purchasePackage(" +
                 "activity, packageToPurchase, upgradeInfo, ProductChangeCallback)"
-        ),
-        level = DeprecationLevel.WARNING
+        )
     )
     fun purchasePackage(
         activity: Activity,
@@ -569,7 +578,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
      */
-    @Deprecated("The callback now returns a PurchaseDetails object")
+    @Deprecated(
+        message = "The callback now returns a PurchaseDetails object",
+        replaceWith =
+            ReplaceWith("purchasePackage(activity, packageToPurchase, PurchaseCallback)")
+    )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
