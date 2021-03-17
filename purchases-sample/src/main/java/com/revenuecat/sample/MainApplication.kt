@@ -1,10 +1,11 @@
 package com.revenuecat.sample
 
 import android.app.Application
+import android.os.StrictMode
+import android.os.StrictMode.VmPolicy
 import android.util.Log
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.amazon.AmazonConfiguration
 
 const val PREMIUM_ENTITLEMENT_ID = "pro_cat"
 
@@ -12,21 +13,15 @@ class MainApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // Doesn't work with amazon becuase they have issues
-//        StrictMode.setVmPolicy(
-//            VmPolicy.Builder()
-//                .detectLeakedClosableObjects()
-//                .penaltyLog()
-//                .penaltyDeath()
-//                .build()
-//        )
-        Purchases.debugLogsEnabled = true
-        val configuration =
-            AmazonConfiguration.Builder(context = this, apiKey = "api_key")
+        StrictMode.setVmPolicy(
+            VmPolicy.Builder()
+                .detectLeakedClosableObjects()
+                .penaltyLog()
+                .penaltyDeath()
                 .build()
-
-        Purchases.configure(configuration)
-
+        )
+        Purchases.debugLogsEnabled = true
+        Purchases.configure(this, "api_key")
         // set attributes to store additional, structured information for a user in RevenueCat.
         // More info: https://docs.revenuecat.com/docs/user-attributes
         Purchases.sharedInstance.setAttributes(mapOf("favorite_cat" to "garfield"))

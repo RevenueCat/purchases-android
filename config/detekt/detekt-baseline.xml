@@ -6,18 +6,21 @@
     <ID>EmptyCatchBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${ }</ID>
     <ID>EmptyCatchBlock:Purchases.kt$Purchases.Companion.&lt;no name provided&gt;${ }</ID>
     <ID>EmptyFunctionBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${}</ID>
-    <ID>ForbiddenComment:AmazonPurchaseWrapper.kt$AmazonPurchaseWrapper$// TODO: replace with PurchaseDetails</ID>
-    <ID>ForbiddenComment:GooglePurchaseWrapper.kt$GooglePurchaseWrapper$// TODO: replace with PurchaseDetails</ID>
-    <ID>ForbiddenComment:ProductDetails.kt$// TODO: add JvmName</ID>
-    <ID>ForbiddenComment:PurchaseDetails.kt$// TODO: should this be nullable or just throw</ID>
-    <ID>ForbiddenComment:PurchaseDetails.kt$PurchaseDetails$// TODO: docs</ID>
-    <ID>ForbiddenComment:PurchaseWrapper.kt$PurchaseWrapper$// TODO: replace with PurchaseDetails</ID>
+    <ID>ForbiddenComment:AmazonConfiguration.kt$AmazonConfiguration$// TODO: make public</ID>
+    <ID>ForbiddenComment:AmazonConfiguration.kt$AmazonConfiguration$// TODO: uncomment</ID>
+    <ID>ForbiddenComment:PurchasesConfiguration.kt$PurchasesConfiguration.Builder$// TODO: make public</ID>
     <ID>LargeClass:Purchases.kt$Purchases$Purchases</ID>
     <ID>LongMethod:Purchases.kt$Purchases$restorePurchases</ID>
     <ID>LongParameterList:EntitlementInfo.kt$EntitlementInfo$( val identifier: String, val isActive: Boolean, val willRenew: Boolean, val periodType: PeriodType, val latestPurchaseDate: Date, val originalPurchaseDate: Date, val expirationDate: Date?, val store: Store, val productIdentifier: String, val isSandbox: Boolean, val unsubscribeDetectedAt: Date?, val billingIssueDetectedAt: Date? )</ID>
-    <ID>LongParameterList:ProductDetails.kt$ProductDetails$( val sku: String, val type: ProductType, val price: String, // For example $3.00 val priceAmountMicros: Long, val priceCurrencyCode: String, // Null for amazon val originalPrice: String?, // 0 for amazon val originalPriceAmountMicros: Long, val title: String, val description: String, // Null if no subscriptionPeriod. Null for amazon val subscriptionPeriod: String?, // Null if no freeTrialPeriod. Null for amazon val freeTrialPeriod: String?, // Null if no introductoryPrice. Null for amazon val introductoryPrice: String?, // 0 for no intro price and amazon val introductoryPriceAmountMicros: Long, // Null if no introductoryPricePeriod. Null for amazon val introductoryPricePeriod: String?, // Null if no introductoryPriceCycles. 0 for amazon val introductoryPriceCycles: Int, val iconUrl: String, val originalJson: JSONObject )</ID>
-    <ID>LongParameterList:PurchaseHistoryRecordWrapper.kt$PurchaseHistoryRecordWrapper$( override val type: ProductType, override val purchaseToken: String, override val purchaseTime: Long, override val sku: String, override val presentedOfferingIdentifier: String? = null, override val purchaseState: RevenueCatPurchaseState, override val storeUserID: String?, override val isAutoRenewing: Boolean?, override val signature: String?, override val orderId: String = purchaseToken, override val originalJson: JSONObject? )</ID>
     <ID>LongParameterList:StubGooglePurchase.kt$( productId: String = "com.revenuecat.lifetime", purchaseTime: Long = System.currentTimeMillis(), purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" + "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg", signature: String = "signature${System.currentTimeMillis()}", purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = true, orderId: String = "GPA.3372-4150-8203-17209" )</ID>
+    <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
+    <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
+    <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$32</ID>
+    <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$33</ID>
+    <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$60</ID>
+    <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$61</ID>
+    <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$90</ID>
+    <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$91</ID>
     <ID>MagicNumber:StubGooglePurchase.kt$4</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendBadRequest$7226</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendCannotTransferPurchase$7102</ID>
@@ -39,6 +42,9 @@
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendProductIdForGoogleReceiptNotProvided$7106</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendStoreProblem$7101</ID>
     <ID>MagicNumber:errors.kt$BackendErrorCode.BackendUserIneligibleForPromoOffer$7232</ID>
+    <ID>MaxLineLength:Constants.kt$com.revenuecat.sample.data.Constants.kt</ID>
+    <ID>NoWildcardImports:com.revenuecat.sample.ui.paywall.PaywallFragment.kt:10</ID>
+    <ID>NoWildcardImports:com.revenuecat.sample.ui.user.UserFragment.kt:14</ID>
     <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): ProductType</ID>
     <ID>TooGenericExceptionCaught:AdvertisingIdClient.kt$AdvertisingIdClient$e: Exception</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
@@ -49,5 +55,7 @@
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases$Purchases</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
+    <ID>WildcardImport:PaywallFragment.kt$import com.revenuecat.purchases.*</ID>
+    <ID>WildcardImport:UserFragment.kt$import com.revenuecat.purchases.*</ID>
   </Whitelist>
 </SmellBaseline>
