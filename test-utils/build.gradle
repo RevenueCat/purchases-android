@@ -7,4 +7,5 @@ dependencies {
     implementation "com.android.billingclient:billing:$billingVersion"
     implementation 'org.assertj:assertj-core:3.13.2'
     implementation 'io.mockk:mockk:1.10.0'
+    implementation 'androidx.test.ext:junit:1.1.2'
 }
