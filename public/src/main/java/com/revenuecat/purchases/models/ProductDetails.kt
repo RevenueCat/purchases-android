@@ -7,9 +7,12 @@ import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.TypeParceler
 import org.json.JSONObject
 
+/**
+ * Represents an in-app product's or subscription's listing details.
+ */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class ProductDetails(
+class ProductDetails(
     /**
      * The product ID.
      */
@@ -155,5 +158,26 @@ data class ProductDetails(
         if (iconUrl != other.iconUrl) return false
 
         return true
+    }
+
+    override fun hashCode(): Int {
+        var result = sku.hashCode()
+        result = 31 * result + type.hashCode()
+        result = 31 * result + price.hashCode()
+        result = 31 * result + priceAmountMicros.hashCode()
+        result = 31 * result + priceCurrencyCode.hashCode()
+        result = 31 * result + (originalPrice?.hashCode() ?: 0)
+        result = 31 * result + originalPriceAmountMicros.hashCode()
+        result = 31 * result + title.hashCode()
+        result = 31 * result + description.hashCode()
+        result = 31 * result + (subscriptionPeriod?.hashCode() ?: 0)
+        result = 31 * result + (freeTrialPeriod?.hashCode() ?: 0)
+        result = 31 * result + (introductoryPrice?.hashCode() ?: 0)
+        result = 31 * result + introductoryPriceAmountMicros.hashCode()
+        result = 31 * result + (introductoryPricePeriod?.hashCode() ?: 0)
+        result = 31 * result + introductoryPriceCycles
+        result = 31 * result + iconUrl.hashCode()
+        result = 31 * result + originalJson.hashCode()
+        return result
     }
 }

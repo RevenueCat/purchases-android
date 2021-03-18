@@ -7,6 +7,9 @@ import kotlinx.android.parcel.Parcelize
 import kotlinx.android.parcel.TypeParceler
 import org.json.JSONObject
 
+/**
+ * Represents an in-app billing purchase.
+ */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 data class PurchaseDetails(
