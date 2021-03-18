@@ -36,11 +36,6 @@ Increment build number and update changelog
 fastlane android github_release
 ```
 Make github release
-### android deploy_snapshot
-```
-fastlane android deploy_snapshot
-```
-Deploy a Snapshot release
 ### android deploy
 ```
 fastlane android deploy
