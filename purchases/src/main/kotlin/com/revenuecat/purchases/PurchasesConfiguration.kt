@@ -23,13 +23,13 @@ open class PurchasesConfiguration(builder: Builder) {
 
     open class Builder(
         internal val context: Context,
-        internal val apiKey: String,
-        internal val store: Store = Store.PLAY_STORE
+        internal val apiKey: String
     ) {
 
         internal var appUserID: String? = null
         internal var observerMode: Boolean = false
         internal var service: ExecutorService? = null
+        internal var store: Store = Store.PLAY_STORE
 
         fun appUserID(appUserID: String?) = apply {
             this.appUserID = appUserID
@@ -41,6 +41,11 @@ open class PurchasesConfiguration(builder: Builder) {
 
         fun service(service: ExecutorService) = apply {
             this.service = service
+        }
+
+        // TODO: make public
+        internal fun store(store: Store) = apply {
+            this.store = store
         }
 
         open fun build(): PurchasesConfiguration {

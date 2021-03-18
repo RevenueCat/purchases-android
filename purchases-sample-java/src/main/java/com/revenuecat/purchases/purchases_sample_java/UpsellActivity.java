@@ -9,8 +9,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.android.billingclient.api.Purchase;
-import com.android.billingclient.api.SkuDetails;
 import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Offerings;
@@ -18,10 +16,11 @@ import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.PurchaserInfo;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
-import com.revenuecat.purchases.interfaces.MakePurchaseListener;
+import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener;
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener;
 import com.revenuecat.purchases.models.ProductDetails;
+import com.revenuecat.purchases.models.PurchaseDetails;
 import com.revenuecat.sample.R;
 
 import static com.revenuecat.purchases.purchases_sample_java.MainApplication.PREMIUM_ENTITLEMENT_ID;
@@ -109,9 +108,9 @@ public class UpsellActivity extends AppCompatActivity {
 
     private void makePurchase(Package packageToPurchase, final Button button) {
         showLoading(button, true);
-        Purchases.getSharedInstance().purchasePackage(this, packageToPurchase, new MakePurchaseListener() {
+        Purchases.getSharedInstance().purchasePackage(this, packageToPurchase, new PurchaseCallback() {
             @Override
-            public void onCompleted(@NonNull Purchase purchase, @NonNull PurchaserInfo purchaserInfo) {
+            public void onCompleted(PurchaseDetails purchase, PurchaserInfo purchaserInfo) {
                 showLoading(button, false);
                 checkForProEntitlement(purchaserInfo);
             }

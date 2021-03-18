@@ -27,7 +27,7 @@ class ProductConverterTest {
 
         product = dummyAmazonProduct(productType = AmazonProductType.ENTITLED)
         productDetails = product.toProductDetails("US")
-        assertThat(productDetails.type).isEqualTo(RevenueCatProductType.ENTITLED)
+        assertThat(productDetails.type).isEqualTo(RevenueCatProductType.INAPP)
 
         product = dummyAmazonProduct(productType = AmazonProductType.SUBSCRIPTION)
         productDetails = product.toProductDetails("US")

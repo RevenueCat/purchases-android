@@ -99,7 +99,7 @@ class PurchaseHandler(
         //
         // According to Amazon's EU MFA flow documentation, the flow would
         // return a PurchaseResponse.RequestStatus.FAILED if cancelled and a
-        // PurchaseResponse.RequestStatus.SUCCESSFUL if the MFA flow is completed successfuly
+        // PurchaseResponse.RequestStatus.SUCCESSFUL if the MFA flow is completed successfully
         //
         // Amazon docs:
         // https://developer.amazon.com/blogs/appstore/post/
