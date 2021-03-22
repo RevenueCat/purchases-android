@@ -29,6 +29,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.lang.ClassCastException
 import java.util.Calendar
 import java.util.Date
 
@@ -430,6 +431,15 @@ class DeviceCacheTest {
 
         cache.clearPurchaserInfoCache(appUserID)
         verify { mockEditor.remove(cache.purchaserInfoCacheKey(appUserID)) }
+    }
+
+    @Test
+    fun `getPreviouslySentHashedTokens returns an emptySet if there's a ClassCastException when calling getStringSet`() {
+        every {
+            mockPrefs.getStringSet(cache.tokensCacheKey, any())
+        } throws ClassCastException("java.lang.String cannot be cast to java.util.Set")
+        val sentTokens = cache.getPreviouslySentHashedTokens()
+        assertThat(sentTokens).isEmpty()
     }
 
     private fun mockString(key: String, value: String?) {
