@@ -188,7 +188,7 @@ jobs:
             if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
               echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
             else
-              bundle exec fastlane android deploy_snapshot
+              bundle exec fastlane android deploy
             fi
       - android-wordpress-orb/save-gradle-cache
 

@@ -72,7 +72,7 @@ hs_err_pid*
 *.iml
 *.ipr
 *.iws
-.idea/
+**/.idea/*
 
 
 ###Eclipse###
@@ -116,3 +116,6 @@ fastlane/report.xml
 /docs/*
 !/docs/index.html
 integration-tests/keystore
+
+# share settings
+!/.idea/codeStyles/

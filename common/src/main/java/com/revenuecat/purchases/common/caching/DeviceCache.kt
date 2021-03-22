@@ -188,8 +188,12 @@ open class DeviceCache(
 
     @Synchronized
     fun getPreviouslySentHashedTokens(): Set<String> {
-        return (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
-            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_ALREADY_POSTED.format(it))
+        return try {
+            (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
+                log(LogIntent.DEBUG, ReceiptStrings.TOKENS_ALREADY_POSTED.format(it))
+            }
+        } catch (e: ClassCastException) {
+            emptySet()
         }
     }
 
