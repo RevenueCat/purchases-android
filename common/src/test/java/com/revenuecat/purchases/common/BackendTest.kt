@@ -964,10 +964,11 @@ class BackendTest {
     fun `logIn makes the right http call`() {
         val newAppUserID = "newId"
         val body = mapOf(
-            "new_app_user_id" to newAppUserID
+            "new_app_user_id" to newAppUserID,
+            "app_user_id" to appUserID
         )
         mockResponse(
-            "/subscribers/$appUserID/identify",
+            "/subscribers/identify",
             body,
             201,
             null,
@@ -984,7 +985,7 @@ class BackendTest {
         )
         verify(exactly = 1) {
             mockClient.performRequest(
-                "/subscribers/$appUserID/identify",
+                "/subscribers/identify",
                 body,
                 any()
             )
@@ -995,11 +996,12 @@ class BackendTest {
     fun `logIn correctly parses purchaserInfo`() {
         val newAppUserID = "newId"
         val requestBody = mapOf(
-            "new_app_user_id" to newAppUserID
+            "new_app_user_id" to newAppUserID,
+            "app_user_id" to appUserID
         )
         val resultBody = Responses.validFullPurchaserResponse
         mockResponse(
-            "/subscribers/$appUserID/identify",
+            "/subscribers/identify",
             requestBody,
             responseCode = 201,
             clientException = null,
@@ -1054,11 +1056,12 @@ class BackendTest {
     fun `logIn returns created true if status is 201`() {
         val newAppUserID = "newId"
         val requestBody = mapOf(
-            "new_app_user_id" to newAppUserID
+            "new_app_user_id" to newAppUserID,
+            "app_user_id" to appUserID
         )
         val resultBody = Responses.validFullPurchaserResponse
         mockResponse(
-            "/subscribers/$appUserID/identify",
+            "/subscribers/identify",
             requestBody,
             responseCode = 201,
             clientException = null,
@@ -1080,11 +1083,12 @@ class BackendTest {
     fun `logIn returns created false if status isn't 201`() {
         val newAppUserID = "newId"
         val requestBody = mapOf(
-            "new_app_user_id" to newAppUserID
+            "new_app_user_id" to newAppUserID,
+            "app_user_id" to appUserID
         )
         val resultBody = Responses.validFullPurchaserResponse
         mockResponse(
-            "/subscribers/$appUserID/identify",
+            "/subscribers/identify",
             requestBody,
             responseCode = 200,
             clientException = null,
