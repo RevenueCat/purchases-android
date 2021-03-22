@@ -192,7 +192,7 @@ class DeviceCache(
             (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
                 log(LogIntent.DEBUG, ReceiptStrings.TOKENS_ALREADY_POSTED.format(it))
             }
-        } catch (e: Exception) {
+        } catch (e: ClassCastException) {
             emptySet()
         }
     }
