@@ -6,6 +6,7 @@
 package com.revenuecat.purchases
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.content.Context
@@ -14,46 +15,49 @@ import android.os.Handler
 import android.os.Looper
 import android.preference.PreferenceManager
 import android.util.Log
+import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.BillingWrapper
+import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
-import com.revenuecat.purchases.common.ProductInfo
-import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
-import com.revenuecat.purchases.common.PurchaseType
-import com.revenuecat.purchases.common.PurchaseWrapper
+import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.attribution.AttributionData
-import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.getBillingResponseCodeName
-import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.toHumanReadableDescription
-import com.revenuecat.purchases.common.toSKUType
+import com.revenuecat.purchases.google.toProductDetails
+import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
+import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
+import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.ProductChangeListener
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.interfaces.toProductChangeCallback
+import com.revenuecat.purchases.interfaces.toPurchaseCallback
+import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -76,8 +80,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
-typealias SuccessfulPurchaseCallback = (PurchaseWrapper, PurchaserInfo) -> Unit
-typealias ErrorPurchaseCallback = (PurchaseWrapper, PurchasesError) -> Unit
+typealias SuccessfulPurchaseCallback = (PurchaseDetails, PurchaserInfo) -> Unit
+typealias ErrorPurchaseCallback = (PurchaseDetails, PurchasesError) -> Unit
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -92,7 +96,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val application: Application,
     backingFieldAppUserID: String?,
     private val backend: Backend,
-    private val billingWrapper: BillingWrapper,
+    private val billing: BillingAbstract,
     private val deviceCache: DeviceCache,
     private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
@@ -171,12 +175,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
         }
 
-        billingWrapper.stateListener = object : BillingWrapper.StateListener {
+        billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
                 updatePendingPurchaseQueue()
             }
         }
-        billingWrapper.purchasesUpdatedListener = getPurchasesUpdatedListener()
+        billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
     }
 
     /** @suppress */
@@ -219,20 +223,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     fun syncPurchases() {
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
-        billingWrapper.queryAllPurchases({ allPurchases ->
-            if (allPurchases.isNotEmpty()) {
-                identityManager.currentAppUserID.let { appUserID ->
+
+        val appUserID = identityManager.currentAppUserID
+
+        billing.queryAllPurchases(
+            appUserID,
+            onReceivePurchaseHistory = { allPurchases ->
+                if (allPurchases.isNotEmpty()) {
                     allPurchases.forEach { purchase ->
                         val unsyncedSubscriberAttributesByKey =
                             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-                        val productInfo = ProductInfo(productID = purchase.sku)
+                        val productInfo = ReceiptInfo(productID = purchase.sku)
                         backend.postReceiptData(
                             purchaseToken = purchase.purchaseToken,
                             appUserID = appUserID,
                             isRestore = this.allowSharingPlayStoreAccount,
                             observerMode = !this.finishTransactions,
                             subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                            productInfo = productInfo,
+                            receiptInfo = productInfo,
+                            storeAppUserID = purchase.storeUserID,
                             onSuccess = { info, body ->
                                 subscriberAttributesManager.markAsSynced(
                                     appUserID,
@@ -259,8 +268,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         )
                     }
                 }
+            },
+            onReceivePurchaseHistoryError = {
+                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it))
             }
-        }, { log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it)) })
+        )
     }
 
     /**
@@ -304,11 +316,39 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skus] List of skus
      * @param [listener] Response listener
      */
+    @Deprecated(
+        message = "GetSkusResponseListener replaced with GetProductDetailsCallback",
+        replaceWith = ReplaceWith(
+            expression = """
+                Purchases.sharedInstance.getSubscriptionSkus(skus, GetProductDetailsCallback)
+            """
+        )
+    )
     fun getSubscriptionSkus(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.SUBS, listener)
+        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), object : GetProductDetailsCallback {
+            override fun onReceived(productDetailsList: List<ProductDetails>) {
+                listener.onReceived(productDetailsList.map { it.skuDetails })
+            }
+
+            override fun onError(error: PurchasesError) {
+                listener.onError(error)
+            }
+        })
+    }
+
+    /**
+     * Gets the ProductDetails for the given list of subscription skus.
+     * @param [skus] List of skus
+     * @param [callback] Response callback
+     */
+    fun getSubscriptionSkus(
+        skus: List<String>,
+        callback: GetProductDetailsCallback
+    ) {
+        getSkus(skus.toSet(), ProductType.SUBS, callback)
     }
 
     /**
@@ -316,11 +356,35 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skus] List of skus
      * @param [listener] Response listener
      */
+    @Deprecated(
+        message = "GetSkusResponseListener replaced with GetProductDetailsCallback",
+        replaceWith = ReplaceWith("getNonSubscriptionSkus(skus, GetProductDetailsCallback)")
+    )
     fun getNonSubscriptionSkus(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus, BillingClient.SkuType.INAPP, listener)
+        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), object : GetProductDetailsCallback {
+            override fun onReceived(productDetailsList: List<ProductDetails>) {
+                listener.onReceived(productDetailsList.map { it.skuDetails })
+            }
+
+            override fun onError(error: PurchasesError) {
+                listener.onError(error)
+            }
+        })
+    }
+
+    /**
+     * Gets the SKUDetails for the given list of non-subscription skus.
+     * @param [skus] List of skus
+     * @param [callback] Response callback
+     */
+    fun getNonSubscriptionSkus(
+        skus: List<String>,
+        callback: GetProductDetailsCallback
+    ) {
+        getSkus(skus.toSet(), ProductType.INAPP, callback)
     }
 
     /**
@@ -332,13 +396,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        message = "The listener has changed to accept a null Purchase on the onCompleted",
+        message = "SkuDetails replaced with ProductDetails and " +
+            "the listener has changed to accept a null Purchase on the onCompleted",
         replaceWith = ReplaceWith(
             expression = """
-                Purchases.sharedInstance.purchasePackage(activity, skuDetails, upgradeInfo, ProductChangeListener)
+                Purchases.sharedInstance.purchaseProduct(activity, ProductDetails, upgradeInfo, 
+                    ProductChangeListener)
             """
-        ),
-        level = DeprecationLevel.WARNING
+        )
     )
     fun purchaseProduct(
         activity: Activity,
@@ -346,24 +411,45 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         upgradeInfo: UpgradeInfo,
         listener: MakePurchaseListener
     ) {
-        startProductChange(
+        purchaseProduct(
             activity,
-            skuDetails,
-            null,
+            skuDetails.toProductDetails(),
             upgradeInfo,
-            listener.toProductChangeListener()
+            listener.toProductChangeCallback()
         )
     }
 
+    @Deprecated(
+        message = "SkuDetails replaced with ProductDetails and ProductChangeListener " +
+            "replaced with ProductChangeCallback",
+        replaceWith = ReplaceWith(
+            expression = "purchaseProduct(activity, ProductDetails, " +
+                "upgradeInfo, ProductChangeCallback)"
+        )
+    )
     fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeListener
     ) {
+        purchaseProduct(
+            activity,
+            skuDetails.toProductDetails(),
+            upgradeInfo,
+            listener.toProductChangeCallback()
+        )
+    }
+
+    fun purchaseProduct(
+        activity: Activity,
+        productDetails: ProductDetails,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeCallback
+    ) {
         startProductChange(
             activity,
-            skuDetails,
+            productDetails,
             null,
             upgradeInfo,
             listener
@@ -376,12 +462,39 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [skuDetails] The skuDetails of the product you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated(
+        message = "SkuDetails replaced with ProductDetails and ProductChangeListener " +
+            "replaced with ProductChangeCallback",
+        replaceWith = ReplaceWith(
+            expression = """
+                purchaseProduct(activity, ProductDetails, PurchaseCallback)
+            """
+        )
+    )
     fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
         listener: MakePurchaseListener
     ) {
-        startPurchase(activity, skuDetails, null, listener)
+        purchaseProduct(
+            activity,
+            skuDetails.toProductDetails(),
+            listener.toPurchaseCallback()
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [productDetails] The ProductDetails of the product you wish to purchase
+     * @param [callback] The PurchaseCallback that will be called when purchase completes.
+     */
+    fun purchaseProduct(
+        activity: Activity,
+        productDetails: ProductDetails,
+        callback: PurchaseCallback
+    ) {
+        startPurchase(activity, productDetails, null, callback)
     }
 
     /**
@@ -397,8 +510,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         replaceWith = ReplaceWith(
             expression = "Purchases.sharedInstance.purchasePackage(" +
                 "activity, packageToPurchase, upgradeInfo, ProductChangeListener)"
-        ),
-        level = DeprecationLevel.WARNING
+        )
     )
     fun purchasePackage(
         activity: Activity,
@@ -411,29 +523,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             packageToPurchase.product,
             packageToPurchase.offering,
             upgradeInfo,
-            listener.toProductChangeListener()
+            listener.toProductChangeCallback()
         )
-    }
-
-    private fun MakePurchaseListener.toProductChangeListener(): ProductChangeListener {
-        return object : ProductChangeListener {
-            override fun onCompleted(purchase: Purchase?, purchaserInfo: PurchaserInfo) {
-                if (purchase == null) {
-                    this@toProductChangeListener.onError(
-                        PurchasesError(
-                            PurchasesErrorCode.PaymentPendingError,
-                            "The product change has been deferred."
-                        ), false
-                    )
-                } else {
-                    this@toProductChangeListener.onCompleted(purchase, purchaserInfo)
-                }
-            }
-
-            override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                this@toProductChangeListener.onError(error, userCancelled)
-            }
-        }
     }
 
     /**
@@ -445,18 +536,62 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * An optional [BillingFlowParams.ProrationMode] can also be specified.
      * @param [listener] The listener that will be called when the purchase of the new product completes.
      */
+    @Deprecated(
+        message = "The listener has changed to receive a PurchaseDetails on the onCompleted",
+        replaceWith = ReplaceWith(
+            expression = "Purchases.sharedInstance.purchasePackage(" +
+                "activity, packageToPurchase, upgradeInfo, ProductChangeCallback)"
+        )
+    )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeListener
     ) {
+        purchasePackage(
+            activity,
+            packageToPurchase,
+            upgradeInfo,
+            listener.toProductChangeCallback()
+        )
+    }
+
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        upgradeInfo: UpgradeInfo,
+        callback: ProductChangeCallback
+    ) {
         startProductChange(
             activity,
             packageToPurchase.product,
             packageToPurchase.offering,
             upgradeInfo,
-            listener
+            callback
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    @Deprecated(
+        message = "The callback now returns a PurchaseDetails object",
+        replaceWith =
+            ReplaceWith("purchasePackage(activity, packageToPurchase, PurchaseCallback)")
+    )
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        listener: MakePurchaseListener
+    ) {
+        purchasePackage(
+            activity,
+            packageToPurchase,
+            listener.toPurchaseCallback()
         )
     }
 
@@ -469,7 +604,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
-        listener: MakePurchaseListener
+        listener: PurchaseCallback
     ) {
         startPurchase(
             activity,
@@ -498,63 +633,68 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (!allowSharingPlayStoreAccount) {
             log(LogIntent.WARNING, RestoreStrings.SHARING_ACC_RESTORE_FALSE)
         }
+
+        val appUserID = identityManager.currentAppUserID
+
         this.finishTransactions.let { finishTransactions ->
-            billingWrapper.queryAllPurchases(
-                { allPurchases ->
+            billing.queryAllPurchases(
+                appUserID,
+                onReceivePurchaseHistory = { allPurchases ->
                     if (allPurchases.isEmpty()) {
                         getPurchaserInfo(listener)
                     } else {
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
-                            identityManager.currentAppUserID.let { appUserID ->
-                                sortedByTime.forEach { purchase ->
-                                    val unsyncedSubscriberAttributesByKey =
-                                        subscriberAttributesManager.getUnsyncedSubscriberAttributes(
-                                            appUserID
+                            sortedByTime.forEach { purchase ->
+                                val unsyncedSubscriberAttributesByKey =
+                                    subscriberAttributesManager.getUnsyncedSubscriberAttributes(
+                                        appUserID
+                                    )
+                                val receiptInfo = ReceiptInfo(productID = purchase.sku)
+                                backend.postReceiptData(
+                                    purchaseToken = purchase.purchaseToken,
+                                    appUserID = appUserID,
+                                    isRestore = true,
+                                    observerMode = !finishTransactions,
+                                    subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+                                    receiptInfo = receiptInfo,
+                                    storeAppUserID = purchase.storeUserID,
+                                    onSuccess = { info, body ->
+                                        subscriberAttributesManager.markAsSynced(
+                                            appUserID,
+                                            unsyncedSubscriberAttributesByKey,
+                                            body.getAttributeErrors()
                                         )
-                                    val productInfo = ProductInfo(productID = purchase.sku)
-                                    backend.postReceiptData(
-                                        purchaseToken = purchase.purchaseToken,
-                                        appUserID = appUserID,
-                                        isRestore = true,
-                                        observerMode = !finishTransactions,
-                                        subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                                        productInfo = productInfo,
-                                        onSuccess = { info, body ->
+                                        billing.consumeAndSave(finishTransactions, purchase)
+                                        cachePurchaserInfo(info)
+                                        sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                                        log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { listener.onReceived(info) }
+                                        }
+                                    },
+                                    onError = { error, errorIsFinishable, body ->
+                                        if (errorIsFinishable) {
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
                                                 unsyncedSubscriberAttributesByKey,
                                                 body.getAttributeErrors()
                                             )
-                                            consumeAndSave(finishTransactions, purchase)
-                                            cachePurchaserInfo(info)
-                                            sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                                            log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
-                                            if (sortedByTime.last() == purchase) {
-                                                dispatch { listener.onReceived(info) }
-                                            }
-                                        },
-                                        onError = { error, errorIsFinishable, body ->
-                                            if (errorIsFinishable) {
-                                                subscriberAttributesManager.markAsSynced(
-                                                    appUserID,
-                                                    unsyncedSubscriberAttributesByKey,
-                                                    body.getAttributeErrors()
-                                                )
-                                                consumeAndSave(finishTransactions, purchase)
-                                            }
-                                            log(LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
-                                                    .format(purchase, error))
-                                            if (sortedByTime.last() == purchase) {
-                                                dispatch { listener.onError(error) }
-                                            }
+                                            billing.consumeAndSave(finishTransactions, purchase)
                                         }
-                                    )
-                                }
+                                        log(
+                                            LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
+                                                .format(purchase, error)
+                                        )
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { listener.onError(error) }
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
                 },
-                { error ->
+                onReceivePurchaseHistoryError = { error ->
                     dispatch { listener.onError(error) }
                 }
             )
@@ -693,7 +833,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             state = state.copy(purchaseCallbacks = emptyMap())
         }
         this.backend.close()
-        billingWrapper.purchasesUpdatedListener = null
+        billing.purchasesUpdatedListener = null
         updatedPurchaserInfoListener = null // Do not call on state since the setter does more stuff
 
         dispatch {
@@ -1065,7 +1205,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             { offeringsJSON ->
                 try {
                     val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-                    val skus = mutableListOf<String>()
+                    val skus = mutableSetOf<String>()
                     for (i in 0 until jsonArrayOfOfferings.length()) {
                         val jsonPackagesArray =
                             jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
@@ -1095,7 +1235,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         PurchasesError(
                             PurchasesErrorCode.UnexpectedBackendResponseError,
                             error.localizedMessage
-                        ).also { errorLog(it) },
+                        ),
                         completion
                     )
                 }
@@ -1117,7 +1257,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun logMissingProducts(
         offerings: Offerings,
-        detailsByID: HashMap<String, SkuDetails>
+        detailsByID: HashMap<String, ProductDetails>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
         .map { it.product.sku }
@@ -1129,20 +1269,20 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
     private fun getSkus(
-        skus: List<String>,
-        @BillingClient.SkuType skuType: String,
-        completion: GetSkusResponseListener
+        skus: Set<String>,
+        productType: ProductType,
+        callback: GetProductDetailsCallback
     ) {
-        billingWrapper.querySkuDetailsAsync(
-            skuType,
+        billing.querySkuDetailsAsync(
+            productType,
             skus,
-            { skuDetails ->
+            { productDetailsList ->
                 dispatch {
-                    completion.onReceived(skuDetails)
+                    callback.onReceived(productDetailsList)
                 }
             }, {
                 dispatch {
-                    completion.onError(it)
+                    callback.onError(it)
                 }
             })
     }
@@ -1184,7 +1324,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun postPurchases(
-        purchases: List<PurchaseWrapper>,
+        purchases: List<PurchaseDetails>,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
@@ -1192,14 +1332,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onError: (ErrorPurchaseCallback)? = null
     ) {
         purchases.forEach { purchase ->
-            if (purchase.containedPurchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                billingWrapper.querySkuDetailsAsync(
-                    itemType = purchase.type.toSKUType() ?: BillingClient.SkuType.INAPP,
-                    skuList = listOf(purchase.sku),
-                    onReceiveSkuDetails = { skuDetailsList ->
+            if (purchase.purchaseState == RevenueCatPurchaseState.PURCHASED) {
+                billing.querySkuDetailsAsync(
+                    productType = purchase.type,
+                    skus = setOf(purchase.sku),
+                    onReceive = { skuDetailsList ->
                         postToBackend(
                             purchase = purchase,
-                            skuDetails = skuDetailsList.firstOrNull { it.sku == purchase.sku },
+                            productDetails = skuDetailsList.firstOrNull { it.sku == purchase.sku },
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1210,7 +1350,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     onError = {
                         postToBackend(
                             purchase = purchase,
-                            skuDetails = null,
+                            productDetails = null,
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1230,8 +1370,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     @JvmSynthetic
     internal fun postToBackend(
-        purchase: PurchaseWrapper,
-        skuDetails: SkuDetails?,
+        purchase: PurchaseDetails,
+        productDetails: ProductDetails?,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
@@ -1240,10 +1380,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         val unsyncedSubscriberAttributesByKey =
             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-        val productInfo = ProductInfo(
+        val receiptInfo = ReceiptInfo(
             productID = purchase.sku,
             offeringIdentifier = purchase.presentedOfferingIdentifier,
-            skuDetails = skuDetails
+            productDetails = productDetails
         )
         backend.postReceiptData(
             purchaseToken = purchase.purchaseToken,
@@ -1251,14 +1391,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             isRestore = allowSharingPlayStoreAccount,
             observerMode = !consumeAllTransactions,
             subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-            productInfo = productInfo,
+            receiptInfo = receiptInfo,
+            storeAppUserID = purchase.storeUserID,
             onSuccess = { info, body ->
                 subscriberAttributesManager.markAsSynced(
                     appUserID,
                     unsyncedSubscriberAttributesByKey,
                     body.getAttributeErrors()
                 )
-                consumeAndSave(consumeAllTransactions, purchase)
+                billing.consumeAndSave(consumeAllTransactions, purchase)
                 cachePurchaserInfo(info)
                 sendUpdatedPurchaserInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
@@ -1270,91 +1411,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         unsyncedSubscriberAttributesByKey,
                         body.getAttributeErrors()
                     )
-                    consumeAndSave(consumeAllTransactions, purchase)
+                    billing.consumeAndSave(consumeAllTransactions, purchase)
                 }
                 onError?.let { it(purchase, error) }
             }
         )
     }
 
-    private fun consumeAndSave(
-        shouldTryToConsume: Boolean,
-        purchase: PurchaseWrapper
-    ) {
-        if (purchase.type == PurchaseType.UNKNOWN) {
-            // Would only get here if the purchase was trigger from outside of the app and there was
-            // an issue getting the purchase type
-            return
-        }
-        if (purchase.containedPurchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
-            // PENDING purchases should not be acknowledged or consumed
-            return
-        }
-        if (shouldTryToConsume && purchase.isConsumable) {
-            billingWrapper.consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()))
-                }
-            }
-        } else if (shouldTryToConsume && !purchase.containedPurchase.isAcknowledged) {
-            billingWrapper.acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()))
-                }
-            }
-        } else {
-            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-        }
-    }
-
-    private fun consumeAndSave(
-        shouldTryToConsume: Boolean,
-        purchase: PurchaseHistoryRecordWrapper
-    ) {
-        if (purchase.type == PurchaseType.UNKNOWN) {
-            // Would only get here if the purchase was trigger from outside of the app and there was
-            // an issue getting the purchase type
-            return
-        }
-        if (shouldTryToConsume && purchase.isConsumable) {
-            billingWrapper.consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()))
-                }
-            }
-        } else if (shouldTryToConsume) {
-            billingWrapper.acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()))
-                }
-            }
-        } else {
-            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-        }
-    }
-
     private fun getSkuDetails(
-        skus: List<String>,
-        onCompleted: (HashMap<String, SkuDetails>) -> Unit,
+        skus: Set<String>,
+        onCompleted: (HashMap<String, ProductDetails>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        billingWrapper.querySkuDetailsAsync(
-            BillingClient.SkuType.SUBS,
+        billing.querySkuDetailsAsync(
+            ProductType.SUBS,
             skus,
             { subscriptionsSKUDetails ->
-                val detailsByID = HashMap<String, SkuDetails>()
+                val detailsByID = HashMap<String, ProductDetails>()
                 val inAPPSkus =
                     skus - subscriptionsSKUDetails
                         .map { details -> details.sku to details }
@@ -1362,8 +1435,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         .map { skuToDetails -> skuToDetails.first }
 
                 if (inAPPSkus.isNotEmpty()) {
-                    billingWrapper.querySkuDetailsAsync(
-                        BillingClient.SkuType.INAPP,
+                    billing.querySkuDetailsAsync(
+                        ProductType.INAPP,
                         inAPPSkus,
                         { skuDetails ->
                             detailsByID.putAll(skuDetails.map { it.sku to it })
@@ -1415,25 +1488,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    private fun getPurchaseCallback(sku: String): MakePurchaseListener? {
+    private fun getPurchaseCallback(sku: String): PurchaseCallback? {
         return state.purchaseCallbacks[sku].also {
             state =
                 state.copy(purchaseCallbacks = state.purchaseCallbacks.filterNot { it.key == sku })
         }
     }
 
-    private fun getAndClearProductChangeCallback(): ProductChangeListener? {
+    private fun getAndClearProductChangeCallback(): ProductChangeCallback? {
         return state.productChangeCallback.also {
             state = state.copy(productChangeCallback = null)
         }
     }
 
-    private fun getPurchasesUpdatedListener(): BillingWrapper.PurchasesUpdatedListener {
-        return object : BillingWrapper.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<@JvmSuppressWildcards PurchaseWrapper>) {
+    private fun getPurchasesUpdatedListener(): BillingAbstract.PurchasesUpdatedListener {
+        return object : BillingAbstract.PurchasesUpdatedListener {
+            override fun onPurchasesUpdated(purchases: List<PurchaseDetails>) {
                 val productChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
-                val productChangeListener: ProductChangeListener?
+                val productChangeListener: ProductChangeCallback?
 
                 synchronized(this@Purchases) {
                     productChangeInProgress = state.productChangeCallback != null
@@ -1469,14 +1542,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 )
             }
 
-            override fun onPurchasesFailedToUpdate(
-                purchases: List<Purchase>?,
-                @BillingClient.BillingResponseCode responseCode: Int,
-                message: String
-            ) {
-                val purchasesError =
-                    responseCode.billingResponseToPurchasesError(message).also { errorLog(it) }
-
+            override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
                 synchronized(this@Purchases) {
                     state.productChangeCallback?.let { productChangeCallback ->
                         state = state.copy(productChangeCallback = null)
@@ -1491,29 +1557,27 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
-        val onSuccess: SuccessfulPurchaseCallback = { purchaseWrapper, info ->
-            getPurchaseCallback(purchaseWrapper.sku)?.let { purchaseCallback ->
+        val onSuccess: SuccessfulPurchaseCallback = { purchaseDetails, info ->
+            getPurchaseCallback(purchaseDetails.sku)?.let { purchaseCallback ->
                 dispatch {
-                    purchaseCallback.onCompleted(purchaseWrapper.containedPurchase, info)
+                    purchaseCallback.onCompleted(purchaseDetails, info)
                 }
             }
         }
         val onError: ErrorPurchaseCallback = { purchase, error ->
-            getPurchaseCallback(purchase.sku)?.let { purchaseCallback ->
-                purchaseCallback.dispatch(error)
-            }
+            getPurchaseCallback(purchase.sku)?.dispatch(error)
         }
 
         return Pair(onSuccess, onError)
     }
 
     private fun getProductChangeCompletedCallbacks(
-        productChangeListener: ProductChangeListener?
+        productChangeListener: ProductChangeCallback?
     ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
-        val onSuccess: SuccessfulPurchaseCallback = { purchaseWrapper, info ->
+        val onSuccess: SuccessfulPurchaseCallback = { purchaseDetails, info ->
             productChangeListener?.let { productChangeCallback ->
                 dispatch {
-                    productChangeCallback.onCompleted(purchaseWrapper.containedPurchase, info)
+                    productChangeCallback.onCompleted(purchaseDetails, info)
                 }
             }
         }
@@ -1534,9 +1598,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun startPurchase(
         activity: Activity,
-        product: SkuDetails,
+        product: ProductDetails,
         presentedOfferingIdentifier: String?,
-        listener: MakePurchaseListener
+        listener: PurchaseCallback
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
                 " $product ${presentedOfferingIdentifier?.let {
@@ -1556,7 +1620,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         }
         userPurchasing?.let { appUserID ->
-            billingWrapper.makePurchaseAsync(
+            billing.makePurchaseAsync(
                 activity,
                 appUserID,
                 product,
@@ -1568,14 +1632,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun startProductChange(
         activity: Activity,
-        product: SkuDetails,
-        presentedOfferingIdentifier: String?,
+        productDetails: ProductDetails,
+        offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeListener
+        listener: ProductChangeCallback
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $product ${presentedOfferingIdentifier?.let {
-                    PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
+                " $productDetails ${offeringIdentifier?.let {
+                    PurchaseStrings.OFFERING + "$offeringIdentifier"
                 }} UpgradeInfo: $upgradeInfo"
 
         ))
@@ -1591,83 +1655,71 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
-                product,
+                productDetails,
                 upgradeInfo,
                 activity,
                 appUserID,
-                presentedOfferingIdentifier,
+                offeringIdentifier,
                 listener
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
 
     private fun replaceOldPurchaseWithNewProduct(
-        product: SkuDetails,
+        product: ProductDetails,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
         listener: PurchaseErrorListener
     ) {
-        billingWrapper.findPurchaseInPurchaseHistory(product.type, upgradeInfo.oldSku) { result, purchaseRecord ->
-            if (result.isSuccessful()) {
-                if (purchaseRecord != null) {
-                    log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
-                    billingWrapper.makePurchaseAsync(
-                        activity,
-                        appUserID,
-                        product,
-                        ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
-                        presentedOfferingIdentifier
-                    )
-                } else {
-                    log(LogIntent.GOOGLE_WARNING, PurchaseStrings.NO_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
-                    dispatch {
-                        listener.onError(
-                            PurchasesError(PurchasesErrorCode.PurchaseInvalidError).also { errorLog(it) },
-                            false
-                        )
-                    }
-                }
-            } else {
-                val message = PurchaseStrings.UPGRADING_SKU_ERROR
-                        .format(result.responseCode.getBillingResponseCodeName())
-                log(LogIntent.GOOGLE_ERROR, message)
+        billing.findPurchaseInPurchaseHistory(
+            appUserID,
+            product.type,
+            upgradeInfo.oldSku,
+            onCompletion = { purchaseRecord ->
+                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
+
+                billing.makePurchaseAsync(
+                    activity,
+                    appUserID,
+                    product,
+                    ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
+                    presentedOfferingIdentifier
+                )
+            },
+            onError = { error ->
+                log(LogIntent.GOOGLE_ERROR, error.message)
                 dispatch {
-                    listener.onError(
-                        result.responseCode.billingResponseToPurchasesError(message).also { errorLog(it) },
-                        false
-                    )
+                    listener.onError(error, false)
                 }
-            }
-        }
+            })
     }
 
     @JvmSynthetic
     internal fun updatePendingPurchaseQueue() {
-        if (billingWrapper.isConnected()) {
+        if (billing.isConnected()) {
             log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
-            dispatcher.enqueue(Runnable {
-                val queryActiveSubscriptionsResult =
-                    billingWrapper.queryPurchases(BillingClient.SkuType.SUBS)
-                val queryUnconsumedInAppsRequest =
-                    billingWrapper.queryPurchases(BillingClient.SkuType.INAPP)
-                if (queryActiveSubscriptionsResult?.isSuccessful() == true &&
-                    queryUnconsumedInAppsRequest?.isSuccessful() == true
-                ) {
-                    deviceCache.cleanPreviouslySentTokens(
-                        queryActiveSubscriptionsResult.purchasesByHashedToken.keys,
-                        queryUnconsumedInAppsRequest.purchasesByHashedToken.keys
-                    )
-                    postPurchases(
-                        deviceCache.getActivePurchasesNotInCache(
-                            queryActiveSubscriptionsResult.purchasesByHashedToken,
-                            queryUnconsumedInAppsRequest.purchasesByHashedToken
-                        ),
-                        allowSharingPlayStoreAccount,
-                        finishTransactions,
-                        appUserID
-                    )
+            dispatcher.enqueue({
+                appUserID.let { appUserID ->
+                    billing.queryPurchases(
+                        appUserID,
+                        onSuccess = { purchasesByHashedToken ->
+                            purchasesByHashedToken.forEach { (hash, purchase) ->
+                                log(LogIntent.DEBUG,
+                                    RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash))
+                            }
+                            deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
+                            postPurchases(
+                                deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken),
+                                allowSharingPlayStoreAccount,
+                                finishTransactions,
+                                appUserID
+                            )
+                        },
+                        onError = { error ->
+                            log(LogIntent.GOOGLE_ERROR, error.message)
+                        })
                 }
             })
         } else {
@@ -1765,48 +1817,73 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             observerMode: Boolean = false,
             service: ExecutorService = createDefaultExecutor()
         ): Purchases {
-            require(context.hasPermission(Manifest.permission.INTERNET)) { "Purchases requires INTERNET permission." }
+            val builtConfiguration = PurchasesConfiguration.Builder(context, apiKey)
+                .appUserID(appUserID)
+                .observerMode(observerMode)
+                .service(service)
+                .build()
+            return configure(builtConfiguration)
+        }
 
-            require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
+        /**
+         * Configures an instance of the Purchases SDK with a specified API key. The instance will
+         * be set as a singleton. You should access the singleton instance using [Purchases.sharedInstance]
+         * @param configuration TODO
+         * @return An instantiated `[Purchases] object that has been set as a singleton.
+         */
+        @JvmStatic
+        fun configure(
+            configuration: PurchasesConfiguration
+        ): Purchases {
+            with(configuration) {
+                require(context.hasPermission(Manifest.permission.INTERNET)) {
+                    "Purchases requires INTERNET permission."
+                }
 
-            require(context.applicationContext is Application) { "Needs an application context." }
-            val application = context.getApplication()
-            val appConfig = AppConfig(
-                context,
-                observerMode,
-                platformInfo,
-                proxyURL
-            )
+                require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
-            val dispatcher = Dispatcher(service)
-            val backend = Backend(
-                apiKey,
-                dispatcher,
-                HTTPClient(appConfig)
-            )
-            val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
+                require(context.applicationContext is Application) { "Needs an application context." }
+                val application = context.getApplication()
+                val appConfig = AppConfig(
+                    context,
+                    observerMode,
+                    platformInfo,
+                    proxyURL,
+                    store
+                )
 
-            val billingWrapper = BillingWrapper(
-                BillingWrapper.ClientFactory(application),
-                Handler(application.mainLooper)
-            )
+                val dispatcher = Dispatcher(service ?: createDefaultExecutor())
+                val backend = Backend(
+                    apiKey,
+                    dispatcher,
+                    HTTPClient(appConfig)
+                )
+                val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
-            val prefs = PreferenceManager.getDefaultSharedPreferences(application)
-            val cache = DeviceCache(prefs, apiKey)
-            val subscriberAttributesCache = SubscriberAttributesCache(cache)
-            val attributionFetcher = AttributionFetcher(dispatcher)
+                val prefs = PreferenceManager.getDefaultSharedPreferences(application)
+                val cache = DeviceCache(prefs, apiKey)
 
-            return Purchases(
-                application,
-                appUserID,
-                backend,
-                billingWrapper,
-                cache,
-                dispatcher,
-                IdentityManager(cache, subscriberAttributesCache, backend),
-                SubscriberAttributesManager(subscriberAttributesCache, subscriberAttributesPoster, attributionFetcher),
-                appConfig
-            ).also { sharedInstance = it }
+                val billing: BillingAbstract = BillingFactory.createBilling(store, application, backend, cache)
+
+                val subscriberAttributesCache = SubscriberAttributesCache(cache)
+                val attributionFetcher = AttributionFetcher(dispatcher)
+                return Purchases(
+                    application,
+                    appUserID,
+                    backend,
+                    billing,
+                    cache,
+                    dispatcher,
+                    IdentityManager(cache, subscriberAttributesCache, backend),
+                    SubscriberAttributesManager(
+                        subscriberAttributesCache, subscriberAttributesPoster, attributionFetcher
+                    ),
+                    appConfig
+                ).also {
+                    @SuppressLint("RestrictedApi")
+                    sharedInstance = it
+                }
+            }
         }
 
         /**

@@ -6,9 +6,9 @@
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.models.ProductDetails
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -226,9 +226,9 @@ class OfferingsTest {
 
     private fun getProducts(
         vararg productIdentifiers: String = arrayOf(monthlyProductIdentifier)
-    ): Map<String, SkuDetails> =
+    ): Map<String, ProductDetails> =
         productIdentifiers.map { productIdentifier ->
-            productIdentifier to mockk<SkuDetails>().also {
+            productIdentifier to mockk<ProductDetails>().also {
                 every { it.sku } returns productIdentifier
             }
         }.toMap()

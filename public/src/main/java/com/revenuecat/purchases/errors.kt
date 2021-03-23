@@ -1,5 +1,7 @@
 package com.revenuecat.purchases
 
+typealias PurchasesErrorCallback = (PurchasesError) -> Unit
+
 /**
  * This class represents an error
  * @param code Error code

@@ -9,6 +9,7 @@ object PurchaseStrings {
     const val CONSUMING_PURCHASE_ERROR = "Error consuming purchase. Will retry next queryPurchases. %s"
     const val FOUND_EXISTING_PURCHASE = "Found existing purchase for SKU: %s"
     const val NO_EXISTING_PURCHASE = "Couldn't find existing purchase for SKU: %s"
+    const val ERROR_FINDING_PURCHASE = "Error finding existing purchase for SKU: %s"
     const val OFFERING = " - offering: "
     const val PRODUCT_CHANGE_STARTED = "Product change started: %s"
     const val PURCHASE_FINISH_TRANSACTION_FALSE = "finishTransactions is set to false " +
@@ -23,4 +24,5 @@ object PurchaseStrings {
     const val UPDATING_PENDING_PURCHASE_QUEUE = "Updating pending purchase queue"
     const val UPGRADING_SKU = "Moving from old SKU %s to sku %s"
     const val UPGRADING_SKU_ERROR = "There was an error trying to upgrade. BillingResponseCode: %s"
+    const val NOT_RECOGNIZED_PRODUCT_TYPE = "Type of product not recognized."
 }

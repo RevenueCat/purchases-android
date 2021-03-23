@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common
 
 import android.net.Uri
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.Offering
@@ -11,6 +10,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
@@ -112,6 +112,7 @@ private fun JSONObject.getStore(name: String) = when (getString(name)) {
     "play_store" -> Store.PLAY_STORE
     "stripe" -> Store.STRIPE
     "promotional" -> Store.PROMOTIONAL
+    "amazon" -> Store.AMAZON
     else -> Store.UNKNOWN_STORE
 }
 
@@ -163,7 +164,7 @@ private fun getWillRenew(
     return !(isPromo || isLifetime || hasUnsubscribed || hasBillingIssues)
 }
 
-fun JSONObject.createOfferings(products: Map<String, SkuDetails>): Offerings {
+fun JSONObject.createOfferings(products: Map<String, ProductDetails>): Offerings {
     val jsonOfferings = getJSONArray("offerings")
     val currentOfferingID = getString("current_offering_id")
 
@@ -177,7 +178,7 @@ fun JSONObject.createOfferings(products: Map<String, SkuDetails>): Offerings {
     return Offerings(offerings[currentOfferingID], offerings)
 }
 
-fun JSONObject.createOffering(products: Map<String, SkuDetails>): Offering? {
+fun JSONObject.createOffering(products: Map<String, ProductDetails>): Offering? {
     val offeringIdentifier = getString("identifier")
     val jsonPackages = getJSONArray("packages")
 
@@ -196,7 +197,7 @@ fun JSONObject.createOffering(products: Map<String, SkuDetails>): Offering? {
 }
 
 fun JSONObject.createPackage(
-    products: Map<String, SkuDetails>,
+    products: Map<String, ProductDetails>,
     offeringIdentifier: String
 ): Package? {
     return products[getString("platform_product_identifier")]?.let { product ->

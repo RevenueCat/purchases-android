@@ -10,7 +10,10 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.purchasePackageWith
-import kotlinx.android.synthetic.main.activity_upsell.*
+import kotlinx.android.synthetic.main.activity_upsell.annual_purchase
+import kotlinx.android.synthetic.main.activity_upsell.monthly_purchase
+import kotlinx.android.synthetic.main.activity_upsell.skip
+import kotlinx.android.synthetic.main.activity_upsell.unlimited_purchase
 
 class UpsellActivity : AppCompatActivity() {
 

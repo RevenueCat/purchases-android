@@ -6,6 +6,7 @@ dependencies {
     implementation project(":common")
     implementation project(":utils")
     implementation project(":feature:subscriber-attributes")
+    implementation project(":feature:google")
     implementation project(":feature:identity")
     implementation project(":strings")
     api project(":public")

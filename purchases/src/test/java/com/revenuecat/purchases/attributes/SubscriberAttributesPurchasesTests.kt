@@ -6,25 +6,26 @@ import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.SyncDispatcher
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.BillingWrapper
+import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
-import com.revenuecat.purchases.common.PurchaseHistoryRecordWrapper
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -45,7 +46,7 @@ class SubscriberAttributesPurchasesTests {
     private val appUserId = "juan"
     private val subscriberAttributesManagerMock = mockk<SubscriberAttributesManager>()
     private val backendMock = mockk<Backend>(relaxed = true)
-    private val billingWrapperMock = mockk<BillingWrapper>(relaxed = true)
+    private val billingWrapperMock = mockk<BillingAbstract>(relaxed = true)
     private lateinit var applicationMock: Application
     private lateinit var dispatcherMock: Dispatcher
 
@@ -77,9 +78,9 @@ class SubscriberAttributesPurchasesTests {
         postReceiptCompletion = null
 
         every {
-            billingWrapperMock.queryAllPurchases(captureLambda(), any())
+            billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
-            lambda<(List<PurchaseHistoryRecordWrapper>) -> Unit>().captured.also {
+            lambda<(List<PurchaseDetails>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
             }
         }
@@ -92,7 +93,8 @@ class SubscriberAttributesPurchasesTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = capture(postedAttributesSlot),
-                productInfo = any(),
+                receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
             )
@@ -121,7 +123,7 @@ class SubscriberAttributesPurchasesTests {
             application = mockk<Application>(relaxed = true).also { applicationMock = it },
             backingFieldAppUserID = appUserId,
             backend = backendMock,
-            billingWrapper = billingWrapperMock,
+            billing = billingWrapperMock,
             deviceCache = mockk(relaxed = true),
             dispatcher = SyncDispatcher(),
             identityManager = mockk<IdentityManager>(relaxed = true).apply {
@@ -132,7 +134,8 @@ class SubscriberAttributesPurchasesTests {
                 context = mockk(relaxed = true),
                 observerMode = false,
                 platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-                proxyURL = null
+                proxyURL = null,
+                store = Store.PLAY_STORE
             )
         )
     }
@@ -248,7 +251,8 @@ class SubscriberAttributesPurchasesTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
-                productInfo = any(),
+                receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -320,7 +324,8 @@ class SubscriberAttributesPurchasesTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
-                productInfo = any(),
+                receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -396,7 +401,7 @@ class SubscriberAttributesPurchasesTests {
 
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            skuDetails = mockk(relaxed = true),
+            productDetails = mockk(relaxed = true),
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
@@ -411,7 +416,8 @@ class SubscriberAttributesPurchasesTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
-                productInfo = any(),
+                receiptInfo = any(),
+                storeAppUserID = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -426,7 +432,7 @@ class SubscriberAttributesPurchasesTests {
         )
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            skuDetails = mockk(relaxed = true),
+            productDetails = mockk(relaxed = true),
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
@@ -449,7 +455,7 @@ class SubscriberAttributesPurchasesTests {
 
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            skuDetails = mockk(relaxed = true),
+            productDetails = mockk(relaxed = true),
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
@@ -476,7 +482,7 @@ class SubscriberAttributesPurchasesTests {
 
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            skuDetails = mockk(relaxed = true),
+            productDetails = mockk(relaxed = true),
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,

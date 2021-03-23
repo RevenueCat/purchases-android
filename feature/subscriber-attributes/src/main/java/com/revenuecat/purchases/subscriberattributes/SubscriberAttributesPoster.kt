@@ -28,16 +28,17 @@ class SubscriberAttributesPoster(
             { error ->
                 onErrorHandler(error, false, emptyList())
             },
-            onSuccessHandler,
             { error, responseCode, body ->
-                val internalServerError = responseCode >= HTTP_SERVER_ERROR_CODE
-                val notFoundError = responseCode == HTTP_NOT_FOUND_ERROR_CODE
-                val successfullySynced = !(internalServerError || notFoundError)
-                var attributeErrors: List<SubscriberAttributeError> = emptyList()
-                if (error.code == PurchasesErrorCode.InvalidSubscriberAttributesError) {
-                    attributeErrors = body.getAttributeErrors()
-                }
-                onErrorHandler(error, successfullySynced, attributeErrors)
+                error?.let {
+                    val internalServerError = responseCode >= HTTP_SERVER_ERROR_CODE
+                    val notFoundError = responseCode == HTTP_NOT_FOUND_ERROR_CODE
+                    val successfullySynced = !(internalServerError || notFoundError)
+                    var attributeErrors: List<SubscriberAttributeError> = emptyList()
+                    if (error.code == PurchasesErrorCode.InvalidSubscriberAttributesError) {
+                        attributeErrors = body.getAttributeErrors()
+                    }
+                    onErrorHandler(error, successfullySynced, attributeErrors)
+                } ?: onSuccessHandler()
             }
         )
     }

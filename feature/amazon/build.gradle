@@ -1,0 +1,49 @@
+apply from: "$rootProject.projectDir/library.gradle"
+
+ext {
+    iapVersion = "2.0.76"
+}
+
+dependencies {
+    implementation project(":purchases")
+    implementation project(":common")
+    implementation project(":strings")
+    implementation project(":utils")
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+
+    compileOnly files("libs/in-app-purchasing-${iapVersion}.jar")
+
+    testImplementation files("libs/in-app-purchasing-${iapVersion}.jar")
+    testImplementation project(":test-utils")
+}
+
+task getAmazonLibrary {
+    ext {
+        downloadURL = "https://amzndevresources.com/iap/sdk/AmazonInAppPurchasing_Android.zip"
+        fileToExtract = "in-app-purchasing-${iapVersion}.jar"
+        destFile = new File( projectDir, "libs/$fileToExtract" )
+    }
+
+    inputs.property( 'downloadURL', downloadURL )
+    inputs.property( 'fileToExtract', fileToExtract )
+    outputs.file( destFile )
+
+    doLast {
+        File destDir = destFile.parentFile
+        destDir.mkdirs()
+
+        File downloadFile = new File( temporaryDir, 'download.zip' )
+        new URL( downloadURL ).withInputStream { is ->
+            downloadFile.withOutputStream { it << is }
+        }
+
+        project.copy {
+            from {
+                zipTree(downloadFile).matching { include "**/$fileToExtract" }.singleFile
+            }
+
+            into( destDir )
+        }
+    }
+}

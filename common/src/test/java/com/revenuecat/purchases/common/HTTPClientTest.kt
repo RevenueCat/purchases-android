@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Store
 import io.mockk.mockk
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -17,9 +18,9 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config as AnnotationConfig
 import java.net.URL
 import java.util.HashMap
+import org.robolectric.annotation.Config as AnnotationConfig
 
 @RunWith(AndroidJUnit4::class)
 @AnnotationConfig(manifest = AnnotationConfig.NONE)
@@ -56,7 +57,8 @@ class HTTPClientTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = expectedPlatformInfo,
-            proxyURL = baseURL
+            proxyURL = baseURL,
+            store = Store.PLAY_STORE
         )
     }
 
@@ -165,7 +167,8 @@ class HTTPClientTest {
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo("native", null),
-            proxyURL = baseURL
+            proxyURL = baseURL,
+            store = Store.PLAY_STORE
         )
         val response = MockResponse().setBody("{}")
         server.enqueue(response)
