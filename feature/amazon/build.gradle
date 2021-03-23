@@ -30,20 +30,25 @@ task getAmazonLibrary {
     outputs.file( destFile )
 
     doLast {
-        File destDir = destFile.parentFile
-        destDir.mkdirs()
+        if(!destFile.exists()) {
+            println 'Downloading Amazon dependency'
+            File destDir = destFile.parentFile
+            destDir.mkdirs()
 
-        File downloadFile = new File( temporaryDir, 'download.zip' )
-        new URL( downloadURL ).withInputStream { is ->
-            downloadFile.withOutputStream { it << is }
-        }
-
-        project.copy {
-            from {
-                zipTree(downloadFile).matching { include "**/$fileToExtract" }.singleFile
+            File downloadFile = new File( temporaryDir, 'download.zip' )
+            new URL( downloadURL ).withInputStream { is ->
+                downloadFile.withOutputStream { it << is }
             }
 
-            into( destDir )
+            project.copy {
+                from {
+                    zipTree(downloadFile).matching { include "**/$fileToExtract" }.singleFile
+                }
+
+                into( destDir )
+            }
         }
     }
 }
+
+preBuild.dependsOn getAmazonLibrary
