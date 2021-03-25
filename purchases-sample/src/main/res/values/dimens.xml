@@ -1,2 +1,3 @@
 <resources>
+    <dimen name="padding_tiny">4dp</dimen>
 </resources>
