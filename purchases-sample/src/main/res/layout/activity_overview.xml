@@ -40,16 +40,70 @@
                         app:layout_constraintTop_toTopOf="parent" />
 
                 <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/purchaser_info_request_date"
+                        style="@style/TextAppearance.AppCompat.Body1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        android:text="@{`As of ` + purchaserInfo.requestDate.toString()}"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_label"
+                        tools:text="As of Jan 21st 2020"/>
+
+                <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/purchaser_info_app_user_id"
                         style="@style/TextAppearance.AppCompat.Body1"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_tiny"
-                        android:text="@{purchaserInfo.originalAppUserId}"
+                        android:text="@{`Original App User Id: ` + purchaserInfo.originalAppUserId}"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_label" />
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_request_date" />
 
+                <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/purchaser_info_schema_version"
+                        style="@style/TextAppearance.AppCompat.Body1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        android:text="@{`Schema Version: ` + String.valueOf(purchaserInfo.schemaVersion)}"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_user_id" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/purchaser_info_first_seen"
+                        style="@style/TextAppearance.AppCompat.Body1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        android:text="@{`First seen: ` + purchaserInfo.firstSeen.toString()}"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_schema_version" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/purchaser_info_management_url"
+                        style="@style/TextAppearance.AppCompat.Body1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        android:text="@{`Management URL: ` + purchaserInfo.managementURL.toString()}"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_first_seen" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/purchaser_info_original_purchase_date"
+                        style="@style/TextAppearance.AppCompat.Body1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        android:text="@{`Original Purchase Date: ` + purchaserInfo.originalPurchaseDate.toString()}"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_management_url" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
         </com.google.android.material.card.MaterialCardView>
