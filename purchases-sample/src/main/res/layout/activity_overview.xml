@@ -2,6 +2,7 @@
 <layout>
 
     <data>
+
         <variable
                 name="purchaserInfo"
                 type="com.revenuecat.purchases.PurchaserInfo" />
@@ -12,8 +13,7 @@
             xmlns:tools="http://schemas.android.com/tools"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="8dp"
-            tools:context=".CatsActivity">
+            android:padding="8dp">
 
         <com.google.android.material.card.MaterialCardView
                 android:id="@+id/purchaser_info_card"
@@ -28,7 +28,8 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/purchaser_info_card_content"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:animateLayoutChanges="true">
 
                 <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/purchaser_info_label"
@@ -48,7 +49,7 @@
                         android:text="@{`As of ` + purchaserInfo.requestDate.toString()}"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/purchaser_info_label"
-                        tools:text="As of Jan 21st 2020"/>
+                        tools:text="As of Jan 21st 2020" />
 
                 <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/purchaser_info_app_user_id"
@@ -104,6 +105,35 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/purchaser_info_management_url" />
+
+                <androidx.appcompat.widget.AppCompatImageView
+                        android:id="@+id/purchaser_info_card_expand_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/ic_arrow_down"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_original_purchase_date" />
+
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/purchaser_info_details_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_card_expand_button">
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/purchaser_info_details_header"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="TESTING"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
 
         </com.google.android.material.card.MaterialCardView>
