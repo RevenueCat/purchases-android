@@ -37,6 +37,7 @@
     <ID>MagicNumber:utils.kt$1000000.0</ID>
     <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): PurchaseType</ID>
     <ID>TooGenericExceptionCaught:AdvertisingIdClient.kt$AdvertisingIdClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
     <ID>TooManyFunctions:Backend.kt$Backend$Backend</ID>
     <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper$BillingWrapper</ID>
