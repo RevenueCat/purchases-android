@@ -8,136 +8,149 @@
                 type="com.revenuecat.purchases.PurchaserInfo" />
     </data>
 
-    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <ScrollView
             xmlns:app="http://schemas.android.com/apk/res-auto"
             xmlns:tools="http://schemas.android.com/tools"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="8dp">
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent">
 
-        <com.google.android.material.card.MaterialCardView
-                android:id="@+id/purchaser_info_card"
+        <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="8dp"
-                app:elevation="@dimen/cardview_default_elevation"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                android:padding="8dp">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/purchaser_info_card_content"
+            <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/purchaser_info_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:animateLayoutChanges="true">
-
-                <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/purchaser_info_label"
-                        style="@style/TextAppearance.AppCompat.Title"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="PurchaserInfo"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/purchaser_info_request_date"
-                        style="@style/TextAppearance.AppCompat.Body1"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/padding_tiny"
-                        android:text="@{`As of ` + purchaserInfo.requestDate.toString()}"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_label"
-                        tools:text="As of Jan 21st 2020" />
-
-                <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/purchaser_info_app_user_id"
-                        style="@style/TextAppearance.AppCompat.Body1"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/padding_tiny"
-                        android:text="@{`Original App User Id: ` + purchaserInfo.originalAppUserId}"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_request_date" />
-
-                <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/purchaser_info_schema_version"
-                        style="@style/TextAppearance.AppCompat.Body1"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/padding_tiny"
-                        android:text="@{`Schema Version: ` + String.valueOf(purchaserInfo.schemaVersion)}"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_user_id" />
-
-                <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/purchaser_info_first_seen"
-                        style="@style/TextAppearance.AppCompat.Body1"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/padding_tiny"
-                        android:text="@{`First seen: ` + purchaserInfo.firstSeen.toString()}"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_schema_version" />
-
-                <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/purchaser_info_management_url"
-                        style="@style/TextAppearance.AppCompat.Body1"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/padding_tiny"
-                        android:text="@{`Management URL: ` + purchaserInfo.managementURL.toString()}"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_first_seen" />
-
-                <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/purchaser_info_original_purchase_date"
-                        style="@style/TextAppearance.AppCompat.Body1"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/padding_tiny"
-                        android:text="@{`Original Purchase Date: ` + purchaserInfo.originalPurchaseDate.toString()}"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_management_url" />
-
-                <androidx.appcompat.widget.AppCompatImageView
-                        android:id="@+id/purchaser_info_card_expand_button"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:src="@drawable/ic_arrow_down"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_original_purchase_date" />
-
+                    android:padding="8dp"
+                    app:elevation="@dimen/cardview_default_elevation"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
-                        android:id="@+id/purchaser_info_details_container"
+                        android:id="@+id/purchaser_info_card_content"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_card_expand_button">
+                        android:animateLayoutChanges="true">
 
                     <androidx.appcompat.widget.AppCompatTextView
-                            android:id="@+id/purchaser_info_details_header"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/purchaser_info_label"
+                            style="@style/TextAppearance.AppCompat.Title"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="TESTING"
+                            android:text="PurchaserInfo"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
 
+                    <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/purchaser_info_request_date"
+                            style="@style/TextAppearance.AppCompat.Body1"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_tiny"
+                            android:text="@{`As of ` + purchaserInfo.requestDate.toString()}"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_label"
+                            tools:text="As of Jan 21st 2020" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/purchaser_info_app_user_id"
+                            style="@style/TextAppearance.AppCompat.Body1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_tiny"
+                            android:text="@{`Original App User Id: ` + purchaserInfo.originalAppUserId}"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_request_date" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/purchaser_info_schema_version"
+                            style="@style/TextAppearance.AppCompat.Body1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_tiny"
+                            android:text="@{`Schema Version: ` + String.valueOf(purchaserInfo.schemaVersion)}"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_user_id" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/purchaser_info_first_seen"
+                            style="@style/TextAppearance.AppCompat.Body1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_tiny"
+                            android:text="@{`First seen: ` + purchaserInfo.firstSeen.toString()}"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_schema_version" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/purchaser_info_management_url"
+                            style="@style/TextAppearance.AppCompat.Body1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_tiny"
+                            android:text="@{`Management URL: ` + purchaserInfo.managementURL.toString()}"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_first_seen" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                            android:id="@+id/purchaser_info_original_purchase_date"
+                            style="@style/TextAppearance.AppCompat.Body1"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_tiny"
+                            android:text="@{`Original Purchase Date: ` + purchaserInfo.originalPurchaseDate.toString()}"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_management_url" />
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/purchaser_info_card_expand_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:src="@drawable/ic_arrow_down"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_original_purchase_date" />
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/purchaser_info_details_container"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_card_expand_button"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintVertical_bias="0">
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                                android:id="@+id/purchaser_info_details_header"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="JSON Object"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toTopOf="parent" />
+
+                        <androidx.appcompat.widget.AppCompatTextView
+                                android:id="@+id/purchaser_info_json_object"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:layout_constraintEnd_toEndOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@+id/purchaser_info_details_header" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
-            </androidx.constraintlayout.widget.ConstraintLayout>
 
-        </com.google.android.material.card.MaterialCardView>
+            </com.google.android.material.card.MaterialCardView>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
 </layout>

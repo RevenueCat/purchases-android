@@ -4,11 +4,11 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
-import androidx.transition.TransitionManager
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.sample.databinding.ActivityOverviewBinding
 import kotlinx.android.synthetic.main.activity_overview.view.*
+import org.json.JSONObject
 
 class OverviewActivity : AppCompatActivity() {
 
@@ -19,7 +19,7 @@ class OverviewActivity : AppCompatActivity() {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_overview)
 
         binding.purchaserInfoCard.setOnClickListener { card ->
-            TransitionManager.beginDelayedTransition(card.purchaser_info_card_content)
+//            TransitionManager.beginDelayedTransition(card.purchaser_info_card_content)
             card.purchaser_info_details_container.visibility = View.VISIBLE
         }
     }
@@ -28,6 +28,8 @@ class OverviewActivity : AppCompatActivity() {
         super.onResume()
         Purchases.sharedInstance.getPurchaserInfoWith(::showError) { purchaserInfo ->
             binding.purchaserInfo = purchaserInfo
+
+            binding.purchaserInfoJsonObject.text = JSONObject(purchaserInfo.jsonObject.toString()).toString(2)
         }
     }
 }
