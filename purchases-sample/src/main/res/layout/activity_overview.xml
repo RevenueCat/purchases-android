@@ -68,14 +68,23 @@
 
                     <include
                             layout="@layout/row_view"
-                            android:id="@+id/purchaser_info_app_entitlements"
+                            android:id="@+id/purchaser_info_app_active_entitlements"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            bind:rcHeader="@{`Entitlements: `}"
-                            bind:rcValue="@{purchaserInfo.entitlements.toString()}"
+                            bind:rcHeader="@{`Active Entitlements: `}"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_user_id" />
+
+                    <include
+                            layout="@layout/row_view"
+                            android:id="@+id/purchaser_info_app_all_entitlements"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            bind:rcHeader="@{`All Entitlements: `}"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_active_entitlements" />
 
                     <include
                             layout="@layout/row_view"
@@ -86,7 +95,7 @@
                             bind:rcValue="@{String.valueOf(purchaserInfo.schemaVersion)}"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_entitlements" />
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_all_entitlements" />
 
                     <include
                             layout="@layout/row_view"
@@ -157,6 +166,7 @@
                                 app:layout_constraintTop_toBottomOf="@+id/purchaser_info_details_header" />
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
+
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
             </com.google.android.material.card.MaterialCardView>

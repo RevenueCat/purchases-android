@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
+import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.sample.databinding.ActivityOverviewBinding
@@ -30,6 +32,18 @@ class OverviewActivity : AppCompatActivity() {
             binding.purchaserInfo = purchaserInfo
 
             binding.purchaserInfoJsonObject.text = JSONObject(purchaserInfo.jsonObject.toString()).toString(2)
+            binding.purchaserInfoAppActiveEntitlements.rcValue = formatEntitlements(purchaserInfo.entitlements.active)
+            binding.purchaserInfoAppAllEntitlements.rcValue = formatEntitlements(purchaserInfo.entitlements.all)
         }
+    }
+
+    private fun formatEntitlements(entitlementInfoMap: Map<String, EntitlementInfo>) : String {
+        if (entitlementInfoMap.isEmpty()) return "None"
+
+        var formattedString = ""
+        for (entitlementInfo in entitlementInfoMap) {
+            formattedString += "${entitlementInfo.key} -> expires ${entitlementInfo.value.expirationDate.toString()}\n"
+        }
+        return formattedString
     }
 }
