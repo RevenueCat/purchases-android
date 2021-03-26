@@ -1,5 +1,3 @@
-## 4.0.5
-
 - Catches NullPointerException on DeviceCache.findKeysThatStartWith
     https://github.com/RevenueCat/purchases-android/pull/284
 - Catch exceptions when getting stringSet from sharedPreferences
