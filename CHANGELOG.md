@@ -1,3 +1,13 @@
+## 4.0.5
+
+- Catches NullPointerException on DeviceCache.findKeysThatStartWith
+  https://github.com/RevenueCat/purchases-android/pull/284
+- Catch exceptions when getting stringSet from sharedPreferences
+  https://github.com/RevenueCat/purchases-android/pull/280
+  https://github.com/RevenueCat/purchases-android/pull/282
+- Identity v3: update appUserID location in /identify
+  https://github.com/RevenueCat/purchases-android/pull/287
+
 ## 4.0.4
 
 - Updated willRenew property in the PurchaserInfo to be false also for Consumabled and Promotionals.
