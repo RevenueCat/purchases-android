@@ -4,11 +4,11 @@
         xmlns:tools="http://schemas.android.com/tools">
     <data>
         <variable
-                name="rcHeader"
+                name="header"
                 type="String" />
 
         <variable
-                name="rcValue"
+                name="detail"
                 type="String" />
     </data>
 
@@ -20,7 +20,7 @@
         <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/header"
                 android:textStyle="bold"
-                android:text="@{rcHeader}"
+                android:text="@{header}"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:layout_constraintStart_toStartOf="parent"
@@ -29,7 +29,7 @@
 
         <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/value"
-                android:text="@{rcValue}"
+                android:text="@{detail}"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 app:layout_constraintStart_toStartOf="parent"

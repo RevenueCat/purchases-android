@@ -21,7 +21,6 @@ class OverviewActivity : AppCompatActivity() {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_overview)
 
         binding.purchaserInfoCard.setOnClickListener { card ->
-//            TransitionManager.beginDelayedTransition(card.purchaser_info_card_content)
             card.purchaser_info_details_container.visibility = View.VISIBLE
         }
     }
@@ -32,8 +31,8 @@ class OverviewActivity : AppCompatActivity() {
             binding.purchaserInfo = purchaserInfo
 
             binding.purchaserInfoJsonObject.text = JSONObject(purchaserInfo.jsonObject.toString()).toString(2)
-            binding.purchaserInfoAppActiveEntitlements.rcValue = formatEntitlements(purchaserInfo.entitlements.active)
-            binding.purchaserInfoAppAllEntitlements.rcValue = formatEntitlements(purchaserInfo.entitlements.all)
+            binding.purchaserInfoAppActiveEntitlements.detail = formatEntitlements(purchaserInfo.entitlements.active)
+            binding.purchaserInfoAppAllEntitlements.detail = formatEntitlements(purchaserInfo.entitlements.all)
         }
     }
 
