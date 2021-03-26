@@ -24,8 +24,7 @@
                     android:id="@+id/purchaser_info_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="8dp"
-                    app:elevation="@dimen/cardview_default_elevation"
+                    android:layout_margin="@dimen/padding_small"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent">
@@ -34,6 +33,7 @@
                         android:id="@+id/purchaser_info_card_content"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:padding="@dimen/padding_small"
                         android:animateLayoutChanges="true">
 
                     <androidx.appcompat.widget.AppCompatTextView

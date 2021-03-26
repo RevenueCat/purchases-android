@@ -16,7 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_small"
-            app:elevation="@dimen/padding_small"
+            android:layout_margin="@dimen/padding_small"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -25,16 +25,39 @@
                 android:id="@+id/offering_card_content"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:padding="@dimen/padding_small"
                 android:animateLayoutChanges="true">
 
             <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/offering_name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@{offering.identifier}"
+                    android:text="@{offering.serverDescription}"
+                    style="@style/TextAppearance.AppCompat.Medium"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
+
+            <include
+                    layout="@layout/row_view"
+                    android:id="@+id/offering_identifier"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    bind:header="@{`Identifier: `}"
+                    bind:detail="@{offering.identifier}"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/offering_name" />
+
+            <include
+                    layout="@layout/row_view"
+                    android:id="@+id/offering_num_packages"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    bind:header="@{String.valueOf(offering.availablePackages.size()) + ` packages included`}"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/offering_identifier" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
