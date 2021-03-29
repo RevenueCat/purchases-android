@@ -21,14 +21,16 @@ class OverviewActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        Purchases.sharedInstance.getPurchaserInfoWith(::showError) { purchaserInfo ->
-            binding.purchaserInfo = purchaserInfo
+        Purchases.sharedInstance.getPurchaserInfoWith(::showError) { info ->
+            with(binding) {
+                purchaserInfo = info
 
-            binding.purchaserInfoJsonObject.detail =
-                JSONObject(purchaserInfo.jsonObject.toString()).toString(JSON_FORMATTER_INDENT_SPACES)
-            binding.purchaserInfoAppActiveEntitlements.detail =
-                formatEntitlements(purchaserInfo.entitlements.active.values)
-            binding.purchaserInfoAppAllEntitlements.detail = formatEntitlements(purchaserInfo.entitlements.all.values)
+                purchaserInfoJsonObject.detail =
+                    JSONObject(info.jsonObject.toString()).toString(JSON_FORMATTER_INDENT_SPACES)
+
+                purchaserInfoActiveEntitlements.detail = formatEntitlements(info.entitlements.active.values)
+                purchaserInfoAllEntitlements.detail = formatEntitlements(info.entitlements.all.values)
+            }
         }
     }
 

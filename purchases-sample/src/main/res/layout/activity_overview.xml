@@ -68,7 +68,7 @@
 
                     <include
                             layout="@layout/row_view"
-                            android:id="@+id/purchaser_info_app_active_entitlements"
+                            android:id="@+id/purchaser_info_active_entitlements"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             bind:header="@{`Active Entitlements: `}"
@@ -78,13 +78,13 @@
 
                     <include
                             layout="@layout/row_view"
-                            android:id="@+id/purchaser_info_app_all_entitlements"
+                            android:id="@+id/purchaser_info_all_entitlements"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             bind:header="@{`All Entitlements: `}"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_active_entitlements" />
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_active_entitlements" />
 
                     <include
                             layout="@layout/row_view"
@@ -95,7 +95,7 @@
                             bind:detail="@{String.valueOf(purchaserInfo.schemaVersion)}"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_all_entitlements" />
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_all_entitlements" />
 
                     <include
                             layout="@layout/row_view"
