@@ -1,11 +1,9 @@
 package com.revenuecat.sample
 
 import android.os.Bundle
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import com.revenuecat.purchases.EntitlementInfo
-import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.sample.databinding.ActivityOverviewBinding
@@ -19,10 +17,6 @@ class OverviewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_overview)
-
-        binding.purchaserInfoCard.setOnClickListener { card ->
-            card.purchaser_info_details_container.visibility = View.VISIBLE
-        }
     }
 
     override fun onResume() {
@@ -30,19 +24,27 @@ class OverviewActivity : AppCompatActivity() {
         Purchases.sharedInstance.getPurchaserInfoWith(::showError) { purchaserInfo ->
             binding.purchaserInfo = purchaserInfo
 
-            binding.purchaserInfoJsonObject.text = JSONObject(purchaserInfo.jsonObject.toString()).toString(2)
-            binding.purchaserInfoAppActiveEntitlements.detail = formatEntitlements(purchaserInfo.entitlements.active)
-            binding.purchaserInfoAppAllEntitlements.detail = formatEntitlements(purchaserInfo.entitlements.all)
+            binding.purchaserInfoJsonObject.detail =
+                JSONObject(purchaserInfo.jsonObject.toString()).toString(JSON_FORMATTER_INDENT_SPACES)
+            binding.purchaserInfoAppActiveEntitlements.detail =
+                formatEntitlements(purchaserInfo.entitlements.active.values)
+            binding.purchaserInfoAppAllEntitlements.detail = formatEntitlements(purchaserInfo.entitlements.all.values)
         }
     }
 
-    private fun formatEntitlements(entitlementInfoMap: Map<String, EntitlementInfo>) : String {
-        if (entitlementInfoMap.isEmpty()) return "None"
+    private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
+        if (entitlementInfos.isEmpty()) return "None"
 
         var formattedString = ""
-        for (entitlementInfo in entitlementInfoMap) {
-            formattedString += "${entitlementInfo.key} -> expires ${entitlementInfo.value.expirationDate.toString()}\n"
+        entitlementInfos.forEachIndexed { index, entitlementInfo ->
+            formattedString += entitlementInfo.toBriefString() +
+                if (index != entitlementInfos.size - 1) "\n" else ""
         }
+
         return formattedString
+    }
+
+    companion object {
+        private const val JSON_FORMATTER_INDENT_SPACES = 4
     }
 }

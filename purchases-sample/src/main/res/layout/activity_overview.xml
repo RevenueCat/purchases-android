@@ -18,13 +18,13 @@
         <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="8dp">
+                android:padding="@dimen/padding_small">
 
             <com.google.android.material.card.MaterialCardView
                     android:id="@+id/purchaser_info_card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="8dp"
+                    android:padding="@dimen/padding_small"
                     app:elevation="@dimen/cardview_default_elevation"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
@@ -142,28 +142,21 @@
                             android:id="@+id/purchaser_info_details_container"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:visibility="gone"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/purchaser_info_card_expand_button"
                             app:layout_constraintVertical_bias="0">
 
-                        <androidx.appcompat.widget.AppCompatTextView
-                                android:id="@+id/purchaser_info_details_header"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="JSON Object"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toTopOf="parent" />
-
-                        <androidx.appcompat.widget.AppCompatTextView
+                        <include
+                                layout="@layout/row_view"
                                 android:id="@+id/purchaser_info_json_object"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                bind:header="@{`JSON Object`}"
                                 app:layout_constraintEnd_toEndOf="parent"
                                 app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/purchaser_info_details_header" />
+                                app:layout_constraintTop_toTopOf="parent"/>
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
