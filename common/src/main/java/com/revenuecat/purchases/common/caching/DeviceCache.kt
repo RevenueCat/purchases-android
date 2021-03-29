@@ -19,6 +19,7 @@ import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.strings.ReceiptStrings
 import org.json.JSONException
 import org.json.JSONObject
+import java.lang.NullPointerException
 import java.util.Date
 
 private const val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 60000 * 5
@@ -320,9 +321,13 @@ open class DeviceCache(
     fun findKeysThatStartWith(
         cacheKey: String
     ): Set<String> {
-        return preferences.all
-            ?.filterKeys { it.startsWith(cacheKey) }
-            ?.keys ?: emptySet()
+        return try {
+            preferences.all
+                ?.filterKeys { it.startsWith(cacheKey) }
+                ?.keys ?: emptySet()
+        } catch (e: NullPointerException) {
+            emptySet()
+        }
     }
 
     fun newKey(

@@ -440,6 +440,16 @@ class DeviceCacheTest {
         assertThat(sentTokens).isEmpty()
     }
 
+    @Test
+    fun `If getting all preferences throws NullPointerException when calling findKeysThatStartWith, an empty set is returned`() {
+        every {
+            mockPrefs.all
+        } throws NullPointerException("NullPointerException")
+
+        val returnedSetOfKeys = cache.findKeysThatStartWith("any_cache_key")
+        assertThat(returnedSetOfKeys).isEmpty()
+    }
+
     private fun mockString(key: String, value: String?) {
         every {
             mockPrefs.getString(eq(key), isNull())

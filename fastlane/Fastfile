@@ -112,7 +112,7 @@ def increment_version_in(previous_version, new_version, path)
   sh "sed -i'#{backup_extension}' #{sed_regex} #{path}"
 end
 
-def attach_changelog_to_main
+def attach_changelog_to_main(version_number)
   current_changelog = File.open("../CHANGELOG.latest.md", 'r')
   master_changelog = File.open("../CHANGELOG.md", 'r')
 
@@ -123,7 +123,8 @@ def attach_changelog_to_main
   master_changelog.close
 
   File.open("../CHANGELOG.md", 'w') { |master_changelog_write_mode|
-    whole_file_data = "#{current_changelog_data}\n#{master_changelog_data}"
+    version_header = "## #{version_number}"
+    whole_file_data = "#{version_header}\n#{current_changelog_data}\n#{master_changelog_data}"
     puts "going to save. Contents - #{whole_file_data}"
     
     master_changelog_write_mode.write(whole_file_data)
