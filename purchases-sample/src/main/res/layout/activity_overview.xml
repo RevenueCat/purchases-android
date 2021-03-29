@@ -134,7 +134,7 @@
                             android:id="@+id/purchaser_info_card_expand_button"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:src="@drawable/ic_arrow_down"
+                            app:srcCompat="@drawable/ic_arrow_down"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/purchaser_info_original_purchase_date" />
 
