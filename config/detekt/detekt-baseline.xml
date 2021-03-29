@@ -48,6 +48,7 @@
     <ID>NoWildcardImports:com.revenuecat.sample.ui.user.UserFragment.kt:14</ID>
     <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): ProductType</ID>
     <ID>TooGenericExceptionCaught:AdvertisingIdClient.kt$AdvertisingIdClient$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
     <ID>TooManyFunctions:AmazonBilling.kt$AmazonBilling$AmazonBilling</ID>
     <ID>TooManyFunctions:Backend.kt$Backend$Backend</ID>
