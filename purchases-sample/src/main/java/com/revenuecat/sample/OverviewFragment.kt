@@ -12,7 +12,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.sample.databinding.FragmentOverviewBinding
-import org.json.JSONObject
 
 class OverviewFragment : Fragment() {
 
@@ -36,8 +35,7 @@ class OverviewFragment : Fragment() {
             with(binding) {
                 purchaserInfo = info
 
-                purchaserInfoJsonObject.detail =
-                    JSONObject(info.jsonObject.toString()).toString(JSON_FORMATTER_INDENT_SPACES)
+                purchaserInfoJsonObject.detail = info.jsonObject.toString(JSON_FORMATTER_INDENT_SPACES)
 
                 purchaserInfoActiveEntitlements.detail = formatEntitlements(info.entitlements.active.values)
                 purchaserInfoAllEntitlements.detail = formatEntitlements(info.entitlements.all.values)
@@ -53,8 +51,6 @@ class OverviewFragment : Fragment() {
     }
 
     private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
-        if (entitlementInfos.isEmpty()) return "None"
-
         var formattedString = ""
         entitlementInfos.forEachIndexed { index, entitlementInfo ->
             formattedString += entitlementInfo.toBriefString() +
