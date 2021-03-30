@@ -1,30 +1,33 @@
 package com.revenuecat.sample
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import androidx.databinding.DataBindingUtil
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getPurchaserInfoWith
-import com.revenuecat.sample.databinding.ActivityOverviewBinding
+import com.revenuecat.sample.databinding.FragmentOverviewBinding
 import org.json.JSONObject
 
-class OverviewActivity : AppCompatActivity() {
+class OverviewFragment : Fragment() {
 
-    lateinit var binding: ActivityOverviewBinding
+    lateinit var binding: FragmentOverviewBinding
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_overview)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        binding = FragmentOverviewBinding.inflate(inflater)
 
         binding.purchaserInfoCard.setOnClickListener {
             with(binding.purchaserInfoDetailsContainer) {
                 visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
             }
         }
+
+        return binding.root
     }
 
     override fun onResume() {
@@ -45,7 +48,7 @@ class OverviewActivity : AppCompatActivity() {
     }
 
     private fun populateOfferings(offerings: Offerings) {
-        binding.overviewOfferingsRecycler.layoutManager = LinearLayoutManager(this)
+        binding.overviewOfferingsRecycler.layoutManager = LinearLayoutManager(requireContext())
         binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(offerings.all.values.toList())
     }
 
