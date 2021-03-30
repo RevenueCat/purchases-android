@@ -19,6 +19,12 @@ class OverviewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_overview)
+
+        binding.purchaserInfoCard.setOnClickListener {
+            with(binding.purchaserInfoDetailsContainer) {
+                visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
+            }
+        }
     }
 
     override fun onResume() {
