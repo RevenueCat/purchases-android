@@ -10,7 +10,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.revenuecat.purchases"
+        applicationId "com.revenuecat.sample"
         minSdkVersion minVersion
         targetSdkVersion compileVersion
         versionCode 1
