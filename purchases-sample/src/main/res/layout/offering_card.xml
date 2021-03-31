@@ -17,6 +17,8 @@
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_small"
             android:layout_margin="@dimen/padding_small"
+            android:clickable="true"
+            android:focusable="true"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">

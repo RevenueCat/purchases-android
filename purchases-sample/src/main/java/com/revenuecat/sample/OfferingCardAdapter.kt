@@ -1,12 +1,14 @@
 package com.revenuecat.sample
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.revenuecat.purchases.Offering
 import com.revenuecat.sample.databinding.OfferingCardBinding
 
-class OfferingCardAdapter(private val offerings: List<Offering>) :
+class OfferingCardAdapter(private val offerings: List<Offering>, private val listener: OfferingCardAdapterListener) :
     RecyclerView.Adapter<OfferingCardAdapter.OfferingViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OfferingViewHolder {
@@ -25,6 +27,14 @@ class OfferingCardAdapter(private val offerings: List<Offering>) :
 
         fun bind(offering: Offering) {
             binding.offering = offering
+            binding.root.setOnClickListener {
+                listener.onOfferingClicked(binding.root, offering)
+            }
+            ViewCompat.setTransitionName(binding.root, offering.identifier)
         }
+    }
+
+    interface OfferingCardAdapterListener {
+        fun onOfferingClicked(cardView: View, offering: Offering)
     }
 }
