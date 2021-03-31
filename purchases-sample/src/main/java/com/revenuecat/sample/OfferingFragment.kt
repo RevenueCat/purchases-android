@@ -7,11 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.navArgs
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.sample.databinding.FragmentOfferingBinding
 
-class OfferingFragment : Fragment() {
+class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
 
     lateinit var binding: FragmentOfferingBinding
 
@@ -30,6 +32,13 @@ class OfferingFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = FragmentOfferingBinding.inflate(inflater)
         binding.offering = offering
+
+        binding.offeringsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
+        binding.offeringsPackagesRecycler.adapter = PackageCardAdapter(offering.availablePackages, this)
         return binding.root
+    }
+
+    override fun onBuyClicked(cardView: View, currentPackage: Package) {
+        // TODO handle purchasing package
     }
 }
