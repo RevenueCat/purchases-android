@@ -27,12 +27,12 @@ class PackageCardAdapter(private val packages: List<Package>, private val listen
         fun bind(currentPackage: Package) {
             binding.currentPackage = currentPackage
             binding.packageBuyButton.setOnClickListener {
-                listener.onBuyClicked(binding.root, currentPackage)
+                listener.onBuyPackageClicked(binding.root, currentPackage)
             }
         }
     }
 
     interface PackageCardAdapterListener {
-        fun onBuyClicked(cardView: View, currentPackage: Package)
+        fun onBuyPackageClicked(cardView: View, currentPackage: Package)
     }
 }

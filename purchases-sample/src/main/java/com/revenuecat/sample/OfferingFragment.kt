@@ -40,7 +40,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         return binding.root
     }
 
-    override fun onBuyClicked(cardView: View, currentPackage: Package) {
+    override fun onBuyPackageClicked(cardView: View, currentPackage: Package) {
         Purchases.sharedInstance.purchasePackageWith(
             requireActivity(),
             currentPackage,

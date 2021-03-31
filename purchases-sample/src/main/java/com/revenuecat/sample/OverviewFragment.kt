@@ -71,13 +71,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     }
 
     private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
-        var formattedString = ""
-        entitlementInfos.forEachIndexed { index, entitlementInfo ->
-            formattedString += entitlementInfo.toBriefString() +
-                if (index != entitlementInfos.size - 1) "\n" else ""
-        }
-
-        return formattedString
+        return entitlementInfos.joinToString(separator = "\n") { it.toBriefString() }
     }
 
     override fun onOfferingClicked(cardView: View, offering: Offering) {
