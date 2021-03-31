@@ -26,7 +26,7 @@ class PackageCardAdapter(private val packages: List<Package>, private val listen
 
         fun bind(currentPackage: Package) {
             binding.currentPackage = currentPackage
-            binding.root.setOnClickListener {
+            binding.packageBuyButton.setOnClickListener {
                 listener.onBuyClicked(binding.root, currentPackage)
             }
         }

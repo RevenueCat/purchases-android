@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.sample.databinding.FragmentOfferingBinding
 
 class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
@@ -39,6 +41,14 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     override fun onBuyClicked(cardView: View, currentPackage: Package) {
-        // TODO handle purchasing package
+        Purchases.sharedInstance.purchasePackageWith(
+            requireActivity(),
+            currentPackage,
+            { error, userCancelled ->
+                if (!userCancelled) {
+                    showError(error)
+                }
+            }) { _, purchaserInfo ->
+        }
     }
 }
