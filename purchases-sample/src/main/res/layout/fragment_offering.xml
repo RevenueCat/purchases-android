@@ -53,7 +53,7 @@
                         bind:header="@{`Identifier`}" />
 
                 <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/offering_packages_header"
+                        android:id="@+id/offering_details_packages_header"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         style="@style/TextAppearance.AppCompat.Title"
@@ -64,13 +64,13 @@
                         app:layout_constraintTop_toBottomOf="@+id/offering_details_name" />
 
                 <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/offerings_packages_recycler"
+                        android:id="@+id/offering__details_packages_recycler"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_tiny"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/offering_packages_header" />
+                        app:layout_constraintTop_toBottomOf="@+id/offering_details_packages_header" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

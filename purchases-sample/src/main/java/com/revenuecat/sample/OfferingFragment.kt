@@ -35,8 +35,8 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         binding = FragmentOfferingBinding.inflate(inflater)
         binding.offering = offering
 
-        binding.offeringsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
-        binding.offeringsPackagesRecycler.adapter = PackageCardAdapter(offering.availablePackages, this)
+        binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
+        binding.offeringDetailsPackagesRecycler.adapter = PackageCardAdapter(offering.availablePackages, this)
         return binding.root
     }
 

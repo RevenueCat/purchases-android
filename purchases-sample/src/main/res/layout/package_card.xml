@@ -50,7 +50,7 @@
                     tools:text="Product with an introductory price" />
 
             <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/package_name"
+                    android:id="@+id/package_identifier"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/padding_tiny"
@@ -84,7 +84,7 @@
                     android:id="@+id/package_buy_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/buy"
+                    android:text="Buy"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_price" />
