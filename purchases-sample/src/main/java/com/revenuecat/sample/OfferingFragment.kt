@@ -20,7 +20,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     lateinit var binding: FragmentOfferingBinding
 
     private val args: OfferingFragmentArgs by navArgs()
-    private val offering: Offering by lazy(LazyThreadSafetyMode.NONE) { args.offering }
+    private val offering: Offering by lazy { args.offering }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

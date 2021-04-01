@@ -28,21 +28,66 @@
                 android:padding="@dimen/padding_small">
 
             <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/package_name"
-                    android:layout_width="match_parent"
+                    android:id="@+id/package_product_title"
+                    style="@style/TextAppearance.AppCompat.Medium"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@{currentPackage.identifier}"
+                    android:text="@{currentPackage.product.title}"
+                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:Text="Introductory Price (PurchasesSample)" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/package_product_description"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/padding_tiny"
+                    android:text="@{currentPackage.product.description}"
+                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/package_product_title"
+                    tools:text="Product with an introductory price" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/package_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/padding_tiny"
+                    android:text="@{currentPackage.identifier}"
+                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/package_product_description"
+                    tools:text="$rc_monthly" />
+
+            <androidx.constraintlayout.widget.Barrier
+                    android:id="@+id/package_card_barrier"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:barrierDirection="start"
+                    app:constraint_referenced_ids="package_buy_button" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/package_price"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@{currentPackage.product.price}"
+                    android:textStyle="bold"
+                    android:textAlignment="center"
+                    app:layout_constraintBottom_toTopOf="@+id/package_buy_button"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/package_card_barrier"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:text="$7.95"/>
 
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/package_buy_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Buy"
+                    android:text="@string/buy"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"/>
+                    app:layout_constraintTop_toBottomOf="@+id/package_price" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

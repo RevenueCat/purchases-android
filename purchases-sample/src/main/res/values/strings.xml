@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Purchases Sample</string>
     <string name="offering_fragment_transition">OfferingFragmentTransition</string>
+    <string name="buy">Buy</string>
 </resources>
