@@ -5,8 +5,12 @@ apply plugin: 'kotlin-android-extensions'
 android {
     compileSdkVersion compileVersion
 
+    buildFeatures {
+        dataBinding true
+    }
+
     defaultConfig {
-        applicationId "com.revenuecat.purchases_sample"
+        applicationId "com.revenuecat.sample"
         minSdkVersion minVersion
         targetSdkVersion compileVersion
         versionCode 1
