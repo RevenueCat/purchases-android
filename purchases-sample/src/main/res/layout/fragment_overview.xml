@@ -116,7 +116,9 @@
                             android:layout_margin="@dimen/padding_tiny"
                             android:text="Logout"
                             app:layout_constraintStart_toEndOf="@+id/purchaser_info_manage_button"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_details_container"/>
+                            app:layout_constraintEnd_toStartOf="@+id/purchaser_info_card_barrier"
+                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_details_container"
+                            app:layout_constraintHorizontal_bias="0"/>
 
                     <androidx.constraintlayout.widget.Barrier
                             android:id="@+id/purchaser_info_card_barrier"
@@ -130,7 +132,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:background="#00000000"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_details_container"
+                            app:layout_constraintTop_toTopOf="@+id/purchaser_info_logout_button"
+                            app:layout_constraintBottom_toBottomOf="@+id/purchaser_info_logout_button"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:srcCompat="@drawable/ic_arrow_down" />
 

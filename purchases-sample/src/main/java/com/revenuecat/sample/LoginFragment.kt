@@ -9,6 +9,7 @@ import androidx.navigation.fragment.findNavController
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.identifyWith
+import com.revenuecat.purchases.resetWith
 import com.revenuecat.sample.databinding.FragmentLoginBinding
 
 class LoginFragment : Fragment() {
@@ -19,7 +20,7 @@ class LoginFragment : Fragment() {
         binding = FragmentLoginBinding.inflate(inflater)
 
         binding.loginButton.setOnClickListener {
-            binding.loginUsernameEdittext.text?.toString()?.let { userId ->
+            binding.loginUsernameEditText.text?.toString()?.let { userId ->
                 Purchases
                     .sharedInstance
                     .identifyWith(
@@ -30,7 +31,12 @@ class LoginFragment : Fragment() {
             }
         }
 
-        binding.anonymousUserButton.setOnClickListener { advanceToOverviewFragment(null) }
+        binding.anonymousUserButton.setOnClickListener {
+            Purchases.sharedInstance.resetWith(
+                { error -> showUserError(requireActivity(), error) },
+                ::advanceToOverviewFragment
+            )
+        }
 
         return binding.root
     }
