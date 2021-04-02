@@ -5,7 +5,6 @@
         xmlns:tools="http://schemas.android.com/tools">
 
     <data>
-
         <variable
                 name="purchaserInfo"
                 type="com.revenuecat.purchases.PurchaserInfo" />
@@ -21,6 +20,15 @@
                 android:animateLayoutChanges="true"
                 android:padding="@dimen/padding_small">
 
+            <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/purchaser_info_label"
+                    style="@style/TextAppearance.AppCompat.Title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="PurchaserInfo"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
             <com.google.android.material.card.MaterialCardView
                     android:id="@+id/purchaser_info_card"
                     android:layout_width="match_parent"
@@ -30,22 +38,13 @@
                     android:focusable="true"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
+                    app:layout_constraintTop_toBottomOf="@+id/purchaser_info_label">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/purchaser_info_card_content"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="@dimen/padding_small">
-
-                    <androidx.appcompat.widget.AppCompatTextView
-                            android:id="@+id/purchaser_info_label"
-                            style="@style/TextAppearance.AppCompat.Medium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="PurchaserInfo"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
 
                     <androidx.appcompat.widget.AppCompatImageView
                             android:id="@+id/purchaser_info_card_expand_button"
@@ -68,13 +67,24 @@
                     <include
                             android:id="@+id/purchaser_info_app_user_id"
                             layout="@layout/row_view"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            app:layout_constraintEnd_toEndOf="parent"
+                            android:layout_marginEnd="@dimen/padding_small"
+                            app:layout_constraintEnd_toStartOf="@+id/purchaser_info_copy_user_id_button"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/purchaser_info_request_date"
                             bind:detail="@{purchaserInfo.originalAppUserId}"
                             bind:header="@{`Original App User Id: `}" />
+
+                    <androidx.appcompat.widget.AppCompatImageButton
+                            android:id="@+id/purchaser_info_copy_user_id_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintBottom_toBottomOf="@+id/purchaser_info_app_user_id"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="@+id/purchaser_info_app_user_id"
+                            app:srcCompat="@drawable/ic_copy"
+                            android:background="#00000000"/>
 
                     <include
                             android:id="@+id/purchaser_info_active_entitlements"
@@ -192,8 +202,8 @@
                     android:id="@+id/overview_offerings_recycler"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:transitionGroup="true"
                     android:layout_marginTop="@dimen/padding_small"
+                    android:transitionGroup="true"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/offering_header" />

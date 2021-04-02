@@ -1,9 +1,12 @@
 package com.revenuecat.sample
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.FragmentNavigatorExtras
@@ -50,6 +53,12 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         Purchases.sharedInstance.getPurchaserInfoWith(::showError) { info ->
             with(binding) {
                 purchaserInfo = info
+
+                purchaserInfoCopyUserIdButton.setOnClickListener {
+                    val clipboard = getSystemService<ClipboardManager>(requireContext(), ClipboardManager::class.java)
+                    val clip = ClipData.newPlainText("RevenueCat userId", info.originalAppUserId)
+                    clipboard?.primaryClip = clip
+                }
 
                 purchaserInfoJsonObject.detail = info.jsonObject.toString(JSON_FORMATTER_INDENT_SPACES)
 
