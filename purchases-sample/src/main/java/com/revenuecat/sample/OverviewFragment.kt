@@ -28,7 +28,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = FragmentOverviewBinding.inflate(inflater)
 
-        binding.purchaserInfoCard.setOnClickListener {
+        binding.purchaserInfoCardExpandButton.setOnClickListener {
             with(binding.purchaserInfoDetailsContainer) {
                 visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
 

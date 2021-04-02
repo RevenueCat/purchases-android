@@ -5,9 +5,12 @@
         xmlns:tools="http://schemas.android.com/tools">
 
     <data>
+
         <variable
                 name="purchaserInfo"
                 type="com.revenuecat.purchases.PurchaserInfo" />
+
+        <import type="android.view.View" />
     </data>
 
     <ScrollView
@@ -29,154 +32,102 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-            <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/purchaser_info_card"
+            <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/purchaser_info_request_date"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="@dimen/padding_small"
-                    android:clickable="true"
-                    android:focusable="true"
+                    android:layout_marginStart="@dimen/padding_small"
+                    android:text="@{` as of ` + purchaserInfo.requestDate}"
+                    android:visibility="@{purchaserInfo.requestDate != null ? View.VISIBLE : View.GONE}"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/purchaser_info_label" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/purchaser_info_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_small"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/purchaser_info_label">
+                    app:layout_constraintTop_toBottomOf="@+id/purchaser_info_request_date">
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                        android:id="@+id/purchaser_info_card_content"
+                <androidx.appcompat.widget.AppCompatImageButton
+                        android:id="@+id/purchaser_info_card_expand_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="See more"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:srcCompat="@drawable/ic_arrow_down"
+                        android:background="#00000000"/>
+
+                <include
+                        android:id="@+id/purchaser_info_app_user_id"
+                        layout="@layout/row_view"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        app:layout_constraintEnd_toStartOf="@+id/purchaser_info_copy_user_id_button"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        bind:detail="@{purchaserInfo.originalAppUserId}"
+                        bind:header="@{`Original App User Id: `}" />
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                        android:id="@+id/purchaser_info_copy_user_id_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="#00000000"
+                        app:layout_constraintBottom_toBottomOf="@+id/purchaser_info_app_user_id"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="@+id/purchaser_info_app_user_id"
+                        app:srcCompat="@drawable/ic_copy" />
+
+                <include
+                        android:id="@+id/purchaser_info_active_entitlements"
+                        layout="@layout/row_view"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:padding="@dimen/padding_small">
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_user_id"
+                        bind:header="@{`Active Entitlements: `}" />
 
-                    <androidx.appcompat.widget.AppCompatImageView
-                            android:id="@+id/purchaser_info_card_expand_button"
-                            android:layout_width="wrap_content"
+                <include
+                        android:id="@+id/purchaser_info_all_entitlements"
+                        layout="@layout/row_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_active_entitlements"
+                        bind:header="@{`All Entitlements: `}" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/purchaser_info_details_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/purchaser_info_all_entitlements"
+                        app:layout_constraintVertical_bias="0">
+
+                    <include
+                            android:id="@+id/purchaser_info_json_object"
+                            layout="@layout/row_view"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent"
-                            app:srcCompat="@drawable/ic_arrow_down" />
-
-                    <include
-                            android:id="@+id/purchaser_info_request_date"
-                            layout="@layout/row_view"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_label"
-                            bind:detail="@{purchaserInfo.requestDate.toString()}"
-                            bind:header="@{`As of`}" />
-
-                    <include
-                            android:id="@+id/purchaser_info_app_user_id"
-                            layout="@layout/row_view"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="@dimen/padding_small"
-                            app:layout_constraintEnd_toStartOf="@+id/purchaser_info_copy_user_id_button"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_request_date"
-                            bind:detail="@{purchaserInfo.originalAppUserId}"
-                            bind:header="@{`Original App User Id: `}" />
-
-                    <androidx.appcompat.widget.AppCompatImageButton
-                            android:id="@+id/purchaser_info_copy_user_id_button"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintBottom_toBottomOf="@+id/purchaser_info_app_user_id"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintTop_toTopOf="@+id/purchaser_info_app_user_id"
-                            app:srcCompat="@drawable/ic_copy"
-                            android:background="#00000000"/>
-
-                    <include
-                            android:id="@+id/purchaser_info_active_entitlements"
-                            layout="@layout/row_view"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_app_user_id"
-                            bind:header="@{`Active Entitlements: `}" />
-
-                    <include
-                            android:id="@+id/purchaser_info_all_entitlements"
-                            layout="@layout/row_view"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_active_entitlements"
-                            bind:header="@{`All Entitlements: `}" />
-
-                    <include
-                            android:id="@+id/purchaser_info_schema_version"
-                            layout="@layout/row_view"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_all_entitlements"
-                            bind:detail="@{String.valueOf(purchaserInfo.schemaVersion)}"
-                            bind:header="@{`Schema Version: `}" />
-
-                    <include
-                            android:id="@+id/purchaser_info_first_seen"
-                            layout="@layout/row_view"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_schema_version"
-                            bind:detail="@{purchaserInfo.firstSeen.toString()}"
-                            bind:header="@{`First seen: `}" />
-
-                    <include
-                            android:id="@+id/purchaser_info_management_url"
-                            layout="@layout/row_view"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_first_seen"
-                            bind:detail="@{purchaserInfo.managementURL.toString()}"
-                            bind:header="@{`Management URL: `}" />
-
-                    <include
-                            android:id="@+id/purchaser_info_original_purchase_date"
-                            layout="@layout/row_view"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_management_url"
-                            bind:detail="@{purchaserInfo.originalPurchaseDate.toString()}"
-                            bind:header="@{`Original Purchase Date: `}" />
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                            android:id="@+id/purchaser_info_details_container"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:visibility="gone"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toBottomOf="@+id/purchaser_info_original_purchase_date"
-                            app:layout_constraintVertical_bias="0">
-
-                        <include
-                                android:id="@+id/purchaser_info_json_object"
-                                layout="@layout/row_view"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                app:layout_constraintEnd_toEndOf="parent"
-                                app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toTopOf="parent"
-                                bind:header="@{`JSON Object`}" />
-
-                    </androidx.constraintlayout.widget.ConstraintLayout>
+                            bind:header="@{`JSON Object`}" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-            </com.google.android.material.card.MaterialCardView>
-
+            </androidx.constraintlayout.widget.ConstraintLayout>
+            
             <View
                     android:id="@+id/overview_divider"
                     android:layout_width="match_parent"
@@ -186,7 +137,7 @@
                     android:background="#a9a9a9"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/purchaser_info_card" />
+                    app:layout_constraintTop_toBottomOf="@+id/purchaser_info_content" />
 
             <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/offering_header"
