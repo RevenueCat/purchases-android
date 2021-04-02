@@ -32,8 +32,8 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                 binding.purchaserInfoCardExpandButton
                     .animate()
                     .rotationBy(
-                        if (visibility == View.GONE) -ARROW_ANIMATION_ROTATION_DEGREES
-                        else ARROW_ANIMATION_ROTATION_DEGREES
+                        if (visibility == View.GONE) -ANIMATION_HALF_ROTATION_DEGREES
+                        else ANIMATION_HALF_ROTATION_DEGREES
                     )
                     .setDuration(resources.getInteger(R.integer.transition_duration).toLong())
                     .start()
@@ -82,10 +82,5 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         val extras = FragmentNavigatorExtras(cardView to offeringCardTransitionName)
         val directions = OverviewFragmentDirections.actionOverviewFragmentToOfferingFragment(offering)
         findNavController().navigate(directions, extras)
-    }
-
-    companion object {
-        private const val JSON_FORMATTER_INDENT_SPACES = 4
-        private const val ARROW_ANIMATION_ROTATION_DEGREES = 180f
     }
 }
