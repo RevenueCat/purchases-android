@@ -2,6 +2,7 @@ package com.revenuecat.sample
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -28,7 +29,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = FragmentOverviewBinding.inflate(inflater)
 
-        binding.purchaserInfoCardExpandButton.setOnClickListener {
+        binding.purchaserInfoCard.setOnClickListener {
             with(binding.purchaserInfoDetailsContainer) {
                 visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
 
@@ -42,6 +43,11 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                     .start()
             }
         }
+
+//        binding.purchaserInfoLogoutButton.setOnClickListener {
+//            Purchases.sharedInstance.reset(null)
+//        }
+
         return binding.root
     }
 
@@ -55,7 +61,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                 purchaserInfo = info
 
                 purchaserInfoCopyUserIdButton.setOnClickListener {
-                    val clipboard = getSystemService<ClipboardManager>(requireContext(), ClipboardManager::class.java)
+                    val clipboard = getSystemService(requireContext(), ClipboardManager::class.java)
                     val clip = ClipData.newPlainText("RevenueCat userId", info.originalAppUserId)
                     clipboard?.primaryClip = clip
                 }
@@ -64,6 +70,14 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
                 purchaserInfoActiveEntitlements.detail = formatEntitlements(info.entitlements.active.values)
                 purchaserInfoAllEntitlements.detail = formatEntitlements(info.entitlements.all.values)
+
+                binding.purchaserInfoManageButton.setOnClickListener {
+                    info.managementURL?.let {
+                        val intent = Intent(Intent.ACTION_VIEW)
+                        intent.data = it
+                        startActivity(intent)
+                    }
+                }
             }
         }
 
