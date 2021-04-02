@@ -51,12 +51,11 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/offering_name" />
 
-            <include
-                    layout="@layout/row_view"
+            <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/offering_num_packages"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    bind:header="@{String.valueOf(offering.availablePackages.size()) + ` packages included`}"
+                    android:text="@{String.valueOf(offering.availablePackages.size()) + ` packages included`}"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/offering_identifier" />

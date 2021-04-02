@@ -32,25 +32,25 @@
                     android:padding="@dimen/padding_small">
 
                 <androidx.appcompat.widget.AppCompatTextView
-                        android:id="@+id/offering_details_server_description"
+                        android:id="@+id/offering_details_name"
                         style="@style/TextAppearance.AppCompat.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@{offering.serverDescription}"
+                        android:text="@{offering.identifier}"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
                 <include
-                        android:id="@+id/offering_details_name"
+                        android:id="@+id/offering_details_server_description"
                         layout="@layout/row_view"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/padding_small"
                         android:layout_marginEnd="@dimen/padding_small"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description"
-                        bind:detail="@{offering.identifier}"
-                        bind:header="@{`Identifier`}" />
+                        app:layout_constraintTop_toBottomOf="@+id/offering_details_name"
+                        bind:detail="@{offering.serverDescription}"
+                        bind:header="@{`Description:`}" />
 
                 <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/offering_details_packages_header"
@@ -60,8 +60,8 @@
                         android:layout_marginTop="@dimen/padding_small"
                         android:text="Packages"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="@+id/offering_details_name"
-                        app:layout_constraintTop_toBottomOf="@+id/offering_details_name" />
+                        app:layout_constraintStart_toStartOf="@+id/offering_details_server_description"
+                        app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
 
                 <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/offering__details_packages_recycler"

@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
 import com.revenuecat.sample.databinding.PackageCardBinding
 
 class PackageCardAdapter(private val packages: List<Package>, private val listener: PackageCardAdapterListener) :
@@ -28,6 +29,12 @@ class PackageCardAdapter(private val packages: List<Package>, private val listen
             binding.currentPackage = currentPackage
             binding.packageBuyButton.setOnClickListener {
                 listener.onBuyPackageClicked(binding.root, currentPackage)
+            }
+
+            binding.packageType.detail = if (currentPackage.packageType == PackageType.CUSTOM) {
+                "custom -> ${currentPackage.packageType.identifier}"
+            } else {
+                currentPackage.packageType.toString()
             }
         }
     }
