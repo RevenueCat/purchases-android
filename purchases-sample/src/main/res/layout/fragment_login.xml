@@ -11,7 +11,8 @@
     <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/login_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:padding="@dimen/padding_large">
 
         <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/login_icon"
@@ -24,6 +25,21 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
+        <com.google.android.material.textfield.TextInputLayout
+                android:id="@id/login_username_input_layout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:hint="User ID"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/login_icon">
+
+            <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/login_username_edittext"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+        </com.google.android.material.textfield.TextInputLayout>
+
         <com.google.android.material.button.MaterialButton
                 android:id="@+id/login_button"
                 android:layout_width="wrap_content"
@@ -32,7 +48,8 @@
                 app:layout_constraintBottom_toTopOf="@+id/anonymous_user_button"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/login_icon" />
+                app:layout_constraintTop_toBottomOf="@+id/login_username_input_layout"
+                app:layout_constraintVertical_bias="0"/>
 
         <com.google.android.material.button.MaterialButton
                 android:id="@+id/anonymous_user_button"

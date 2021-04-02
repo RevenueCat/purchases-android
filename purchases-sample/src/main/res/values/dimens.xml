@@ -1,4 +1,5 @@
 <resources>
     <dimen name="padding_tiny">4dp</dimen>
     <dimen name="padding_small">8dp</dimen>
+    <dimen name="padding_large">32dp</dimen>
 </resources>

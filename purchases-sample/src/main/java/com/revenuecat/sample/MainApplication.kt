@@ -1,13 +1,13 @@
 package com.revenuecat.sample
 
+import android.app.Activity
 import android.app.Application
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.util.Log
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-
-const val PREMIUM_ENTITLEMENT_ID = "pro_cat"
 
 class MainApplication : Application() {
 
@@ -34,4 +34,12 @@ fun showError(message: String) {
 
 fun showError(error: PurchasesError) {
     showError(error.message)
+}
+
+fun showUserError(activity: Activity, error: PurchasesError) {
+    MaterialAlertDialogBuilder(activity)
+        .setTitle("Error")
+        .setMessage(error.message)
+        .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+        .show()
 }
