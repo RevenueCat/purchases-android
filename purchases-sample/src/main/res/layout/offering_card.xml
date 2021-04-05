@@ -9,6 +9,10 @@
         <variable
                 name="offering"
                 type="com.revenuecat.purchases.Offering" />
+
+        <variable
+                name="isCurrent"
+                type="Boolean" />
     </data>
 
     <com.google.android.material.card.MaterialCardView
@@ -34,7 +38,7 @@
                     android:id="@+id/offering_name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@{offering.serverDescription}"
+                    android:text="@{offering.serverDescription + (isCurrent ? ` (current)` : ``)}"
                     style="@style/TextAppearance.AppCompat.Medium"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"

@@ -89,8 +89,16 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     }
 
     private fun populateOfferings(offerings: Offerings) {
+        if (offerings.all.isEmpty()) {
+            binding.offeringHeader.text = "No Offerings"
+            return
+        }
+
         binding.overviewOfferingsRecycler.layoutManager = LinearLayoutManager(requireContext())
-        binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(offerings.all.values.toList(), this)
+        binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(
+            offerings.all.values.toList(),
+            offerings.current,
+            this)
     }
 
     private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
