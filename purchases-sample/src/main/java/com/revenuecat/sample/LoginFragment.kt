@@ -41,7 +41,7 @@ class LoginFragment : Fragment() {
         return binding.root
     }
 
-    private fun advanceToOverviewFragment(purchaserInfo: PurchaserInfo?) {
+    private fun advanceToOverviewFragment(purchaserInfo: PurchaserInfo) {
         val directions = LoginFragmentDirections.actionLoginFragmentToOverviewFragment()
         findNavController().navigate(directions)
     }

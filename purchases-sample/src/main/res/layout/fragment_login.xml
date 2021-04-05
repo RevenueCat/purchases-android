@@ -19,20 +19,21 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="😻"
-                android:textSize="150sp"
-                app:layout_constraintBottom_toTopOf="@+id/login_button"
+                android:textSize="120sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.textfield.TextInputLayout
-                android:id="@id/login_username_input_layout"
+                android:id="@+id/login_username_input_layout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:hint="User ID"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/login_icon">
+                app:layout_constraintTop_toBottomOf="@+id/login_icon"
+                app:layout_constraintBottom_toTopOf="@+id/login_button"
+                app:layout_constraintVertical_chainStyle="packed">
 
             <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/login_username_edit_text"
@@ -45,11 +46,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Login with User ID"
-                app:layout_constraintBottom_toTopOf="@+id/anonymous_user_button"
+                android:layout_marginTop="@dimen/padding_small"
+                app:layout_constraintTop_toBottomOf="@+id/login_username_input_layout"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/login_username_input_layout"
-                app:layout_constraintVertical_bias="0"/>
+                app:layout_constraintBottom_toTopOf="@+id/anonymous_user_button"/>
 
         <com.google.android.material.button.MaterialButton
                 android:id="@+id/anonymous_user_button"
@@ -58,8 +59,7 @@
                 android:text="Continue as new random user"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/login_button" />
+                app:layout_constraintStart_toStartOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

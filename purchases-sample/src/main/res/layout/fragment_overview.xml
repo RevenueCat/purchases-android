@@ -73,7 +73,7 @@
                             android:id="@+id/purchaser_info_copy_user_id_button"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="#00000000"
+                            android:background="?attr/selectableItemBackground"
                             app:layout_constraintBottom_toBottomOf="@+id/purchaser_info_app_user_id"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintTop_toTopOf="@+id/purchaser_info_app_user_id"

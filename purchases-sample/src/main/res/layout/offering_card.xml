@@ -55,6 +55,7 @@
                     android:id="@+id/offering_num_packages"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/padding_tiny"
                     android:text="@{String.valueOf(offering.availablePackages.size()) + ` packages included`}"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
