@@ -19,7 +19,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="😻"
-                android:textSize="120sp"
+                android:textSize="100sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -29,11 +29,11 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:hint="User ID"
+                android:layout_marginTop="@dimen/padding_large"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/login_icon"
-                app:layout_constraintBottom_toTopOf="@+id/login_button"
-                app:layout_constraintVertical_chainStyle="packed">
+                app:layout_constraintBottom_toTopOf="@+id/login_button">
 
             <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/login_username_edit_text"
@@ -43,7 +43,7 @@
 
         <com.google.android.material.button.MaterialButton
                 android:id="@+id/login_button"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Login with User ID"
                 android:layout_marginTop="@dimen/padding_small"
@@ -54,10 +54,10 @@
 
         <com.google.android.material.button.MaterialButton
                 android:id="@+id/anonymous_user_button"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Continue as new random user"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/login_button"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />
 
