@@ -33,13 +33,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             duration = requireContext().resources.getInteger(R.integer.transition_duration).toLong()
             scrimColor = Color.TRANSPARENT
         }
-
-        Purchases.sharedInstance.getPurchaserInfoWith {
-            activeSubscriptions = it.activeSubscriptions
-        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        Purchases.sharedInstance.getPurchaserInfoWith {
+            activeSubscriptions = it.activeSubscriptions
+        }
+
         binding = FragmentOfferingBinding.inflate(inflater)
         binding.offering = offering
 

@@ -38,7 +38,6 @@ fun showError(error: PurchasesError) {
 
 fun showUserError(activity: Activity, error: PurchasesError) {
     MaterialAlertDialogBuilder(activity)
-        .setTitle("Error")
         .setMessage(error.message)
         .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
         .show()
