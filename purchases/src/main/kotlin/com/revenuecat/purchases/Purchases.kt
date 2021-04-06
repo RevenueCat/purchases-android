@@ -37,6 +37,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.google.toProductDetails
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.identity.IdentityManager
@@ -801,6 +802,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         if (error != null) {
             listener?.onError(error)
         } else {
+            backend.clearCaches()
             synchronized(this@Purchases) {
                 state = state.copy(purchaseCallbacks = emptyMap())
             }
@@ -819,6 +821,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         deviceCache.clearLatestAttributionData(identityManager.currentAppUserID)
         identityManager.reset()
+        backend.clearCaches()
         synchronized(this@Purchases) {
             state = state.copy(purchaseCallbacks = emptyMap())
         }
@@ -1852,15 +1855,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     store
                 )
 
+                val prefs = PreferenceManager.getDefaultSharedPreferences(application)
+
+                val sharedPreferencesForETags = ETagManager.initializeSharedPreferences(context)
+                val eTagManager = ETagManager(sharedPreferencesForETags)
+
                 val dispatcher = Dispatcher(service ?: createDefaultExecutor())
                 val backend = Backend(
                     apiKey,
                     dispatcher,
-                    HTTPClient(appConfig)
+                    HTTPClient(appConfig, eTagManager)
                 )
                 val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
-                val prefs = PreferenceManager.getDefaultSharedPreferences(application)
                 val cache = DeviceCache(prefs, apiKey)
 
                 val billing: BillingAbstract = BillingFactory.createBilling(store, application, backend, cache)

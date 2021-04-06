@@ -7,7 +7,11 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.strings.NetworkStrings
+import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -20,9 +24,11 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+import kotlin.jvm.Throws
 
 class HTTPClient(
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
+    private val eTagManager: ETagManager
 ) {
 
     private fun buffer(inputStream: InputStream): BufferedReader {
@@ -66,7 +72,7 @@ class HTTPClient(
     /** Performs a synchronous web request to the RevenueCat API
      * @param path The resource being requested
      * @param body The body of the request, for GET must be null
-     * @param headers Map of headers, basic headers are added automatically
+     * @param authenticationHeaders Map of headers, basic headers are added automatically
      * @return Result containing the HTTP response code and the parsed JSON body
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
@@ -75,15 +81,21 @@ class HTTPClient(
     fun performRequest(
         path: String,
         body: Map<String, Any?>?,
-        headers: Map<String, String>
-    ): Result {
+        authenticationHeaders: Map<String, String>
+    ): HTTPResult {
         val jsonBody = body?.convert()
 
         val fullURL: URL
         val connection: HttpURLConnection
+        val httpRequest: HTTPRequest
         try {
             fullURL = URL(appConfig.baseURL, "/v1$path")
-            connection = getConnection(fullURL, headers, jsonBody)
+            val headersWithoutETag = getHeaders(authenticationHeaders)
+            httpRequest = HTTPRequest(fullURL, headersWithoutETag, jsonBody).let {
+                eTagManager.addETagHeaderToRequest(it)
+            }
+
+            connection = getConnection(httpRequest)
         } catch (e: MalformedURLException) {
             throw RuntimeException(e)
         }
@@ -101,9 +113,31 @@ class HTTPClient(
             connection.disconnect()
         }
 
-        val responseBody = payload?.let { JSONObject(it) } ?: throw IOException("Network call payload is null.")
         log(LogIntent.DEBUG, NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
-        return Result(responseCode, responseBody)
+        if (payload == null) {
+            throw IOException("Network call payload is null.")
+        }
+        val result = HTTPResult(responseCode, payload)
+        val eTagInResponse = connection.getHeaderField("X-RevenueCat-ETag")
+        return eTagManager.processResponse(httpRequest, eTagInResponse, result)
+    }
+
+    fun clearCaches() {
+        eTagManager.clearCaches()
+    }
+
+    private fun getHeaders(authenticationHeaders: Map<String, String>): Map<String, String> {
+        return mapOf(
+            "Content-Type" to "application/json",
+            "X-Platform" to getXPlatformHeader(),
+            "X-Platform-Flavor" to appConfig.platformInfo.flavor,
+            "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
+            "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
+            "X-Version" to Config.frameworkVersion,
+            "X-Client-Locale" to appConfig.languageTag,
+            "X-Client-Version" to appConfig.versionName,
+            "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true"
+        ).plus(authenticationHeaders).filterNotNullValues()
     }
 
     private fun Map<String, Any?>.convert(): JSONObject {
@@ -130,29 +164,12 @@ class HTTPClient(
         }
     }
 
-    private fun getConnection(
-        fullURL: URL,
-        headers: Map<String, String>?,
-        body: JSONObject?
-    ): HttpURLConnection {
-        return (fullURL.openConnection() as HttpURLConnection).apply {
-            mapOf(
-                "Content-Type" to "application/json",
-                "X-Platform" to getXPlatformHeader(),
-                "X-Platform-Flavor" to appConfig.platformInfo.flavor,
-                "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
-                "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
-                "X-Version" to Config.frameworkVersion,
-                "X-Client-Locale" to appConfig.languageTag,
-                "X-Client-Version" to appConfig.versionName,
-                "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true"
-            ).filterValues { it != null }
-                .plus(headers ?: emptyMap())
-                .forEach { (key, value) ->
-                    addRequestProperty(key, value)
-                }
-
-            if (body != null) {
+    private fun getConnection(request: HTTPRequest): HttpURLConnection {
+        return (request.fullURL.openConnection() as HttpURLConnection).apply {
+            request.headers.forEach { (key, value) ->
+                addRequestProperty(key, value)
+            }
+            request.body?.let { body ->
                 doOutput = true
                 requestMethod = "POST"
                 val os = outputStream
@@ -165,9 +182,4 @@ class HTTPClient(
         Store.AMAZON -> "amazon"
         else -> "android"
     }
-
-    data class Result(
-        val responseCode: Int,
-        val body: JSONObject
-    )
 }

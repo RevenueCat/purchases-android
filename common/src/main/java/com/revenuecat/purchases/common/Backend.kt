@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
+import com.revenuecat.purchases.common.networking.HTTPResult
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -63,7 +64,7 @@ class Backend(
         onCompleted: (PurchasesError?, Int, JSONObject) -> Unit
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     path,
                     body,
@@ -75,7 +76,7 @@ class Backend(
                 onError(error)
             }
 
-            override fun onCompletion(result: HTTPClient.Result) {
+            override fun onCompletion(result: HTTPResult) {
                 val error = if (!result.isSuccessful()) {
                     result.toPurchasesError().also { errorLog(it) }
                 } else {
@@ -105,15 +106,15 @@ class Backend(
         val cacheKey = listOf(path)
         val call = object : Dispatcher.AsyncCall() {
 
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 return httpClient.performRequest(
-                    "/subscribers/" + encode(appUserID),
+                    path,
                     null,
                     authenticationHeaders
                 )
             }
 
-            override fun onCompletion(result: HTTPClient.Result) {
+            override fun onCompletion(result: HTTPResult) {
                 synchronized(this@Backend) {
                     callbacks.remove(cacheKey)
                 }?.forEach { (onSuccess, onError) ->
@@ -182,7 +183,7 @@ class Backend(
 
         val call = object : Dispatcher.AsyncCall() {
 
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     "/receipts",
                     body,
@@ -190,7 +191,7 @@ class Backend(
                 )
             }
 
-            override fun onCompletion(result: HTTPClient.Result) {
+            override fun onCompletion(result: HTTPResult) {
                 synchronized(this@Backend) {
                     postReceiptCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccess, onError) ->
@@ -235,7 +236,7 @@ class Backend(
     ) {
         val path = "/subscribers/" + encode(appUserID) + "/offerings"
         val call = object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     path,
                     null,
@@ -251,7 +252,7 @@ class Backend(
                 }
             }
 
-            override fun onCompletion(result: HTTPClient.Result) {
+            override fun onCompletion(result: HTTPResult) {
                 synchronized(this@Backend) {
                     offeringsCallbacks.remove(path)
                 }?.forEach { (onSuccess, onError) ->
@@ -290,7 +291,7 @@ class Backend(
         )
 
         enqueue(object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     "/subscribers/" + encode(appUserID) + "/attribution",
                     body,
@@ -298,7 +299,7 @@ class Backend(
                 )
             }
 
-            override fun onCompletion(result: HTTPClient.Result) {
+            override fun onCompletion(result: HTTPResult) {
                 if (result.isSuccessful()) {
                     onSuccessHandler()
                 }
@@ -313,7 +314,7 @@ class Backend(
         onErrorHandler: (PurchasesError) -> Unit
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     "/subscribers/" + encode(appUserID) + "/alias",
                     mapOf("new_app_user_id" to newAppUserID),
@@ -325,7 +326,7 @@ class Backend(
                 onErrorHandler(error)
             }
 
-            override fun onCompletion(result: HTTPClient.Result) {
+            override fun onCompletion(result: HTTPResult) {
                 if (result.isSuccessful()) {
                     onSuccessHandler()
                 } else {
@@ -342,7 +343,7 @@ class Backend(
         onErrorHandler: (PurchasesError) -> Unit
     ) {
         enqueue(object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     "/subscribers/identify",
                     mapOf(
@@ -357,7 +358,7 @@ class Backend(
                 onErrorHandler(error)
             }
 
-            override fun onCompletion(result: HTTPClient.Result) {
+            override fun onCompletion(result: HTTPResult) {
                 if (result.isSuccessful()) {
                     val created = result.responseCode == HTTP_STATUS_CREATED
                     if (result.body.length() > 0) {
@@ -374,7 +375,11 @@ class Backend(
         })
     }
 
-    private fun HTTPClient.Result.isSuccessful(): Boolean {
+    fun clearCaches() {
+        httpClient.clearCaches()
+    }
+
+    private fun HTTPResult.isSuccessful(): Boolean {
         return responseCode < UNSUCCESSFUL_HTTP_STATUS_CODE
     }
 

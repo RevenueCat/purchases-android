@@ -1641,6 +1641,26 @@ class PurchasesTest {
     }
 
     @Test
+    fun `when resetting, backend caches are cleared`() {
+        setup()
+        every {
+            mockCache.clearLatestAttributionData(appUserId)
+        } just Runs
+        every {
+            mockIdentityManager.reset()
+        } just Runs
+        every {
+            mockBackend.clearCaches()
+        } just Runs
+
+        purchases.reset()
+
+        verify(exactly = 1) {
+            mockBackend.clearCaches()
+        }
+    }
+
+    @Test
     fun `when setting up, and passing a appUserID, user is identified`() {
         setup()
         assertThat(purchases.allowSharingPlayStoreAccount).isEqualTo(false)
@@ -2179,6 +2199,35 @@ class PurchasesTest {
         purchases.logOut(mockCompletion)
         verify(exactly = 1) {
             mockCompletion.onReceived(mockInfo)
+        }
+    }
+
+    @Test
+    fun `logOut clears backend caches when successful`() {
+        setup()
+        val mockInfo = mockk<PurchaserInfo>()
+
+        every {
+            mockCache.clearLatestAttributionData(appUserId)
+        } just Runs
+
+        every {
+            mockBackend.getPurchaserInfo(any(), any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+        }
+        every {
+            mockBackend.clearCaches()
+        } just Runs
+
+        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        every {
+            mockIdentityManager.logOut()
+        } returns null
+
+        purchases.logOut(mockCompletion)
+        verify(exactly = 1) {
+            mockBackend.clearCaches()
         }
     }
 

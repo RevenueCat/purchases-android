@@ -6,11 +6,13 @@
 package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.networking.HTTPResult
 import org.json.JSONException
 import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import kotlin.jvm.Throws
 
 private const val JITTERING_DELAY_MILLISECONDS = 5000
 
@@ -20,10 +22,10 @@ open class Dispatcher(
 
     abstract class AsyncCall : Runnable {
         @Throws(JSONException::class, IOException::class)
-        abstract fun call(): HTTPClient.Result
+        abstract fun call(): HTTPResult
 
         open fun onError(error: PurchasesError) {}
-        open fun onCompletion(result: HTTPClient.Result) {}
+        open fun onCompletion(result: HTTPResult) {}
 
         override fun run() {
             try {

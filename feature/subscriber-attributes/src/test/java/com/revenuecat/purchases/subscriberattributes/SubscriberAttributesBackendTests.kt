@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
@@ -391,7 +392,7 @@ class SubscriberAttributesPosterTests {
 
         if (clientException == null) {
             everyMockedCall answers {
-                HTTPClient.Result(responseCode, JSONObject(expectedResultBody ?: "{}"))
+                HTTPResult(responseCode, JSONObject(expectedResultBody ?: "{}"))
             }
         } else {
             everyMockedCall throws clientException
@@ -410,7 +411,7 @@ class SubscriberAttributesPosterTests {
                 mapOf("Authorization" to "Bearer $API_KEY")
             )
         } answers {
-            HTTPClient.Result(responseCode, responseBody).also {
+            HTTPResult(responseCode, responseBody).also {
                 every {
                     it.body.buildPurchaserInfo()
                 } returns mockk()

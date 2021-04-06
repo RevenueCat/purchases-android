@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
+import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
@@ -123,7 +124,7 @@ class BackendTest {
     ): PurchaserInfo {
         val info: PurchaserInfo = mockk()
 
-        val result = HTTPClient.Result(responseCode, JSONObject(resultBody ?: "{}"))
+        val result = HTTPResult(responseCode, resultBody ?: "{}")
 
         val headers = HashMap<String, String>()
         headers["Authorization"] = "Bearer $API_KEY"
@@ -1197,6 +1198,15 @@ class BackendTest {
                 any(),
                 any()
             )
+        }
+    }
+
+    @Test
+    fun `clearing caches clears http caches`() {
+        backend.clearCaches()
+
+        verify {
+            mockClient.clearCaches()
         }
     }
 

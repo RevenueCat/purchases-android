@@ -6,13 +6,13 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.IOException
@@ -51,11 +51,11 @@ class AmazonBackendTest {
 
     private var underTest = AmazonBackend(backend)
 
-    private var successfulResult = HTTPClient.Result(
+    private var successfulResult = HTTPResult(
         responseCode = 200,
         body = successfulRVSResponse()
     )
-    private var unsuccessfulResult = HTTPClient.Result(
+    private var unsuccessfulResult = HTTPResult(
         responseCode = 401,
         body = JSONObject(
             """
@@ -73,7 +73,7 @@ class AmazonBackendTest {
             mockClient.performRequest(
                 path = "/receipts/amazon/store_user_id/receipt_id",
                 body = null,
-                headers = mapOf("Authorization" to "Bearer $API_KEY")
+                authenticationHeaders = mapOf("Authorization" to "Bearer $API_KEY")
             )
         } returns successfulResult
 
@@ -93,7 +93,7 @@ class AmazonBackendTest {
             mockClient.performRequest(
                 path = "/receipts/amazon/store_user_id/receipt_id",
                 body = null,
-                headers = mapOf("Authorization" to "Bearer $API_KEY")
+                authenticationHeaders = mapOf("Authorization" to "Bearer $API_KEY")
             )
         } returns unsuccessfulResult
 
@@ -114,7 +114,7 @@ class AmazonBackendTest {
             mockClient.performRequest(
                 path = "/receipts/amazon/store_user_id/receipt_id",
                 body = null,
-                headers = mapOf("Authorization" to "Bearer $API_KEY")
+                authenticationHeaders = mapOf("Authorization" to "Bearer $API_KEY")
             )
         } throws IOException()
 
