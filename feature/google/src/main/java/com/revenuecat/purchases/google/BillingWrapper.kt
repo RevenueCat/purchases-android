@@ -34,6 +34,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.PurchaseDetails
@@ -180,15 +181,15 @@ class BillingWrapper(
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
                 .setSkuDetails(productDetails.skuDetails)
-                // Causing issues with downgrades/upgrades https://issuetracker.google.com/issues/155005449
-                // .setObfuscatedAccountId(appUserID.sha256())
                 .apply {
                     replaceSkuInfo?.apply {
                         setOldSku(oldPurchase.sku, oldPurchase.purchaseToken)
                         prorationMode?.let { prorationMode ->
                             setReplaceSkusProrationMode(prorationMode)
                         }
-                    }
+                    } ?: setObfuscatedAccountId(appUserID.sha256())
+                    // only setObfuscatedAccountId for non-upgrade/downgrades:
+                    // https://revenuecat.zendesk.com/agent/tickets/8987
                 }.build()
 
             launchBillingFlow(activity, params)
