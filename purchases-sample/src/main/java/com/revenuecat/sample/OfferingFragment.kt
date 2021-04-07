@@ -62,14 +62,15 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 if (!userCancelled) {
                     showUserError(requireActivity(), error)
                 }
-            }) { purchaseDetails, _ ->
-            Toast.makeText(
-                requireContext(),
-                "Successful purchase, order id: ${purchaseDetails.orderId}",
-                Toast.LENGTH_LONG
-            ).show()
+            },
+            { purchaseDetails, _ ->
+                Toast.makeText(
+                    requireContext(),
+                    "Successful purchase, order id: ${purchaseDetails.orderId}",
+                    Toast.LENGTH_LONG
+                ).show()
 
-            findNavController().navigateUp()
-        }
+                findNavController().navigateUp()
+            })
     }
 }

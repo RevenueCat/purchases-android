@@ -21,8 +21,7 @@ class LoginFragment : Fragment() {
 
         binding.loginButton.setOnClickListener {
             binding.loginUsernameEditText.text?.toString()?.let { userId ->
-                Purchases
-                    .sharedInstance
+                Purchases.sharedInstance
                     .identifyWith(
                         userId,
                         { error -> showUserError(requireActivity(), error) },
