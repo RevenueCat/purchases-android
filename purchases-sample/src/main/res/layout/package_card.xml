@@ -9,6 +9,10 @@
         <variable
                 name="currentPackage"
                 type="com.revenuecat.purchases.Package" />
+
+        <variable
+                name="isActive"
+                type="Boolean" />
     </data>
 
     <com.google.android.material.card.MaterialCardView
@@ -33,7 +37,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="@dimen/padding_tiny"
-                    android:text="@{currentPackage.product.title}"
+                    android:text="@{currentPackage.product.title + (isActive ? ` (active)` : ``)}"
                     app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
@@ -89,6 +93,7 @@
                     android:id="@+id/package_buy_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:enabled="@{!isActive}"
                     android:text="@{currentPackage.product.price}"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"

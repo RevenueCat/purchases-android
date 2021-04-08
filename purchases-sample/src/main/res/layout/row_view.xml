@@ -13,7 +13,7 @@
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_margin="@dimen/padding_small"
+            android:padding="@dimen/padding_tiny"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 

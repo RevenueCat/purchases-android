@@ -1,9 +1,13 @@
 package com.revenuecat.sample
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.FragmentNavigatorExtras
@@ -16,6 +20,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getPurchaserInfoWith
+import com.revenuecat.purchases.resetWith
 import com.revenuecat.sample.databinding.FragmentOverviewBinding
 
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener {
@@ -39,6 +44,14 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                     .start()
             }
         }
+
+        binding.purchaserInfoLogoutButton.setOnClickListener {
+            Purchases.sharedInstance.resetWith(
+                { error -> showUserError(requireActivity(), error) },
+                { findNavController().navigateUp() }
+            )
+        }
+
         return binding.root
     }
 
@@ -51,10 +64,24 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             with(binding) {
                 purchaserInfo = info
 
+                purchaserInfoCopyUserIdButton.setOnClickListener {
+                    val clipboard = getSystemService(requireContext(), ClipboardManager::class.java)
+                    val clip = ClipData.newPlainText("RevenueCat userId", info.originalAppUserId)
+                    clipboard?.primaryClip = clip
+                }
+
                 purchaserInfoJsonObject.detail = info.jsonObject.toString(JSON_FORMATTER_INDENT_SPACES)
 
                 purchaserInfoActiveEntitlements.detail = formatEntitlements(info.entitlements.active.values)
                 purchaserInfoAllEntitlements.detail = formatEntitlements(info.entitlements.all.values)
+
+                binding.purchaserInfoManageButton.setOnClickListener {
+                    info.managementURL?.let {
+                        val intent = Intent(Intent.ACTION_VIEW)
+                        intent.data = it
+                        startActivity(intent)
+                    }
+                }
             }
         }
 
@@ -62,8 +89,16 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     }
 
     private fun populateOfferings(offerings: Offerings) {
+        if (offerings.all.isEmpty()) {
+            binding.offeringHeader.text = "No Offerings"
+            return
+        }
+
         binding.overviewOfferingsRecycler.layoutManager = LinearLayoutManager(requireContext())
-        binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(offerings.all.values.toList(), this)
+        binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(
+            offerings.all.values.toList(),
+            offerings.current,
+            this)
     }
 
     private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {

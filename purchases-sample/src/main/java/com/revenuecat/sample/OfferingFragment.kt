@@ -14,6 +14,7 @@ import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.sample.databinding.FragmentOfferingBinding
 
@@ -23,6 +24,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private val args: OfferingFragmentArgs by navArgs()
     private val offering: Offering by lazy { args.offering }
+    private var activeSubscriptions: Set<String> = setOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,11 +36,21 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        Purchases.sharedInstance.getPurchaserInfoWith {
+            activeSubscriptions = it.activeSubscriptions
+        }
+
         binding = FragmentOfferingBinding.inflate(inflater)
         binding.offering = offering
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
-        binding.offeringDetailsPackagesRecycler.adapter = PackageCardAdapter(offering.availablePackages, this)
+        binding.offeringDetailsPackagesRecycler.adapter =
+            PackageCardAdapter(
+                offering.availablePackages,
+                activeSubscriptions,
+                this
+            )
+
         return binding.root
     }
 
@@ -48,9 +60,10 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             currentPackage,
             { error, userCancelled ->
                 if (!userCancelled) {
-                    showError(error)
+                    showUserError(requireActivity(), error)
                 }
-            }) { purchaseDetails, _ ->
+            },
+            { purchaseDetails, _ ->
                 Toast.makeText(
                     requireContext(),
                     "Successful purchase, order id: ${purchaseDetails.orderId}",
@@ -58,6 +71,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 ).show()
 
                 findNavController().navigateUp()
-        }
+            })
     }
 }

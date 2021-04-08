@@ -8,7 +8,11 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.sample.databinding.PackageCardBinding
 
-class PackageCardAdapter(private val packages: List<Package>, private val listener: PackageCardAdapterListener) :
+class PackageCardAdapter(
+    private val packages: List<Package>,
+    private val activeSubscriptions: Set<String>,
+    private val listener: PackageCardAdapterListener
+) :
     RecyclerView.Adapter<PackageCardAdapter.PackageViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PackageViewHolder {
@@ -27,6 +31,8 @@ class PackageCardAdapter(private val packages: List<Package>, private val listen
 
         fun bind(currentPackage: Package) {
             binding.currentPackage = currentPackage
+            binding.isActive = activeSubscriptions.contains(currentPackage.product.sku)
+
             binding.packageBuyButton.setOnClickListener {
                 listener.onBuyPackageClicked(binding.root, currentPackage)
             }
