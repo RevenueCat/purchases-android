@@ -32,6 +32,7 @@ import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubSkuDetails
+import io.mockk.Called
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -318,7 +319,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun setObfuscatedAccountIdWhenNotUpgradingOrTransferring() {
+    fun `obfuscatedAccountId is set for non-transfer purchases`() {
         setup()
         val appUserID = "jerry"
 
@@ -335,13 +336,8 @@ class BillingWrapperTest {
             mockBuilder.setSkuDetails(any())
         } returns mockBuilder
 
-        val params = mockk<BillingFlowParams>(relaxed = true)
         every {
-            mockBuilder.build()
-        } returns params
-
-        every {
-            mockClient.launchBillingFlow(any(), params)
+            mockClient.launchBillingFlow(any(), any())
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
@@ -356,6 +352,43 @@ class BillingWrapperTest {
 
         verify {
             mockBuilder.setObfuscatedAccountId(appUserID.sha256())
+        }
+    }
+
+    @Test
+    fun `obfuscatedAccountId is not set for transfer purchases`() {
+        setup()
+        val appUserID = "jerry"
+
+        val skuDetails = stubSkuDetails(productId = "product_a")
+        val activity: Activity = mockk()
+
+        mockkStatic(BillingFlowParams::class)
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.newBuilder()
+        } returns mockBuilder
+
+        every {
+            mockBuilder.setSkuDetails(any())
+        } returns mockBuilder
+
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns BillingClient.BillingResponseCode.OK.buildResult()
+
+        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+
+        wrapper.makePurchaseAsync(
+            activity,
+            appUserID,
+            skuDetails.toProductDetails(),
+            null,
+            null
+        )
+
+        verify {
+            mockBuilder.setObfuscatedAccountId(any()) wasNot Called
         }
     }
 
