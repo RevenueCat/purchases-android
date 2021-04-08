@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto" android:id="@+id/nav_graph.xml"
+        app:startDestination="@id/loginFragment">
+
+    <fragment
+            android:id="@+id/loginFragment"
+            android:name="com.revenuecat.sample.LoginFragment"
+            android:label="LoginFragment">
+        <action
+                android:id="@+id/action_loginFragment_to_overviewFragment"
+                app:destination="@id/overviewFragment" />
+    </fragment>
+
+    <fragment
+            android:id="@+id/overviewFragment"
+            android:name="com.revenuecat.sample.OverviewFragment"
+            android:label="OverviewFragment">
+        <action
+                android:id="@+id/action_overviewFragment_to_offeringFragment"
+                app:destination="@id/offeringFragment" />
+    </fragment>
+
+    <fragment
+            android:id="@+id/offeringFragment"
+            android:name="com.revenuecat.sample.OfferingFragment"
+            android:label="OfferingFragment">
+        <argument
+                android:name="offering"
+                app:argType="com.revenuecat.purchases.Offering" />
+    </fragment>
+
+</navigation>
