@@ -334,8 +334,13 @@ class BillingWrapperTest {
             mockBuilder.setSkuDetails(any())
         } returns mockBuilder
 
+        val params = mockk<BillingFlowParams>(relaxed = true)
         every {
-            mockClient.launchBillingFlow(any(), any())
+            mockBuilder.build()
+        } returns params
+
+        every {
+            mockClient.launchBillingFlow(any(), params)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
@@ -371,8 +376,13 @@ class BillingWrapperTest {
             mockBuilder.setSkuDetails(any())
         } returns mockBuilder
 
+        val params = mockk<BillingFlowParams>(relaxed = true)
         every {
-            mockClient.launchBillingFlow(any(), any())
+            mockBuilder.build()
+        } returns params
+
+        every {
+            mockClient.launchBillingFlow(any(), params)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
