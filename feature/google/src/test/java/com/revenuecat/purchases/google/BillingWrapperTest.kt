@@ -32,12 +32,10 @@ import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubSkuDetails
-import io.mockk.Called
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkClass
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
@@ -383,12 +381,12 @@ class BillingWrapperTest {
             activity,
             appUserID,
             skuDetails.toProductDetails(),
-            null,
+            mockReplaceSkuInfo(),
             null
         )
 
-        verify {
-            mockBuilder.setObfuscatedAccountId(any()) wasNot Called
+        verify(exactly = 0) {
+            mockBuilder.setObfuscatedAccountId(any())
         }
     }
 
