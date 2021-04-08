@@ -188,8 +188,8 @@ class BillingWrapper(
                             setReplaceSkusProrationMode(prorationMode)
                         }
                     } ?: setObfuscatedAccountId(appUserID.sha256())
-                    // only setObfuscatedAccountId for non-upgrade/downgrades:
-                    // https://revenuecat.zendesk.com/agent/tickets/8987
+                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                    // https://issuetracker.google.com/issues/155005449
                 }.build()
 
             launchBillingFlow(activity, params)

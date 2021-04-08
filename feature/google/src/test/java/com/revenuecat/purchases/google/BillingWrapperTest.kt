@@ -26,6 +26,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
@@ -35,6 +36,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkClass
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
@@ -313,6 +315,48 @@ class BillingWrapperTest {
             upgradeInfo,
             null
         )
+    }
+
+    @Test
+    fun setObfuscatedAccountIdWhenNotUpgradingOrTransferring() {
+        setup()
+        val appUserID = "jerry"
+
+        val skuDetails = stubSkuDetails(productId = "product_a")
+        val activity: Activity = mockk()
+
+        mockkStatic(BillingFlowParams::class)
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.newBuilder()
+        } returns mockBuilder
+
+        every {
+            mockBuilder.setSkuDetails(any())
+        } returns mockBuilder
+
+        val params = mockk<BillingFlowParams>(relaxed = true)
+        every {
+            mockBuilder.build()
+        } returns params
+
+        every {
+            mockClient.launchBillingFlow(any(), params)
+        } returns BillingClient.BillingResponseCode.OK.buildResult()
+
+        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+
+        wrapper.makePurchaseAsync(
+            activity,
+            appUserID,
+            skuDetails.toProductDetails(),
+            null,
+            null
+        )
+
+        verify {
+            mockBuilder.setObfuscatedAccountId(appUserID.sha256())
+        }
     }
 
     @Test
@@ -648,11 +692,11 @@ class BillingWrapperTest {
 
         assertThat(receivedPurchases.size).isNotZero()
 
-        verify (exactly = 1){
+        verify(exactly = 1) {
             mockClient.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, any())
         }
 
-        verify (exactly = 1){
+        verify(exactly = 1) {
             mockClient.queryPurchaseHistoryAsync(BillingClient.SkuType.INAPP, any())
         }
     }
@@ -819,7 +863,7 @@ class BillingWrapperTest {
             BillingClient.newBuilder(context)
         } returns mockBuilder
         BillingWrapper.ClientFactory(context).buildClient(mockk())
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockBuilder.enablePendingPurchases()
         }
     }
@@ -1525,5 +1569,4 @@ class BillingWrapperTest {
             type = productType
         )
     }
-
 }
