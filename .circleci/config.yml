@@ -90,6 +90,7 @@ jobs:
 
   test:
     executor: android-executor
+    shell: /bin/bash --login -o pipefail
     steps:
       - checkout
       - android/accept-licenses
@@ -98,6 +99,11 @@ jobs:
       - run:
           name: Run Tests
           command: ./gradlew lint test
+      - run:
+          name: Consolidate artifacts
+          command: |
+              mkdir -p build/test-results/
+              find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - run:
           name: Detekt
           command: ./gradlew detektAll
