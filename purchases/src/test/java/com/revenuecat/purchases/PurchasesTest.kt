@@ -4255,6 +4255,9 @@ class PurchasesTest {
             every {
                 close()
             } just Runs
+            every {
+                clearCaches()
+            } just Runs
         }
     }
 
