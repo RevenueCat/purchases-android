@@ -154,8 +154,9 @@ class ETagManagerTest {
         val cachedResult = expectedETag?.let {
             HTTPResultWithETag(expectedETag, HTTPResult(200, "{}"))
         }
+        val httpRequestHash = underTest.getHTTPRequestHash(httpRequestWithoutETagHeader)
         every {
-            mockedPrefs.getString(underTest.getHTTPRequestHash(httpRequestWithoutETagHeader), null)
+            mockedPrefs.getString(httpRequestHash, null)
         } returns cachedResult?.serialize()
         return cachedResult
     }
