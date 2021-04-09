@@ -1,11 +1,8 @@
 package com.revenuecat.purchases.amazon.helpers
 
-import org.json.JSONObject
-
 fun successfulRVSResponse(
     termSku: String = "premium.subscription.quarterly"
-) = JSONObject(
-    """
+) = """
         {
            "autoRenewing": true,
            "betaProduct": true,
@@ -27,4 +24,3 @@ fun successfulRVSResponse(
            "testTransaction": true
         }
     """.trimIndent()
-)

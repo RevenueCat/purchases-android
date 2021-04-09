@@ -53,18 +53,16 @@ class AmazonBackendTest {
 
     private var successfulResult = HTTPResult(
         responseCode = 200,
-        body = successfulRVSResponse()
+        payload = successfulRVSResponse()
     )
     private var unsuccessfulResult = HTTPResult(
         responseCode = 401,
-        body = JSONObject(
-            """
+        payload = """
                 {
                     "code":7225,"message":
                     "Invalid API Key."
                 }
             """.trimIndent()
-        )
     )
 
     @Test

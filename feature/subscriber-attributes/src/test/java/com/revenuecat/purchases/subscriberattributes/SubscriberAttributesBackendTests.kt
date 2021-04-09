@@ -297,7 +297,7 @@ class SubscriberAttributesPosterTests {
     fun `200 but subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
             responseCode = 200,
-            responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
+            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ReceiptInfo(
             productID = productID
@@ -324,7 +324,7 @@ class SubscriberAttributesPosterTests {
     fun `505 and subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
             responseCode = 505,
-            responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
+            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ReceiptInfo(
             productID = productID
@@ -351,7 +351,7 @@ class SubscriberAttributesPosterTests {
     fun `304 and subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
             responseCode = 304,
-            responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
+            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ReceiptInfo(
             productID = productID
@@ -392,7 +392,7 @@ class SubscriberAttributesPosterTests {
 
         if (clientException == null) {
             everyMockedCall answers {
-                HTTPResult(responseCode, JSONObject(expectedResultBody ?: "{}"))
+                HTTPResult(responseCode, expectedResultBody ?: "{}")
             }
         } else {
             everyMockedCall throws clientException
@@ -402,7 +402,7 @@ class SubscriberAttributesPosterTests {
     private val actualPostReceiptBodySlot = slot<Map<String, Any?>>()
     private fun mockPostReceiptResponse(
         responseCode: Int = 200,
-        responseBody: JSONObject = JSONObject("{}")
+        responseBody: String = "{}"
     ) {
         every {
             mockClient.performRequest(

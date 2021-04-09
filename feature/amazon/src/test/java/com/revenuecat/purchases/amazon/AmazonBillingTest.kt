@@ -657,7 +657,7 @@ class AmazonBillingTest {
                 onError = any()
             )
         } answers {
-            lambda<(JSONObject) -> Unit>().captured.invoke(successfulRVSResponse(expectedTermSku))
+            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(successfulRVSResponse(expectedTermSku)))
         }
     }
 }
