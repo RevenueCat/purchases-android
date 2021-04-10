@@ -33,6 +33,7 @@ import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubSkuDetails
 import io.mockk.Runs
+import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -356,6 +357,8 @@ class BillingWrapperTest {
         verify {
             mockBuilder.setObfuscatedAccountId(appUserID.sha256())
         }
+
+        clearStaticMockk(BillingFlowParams::class)
     }
 
     @Test
@@ -398,6 +401,8 @@ class BillingWrapperTest {
         verify(exactly = 0) {
             mockBuilder.setObfuscatedAccountId(any())
         }
+
+        clearStaticMockk(BillingFlowParams::class)
     }
 
     @Test
