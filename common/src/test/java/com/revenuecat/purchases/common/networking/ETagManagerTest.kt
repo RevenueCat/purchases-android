@@ -118,7 +118,7 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `If response code is not 500, don't store response in cache`() {
+    fun `If response code is 500, don't store response in cache`() {
         val eTag = "eTag"
         val newETag = "new_eTag"
         val httpRequest = getHTTPRequest(eTag = eTag)
