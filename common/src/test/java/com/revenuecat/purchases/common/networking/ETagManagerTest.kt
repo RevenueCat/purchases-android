@@ -103,7 +103,7 @@ class ETagManagerTest {
         val newETag = "new_eTag"
         val httpRequest = getHTTPRequest(eTag = eTag)
 
-        val httpRequestHash = underTest.getHTTPRequestHash(httpRequest)
+        val httpRequestHash = underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequest)
         val resultFromBackend = HTTPResult(200, Responses.validEmptyPurchaserResponse)
 
         underTest.processResponse(httpRequest, newETag, resultFromBackend)
@@ -123,7 +123,7 @@ class ETagManagerTest {
         val newETag = "new_eTag"
         val httpRequest = getHTTPRequest(eTag = eTag)
 
-        underTest.getHTTPRequestHash(httpRequest)
+        underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequest)
         val resultFromBackend = HTTPResult(500, Responses.validEmptyPurchaserResponse)
 
         underTest.processResponse(httpRequest, newETag, resultFromBackend)
@@ -154,7 +154,7 @@ class ETagManagerTest {
         val cachedResult = expectedETag?.let {
             HTTPResultWithETag(expectedETag, HTTPResult(200, "{}"))
         }
-        val httpRequestHash = underTest.getHTTPRequestHash(httpRequestWithoutETagHeader)
+        val httpRequestHash = underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequestWithoutETagHeader)
         every {
             mockedPrefs.getString(httpRequestHash, null)
         } returns cachedResult?.serialize()

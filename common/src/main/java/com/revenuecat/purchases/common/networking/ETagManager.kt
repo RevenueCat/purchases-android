@@ -67,13 +67,13 @@ class ETagManager(
         result: HTTPResult,
         eTag: String
     ) {
-        val requestHash = getHTTPRequestHash(request)
+        val requestHash = getOrCalculateAndSaveHTTPRequestHash(request)
         val httpResultWithETag = HTTPResultWithETag(eTag, result)
         prefs.edit().putString(requestHash, httpResultWithETag.serialize()).apply()
     }
 
     private fun getStoredResult(httpRequest: HTTPRequest): HTTPResultWithETag? {
-        val requestHash = getHTTPRequestHash(httpRequest)
+        val requestHash = getOrCalculateAndSaveHTTPRequestHash(httpRequest)
         val serializedHTTPResultWithETag = prefs.getString(requestHash, null)
         return serializedHTTPResultWithETag?.let {
             HTTPResultWithETag.deserialize(it)
@@ -85,14 +85,16 @@ class ETagManager(
     }
 
     @Synchronized
-    internal fun getHTTPRequestHash(httpRequest: HTTPRequest): RequestHash {
-        hashes[httpRequest]?.let { return it }
+    internal fun getOrCalculateAndSaveHTTPRequestHash(httpRequest: HTTPRequest): RequestHash {
+        return hashes[httpRequest] ?: calculateAndSaveHTTPRequestHash(httpRequest)
+    }
 
+    private fun calculateAndSaveHTTPRequestHash(httpRequest: HTTPRequest): String {
         val sha1 = (httpRequest.fullURL.toString()).sha1()
         val updatedHashesMap = hashes.toMutableMap().also {
             it[httpRequest] = sha1
         }
-        hashes - updatedHashesMap
+        hashes = updatedHashesMap
         return sha1
     }
 
