@@ -1,4 +1,4 @@
-package com.revenuecat.sample
+package com.revenuecat.purchasetester
 
 import android.app.Activity
 import android.app.Application
@@ -29,7 +29,7 @@ class MainApplication : Application() {
 }
 
 fun showError(message: String) {
-    Log.e("Purchases Sample", message)
+    Log.e("Purchase Tester", message)
 }
 
 fun showError(error: PurchasesError) {

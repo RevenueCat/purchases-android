@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.purchases_sample_java;
+package com.revenuecat.purchasetester.java;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -23,7 +23,7 @@ import com.revenuecat.purchases.models.ProductDetails;
 import com.revenuecat.purchases.models.PurchaseDetails;
 import com.revenuecat.sample.R;
 
-import static com.revenuecat.purchases.purchases_sample_java.MainApplication.PREMIUM_ENTITLEMENT_ID;
+import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
 
 public class UpsellActivity extends AppCompatActivity {
 

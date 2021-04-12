@@ -5,7 +5,7 @@
 
     <fragment
             android:id="@+id/loginFragment"
-            android:name="com.revenuecat.sample.LoginFragment"
+            android:name="com.revenuecat.purchasetester.LoginFragment"
             android:label="LoginFragment">
         <action
                 android:id="@+id/action_loginFragment_to_overviewFragment"
@@ -14,7 +14,7 @@
 
     <fragment
             android:id="@+id/overviewFragment"
-            android:name="com.revenuecat.sample.OverviewFragment"
+            android:name="com.revenuecat.purchasetester.OverviewFragment"
             android:label="OverviewFragment">
         <action
                 android:id="@+id/action_overviewFragment_to_offeringFragment"
@@ -23,7 +23,7 @@
 
     <fragment
             android:id="@+id/offeringFragment"
-            android:name="com.revenuecat.sample.OfferingFragment"
+            android:name="com.revenuecat.purchasetester.OfferingFragment"
             android:label="OfferingFragment">
         <argument
                 android:name="offering"

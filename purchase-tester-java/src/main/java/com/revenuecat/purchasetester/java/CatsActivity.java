@@ -1,8 +1,7 @@
-package com.revenuecat.purchases.purchases_sample_java;
+package com.revenuecat.purchasetester.java;
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -22,7 +21,7 @@ import com.revenuecat.sample.R;
 import java.text.DateFormat;
 import java.util.Date;
 
-import static com.revenuecat.purchases.purchases_sample_java.MainApplication.PREMIUM_ENTITLEMENT_ID;
+import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
 
 public class CatsActivity extends AppCompatActivity {
     Button restoreView;

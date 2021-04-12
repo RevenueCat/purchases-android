@@ -1,4 +1,4 @@
-package com.revenuecat.sample
+package com.revenuecat.purchasetester
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -21,6 +21,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.purchases.resetWith
+import com.revenuecat.sample.R
 import com.revenuecat.sample.databinding.FragmentOverviewBinding
 
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener {

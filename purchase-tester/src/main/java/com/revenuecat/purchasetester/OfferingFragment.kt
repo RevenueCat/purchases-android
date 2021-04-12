@@ -1,4 +1,4 @@
-package com.revenuecat.sample
+package com.revenuecat.purchasetester
 
 import android.graphics.Color
 import android.os.Bundle
@@ -16,6 +16,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.purchases.purchasePackageWith
+import com.revenuecat.sample.R
 import com.revenuecat.sample.databinding.FragmentOfferingBinding
 
 class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {

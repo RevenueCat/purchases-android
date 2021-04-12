@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.purchases_sample_java;
+package com.revenuecat.purchasetester.java;
 
 import android.app.Application;
 import android.os.StrictMode;

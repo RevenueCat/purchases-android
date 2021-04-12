@@ -9,9 +9,9 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/AppTheme"
-            android:name="com.revenuecat.purchases.purchases_sample_java.MainApplication">
+            android:name="com.revenuecat.purchasetester.java.MainApplication">
         <activity
-                android:name="com.revenuecat.purchases.purchases_sample_java.InitialActivity"
+                android:name="com.revenuecat.purchasetester.java.InitialActivity"
                 android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -19,7 +19,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.revenuecat.purchases.purchases_sample_java.UpsellActivity" />
-        <activity android:name="com.revenuecat.purchases.purchases_sample_java.CatsActivity" />
+        <activity android:name="com.revenuecat.purchasetester.java.UpsellActivity" />
+        <activity android:name="com.revenuecat.purchasetester.java.CatsActivity" />
     </application>
 </manifest>

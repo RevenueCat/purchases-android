@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.purchases_sample_java;
+package com.revenuecat.purchasetester.java;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -13,7 +13,7 @@ import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener;
 import com.revenuecat.sample.R;
 
-import static com.revenuecat.purchases.purchases_sample_java.MainApplication.PREMIUM_ENTITLEMENT_ID;
+import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
 
 public class InitialActivity extends AppCompatActivity {
 
@@ -41,7 +41,7 @@ public class InitialActivity extends AppCompatActivity {
 
             @Override
             public void onError(@NonNull PurchasesError error) {
-                Log.e("Purchases Sample", error.getMessage());
+                Log.e("Purchase", error.getMessage());
             }
         });
     }

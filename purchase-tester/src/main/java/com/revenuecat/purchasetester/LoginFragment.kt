@@ -1,4 +1,4 @@
-package com.revenuecat.sample
+package com.revenuecat.purchasetester
 
 import android.os.Bundle
 import android.view.LayoutInflater
