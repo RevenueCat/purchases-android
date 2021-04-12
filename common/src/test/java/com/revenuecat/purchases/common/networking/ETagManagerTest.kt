@@ -15,6 +15,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.net.HttpURLConnection
 import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
@@ -50,7 +51,7 @@ class ETagManagerTest {
         mockCachedHTTPResult(httpRequestWithoutETagHeader, null)
 
         val requestWithETagHeader = underTest.addETagHeaderToRequest(httpRequestWithoutETagHeader)
-        val eTagHeader = requestWithETagHeader.headers["X-RevenueCat-ETag"]
+        val eTagHeader = requestWithETagHeader.headers[ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull()
         assertThat(eTagHeader).isBlank()
     }
@@ -63,7 +64,7 @@ class ETagManagerTest {
         mockCachedHTTPResult(httpRequestWithoutETagHeader, expectedETag)
 
         val requestWithETagHeader = underTest.addETagHeaderToRequest(httpRequestWithoutETagHeader)
-        val eTagHeader = requestWithETagHeader.headers["X-RevenueCat-ETag"]
+        val eTagHeader = requestWithETagHeader.headers[ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull()
         assertThat(eTagHeader).isEqualTo(expectedETag)
     }
@@ -71,11 +72,12 @@ class ETagManagerTest {
     @Test
     fun `If response code is 304, use cached result`() {
         val eTag = "eTag"
+        val mockedConnection = mockURLConnectionETag(eTag)
         val httpRequest = getHTTPRequest(eTag = eTag)
 
         val cachedHTTPResult = mockCachedHTTPResult(httpRequest, eTag)!!.httpResult
 
-        val processedResponse = underTest.processResponse(httpRequest, eTag, HTTPResult(304, ""))
+        val processedResponse = underTest.processResponse(httpRequest, mockedConnection, HTTPResult(304, ""))
 
         assertThat(processedResponse.payload).isEqualTo(cachedHTTPResult.payload)
         assertThat(processedResponse.responseCode).isEqualTo(cachedHTTPResult.responseCode)
@@ -85,13 +87,14 @@ class ETagManagerTest {
     fun `If response code is not 304, don't return cached result and return result from backend`() {
         val eTag = "eTag"
         val newETag = "new_eTag"
+        val mockedConnection = mockURLConnectionETag(newETag)
         val httpRequest = getHTTPRequest(eTag = eTag)
 
         val cachedHTTPResult = mockCachedHTTPResult(httpRequest, eTag)
         assertThat(cachedHTTPResult).isNotNull
 
         val resultFromBackend = HTTPResult(200, Responses.validEmptyPurchaserResponse)
-        val processedResponse = underTest.processResponse(httpRequest, newETag, resultFromBackend)
+        val processedResponse = underTest.processResponse(httpRequest, mockedConnection, resultFromBackend)
 
         assertThat(processedResponse.payload).isEqualTo(resultFromBackend.payload)
         assertThat(processedResponse.responseCode).isEqualTo(resultFromBackend.responseCode)
@@ -101,12 +104,13 @@ class ETagManagerTest {
     fun `If response code is not 304, store response in cache`() {
         val eTag = "eTag"
         val newETag = "new_eTag"
+        val mockedConnection = mockURLConnectionETag(newETag)
         val httpRequest = getHTTPRequest(eTag = eTag)
 
         val httpRequestHash = underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequest)
         val resultFromBackend = HTTPResult(200, Responses.validEmptyPurchaserResponse)
 
-        underTest.processResponse(httpRequest, newETag, resultFromBackend)
+        underTest.processResponse(httpRequest, mockedConnection, resultFromBackend)
 
         val expectedCachedResult = HTTPResultWithETag(newETag, resultFromBackend)
 
@@ -121,12 +125,13 @@ class ETagManagerTest {
     fun `If response code is 500, don't store response in cache`() {
         val eTag = "eTag"
         val newETag = "new_eTag"
+        val mockedConnection = mockURLConnectionETag(newETag)
         val httpRequest = getHTTPRequest(eTag = eTag)
 
         underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequest)
         val resultFromBackend = HTTPResult(500, Responses.validEmptyPurchaserResponse)
 
-        underTest.processResponse(httpRequest, newETag, resultFromBackend)
+        underTest.processResponse(httpRequest, mockedConnection, resultFromBackend)
 
         HTTPResultWithETag(newETag, resultFromBackend)
 
@@ -136,6 +141,13 @@ class ETagManagerTest {
         verify(exactly = 0) {
             mockEditor.putString(any(), any())
         }
+    }
+
+    private fun mockURLConnectionETag(eTag: String): HttpURLConnection {
+        val mockedConnection = mockk<HttpURLConnection>(relaxed = true).also {
+            every { it.getHeaderField(ETAG_HEADER_NAME) } returns eTag
+        }
+        return mockedConnection
     }
 
     @Test
@@ -173,7 +185,7 @@ class ETagManagerTest {
             "X-Client-Version" to "1.0",
             "X-Observer-Mode-Enabled" to "false",
             "Authorization" to "Bearer apiKey",
-            "X-RevenueCat-ETag" to eTag
+            ETAG_HEADER_NAME to eTag
         ).filterNotNullValues()
         return HTTPRequest(fullURL, headers, body = null)
     }

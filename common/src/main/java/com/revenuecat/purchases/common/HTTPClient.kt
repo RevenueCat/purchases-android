@@ -118,8 +118,7 @@ class HTTPClient(
             throw IOException("Network call payload is null.")
         }
         val result = HTTPResult(responseCode, payload)
-        val eTagInResponse = connection.getHeaderField("X-RevenueCat-ETag")
-        return eTagManager.processResponse(httpRequest, eTagInResponse, result)
+        return eTagManager.processResponse(httpRequest, connection, result)
     }
 
     fun clearCaches() {

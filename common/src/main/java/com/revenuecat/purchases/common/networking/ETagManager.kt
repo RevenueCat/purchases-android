@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.revenuecat.purchases.common.sha1
 import org.json.JSONObject
+import java.net.HttpURLConnection
 
 private const val NOT_MODIFIED_RESPONSE_CODE = 304
 private const val INTERNAL_SERVER_ERROR_RESPONSE_CODE = 500
@@ -30,6 +31,8 @@ data class HTTPResultWithETag(
     }
 }
 
+internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
+
 class ETagManager(
     private val prefs: SharedPreferences
 ) {
@@ -38,16 +41,17 @@ class ETagManager(
     internal fun addETagHeaderToRequest(
         httpRequestWithoutETagHeader: HTTPRequest
     ): HTTPRequest {
-        val eTagHeader = "X-RevenueCat-ETag" to getETag(httpRequestWithoutETagHeader)
+        val eTagHeader = ETAG_HEADER_NAME to getETag(httpRequestWithoutETagHeader)
         val updatedHeaders = httpRequestWithoutETagHeader.headers + mapOf(eTagHeader)
         return HTTPRequest(httpRequestWithoutETagHeader.fullURL, updatedHeaders, httpRequestWithoutETagHeader.body)
     }
 
     internal fun processResponse(
         httpRequest: HTTPRequest,
-        eTagInResponse: String?,
+        connection: HttpURLConnection,
         result: HTTPResult
     ): HTTPResult {
+        val eTagInResponse = connection.getHeaderField(ETAG_HEADER_NAME)
         if (eTagInResponse != null) {
             if (result.responseCode == NOT_MODIFIED_RESPONSE_CODE) {
                 getStoredResult(httpRequest)?.let { (_, cachedResult) ->
