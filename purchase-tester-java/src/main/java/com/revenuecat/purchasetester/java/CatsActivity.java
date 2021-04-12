@@ -52,7 +52,7 @@ public class CatsActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(@NonNull PurchasesError error) {
-                        Log.e("Purchases Sample", error.getMessage());
+                        Log.e("Purchase Tester Java", error.getMessage());
                     }
                 });
             }
@@ -67,7 +67,7 @@ public class CatsActivity extends AppCompatActivity {
 
         EntitlementInfo proEntitlement = purchaserInfo.getEntitlements().get(PREMIUM_ENTITLEMENT_ID);
         if (proEntitlement != null && proEntitlement.isActive()) {
-            Log.i("Purchases Sample", "Hey there premium, you're a happy cat 😻");
+            Log.i("Purchase Tester Java", "Hey there premium, you're a happy cat 😻");
             catIconView.setText("😻");
             goPremiumView.setVisibility(View.GONE);
             restoreView.setVisibility(View.GONE);
@@ -82,7 +82,7 @@ public class CatsActivity extends AppCompatActivity {
             expirationDateView.setText("Expiration Date: " + dateFormat.format(expirationDate));
             expirationDateView.setVisibility(View.VISIBLE);
         } else {
-            Log.i("Purchases Sample", "Happy cats are only for premium members 😿");
+            Log.i("Purchase Tester Java", "Happy cats are only for premium members 😿");
             catIconView.setText("😿");
             goPremiumView.setVisibility(View.VISIBLE);
             restoreView.setVisibility(View.VISIBLE);

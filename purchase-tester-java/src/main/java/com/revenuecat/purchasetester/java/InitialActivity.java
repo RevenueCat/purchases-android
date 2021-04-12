@@ -41,7 +41,7 @@ public class InitialActivity extends AppCompatActivity {
 
             @Override
             public void onError(@NonNull PurchasesError error) {
-                Log.e("Purchase", error.getMessage());
+                Log.e("Purchase Tester Java", error.getMessage());
             }
         });
     }

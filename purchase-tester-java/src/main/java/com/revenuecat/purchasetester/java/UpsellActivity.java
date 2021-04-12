@@ -66,7 +66,7 @@ public class UpsellActivity extends AppCompatActivity {
 
             @Override
             public void onError(@NonNull PurchasesError error) {
-                Log.e("Purchases Sample", error.getMessage());
+                Log.e("Purchase Tester Java", error.getMessage());
             }
         });
     }
@@ -84,7 +84,7 @@ public class UpsellActivity extends AppCompatActivity {
                 setupPackageButton(currentOffering.getAnnual(), annualPurchaseView);
                 setupPackageButton(currentOffering.getLifetime(), unlimitedPurchaseView);
             } else {
-                Log.e("Purchases Sample", "Error loading current offering");
+                Log.e("Purchase Tester Java", "Error loading current offering");
             }
         }
     }
@@ -102,7 +102,7 @@ public class UpsellActivity extends AppCompatActivity {
                 }
             });
         } else {
-            Log.e("Purchases Sample", "Error loading package");
+            Log.e("Purchase Tester Java", "Error loading package");
         }
     }
 
@@ -118,7 +118,7 @@ public class UpsellActivity extends AppCompatActivity {
             @Override
             public void onError(@NonNull PurchasesError error, boolean userCancelled) {
                 if (!userCancelled) {
-                    Log.e("Purchases Sample", error.getMessage());
+                    Log.e("Purchase Tester Java", error.getMessage());
                 }
             }
         });
