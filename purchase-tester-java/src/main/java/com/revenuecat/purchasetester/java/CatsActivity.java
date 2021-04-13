@@ -16,7 +16,6 @@ import com.revenuecat.purchases.PurchaserInfo;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener;
-import com.revenuecat.sample.R;
 
 import java.text.DateFormat;
 import java.util.Date;

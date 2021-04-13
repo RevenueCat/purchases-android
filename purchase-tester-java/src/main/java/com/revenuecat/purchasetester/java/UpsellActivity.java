@@ -21,7 +21,6 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener;
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener;
 import com.revenuecat.purchases.models.ProductDetails;
 import com.revenuecat.purchases.models.PurchaseDetails;
-import com.revenuecat.sample.R;
 
 import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
 

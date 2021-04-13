@@ -21,8 +21,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getPurchaserInfoWith
 import com.revenuecat.purchases.resetWith
-import com.revenuecat.sample.R
-import com.revenuecat.sample.databinding.FragmentOverviewBinding
+import com.revenuecat.purchasetester.databinding.FragmentOverviewBinding
 
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener {
 

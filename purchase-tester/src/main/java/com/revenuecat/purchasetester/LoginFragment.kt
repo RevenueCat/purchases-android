@@ -10,7 +10,7 @@ import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.identifyWith
 import com.revenuecat.purchases.resetWith
-import com.revenuecat.sample.databinding.FragmentLoginBinding
+import com.revenuecat.purchasetester.databinding.FragmentLoginBinding
 
 class LoginFragment : Fragment() {
 
