@@ -39,7 +39,7 @@ data class HTTPResultWithETag(
 class ETagManager(
     private val prefs: SharedPreferences
 ) {
-    private var hashes: Map<HTTPRequest, RequestHash> = emptyMap()
+    private var hashesByHttpRequest: Map<HTTPRequest, RequestHash> = emptyMap()
 
     internal fun addETagHeaderToRequest(
         httpRequest: HTTPRequest
@@ -60,7 +60,7 @@ class ETagManager(
                 getStoredResult(httpRequest)?.let { (_, cachedResult) ->
                     return cachedResult
                 }
-            } else if (result.responseCode <= INTERNAL_SERVER_ERROR_RESPONSE_CODE) {
+            } else if (result.responseCode < INTERNAL_SERVER_ERROR_RESPONSE_CODE) {
                 storeResult(httpRequest, result, eTagInResponse)
             }
         }
@@ -93,21 +93,21 @@ class ETagManager(
 
     @Synchronized
     internal fun getOrCalculateAndSaveHTTPRequestHash(httpRequest: HTTPRequest): RequestHash {
-        return hashes[httpRequest] ?: calculateAndSaveHTTPRequestHash(httpRequest)
+        return hashesByHttpRequest[httpRequest] ?: calculateAndSaveHTTPRequestHash(httpRequest)
     }
 
     private fun calculateAndSaveHTTPRequestHash(httpRequest: HTTPRequest): String {
         val sha1 = (httpRequest.fullURL.toString()).sha1()
-        val updatedHashesMap = hashes.toMutableMap().also {
+        val updatedHashesMap = hashesByHttpRequest.toMutableMap().also {
             it[httpRequest] = sha1
         }
-        hashes = updatedHashesMap
+        hashesByHttpRequest = updatedHashesMap
         return sha1
     }
 
     @Synchronized
     internal fun clearCaches() {
-        hashes = emptyMap()
+        hashesByHttpRequest = emptyMap()
         prefs.edit().clear().apply()
     }
 
