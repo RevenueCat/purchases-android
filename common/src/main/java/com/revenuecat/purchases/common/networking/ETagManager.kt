@@ -42,11 +42,11 @@ class ETagManager(
     private var hashes: Map<HTTPRequest, RequestHash> = emptyMap()
 
     internal fun addETagHeaderToRequest(
-        httpRequestWithoutETagHeader: HTTPRequest
+        httpRequest: HTTPRequest
     ): HTTPRequest {
-        val eTagHeader = ETAG_HEADER_NAME to getETag(httpRequestWithoutETagHeader)
-        val updatedHeaders = httpRequestWithoutETagHeader.headers + mapOf(eTagHeader)
-        return HTTPRequest(httpRequestWithoutETagHeader.fullURL, updatedHeaders, httpRequestWithoutETagHeader.body)
+        val eTagHeader = ETAG_HEADER_NAME to getETag(httpRequest)
+        val updatedHeaders = httpRequest.headers + mapOf(eTagHeader)
+        return HTTPRequest(httpRequest.fullURL, updatedHeaders, httpRequest.body)
     }
 
     internal fun processResponse(
