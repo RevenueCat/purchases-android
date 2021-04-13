@@ -208,22 +208,22 @@ jobs:
       - download-amazon-dependency
       - run:
           name: Replace API_KEY
-          working_directory: purchase-tester
+          working_directory: examples/purchase-tester
           command: |
             sed -i s/api_key/$API_KEY/ src/main/java/com/revenuecat/purchasetester/MainApplication.kt
       - run:
           name: Prepare Keystore
-          working_directory: purchase-tester
+          working_directory: examples/purchase-tester
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
       - run:
           name: Assemble
           command: |
-            ./gradlew -p purchase-tester assemble \
+            ./gradlew -p examples/purchase-tester assemble \
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - store_artifacts:
-          path: purchase-tester/build/outputs/apk/release/purchase-tester-release.apk
+          path: examples/purchase-tester/build/outputs/apk/release/purchase-tester-release.apk
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
 
