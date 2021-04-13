@@ -42,9 +42,10 @@ class ETagManager(
     private var hashesByHttpRequest: Map<HTTPRequest, RequestHash> = emptyMap()
 
     internal fun addETagHeaderToRequest(
-        httpRequest: HTTPRequest
+        httpRequest: HTTPRequest,
+        refreshETag: Boolean = false
     ): HTTPRequest {
-        val eTagHeader = ETAG_HEADER_NAME to getETag(httpRequest)
+        val eTagHeader = ETAG_HEADER_NAME to if (refreshETag) "" else getETag(httpRequest)
         val updatedHeaders = httpRequest.headers + mapOf(eTagHeader)
         return HTTPRequest(httpRequest.fullURL, updatedHeaders, httpRequest.body)
     }
@@ -53,13 +54,11 @@ class ETagManager(
         httpRequest: HTTPRequest,
         connection: HttpURLConnection,
         result: HTTPResult
-    ): HTTPResult {
+    ): HTTPResult? {
         val eTagInResponse = connection.getHeaderField(ETAG_HEADER_NAME)
         if (eTagInResponse != null) {
             if (result.responseCode == NOT_MODIFIED_RESPONSE_CODE) {
-                getStoredResult(httpRequest)?.let { (_, cachedResult) ->
-                    return cachedResult
-                }
+                return getStoredResult(httpRequest)?.httpResult
             } else if (result.responseCode < INTERNAL_SERVER_ERROR_RESPONSE_CODE) {
                 storeResult(httpRequest, result, eTagInResponse)
             }

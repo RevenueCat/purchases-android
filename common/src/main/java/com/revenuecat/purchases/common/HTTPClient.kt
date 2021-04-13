@@ -81,7 +81,8 @@ class HTTPClient(
     fun performRequest(
         path: String,
         body: Map<String, Any?>?,
-        authenticationHeaders: Map<String, String>
+        authenticationHeaders: Map<String, String>,
+        refreshETag: Boolean = false
     ): HTTPResult {
         val jsonBody = body?.convert()
 
@@ -91,8 +92,8 @@ class HTTPClient(
         try {
             fullURL = URL(appConfig.baseURL, "/v1$path")
             val headersWithoutETag = getHeaders(authenticationHeaders)
-            httpRequest = HTTPRequest(fullURL, headersWithoutETag, jsonBody).let {
-                eTagManager.addETagHeaderToRequest(it)
+            httpRequest = HTTPRequest(fullURL, headersWithoutETag, jsonBody).let { request ->
+                eTagManager.addETagHeaderToRequest(request, refreshETag)
             }
 
             connection = getConnection(httpRequest)
@@ -118,7 +119,8 @@ class HTTPClient(
             throw IOException("Network call payload is null.")
         }
         val result = HTTPResult(responseCode, payload)
-        return eTagManager.processResponse(httpRequest, connection, result)
+        val processedResponse = eTagManager.processResponse(httpRequest, connection, result)
+        return processedResponse ?: performRequest(path, body, authenticationHeaders, refreshETag = true)
     }
 
     fun clearCaches() {

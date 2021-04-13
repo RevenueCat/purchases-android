@@ -8,6 +8,7 @@ package com.revenuecat.purchases.common
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.common.networking.ETAG_HEADER_NAME
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -58,11 +59,13 @@ class HTTPClientTest {
     private lateinit var appConfig: AppConfig
     private val mockETagManager = mockk<ETagManager>().also {
         val httpRequestSlot = slot<HTTPRequest>()
+        val refreshETagSlot = slot<Boolean>()
         every {
-            it.addETagHeaderToRequest(capture(httpRequestSlot))
+            it.addETagHeaderToRequest(capture(httpRequestSlot), capture(refreshETagSlot))
         } answers {
             val capturedHTTPRequest = httpRequestSlot.captured
-            val updatedHeaders = capturedHTTPRequest.headers + mapOf("X-RevenueCat-ETag" to "etag")
+            val capturedRefreshETag = refreshETagSlot.captured
+            val updatedHeaders = capturedHTTPRequest.headers + mapOf(ETAG_HEADER_NAME to if (capturedRefreshETag) "" else "etag")
             capturedHTTPRequest.copy(headers = updatedHeaders)
         }
     }
@@ -220,6 +223,37 @@ class HTTPClientTest {
         verify {
             mockETagManager.clearCaches()
         }
+    }
+
+    @Test
+    fun `if etags manager processed response is null, retry refreshing etags`() {
+        val response = MockResponse().setBody("{}")
+
+        server.enqueue(response)
+        server.enqueue(response)
+
+        var firstTimeCallingProcessResponse = true
+        val lst = slot<HTTPResult>()
+        every {
+            mockETagManager.processResponse(any(), any(), capture(lst))
+        } answers {
+            if (firstTimeCallingProcessResponse) {
+                firstTimeCallingProcessResponse = false
+                null
+            } else {
+                lst.captured
+            }
+        }
+
+        client.performRequest("/resource", null, mapOf("" to ""))
+
+        verify(exactly = 1) {
+            mockETagManager.addETagHeaderToRequest(any(), false)
+        }
+        verify(exactly = 1) {
+            mockETagManager.addETagHeaderToRequest(any(), true)
+        }
+
     }
 
     private fun mockResponse(response: MockResponse) {
