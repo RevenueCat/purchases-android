@@ -10,28 +10,31 @@ private const val NOT_MODIFIED_RESPONSE_CODE = 304
 private const val INTERNAL_SERVER_ERROR_RESPONSE_CODE = 500
 private typealias RequestHash = String
 
+private const val SERIALIZATION_NAME_ETAG = "eTag"
+private const val SERIALIZATION_NAME_HTTPRESULT = "httpResult"
+
+internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
+
 data class HTTPResultWithETag(
     val eTag: String,
     val httpResult: HTTPResult
 ) {
     fun serialize(): String {
         val jsonObject = JSONObject()
-        jsonObject.put("eTag", eTag)
-        jsonObject.put("httpResult", httpResult.serialize())
+        jsonObject.put(SERIALIZATION_NAME_ETAG, eTag)
+        jsonObject.put(SERIALIZATION_NAME_HTTPRESULT, httpResult.serialize())
         return jsonObject.toString()
     }
 
     companion object {
         fun deserialize(serialized: String): HTTPResultWithETag {
             val jsonObject = JSONObject(serialized)
-            val eTag = jsonObject.getString("eTag")
-            val serializedHTTPResult = jsonObject.getString("httpResult")
+            val eTag = jsonObject.getString(SERIALIZATION_NAME_ETAG)
+            val serializedHTTPResult = jsonObject.getString(SERIALIZATION_NAME_HTTPRESULT)
             return HTTPResultWithETag(eTag, HTTPResult.deserialize(serializedHTTPResult))
         }
     }
 }
-
-internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
 
 class ETagManager(
     private val prefs: SharedPreferences
