@@ -60,7 +60,7 @@ class ETagManager(
                 getStoredResult(httpRequest)?.let { (_, cachedResult) ->
                     return cachedResult
                 }
-            } else if (result.responseCode != INTERNAL_SERVER_ERROR_RESPONSE_CODE) {
+            } else if (result.responseCode <= INTERNAL_SERVER_ERROR_RESPONSE_CODE) {
                 storeResult(httpRequest, result, eTagInResponse)
             }
         }
