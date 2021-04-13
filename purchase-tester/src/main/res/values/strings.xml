@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Purchase Tester</string>
+    <string name="offering_fragment_transition">OfferingFragmentTransition</string>
+</resources>

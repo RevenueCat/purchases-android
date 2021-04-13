@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:bind="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+                name="offering"
+                type="com.revenuecat.purchases.Offering" />
+
+    </data>
+
+    <androidx.core.widget.NestedScrollView
+            android:id="@+id/offering_fragment_scroll_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:fillViewport="true">
+
+        <com.google.android.material.card.MaterialCardView
+                android:id="@+id/offering_details_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/padding_tiny"
+                android:transitionName="@string/offering_fragment_transition">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="@dimen/padding_small">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/offering_details_name"
+                        style="@style/TextAppearance.AppCompat.Title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@{offering.identifier}"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                <include
+                        android:id="@+id/offering_details_server_description"
+                        layout="@layout/row_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/padding_small"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/offering_details_name"
+                        bind:detail="@{offering.serverDescription}"
+                        bind:header="@{`Description:`}" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/offering_details_packages_header"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        style="@style/TextAppearance.AppCompat.Title"
+                        android:layout_marginTop="@dimen/padding_small"
+                        android:text="Packages"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="@+id/offering_details_server_description"
+                        app:layout_constraintTop_toBottomOf="@+id/offering_details_server_description" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/offering__details_packages_recycler"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/padding_tiny"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/offering_details_packages_header" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+    </androidx.core.widget.NestedScrollView>
+</layout>
