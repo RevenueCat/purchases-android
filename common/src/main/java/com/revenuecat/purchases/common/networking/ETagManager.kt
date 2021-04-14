@@ -20,10 +20,10 @@ data class HTTPResultWithETag(
     val httpResult: HTTPResult
 ) {
     fun serialize(): String {
-        val jsonObject = JSONObject()
-        jsonObject.put(SERIALIZATION_NAME_ETAG, eTag)
-        jsonObject.put(SERIALIZATION_NAME_HTTPRESULT, httpResult.serialize())
-        return jsonObject.toString()
+        return JSONObject().apply {
+            put(SERIALIZATION_NAME_ETAG, eTag)
+            put(SERIALIZATION_NAME_HTTPRESULT, httpResult.serialize())
+        }.toString()
     }
 
     companion object {
@@ -87,7 +87,7 @@ class ETagManager(
     }
 
     private fun getETag(httpRequest: HTTPRequest): String {
-        return getStoredResult(httpRequest)?.eTag ?: ""
+        return getStoredResult(httpRequest)?.eTag.orEmpty()
     }
 
     @Synchronized
@@ -113,7 +113,7 @@ class ETagManager(
     companion object {
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
-                context.packageName + "_preferences_etags",
+                "${context.packageName}_preferences_etags",
                 Context.MODE_PRIVATE
             )
     }
