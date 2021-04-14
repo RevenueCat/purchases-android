@@ -192,15 +192,15 @@ class BillingWrapper(
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
                 .setSkuDetails(skuDetails)
-                // Causing issues with downgrades/upgrades https://issuetracker.google.com/issues/155005449
-                // .setObfuscatedAccountId(appUserID.sha256())
                 .apply {
                     replaceSkuInfo?.apply {
                         setOldSku(oldPurchase.sku, oldPurchase.purchaseToken)
                         prorationMode?.let { prorationMode ->
                             setReplaceSkusProrationMode(prorationMode)
                         }
-                    }
+                    } ?: setObfuscatedAccountId(appUserID.sha256())
+                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                    // https://issuetracker.google.com/issues/155005449
                 }.build()
 
             launchBillingFlow(activity, params)
