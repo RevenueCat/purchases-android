@@ -247,6 +247,9 @@ class HTTPClientTest {
 
         client.performRequest("/resource", null, mapOf("" to ""))
 
+        server.takeRequest()
+        server.takeRequest()
+
         verify(exactly = 1) {
             mockETagManager.addETagHeaderToRequest(any(), false)
         }
