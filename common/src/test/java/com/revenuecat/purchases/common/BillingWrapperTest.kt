@@ -290,8 +290,9 @@ class BillingWrapperTest {
             null
         )
 
+        val expectedSHA256 = appUserId.sha256()
         verify {
-            mockBuilder.setObfuscatedAccountId(appUserId.sha256())
+            mockBuilder.setObfuscatedAccountId(expectedSHA256)
         }
 
         clearStaticMockk(BillingFlowParams::class)
