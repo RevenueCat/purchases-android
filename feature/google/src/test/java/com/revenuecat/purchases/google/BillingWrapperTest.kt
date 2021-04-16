@@ -313,8 +313,9 @@ class BillingWrapperTest {
             null
         )
 
+        val expectedUserId = appUserId.sha256()
         verify {
-            mockBuilder.setObfuscatedAccountId(appUserId.sha256())
+            mockBuilder.setObfuscatedAccountId(expectedUserId)
         }
 
         clearStaticMockk(BillingFlowParams::class)
@@ -1425,7 +1426,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `do not query BillingClient for any empty skus`() {
+    fun `querySkuDetails filters empty skus before querying BillingClient`() {
         val skuSet = setOf("abcd", "", "1", "")
 
         val slot = slot<SkuDetailsParams>()
@@ -1436,9 +1437,7 @@ class BillingWrapperTest {
         wrapper.querySkuDetailsAsync(
             ProductType.SUBS,
             skuSet,
-            {
-                this@BillingWrapperTest.productDetailsList = it
-            }, {
+            {}, {
                 fail("shouldn't be an error")
             })
 
@@ -1446,7 +1445,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `querySkuDetails with empty list returns empty list and does not query billingclient`() {
+    fun `querySkuDetails with empty list returns empty list and does not query BillingClient`() {
         wrapper.querySkuDetailsAsync(
             ProductType.SUBS,
             emptySet(),
@@ -1462,7 +1461,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `querySkuDetails with only empty skus returns empty list and does not query client`() {
+    fun `querySkuDetails with only empty skus returns empty list and does not query BillingClient`() {
         wrapper.querySkuDetailsAsync(
             ProductType.SUBS,
             setOf("", ""),
