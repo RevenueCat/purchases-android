@@ -16,5 +16,5 @@ object OfferingStrings {
     const val OFFERINGS_UPDATED_FROM_NETWORK = "Offerings updated from network."
     const val RETRIEVED_PRODUCTS = "Retrieved skuDetailsList: %s"
     const val VENDING_OFFERINGS_CACHE = "Vending Offerings from cache"
-    const val EMPTY_SKU_LIST = "SKU list is empty, skipping fetchSkuDetailsAsync call"
+    const val EMPTY_SKU_LIST = "SKU list is empty, skipping querySkuDetailsAsync call"
 }
