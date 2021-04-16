@@ -127,6 +127,7 @@ class BillingWrapper(
     ) {
         if (skus.none { it.isNotEmpty() }) {
             log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
+            onReceive(emptyList())
             return
         }
 
