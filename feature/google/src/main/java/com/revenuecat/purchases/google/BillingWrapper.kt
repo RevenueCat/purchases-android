@@ -136,7 +136,7 @@ class BillingWrapper(
             if (connectionError == null) {
                 val params = SkuDetailsParams.newBuilder()
                     .setType(productType.toSKUType() ?: SkuType.INAPP)
-                    .setSkusList(skus.toList().filter { it.isNotEmpty() }).build()
+                    .setSkusList(skus.toList()).build()
 
                 withConnectedClient {
                     querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
