@@ -125,12 +125,17 @@ class BillingWrapper(
         onReceive: ProductDetailsListCallback,
         onError: PurchasesErrorCallback
     ) {
+        if (skus.none { it.isNotEmpty() }) {
+            log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
+            return
+        }
+
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 val params = SkuDetailsParams.newBuilder()
                     .setType(productType.toSKUType() ?: SkuType.INAPP)
-                    .setSkusList(skus.toList()).build()
+                    .setSkusList(skus.toList().filter { it.isNotEmpty() }).build()
 
                 withConnectedClient {
                     querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
