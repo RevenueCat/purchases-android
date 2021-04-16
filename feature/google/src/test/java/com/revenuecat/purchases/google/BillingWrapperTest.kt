@@ -1424,6 +1424,59 @@ class BillingWrapperTest {
         }
     }
 
+    @Test
+    fun `do not query BillingClient for any empty skus`() {
+        val skuSet = setOf("abcd", "", "1", "")
+
+        val slot = slot<SkuDetailsParams>()
+        every {
+            mockClient.querySkuDetailsAsync(capture(slot), any())
+        } just Runs
+
+        wrapper.querySkuDetailsAsync(
+            ProductType.SUBS,
+            skuSet,
+            {
+                this@BillingWrapperTest.productDetailsList = it
+            }, {
+                fail("shouldn't be an error")
+            })
+
+        assertThat(slot.captured.skusList).isEqualTo(skuSet.filter { it.isNotEmpty() })
+    }
+
+    @Test
+    fun `querySkuDetails with empty list returns empty list and does not query billingclient`() {
+        wrapper.querySkuDetailsAsync(
+            ProductType.SUBS,
+            emptySet(),
+            {
+                assertThat(it.isEmpty())
+            }, {
+                fail("shouldn't be an error")
+            })
+
+        verify(exactly = 0) {
+            mockClient.querySkuDetailsAsync(any(), any())
+        }
+    }
+
+    @Test
+    fun `querySkuDetails with only empty skus returns empty list and does not query client`() {
+        wrapper.querySkuDetailsAsync(
+            ProductType.SUBS,
+            setOf("", ""),
+            {
+                assertThat(it.isEmpty())
+            }, {
+                fail("shouldn't be an error")
+            })
+
+        verify(exactly = 0) {
+            mockClient.querySkuDetailsAsync(any(), any())
+        }
+    }
+
     private fun mockNullSkuDetailsResponse() {
         val slot = slot<SkuDetailsResponseListener>()
         every {
