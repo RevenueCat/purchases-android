@@ -12,7 +12,6 @@ import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import kotlin.jvm.Throws
 
 private const val JITTERING_DELAY_MILLISECONDS = 5000
 
