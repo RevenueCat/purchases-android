@@ -1859,6 +1859,49 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
+         * Check if current user can make payments on the device device. This method is asynchronous since it tries
+         * to connect the billing client and checks for the result of the connection.
+         * @param context A context object that will be used to connect to the billing client
+         * @param feature An optional feature type to check for support. Must be one of [BillingClient.FeatureType]
+         * @param callback Callback that will be notified when the check is complete.
+         */
+        @JvmStatic
+        fun canMakePayments(
+            context: Context,
+            @BillingClient.FeatureType feature: String? = null,
+            callback: Callback<Boolean>
+        ) {
+            var isBillingSupported = false
+            var billingSupportedReturned = false
+
+            var isFeatureSupported = false
+            var featureSupportedReturned = false
+
+            isBillingSupported(context, Callback {
+                isBillingSupported = it
+                billingSupportedReturned = true
+
+                if (featureSupportedReturned) {
+                    callback.onReceived(isBillingSupported && isFeatureSupported)
+                }
+            })
+
+            if (feature != null) {
+                isFeatureSupported(feature, context, Callback {
+                    isFeatureSupported = it
+                    featureSupportedReturned = true
+
+                    if (billingSupportedReturned) {
+                        callback.onReceived(isBillingSupported && isFeatureSupported)
+                    }
+                })
+            } else {
+                isFeatureSupported = true
+                featureSupportedReturned = true
+            }
+        }
+
+        /**
          * Check if billing is supported in the device. This method is asynchronous since it tries
          * to connect the billing client and checks for the result of the connection.
          * If billing is supported, IN-APP purchases are supported.
