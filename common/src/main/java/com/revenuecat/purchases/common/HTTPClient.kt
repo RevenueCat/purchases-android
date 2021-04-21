@@ -115,7 +115,7 @@ class HTTPClient(
 
         log(LogIntent.DEBUG, NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
         if (payload == null) {
-            throw IOException("Network call payload is null.")
+            throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
         val result = HTTPResult(responseCode, payload)
         val processedResponse = eTagManager.processResponse(httpRequest, connection, result)
