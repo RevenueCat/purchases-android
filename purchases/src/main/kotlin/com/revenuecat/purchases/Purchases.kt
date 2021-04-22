@@ -1871,34 +1871,42 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             @BillingClient.FeatureType feature: String? = null,
             callback: Callback<Boolean>
         ) {
-            var isBillingSupported = false
-            var billingSupportedReturned = false
+            BillingClient.newBuilder(context)
+                .enablePendingPurchases()
+                .setListener { _, _ -> }
+                .build()
+                .let { billingClient ->
+                    billingClient.startConnection(
+                        object : BillingClientStateListener {
+                            override fun onBillingSetupFinished(billingResult: BillingResult) {
+                                try {
+                                    billingClient.endConnection()
 
-            var isFeatureSupported = false
-            var featureSupportedReturned = false
+                                    val billingSupportedResultOk =
+                                        billingResult.responseCode == BillingClient.BillingResponseCode.OK
 
-            isBillingSupported(context, Callback {
-                isBillingSupported = it
-                billingSupportedReturned = true
+                                    val featureSupportedResultOk = feature?.let {
+                                        billingClient.isFeatureSupported(it).responseCode ==
+                                            BillingClient.BillingResponseCode.OK
+                                    } ?: true
 
-                if (featureSupportedReturned) {
-                    callback.onReceived(isBillingSupported && isFeatureSupported)
+                                    callback.onReceived(billingSupportedResultOk && featureSupportedResultOk)
+                                } catch (e: IllegalArgumentException) {
+                                    // Play Services not available
+                                    callback.onReceived(false)
+                                }
+                            }
+
+                            override fun onBillingServiceDisconnected() {
+                                try {
+                                    billingClient.endConnection()
+                                } catch (e: IllegalArgumentException) {
+                                } finally {
+                                    callback.onReceived(false)
+                                }
+                            }
+                        })
                 }
-            })
-
-            if (feature != null) {
-                isFeatureSupported(feature, context, Callback {
-                    isFeatureSupported = it
-                    featureSupportedReturned = true
-
-                    if (billingSupportedReturned) {
-                        callback.onReceived(isBillingSupported && isFeatureSupported)
-                    }
-                })
-            } else {
-                isFeatureSupported = true
-                featureSupportedReturned = true
-            }
         }
 
         /**

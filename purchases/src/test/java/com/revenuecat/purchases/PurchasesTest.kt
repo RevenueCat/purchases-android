@@ -1243,7 +1243,7 @@ class PurchasesTest {
         var capturedRestoreLambda: ((List<PurchaseDetails>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
-                    appUserId,
+                appUserId,
                 captureLambda(),
                 any()
             )
@@ -1321,7 +1321,7 @@ class PurchasesTest {
         var capturedRestoreLambda: ((List<PurchaseDetails>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
-                    appUserId,
+                appUserId,
                 captureLambda(),
                 any()
             )
@@ -2295,7 +2295,11 @@ class PurchasesTest {
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         val listener = isBillingSupportedSetup(mockLocalBillingClient)
 
-        Purchases.canMakePayments(mockContext, null, Callback {
+        every {
+            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
+        } returns BillingClient.BillingResponseCode.OK.buildResult()
+
+        Purchases.canMakePayments(mockContext, BillingClient.FeatureType.SUBSCRIPTIONS, Callback {
             receivedCanMakePayments = it
         })
 
@@ -2311,11 +2315,15 @@ class PurchasesTest {
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         val listener = isBillingSupportedSetup(mockLocalBillingClient)
 
+        every {
+            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
+        } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
+
         Purchases.canMakePayments(mockContext, BillingClient.FeatureType.SUBSCRIPTIONS, Callback {
             receivedCanMakePayments = it
         })
 
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
         AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse()
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
@@ -2327,14 +2335,33 @@ class PurchasesTest {
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         val listener = isBillingSupportedSetup(mockLocalBillingClient)
 
+        every {
+            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
+        } returns BillingClient.BillingResponseCode.OK.buildResult()
+
         Purchases.canMakePayments(mockContext, BillingClient.FeatureType.SUBSCRIPTIONS, Callback {
             receivedCanMakePayments = it
         })
 
-
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
         AssertionsForClassTypes.assertThat(receivedCanMakePayments).isTrue()
+        verify(exactly = 1) { mockLocalBillingClient.endConnection() }
+    }
+
+    @Test
+    fun `when feature is null, canMakePayments does not check billing client`() {
+        var receivedCanMakePayments = true
+        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
+        val listener = isBillingSupportedSetup(mockLocalBillingClient)
+
+        Purchases.canMakePayments(mockContext, null, Callback {
+            receivedCanMakePayments = it
+        })
+
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+
+        verify(exactly = 0) { mockLocalBillingClient.isFeatureSupported(any()) }
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -2402,14 +2429,11 @@ class PurchasesTest {
 
     @Test
     fun `when finishTransactions is set to false, don't consume transactions on 4xx`() {
-
-
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
-        var capturedLambda: (PostReceiptDataErrorCallback)? = null
         mockPostReceiptError(
             sku,
             purchaseToken,
@@ -2417,13 +2441,12 @@ class PurchasesTest {
             offeringIdentifier = null,
             type = ProductType.INAPP,
             answer = {
-                capturedLambda = lambda<PostReceiptDataErrorCallback>().captured.also {
+                lambda<PostReceiptDataErrorCallback>().captured.also {
                     it.invokeWithFinishableError()
                 }
             }
         )
 
-        var capturedLambda1: (PostReceiptDataErrorCallback)? = null
         mockPostReceiptError(
             skuSub,
             purchaseTokenSub,
@@ -2431,7 +2454,7 @@ class PurchasesTest {
             offeringIdentifier = null,
             type = ProductType.SUBS,
             answer = {
-                capturedLambda1 = lambda<PostReceiptDataErrorCallback>().captured.also {
+                lambda<PostReceiptDataErrorCallback>().captured.also {
                     it.invokeWithFinishableError()
                 }
             }
@@ -2450,7 +2473,6 @@ class PurchasesTest {
 
     @Test
     fun `when finishTransactions is set to false, don't consume transactions on 5xx`() {
-
 
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
@@ -2843,7 +2865,6 @@ class PurchasesTest {
     @Test
     fun `do not resend last attribution data to backend`() {
 
-
         val network = CommonAttributionNetwork.APPSFLYER
         val capturedJSONObject = slot<JSONObject>()
 
@@ -2869,7 +2890,6 @@ class PurchasesTest {
 
     @Test
     fun `cache last sent attribution data`() {
-
 
         val network = CommonAttributionNetwork.APPSFLYER
         val capturedJSONObject = slot<JSONObject>()
@@ -2945,8 +2965,6 @@ class PurchasesTest {
         val purchaseToken = "crazy_purchase_token"
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
-
-
 
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
         mockPostReceiptError(
@@ -3060,7 +3078,7 @@ class PurchasesTest {
     fun `when updating pending purchases, if token has not been sent, send it`() {
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
-            productId= "product",
+            productId = "product",
             purchaseState = Purchase.PurchaseState.PURCHASED
         )
 
@@ -3094,7 +3112,7 @@ class PurchasesTest {
         val token = "1234token"
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
-            productId= "product"
+            productId = "product"
         )
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(
@@ -3461,7 +3479,6 @@ class PurchasesTest {
         ) { _, _ -> }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
-
     }
 
     // region Private Methods
@@ -3710,7 +3727,11 @@ class PurchasesTest {
             }
         )
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(offerings[stubOfferingIdentifier]!!.monthly!!.product.sku, purchaseToken, ProductType.SUBS)
+            getMockedPurchaseList(
+                offerings[stubOfferingIdentifier]!!.monthly!!.product.sku,
+                purchaseToken,
+                ProductType.SUBS
+            )
         )
         assertThat(callCount).isEqualTo(1)
     }
@@ -3871,7 +3892,6 @@ class PurchasesTest {
 
         val receiptInfo = mockQueryingSkuDetails(sku, ProductType.SUBS, null)
 
-
         val oldPurchase = mockPurchaseFound()
 
         var receivedError: PurchasesError? = null
@@ -3900,7 +3920,6 @@ class PurchasesTest {
         assertThat(receivedUserCancelled).isFalse()
     }
 
-
     @Test
     fun `when purchasing a package with upgrade info, completion block is called`() {
         val sku = "onemonth_freetrial"
@@ -3925,7 +3944,11 @@ class PurchasesTest {
             }
         )
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(offerings[stubOfferingIdentifier]!!.monthly!!.product.sku, purchaseToken, ProductType.SUBS)
+            getMockedPurchaseList(
+                offerings[stubOfferingIdentifier]!!.monthly!!.product.sku,
+                purchaseToken,
+                ProductType.SUBS
+            )
         )
         assertThat(callCount).isEqualTo(1)
     }
@@ -4439,5 +4462,5 @@ class PurchasesTest {
         }
         return oldPurchase
     }
-    // endregion
+// endregion
 }
