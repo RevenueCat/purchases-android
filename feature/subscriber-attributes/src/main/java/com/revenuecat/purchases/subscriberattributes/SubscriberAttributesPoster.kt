@@ -4,7 +4,7 @@ import android.net.Uri
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.HTTP_NOT_FOUND_ERROR_CODE
+import com.revenuecat.purchases.common.networking.HTTP_NOT_FOUND_ERROR_CODE
 import com.revenuecat.purchases.common.HTTP_SERVER_ERROR_CODE
 import com.revenuecat.purchases.common.SubscriberAttributeError
 

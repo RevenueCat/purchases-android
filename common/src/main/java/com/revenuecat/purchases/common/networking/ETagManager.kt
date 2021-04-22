@@ -6,8 +6,6 @@ import com.revenuecat.purchases.common.sha1
 import org.json.JSONObject
 import java.net.HttpURLConnection
 
-private const val NOT_MODIFIED_RESPONSE_CODE = 304
-private const val INTERNAL_SERVER_ERROR_RESPONSE_CODE = 500
 private typealias RequestHash = String
 
 private const val SERIALIZATION_NAME_ETAG = "eTag"

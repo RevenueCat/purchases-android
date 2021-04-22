@@ -11,13 +11,11 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.HTTP_SERVER_ERROR_CODE
+import com.revenuecat.purchases.common.networking.HTTP_STATUS_CREATED
+import com.revenuecat.purchases.common.networking.UNSUCCESSFUL_HTTP_STATUS_CODE
 import org.json.JSONException
 import org.json.JSONObject
-
-private const val HTTP_STATUS_CREATED = 201
-private const val UNSUCCESSFUL_HTTP_STATUS_CODE = 300
-const val HTTP_SERVER_ERROR_CODE = 500
-const val HTTP_NOT_FOUND_ERROR_CODE = 404
 
 const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
