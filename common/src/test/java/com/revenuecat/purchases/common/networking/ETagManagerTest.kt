@@ -50,7 +50,7 @@ class ETagManagerTest {
 
         mockCachedHTTPResult(httpRequestWithoutETagHeader, null)
 
-        val requestWithETagHeader = underTest.addETagHeaderToRequest(httpRequestWithoutETagHeader)
+        val requestWithETagHeader = underTest.getETagHeader(httpRequestWithoutETagHeader)
         val eTagHeader = requestWithETagHeader.headers[ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull()
         assertThat(eTagHeader).isBlank()
@@ -63,7 +63,7 @@ class ETagManagerTest {
 
         mockCachedHTTPResult(httpRequestWithoutETagHeader, expectedETag)
 
-        val requestWithETagHeader = underTest.addETagHeaderToRequest(httpRequestWithoutETagHeader)
+        val requestWithETagHeader = underTest.getETagHeader(httpRequestWithoutETagHeader)
         val eTagHeader = requestWithETagHeader.headers[ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull()
         assertThat(eTagHeader).isEqualTo(expectedETag)
@@ -77,7 +77,7 @@ class ETagManagerTest {
 
         val cachedHTTPResult = mockCachedHTTPResult(httpRequest, eTag)!!.httpResult
 
-        val processedResponse = underTest.processResponse(httpRequest, mockedConnection, HTTPResult(304, ""))
+        val processedResponse = underTest.retrieveResponsePayload(httpRequest, mockedConnection, HTTPResult(304, ""))
 
         assertThat(processedResponse).isNotNull
         assertThat(processedResponse!!.payload).isEqualTo(cachedHTTPResult.payload)
@@ -95,7 +95,7 @@ class ETagManagerTest {
         assertThat(cachedHTTPResult).isNotNull
 
         val resultFromBackend = HTTPResult(200, Responses.validEmptyPurchaserResponse)
-        val processedResponse = underTest.processResponse(httpRequest, mockedConnection, resultFromBackend)
+        val processedResponse = underTest.retrieveResponsePayload(httpRequest, mockedConnection, resultFromBackend)
 
         assertThat(processedResponse).isNotNull
         assertThat(processedResponse!!.payload).isEqualTo(resultFromBackend.payload)
@@ -112,7 +112,7 @@ class ETagManagerTest {
         val httpRequestHash = underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequest)
         val resultFromBackend = HTTPResult(200, Responses.validEmptyPurchaserResponse)
 
-        underTest.processResponse(httpRequest, mockedConnection, resultFromBackend)
+        underTest.retrieveResponsePayload(httpRequest, mockedConnection, resultFromBackend)
 
         val expectedCachedResult = HTTPResultWithETag(newETag, resultFromBackend)
 
@@ -133,7 +133,7 @@ class ETagManagerTest {
         underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequest)
         val resultFromBackend = HTTPResult(500, Responses.validEmptyPurchaserResponse)
 
-        underTest.processResponse(httpRequest, mockedConnection, resultFromBackend)
+        underTest.retrieveResponsePayload(httpRequest, mockedConnection, resultFromBackend)
 
         HTTPResultWithETag(newETag, resultFromBackend)
 
@@ -161,7 +161,7 @@ class ETagManagerTest {
 
         mockCachedHTTPResult(httpRequestWithoutETagHeader, expectedETag)
 
-        val requestWithETagHeader = underTest.addETagHeaderToRequest(httpRequestWithoutETagHeader, refreshETag = true)
+        val requestWithETagHeader = underTest.getETagHeader(httpRequestWithoutETagHeader, refreshETag = true)
         val eTagHeader = requestWithETagHeader.headers[ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull()
         assertThat(eTagHeader).isEqualTo(expectedETag)
@@ -178,7 +178,7 @@ class ETagManagerTest {
             mockedPrefs.getString(httpRequestHash, null)
         } returns null
 
-        val processedResponse = underTest.processResponse(httpRequest, mockedConnection, HTTPResult(304, ""))
+        val processedResponse = underTest.retrieveResponsePayload(httpRequest, mockedConnection, HTTPResult(304, ""))
 
         assertThat(processedResponse).isNull()
     }

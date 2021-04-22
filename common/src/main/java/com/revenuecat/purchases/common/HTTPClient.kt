@@ -10,6 +10,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPRequest
+import com.revenuecat.purchases.common.networking.getETagHeader
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
@@ -88,12 +89,12 @@ class HTTPClient(
         val fullURL: URL
         val connection: HttpURLConnection
         val httpRequest: HTTPRequest
+        val urlPathWithVersion = "/v1$path"
         try {
-            fullURL = URL(appConfig.baseURL, "/v1$path")
-            val headersWithoutETag = getHeaders(authenticationHeaders)
-            httpRequest = HTTPRequest(fullURL, headersWithoutETag, jsonBody).let { request ->
-                eTagManager.addETagHeaderToRequest(request, refreshETag)
-            }
+            fullURL = URL(appConfig.baseURL, urlPathWithVersion)
+
+            val headers = getHeaders(authenticationHeaders, urlPathWithVersion, refreshETag)
+            httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
             connection = getConnection(httpRequest)
         } catch (e: MalformedURLException) {
@@ -117,16 +118,33 @@ class HTTPClient(
         if (payload == null) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
-        val result = HTTPResult(responseCode, payload)
-        val processedResponse = eTagManager.processResponse(httpRequest, connection, result)
-        return processedResponse ?: performRequest(path, body, authenticationHeaders, refreshETag = true)
+
+        val resultFromBackend = HTTPResult(responseCode, payload)
+        connection.getETagHeader()?.let { eTagInResponse ->
+            val (storedResult, shouldRetry) = eTagManager.getStoredResultIfNeeded(urlPathWithVersion, responseCode)
+            if (shouldRetry) {
+                if (refreshETag) {
+                    return resultFromBackend
+                }
+                return performRequest(path, body, authenticationHeaders, refreshETag = true)
+            }
+            if (storedResult != null) {
+                return storedResult
+            }
+            eTagManager.storeBackendResultIfNoError(urlPathWithVersion, resultFromBackend, eTagInResponse)
+        }
+        return resultFromBackend
     }
 
     fun clearCaches() {
         eTagManager.clearCaches()
     }
 
-    private fun getHeaders(authenticationHeaders: Map<String, String>): Map<String, String> {
+    private fun getHeaders(
+        authenticationHeaders: Map<String, String>,
+        urlPath: String,
+        refreshETag: Boolean
+    ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
             "X-Platform" to getXPlatformHeader(),
@@ -137,7 +155,10 @@ class HTTPClient(
             "X-Client-Locale" to appConfig.languageTag,
             "X-Client-Version" to appConfig.versionName,
             "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true"
-        ).plus(authenticationHeaders).filterNotNullValues()
+        )
+            .plus(authenticationHeaders)
+            .plus(eTagManager.getETagHeader(urlPath, refreshETag))
+            .filterNotNullValues()
     }
 
     private fun Map<String, Any?>.convert(): JSONObject {

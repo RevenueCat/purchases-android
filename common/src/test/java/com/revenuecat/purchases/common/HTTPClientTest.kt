@@ -61,7 +61,7 @@ class HTTPClientTest {
         val httpRequestSlot = slot<HTTPRequest>()
         val refreshETagSlot = slot<Boolean>()
         every {
-            it.addETagHeaderToRequest(capture(httpRequestSlot), capture(refreshETagSlot))
+            it.getETagHeader(capture(httpRequestSlot), capture(refreshETagSlot))
         } answers {
             val capturedHTTPRequest = httpRequestSlot.captured
             val capturedRefreshETag = refreshETagSlot.captured
@@ -235,7 +235,7 @@ class HTTPClientTest {
         var firstTimeCallingProcessResponse = true
         val lst = slot<HTTPResult>()
         every {
-            mockETagManager.processResponse(any(), any(), capture(lst))
+            mockETagManager.retrieveResponsePayload(any(), any(), capture(lst))
         } answers {
             if (firstTimeCallingProcessResponse) {
                 firstTimeCallingProcessResponse = false
@@ -251,10 +251,10 @@ class HTTPClientTest {
         server.takeRequest()
 
         verify(exactly = 1) {
-            mockETagManager.addETagHeaderToRequest(any(), false)
+            mockETagManager.getETagHeader(any(), false)
         }
         verify(exactly = 1) {
-            mockETagManager.addETagHeaderToRequest(any(), true)
+            mockETagManager.getETagHeader(any(), true)
         }
 
     }
@@ -263,7 +263,7 @@ class HTTPClientTest {
         server.enqueue(response)
         val lst = slot<HTTPResult>()
         every {
-            mockETagManager.processResponse(any(), any(), capture(lst))
+            mockETagManager.retrieveResponsePayload(any(), any(), capture(lst))
         } answers {
             lst.captured
         }

@@ -2,11 +2,11 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONObject
 import java.net.HttpURLConnection
-
-private typealias RequestHash = String
 
 private const val SERIALIZATION_NAME_ETAG = "eTag"
 private const val SERIALIZATION_NAME_HTTPRESULT = "httpResult"
@@ -34,77 +34,70 @@ data class HTTPResultWithETag(
     }
 }
 
+typealias ShouldRefreshETags = Boolean
+
 class ETagManager(
     private val prefs: SharedPreferences
 ) {
-    private var hashesByHttpRequest: Map<HTTPRequest, RequestHash> = emptyMap()
 
-    internal fun addETagHeaderToRequest(
-        httpRequest: HTTPRequest,
+    internal fun getETagHeader(
+        path: String,
         refreshETag: Boolean = false
-    ): HTTPRequest {
-        val eTagHeader = ETAG_HEADER_NAME to if (refreshETag) "" else getETag(httpRequest)
-        val updatedHeaders = httpRequest.headers + mapOf(eTagHeader)
-        return HTTPRequest(httpRequest.fullURL, updatedHeaders, httpRequest.body)
+    ): Map<String, String> {
+        val eTagHeader = ETAG_HEADER_NAME to if (refreshETag) "" else getETag(path)
+        return mapOf(eTagHeader)
     }
 
-    internal fun processResponse(
-        httpRequest: HTTPRequest,
-        connection: HttpURLConnection,
-        result: HTTPResult
-    ): HTTPResult? {
-        val eTagInResponse = connection.getHeaderField(ETAG_HEADER_NAME)
-        if (eTagInResponse != null) {
-            if (result.responseCode == NOT_MODIFIED_RESPONSE_CODE) {
-                return getStoredResult(httpRequest)?.httpResult
-            } else if (result.responseCode < INTERNAL_SERVER_ERROR_RESPONSE_CODE) {
-                storeResult(httpRequest, result, eTagInResponse)
-            }
+    internal fun getStoredResultIfNeeded(
+        path: String,
+        responseCode: Int
+    ): Pair<HTTPResult?, ShouldRefreshETags> {
+        if (responseCode == NOT_MODIFIED_RESPONSE_CODE) {
+            return getStoredResult(path)?.let {
+                it.httpResult to false
+            } ?: {
+                log(LogIntent.WARNING, NetworkStrings.ETAG_ERROR_RETRIEVING_CACHE)
+                null to true
+            }.invoke()
         }
 
-        return result
+        return null to false
+    }
+
+    internal fun storeBackendResultIfNoError(
+        path: String,
+        resultFromBackend: HTTPResult,
+        eTagInResponse: String
+    ) {
+        val responseCode = resultFromBackend.responseCode
+        if (responseCode != NOT_MODIFIED_RESPONSE_CODE && responseCode < HTTP_SERVER_ERROR_CODE) {
+            storeResult(path, resultFromBackend, eTagInResponse)
+        }
     }
 
     @Synchronized
     private fun storeResult(
-        request: HTTPRequest,
+        path: String,
         result: HTTPResult,
         eTag: String
     ) {
-        val requestHash = getOrCalculateAndSaveHTTPRequestHash(request)
         val httpResultWithETag = HTTPResultWithETag(eTag, result)
-        prefs.edit().putString(requestHash, httpResultWithETag.serialize()).apply()
+        prefs.edit().putString(path, httpResultWithETag.serialize()).apply()
     }
 
-    private fun getStoredResult(httpRequest: HTTPRequest): HTTPResultWithETag? {
-        val requestHash = getOrCalculateAndSaveHTTPRequestHash(httpRequest)
-        val serializedHTTPResultWithETag = prefs.getString(requestHash, null)
+    private fun getStoredResult(path: String): HTTPResultWithETag? {
+        val serializedHTTPResultWithETag = prefs.getString(path, null)
         return serializedHTTPResultWithETag?.let {
             HTTPResultWithETag.deserialize(it)
         }
     }
 
-    private fun getETag(httpRequest: HTTPRequest): String {
-        return getStoredResult(httpRequest)?.eTag.orEmpty()
-    }
-
-    @Synchronized
-    internal fun getOrCalculateAndSaveHTTPRequestHash(httpRequest: HTTPRequest): RequestHash {
-        return hashesByHttpRequest[httpRequest] ?: calculateAndSaveHTTPRequestHash(httpRequest)
-    }
-
-    private fun calculateAndSaveHTTPRequestHash(httpRequest: HTTPRequest): String {
-        val sha1 = (httpRequest.fullURL.toString()).sha1()
-        val updatedHashesMap = hashesByHttpRequest.toMutableMap().also {
-            it[httpRequest] = sha1
-        }
-        hashesByHttpRequest = updatedHashesMap
-        return sha1
+    private fun getETag(path: String): String {
+        return getStoredResult(path)?.eTag.orEmpty()
     }
 
     @Synchronized
     internal fun clearCaches() {
-        hashesByHttpRequest = emptyMap()
         prefs.edit().clear().apply()
     }
 
@@ -116,3 +109,5 @@ class ETagManager(
             )
     }
 }
+
+internal fun HttpURLConnection.getETagHeader(): String? = this.getHeaderField(ETAG_HEADER_NAME)
