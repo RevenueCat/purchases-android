@@ -62,6 +62,11 @@ class ETagManager(
     }
 
     @Synchronized
+    internal fun clearCaches() {
+        prefs.edit().clear().apply()
+    }
+
+    @Synchronized
     private fun storeResult(
         path: String,
         result: HTTPResult,
@@ -80,11 +85,6 @@ class ETagManager(
 
     private fun getETag(path: String): String {
         return getStoredResultSavedInSharedPreferences(path)?.eTag.orEmpty()
-    }
-
-    @Synchronized
-    internal fun clearCaches() {
-        prefs.edit().clear().apply()
     }
 
     companion object {
