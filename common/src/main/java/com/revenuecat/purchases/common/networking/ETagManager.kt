@@ -31,8 +31,6 @@ data class HTTPResultWithETag(
     }
 }
 
-typealias ShouldRefreshETags = Boolean
-
 class ETagManager(
     private val prefs: SharedPreferences
 ) {
@@ -45,7 +43,7 @@ class ETagManager(
         return mapOf(eTagHeader)
     }
 
-    internal fun shouldUseCachedVersion(responseCode: Int) = responseCode == RC_HTTP_STATUS_NOT_MODIFIED
+    internal fun shouldUseCachedVersion(responseCode: Int) = responseCode == RCHTTPStatusCodes.NOT_MODIFIED
 
     internal fun getStoredResult(path: String): HTTPResult? {
         val storedResult = getStoredResultSavedInSharedPreferences(path)
@@ -58,7 +56,7 @@ class ETagManager(
         eTagInResponse: String
     ) {
         val responseCode = resultFromBackend.responseCode
-        if (responseCode != RC_HTTP_STATUS_NOT_MODIFIED && responseCode < RC_HTTP_STATUS_ERROR) {
+        if (responseCode != RCHTTPStatusCodes.NOT_MODIFIED && responseCode < RCHTTPStatusCodes.ERROR) {
             storeResult(path, resultFromBackend, eTagInResponse)
         }
     }

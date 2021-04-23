@@ -11,6 +11,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.networking.ETAG_HEADER_NAME
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -22,6 +23,8 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
+import org.json.JSONObject
+import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
 import org.junit.BeforeClass
@@ -35,25 +38,18 @@ import org.robolectric.annotation.Config as AnnotationConfig
 @AnnotationConfig(manifest = AnnotationConfig.NONE)
 class HTTPClientTest {
 
-    companion object {
+    private lateinit var server: MockWebServer
+    private lateinit var baseURL: URL
 
-        @JvmStatic
-        private lateinit var server: MockWebServer
-        @JvmStatic
-        private lateinit var baseURL: URL
+    @Before
+    fun setup() {
+        server = MockWebServer()
+        baseURL = server.url("/v1").toUrl()
+    }
 
-        @BeforeClass
-        @JvmStatic
-        fun setup() {
-            server = MockWebServer()
-            baseURL = server.url("/v1").toUrl()
-        }
-
-        @AfterClass
-        @JvmStatic
-        fun teardown() {
-            server.shutdown()
-        }
+    @After
+    fun teardown() {
+        server.shutdown()
     }
 
     private lateinit var appConfig: AppConfig
@@ -225,11 +221,11 @@ class HTTPClientTest {
     }
 
     @Test
-    fun `if there's an error getting ETag, retry call refreshing ETags`() {
+    fun `if there's an error getting ETag from cache, retry call refreshing ETags`() {
         val response =
             MockResponse()
                 .setHeader(ETAG_HEADER_NAME, "anetag")
-                .setResponseCode(304)
+                .setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED)
 
         val secondResponse =
             MockResponse()
@@ -240,21 +236,19 @@ class HTTPClientTest {
         server.enqueue(secondResponse)
 
         every {
+            mockETagManager.shouldUseCachedVersion(RCHTTPStatusCodes.NOT_MODIFIED)
+        } returns true
+        every {
+            mockETagManager.shouldUseCachedVersion(RCHTTPStatusCodes.SUCCESS)
+        } returns false
+        every {
             mockETagManager.storeBackendResultIfNoError(any(), any(), any())
         } just Runs
         every {
-            mockETagManager.getStoredResult(any(), 304)
-        } answers {
-            null to true
-        }
+            mockETagManager.getStoredResult(any())
+        } returns null
 
-        every {
-            mockETagManager.getStoredResult(any(), 200)
-        } answers {
-            null to false
-        }
-
-        client.performRequest("/resource", null, mapOf("" to ""))
+        val result = client.performRequest("/resource", null, mapOf("" to ""))
 
         server.takeRequest()
         server.takeRequest()
@@ -265,31 +259,70 @@ class HTTPClientTest {
         verify(exactly = 1) {
             mockETagManager.getETagHeader(any(), true)
         }
-
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        assertThat(JSONObject(result.payload).toString()).isEqualTo(JSONObject(Responses.validEmptyPurchaserResponse).toString())
     }
 
     @Test
-    fun `store result from backend if result is not cached already`() {
+    fun `if there's an error getting ETag, retry call refreshing ETags only once`() {
+        val response =
+            MockResponse()
+                .setHeader(ETAG_HEADER_NAME, "anetag")
+                .setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED)
+
+        val secondResponse =
+            MockResponse()
+                .setHeader(ETAG_HEADER_NAME, "anotheretag")
+                .setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED)
+
+        server.enqueue(response)
+        server.enqueue(secondResponse)
+
+        every {
+            mockETagManager.shouldUseCachedVersion(RCHTTPStatusCodes.NOT_MODIFIED)
+        } returns true
+        every {
+            mockETagManager.storeBackendResultIfNoError(any(), any(), any())
+        } just Runs
+        every {
+            mockETagManager.getStoredResult(any())
+        } returns null
+
+        val result = client.performRequest("/resource", null, mapOf("" to ""))
+
+        server.takeRequest()
+        server.takeRequest()
+
+        verify(exactly = 1) {
+            mockETagManager.getETagHeader(any(), false)
+        }
+        verify(exactly = 1) {
+            mockETagManager.getETagHeader(any(), true)
+        }
+        assertThat(result.payload).isEqualTo("")
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_MODIFIED)
+    }
+
+    @Test
+    fun `if backend returns a 200, store result from backend`() {
         val eTagInResponse = "etagInResponse"
         val response =
             MockResponse()
                 .setHeader(ETAG_HEADER_NAME, eTagInResponse)
-                .setResponseCode(200)
+                .setResponseCode(RCHTTPStatusCodes.SUCCESS)
                 .setBody("{}")
 
         server.enqueue(response)
 
         val resultFromBackendSlot = slot<HTTPResult>()
         every {
-            mockETagManager.storeBackendResultIfNoError(any(), capture(resultFromBackendSlot), any())
-        } just Runs
+            mockETagManager.shouldUseCachedVersion(RCHTTPStatusCodes.SUCCESS)
+        } returns false
 
         val pathSlot = slot<String>()
         every {
-            mockETagManager.getStoredResult(capture(pathSlot), 200)
-        } answers {
-            null to false
-        }
+            mockETagManager.storeBackendResultIfNoError(capture(pathSlot), capture(resultFromBackendSlot), any())
+        } just Runs
 
         client.performRequest("/resource", null, mapOf("" to ""))
 
@@ -311,16 +344,17 @@ class HTTPClientTest {
         val response =
             MockResponse()
                 .setHeader(ETAG_HEADER_NAME, eTagInResponse)
-                .setResponseCode(304)
+                .setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED)
 
         server.enqueue(response)
 
         val cachedResult = HTTPResult(200, Responses.validEmptyPurchaserResponse)
         every {
-            mockETagManager.getStoredResult(any(), 304)
-        } answers {
-            cachedResult to false
-        }
+            mockETagManager.shouldUseCachedVersion(RCHTTPStatusCodes.NOT_MODIFIED)
+        } returns true
+        every {
+            mockETagManager.getStoredResult(any())
+        } returns cachedResult
 
         client.performRequest("/resource", null, mapOf("" to ""))
 
@@ -337,17 +371,14 @@ class HTTPClientTest {
         val response =
             MockResponse()
                 .setHeader(ETAG_HEADER_NAME, eTagInResponse)
-                .setResponseCode(200)
+                .setResponseCode(RCHTTPStatusCodes.SUCCESS)
                 .setBody("{}")
 
         server.enqueue(response)
 
-        val pathWhenGettingStoredResult = slot<String>()
         every {
-            mockETagManager.getStoredResult(capture(pathWhenGettingStoredResult), 200)
-        } answers {
-            null to false
-        }
+            mockETagManager.shouldUseCachedVersion(RCHTTPStatusCodes.SUCCESS)
+        } returns false
 
         val pathWhenStoringResult = slot<String>()
         every {
@@ -365,9 +396,7 @@ class HTTPClientTest {
         }
 
         assertThat(pathWhenStoringResult.isCaptured).isTrue()
-        assertThat(pathWhenGettingStoredResult.isCaptured).isTrue()
         assertThat(pathWhenStoringResult.captured).isEqualTo(expectedPath)
-        assertThat(pathWhenStoringResult.captured).isEqualTo(pathWhenGettingStoredResult.captured)
     }
 
 }
