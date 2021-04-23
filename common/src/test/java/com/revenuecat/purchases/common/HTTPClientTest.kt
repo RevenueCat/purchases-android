@@ -10,8 +10,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.networking.ETAG_HEADER_NAME
 import com.revenuecat.purchases.common.networking.ETagManager
-import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -57,16 +57,15 @@ class HTTPClientTest {
     }
 
     private lateinit var appConfig: AppConfig
+
+    private val mockedETags = emptyMap<String, String>()
     private val mockETagManager = mockk<ETagManager>().also {
-        val httpRequestSlot = slot<HTTPRequest>()
-        val refreshETagSlot = slot<Boolean>()
+        val pathSlot = slot<String>()
         every {
-            it.getETagHeader(capture(httpRequestSlot), capture(refreshETagSlot))
+            it.getETagHeader(capture(pathSlot), any())
         } answers {
-            val capturedHTTPRequest = httpRequestSlot.captured
-            val capturedRefreshETag = refreshETagSlot.captured
-            val updatedHeaders = capturedHTTPRequest.headers + mapOf(ETAG_HEADER_NAME to if (capturedRefreshETag) "" else "etag")
-            capturedHTTPRequest.copy(headers = updatedHeaders)
+            val capturedPath = pathSlot.captured
+            mapOf(ETAG_HEADER_NAME to (mockedETags[capturedPath] ?: ""))
         }
     }
     private val expectedPlatformInfo = PlatformInfo("flutter", "2.1.0")
@@ -87,7 +86,7 @@ class HTTPClientTest {
 
     @Test
     fun canPerformASimpleGet() {
-        mockResponse(MockResponse().setBody("{}"))
+        server.enqueue(MockResponse().setBody("{}"))
 
         client.performRequest("/resource", null, mapOf("" to ""))
 
@@ -98,7 +97,7 @@ class HTTPClientTest {
 
     @Test
     fun forwardsTheResponseCode() {
-        mockResponse(MockResponse().setBody("{}").setResponseCode(223))
+        server.enqueue(MockResponse().setBody("{}").setResponseCode(223))
 
         val result = client.performRequest("/resource", null, mapOf("" to ""))
 
@@ -109,7 +108,7 @@ class HTTPClientTest {
 
     @Test
     fun parsesTheBody() {
-        mockResponse(MockResponse().setBody("{'response': 'OK'}").setResponseCode(223))
+        server.enqueue(MockResponse().setBody("{'response': 'OK'}").setResponseCode(223))
 
         val result = client.performRequest("/resource", null, mapOf("" to ""))
 
@@ -135,7 +134,7 @@ class HTTPClientTest {
     // Headers
     @Test
     fun addsHeadersToRequest() {
-        mockResponse(MockResponse().setBody("{}"))
+        server.enqueue(MockResponse().setBody("{}"))
 
         val headers = HashMap<String, String>()
         headers["Authentication"] = "Bearer todd"
@@ -149,7 +148,7 @@ class HTTPClientTest {
 
     @Test
     fun addsDefaultHeadersToRequest() {
-        mockResponse(MockResponse().setBody("{}"))
+        server.enqueue(MockResponse().setBody("{}"))
 
         client.performRequest("/resource", null, mapOf("" to ""))
 
@@ -175,7 +174,7 @@ class HTTPClientTest {
             proxyURL = baseURL,
             store = Store.PLAY_STORE
         )
-        mockResponse(MockResponse().setBody("{}"))
+        server.enqueue(MockResponse().setBody("{}"))
 
         client = HTTPClient(appConfig, mockETagManager)
         client.performRequest("/resource", null, mapOf("" to ""))
@@ -187,7 +186,7 @@ class HTTPClientTest {
 
     @Test
     fun addsPostBody() {
-        mockResponse(MockResponse().setBody("{}"))
+        server.enqueue(MockResponse().setBody("{}"))
 
         val body = HashMap<String, String>()
         body["user_id"] = "jerry"
@@ -203,7 +202,7 @@ class HTTPClientTest {
     @Test
     fun `given observer mode is enabled, observer mode header is sent`() {
         appConfig.finishTransactions = false
-        mockResponse(MockResponse().setBody("{}"))
+        server.enqueue(MockResponse().setBody("{}"))
 
         client.performRequest("/resource", null, mapOf("" to ""))
 
@@ -226,23 +225,33 @@ class HTTPClientTest {
     }
 
     @Test
-    fun `if etags manager processed response is null, retry refreshing etags`() {
-        val response = MockResponse().setBody("{}")
+    fun `if there's an error getting ETag, retry call refreshing ETags`() {
+        val response =
+            MockResponse()
+                .setHeader(ETAG_HEADER_NAME, "anetag")
+                .setResponseCode(304)
+
+        val secondResponse =
+            MockResponse()
+                .setHeader(ETAG_HEADER_NAME, "anotheretag")
+                .setBody(Responses.validEmptyPurchaserResponse)
 
         server.enqueue(response)
-        server.enqueue(response)
+        server.enqueue(secondResponse)
 
-        var firstTimeCallingProcessResponse = true
-        val lst = slot<HTTPResult>()
         every {
-            mockETagManager.retrieveResponsePayload(any(), any(), capture(lst))
+            mockETagManager.storeBackendResultIfNoError(any(), any(), any())
+        } just Runs
+        every {
+            mockETagManager.getStoredResult(any(), 304)
         } answers {
-            if (firstTimeCallingProcessResponse) {
-                firstTimeCallingProcessResponse = false
-                null
-            } else {
-                lst.captured
-            }
+            null to true
+        }
+
+        every {
+            mockETagManager.getStoredResult(any(), 200)
+        } answers {
+            null to false
         }
 
         client.performRequest("/resource", null, mapOf("" to ""))
@@ -259,13 +268,106 @@ class HTTPClientTest {
 
     }
 
-    private fun mockResponse(response: MockResponse) {
+    @Test
+    fun `store result from backend if result is not cached already`() {
+        val eTagInResponse = "etagInResponse"
+        val response =
+            MockResponse()
+                .setHeader(ETAG_HEADER_NAME, eTagInResponse)
+                .setResponseCode(200)
+                .setBody("{}")
+
         server.enqueue(response)
-        val lst = slot<HTTPResult>()
+
+        val resultFromBackendSlot = slot<HTTPResult>()
         every {
-            mockETagManager.retrieveResponsePayload(any(), any(), capture(lst))
+            mockETagManager.storeBackendResultIfNoError(any(), capture(resultFromBackendSlot), any())
+        } just Runs
+
+        val pathSlot = slot<String>()
+        every {
+            mockETagManager.getStoredResult(capture(pathSlot), 200)
         } answers {
-            lst.captured
+            null to false
+        }
+
+        client.performRequest("/resource", null, mapOf("" to ""))
+
+        server.takeRequest()
+
+        verify(exactly = 1) {
+            mockETagManager.getETagHeader(any(), false)
+        }
+        assertThat(pathSlot.isCaptured).isTrue()
+        assertThat(resultFromBackendSlot.isCaptured).isTrue()
+        verify(exactly = 1) {
+            mockETagManager.storeBackendResultIfNoError(pathSlot.captured, resultFromBackendSlot.captured, eTagInResponse)
         }
     }
+
+    @Test
+    fun `don't store result from backend if the response code is 304 and there is a cached result`() {
+        val eTagInResponse = "etagInResponse"
+        val response =
+            MockResponse()
+                .setHeader(ETAG_HEADER_NAME, eTagInResponse)
+                .setResponseCode(304)
+
+        server.enqueue(response)
+
+        val cachedResult = HTTPResult(200, Responses.validEmptyPurchaserResponse)
+        every {
+            mockETagManager.getStoredResult(any(), 304)
+        } answers {
+            cachedResult to false
+        }
+
+        client.performRequest("/resource", null, mapOf("" to ""))
+
+        server.takeRequest()
+
+        verify(exactly = 0) {
+            mockETagManager.storeBackendResultIfNoError(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `include API version in path when storing result from backend`() {
+        val eTagInResponse = "etagInResponse"
+        val response =
+            MockResponse()
+                .setHeader(ETAG_HEADER_NAME, eTagInResponse)
+                .setResponseCode(200)
+                .setBody("{}")
+
+        server.enqueue(response)
+
+        val pathWhenGettingStoredResult = slot<String>()
+        every {
+            mockETagManager.getStoredResult(capture(pathWhenGettingStoredResult), 200)
+        } answers {
+            null to false
+        }
+
+        val pathWhenStoringResult = slot<String>()
+        every {
+            mockETagManager.storeBackendResultIfNoError(capture(pathWhenStoringResult), any(), eTagInResponse)
+        } just Runs
+
+        val path = "/resource"
+        val expectedPath = "/v1$path"
+        client.performRequest(path, null, mapOf("" to ""))
+
+        server.takeRequest()
+
+        verify(exactly = 1) {
+            mockETagManager.getETagHeader(any(), false)
+        }
+
+        assertThat(pathWhenStoringResult.isCaptured).isTrue()
+        assertThat(pathWhenGettingStoredResult.isCaptured).isTrue()
+        assertThat(pathWhenStoringResult.captured).isEqualTo(expectedPath)
+        assertThat(pathWhenStoringResult.captured).isEqualTo(pathWhenGettingStoredResult.captured)
+    }
+
 }

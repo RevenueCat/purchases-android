@@ -121,16 +121,18 @@ class HTTPClient(
 
         val resultFromBackend = HTTPResult(responseCode, payload)
         connection.getETagHeader()?.let { eTagInResponse ->
-            val (storedResult, shouldRetry) = eTagManager.getStoredResultIfNeeded(urlPathWithVersion, responseCode)
-            if (shouldRetry) {
-                if (refreshETag) {
-                    return resultFromBackend
-                }
-                return performRequest(path, body, authenticationHeaders, refreshETag = true)
-            }
-            if (storedResult != null) {
+            if (eTagManager.shouldUseCachedVersion(responseCode)) {
+                val storedResult = eTagManager.getStoredResult(urlPathWithVersion)
                 return storedResult
+                    ?: if (refreshETag) {
+                        log(LogIntent.WARNING, NetworkStrings.ETAG_CALL_ALREADY_RETRIED.format(resultFromBackend))
+                        resultFromBackend
+                    } else {
+                        log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
+                        performRequest(path, body, authenticationHeaders, refreshETag = true)
+                    }
             }
+
             eTagManager.storeBackendResultIfNoError(urlPathWithVersion, resultFromBackend, eTagInResponse)
         }
         return resultFromBackend

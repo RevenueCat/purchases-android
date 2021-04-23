@@ -11,9 +11,9 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.networking.HTTPResult
-import com.revenuecat.purchases.common.networking.HTTP_SERVER_ERROR_CODE
-import com.revenuecat.purchases.common.networking.HTTP_STATUS_CREATED
-import com.revenuecat.purchases.common.networking.UNSUCCESSFUL_HTTP_STATUS_CODE
+import com.revenuecat.purchases.common.networking.RC_HTTP_STATUS_ERROR
+import com.revenuecat.purchases.common.networking.RC_HTTP_STATUS_CREATED
+import com.revenuecat.purchases.common.networking.RC_HTTP_STATUS_UNSUCCESSFUL
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -199,7 +199,7 @@ class Backend(
                         } else {
                             onError(
                                 result.toPurchasesError().also { errorLog(it) },
-                                result.responseCode < HTTP_SERVER_ERROR_CODE,
+                                result.responseCode < RC_HTTP_STATUS_ERROR,
                                 result.body
                             )
                         }
@@ -358,7 +358,7 @@ class Backend(
 
             override fun onCompletion(result: HTTPResult) {
                 if (result.isSuccessful()) {
-                    val created = result.responseCode == HTTP_STATUS_CREATED
+                    val created = result.responseCode == RC_HTTP_STATUS_CREATED
                     if (result.body.length() > 0) {
                         val purchaserInfo = result.body.buildPurchaserInfo()
                         onSuccessHandler(purchaserInfo, created)
@@ -378,7 +378,7 @@ class Backend(
     }
 
     private fun HTTPResult.isSuccessful(): Boolean {
-        return responseCode < UNSUCCESSFUL_HTTP_STATUS_CODE
+        return responseCode < RC_HTTP_STATUS_UNSUCCESSFUL
     }
 
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(

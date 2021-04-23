@@ -45,104 +45,115 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `An empty ETag header is added if there is no ETag saved for that request`() {
-        val httpRequestWithoutETagHeader = getHTTPRequest(eTag = null)
+    fun `ETag header is empty added if there is no ETag saved for that request`() {
+        val path = "v1/subscribers/appUserID"
+        mockCachedHTTPResult(expectedETag = null, path = path)
 
-        mockCachedHTTPResult(httpRequestWithoutETagHeader, null)
-
-        val requestWithETagHeader = underTest.getETagHeader(httpRequestWithoutETagHeader)
-        val eTagHeader = requestWithETagHeader.headers[ETAG_HEADER_NAME]
+        val requestWithETagHeader = underTest.getETagHeader(path)
+        val eTagHeader = requestWithETagHeader[ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull()
         assertThat(eTagHeader).isBlank()
     }
 
     @Test
     fun `An ETag header is added if there is an ETag saved for that request`() {
-        val httpRequestWithoutETagHeader = getHTTPRequest(eTag = null)
+        val path = "v1/subscribers/appUserID"
         val expectedETag = "etag"
+        mockCachedHTTPResult(expectedETag, path)
 
-        mockCachedHTTPResult(httpRequestWithoutETagHeader, expectedETag)
-
-        val requestWithETagHeader = underTest.getETagHeader(httpRequestWithoutETagHeader)
-        val eTagHeader = requestWithETagHeader.headers[ETAG_HEADER_NAME]
+        val requestWithETagHeader = underTest.getETagHeader(path)
+        val eTagHeader = requestWithETagHeader[ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull()
         assertThat(eTagHeader).isEqualTo(expectedETag)
     }
 
     @Test
-    fun `If response code is 304, use cached result`() {
+    fun `If response code is 304, return cached result`() {
+        val path = "v1/subscribers/appUserID"
+        val eTag = "eTag"
+
+        val cachedHTTPResult = mockCachedHTTPResult(eTag, path)!!.httpResult
+
+        val (storedResult, shouldRetry) = underTest.getStoredResult(path, RC_HTTP_STATUS_NOT_MODIFIED)
+
+        assertThat(storedResult).isNotNull
+        assertThat(storedResult!!.payload).isEqualTo(cachedHTTPResult.payload)
+        assertThat(storedResult.responseCode).isEqualTo(cachedHTTPResult.responseCode)
+        assertThat(shouldRetry).isFalse
+    }
+
+    @Test
+    fun `If response code is not 304, don't return cached result`() {
+        val path = "v1/subscribers/appUserID"
+        val eTag = "eTag"
+
+        val cachedHTTPResult = mockCachedHTTPResult(eTag, path)
+        assertThat(cachedHTTPResult).isNotNull
+
+        val (storedResult, shouldRetry) = underTest.getStoredResult(path, RC_HTTP_STATUS_SUCCESS)
+
+        assertThat(storedResult).isNull()
+        assertThat(shouldRetry).isFalse()
+    }
+
+    @Test
+    fun `If response code is 304, but there is no cached result, return boolean to refresh etag`() {
+        val path = "v1/subscribers/appUserID"
         val eTag = "eTag"
         val mockedConnection = mockURLConnectionETag(eTag)
         val httpRequest = getHTTPRequest(eTag = eTag)
 
-        val cachedHTTPResult = mockCachedHTTPResult(httpRequest, eTag)!!.httpResult
+        every {
+            mockedPrefs.getString(path, null)
+        } returns null
 
-        val processedResponse = underTest.retrieveResponsePayload(httpRequest, mockedConnection, HTTPResult(304, ""))
+        val (storedResult, shouldRetry) = underTest.getStoredResult(path, RC_HTTP_STATUS_NOT_MODIFIED)
 
-        assertThat(processedResponse).isNotNull
-        assertThat(processedResponse!!.payload).isEqualTo(cachedHTTPResult.payload)
-        assertThat(processedResponse.responseCode).isEqualTo(cachedHTTPResult.responseCode)
+        assertThat(storedResult).isNull()
+        assertThat(shouldRetry).isTrue()
     }
 
     @Test
-    fun `If response code is not 304, don't return cached result and return result from backend`() {
+    fun `If response code is 304, don't store response in cache`() {
+        val path = "v1/subscribers/appUserID"
         val eTag = "eTag"
-        val newETag = "new_eTag"
-        val mockedConnection = mockURLConnectionETag(newETag)
-        val httpRequest = getHTTPRequest(eTag = eTag)
 
-        val cachedHTTPResult = mockCachedHTTPResult(httpRequest, eTag)
-        assertThat(cachedHTTPResult).isNotNull
+        val resultFromBackend = HTTPResult(RC_HTTP_STATUS_NOT_MODIFIED, "")
 
-        val resultFromBackend = HTTPResult(200, Responses.validEmptyPurchaserResponse)
-        val processedResponse = underTest.retrieveResponsePayload(httpRequest, mockedConnection, resultFromBackend)
+        underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
-        assertThat(processedResponse).isNotNull
-        assertThat(processedResponse!!.payload).isEqualTo(resultFromBackend.payload)
-        assertThat(processedResponse.responseCode).isEqualTo(resultFromBackend.responseCode)
+        assertThat(slotSharedPreferencesKey.isCaptured).isFalse()
+        assertThat(slotSharedPreferencesValue.isCaptured).isFalse()
     }
 
     @Test
     fun `If response code is not 304, store response in cache`() {
+        val path = "v1/subscribers/appUserID"
         val eTag = "eTag"
-        val newETag = "new_eTag"
-        val mockedConnection = mockURLConnectionETag(newETag)
-        val httpRequest = getHTTPRequest(eTag = eTag)
 
-        val httpRequestHash = underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequest)
-        val resultFromBackend = HTTPResult(200, Responses.validEmptyPurchaserResponse)
+        val resultFromBackend = HTTPResult(RC_HTTP_STATUS_SUCCESS, Responses.validEmptyPurchaserResponse)
+        val resultFromBackendWithETag = HTTPResultWithETag(eTag, resultFromBackend)
 
-        underTest.retrieveResponsePayload(httpRequest, mockedConnection, resultFromBackend)
-
-        val expectedCachedResult = HTTPResultWithETag(newETag, resultFromBackend)
+        underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
         assertThat(slotSharedPreferencesKey.isCaptured).isTrue()
         assertThat(slotSharedPreferencesValue.isCaptured).isTrue()
 
-        assertThat(slotSharedPreferencesKey.captured).isEqualTo(httpRequestHash)
-        assertThat(slotSharedPreferencesValue.captured).isEqualTo(expectedCachedResult.serialize())
+        assertThat(slotSharedPreferencesKey.captured).isEqualTo(path)
+        assertThat(slotSharedPreferencesValue.captured).isEqualTo(resultFromBackendWithETag.serialize())
     }
 
     @Test
     fun `If response code is 500, don't store response in cache`() {
+        val path = "v1/subscribers/appUserID"
         val eTag = "eTag"
-        val newETag = "new_eTag"
-        val mockedConnection = mockURLConnectionETag(newETag)
-        val httpRequest = getHTTPRequest(eTag = eTag)
 
-        underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequest)
-        val resultFromBackend = HTTPResult(500, Responses.validEmptyPurchaserResponse)
+        val resultFromBackend = HTTPResult(500, "{}")
 
-        underTest.retrieveResponsePayload(httpRequest, mockedConnection, resultFromBackend)
-
-        HTTPResultWithETag(newETag, resultFromBackend)
+        underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
         assertThat(slotSharedPreferencesKey.isCaptured).isFalse()
         assertThat(slotSharedPreferencesValue.isCaptured).isFalse()
-
-        verify(exactly = 0) {
-            mockEditor.putString(any(), any())
-        }
     }
 
     @Test
@@ -156,31 +167,13 @@ class ETagManagerTest {
 
     @Test
     fun `HTTP Header is empty when refreshing etag`() {
-        val httpRequestWithoutETagHeader = getHTTPRequest(eTag = null)
-        val expectedETag = ""
+        val path = "v1/subscribers/appUserID"
+        mockCachedHTTPResult(expectedETag = null, path = path)
 
-        mockCachedHTTPResult(httpRequestWithoutETagHeader, expectedETag)
-
-        val requestWithETagHeader = underTest.getETagHeader(httpRequestWithoutETagHeader, refreshETag = true)
-        val eTagHeader = requestWithETagHeader.headers[ETAG_HEADER_NAME]
+        val requestWithETagHeader = underTest.getETagHeader(path, refreshETag = true)
+        val eTagHeader = requestWithETagHeader[ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull()
-        assertThat(eTagHeader).isEqualTo(expectedETag)
-    }
-
-    @Test
-    fun `If response code is 304, but there is no cached result, return null when processing the request`() {
-        val eTag = "eTag"
-        val mockedConnection = mockURLConnectionETag(eTag)
-        val httpRequest = getHTTPRequest(eTag = eTag)
-
-        val httpRequestHash = underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequest)
-        every {
-            mockedPrefs.getString(httpRequestHash, null)
-        } returns null
-
-        val processedResponse = underTest.retrieveResponsePayload(httpRequest, mockedConnection, HTTPResult(304, ""))
-
-        assertThat(processedResponse).isNull()
+        assertThat(eTagHeader).isBlank()
     }
 
     private fun mockURLConnectionETag(eTag: String): HttpURLConnection {
@@ -191,15 +184,14 @@ class ETagManagerTest {
     }
 
     private fun mockCachedHTTPResult(
-        httpRequestWithoutETagHeader: HTTPRequest,
-        expectedETag: String?
+        expectedETag: String?,
+        path: String
     ): HTTPResultWithETag? {
         val cachedResult = expectedETag?.let {
-            HTTPResultWithETag(expectedETag, HTTPResult(200, "{}"))
+            HTTPResultWithETag(expectedETag, HTTPResult(RC_HTTP_STATUS_SUCCESS, "{}"))
         }
-        val httpRequestHash = underTest.getOrCalculateAndSaveHTTPRequestHash(httpRequestWithoutETagHeader)
         every {
-            mockedPrefs.getString(httpRequestHash, null)
+            mockedPrefs.getString(path, null)
         } returns cachedResult?.serialize()
         return cachedResult
     }

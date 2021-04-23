@@ -2,9 +2,6 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONObject
 import java.net.HttpURLConnection
 
@@ -48,20 +45,11 @@ class ETagManager(
         return mapOf(eTagHeader)
     }
 
-    internal fun getStoredResultIfNeeded(
-        path: String,
-        responseCode: Int
-    ): Pair<HTTPResult?, ShouldRefreshETags> {
-        if (responseCode == NOT_MODIFIED_RESPONSE_CODE) {
-            return getStoredResult(path)?.let {
-                it.httpResult to false
-            } ?: {
-                log(LogIntent.WARNING, NetworkStrings.ETAG_ERROR_RETRIEVING_CACHE)
-                null to true
-            }.invoke()
-        }
+    internal fun shouldUseCachedVersion(responseCode: Int) = responseCode == RC_HTTP_STATUS_NOT_MODIFIED
 
-        return null to false
+    internal fun getStoredResult(path: String): HTTPResult? {
+        val storedResult = getStoredResultSavedInSharedPreferences(path)
+        return storedResult?.httpResult
     }
 
     internal fun storeBackendResultIfNoError(
@@ -70,7 +58,7 @@ class ETagManager(
         eTagInResponse: String
     ) {
         val responseCode = resultFromBackend.responseCode
-        if (responseCode != NOT_MODIFIED_RESPONSE_CODE && responseCode < HTTP_SERVER_ERROR_CODE) {
+        if (responseCode != RC_HTTP_STATUS_NOT_MODIFIED && responseCode < RC_HTTP_STATUS_ERROR) {
             storeResult(path, resultFromBackend, eTagInResponse)
         }
     }
@@ -85,7 +73,7 @@ class ETagManager(
         prefs.edit().putString(path, httpResultWithETag.serialize()).apply()
     }
 
-    private fun getStoredResult(path: String): HTTPResultWithETag? {
+    private fun getStoredResultSavedInSharedPreferences(path: String): HTTPResultWithETag? {
         val serializedHTTPResultWithETag = prefs.getString(path, null)
         return serializedHTTPResultWithETag?.let {
             HTTPResultWithETag.deserialize(it)
@@ -93,7 +81,7 @@ class ETagManager(
     }
 
     private fun getETag(path: String): String {
-        return getStoredResult(path)?.eTag.orEmpty()
+        return getStoredResultSavedInSharedPreferences(path)?.eTag.orEmpty()
     }
 
     @Synchronized
