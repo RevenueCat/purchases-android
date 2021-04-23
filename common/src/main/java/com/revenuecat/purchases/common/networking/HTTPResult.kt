@@ -12,9 +12,10 @@ data class HTTPResult(
     val body: JSONObject = payload.takeIf { it.isNotBlank() }?.let { JSONObject(it) } ?: JSONObject()
 
     fun serialize(): String {
-        val jsonObject = JSONObject()
-        jsonObject.put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
-        jsonObject.put(SERIALIZATION_NAME_PAYLOAD, payload)
+        val jsonObject = JSONObject().apply {
+            put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
+            put(SERIALIZATION_NAME_PAYLOAD, payload)
+        }
         return jsonObject.toString()
     }
 
