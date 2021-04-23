@@ -1,8 +1,12 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
+import android.content.Context
+import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.Purchases.Companion.canMakePayments
+import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.LogInCallback
@@ -24,6 +28,7 @@ private typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: Purchase
 private typealias ReceiveLogInSuccessFunction = (purchaserInfo: PurchaserInfo, created: Boolean) -> Unit
 private typealias ErrorFunction = (error: PurchasesError) -> Unit
 private typealias PurchaseErrorFunction = (error: PurchasesError, userCancelled: Boolean) -> Unit
+private typealias ReceiveBooleanCallback = (Boolean) -> Unit
 
 private val ON_ERROR_STUB: ErrorFunction = {}
 private val ON_PURCHASE_ERROR_STUB: PurchaseErrorFunction = { _, _ -> }
@@ -142,6 +147,14 @@ internal fun logInSuccessListener(
 
     override fun onError(error: PurchasesError) {
         onError?.invoke(error)
+    }
+}
+
+internal fun booleanCallbackListener(
+    onComplete: (Boolean) -> Unit
+) = object : Callback<Boolean> {
+    override fun onReceived(result: Boolean) {
+        onComplete(result)
     }
 }
 
@@ -409,4 +422,18 @@ fun Purchases.getNonSubscriptionSkusWith(
     onReceiveSkus: (skus: List<SkuDetails>) -> Unit
 ) {
     getNonSubscriptionSkus(skus, getSkusResponseListener(onReceiveSkus, onError))
+}
+
+/**
+ * Gets the SKUDetails for the given list of non-subscription skus.
+ * @param [skus] List of skus
+ * @param [onReceiveSkus] Will be called after fetching SkuDetails
+ */
+@Suppress("unused")
+fun Purchases.Companion.canMakePaymentsWith(
+    context: Context,
+    @BillingClient.FeatureType feature: String?,
+    onComplete: ReceiveBooleanCallback
+) {
+    canMakePayments(context, feature, booleanCallbackListener(onComplete))
 }

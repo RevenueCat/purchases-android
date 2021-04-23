@@ -1859,7 +1859,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
-         * Check if current user can make payments on the device device. This method is asynchronous since it tries
+         * Check if current user can make payments on the device. This method is asynchronous since it tries
          * to connect the billing client and checks for the result of the connection.
          * @param context A context object that will be used to connect to the billing client
          * @param feature An optional feature type to check for support. Must be one of [BillingClient.FeatureType]
