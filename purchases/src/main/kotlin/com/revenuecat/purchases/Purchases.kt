@@ -1859,8 +1859,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
-         * Check if current user can make payments on the device. This method is asynchronous since it tries
-         * to connect the billing client and checks for the result of the connection.
+         * Check if current user can make payments on the device and optionally, whether a specified feature
+         * type is supported. This method is asynchronous since it requires a connected BillingClient.
          * @param context A context object that will be used to connect to the billing client
          * @param feature An optional feature type to check for support. Must be one of [BillingClient.FeatureType]
          * @param callback Callback that will be notified when the check is complete.
@@ -1887,7 +1887,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                                     val featureSupportedResultOk = feature?.let {
                                         billingClient.isFeatureSupported(it).responseCode ==
-                                            BillingClient.BillingResponseCode.OK
+                                                BillingClient.BillingResponseCode.OK
                                     } ?: true
 
                                     callback.onReceived(billingSupportedResultOk && featureSupportedResultOk)
