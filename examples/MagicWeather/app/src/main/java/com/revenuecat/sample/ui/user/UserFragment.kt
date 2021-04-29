@@ -106,11 +106,11 @@ class UserFragment : Fragment() {
                     /*
                     Call `identify` with the Purchases SDK with the unique user ID
                      */
-                    Purchases.sharedInstance.identifyWith(input.text.toString(),
+                    Purchases.sharedInstance.logInWith(input.text.toString(),
                             onError = { error ->
                                 buildError(context, error.message)
                             },
-                            onSuccess = { info ->
+                            onSuccess = { info, created ->
                                 updateUserDetails(info)
                             })
                 }
@@ -119,7 +119,7 @@ class UserFragment : Fragment() {
 
             alert.show()
         } else {
-            Purchases.sharedInstance.resetWith {}
+            Purchases.sharedInstance.logOutWith {}
         }
     }
 }
