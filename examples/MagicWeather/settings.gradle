@@ -1,2 +1,7 @@
 include ':app'
 rootProject.name = "MagicWeatherKotlin"
+sourceControl {
+    gitRepository("https://github.com/revenuecat/purchases-android.git") {
+        producesModule("com.revenuecat.purchases:purchases")
+    }
+}
