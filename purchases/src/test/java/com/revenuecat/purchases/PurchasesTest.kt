@@ -2350,7 +2350,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when feature is none, canMakePayments does not check billing client`() {
+    fun `when feature is null, canMakePayments does not check billing client`() {
         var receivedCanMakePayments = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         val listener = isBillingSupportedSetup(mockLocalBillingClient)

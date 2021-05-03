@@ -2,7 +2,6 @@ package com.revenuecat.purchases
 
 import android.app.Activity
 import android.content.Context
-import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.interfaces.Callback
@@ -415,10 +414,13 @@ fun Purchases.getNonSubscriptionSkusWith(
 }
 
 /**
- * Check if current Play user can make payments on the device and optionally, whether a specified feature
- * type is supported. This method is asynchronous since it requires a connected BillingClient.
+ * Check if billing is supported for the current Play user (meaning IN-APP purchases are supported)
+ * and optionally, whether a specified feature type is supported. This method is asynchronous since
+ * it requires a connected BillingClient.
+ *
  * @param context A context object that will be used to connect to the billing client
- * @param feature An optional feature type to check for support. Must be one of [BillingClient.FeatureType]
+ * @param feature An optional feature type to check for support. Must be one of [BillingFeature]
+ *                  If null, no specific feature support will be checked.
  * @param callback Callback that will be notified when the check is complete.
  */
 @Suppress("unused")
