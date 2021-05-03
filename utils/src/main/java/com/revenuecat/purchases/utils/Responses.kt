@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.utils
 
+import org.json.JSONObject
+
 object Responses {
-    const val validFullPurchaserResponse = """
+    val validFullPurchaserResponse = JSONObject("""
                 {
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
@@ -95,9 +97,9 @@ object Responses {
                     "management_url": "https://play.google.com/store/account/subscriptions"
                   }
                 }
-            """
+            """).toString()
 
-    const val validEmptyPurchaserResponse = """
+    val validEmptyPurchaserResponse = JSONObject("""
                 {
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
@@ -112,9 +114,9 @@ object Responses {
                     "management_url": null
                   }
                 }
-            """
+            """).toString()
 
-    const val subscriberAttributesErrorsPostReceiptResponse = """
+    val subscriberAttributesErrorsPostReceiptResponse = JSONObject("""
                {
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
@@ -182,26 +184,26 @@ object Responses {
                     }
                   }
                 } 
-            """
+            """).toString()
 
-    const val internalServerErrorResponse = """
+    val internalServerErrorResponse = JSONObject("""
                 {
                     "code": 7110, 
                     "message": "Internal server error."
                 }
-            """
+            """).toString()
 
-    const val invalidCredentialsErrorResponse = """
+    val invalidCredentialsErrorResponse = JSONObject("""
                 {
                     "code": 7225, 
                     "message": "Invalid credentials error."
                 }
-            """
+            """).toString()
 
-    const val badRequestErrorResponse = """
+    val badRequestErrorResponse = JSONObject("""
                 {
                     "code": 7226, 
                     "message": "Missing required params."
                 }
-            """
+            """).toString()
 }

@@ -119,23 +119,18 @@ class HTTPClient(
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
 
-        val resultFromBackend = HTTPResult(responseCode, payload)
-        connection.getETagHeader()?.let { eTagInResponse ->
-            if (eTagManager.shouldUseCachedVersion(responseCode)) {
-                val storedResult = eTagManager.getStoredResult(urlPathWithVersion)
-                return storedResult
-                    ?: if (refreshETag) {
-                        log(LogIntent.WARNING, NetworkStrings.ETAG_CALL_ALREADY_RETRIED.format(resultFromBackend))
-                        resultFromBackend
-                    } else {
-                        log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-                        performRequest(path, body, authenticationHeaders, refreshETag = true)
-                    }
-            }
-
-            eTagManager.storeBackendResultIfNoError(urlPathWithVersion, resultFromBackend, eTagInResponse)
+        val callResult: HTTPResult? = eTagManager.getHTTPResultFromCacheOrBackend(
+            responseCode,
+            payload,
+            connection,
+            urlPathWithVersion,
+            refreshETag
+        )
+        if (callResult == null) {
+            log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
+            return performRequest(path, body, authenticationHeaders, refreshETag = true)
         }
-        return resultFromBackend
+        return callResult
     }
 
     fun clearCaches() {
