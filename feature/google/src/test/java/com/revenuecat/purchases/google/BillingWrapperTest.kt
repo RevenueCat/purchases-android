@@ -26,12 +26,14 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubSkuDetails
 import io.mockk.Runs
+import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -41,6 +43,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes.fail
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -73,7 +76,11 @@ class BillingWrapperTest {
 
     private var skuDetailsResponseCalled = 0
 
-    private fun setup() {
+    private val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
+    private val appUserId = "jerry"
+
+    @Before
+    fun setup() {
         val slot = slot<Runnable>()
         every {
             handler.post(capture(slot))
@@ -140,13 +147,11 @@ class BillingWrapperTest {
 
     @Test
     fun canBeCreated() {
-        setup()
         assertThat(wrapper).`as`("Wrapper is not null").isNotNull
     }
 
     @Test
     fun callsBuildOnTheFactory() {
-        setup()
         verify {
             mockClientFactory.buildClient(purchasesUpdatedListener!!)
         }
@@ -154,27 +159,13 @@ class BillingWrapperTest {
 
     @Test
     fun connectsToPlayBilling() {
-        setup()
         verify {
             mockClient.startConnection(billingClientStateListener!!)
         }
     }
 
-    private fun mockStandardSkuDetailsResponse() {
-        val slot = slot<SkuDetailsResponseListener>()
-        every {
-            mockClient.querySkuDetailsAsync(
-                any(),
-                capture(slot)
-            )
-        } answers {
-            slot.captured.onSkuDetailsResponse(BillingClient.BillingResponseCode.OK.buildResult(), mockDetailsList)
-        }
-    }
-
     @Test
     fun defersCallingSkuQueryUntilConnected() {
-        setup()
         mockStandardSkuDetailsResponse()
         every { mockClient.isReady } returns false
 
@@ -200,7 +191,6 @@ class BillingWrapperTest {
 
     @Test
     fun canDeferMultipleCalls() {
-        setup()
         mockStandardSkuDetailsResponse()
         every { mockClient.isReady } returns false
 
@@ -235,7 +225,6 @@ class BillingWrapperTest {
 
     @Test
     fun makingARequestTriggersAConnectionAttempt() {
-        setup()
         mockStandardSkuDetailsResponse()
         every { mockClient.isReady } returns false
 
@@ -255,10 +244,9 @@ class BillingWrapperTest {
 
     @Test
     fun canMakeAPurchase() {
-        setup()
         every {
             mockClient.launchBillingFlow(any(), any())
-        } returns BillingClient.BillingResponseCode.OK.buildResult()
+        } returns billingClientOKResult
 
         val skuDetails = stubSkuDetails(productId = "product_a")
 
@@ -267,7 +255,7 @@ class BillingWrapperTest {
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         wrapper.makePurchaseAsync(
             activity,
-            "jerry",
+            appUserId,
             skuDetails.toProductDetails(),
             mockReplaceSkuInfo(),
             "offering_a"
@@ -283,8 +271,6 @@ class BillingWrapperTest {
 
     @Test
     fun properlySetsBillingFlowParams() {
-        setup()
-        val appUserID = "jerry"
         val sku = "product_a"
         @BillingClient.SkuType val skuType = BillingClient.SkuType.SUBS
 
@@ -302,13 +288,13 @@ class BillingWrapperTest {
             assertThat(upgradeInfo.oldPurchase.sku).isEqualTo(params.oldSku)
             assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(params.oldSkuPurchaseToken)
             assertThat(upgradeInfo.prorationMode).isEqualTo(params.replaceSkusProrationMode)
-            BillingClient.BillingResponseCode.OK.buildResult()
+            billingClientOKResult
         }
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         wrapper.makePurchaseAsync(
             activity,
-            appUserID,
+            appUserId,
             skuDetails.toProductDetails(),
             upgradeInfo,
             null
@@ -316,23 +302,58 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun defersBillingFlowIfNotConnected() {
-        setup()
+    fun `obfuscatedAccountId is set for non-transfer purchases`() {
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
 
+        wrapper.makePurchaseAsync(
+            mockk(),
+            appUserId,
+            stubSkuDetails(productId = "product_a").toProductDetails(),
+            null,
+            null
+        )
+
+        val expectedUserId = appUserId.sha256()
+        verify {
+            mockBuilder.setObfuscatedAccountId(expectedUserId)
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
+    fun `obfuscatedAccountId is not set for transfer purchases`() {
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+
+        wrapper.makePurchaseAsync(
+            mockk(),
+            appUserId,
+            stubSkuDetails(productId = "product_a").toProductDetails(),
+            mockReplaceSkuInfo(),
+            null
+        )
+
+        verify(exactly = 0) {
+            mockBuilder.setObfuscatedAccountId(any())
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
+    fun defersBillingFlowIfNotConnected() {
         every {
             mockClient.launchBillingFlow(any(), any())
-        } returns BillingClient.BillingResponseCode.OK.buildResult()
+        } returns billingClientOKResult
 
         every { mockClient.isReady } returns false
-
-        val appUserID = "jerry"
 
         val activity: Activity = mockk()
         val skuDetails = stubSkuDetails(productId = "product_a")
 
         wrapper.makePurchaseAsync(
             activity,
-            appUserID,
+            appUserId,
             skuDetails.toProductDetails(),
             mockReplaceSkuInfo(),
             null
@@ -353,22 +374,19 @@ class BillingWrapperTest {
 
     @Test
     fun callsLaunchFlowFromMainThread() {
-        setup()
-
         every {
             mockClient.launchBillingFlow(any(), any())
-        } returns BillingClient.BillingResponseCode.OK.buildResult()
+        } returns billingClientOKResult
 
         every { mockClient.isReady } returns false
 
         val skuDetails = stubSkuDetails(productId = "product_a")
-        val appUserID = "jerry"
 
         val activity: Activity = mockk()
 
         wrapper.makePurchaseAsync(
             activity,
-            appUserID,
+            appUserId,
             skuDetails.toProductDetails(),
             mockReplaceSkuInfo(),
             null
@@ -389,7 +407,6 @@ class BillingWrapperTest {
 
     @Test
     fun purchasesUpdatedCallsAreForwarded() {
-        setup()
         val purchases = listOf(stubGooglePurchase())
         val slot = slot<List<PurchaseDetails>>()
         every {
@@ -398,23 +415,21 @@ class BillingWrapperTest {
 
         every {
             mockClient.queryPurchases(BillingClient.SkuType.SUBS)
-        } returns Purchase.PurchasesResult(BillingClient.BillingResponseCode.OK.buildResult(), purchases)
+        } returns Purchase.PurchasesResult(billingClientOKResult, purchases)
 
-        purchasesUpdatedListener!!.onPurchasesUpdated(BillingClient.BillingResponseCode.OK.buildResult(), purchases)
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
 
         assertThat(slot.captured.size).isOne()
     }
 
     @Test
     fun `purchasesUpdatedCalls are forwarded with empty list if result is ok but with a null purchase`() {
-        setup()
-
         val slot = slot<List<PurchaseDetails>>()
         every {
             mockPurchasesListener.onPurchasesUpdated(capture(slot))
         } just Runs
 
-        purchasesUpdatedListener!!.onPurchasesUpdated(BillingClient.BillingResponseCode.OK.buildResult(), null)
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, null)
 
         assertThat(slot.isCaptured).isTrue()
         assertThat(slot.captured.isEmpty()).isTrue()
@@ -422,7 +437,6 @@ class BillingWrapperTest {
 
     @Test
     fun purchaseUpdateFailedCalledIfNotOK() {
-        setup()
         every {
             mockPurchasesListener.onPurchasesFailedToUpdate(any())
         } just Runs
@@ -440,7 +454,6 @@ class BillingWrapperTest {
 
     @Test
     fun queryHistoryCallsListenerIfOk() {
-        setup()
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         var successCalled = false
         wrapper.queryPurchaseHistoryAsync(
@@ -453,7 +466,7 @@ class BillingWrapperTest {
             }
         )
         billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            BillingClient.BillingResponseCode.OK.buildResult(),
+            billingClientOKResult,
             ArrayList()
         )
         assertThat(successCalled).isTrue()
@@ -461,8 +474,6 @@ class BillingWrapperTest {
 
     @Test
     fun queryHistoryNotCalledIfNotOK() {
-        setup()
-
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         var errorCalled = false
         wrapper.queryPurchaseHistoryAsync(
@@ -484,7 +495,6 @@ class BillingWrapperTest {
 
     @Test
     fun canConsumeAToken() {
-        setup()
         val token = "mockToken"
 
         val capturingSlot = slot<ConsumeParams>()
@@ -501,7 +511,6 @@ class BillingWrapperTest {
 
     @Test
     fun removingListenerDisconnects() {
-        setup()
         every {
             mockClient.endConnection()
         } just Runs
@@ -518,7 +527,6 @@ class BillingWrapperTest {
 
     @Test
     fun whenSettingListenerStartConnection() {
-        setup()
         verify {
             mockClient.startConnection(eq(wrapper))
         }
@@ -527,7 +535,6 @@ class BillingWrapperTest {
 
     @Test
     fun whenExecutingRequestAndThereIsNoListenerDoNotTryToStartConnection() {
-        setup()
         every {
             mockClient.endConnection()
         } just Runs
@@ -541,7 +548,6 @@ class BillingWrapperTest {
 
     @Test
     fun whenSkuDetailsIsNullPassAnEmptyListToTheListener() {
-        setup()
         mockNullSkuDetailsResponse()
 
         val productIDs = setOf("product_a")
@@ -561,7 +567,6 @@ class BillingWrapperTest {
 
     @Test
     fun nullifyBillingClientAfterEndingConnection() {
-        setup()
         every {
             mockClient.endConnection()
         } just Runs
@@ -575,7 +580,6 @@ class BillingWrapperTest {
 
     @Test
     fun newBillingClientIsCreatedWhenSettingListener() {
-        setup()
         wrapper.purchasesUpdatedListener = mockPurchasesListener
 
         assertThat<BillingClient>(wrapper.billingClient).isNotNull
@@ -583,7 +587,6 @@ class BillingWrapperTest {
 
     @Test
     fun `calling close before setup finishes doesn't crash`() {
-        setup()
         every {
             mockClient.isReady
         } returns false
@@ -602,7 +605,6 @@ class BillingWrapperTest {
 
     @Test
     fun `calling close before purchase completes doesn't crash`() {
-        setup()
         every {
             mockClient.isReady
         } returns false
@@ -613,7 +615,6 @@ class BillingWrapperTest {
 
     @Test
     fun `calling end connection before client is ready ends connection`() {
-        setup()
         every {
             mockClient.isReady
         } returns false
@@ -626,8 +627,6 @@ class BillingWrapperTest {
 
     @Test
     fun `getting all purchases gets both subs and inapps`() {
-        setup()
-
         val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
         every {
             mockClient.queryPurchaseHistoryAsync(
@@ -636,7 +635,7 @@ class BillingWrapperTest {
             )
         } answers {
             billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
-                BillingClient.BillingResponseCode.OK.buildResult(),
+                billingClientOKResult,
                 listOf(stubPurchaseHistoryRecord())
             )
         }
@@ -648,30 +647,26 @@ class BillingWrapperTest {
 
         assertThat(receivedPurchases.size).isNotZero()
 
-        verify (exactly = 1){
+        verify(exactly = 1) {
             mockClient.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, any())
         }
 
-        verify (exactly = 1){
+        verify(exactly = 1) {
             mockClient.queryPurchaseHistoryAsync(BillingClient.SkuType.INAPP, any())
         }
     }
 
     @Test
     fun `on successfully connected billing client, listener is called`() {
-        setup()
-
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         assertThat(onConnectedCalled).isTrue()
     }
 
     @Test
     fun `when querying anything and billing client returns a null list, returns an empty list`() {
-        setup()
-
         every {
             mockClient.queryPurchases(any())
-        } returns Purchase.PurchasesResult(BillingClient.BillingResponseCode.OK.buildResult(), null)
+        } returns Purchase.PurchasesResult(billingClientOKResult, null)
 
         var purchasesByHashedToken: Map<String, PurchaseDetails>? = null
         wrapper.queryPurchases(
@@ -690,8 +685,6 @@ class BillingWrapperTest {
 
     @Test
     fun `when querying INAPPs result is created properly`() {
-        setup()
-        val resultCode = BillingClient.BillingResponseCode.OK
         val token = "token"
         val type = BillingClient.SkuType.INAPP
         val time = System.currentTimeMillis()
@@ -705,11 +698,11 @@ class BillingWrapperTest {
 
         every {
             mockClient.queryPurchases(BillingClient.SkuType.INAPP)
-        } returns Purchase.PurchasesResult(resultCode.buildResult(), listOf(purchase))
+        } returns Purchase.PurchasesResult(billingClientOKResult, listOf(purchase))
 
         every {
             mockClient.queryPurchases(BillingClient.SkuType.SUBS)
-        } returns Purchase.PurchasesResult(resultCode.buildResult(), emptyList())
+        } returns Purchase.PurchasesResult(billingClientOKResult, emptyList())
 
         var purchasesByHashedToken: Map<String, PurchaseDetails>? = null
         wrapper.queryPurchases(
@@ -735,7 +728,6 @@ class BillingWrapperTest {
 
     @Test
     fun `when querying SUBS result is created properly`() {
-        setup()
         val resultCode = BillingClient.BillingResponseCode.OK
         val token = "token"
         val type = BillingClient.SkuType.SUBS
@@ -780,10 +772,9 @@ class BillingWrapperTest {
 
     @Test
     fun `Presented offering is properly forwarded`() {
-        setup()
         every {
             mockClient.launchBillingFlow(any(), any())
-        } returns BillingClient.BillingResponseCode.OK.buildResult()
+        } returns billingClientOKResult
 
         val skuDetails = stubSkuDetails(productId = "product_a")
 
@@ -792,7 +783,7 @@ class BillingWrapperTest {
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         wrapper.makePurchaseAsync(
             activity,
-            "jerry",
+            appUserId,
             skuDetails.toProductDetails(),
             mockReplaceSkuInfo(),
             "offering_a"
@@ -804,7 +795,7 @@ class BillingWrapperTest {
         every {
             mockPurchasesListener.onPurchasesUpdated(capture(slot))
         } just Runs
-        purchasesUpdatedListener!!.onPurchasesUpdated(BillingClient.BillingResponseCode.OK.buildResult(), purchases)
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
 
         assertThat(slot.captured.size).isOne()
         assertThat(slot.captured[0].presentedOfferingIdentifier).isEqualTo("offering_a")
@@ -819,14 +810,13 @@ class BillingWrapperTest {
             BillingClient.newBuilder(context)
         } returns mockBuilder
         BillingWrapper.ClientFactory(context).buildClient(mockk())
-        verify (exactly = 1) {
+        verify(exactly = 1) {
             mockBuilder.enablePendingPurchases()
         }
     }
 
     @Test
     fun `Acknowledge works`() {
-        setup()
         val token = "token"
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
@@ -838,11 +828,10 @@ class BillingWrapperTest {
 
     @Test
     fun `Getting subscriptions type`() {
-        setup()
         every {
             mockClient.queryPurchases(BillingClient.SkuType.INAPP)
         } returns Purchase.PurchasesResult(
-            BillingClient.BillingResponseCode.OK.buildResult(), listOf(mockk(
+            billingClientOKResult, listOf(mockk(
                 relaxed = true
             ) {
                 every { this@mockk.purchaseToken } returns "inapp"
@@ -851,7 +840,7 @@ class BillingWrapperTest {
         every {
             mockClient.queryPurchases(BillingClient.SkuType.SUBS)
         } returns Purchase.PurchasesResult(
-            BillingClient.BillingResponseCode.OK.buildResult(), listOf(mockk(
+            billingClientOKResult, listOf(mockk(
                 relaxed = true
             ) {
                 every { this@mockk.purchaseToken } returns "sub"
@@ -864,11 +853,10 @@ class BillingWrapperTest {
 
     @Test
     fun `Getting INAPPs type`() {
-        setup()
         every {
             mockClient.queryPurchases(BillingClient.SkuType.INAPP)
         } returns Purchase.PurchasesResult(
-            BillingClient.BillingResponseCode.OK.buildResult(), listOf(mockk(
+            billingClientOKResult, listOf(mockk(
                 relaxed = true
             ) {
                 every { this@mockk.purchaseToken } returns "inapp"
@@ -877,7 +865,7 @@ class BillingWrapperTest {
         every {
             mockClient.queryPurchases(BillingClient.SkuType.SUBS)
         } returns Purchase.PurchasesResult(
-            BillingClient.BillingResponseCode.OK.buildResult(), listOf(mockk(
+            billingClientOKResult, listOf(mockk(
                 relaxed = true
             ) {
                 every { this@mockk.purchaseToken } returns "sub"
@@ -890,13 +878,12 @@ class BillingWrapperTest {
 
     @Test
     fun `findPurchaseInPurchaseHistory works`() {
-        setup()
         val sku = "aPurchase"
         val purchaseHistoryRecord = stubPurchaseHistoryRecord(productId = sku)
 
         var recordFound: PurchaseDetails? = null
         wrapper.findPurchaseInPurchaseHistory(
-            "jerry",
+            appUserId,
             ProductType.SUBS,
             sku,
             onCompletion = {
@@ -907,7 +894,7 @@ class BillingWrapperTest {
             }
         )
         billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            BillingClient.BillingResponseCode.OK.buildResult(),
+            billingClientOKResult,
             listOf(purchaseHistoryRecord)
         )
         assertThat(recordFound).isNotNull
@@ -918,7 +905,6 @@ class BillingWrapperTest {
 
     @Test
     fun `findPurchaseInPurchaseHistory returns error if not found`() {
-        setup()
         val sku = "aPurchase"
         val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
             every { it.sku } returns sku + "somethingrandom"
@@ -927,7 +913,7 @@ class BillingWrapperTest {
         var errorReturned: PurchasesError? = null
 
         wrapper.findPurchaseInPurchaseHistory(
-            "jerry",
+            appUserId,
             ProductType.SUBS,
             sku,
             onCompletion = {
@@ -939,7 +925,7 @@ class BillingWrapperTest {
         )
 
         billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            BillingClient.BillingResponseCode.OK.buildResult(),
+            billingClientOKResult,
             listOf(purchaseHistoryRecord)
         )
         assertThat(errorReturned).isNotNull
@@ -948,8 +934,6 @@ class BillingWrapperTest {
 
     @Test
     fun `tokens are saved in cache when acknowledging`() {
-        setup()
-
         val sku = "sub"
         val token = "token_sub"
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
@@ -967,7 +951,7 @@ class BillingWrapperTest {
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue()
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
-            BillingClient.BillingResponseCode.OK.buildResult()
+            billingClientOKResult
         )
 
         verify(exactly = 1) {
@@ -977,7 +961,6 @@ class BillingWrapperTest {
 
     @Test
     fun `restored tokens are saved in cache when acknowledging`() {
-        setup()
         val sku = "sub"
         val token = "token_sub"
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
@@ -994,7 +977,7 @@ class BillingWrapperTest {
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue()
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
-            BillingClient.BillingResponseCode.OK.buildResult()
+            billingClientOKResult
         )
 
         verify(exactly = 1) {
@@ -1004,7 +987,6 @@ class BillingWrapperTest {
 
     @Test
     fun `tokens are saved in cache when consuming`() {
-        setup()
         val sku = "consumable"
         val token = "token_consumable"
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
@@ -1022,7 +1004,7 @@ class BillingWrapperTest {
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue()
         capturedConsumeResponseListener.captured.onConsumeResponse(
-            BillingClient.BillingResponseCode.OK.buildResult(),
+            billingClientOKResult,
             token
         )
 
@@ -1033,7 +1015,6 @@ class BillingWrapperTest {
 
     @Test
     fun `restored tokens are saved in cache when consuming`() {
-        setup()
         val sku = "consumable"
         val token = "token_consumable"
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
@@ -1050,7 +1031,7 @@ class BillingWrapperTest {
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue()
         capturedConsumeResponseListener.captured.onConsumeResponse(
-            BillingClient.BillingResponseCode.OK.buildResult(),
+            billingClientOKResult,
             token
         )
 
@@ -1061,7 +1042,6 @@ class BillingWrapperTest {
 
     @Test
     fun `tokens are not saved in cache if acknowledge fails`() {
-        setup()
         val sku = "sub"
         val token = "token_sub"
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
@@ -1085,7 +1065,6 @@ class BillingWrapperTest {
 
     @Test
     fun `restored tokens are not save in cache if acknowledge fails`() {
-        setup()
         val sku = "sub"
         val token = "token_sub"
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
@@ -1108,7 +1087,6 @@ class BillingWrapperTest {
 
     @Test
     fun `tokens are not save in cache if consuming fails`() {
-        setup()
         val sku = "consumable"
         val token = "token_consumable"
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
@@ -1133,7 +1111,6 @@ class BillingWrapperTest {
 
     @Test
     fun `restored tokens are not save in cache if consuming fails`() {
-        setup()
         val sku = "consumable"
         val token = "token_consumable"
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
@@ -1157,8 +1134,6 @@ class BillingWrapperTest {
 
     @Test
     fun `subscriptions are acknowledged`() {
-        setup()
-
         val sku = "sub"
         val token = "token_sub"
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
@@ -1176,7 +1151,7 @@ class BillingWrapperTest {
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue()
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
-            BillingClient.BillingResponseCode.OK.buildResult()
+            billingClientOKResult
         )
 
         assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue()
@@ -1186,7 +1161,6 @@ class BillingWrapperTest {
 
     @Test
     fun `restored subscriptions are acknowledged`() {
-        setup()
         val sku = "sub"
         val token = "token_sub"
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
@@ -1203,7 +1177,7 @@ class BillingWrapperTest {
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue()
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
-            BillingClient.BillingResponseCode.OK.buildResult()
+            billingClientOKResult
         )
 
         assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue()
@@ -1213,7 +1187,6 @@ class BillingWrapperTest {
 
     @Test
     fun `consumables are consumed`() {
-        setup()
         val sku = "consumable"
         val token = "token_consumable"
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
@@ -1231,7 +1204,7 @@ class BillingWrapperTest {
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue()
         capturedConsumeResponseListener.captured.onConsumeResponse(
-            BillingClient.BillingResponseCode.OK.buildResult(),
+            billingClientOKResult,
             token
         )
 
@@ -1242,7 +1215,6 @@ class BillingWrapperTest {
 
     @Test
     fun `restored consumables are consumed`() {
-        setup()
         val sku = "consumable"
         val token = "token_consumable"
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
@@ -1259,7 +1231,7 @@ class BillingWrapperTest {
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue()
         capturedConsumeResponseListener.captured.onConsumeResponse(
-            BillingClient.BillingResponseCode.OK.buildResult(),
+            billingClientOKResult,
             token
         )
 
@@ -1270,7 +1242,6 @@ class BillingWrapperTest {
 
     @Test
     fun `product type defaults to INAPP when querying sku details`() {
-        setup()
         val slot = slot<SkuDetailsParams>()
         every {
             mockClient.querySkuDetailsAsync(
@@ -1296,7 +1267,6 @@ class BillingWrapperTest {
 
     @Test
     fun `if it shouldn't consume transactions, don't consume and save it in cache`() {
-        setup()
         val sku = "consumable"
         val token = "token_consumable"
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
@@ -1323,7 +1293,6 @@ class BillingWrapperTest {
 
     @Test
     fun `if it shouldn't consume restored transactions, don't consume and save it in cache`() {
-        setup()
         val sku = "consumable"
         val token = "token_consumable"
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
@@ -1349,8 +1318,6 @@ class BillingWrapperTest {
 
     @Test
     fun `if it shouldn't consume transactions, don't acknowledge and save it in cache`() {
-        setup()
-
         val sku = "sub"
         val token = "token_sub"
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
@@ -1377,7 +1344,6 @@ class BillingWrapperTest {
 
     @Test
     fun `if it shouldn't consume restored transactions, don't acknowledge and save it in cache`() {
-        setup()
         val sku = "sub"
         val token = "token_sub"
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
@@ -1403,8 +1369,6 @@ class BillingWrapperTest {
 
     @Test
     fun `Do not acknowledge purchases that are already acknowledged`() {
-        setup()
-
         val sku = "sub"
         val token = "token_sub"
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
@@ -1432,8 +1396,6 @@ class BillingWrapperTest {
 
     @Test
     fun `Do not consume nor acknowledge pending purchases`() {
-        setup()
-
         val sku = "sub"
         val token = "token_sub"
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
@@ -1463,6 +1425,57 @@ class BillingWrapperTest {
         }
     }
 
+    @Test
+    fun `querySkuDetails filters empty skus before querying BillingClient`() {
+        val skuSet = setOf("abcd", "", "1", "")
+
+        val slot = slot<SkuDetailsParams>()
+        every {
+            mockClient.querySkuDetailsAsync(capture(slot), any())
+        } just Runs
+
+        wrapper.querySkuDetailsAsync(
+            ProductType.SUBS,
+            skuSet,
+            {}, {
+                fail("shouldn't be an error")
+            })
+
+        assertThat(slot.captured.skusList).isEqualTo(skuSet.filter { it.isNotEmpty() })
+    }
+
+    @Test
+    fun `querySkuDetails with empty list returns empty list and does not query BillingClient`() {
+        wrapper.querySkuDetailsAsync(
+            ProductType.SUBS,
+            emptySet(),
+            {
+                assertThat(it.isEmpty())
+            }, {
+                fail("shouldn't be an error")
+            })
+
+        verify(exactly = 0) {
+            mockClient.querySkuDetailsAsync(any(), any())
+        }
+    }
+
+    @Test
+    fun `querySkuDetails with only empty skus returns empty list and does not query BillingClient`() {
+        wrapper.querySkuDetailsAsync(
+            ProductType.SUBS,
+            setOf("", ""),
+            {
+                assertThat(it.isEmpty())
+            }, {
+                fail("shouldn't be an error")
+            })
+
+        verify(exactly = 0) {
+            mockClient.querySkuDetailsAsync(any(), any())
+        }
+    }
+
     private fun mockNullSkuDetailsResponse() {
         val slot = slot<SkuDetailsResponseListener>()
         every {
@@ -1471,7 +1484,7 @@ class BillingWrapperTest {
                 capture(slot)
             )
         } answers {
-            slot.captured.onSkuDetailsResponse(BillingClient.BillingResponseCode.OK.buildResult(), null)
+            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
         }
     }
 
@@ -1526,4 +1539,40 @@ class BillingWrapperTest {
         )
     }
 
+    private fun setUpForObfuscatedAccountIDTests(): BillingFlowParams.Builder {
+        mockkStatic(BillingFlowParams::class)
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.newBuilder()
+        } returns mockBuilder
+
+        every {
+            mockBuilder.setSkuDetails(any())
+        } returns mockBuilder
+
+        val params = mockk<BillingFlowParams>(relaxed = true)
+        every {
+            mockBuilder.build()
+        } returns params
+
+        every {
+            mockClient.launchBillingFlow(any(), params)
+        } returns billingClientOKResult
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        return mockBuilder
+    }
+
+    private fun mockStandardSkuDetailsResponse() {
+        val slot = slot<SkuDetailsResponseListener>()
+        every {
+            mockClient.querySkuDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        } answers {
+            slot.captured.onSkuDetailsResponse(billingClientOKResult, mockDetailsList)
+        }
+    }
 }

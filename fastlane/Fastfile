@@ -36,7 +36,7 @@ platform :android do
   desc "Increment build number and update changelog"
   lane :bump_and_update_changelog do |options|
     bump(options)
-    attach_changelog_to_main
+    attach_changelog_to_main(options)
   end
 
   desc "Make github release"
@@ -112,7 +112,8 @@ def increment_version_in(previous_version, new_version, path)
   sh "sed -i'#{backup_extension}' #{sed_regex} #{path}"
 end
 
-def attach_changelog_to_main(version_number)
+def attach_changelog_to_main(options)
+  version_number = options[:version]
   current_changelog = File.open("../CHANGELOG.latest.md", 'r')
   master_changelog = File.open("../CHANGELOG.md", 'r')
 
@@ -124,7 +125,7 @@ def attach_changelog_to_main(version_number)
 
   File.open("../CHANGELOG.md", 'w') { |master_changelog_write_mode|
     version_header = "## #{version_number}"
-    whole_file_data = "#{version_header}\n#{current_changelog_data}\n#{master_changelog_data}"
+    whole_file_data = "#{version_header}\n\n#{current_changelog_data}\n#{master_changelog_data}"
     puts "going to save. Contents - #{whole_file_data}"
     
     master_changelog_write_mode.write(whole_file_data)

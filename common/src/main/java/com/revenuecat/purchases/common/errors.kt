@@ -65,11 +65,9 @@ fun HTTPResult.toPurchasesError(): PurchasesError {
 @Suppress("ComplexMethod")
 fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
     return when (this) {
-        BackendErrorCode.BackendInvalidPlatform -> PurchasesErrorCode.UnknownError
         BackendErrorCode.BackendStoreProblem -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendCannotTransferPurchase -> PurchasesErrorCode.ReceiptAlreadyInUseError
         BackendErrorCode.BackendInvalidReceiptToken -> PurchasesErrorCode.InvalidReceiptError
-        BackendErrorCode.BackendInvalidAppStoreSharedSecret,
         BackendErrorCode.BackendInvalidPlayStoreCredentials,
         BackendErrorCode.BackendInvalidAuthToken,
         BackendErrorCode.BackendInvalidAPIKey -> PurchasesErrorCode.InvalidCredentialsError
@@ -77,12 +75,14 @@ fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendProductIdForGoogleReceiptNotProvided -> PurchasesErrorCode.PurchaseInvalidError
         BackendErrorCode.BackendEmptyAppUserId -> PurchasesErrorCode.InvalidAppUserIdError
         BackendErrorCode.BackendPlayStoreQuotaExceeded -> PurchasesErrorCode.StoreProblemError
-        BackendErrorCode.BackendPlayStoreInvalidPackageName -> PurchasesErrorCode.StoreProblemError
+        BackendErrorCode.BackendPlayStoreInvalidPackageName,
+        BackendErrorCode.BackendInvalidPlatform -> PurchasesErrorCode.ConfigurationError
         BackendErrorCode.BackendPlayStoreGenericError -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendUserIneligibleForPromoOffer -> PurchasesErrorCode.IneligibleError
-        BackendErrorCode.BackendInvalidAppleSubscriptionKey -> PurchasesErrorCode.InvalidAppleSubscriptionKeyError
         BackendErrorCode.BackendInvalidSubscriberAttributes,
         BackendErrorCode.BackendInvalidSubscriberAttributesBody -> PurchasesErrorCode.InvalidSubscriberAttributesError
+        BackendErrorCode.BackendInvalidAppStoreSharedSecret,
+        BackendErrorCode.BackendInvalidAppleSubscriptionKey,
         BackendErrorCode.BackendBadRequest,
         BackendErrorCode.BackendInternalServerError -> PurchasesErrorCode.UnexpectedBackendResponseError
     }

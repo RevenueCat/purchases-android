@@ -37,7 +37,7 @@ data class PurchaserInfo constructor(
     val entitlements: EntitlementInfos,
     @Deprecated(
         "Use nonSubscriptionTransactions instead",
-        ReplaceWith("nonSubscriptionTransactions.keys")
+        ReplaceWith("nonSubscriptionTransactions.map{ it.productId }.toSet()")
     ) val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:bind="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+                name="currentPackage"
+                type="com.revenuecat.purchases.Package" />
+
+        <variable
+                name="isActive"
+                type="Boolean" />
+    </data>
+
+    <com.google.android.material.card.MaterialCardView
+            android:id="@+id/package_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/padding_small"
+            android:padding="@dimen/padding_small"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/package_card_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_small">
+
+            <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/package_product_title"
+                    style="@style/TextAppearance.AppCompat.Medium"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/padding_tiny"
+                    android:text="@{currentPackage.product.title + (isActive ? ` (active)` : ``)}"
+                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:Text="Introductory Price (PurchasesSample)" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/package_product_description"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/padding_tiny"
+                    android:layout_marginEnd="@dimen/padding_tiny"
+                    android:text="@{currentPackage.product.description}"
+                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/package_product_title"
+                    tools:text="Product with an introductory price" />
+
+            <include
+                    layout="@layout/row_view"
+                    android:id="@+id/package_product_sku"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/padding_tiny"
+                    android:layout_marginEnd="@dimen/padding_tiny"
+                    bind:header="@{`Sku:`}"
+                    bind:detail="@{currentPackage.product.sku}"
+                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/package_product_description"
+                    tools:text="$rc_monthly" />
+
+            <include
+                    layout="@layout/row_view"
+                    android:id="@+id/package_type"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/padding_tiny"
+                    android:layout_marginEnd="@dimen/padding_tiny"
+                    bind:header="@{`Package Type:`}"
+                    app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/package_product_sku"
+                    tools:text="$rc_monthly" />
+
+            <androidx.constraintlayout.widget.Barrier
+                    android:id="@+id/package_card_barrier"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:barrierDirection="start"
+                    app:constraint_referenced_ids="package_buy_button" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/package_buy_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:enabled="@{!isActive}"
+                    android:text="@{currentPackage.product.price}"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</layout>

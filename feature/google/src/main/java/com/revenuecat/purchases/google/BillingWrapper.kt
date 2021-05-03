@@ -34,6 +34,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.PurchaseDetails
@@ -124,12 +125,20 @@ class BillingWrapper(
         onReceive: ProductDetailsListCallback,
         onError: PurchasesErrorCallback
     ) {
+        val nonEmptySkus = skus.filter { it.isNotEmpty() }
+
+        if (nonEmptySkus.isEmpty()) {
+            log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
+            onReceive(emptyList())
+            return
+        }
+
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 val params = SkuDetailsParams.newBuilder()
                     .setType(productType.toSKUType() ?: SkuType.INAPP)
-                    .setSkusList(skus.toList()).build()
+                    .setSkusList(nonEmptySkus).build()
 
                 withConnectedClient {
                     querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
@@ -180,15 +189,15 @@ class BillingWrapper(
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
                 .setSkuDetails(productDetails.skuDetails)
-                // Causing issues with downgrades/upgrades https://issuetracker.google.com/issues/155005449
-                // .setObfuscatedAccountId(appUserID.sha256())
                 .apply {
                     replaceSkuInfo?.apply {
                         setOldSku(oldPurchase.sku, oldPurchase.purchaseToken)
                         prorationMode?.let { prorationMode ->
                             setReplaceSkusProrationMode(prorationMode)
                         }
-                    }
+                    } ?: setObfuscatedAccountId(appUserID.sha256())
+                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                    // https://issuetracker.google.com/issues/155005449
                 }.build()
 
             launchBillingFlow(activity, params)
