@@ -5,8 +5,6 @@ import android.content.Context
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.Purchases.Companion.canMakePayments
-import com.revenuecat.purchases.common.BillingFeature
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
@@ -29,7 +27,6 @@ private typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: Purchase
 private typealias ReceiveLogInSuccessFunction = (purchaserInfo: PurchaserInfo, created: Boolean) -> Unit
 private typealias ErrorFunction = (error: PurchasesError) -> Unit
 private typealias PurchaseErrorFunction = (error: PurchasesError, userCancelled: Boolean) -> Unit
-private typealias ReceiveBooleanCallback = (Boolean) -> Unit
 
 private val ON_ERROR_STUB: ErrorFunction = {}
 private val ON_PURCHASE_ERROR_STUB: PurchaseErrorFunction = { _, _ -> }
@@ -148,14 +145,6 @@ internal fun logInSuccessListener(
 
     override fun onError(error: PurchasesError) {
         onError?.invoke(error)
-    }
-}
-
-internal fun booleanCallbackListener(
-    onComplete: (Boolean) -> Unit
-) = object : Callback<Boolean> {
-    override fun onReceived(result: Boolean) {
-        onComplete(result)
     }
 }
 
@@ -436,7 +425,7 @@ fun Purchases.getNonSubscriptionSkusWith(
 fun Purchases.Companion.canMakePaymentsWith(
     context: Context,
     feature: BillingFeature?,
-    onComplete: ReceiveBooleanCallback
+    onComplete: (Boolean) -> Unit
 ) {
-    canMakePayments(context, feature, booleanCallbackListener(onComplete))
+    canMakePayments(context, feature, Callback { result -> onComplete(result) })
 }
