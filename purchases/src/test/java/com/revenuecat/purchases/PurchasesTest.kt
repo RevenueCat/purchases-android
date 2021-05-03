@@ -21,6 +21,7 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.BillingFeature
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
@@ -2299,7 +2300,7 @@ class PurchasesTest {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
-        Purchases.canMakePayments(mockContext, BillingClient.FeatureType.SUBSCRIPTIONS, Callback {
+        Purchases.canMakePayments(mockContext, BillingFeature.SUBSCRIPTIONS, Callback {
             receivedCanMakePayments = it
         })
 
@@ -2319,7 +2320,7 @@ class PurchasesTest {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
         } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
 
-        Purchases.canMakePayments(mockContext, BillingClient.FeatureType.SUBSCRIPTIONS, Callback {
+        Purchases.canMakePayments(mockContext, BillingFeature.SUBSCRIPTIONS, Callback {
             receivedCanMakePayments = it
         })
 
@@ -2339,7 +2340,7 @@ class PurchasesTest {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
-        Purchases.canMakePayments(mockContext, BillingClient.FeatureType.SUBSCRIPTIONS, Callback {
+        Purchases.canMakePayments(mockContext, BillingFeature.SUBSCRIPTIONS, Callback {
             receivedCanMakePayments = it
         })
 
@@ -2350,7 +2351,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when feature is null, canMakePayments does not check billing client`() {
+    fun `when feature is none, canMakePayments does not check billing client`() {
         var receivedCanMakePayments = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         val listener = isBillingSupportedSetup(mockLocalBillingClient)

@@ -25,6 +25,7 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.BillingFeature
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
@@ -484,7 +485,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         message = "The listener has changed to accept a null Purchase on the onCompleted",
         replaceWith = ReplaceWith(
             expression = "Purchases.sharedInstance.purchasePackage(" +
-                "activity, packageToPurchase, upgradeInfo, ProductChangeListener)"
+                    "activity, packageToPurchase, upgradeInfo, ProductChangeListener)"
         )
     )
     fun purchasePackage(
@@ -1859,7 +1860,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
-         * Check if current user can make payments on the device and optionally, whether a specified feature
+         * Check if current Play user can make payments on the device and optionally, whether a specified feature
          * type is supported. This method is asynchronous since it requires a connected BillingClient.
          * @param context A context object that will be used to connect to the billing client
          * @param feature An optional feature type to check for support. Must be one of [BillingClient.FeatureType]
@@ -1868,7 +1869,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @JvmStatic
         fun canMakePayments(
             context: Context,
-            @BillingClient.FeatureType feature: String? = null,
+            feature: BillingFeature?,
             callback: Callback<Boolean>
         ) {
             BillingClient.newBuilder(context)
@@ -1880,15 +1881,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         object : BillingClientStateListener {
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
                                 try {
+                                    val featureSupportedResultOk = feature?.let {
+                                        billingClient.isFeatureSupported(it.playBillingClientName).responseCode ==
+                                            BillingClient.BillingResponseCode.OK
+                                    } ?: true
+
                                     billingClient.endConnection()
 
                                     val billingSupportedResultOk =
                                         billingResult.responseCode == BillingClient.BillingResponseCode.OK
-
-                                    val featureSupportedResultOk = feature?.let {
-                                        billingClient.isFeatureSupported(it).responseCode ==
-                                                BillingClient.BillingResponseCode.OK
-                                    } ?: true
 
                                     callback.onReceived(billingSupportedResultOk && featureSupportedResultOk)
                                 } catch (e: IllegalArgumentException) {
