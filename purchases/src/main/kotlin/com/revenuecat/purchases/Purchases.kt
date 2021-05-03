@@ -36,6 +36,7 @@ import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.google.toProductDetails
@@ -1889,8 +1890,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                                     billingClient.endConnection()
 
-                                    val billingSupportedResultOk =
-                                        billingResult.responseCode == BillingClient.BillingResponseCode.OK
+                                    val billingSupportedResultOk = billingResult.isSuccessful()
 
                                     callback.onReceived(billingSupportedResultOk && featureSupportedResultOk)
                                 } catch (e: IllegalArgumentException) {
@@ -1933,8 +1933,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                 // It also means that IN-APP items are supported for purchasing
                                 try {
                                     billingClient.endConnection()
-                                    val resultIsOK =
-                                        billingResult.responseCode == BillingClient.BillingResponseCode.OK
+                                    val resultIsOK = billingResult.isSuccessful()
                                     callback.onReceived(resultIsOK)
                                 } catch (e: IllegalArgumentException) {
                                     // Play Services not available
@@ -1977,11 +1976,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         object : BillingClientStateListener {
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
                                 try {
-                                    val featureSupportedResult =
-                                        billingClient.isFeatureSupported(feature)
+                                    val featureSupportedResult = billingClient.isFeatureSupported(feature)
                                     billingClient.endConnection()
-                                    val responseIsOK =
-                                        featureSupportedResult.responseCode == BillingClient.BillingResponseCode.OK
+                                    val responseIsOK = featureSupportedResult.isSuccessful()
                                     callback.onReceived(responseIsOK)
                                 } catch (e: IllegalArgumentException) {
                                     // Play Services not available
