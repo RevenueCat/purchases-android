@@ -8,6 +8,7 @@ package com.revenuecat.purchases.common
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.networking.HTTPResult
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -38,7 +39,7 @@ class DispatcherTest {
 
     private var errorCalled: Boolean? = false
 
-    private var result: HTTPClient.Result? = null
+    private var result: HTTPResult? = null
 
 
     @Before
@@ -54,7 +55,7 @@ class DispatcherTest {
 
     @Test
     fun executesInExecutor() {
-        val result = HTTPClient.Result(200, JSONObject("{}"))
+        val result = HTTPResult(200, "{}")
 
         every {
             mockExecutorService.isShutdown
@@ -65,7 +66,7 @@ class DispatcherTest {
         } returns mockk()
 
         dispatcherWithMockExecutor.enqueue(object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 return result
             }
         })
@@ -78,7 +79,7 @@ class DispatcherTest {
     @Test
     fun asyncCallHandlesFailures() {
         val call = object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 throw JSONException("an exception")
             }
 
@@ -94,13 +95,13 @@ class DispatcherTest {
 
     @Test
     fun asyncCallHandlesSuccess() {
-        val result = HTTPClient.Result(200, JSONObject("{}"))
+        val result = HTTPResult(200, "{}")
         val call = object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 return result
             }
 
-            override fun onCompletion(result: HTTPClient.Result) {
+            override fun onCompletion(result: HTTPResult) {
                 this@DispatcherTest.result = result
             }
         }
@@ -128,7 +129,7 @@ class DispatcherTest {
         val errorHolder = AtomicReference<PurchasesError>()
 
         val call = object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPClient.Result {
+            override fun call(): HTTPResult {
                 throw SecurityException("missing permissoins")
             }
 

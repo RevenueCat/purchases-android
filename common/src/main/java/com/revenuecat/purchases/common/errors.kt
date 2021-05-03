@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common
 import com.android.billingclient.api.BillingClient
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.networking.HTTPResult
 import org.json.JSONException
 import java.io.IOException
 
@@ -50,7 +51,7 @@ fun Exception.toPurchasesError(): PurchasesError {
 fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
     PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
 
-fun HTTPClient.Result.toPurchasesError(): PurchasesError {
+fun HTTPResult.toPurchasesError(): PurchasesError {
     val errorCode = if (body.has("code")) body.get("code") as Int else null
     val errorMessage = if (body.has("message")) body.get("message") as String else ""
 

@@ -4,9 +4,8 @@ import android.net.Uri
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.HTTP_NOT_FOUND_ERROR_CODE
-import com.revenuecat.purchases.common.HTTP_SERVER_ERROR_CODE
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 
 class SubscriberAttributesPoster(
     private val backend: Backend
@@ -30,8 +29,8 @@ class SubscriberAttributesPoster(
             },
             { error, responseCode, body ->
                 error?.let {
-                    val internalServerError = responseCode >= HTTP_SERVER_ERROR_CODE
-                    val notFoundError = responseCode == HTTP_NOT_FOUND_ERROR_CODE
+                    val internalServerError = responseCode >= RCHTTPStatusCodes.ERROR
+                    val notFoundError = responseCode == RCHTTPStatusCodes.NOT_FOUND
                     val successfullySynced = !(internalServerError || notFoundError)
                     var attributeErrors: List<SubscriberAttributeError> = emptyList()
                     if (error.code == PurchasesErrorCode.InvalidSubscriberAttributesError) {

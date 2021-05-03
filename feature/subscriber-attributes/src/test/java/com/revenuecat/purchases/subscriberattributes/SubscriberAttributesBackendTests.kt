@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
@@ -296,7 +297,7 @@ class SubscriberAttributesPosterTests {
     fun `200 but subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
             responseCode = 200,
-            responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
+            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ReceiptInfo(
             productID = productID
@@ -323,7 +324,7 @@ class SubscriberAttributesPosterTests {
     fun `505 and subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
             responseCode = 505,
-            responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
+            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ReceiptInfo(
             productID = productID
@@ -350,7 +351,7 @@ class SubscriberAttributesPosterTests {
     fun `304 and subscriber attribute errors when posting receipt`() {
         mockPostReceiptResponse(
             responseCode = 304,
-            responseBody = JSONObject(Responses.subscriberAttributesErrorsPostReceiptResponse)
+            responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ReceiptInfo(
             productID = productID
@@ -391,7 +392,7 @@ class SubscriberAttributesPosterTests {
 
         if (clientException == null) {
             everyMockedCall answers {
-                HTTPClient.Result(responseCode, JSONObject(expectedResultBody ?: "{}"))
+                HTTPResult(responseCode, expectedResultBody ?: "{}")
             }
         } else {
             everyMockedCall throws clientException
@@ -401,7 +402,7 @@ class SubscriberAttributesPosterTests {
     private val actualPostReceiptBodySlot = slot<Map<String, Any?>>()
     private fun mockPostReceiptResponse(
         responseCode: Int = 200,
-        responseBody: JSONObject = JSONObject("{}")
+        responseBody: String = "{}"
     ) {
         every {
             mockClient.performRequest(
@@ -410,7 +411,7 @@ class SubscriberAttributesPosterTests {
                 mapOf("Authorization" to "Bearer $API_KEY")
             )
         } answers {
-            HTTPClient.Result(responseCode, responseBody).also {
+            HTTPResult(responseCode, responseBody).also {
                 every {
                     it.body.buildPurchaserInfo()
                 } returns mockk()
