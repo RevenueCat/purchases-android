@@ -3,7 +3,7 @@ package com.revenuecat.purchases.utils
 import org.json.JSONObject
 
 object Responses {
-    val validFullPurchaserResponse = JSONObject("""
+    val validFullPurchaserResponse = """
                 {
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
@@ -97,9 +97,9 @@ object Responses {
                     "management_url": "https://play.google.com/store/account/subscriptions"
                   }
                 }
-            """).toString()
+            """.removeJSONFormatting()
 
-    val validEmptyPurchaserResponse = JSONObject("""
+    val validEmptyPurchaserResponse = """
                 {
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
@@ -114,9 +114,9 @@ object Responses {
                     "management_url": null
                   }
                 }
-            """).toString()
+            """.removeJSONFormatting()
 
-    val subscriberAttributesErrorsPostReceiptResponse = JSONObject("""
+    val subscriberAttributesErrorsPostReceiptResponse = """
                {
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
@@ -184,26 +184,28 @@ object Responses {
                     }
                   }
                 } 
-            """).toString()
+            """.removeJSONFormatting()
 
-    val internalServerErrorResponse = JSONObject("""
+    val internalServerErrorResponse = """
                 {
                     "code": 7110, 
                     "message": "Internal server error."
                 }
-            """).toString()
+            """.removeJSONFormatting()
 
-    val invalidCredentialsErrorResponse = JSONObject("""
+    val invalidCredentialsErrorResponse = """
                 {
                     "code": 7225, 
                     "message": "Invalid credentials error."
                 }
-            """).toString()
+            """.removeJSONFormatting()
 
-    val badRequestErrorResponse = JSONObject("""
+    val badRequestErrorResponse = """
                 {
                     "code": 7226, 
                     "message": "Missing required params."
                 }
-            """).toString()
+            """.removeJSONFormatting()
 }
+
+private fun String.removeJSONFormatting(): String = JSONObject(this).toString()
