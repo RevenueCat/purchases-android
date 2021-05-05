@@ -1925,6 +1925,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param context A context object that will be used to connect to the billing client
          * @param callback Callback that will be notified when the check is complete.
          */
+        @Deprecated(
+            message = "use canMakePayments instead",
+            replaceWith = ReplaceWith("canMakePayments(context, features, Callback<Boolean>)")
+        )
         @JvmStatic
         fun isBillingSupported(context: Context, callback: Callback<Boolean>) {
             BillingClient.newBuilder(context)
@@ -1966,6 +1970,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param context A context object that will be used to connect to the billing client
          * @param callback Callback that will be notified when the check is complete.
          */
+        @Deprecated(
+            message = "use canMakePayments instead",
+            replaceWith = ReplaceWith("canMakePayments(context, features, Callback<Boolean>)")
+        )
         @JvmStatic
         fun isFeatureSupported(
             @BillingClient.FeatureType feature: String,
