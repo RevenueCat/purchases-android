@@ -415,19 +415,18 @@ fun Purchases.getNonSubscriptionSkusWith(
 
 /**
  * Check if billing is supported for the current Play user (meaning IN-APP purchases are supported)
- * and optionally, whether a specified feature type is supported. This method is asynchronous since
- * it requires a connected BillingClient.
- *
+ * and optionally, whether a list of specified feature types are supported. This method is asynchronous
+ * since it requires a connected BillingClient.
  * @param context A context object that will be used to connect to the billing client
- * @param feature An optional feature type to check for support. Must be one of [BillingFeature]
- *                  If null, no specific feature support will be checked.
+ * @param feature A list of feature types to check for support. Feature types must be one of [BillingFeature]
+ *                 By default, is an empty list and no specific feature support will be checked.
  * @param callback Callback that will be notified when the check is complete.
  */
 @Suppress("unused")
 fun Purchases.Companion.canMakePaymentsWith(
     context: Context,
-    feature: BillingFeature?,
+    features: List<BillingFeature> = listOf(),
     onComplete: (Boolean) -> Unit
 ) {
-    canMakePayments(context, feature, Callback { result -> onComplete(result) })
+    canMakePayments(context, features, Callback { result -> onComplete(result) })
 }

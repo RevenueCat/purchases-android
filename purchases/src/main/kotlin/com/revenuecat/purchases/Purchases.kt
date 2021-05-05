@@ -1861,17 +1861,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
         /**
          * Check if billing is supported for the current Play user (meaning IN-APP purchases are supported)
-         * and optionally, whether a specified feature type is supported. This method is asynchronous since
-         * it requires a connected BillingClient.
+         * and optionally, whether a list of specified feature types are supported. This method is asynchronous
+         * since it requires a connected BillingClient.
          * @param context A context object that will be used to connect to the billing client
-         * @param feature An optional feature type to check for support. Must be one of [BillingFeature]
-         *                  If null, no specific feature support will be checked.
+         * @param feature A list of feature types to check for support. Feature types must be one of [BillingFeature]
+         *                 By default, is an empty list and no specific feature support will be checked.
          * @param callback Callback that will be notified when the check is complete.
          */
         @JvmStatic
         fun canMakePayments(
             context: Context,
-            feature: BillingFeature?,
+            features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>
         ) {
             BillingClient.newBuilder(context)
@@ -1883,16 +1883,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         object : BillingClientStateListener {
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
                                 try {
-                                    val featureSupportedResultOk = feature?.let {
-                                        billingClient.isFeatureSupported(it.playBillingClientName).responseCode ==
-                                            BillingClient.BillingResponseCode.OK
-                                    } ?: true
+                                    if (!billingResult.isSuccessful()) {
+                                        callback.onReceived(false)
+                                        billingClient.endConnection()
+                                        return
+                                    }
+
+                                    var featureSupportedResultOk = true
+                                    features.forEach {
+                                        featureSupportedResultOk = featureSupportedResultOk &&
+                                            billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful()
+                                    }
 
                                     billingClient.endConnection()
 
-                                    val billingSupportedResultOk = billingResult.isSuccessful()
-
-                                    callback.onReceived(billingSupportedResultOk && featureSupportedResultOk)
+                                    callback.onReceived(featureSupportedResultOk)
                                 } catch (e: IllegalArgumentException) {
                                     // Play Services not available
                                     callback.onReceived(false)
