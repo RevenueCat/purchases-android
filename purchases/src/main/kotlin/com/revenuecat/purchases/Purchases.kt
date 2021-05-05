@@ -1889,10 +1889,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         return
                                     }
 
-                                    var featureSupportedResultOk = true
-                                    features.forEach {
-                                        featureSupportedResultOk = featureSupportedResultOk &&
-                                            billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful()
+                                    var featureSupportedResultOk = features.all {
+                                        billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful()
                                     }
 
                                     billingClient.endConnection()
