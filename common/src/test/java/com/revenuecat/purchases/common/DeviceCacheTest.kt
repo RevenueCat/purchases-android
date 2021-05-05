@@ -17,7 +17,9 @@ import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.PURCHASER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.stubSkuDetails
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -394,12 +396,15 @@ class DeviceCacheTest {
     @Test
     fun `caching offerings works`() {
         val productDetails = mockk<ProductDetails>().also {
-            every { it.sku } returns "onemonth_freetrial"
+            val productId = "onemonth_freetrial"
+            val stubSkuDetails = stubSkuDetails(productId = productId)
+            every { it.sku } returns productId
+            every { it.originalJson } returns JSONObject(stubSkuDetails.originalJson)
         }
         val packageObject = Package(
             "custom",
             PackageType.CUSTOM,
-            productDetails,
+            productDetails.skuDetails,
             "offering_a"
         )
         val offering = Offering(
