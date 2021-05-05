@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.utils
 
+import org.json.JSONObject
+
 object Responses {
-    const val validFullPurchaserResponse = """
+    val validFullPurchaserResponse = """
                 {
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
@@ -95,9 +97,9 @@ object Responses {
                     "management_url": "https://play.google.com/store/account/subscriptions"
                   }
                 }
-            """
+            """.removeJSONFormatting()
 
-    const val validEmptyPurchaserResponse = """
+    val validEmptyPurchaserResponse = """
                 {
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
@@ -112,9 +114,9 @@ object Responses {
                     "management_url": null
                   }
                 }
-            """
+            """.removeJSONFormatting()
 
-    const val subscriberAttributesErrorsPostReceiptResponse = """
+    val subscriberAttributesErrorsPostReceiptResponse = """
                {
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
@@ -182,26 +184,28 @@ object Responses {
                     }
                   }
                 } 
-            """
+            """.removeJSONFormatting()
 
-    const val internalServerErrorResponse = """
+    val internalServerErrorResponse = """
                 {
                     "code": 7110, 
                     "message": "Internal server error."
                 }
-            """
+            """.removeJSONFormatting()
 
-    const val invalidCredentialsErrorResponse = """
+    val invalidCredentialsErrorResponse = """
                 {
                     "code": 7225, 
                     "message": "Invalid credentials error."
                 }
-            """
+            """.removeJSONFormatting()
 
-    const val badRequestErrorResponse = """
+    val badRequestErrorResponse = """
                 {
                     "code": 7226, 
                     "message": "Missing required params."
                 }
-            """
+            """.removeJSONFormatting()
 }
+
+private fun String.removeJSONFormatting(): String = JSONObject(this).toString()

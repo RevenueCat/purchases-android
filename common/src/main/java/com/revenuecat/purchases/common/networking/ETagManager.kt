@@ -2,6 +2,9 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONObject
 import java.net.HttpURLConnection
 
@@ -41,6 +44,31 @@ class ETagManager(
     ): Map<String, String> {
         val eTagHeader = ETAG_HEADER_NAME to if (refreshETag) "" else getETag(path)
         return mapOf(eTagHeader)
+    }
+
+    internal fun getHTTPResultFromCacheOrBackend(
+        responseCode: Int,
+        payload: String,
+        connection: HttpURLConnection,
+        urlPathWithVersion: String,
+        refreshETag: Boolean
+    ): HTTPResult? {
+        val resultFromBackend = HTTPResult(responseCode, payload)
+        connection.getETagHeader()?.let { eTagInResponse ->
+            if (shouldUseCachedVersion(responseCode)) {
+                val storedResult = getStoredResult(urlPathWithVersion)
+                return storedResult
+                    ?: if (refreshETag) {
+                        log(LogIntent.WARNING, NetworkStrings.ETAG_CALL_ALREADY_RETRIED.format(resultFromBackend))
+                        resultFromBackend
+                    } else {
+                        null
+                    }
+            }
+
+            storeBackendResultIfNoError(urlPathWithVersion, resultFromBackend, eTagInResponse)
+        }
+        return resultFromBackend
     }
 
     internal fun shouldUseCachedVersion(responseCode: Int) = responseCode == RCHTTPStatusCodes.NOT_MODIFIED
