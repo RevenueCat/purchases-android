@@ -9,6 +9,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.skuDetails
+import com.revenuecat.purchases.utils.stubSkuDetails
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -42,7 +44,7 @@ class OfferingsTest {
                     "offering"
                 )
         assertThat(packageToTest).isNotNull
-        assertThat(packageToTest!!.product).isEqualTo(products[monthlyProductIdentifier])
+        assertThat(packageToTest!!.product).isEqualTo(products[monthlyProductIdentifier]!!.skuDetails)
         assertThat(packageToTest.identifier).isEqualTo(PackageType.MONTHLY.identifier)
         assertThat(packageToTest.packageType).isEqualTo(PackageType.MONTHLY)
     }
@@ -228,8 +230,10 @@ class OfferingsTest {
         vararg productIdentifiers: String = arrayOf(monthlyProductIdentifier)
     ): Map<String, ProductDetails> =
         productIdentifiers.map { productIdentifier ->
+            val stubSkuDetails = stubSkuDetails(productId = productIdentifier)
             productIdentifier to mockk<ProductDetails>().also {
                 every { it.sku } returns productIdentifier
+                every { it.originalJson } returns JSONObject(stubSkuDetails.originalJson)
             }
         }.toMap()
 }

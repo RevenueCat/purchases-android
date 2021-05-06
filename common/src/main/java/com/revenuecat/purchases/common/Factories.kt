@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
@@ -203,7 +204,7 @@ fun JSONObject.createPackage(
     return products[getString("platform_product_identifier")]?.let { product ->
         val identifier = getString("identifier")
         val packageType = identifier.toPackageType()
-        return Package(identifier, packageType, product, offeringIdentifier)
+        return Package(identifier, packageType, product.skuDetails, offeringIdentifier)
     }
 }
 

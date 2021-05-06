@@ -168,15 +168,13 @@ class PurchasesTest {
     }
 
     private fun stubOfferings(sku: String): Pair<ProductDetails, Offerings> {
-        val productDetails = mockk<ProductDetails>().also {
-            every { it.sku } returns sku
-            every { it.type } returns ProductType.SUBS
-        }
+        val stubSkuDetails = stubSkuDetails(productId = sku, type = BillingClient.SkuType.SUBS)
+        val productDetails = stubSkuDetails.toProductDetails()
         val jsonObject = JSONObject(oneOfferingsResponse)
         val packageObject = Package(
             "\$rc_monthly",
             PackageType.MONTHLY,
-            productDetails,
+            stubSkuDetails,
             stubOfferingIdentifier
         )
         val offering = Offering(

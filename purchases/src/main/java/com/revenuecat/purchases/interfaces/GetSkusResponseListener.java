@@ -14,7 +14,6 @@ import java.util.List;
 /**
  * Interface to be implemented when making calls to fetch [SkuDetails]
  */
-@Deprecated
 public interface GetSkusResponseListener {
     /**
      * Will be called after SkuDetails have been fetched successfully

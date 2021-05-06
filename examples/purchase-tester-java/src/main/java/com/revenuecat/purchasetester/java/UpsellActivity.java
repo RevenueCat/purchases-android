@@ -9,6 +9,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.SkuDetails;
 import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Offerings;
@@ -16,6 +18,7 @@ import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.PurchaserInfo;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
+import com.revenuecat.purchases.interfaces.MakePurchaseListener;
 import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener;
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener;
@@ -90,7 +93,7 @@ public class UpsellActivity extends AppCompatActivity {
 
     private void setupPackageButton(@Nullable final Package aPackage, final Button button) {
         if (aPackage != null) {
-            ProductDetails product = aPackage.getProduct();
+            SkuDetails product = aPackage.getProduct();
             String loadedText = "Buy " + aPackage.getPackageType() + " - " + product.getPriceCurrencyCode() + " " + product.getPrice();
             button.setTag(loadedText);
             showLoading(button, false);
@@ -107,9 +110,9 @@ public class UpsellActivity extends AppCompatActivity {
 
     private void makePurchase(Package packageToPurchase, final Button button) {
         showLoading(button, true);
-        Purchases.getSharedInstance().purchasePackage(this, packageToPurchase, new PurchaseCallback() {
+        Purchases.getSharedInstance().purchasePackage(this, packageToPurchase, new MakePurchaseListener() {
             @Override
-            public void onCompleted(PurchaseDetails purchase, PurchaserInfo purchaserInfo) {
+            public void onCompleted(@NonNull Purchase purchase, @NonNull PurchaserInfo purchaserInfo) {
                 showLoading(button, false);
                 checkForProEntitlement(purchaserInfo);
             }
