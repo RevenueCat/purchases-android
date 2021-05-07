@@ -36,6 +36,7 @@ import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.google.toProductDetails
@@ -484,7 +485,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         message = "The listener has changed to accept a null Purchase on the onCompleted",
         replaceWith = ReplaceWith(
             expression = "Purchases.sharedInstance.purchasePackage(" +
-                "activity, packageToPurchase, upgradeInfo, ProductChangeListener)"
+                    "activity, packageToPurchase, upgradeInfo, ProductChangeListener)"
         )
     )
     fun purchasePackage(
@@ -1859,6 +1860,61 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
+         * Check if billing is supported for the current Play user (meaning IN-APP purchases are supported)
+         * and optionally, whether a list of specified feature types are supported. This method is asynchronous
+         * since it requires a connected BillingClient.
+         * @param context A context object that will be used to connect to the billing client
+         * @param feature A list of feature types to check for support. Feature types must be one of [BillingFeature]
+         *                 By default, is an empty list and no specific feature support will be checked.
+         * @param callback Callback that will be notified when the check is complete.
+         */
+        @JvmStatic
+        fun canMakePayments(
+            context: Context,
+            features: List<BillingFeature> = listOf(),
+            callback: Callback<Boolean>
+        ) {
+            BillingClient.newBuilder(context)
+                .enablePendingPurchases()
+                .setListener { _, _ -> }
+                .build()
+                .let { billingClient ->
+                    billingClient.startConnection(
+                        object : BillingClientStateListener {
+                            override fun onBillingSetupFinished(billingResult: BillingResult) {
+                                try {
+                                    if (!billingResult.isSuccessful()) {
+                                        callback.onReceived(false)
+                                        billingClient.endConnection()
+                                        return
+                                    }
+
+                                    var featureSupportedResultOk = features.all {
+                                        billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful()
+                                    }
+
+                                    billingClient.endConnection()
+
+                                    callback.onReceived(featureSupportedResultOk)
+                                } catch (e: IllegalArgumentException) {
+                                    // Play Services not available
+                                    callback.onReceived(false)
+                                }
+                            }
+
+                            override fun onBillingServiceDisconnected() {
+                                try {
+                                    billingClient.endConnection()
+                                } catch (e: IllegalArgumentException) {
+                                } finally {
+                                    callback.onReceived(false)
+                                }
+                            }
+                        })
+                }
+        }
+
+        /**
          * Check if billing is supported in the device. This method is asynchronous since it tries
          * to connect the billing client and checks for the result of the connection.
          * If billing is supported, IN-APP purchases are supported.
@@ -1867,6 +1923,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param context A context object that will be used to connect to the billing client
          * @param callback Callback that will be notified when the check is complete.
          */
+        @Deprecated(
+            message = "use canMakePayments instead",
+            replaceWith = ReplaceWith("canMakePayments(context, features, Callback<Boolean>)")
+        )
         @JvmStatic
         fun isBillingSupported(context: Context, callback: Callback<Boolean>) {
             BillingClient.newBuilder(context)
@@ -1880,8 +1940,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                 // It also means that IN-APP items are supported for purchasing
                                 try {
                                     billingClient.endConnection()
-                                    val resultIsOK =
-                                        billingResult.responseCode == BillingClient.BillingResponseCode.OK
+                                    val resultIsOK = billingResult.isSuccessful()
                                     callback.onReceived(resultIsOK)
                                 } catch (e: IllegalArgumentException) {
                                     // Play Services not available
@@ -1909,6 +1968,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param context A context object that will be used to connect to the billing client
          * @param callback Callback that will be notified when the check is complete.
          */
+        @Deprecated(
+            message = "use canMakePayments instead",
+            replaceWith = ReplaceWith("canMakePayments(context, features, Callback<Boolean>)")
+        )
         @JvmStatic
         fun isFeatureSupported(
             @BillingClient.FeatureType feature: String,
@@ -1924,11 +1987,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         object : BillingClientStateListener {
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
                                 try {
-                                    val featureSupportedResult =
-                                        billingClient.isFeatureSupported(feature)
+                                    val featureSupportedResult = billingClient.isFeatureSupported(feature)
                                     billingClient.endConnection()
-                                    val responseIsOK =
-                                        featureSupportedResult.responseCode == BillingClient.BillingResponseCode.OK
+                                    val responseIsOK = featureSupportedResult.isSuccessful()
                                     callback.onReceived(responseIsOK)
                                 } catch (e: IllegalArgumentException) {
                                     // Play Services not available
