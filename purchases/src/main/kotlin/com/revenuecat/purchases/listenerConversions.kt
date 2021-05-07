@@ -246,7 +246,8 @@ internal fun Purchases.purchaseProductWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
-fun Purchases.purchasePackageWith(
+@JvmSynthetic
+internal fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
     upgradeInfo: UpgradeInfo,
