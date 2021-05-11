@@ -5,8 +5,7 @@ Automatic Releasing
  1. Run `bundle exec fastlane bump_and_update_changelog version:X.Y.Z` (where X.Y.Z is the new version) to update the version number in `gradle.properties`, `Config.kt` and in `library/build.gradle`
  1. Commit the changes `git commit -am "Version X.Y.Z"` (where X.Y.Z is the new version)
  1. Make a PR, merge when approved
- 1. Pull main and develop
- 1. Update the main branch. You can do this by pushing develop to main.
+ 1. Pull develop
  1. Make a tag and push, the rest will be performed automatically by CircleCI. If the automation fails, you can revert
  to manually calling `bundle exec fastlane deploy`.
  1. Visit [Sonatype Nexus](https://oss.sonatype.org/)
