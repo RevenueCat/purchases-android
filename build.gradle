@@ -21,17 +21,8 @@ plugins {
     id "io.gitlab.arturbosch.detekt" version "1.7.2"
     id "com.github.kt3k.coveralls" version "2.10.0"
     id "com.savvasdalkitsis.module-dependency-graph" version "0.9"
-    id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
 }
 
-group = "com.revenuecat.purchases"
-version = "$VERSION_NAME"
-
-nexusPublishing {
-    repositories {
-        sonatype()
-    }
-}
 dependencies {
     detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:1.8.0"
 }
