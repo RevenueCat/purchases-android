@@ -60,18 +60,13 @@ platform :android do
       upload_assets: []
     )
     add_git_tag(
-      tag: "latest-test",
+      tag: "latest",
       force: true,
       grouping: "releases"
     )
-  end
-
-  desc "Make github release test"
-  lane :github_release_test do |options|
-    add_git_tag(
-      tag: "latest-test",
-      force: true,
-      grouping: "releases"
+    push_git_tags(
+      tag: "latest",
+      force: true
     )
   end
 
