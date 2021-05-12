@@ -273,36 +273,6 @@ class Backend(
         return Uri.encode(string)
     }
 
-    fun postAttributionData(
-        appUserID: String,
-        network: AttributionNetwork,
-        data: JSONObject,
-        onSuccessHandler: () -> Unit
-    ) {
-        if (data.length() == 0) return
-
-        val body = mapOf(
-            "network" to network.serverValue,
-            "data" to data
-        )
-
-        enqueue(object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPResult {
-                return httpClient.performRequest(
-                    "/subscribers/" + encode(appUserID) + "/attribution",
-                    body,
-                    authenticationHeaders
-                )
-            }
-
-            override fun onCompletion(result: HTTPResult) {
-                if (result.isSuccessful()) {
-                    onSuccessHandler()
-                }
-            }
-        })
-    }
-
     fun createAlias(
         appUserID: String,
         newAppUserID: String,

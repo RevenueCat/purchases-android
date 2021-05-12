@@ -1144,9 +1144,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                     jsonObject.put("rc_attribution_network_id", networkUserId)
 
-                    backend.postAttributionData(appUserID, network, jsonObject) {
-                        deviceCache.cacheAttributionData(network, appUserID, newCacheValue)
-                    }
+                    subscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
+                        jsonObject,
+                        network,
+                        appUserID
+                    )
+                    deviceCache.cacheAttributionData(network, appUserID, newCacheValue)
                 }
             }
         }

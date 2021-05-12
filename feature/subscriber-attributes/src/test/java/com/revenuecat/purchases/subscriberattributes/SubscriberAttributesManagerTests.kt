@@ -25,6 +25,7 @@ class SubscriberAttributesManagerTests {
     private val mockDeviceCache: SubscriberAttributesCache = mockk()
     private val mockBackend: SubscriberAttributesPoster = mockk()
     private val mockAttributionFetcher: AttributionFetcher = mockk()
+    private val mockAttributionDataMigrator: AttributionDataMigrator = mockk()
     private val appUserID: String = "appUserID"
     private lateinit var underTest: SubscriberAttributesManager
 
@@ -33,7 +34,8 @@ class SubscriberAttributesManagerTests {
         underTest = SubscriberAttributesManager(
             mockDeviceCache,
             mockBackend,
-            mockAttributionFetcher
+            mockAttributionFetcher,
+            mockAttributionDataMigrator
         )
     }
 
