@@ -7,7 +7,7 @@ buildscript {
     repositories {
         jcenter()
         google()
-        maven { url "http://oss.sonatype.org/content/repositories/snapshots/" }
+        mavenCentral()
     }
     dependencies {
         classpath "com.vanniktech:gradle-maven-publish-plugin:0.15.1"
