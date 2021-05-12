@@ -70,26 +70,47 @@ platform :android do
     )
   end
 
-  desc "Deploy a release"
-  lane :deploy do |options|
+  desc "Upload a release"
+  lane :upload_release do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
     is_snapshot_version = version.end_with?("-SNAPSHOT")
     puts "Deploying #{version}"
     gradle(
       tasks: [
-          "androidSourcesJar", "androidJavadocsJar", "uploadArchives"
+          "androidSourcesJar", "androidJavadocsJar", "publish"
       ],
       properties: {
         "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
         "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
         "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
-        "SONATYPE_NEXUS_USERNAME" => ENV['SONATYPE_NEXUS_USERNAME'],
-        "SONATYPE_NEXUS_PASSWORD" => ENV['SONATYPE_NEXUS_PASSWORD'],
+        "SONATYPE_NEXUS_USERNAME" => ENV['SONATYPE_NEXUS_TOKEN_USERNAME'],
+        "SONATYPE_NEXUS_PASSWORD" => ENV['SONATYPE_NEXUS_TOKEN_PASSWORD'],
         "RELEASE_SIGNING_ENABLED" => true,
       }
     )
     if !is_snapshot_version then github_release(version: version) end
   end
+
+    desc "Upload and close a release"
+    lane :upload_and_close_release do |options|
+      version = android_get_version_name(gradle_file: gradle_file_path)
+      is_snapshot_version = version.end_with?("-SNAPSHOT")
+      puts "Deploying #{version}"
+      gradle(
+        tasks: [
+            "androidSourcesJar", "androidJavadocsJar", "publish", "closeAndReleaseRepository"
+        ],
+        properties: {
+          "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
+          "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
+          "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
+          "SONATYPE_NEXUS_USERNAME" => ENV['SONATYPE_NEXUS_TOKEN_USERNAME'],
+          "SONATYPE_NEXUS_PASSWORD" => ENV['SONATYPE_NEXUS_TOKEN_PASSWORD'],
+          "RELEASE_SIGNING_ENABLED" => true,
+        }
+      )
+      if !is_snapshot_version then github_release(version: version) end
+    end
 
   desc "Prepare next version"
   lane :prepare_next_version do |options|

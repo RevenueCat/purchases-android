@@ -7,12 +7,7 @@ Automatic Releasing
  1. Make a PR, merge when approved
  1. Pull develop
  1. Make a tag and push, the rest will be performed automatically by CircleCI. If the automation fails, you can revert
- to manually calling `bundle exec fastlane deploy`.
- 1. Visit [Sonatype Nexus](https://oss.sonatype.org/)
- 1. Click on Staging Repositories on the left side
- 1. Scroll down to find the purchase repository
- 1. Select and click "Close" from the top menu. Why is it called close?
- 1. Once close is complete, press the "Release" button. It's safe to choose "Automatically drop".
+ to manually calling `bundle exec fastlane upload_release`.
 
 Hotfix Releases
 =========
