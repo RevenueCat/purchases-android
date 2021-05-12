@@ -18,13 +18,13 @@ buildscript {
 }
 
 plugins {
-    id "io.gitlab.arturbosch.detekt" version "1.7.2"
+    id "io.gitlab.arturbosch.detekt" version "1.17.0-RC3"
     id "com.github.kt3k.coveralls" version "2.10.0"
     id "com.savvasdalkitsis.module-dependency-graph" version "0.9"
 }
 
 dependencies {
-    detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:1.8.0"
+    detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:1.17.0-RC3"
 }
 
 allprojects {
