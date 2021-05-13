@@ -7,7 +7,6 @@ buildscript {
     repositories {
         mavenCentral()
         google()
-        mavenCentral()
     }
     dependencies {
         classpath "com.vanniktech:gradle-maven-publish-plugin:0.15.1"
