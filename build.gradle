@@ -5,9 +5,8 @@ buildscript {
     ext.billingVersion = "3.0.2"
     ext.lifecycleVersion = "2.3.0-rc01"
     repositories {
-        jcenter()
-        google()
         mavenCentral()
+        google()
     }
     dependencies {
         classpath "com.vanniktech:gradle-maven-publish-plugin:0.15.1"
@@ -18,18 +17,18 @@ buildscript {
 }
 
 plugins {
-    id "io.gitlab.arturbosch.detekt" version "1.7.2"
+    id "io.gitlab.arturbosch.detekt" version "1.17.0-RC3"
     id "com.github.kt3k.coveralls" version "2.10.0"
     id "com.savvasdalkitsis.module-dependency-graph" version "0.9"
 }
 
 dependencies {
-    detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:1.8.0"
+    detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:1.17.0-RC3"
 }
 
 allprojects {
     repositories {
-        jcenter()
+        mavenCentral()
         google()
     }
 }
