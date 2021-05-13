@@ -141,7 +141,7 @@ jobs:
           name: Invalidate CloudFront caches
           command: aws cloudfront create-invalidation --distribution-id EPTW7F3CB566V --paths "/*"
 
-  upload-release:
+  deploy:
     executor: android-executor
     steps:
       - checkout
@@ -158,29 +158,7 @@ jobs:
             if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
               echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
             else
-              bundle exec fastlane android upload_release
-            fi
-      - android-wordpress-orb/save-gradle-cache
-      - android/save-build-cache
-
-  upload-and-close-release:
-    executor: android-executor
-    steps:
-      - checkout
-      - setup-git-credentials
-      - trust-github-key
-      - install-gems
-      - prepare-signing-key
-      - android-wordpress-orb/restore-gradle-cache
-      - android/restore-build-cache
-      - download-amazon-dependency
-      - run:
-          name: Deployment
-          command: |
-            if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
-              echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
-            else
-              bundle exec fastlane android upload_release
+              bundle exec fastlane android deploy
             fi
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
@@ -216,7 +194,7 @@ jobs:
             if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
               echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
             else
-              bundle exec fastlane android upload_release
+              bundle exec fastlane android deploy_snapshot
             fi
       - android-wordpress-orb/save-gradle-cache
 
@@ -330,7 +308,7 @@ workflows:
 
   deploy:
     jobs:
-      - upload-release: *release-tags
+      - deploy: *release-tags
       - prepare-next-version: *release-tags
       - deploy-snapshot:
           filters:

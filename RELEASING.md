@@ -7,7 +7,7 @@ Automatic Releasing
  1. Make a PR, merge when approved
  1. Pull develop
  1. Make a tag and push, the rest will be performed automatically by CircleCI. If the automation fails, you can revert
- to manually calling `bundle exec fastlane upload_release`.
+ to manually calling `bundle exec fastlane deploy`.
 
 Hotfix Releases
 =========
