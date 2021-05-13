@@ -117,7 +117,7 @@ platform :android do
   lane :deploy_snapshot do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
     is_snapshot_version = version.end_with?("-SNAPSHOT")
-    if !is_snapshot_version then return end
+    if !is_snapshot_version then next end
     deploy
   end
 
