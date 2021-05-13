@@ -40,7 +40,12 @@ Make github release
 ```
 fastlane android deploy
 ```
-Deploy a release
+Upload and close a release
+### android deploy_snapshot
+```
+fastlane android deploy_snapshot
+```
+Upload a snapshot release
 ### android prepare_next_version
 ```
 fastlane android prepare_next_version
