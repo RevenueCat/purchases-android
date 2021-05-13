@@ -39,6 +39,34 @@ platform :android do
     attach_changelog_to_main(options)
   end
 
+  desc "Tag release version with latest if necessary"
+  lane :tag_release_with_latest_if_needed do |options|
+    release_version = options[:release_version]
+
+    lines_in_changelog = File.open("../CHANGELOG.md").to_a
+    first_line = lines_in_changelog.first
+    latest_version = first_line.split("## ").last.chomp
+    puts "Latest version is #{latest_version}"
+
+    if latest_version == release_version then
+      latest_version_commit = sh("git", "rev-list", "--tags=#{latest_version}*", "--max-count=1").chomp
+      puts "Tagging #{latest_version}, with commit #{latest_version_commit} with latest"
+
+      add_git_tag(
+        tag: "latest",
+        force: true,
+        grouping: "releases",
+        commit: latest_version_commit
+      )
+      push_git_tags(
+        tag: "latest",
+        force: true
+      )
+    else
+      puts "There's a more recent version. Skipping tagging."
+    end
+  end
+
   desc "Make github release"
   lane :github_release do |options|
     release_version = options[:version]
@@ -59,15 +87,8 @@ platform :android do
       commitish: "main",
       upload_assets: []
     )
-    add_git_tag(
-      tag: "latest",
-      force: true,
-      grouping: "releases"
-    )
-    push_git_tags(
-      tag: "latest",
-      force: true
-    )
+
+    tag_release_with_latest_if_needed(release_version: release_version)
   end
 
   desc "Upload and close a release"
