@@ -1,14 +1,18 @@
 release-tags-and-branches: &release-tags-and-branches
   filters:
     tags:
-      ignore: /^.*-SNAPSHOT/
+      ignore:
+        - /^.*-SNAPSHOT/
+        - latest
     branches:
       only: /^release\/.*/
 
 release-tags: &release-tags
   filters:
     tags:
-      ignore: /^.*-SNAPSHOT/
+      ignore:
+        - /^.*-SNAPSHOT/
+        - latest
     branches:
       ignore: /.*/
 
