@@ -4,71 +4,126 @@ import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONObject
 
+internal object AttributionKeys {
+    const val IDFA = "rc_idfa"
+    const val IDFV = "rc_idfv"
+    const val IP = "rc_ip_address"
+    const val GPS_AD_ID = "rc_gps_adid"
+    const val NETWORK_ID = "rc_attribution_network_id"
+    internal object Adjust {
+        const val ID = "adid"
+        const val NETWORK = "network"
+        const val CAMPAIGN = "campaign"
+        const val AD_GROUP = "adgroup"
+        const val CREATIVE = "creative"
+    }
+    internal object AppsFlyer {
+        const val ID = "rc_appsflyer_id"
+        const val CAMPAIGN = "campaign"
+        const val CHANNEL = "af_channel"
+        const val MEDIA_SOURCE = "media_source"
+        const val ADSET = "adset"
+        const val AD = "af_ad"
+        const val AD_GROUP = "adgroup"
+        const val AD_KEYWORDS = "af_keywords"
+        const val AD_ID = "ad_id"
+        const val DATA_KEY = "data"
+        const val STATUS_KEY = "status"
+    }
+    internal object Branch {
+        const val CAMPAIGN = "campaign"
+        const val CHANNEL = "channel"
+    }
+    internal object MParticle {
+        const val ID = "mpid"
+    }
+}
+
 class AttributionDataMigrator {
 
     fun convertAttributionDataToSubscriberAttributes(
         data: JSONObject,
         network: AttributionNetwork
     ): Map<String, String> {
+        if (network == AttributionNetwork.APPSFLYER) {
+            val innerDataJSONObject = data.optJSONObject(AttributionKeys.AppsFlyer.DATA_KEY)
+            if (data.has(AttributionKeys.AppsFlyer.STATUS_KEY) && innerDataJSONObject != null) {
+                val keys = innerDataJSONObject.keys()
+
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    data.put(key, innerDataJSONObject[key])
+                }
+            }
+        }
+
         val mappingOfCommonAttribution: Map<Any, String> = mapOf(
-            "rc_idfa" to SPECIAL_KEY_IDFA,
-            "rc_idfv" to SPECIAL_KEY_IDFV,
-            "rc_ip_address" to SPECIAL_KEY_IP,
-            "rc_gps_adid" to SPECIAL_KEY_GPS_AD_ID
+            AttributionKeys.IDFA to SPECIAL_KEY_IDFA,
+            AttributionKeys.IDFV to SPECIAL_KEY_IDFV,
+            AttributionKeys.IP to SPECIAL_KEY_IP,
+            AttributionKeys.GPS_AD_ID to SPECIAL_KEY_GPS_AD_ID
         )
 
         val commonSubscriberAttributes = data.convertToSubscriberAttributes(mappingOfCommonAttribution)
 
         val networkSpecificSubscriberAttributes: Map<String, String> = when (network) {
             AttributionNetwork.ADJUST -> {
-                val mapping: Map<Any, String> = mapOf(
-                    ("adid" or "rc_attribution_network_id") to SPECIAL_KEY_ADJUST_ID,
-                    "network" to SPECIAL_KEY_MEDIA_SOURCE,
-                    "campaign" to SPECIAL_KEY_CAMPAIGN,
-                    "adgroup" to SPECIAL_KEY_AD_GROUP,
-                    "creative" to SPECIAL_KEY_CREATIVE,
-                )
-                data.convertToSubscriberAttributes(mapping)
+                convertAdjustAttribution(data)
             }
             AttributionNetwork.APPSFLYER -> {
-                val innerDataJSONObject = data.optJSONObject("data")
-                if (data.has("status") && innerDataJSONObject != null) {
-                    val keys = innerDataJSONObject.keys()
-
-                    while (keys.hasNext()) {
-                        val key = keys.next()
-                        data.put(key, innerDataJSONObject[key])
-                    }
-                }
-                val mapping: Map<Any, String> = mapOf(
-                    ("rc_appsflyer_id" or "rc_attribution_network_id") to SPECIAL_KEY_APPSFLYER_ID,
-                    ("af_channel" or "media_source") to SPECIAL_KEY_MEDIA_SOURCE,
-                    "campaign" to SPECIAL_KEY_CAMPAIGN,
-                    "adset" to SPECIAL_KEY_AD_GROUP,
-                    ("af_ad" or "adgroup") to SPECIAL_KEY_AD,
-                    "af_keywords" to SPECIAL_KEY_KEYWORD,
-                    "ad_id" to SPECIAL_KEY_CREATIVE
-                )
-                data.convertToSubscriberAttributes(mapping)
+                convertAppsFlyerAttribution(data)
             }
             AttributionNetwork.BRANCH -> {
-                val mapping: Map<Any, String> = mapOf(
-                    "channel" to SPECIAL_KEY_MEDIA_SOURCE,
-                    "campaign" to SPECIAL_KEY_CAMPAIGN
-                )
-                data.convertToSubscriberAttributes(mapping)
+                convertBranchAttribution(data)
             }
             AttributionNetwork.MPARTICLE -> {
-                val mapping: Map<Any, String> = mapOf(
-                    ("mpid" or "rc_attribution_network_id") to SPECIAL_KEY_MPARTICLE_ID,
-                )
-                data.convertToSubscriberAttributes(mapping)
+                convertMParticleAttribution(data)
             }
             AttributionNetwork.TENJIN,
             AttributionNetwork.FACEBOOK -> { emptyMap() }
         }
 
         return commonSubscriberAttributes + networkSpecificSubscriberAttributes
+    }
+
+    private fun convertMParticleAttribution(data: JSONObject): Map<String, String> {
+        val mapping: Map<Any, String> = mapOf(
+            (AttributionKeys.MParticle.ID or AttributionKeys.NETWORK_ID) to SPECIAL_KEY_MPARTICLE_ID,
+        )
+        return data.convertToSubscriberAttributes(mapping)
+    }
+
+    private fun convertBranchAttribution(data: JSONObject): Map<String, String> {
+        val mapping: Map<Any, String> = mapOf(
+            AttributionKeys.Branch.CHANNEL to SPECIAL_KEY_MEDIA_SOURCE,
+            AttributionKeys.Branch.CAMPAIGN to SPECIAL_KEY_CAMPAIGN
+        )
+        return data.convertToSubscriberAttributes(mapping)
+    }
+
+    private fun convertAppsFlyerAttribution(data: JSONObject): Map<String, String> {
+        val mapping: Map<Any, String> = mapOf(
+            (AttributionKeys.AppsFlyer.ID or AttributionKeys.NETWORK_ID) to SPECIAL_KEY_APPSFLYER_ID,
+            (AttributionKeys.AppsFlyer.CHANNEL or AttributionKeys.AppsFlyer.MEDIA_SOURCE)
+                to SPECIAL_KEY_MEDIA_SOURCE,
+            AttributionKeys.AppsFlyer.CAMPAIGN to SPECIAL_KEY_CAMPAIGN,
+            AttributionKeys.AppsFlyer.ADSET to SPECIAL_KEY_AD_GROUP,
+            (AttributionKeys.AppsFlyer.AD or AttributionKeys.AppsFlyer.AD_GROUP) to SPECIAL_KEY_AD,
+            AttributionKeys.AppsFlyer.AD_KEYWORDS to SPECIAL_KEY_KEYWORD,
+            AttributionKeys.AppsFlyer.AD_ID to SPECIAL_KEY_CREATIVE
+        )
+        return data.convertToSubscriberAttributes(mapping)
+    }
+
+    private fun convertAdjustAttribution(data: JSONObject): Map<String, String> {
+        val mapping: Map<Any, String> = mapOf(
+            (AttributionKeys.Adjust.ID or AttributionKeys.NETWORK_ID) to SPECIAL_KEY_ADJUST_ID,
+            AttributionKeys.Adjust.NETWORK to SPECIAL_KEY_MEDIA_SOURCE,
+            AttributionKeys.Adjust.CAMPAIGN to SPECIAL_KEY_CAMPAIGN,
+            AttributionKeys.Adjust.AD_GROUP to SPECIAL_KEY_AD_GROUP,
+            AttributionKeys.Adjust.CREATIVE to SPECIAL_KEY_CREATIVE,
+        )
+        return data.convertToSubscriberAttributes(mapping)
     }
 
     private fun JSONObject.convertToSubscriberAttributes(
@@ -78,12 +133,14 @@ class AttributionDataMigrator {
         mapping.forEach { (attributionKey, specialSubscriberAttribute) ->
             when (attributionKey) {
                 is String -> {
-                    this.optNullableString(attributionKey)?.let { subscriberAttributes[specialSubscriberAttribute] = it }
-                }
-                is Pair<*, *> -> {
-                    (this.optNullableString(attributionKey.first as String) ?: this.optNullableString(attributionKey.second as String))?.let {
+                    this.optNullableString(attributionKey)?.let {
                         subscriberAttributes[specialSubscriberAttribute] = it
                     }
+                }
+                is Pair<*, *> -> {
+                    val firstOption = this.optNullableString(attributionKey.first as String)
+                    val secondOption = this.optNullableString(attributionKey.second as String)
+                    (firstOption ?: secondOption)?.let { subscriberAttributes[specialSubscriberAttribute] = it }
                 }
             }
         }
@@ -91,5 +148,4 @@ class AttributionDataMigrator {
     }
 
     private infix fun <A, B> A.or(that: B): Pair<A, B> = to(that)
-
 }
