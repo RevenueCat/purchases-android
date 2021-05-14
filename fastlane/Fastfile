@@ -43,14 +43,16 @@ platform :android do
   lane :tag_release_with_latest_if_needed do |options|
     release_version = options[:release_version]
 
-    lines_in_changelog = File.open("../CHANGELOG.md").to_a
-    first_line = lines_in_changelog.first
-    latest_version = first_line.split("## ").last.chomp
+    current_branch = git_branch
+    sh("git", "checkout", "tags/latest")
+    latest_version = android_get_version_name(gradle_file: gradle_file_path)
+    sh("git", "checkout", current_branch)
+
     puts "Latest version is #{latest_version}"
 
-    if latest_version == release_version then
-      latest_version_commit = sh("git", "rev-list", "--tags=#{latest_version}*", "--max-count=1").chomp
-      puts "Tagging #{latest_version}, with commit #{latest_version_commit} with latest"
+    if Gem::Version.new(release_version) > Gem::Version.new(latest_version)
+      latest_version_commit = sh("git", "rev-list", "--tags=#{release_version}*", "--max-count=1").chomp
+      puts "Tagging #{release_version}, with commit #{latest_version_commit} with latest"
 
       add_git_tag(
         tag: "latest",
