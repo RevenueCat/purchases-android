@@ -95,7 +95,6 @@ platform :android do
   desc "Upload and close a release"
   lane :deploy do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
-  	is_snapshot_version = version.end_with?("-SNAPSHOT")
   	gradleProperties = {
   	  "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
   		"signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
@@ -117,15 +116,13 @@ platform :android do
   		],
   		properties: gradleProperties
   	)
-  	if !is_snapshot_version then github_release(version: version) end
+  	github_release(version: version) unless is_snapshot_version?(version)
   end
 
   desc "Upload a snapshot release"
   lane :deploy_snapshot do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
-    is_snapshot_version = version.end_with?("-SNAPSHOT")
-    if !is_snapshot_version then next end
-    deploy
+    deploy unless is_snapshot_version?(version)
   end
 
   desc "Prepare next version"
@@ -176,4 +173,8 @@ def attach_changelog_to_main(options)
     puts "going to save. Contents - #{whole_file_data}"
     master_changelog_write_mode.write(whole_file_data)
   }
+end
+
+def is_snapshot_version?(version_name)
+    version.end_with?("-SNAPSHOT")
 end
