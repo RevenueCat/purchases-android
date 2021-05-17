@@ -50,23 +50,22 @@ platform :android do
 
     puts "Latest version is #{latest_version}"
 
-    if Gem::Version.new(release_version) > Gem::Version.new(latest_version)
-      latest_version_commit = sh("git", "rev-list", "--tags=#{release_version}*", "--max-count=1").chomp
-      puts "Tagging #{release_version}, with commit #{latest_version_commit} with latest"
-
-      add_git_tag(
-        tag: "latest",
-        force: true,
-        grouping: "releases",
-        commit: latest_version_commit
-      )
-      push_git_tags(
-        tag: "latest",
-        force: true
-      )
-    else
+    unless Gem::Version.new(release_version) > Gem::Version.new(latest_version)
       puts "There's a more recent version. Skipping tagging."
     end
+    latest_version_commit = sh("git", "rev-list", "--tags=#{release_version}*", "--max-count=1").chomp
+    puts "Tagging #{release_version}, with commit #{latest_version_commit} with latest"
+
+    add_git_tag(
+      tag: "latest",
+      force: true,
+      grouping: "releases",
+      commit: latest_version_commit
+    )
+    push_git_tags(
+      tag: "latest",
+      force: true
+    )
   end
 
   desc "Make github release"
