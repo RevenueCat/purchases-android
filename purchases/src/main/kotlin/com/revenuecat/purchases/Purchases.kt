@@ -1869,6 +1869,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @param callback Callback that will be notified when the check is complete.
          */
         @JvmStatic
+        @JvmOverloads
         fun canMakePayments(
             context: Context,
             features: List<BillingFeature> = listOf(),
