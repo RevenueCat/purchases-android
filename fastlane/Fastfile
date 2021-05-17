@@ -95,28 +95,28 @@ platform :android do
   desc "Upload and close a release"
   lane :deploy do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
-  	gradleProperties = {
-  	  "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
-  		"signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
-  		"signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
-  		"mavenCentralUsername" => ENV['SONATYPE_NEXUS_TOKEN_USERNAME'],
-  		"mavenCentralPassword" => ENV['SONATYPE_NEXUS_TOKEN_PASSWORD'],
-  		"RELEASE_SIGNING_ENABLED" => true
-  	}
-  	puts "Deploying #{version}"
-  	gradle(
-  		tasks: [
-  			"androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
-  		],
-  		properties: gradleProperties
-  	)
-  	gradle(
-  		tasks: [
-  			"closeAndReleaseRepository"
-  		],
-  		properties: gradleProperties
-  	)
-  	github_release(version: version) unless is_snapshot_version?(version)
+    gradleProperties = {
+      "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
+      "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
+      "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
+      "mavenCentralUsername" => ENV['SONATYPE_NEXUS_TOKEN_USERNAME'],
+      "mavenCentralPassword" => ENV['SONATYPE_NEXUS_TOKEN_PASSWORD'],
+      "RELEASE_SIGNING_ENABLED" => true
+    }
+    puts "Deploying #{version}"
+    gradle(
+      tasks: [
+  	    "androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
+      ],
+    properties: gradleProperties
+    )
+    gradle(
+      tasks: [
+        "closeAndReleaseRepository"
+      ],
+      properties: gradleProperties
+    )
+    github_release(version: version) unless is_snapshot_version?(version)
   end
 
   desc "Upload a snapshot release"
@@ -176,5 +176,5 @@ def attach_changelog_to_main(options)
 end
 
 def is_snapshot_version?(version_name)
-    version.end_with?("-SNAPSHOT")
+  version.end_with?("-SNAPSHOT")
 end
