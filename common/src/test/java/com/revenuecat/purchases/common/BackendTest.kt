@@ -341,62 +341,21 @@ class BackendTest {
     }
 
     @Test
-    fun canPostBasicAttributionData() {
-        val path = "/subscribers/$appUserID/attribution"
-
-        val `object` = JSONObject()
-        `object`.put("string", "value")
-
-        val expectedBody = JSONObject()
-        expectedBody.put("network", AttributionNetwork.APPSFLYER)
-        expectedBody.put("data", `object`)
-
-        backend.postAttributionData(appUserID, AttributionNetwork.APPSFLYER, `object`) {
-
-        }
-
-        val headers = HashMap<String, String>()
-        headers["Authorization"] = "Bearer $API_KEY"
-        val slot = slot<Map<String, Any?>>()
-        verify {
-            mockClient.performRequest(
-                eq(path),
-                capture(slot),
-                eq(headers)
-            )
-        }
-        val captured = slot.captured
-        assertThat(captured.containsKey("network") && captured.containsKey("data") &&
-                captured["network"] == AttributionNetwork.APPSFLYER.serverValue).isTrue()
-    }
-
-    @Test
-    fun doesntPostEmptyAttributionData() {
-        backend.postAttributionData(
-            appUserID,
-            AttributionNetwork.APPSFLYER,
-            JSONObject()
-        ) {}
-        verify {
-            mockClient wasNot Called
-        }
-    }
-
-    @Test
     fun encodesAppUserId() {
         val encodeableUserID = "userid with spaces"
 
         val encodedUserID = "userid%20with%20spaces"
-        val path = "/subscribers/$encodedUserID/attribution"
+        val path = "/subscribers/$encodedUserID/offerings"
 
         val `object` = JSONObject()
         `object`.put("string", "value")
 
-        backend.postAttributionData(
+        backend.getOfferings(
             encodeableUserID,
-            AttributionNetwork.APPSFLYER,
-            `object`
-        ) { }
+            appInBackground = false,
+            onSuccess = {},
+            onError = {}
+        )
 
         verify {
             mockClient.performRequest(
@@ -409,11 +368,21 @@ class BackendTest {
 
     @Test
     fun doesntDispatchIfClosed() {
-        backend.postAttributionData("id", AttributionNetwork.APPSFLYER, JSONObject()) { }
+        backend.getOfferings(
+            appUserID = "id",
+            appInBackground = false,
+            onSuccess = {},
+            onError = {}
+        )
 
         backend.close()
 
-        backend.postAttributionData("id", AttributionNetwork.APPSFLYER, JSONObject()) { }
+        backend.getOfferings(
+            appUserID = "id",
+            appInBackground = false,
+            onSuccess = {},
+            onError = {}
+        )
     }
 
     @Test
