@@ -122,7 +122,7 @@ platform :android do
   desc "Upload a snapshot release"
   lane :deploy_snapshot do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
-    deploy unless is_snapshot_version?(version)
+    deploy unless !is_snapshot_version?(version)
   end
 
   desc "Prepare next version"
