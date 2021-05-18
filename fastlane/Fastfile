@@ -176,5 +176,5 @@ def attach_changelog_to_main(options)
 end
 
 def is_snapshot_version?(version_name)
-  version.end_with?("-SNAPSHOT")
+  version_name.end_with?("-SNAPSHOT")
 end
