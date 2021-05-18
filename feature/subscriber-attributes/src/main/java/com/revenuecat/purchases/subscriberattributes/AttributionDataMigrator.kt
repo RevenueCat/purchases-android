@@ -45,18 +45,6 @@ class AttributionDataMigrator {
         data: JSONObject,
         network: AttributionNetwork
     ): Map<String, String> {
-        if (network == AttributionNetwork.APPSFLYER) {
-            val innerDataJSONObject = data.optJSONObject(AttributionKeys.AppsFlyer.DATA_KEY)
-            if (data.has(AttributionKeys.AppsFlyer.STATUS_KEY) && innerDataJSONObject != null) {
-                val keys = innerDataJSONObject.keys()
-
-                while (keys.hasNext()) {
-                    val key = keys.next()
-                    data.put(key, innerDataJSONObject[key])
-                }
-            }
-        }
-
         val mappingOfCommonAttribution: Map<Any, String> = mapOf(
             AttributionKeys.IDFA to SPECIAL_KEY_IDFA,
             AttributionKeys.IDFV to SPECIAL_KEY_IDFV,
@@ -102,6 +90,15 @@ class AttributionDataMigrator {
     }
 
     private fun convertAppsFlyerAttribution(data: JSONObject): Map<String, String> {
+        val innerDataJSONObject = data.optJSONObject(AttributionKeys.AppsFlyer.DATA_KEY)
+        if (data.has(AttributionKeys.AppsFlyer.STATUS_KEY) && innerDataJSONObject != null) {
+            val keys = innerDataJSONObject.keys()
+
+            while (keys.hasNext()) {
+                val key = keys.next()
+                data.put(key, innerDataJSONObject[key])
+            }
+        }
         val mapping: Map<Any, String> = mapOf(
             (AttributionKeys.AppsFlyer.ID or AttributionKeys.NETWORK_ID) to SPECIAL_KEY_APPSFLYER_ID,
             (AttributionKeys.AppsFlyer.CHANNEL or AttributionKeys.AppsFlyer.MEDIA_SOURCE)

@@ -259,11 +259,25 @@ class AttributionDataMigratorTests {
 
     @Test
     fun `AppsFlyer attribution is properly converted if it's inside data inner json`() {
-        val innerJSONObject = getAppsFlyerJSON()
         val jsonObject = JSONObject().also {
             it.put("status", 1)
-            it.put("data", innerJSONObject)
         }
+        val innerJSONObject = getAppsFlyerJSON()
+        val innerJSONObjectClean = JSONObject()
+        val keys = innerJSONObject.keys()
+
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val value = innerJSONObject.get(key)
+            if (key.startsWith("rc_")) {
+                jsonObject.put(key, value)
+            } else {
+                innerJSONObjectClean.put(key, value)
+            }
+        }
+
+        jsonObject.put("data", innerJSONObjectClean)
+
         val converted =
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
@@ -275,6 +289,34 @@ class AttributionDataMigratorTests {
         assertThat(converted[SPECIAL_KEY_AD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
         assertThat(converted[SPECIAL_KEY_KEYWORD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
         assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
+    }
+
+    @Test
+    fun `AppsFlyer attribution is properly converted if it's inside data inner json and uses rc_network_id`() {
+        val jsonObject = JSONObject().also {
+            it.put("status", 1)
+        }
+        val innerJSONObject = getAppsFlyerJSON(addAppsFlyerId = false, addNetworkID = true)
+        val innerJSONObjectClean = JSONObject()
+        val keys = innerJSONObject.keys()
+
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val value = innerJSONObject.get(key)
+            if (key.startsWith("rc_")) {
+                jsonObject.put(key, value)
+            } else {
+                innerJSONObjectClean.put(key, value)
+            }
+        }
+
+        jsonObject.put("data", innerJSONObjectClean)
+
+        val converted =
+            underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
+        assertThat(converted).isNotNull
+        checkCommonAttributes(converted)
+        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.NETWORK_ID))
     }
 
     @Test
