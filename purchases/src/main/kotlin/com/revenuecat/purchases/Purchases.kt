@@ -66,6 +66,7 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.PurchaserInfoStrings
 import com.revenuecat.purchases.strings.RestoreStrings
+import com.revenuecat.purchases.subscriberattributes.AttributionDataMigrator
 import com.revenuecat.purchases.subscriberattributes.AttributionFetcher
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -1843,6 +1844,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                 val subscriberAttributesCache = SubscriberAttributesCache(cache)
                 val attributionFetcher = AttributionFetcher(dispatcher)
+                val attributionDataMigrator = AttributionDataMigrator()
                 return Purchases(
                     application,
                     appUserID,
@@ -1852,7 +1854,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     dispatcher,
                     IdentityManager(cache, subscriberAttributesCache, backend),
                     SubscriberAttributesManager(
-                        subscriberAttributesCache, subscriberAttributesPoster, attributionFetcher
+                        subscriberAttributesCache,
+                        subscriberAttributesPoster,
+                        attributionFetcher,
+                        attributionDataMigrator
                     ),
                     appConfig
                 ).also {
