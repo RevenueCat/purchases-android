@@ -5,8 +5,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesPerAppUserIDMap
+import com.revenuecat.purchases.utils.filterNotNullValues
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
@@ -15,6 +17,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -433,6 +436,45 @@ class SubscriberAttributesManagerTests {
             captured[SubscriberAttributeKey.AttributionIds.Facebook.backendKey]
         assertThat(facebookID).isNotNull
         assertThat(facebookID!!.value).isEqualTo("facebook_id")
+    }
+
+    @Test
+    fun `convertAttributionDataAndSetAsSubscriberAttributes converts and sets the attributes`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        val attributes = mapOf(
+            "tshirtsize" to "L",
+            "age" to "34",
+            "removeThis" to null
+        )
+        val attributesJSON = JSONObject().also { jsonObject ->
+            attributes.forEach { (t, u) ->
+                jsonObject.put(t, u ?: JSONObject.NULL)
+            }
+        }
+        val filteredNotNullValues = attributes.filterNotNullValues()
+        every {
+            mockAttributionDataMigrator.convertAttributionDataToSubscriberAttributes(
+                attributesJSON,
+                AttributionNetwork.FACEBOOK
+            )
+        } returns filteredNotNullValues
+
+        underTest.convertAttributionDataAndSetAsSubscriberAttributes(
+            attributesJSON,
+            AttributionNetwork.FACEBOOK,
+            appUserID
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+
+        filteredNotNullValues.forEach { (key, value) ->
+            val subscriberAttribute = captured[key] ?: error("Should be there")
+            assertThat(subscriberAttribute).isNotNull
+            assertThat(subscriberAttribute.key.backendKey).isEqualTo(key)
+            assertThat(subscriberAttribute.value).isEqualTo(value)
+        }
     }
 
     private fun mockAdvertisingInfo(
