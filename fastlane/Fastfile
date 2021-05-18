@@ -122,7 +122,7 @@ platform :android do
   desc "Upload a snapshot release"
   lane :deploy_snapshot do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
-    deploy unless !is_snapshot_version?(version)
+    deploy if is_snapshot_version?(version)
   end
 
   desc "Prepare next version"
@@ -140,13 +140,15 @@ platform :android do
     sh("git", "commit", "-am", "Preparing for next version")
     push_to_git_remote
 
-    create_pull_request(
+    pr_url = create_pull_request(
       repo: "revenuecat/purchases-android",
       title: "Prepare next version: #{next_version_snapshot}",
       base: "develop",
       api_token: ENV["GITHUB_TOKEN"],
       head: branch_name
     )
+
+    if pr_url.
   end
 end
 
