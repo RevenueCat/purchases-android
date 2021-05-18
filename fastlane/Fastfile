@@ -85,7 +85,7 @@ platform :android do
       name: release_version,
       tag_name: "#{release_version}",
       description: changelog,
-      commitish: "main",
+      commitish: "develop",
       upload_assets: []
     )
 
@@ -95,30 +95,34 @@ platform :android do
   desc "Upload and close a release"
   lane :deploy do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
-    is_snapshot_version = version.end_with?("-SNAPSHOT")
+    gradleProperties = {
+      "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
+      "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
+      "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
+      "mavenCentralUsername" => ENV['SONATYPE_NEXUS_TOKEN_USERNAME'],
+      "mavenCentralPassword" => ENV['SONATYPE_NEXUS_TOKEN_PASSWORD'],
+      "RELEASE_SIGNING_ENABLED" => true
+    }
     puts "Deploying #{version}"
     gradle(
       tasks: [
-          "androidSourcesJar", "androidJavadocJar", "publish", "closeAndReleaseRepository"
+  	    "androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
       ],
-      properties: {
-        "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
-        "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
-        "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
-        "mavenCentralUsername" => ENV['SONATYPE_NEXUS_TOKEN_USERNAME'],
-        "mavenCentralPassword" => ENV['SONATYPE_NEXUS_TOKEN_PASSWORD'],
-        "RELEASE_SIGNING_ENABLED" => true,
-      }
+    properties: gradleProperties
     )
-    if !is_snapshot_version then github_release(version: version) end
+    gradle(
+      tasks: [
+        "closeAndReleaseRepository"
+      ],
+      properties: gradleProperties
+    )
+    github_release(version: version) unless is_snapshot_version?(version)
   end
 
   desc "Upload a snapshot release"
   lane :deploy_snapshot do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
-    is_snapshot_version = version.end_with?("-SNAPSHOT")
-    if !is_snapshot_version then return end
-    deploy
+    deploy unless is_snapshot_version?(version)
   end
 
   desc "Prepare next version"
@@ -140,7 +144,8 @@ platform :android do
       repo: "revenuecat/purchases-android",
       title: "Prepare next version: #{next_version_snapshot}",
       base: "develop",
-      api_token: ENV["GITHUB_TOKEN"]
+      api_token: ENV["GITHUB_TOKEN"],
+      head: branch_name
     )
   end
 end
@@ -159,14 +164,17 @@ def attach_changelog_to_main(options)
   current_changelog_data = current_changelog.read
   master_changelog_data = master_changelog.read
 
-  current_changelog.close  
+  current_changelog.close
   master_changelog.close
 
   File.open("../CHANGELOG.md", 'w') { |master_changelog_write_mode|
     version_header = "## #{version_number}"
     whole_file_data = "#{version_header}\n\n#{current_changelog_data}\n#{master_changelog_data}"
     puts "going to save. Contents - #{whole_file_data}"
-    
     master_changelog_write_mode.write(whole_file_data)
   }
+end
+
+def is_snapshot_version?(version_name)
+  version.end_with?("-SNAPSHOT")
 end
