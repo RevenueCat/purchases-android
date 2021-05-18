@@ -106,17 +106,19 @@ platform :android do
     puts "Deploying #{version}"
     gradle(
       tasks: [
-  	    "androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
-      ],
-    properties: gradleProperties
-    )
-    gradle(
-      tasks: [
-        "closeAndReleaseRepository"
+        "androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
       ],
       properties: gradleProperties
     )
-    github_release(version: version) unless is_snapshot_version?(version)
+    unless is_snapshot_version?(version)
+      gradle(
+        tasks: [
+          "closeAndReleaseRepository"
+        ],
+        properties: gradleProperties
+      )
+      github_release(version: version)
+    end
   end
 
   desc "Upload a snapshot release"
