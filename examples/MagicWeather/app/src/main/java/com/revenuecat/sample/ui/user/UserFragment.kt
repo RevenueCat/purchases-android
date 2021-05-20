@@ -35,9 +35,14 @@ class UserFragment : Fragment() {
             restorePurchases()
         }
 
-        val identityButton: Button = root.findViewById(R.id.identityButton)
-        identityButton.setOnClickListener {
-            identityFlow()
+        val logInButton: Button = root.findViewById(R.id.logInButton)
+        logInButton.setOnClickListener {
+            logIn()
+        }
+
+        val logOutButton: Button = root.findViewById(R.id.logOutButton)
+        logOutButton.setOnClickListener {
+            logOut()
         }
 
         /*
@@ -65,14 +70,6 @@ class UserFragment : Fragment() {
             userStatusLabel.text = "Not Active"
             userStatusLabel.setTextColor(Color.RED)
         }
-
-        val identityButton: Button = root.findViewById(R.id.identityButton)
-
-        if (Purchases.sharedInstance.isAnonymous) {
-            identityButton.text = "Log In"
-        } else {
-            identityButton.text = "Log Out"
-        }
     }
 
     /*
@@ -94,32 +91,32 @@ class UserFragment : Fragment() {
 
     Read more about Identifying Users here: https://docs.revenuecat.com/docs/user-ids
      */
-    private fun identityFlow() {
-        if (Purchases.sharedInstance.isAnonymous) {
-            val view = layoutInflater.inflate(R.layout.dialog_login, null)
-            val input = view.findViewById<EditText>(R.id.username)
+    private fun logIn() {
+        val view = layoutInflater.inflate(R.layout.dialog_login, null)
+        val input = view.findViewById<EditText>(R.id.username)
 
-            val alert = AlertDialog.Builder(requireContext())
-                .setTitle("Log In")
-                .setView(view)
-                .setPositiveButton("Log In") { _, _ ->
-                    /*
-                    Call `identify` with the Purchases SDK with the unique user ID
-                     */
-                    Purchases.sharedInstance.logInWith(input.text.toString(),
-                            onError = { error ->
-                                buildError(context, error.message)
-                            },
-                            onSuccess = { info, created ->
-                                updateUserDetails(info)
-                            })
-                }
-                .setNegativeButton("Cancel") { _, _ -> }
-                .create()
+        val alert = AlertDialog.Builder(requireContext())
+            .setTitle("Log In")
+            .setView(view)
+            .setPositiveButton("Log In") { _, _ ->
+                /*
+                Call `identify` with the Purchases SDK with the unique user ID
+                 */
+                Purchases.sharedInstance.logInWith(input.text.toString(),
+                    onError = { error ->
+                        buildError(context, error.message)
+                    },
+                    onSuccess = { info, created ->
+                        updateUserDetails(info)
+                    })
+            }
+            .setNegativeButton("Cancel") { _, _ -> }
+            .create()
 
-            alert.show()
-        } else {
-            Purchases.sharedInstance.logOutWith {}
-        }
+        alert.show()
+    }
+
+    private fun logOut() {
+        Purchases.sharedInstance.logOutWith {}
     }
 }
