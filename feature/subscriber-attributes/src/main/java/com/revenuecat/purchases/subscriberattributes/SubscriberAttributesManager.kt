@@ -3,15 +3,18 @@ package com.revenuecat.purchases.subscriberattributes
 import android.app.Application
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import org.json.JSONObject
 
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
-    private val attributionFetcher: AttributionFetcher
+    private val attributionFetcher: AttributionFetcher,
+    private val attributionDataMigrator: AttributionDataMigrator
 ) {
 
     @Synchronized
@@ -93,7 +96,8 @@ class SubscriberAttributesManager(
         if (attributesToMarkAsSynced.isEmpty()) {
             return
         }
-        log(LogIntent.INFO, AttributionStrings.MARKING_ATTRIBUTES_SYNCED.format(appUserID) +
+        log(
+            LogIntent.INFO, AttributionStrings.MARKING_ATTRIBUTES_SYNCED.format(appUserID) +
                 attributesToMarkAsSynced.values.joinToString("\n")
         )
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)
@@ -136,6 +140,16 @@ class SubscriberAttributesManager(
             val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
             setAttributes(attributesToSet, appUserID)
         }
+    }
+
+    fun convertAttributionDataAndSetAsSubscriberAttributes(
+        jsonObject: JSONObject,
+        network: AttributionNetwork,
+        appUserID: String
+    ) {
+        val convertedAttribution =
+            attributionDataMigrator.convertAttributionDataToSubscriberAttributes(jsonObject, network)
+        setAttributes(convertedAttribution, appUserID)
     }
 
     private fun getDeviceIdentifiers(

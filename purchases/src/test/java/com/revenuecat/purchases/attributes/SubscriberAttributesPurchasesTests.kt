@@ -48,7 +48,6 @@ class SubscriberAttributesPurchasesTests {
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingAbstract>(relaxed = true)
     private lateinit var applicationMock: Application
-    private lateinit var dispatcherMock: Dispatcher
 
     private var postReceiptError: PostReceiptErrorContainer? = null
     private var postReceiptCompletion: PostReceiptCompletionContainer? = null
