@@ -31,6 +31,11 @@ Increment build number
 fastlane android bump_and_update_changelog
 ```
 Increment build number and update changelog
+### android tag_release_with_latest_if_needed
+```
+fastlane android tag_release_with_latest_if_needed
+```
+Tag release version with latest if necessary
 ### android github_release
 ```
 fastlane android github_release

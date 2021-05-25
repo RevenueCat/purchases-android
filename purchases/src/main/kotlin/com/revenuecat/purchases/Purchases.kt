@@ -1735,7 +1735,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
         /**
          * Singleton instance of Purchases. [configure] will set this
-         * @return A previously set singleton Purchases instance or null
+         * @return A previously set singleton Purchases instance
+         * @throws UninitializedPropertyAccessException if the shared instance has not been configured.
          */
         @JvmStatic
         var sharedInstance: Purchases
