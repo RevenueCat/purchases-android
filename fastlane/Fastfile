@@ -41,7 +41,7 @@ platform :android do
 
   desc "Tag release version with latest if necessary"
   lane :tag_release_with_latest_if_needed do |options|
-    release_version = options[:version]
+    release_version = options[:release_version]
     puts "Release version is #{release_version}"
 
     sh("git", "checkout", "tags/latest")
@@ -91,7 +91,7 @@ platform :android do
       upload_assets: []
     )
 
-    tag_release_with_latest_if_needed(options)
+    tag_release_with_latest_if_needed(release_version: release_version)
   end
 
   desc "Upload and close a release"
