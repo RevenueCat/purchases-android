@@ -42,16 +42,18 @@ platform :android do
   desc "Tag release version with latest if necessary"
   lane :tag_release_with_latest_if_needed do |options|
     release_version = options[:release_version]
+    puts "Release version is #{release_version}"
 
-    current_branch = git_branch
     sh("git", "checkout", "tags/latest")
     latest_version = android_get_version_name(gradle_file: gradle_file_path)
-    sh("git", "checkout", current_branch)
-
     puts "Latest version is #{latest_version}"
+
+    # We assume there's already a tag for the version we are tagging as latest
+    sh("git", "checkout", release_version)
 
     unless Gem::Version.new(release_version) > Gem::Version.new(latest_version)
       puts "There's a more recent version. Skipping tagging."
+      next
     end
     latest_version_commit = sh("git", "rev-list", "--tags=#{release_version}*", "--max-count=1").chomp
     puts "Tagging #{release_version}, with commit #{latest_version_commit} with latest"
@@ -140,7 +142,11 @@ platform :android do
     bump(version: next_version_snapshot)
 
     sh("git", "commit", "-am", "Preparing for next version")
-    push_to_git_remote
+    push_to_git_remote(
+      remote: "origin",
+      local_branch: branch_name,
+      remote_branch: branch_name,
+    )
 
     create_pull_request(
       repo: "revenuecat/purchases-android",
