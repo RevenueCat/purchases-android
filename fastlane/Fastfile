@@ -48,6 +48,7 @@ platform :android do
     latest_version = android_get_version_name(gradle_file: gradle_file_path)
     puts "Latest version is #{latest_version}"
 
+    # We assume there's already a tag for the version we are tagging as latest
     sh("git", "checkout", release_version)
 
     unless Gem::Version.new(release_version) > Gem::Version.new(latest_version)
