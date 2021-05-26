@@ -313,7 +313,8 @@ workflows:
   deploy:
     jobs:
       - deploy: *release-tags
-      - prepare-next-version: *release-tags
+      - prepare-next-version
+      #      - prepare-next-version: *release-tags
       - deploy-snapshot:
           filters:
             branches:
