@@ -283,11 +283,11 @@ class BillingWrapperTest {
             mockClient.launchBillingFlow(eq(activity), capture(slot))
         } answers {
             val params = slot.captured
-            assertThat(sku).isEqualTo(params.sku)
-            assertThat(skuType).isEqualTo(params.skuType)
-            assertThat(upgradeInfo.oldPurchase.sku).isEqualTo(params.oldSku)
-            assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(params.oldSkuPurchaseToken)
-            assertThat(upgradeInfo.prorationMode).isEqualTo(params.replaceSkusProrationMode)
+            val skuDetails1 = params.zzj()[0]
+            assertThat(sku).isEqualTo(skuDetails1.sku)
+            assertThat(skuType).isEqualTo(skuDetails1.type)
+            assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(params.zzh())
+            assertThat(upgradeInfo.prorationMode).isEqualTo(params.zzb())
             billingClientOKResult
         }
 
@@ -898,7 +898,7 @@ class BillingWrapperTest {
             listOf(purchaseHistoryRecord)
         )
         assertThat(recordFound).isNotNull
-        assertThat(recordFound!!.sku).isEqualTo(purchaseHistoryRecord.sku)
+        assertThat(recordFound!!.sku).isEqualTo(purchaseHistoryRecord.skus[0])
         assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
         assertThat(recordFound!!.purchaseToken).isEqualTo(purchaseHistoryRecord.purchaseToken)
     }
@@ -907,7 +907,7 @@ class BillingWrapperTest {
     fun `findPurchaseInPurchaseHistory returns error if not found`() {
         val sku = "aPurchase"
         val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
-            every { it.sku } returns sku + "somethingrandom"
+            every { it.skus[0] } returns sku + "somethingrandom"
         }
 
         var errorReturned: PurchasesError? = null
