@@ -18,37 +18,26 @@ dependencies {
     testImplementation project(":test-utils")
 }
 
-task getAmazonLibrary {
+task downloadAmazonZipFile(type: Download) {
+    src 'https://amzndevresources.com/iap/sdk/AmazonInAppPurchasing_Android.zip'
+    dest new File(buildDir, 'download.zip')
+}
+
+task getAmazonLibrary(dependsOn: downloadAmazonZipFile, type: Copy) {
     ext {
-        downloadURL = "https://amzndevresources.com/iap/sdk/AmazonInAppPurchasing_Android.zip"
         fileToExtract = "in-app-purchasing-${iapVersion}.jar"
         destFile = new File( projectDir, "libs/$fileToExtract" )
     }
-
-    inputs.property( 'downloadURL', downloadURL )
-    inputs.property( 'fileToExtract', fileToExtract )
-    outputs.file( destFile )
-
-    doLast {
-        if(!destFile.exists()) {
-            println 'Downloading Amazon dependency'
-            File destDir = destFile.parentFile
-            destDir.mkdirs()
-
-            File downloadFile = new File( temporaryDir, 'download.zip' )
-            new URL( downloadURL ).withInputStream { is ->
-                downloadFile.withOutputStream { it << is }
-            }
-
-            project.copy {
-                from {
-                    zipTree(downloadFile).matching { include "**/$fileToExtract" }.singleFile
-                }
-
-                into( destDir )
-            }
+    File destDir = destFile.parentFile
+    destDir.mkdirs()
+    project.copy {
+        from {
+            zipTree(downloadAmazonZipFile.dest).matching { include "**/$fileToExtract" }.singleFile
         }
+
+        into( destDir )
     }
 }
+
 
 preBuild.dependsOn getAmazonLibrary
