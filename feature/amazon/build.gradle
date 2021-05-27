@@ -18,24 +18,27 @@ dependencies {
     testImplementation project(":test-utils")
 }
 
-task downloadAmazonZipFile(type: Download) {
-    src 'https://amzndevresources.com/iap/sdk/AmazonInAppPurchasing_Android.zip'
-    dest new File(buildDir, 'download.zip')
-}
-
-task getAmazonLibrary(dependsOn: downloadAmazonZipFile, type: Copy) {
+task getAmazonLibrary(type: Download) {
     ext {
         fileToExtract = "in-app-purchasing-${iapVersion}.jar"
         destFile = new File( projectDir, "libs/$fileToExtract" )
     }
-    File destDir = destFile.parentFile
-    destDir.mkdirs()
-    project.copy {
-        from {
-            zipTree(downloadAmazonZipFile.dest).matching { include "**/$fileToExtract" }.singleFile
-        }
 
-        into( destDir )
+    if(!destFile.exists()) {
+        println 'Downloading Amazon dependency'
+        File destDir = destFile.parentFile
+        destDir.mkdirs()
+
+        src 'https://amzndevresources.com/iap/sdk/AmazonInAppPurchasing_Android.zip'
+        dest new File(temporaryDir, 'download.zip')
+
+        project.copy {
+            from {
+                zipTree(dest).matching { include "**/$fileToExtract" }.singleFile
+            }
+
+            into( destDir )
+        }
     }
 }
 
