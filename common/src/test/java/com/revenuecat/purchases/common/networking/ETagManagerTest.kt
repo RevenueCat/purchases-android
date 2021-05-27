@@ -56,9 +56,9 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `An ETag header is added if there is an ETag saved for that request`() {
+    fun `An ETag header is never added even if there is an ETag saved for that request`() {
         val path = "/v1/subscribers/appUserID"
-        val expectedETag = "etag"
+        val expectedETag = ""
         mockCachedHTTPResult(expectedETag, path)
 
         val requestWithETagHeader = underTest.getETagHeader(path)

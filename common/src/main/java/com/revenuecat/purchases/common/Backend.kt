@@ -9,7 +9,6 @@ import android.net.Uri
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import org.json.JSONException
@@ -271,36 +270,6 @@ class Backend(
 
     private fun encode(string: String): String {
         return Uri.encode(string)
-    }
-
-    fun postAttributionData(
-        appUserID: String,
-        network: AttributionNetwork,
-        data: JSONObject,
-        onSuccessHandler: () -> Unit
-    ) {
-        if (data.length() == 0) return
-
-        val body = mapOf(
-            "network" to network.serverValue,
-            "data" to data
-        )
-
-        enqueue(object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPResult {
-                return httpClient.performRequest(
-                    "/subscribers/" + encode(appUserID) + "/attribution",
-                    body,
-                    authenticationHeaders
-                )
-            }
-
-            override fun onCompletion(result: HTTPResult) {
-                if (result.isSuccessful()) {
-                    onSuccessHandler()
-                }
-            }
-        })
     }
 
     fun createAlias(

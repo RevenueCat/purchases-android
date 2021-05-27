@@ -39,10 +39,13 @@ class ETagManager(
 ) {
 
     internal fun getETagHeader(
+        @SuppressWarnings("UnusedPrivateMember")
         path: String,
+        @SuppressWarnings("UnusedPrivateMember")
         refreshETag: Boolean = false
     ): Map<String, String> {
-        val eTagHeader = ETAG_HEADER_NAME to if (refreshETag) "" else getETag(path)
+        // Always return "" until request date issue is figured out
+        val eTagHeader = ETAG_HEADER_NAME to ""
         return mapOf(eTagHeader)
     }
 
@@ -111,6 +114,7 @@ class ETagManager(
         }
     }
 
+    @SuppressWarnings("UnusedPrivateMember")
     private fun getETag(path: String): String {
         return getStoredResultSavedInSharedPreferences(path)?.eTag.orEmpty()
     }
