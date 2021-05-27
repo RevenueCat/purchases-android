@@ -1,3 +1,30 @@
+## 4.3.0-beta1
+
+### Identity V3:
+
+#### New methods
+- Introduces `logIn`, a new way of identifying users, which also returns whether a new user has been registered in the system. 
+`logIn` uses a new backend endpoint. 
+- Introduces `logOut`, a replacement for `reset`. 
+
+#### Deprecations / removals
+- removes `createAlias`
+- deprecates `identify` in favor of `logIn`
+- deprecates `reset` in favor of `logOut`
+- deprecates `allowSharingPlayStoreAccount` in favor of dashboard-side configuration
+
+    https://github.com/RevenueCat/purchases-android/pull/250
+    https://github.com/RevenueCat/purchases-android/pull/260
+    https://github.com/RevenueCat/purchases-android/pull/252
+
+
+### Other changes: 
+- Fixed CI issues with creating pull requests
+    https://github.com/RevenueCat/purchases-android/pull/324
+
+### HOLD
+This PR should not be merged. Instead, we'll make a regular release from develop once beta testing is complete. 
+
 ## 4.2.1
 
 - Temporarily disable ETags
