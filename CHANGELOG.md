@@ -1,4 +1,4 @@
-## 4.3.0-beta1
+## 4.3.0-beta.1
 
 ### Identity V3:
 
