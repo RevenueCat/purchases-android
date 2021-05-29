@@ -271,6 +271,34 @@ class BillingWrapperTest {
 
     @Test
     fun properlySetsBillingFlowParams() {
+        mockkStatic(BillingFlowParams::class)
+        mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
+
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.newBuilder()
+        } returns mockBuilder
+
+        val skuDetailsSlot = slot<SkuDetails>()
+        every {
+            mockBuilder.setSkuDetails(capture(skuDetailsSlot))
+        } returns mockBuilder
+
+        val mockSubscriptionUpdateParamsBuilder = mockk<BillingFlowParams.SubscriptionUpdateParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val oldSkuPurchaseTokenSlot = slot<String>()
+        every {
+            mockSubscriptionUpdateParamsBuilder.setOldSkuPurchaseToken(capture(oldSkuPurchaseTokenSlot))
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val prorationModeSlot = slot<Int>()
+        every {
+            mockSubscriptionUpdateParamsBuilder.setReplaceSkusProrationMode(capture(prorationModeSlot))
+        } returns mockSubscriptionUpdateParamsBuilder
+
         val sku = "product_a"
         @BillingClient.SkuType val skuType = BillingClient.SkuType.SUBS
 
@@ -282,12 +310,13 @@ class BillingWrapperTest {
         every {
             mockClient.launchBillingFlow(eq(activity), capture(slot))
         } answers {
-            val params = slot.captured
-            val skuDetails1 = params.zzj()[0]
-            assertThat(sku).isEqualTo(skuDetails1.sku)
-            assertThat(skuType).isEqualTo(skuDetails1.type)
-            assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(params.zzh())
-            assertThat(upgradeInfo.prorationMode).isEqualTo(params.zzb())
+            val capturedSkuDetails = skuDetailsSlot.captured
+
+            assertThat(sku).isEqualTo(capturedSkuDetails.sku)
+            assertThat(skuType).isEqualTo(capturedSkuDetails.type)
+
+            assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldSkuPurchaseTokenSlot.captured)
+            assertThat(upgradeInfo.prorationMode).isEqualTo(prorationModeSlot.captured)
             billingClientOKResult
         }
 
