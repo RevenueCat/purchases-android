@@ -22,9 +22,6 @@
 - Fixed CI issues with creating pull requests
     https://github.com/RevenueCat/purchases-android/pull/324
 
-### HOLD
-This PR should not be merged. Instead, we'll make a regular release from develop once beta testing is complete. 
-
 ## 4.2.1
 
 - Temporarily disable ETags
