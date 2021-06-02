@@ -18,7 +18,9 @@ import java.util.Locale
 const val MICROS_MULTIPLIER = 1_000_000
 
 fun Purchase.toHumanReadableDescription() =
-    "${this.skus.joinToString()} ${this.orderId} ${this.purchaseToken}"
+    "skus: ${
+        this.skus.joinToString(prefix = "[", postfix = "]")
+    }, orderId: ${this.orderId}, purchaseToken: ${this.purchaseToken}"
 
 fun Context.getLocale(): Locale? =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -100,7 +102,9 @@ fun BillingResult.toHumanReadableDescription() =
     "DebugMessage: $debugMessage. ErrorCode: ${responseCode.getBillingResponseCodeName()}."
 
 fun PurchaseHistoryRecord.toHumanReadableDescription() =
-    "${this.skus.joinToString()} ${this.purchaseTime} ${this.purchaseToken}"
+    "skus: ${
+        this.skus.joinToString(prefix = "[", postfix = "]")
+    }, purchaseTime: ${this.purchaseTime}, purchaseToken: ${this.purchaseToken}"
 
 val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
