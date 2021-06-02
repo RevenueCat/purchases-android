@@ -471,8 +471,8 @@ class BillingWrapper(
                 var type: ProductType?
                 var presentedOffering: String?
                 synchronized(this@BillingWrapper) {
-                    type = productTypes[purchase.skus[0]]
-                    presentedOffering = presentedOfferingsByProductIdentifier[purchase.skus[0]]
+                    type = productTypes[purchase.sku]
+                    presentedOffering = presentedOfferingsByProductIdentifier[purchase.sku]
                 }
                 purchase.toRevenueCatPurchaseDetails(
                     type ?: getPurchaseType(purchase.purchaseToken),

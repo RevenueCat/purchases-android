@@ -13,7 +13,7 @@ fun Purchase.toRevenueCatPurchaseDetails(
     presentedOfferingIdentifier: String?
 ): PurchaseDetails = PurchaseDetails(
     orderId = this.orderId,
-    sku = this.skus[0],
+    sku = this.sku,
     type = productType,
     purchaseTime = this.purchaseTime,
     purchaseToken = this.purchaseToken,
@@ -37,7 +37,7 @@ fun PurchaseHistoryRecord.toRevenueCatPurchaseDetails(
 ): PurchaseDetails {
     return PurchaseDetails(
         orderId = null,
-        sku = this.skus[0],
+        sku = this.sku,
         type = type,
         purchaseTime = this.purchaseTime,
         purchaseToken = this.purchaseToken,

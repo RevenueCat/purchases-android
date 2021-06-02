@@ -927,7 +927,7 @@ class BillingWrapperTest {
             listOf(purchaseHistoryRecord)
         )
         assertThat(recordFound).isNotNull
-        assertThat(recordFound!!.sku).isEqualTo(purchaseHistoryRecord.skus[0])
+        assertThat(recordFound!!.sku).isEqualTo(purchaseHistoryRecord.sku)
         assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
         assertThat(recordFound!!.purchaseToken).isEqualTo(purchaseHistoryRecord.purchaseToken)
     }
@@ -936,7 +936,7 @@ class BillingWrapperTest {
     fun `findPurchaseInPurchaseHistory returns error if not found`() {
         val sku = "aPurchase"
         val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
-            every { it.skus[0] } returns sku + "somethingrandom"
+            every { it.sku } returns sku + "somethingrandom"
         }
 
         var errorReturned: PurchasesError? = null
