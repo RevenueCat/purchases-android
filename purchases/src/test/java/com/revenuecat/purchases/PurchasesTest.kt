@@ -31,6 +31,7 @@ import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.google.sku
 import com.revenuecat.purchases.google.toProductDetails
 import com.revenuecat.purchases.google.toRevenueCatPurchaseDetails
 import com.revenuecat.purchases.google.toSKUType
