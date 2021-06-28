@@ -69,8 +69,10 @@ data class Offering constructor(
 
     /**
      * Retrieves a specific package by identifier, use this to access custom package types configured
-     * in the RevenueCat dashboard.
+     * in the RevenueCat dashboard
+     * @throws NoSuchElementException if there's no package with the specified identifier in the Offering.
      */
+    @Throws(NoSuchElementException::class)
     @Suppress("MemberVisibilityCanBePrivate")
     fun getPackage(identifier: String) =
         availablePackages.first { it.identifier == identifier }
