@@ -450,7 +450,6 @@ class AttributionDataMigratorTests {
                 "campaign_id": "23847301359200211",
                 "click_time": "2021-05-04 18:08:51.000", 
                 "iscache": false, 
-                "adset": "0111 - mm - aaa - US - best 10", 
                 "adgroup_id": "238473013556789090", 
                 "is_mobile_data_terms_signed": true, 
                 "match_type": "srn", 

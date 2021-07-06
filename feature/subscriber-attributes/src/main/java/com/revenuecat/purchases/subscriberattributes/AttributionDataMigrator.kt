@@ -76,7 +76,7 @@ class AttributionDataMigrator {
 
     private fun convertMParticleAttribution(data: JSONObject): Map<String, String> {
         val mapping: Map<Any, String> = mapOf(
-            (AttributionKeys.MParticle.ID or AttributionKeys.NETWORK_ID) to SPECIAL_KEY_MPARTICLE_ID,
+            (AttributionKeys.NETWORK_ID or AttributionKeys.MParticle.ID) to SPECIAL_KEY_MPARTICLE_ID,
         )
         return data.convertToSubscriberAttributes(mapping)
     }
