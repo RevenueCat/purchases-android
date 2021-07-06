@@ -312,7 +312,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku)
+            UpgradeInfo(oldPurchase.skus[0])
         ) { _, _ -> }
 
         verify {
@@ -691,9 +691,7 @@ class PurchasesTest {
         assertThat(capturedLambda).isNotNull
         assertThat(restoreCalled).isTrue()
 
-        val productInfo = ReceiptInfo(
-            productID = sku
-        )
+        val productInfo = ReceiptInfo(productIDs = listOf(sku))
         verify(exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseToken,
@@ -708,9 +706,7 @@ class PurchasesTest {
             )
         }
 
-        val productInfo1 = ReceiptInfo(
-            productID = skuSub
-        )
+        val productInfo1 = ReceiptInfo(productIDs = listOf(skuSub))
         verify(exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseTokenSub,
@@ -2615,9 +2611,7 @@ class PurchasesTest {
 
         purchases.syncPurchases()
 
-        val productInfo = ReceiptInfo(
-            productID = sku
-        )
+        val productInfo = ReceiptInfo(productIDs = listOf(sku))
         assertThat(capturedLambda).isNotNull
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -2632,9 +2626,7 @@ class PurchasesTest {
                 onError = any()
             )
         }
-        val productInfo1 = ReceiptInfo(
-            productID = skuSub
-        )
+        val productInfo1 = ReceiptInfo(productIDs = listOf(skuSub))
         verify(exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseTokenSub,
@@ -2679,9 +2671,7 @@ class PurchasesTest {
 
         purchases.syncPurchases()
 
-        val productInfo = ReceiptInfo(
-            productID = sku
-        )
+        val productInfo = ReceiptInfo(productIDs = listOf(sku))
         assertThat(capturedLambda).isNotNull
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -2697,9 +2687,7 @@ class PurchasesTest {
             )
         }
 
-        val productInfo1 = ReceiptInfo(
-            productID = skuSub
-        )
+        val productInfo1 = ReceiptInfo(productIDs = listOf(skuSub))
         verify(exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseTokenSub,
@@ -2738,9 +2726,7 @@ class PurchasesTest {
 
         purchases.syncPurchases()
 
-        val productInfo = ReceiptInfo(
-            productID = sku
-        )
+        val productInfo = ReceiptInfo(productIDs = listOf(sku))
         verify {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseToken,
@@ -3183,9 +3169,7 @@ class PurchasesTest {
         )
         purchases.updatePendingPurchaseQueue()
 
-        val productInfo = ReceiptInfo(
-            productID = "product"
-        )
+        val productInfo = ReceiptInfo(productIDs = listOf("product"))
         verify(exactly = 0) {
             mockBackend.postReceiptData(
                 purchaseToken = token,
@@ -3304,7 +3288,7 @@ class PurchasesTest {
             )
         )
         val productInfo = ReceiptInfo(
-            productID = skuSub,
+            productIDs = listOf(skuSub),
             offeringIdentifier = "offering_a"
         )
         verify(exactly = 1) {
@@ -3372,7 +3356,7 @@ class PurchasesTest {
             )
         )
         val productInfo = ReceiptInfo(
-            productID = sku,
+            productIDs = listOf(sku),
             offeringIdentifier = "offering_a"
         )
         verify(exactly = 1) {
@@ -3432,7 +3416,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -3487,7 +3471,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -3514,7 +3498,7 @@ class PurchasesTest {
         val (_, offerings) = stubOfferings("onemonth_freetrial")
 
         val oldPurchase = mockk<PurchaseDetails>()
-        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.skus[0] } returns "oldSku"
         every { oldPurchase.type } returns ProductType.SUBS
 
         every {
@@ -3532,7 +3516,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku)
+            UpgradeInfo(oldPurchase.skus[0])
         ) { _, _ -> }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
@@ -3652,7 +3636,7 @@ class PurchasesTest {
         val receiptInfo = mockQueryingSkuDetails(sku, ProductType.SUBS, null)
 
         val oldPurchase = mockk<PurchaseDetails>()
-        every { oldPurchase.sku } returns "oldSku"
+        every { oldPurchase.skus[0] } returns "oldSku"
         every { oldPurchase.type } returns ProductType.SUBS
 
         every {
@@ -3672,7 +3656,7 @@ class PurchasesTest {
         purchases.purchaseProduct(
             mockActivity,
             receiptInfo.productDetails!!.skuDetails,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             object : MakePurchaseListener {
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
                     fail("should be successful")
@@ -3702,7 +3686,7 @@ class PurchasesTest {
         purchases.purchaseProduct(
             mockActivity,
             receiptInfo.productDetails!!.skuDetails,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             object : MakePurchaseListener {
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
                     callCount++
@@ -3739,7 +3723,7 @@ class PurchasesTest {
         purchases.purchaseProduct(
             mockActivity,
             receiptInfo.productDetails!!.skuDetails,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             object : MakePurchaseListener {
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
                     receivedError = error
@@ -3772,7 +3756,7 @@ class PurchasesTest {
         purchases.purchasePackage(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             object : MakePurchaseListener {
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
                     fail("should be successful")
@@ -3805,7 +3789,7 @@ class PurchasesTest {
         purchases.purchasePackage(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             object : MakePurchaseListener {
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
                     callCount++
@@ -3841,7 +3825,7 @@ class PurchasesTest {
         purchases.purchasePackage(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             object : MakePurchaseListener {
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
                     receivedError = error
@@ -3872,7 +3856,7 @@ class PurchasesTest {
         purchases.purchaseProductWith(
             mockActivity,
             receiptInfo.productDetails!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             onError = { _, _ ->
                 fail("should be successful")
             }, onSuccess = { _, _ ->
@@ -3897,7 +3881,7 @@ class PurchasesTest {
         purchases.purchaseProductWith(
             mockActivity,
             receiptInfo.productDetails!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             onError = { error, userCancelled ->
                 fail("should be success")
             }, onSuccess = { purchase, _ ->
@@ -3930,7 +3914,7 @@ class PurchasesTest {
         purchases.purchaseProductWith(
             mockActivity,
             receiptInfo.productDetails!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -3957,7 +3941,7 @@ class PurchasesTest {
         purchases.purchaseProductWith(
             mockActivity,
             receiptInfo.productDetails!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -3993,7 +3977,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             onError = { _, _ ->
                 fail("should be successful")
             }, onSuccess = { _, _ ->
@@ -4022,7 +4006,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             onError = { error, userCancelled ->
                 fail("should be success")
             }, onSuccess = { purchase, _ ->
@@ -4055,7 +4039,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -4080,7 +4064,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.sku),
+            UpgradeInfo(oldPurchase.skus[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -4380,7 +4364,7 @@ class PurchasesTest {
                 isRestore = isRestore,
                 observerMode = observerMode,
                 subscriberAttributes = emptyMap(),
-                receiptInfo = if (isRestore) ReceiptInfo(productID = sku) else receiptInfo,
+                receiptInfo = if (isRestore) ReceiptInfo(productIDs = listOf(sku)) else receiptInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
                 onError = captureLambda()
@@ -4406,7 +4390,7 @@ class PurchasesTest {
                 isRestore = restore,
                 observerMode = observerMode,
                 subscriberAttributes = emptyMap(),
-                receiptInfo = if (restore) ReceiptInfo(productID = sku) else receiptInfo,
+                receiptInfo = if (restore) ReceiptInfo(productIDs = listOf(sku)) else receiptInfo,
                 storeAppUserID = null,
                 onSuccess = captureLambda(),
                 onError = any()
@@ -4435,7 +4419,7 @@ class PurchasesTest {
         )
 
         val productInfo = ReceiptInfo(
-            productID = sku,
+            productIDs = listOf(sku),
             offeringIdentifier = offeringIdentifier,
             productDetails = skuDetails.toProductDetails()
         )

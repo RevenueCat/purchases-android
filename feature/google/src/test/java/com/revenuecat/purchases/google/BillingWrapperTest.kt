@@ -752,7 +752,7 @@ class BillingWrapperTest {
         assertThat(purchaseWrapper!!.type).isEqualTo(type.toProductType())
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
-        assertThat(purchaseWrapper.sku).isEqualTo(sku)
+        assertThat(purchaseWrapper.skus[0]).isEqualTo(sku)
     }
 
     @Test
@@ -796,7 +796,7 @@ class BillingWrapperTest {
         assertThat(purchaseWrapper!!.type).isEqualTo(type.toProductType())
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
-        assertThat(purchaseWrapper.sku).isEqualTo(sku)
+        assertThat(purchaseWrapper.skus[0]).isEqualTo(sku)
     }
 
     @Test
@@ -927,7 +927,7 @@ class BillingWrapperTest {
             listOf(purchaseHistoryRecord)
         )
         assertThat(recordFound).isNotNull
-        assertThat(recordFound!!.sku).isEqualTo(purchaseHistoryRecord.sku)
+        assertThat(recordFound!!.skus[0]).isEqualTo(purchaseHistoryRecord.sku)
         assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
         assertThat(recordFound!!.purchaseToken).isEqualTo(purchaseHistoryRecord.purchaseToken)
     }

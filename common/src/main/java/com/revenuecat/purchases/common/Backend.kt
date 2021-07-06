@@ -162,7 +162,7 @@ class Backend(
 
         val body = mapOf(
             "fetch_token" to purchaseToken,
-            "product_id" to receiptInfo.productID,
+            "product_ids" to receiptInfo.productIDs,
             "app_user_id" to appUserID,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.offeringIdentifier,

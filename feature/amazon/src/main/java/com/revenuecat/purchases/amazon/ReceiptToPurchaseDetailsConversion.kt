@@ -15,7 +15,7 @@ fun Receipt.toRevenueCatPurchaseDetails(
     val type = this.productType.toRevenueCatProductType()
     return PurchaseDetails(
         orderId = null,
-        sku = sku,
+        skus = listOf(sku),
         type = type,
         purchaseTime = this.purchaseDate.time,
         purchaseToken = this.receiptId,

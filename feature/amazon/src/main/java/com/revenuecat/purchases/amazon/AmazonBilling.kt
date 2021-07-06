@@ -131,7 +131,7 @@ internal class AmazonBilling constructor(
         queryAllPurchases(
             appUserID,
             onReceivePurchaseHistory = {
-                val record: PurchaseDetails? = it.firstOrNull { record -> sku == record.sku }
+                val record: PurchaseDetails? = it.firstOrNull { record -> sku == record.skus[0] }
                 if (record != null) {
                     onCompletion(record)
                 } else {

@@ -188,7 +188,7 @@ class BackendTest {
         return info
     }
 
-    private val productID = "product_id"
+    private val productIDs = listOf("product_id_0", "product_id_1")
 
     private fun mockPostReceiptResponse(
         isRestore: Boolean,
@@ -204,7 +204,7 @@ class BackendTest {
         val body = mapOf(
             "fetch_token" to fetchToken,
             "app_user_id" to appUserID,
-            "product_id" to receiptInfo.productID,
+            "product_ids" to receiptInfo.productIDs,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.offeringIdentifier,
             "observer_mode" to observerMode,
@@ -298,7 +298,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             observerMode = false,
-            receiptInfo = ReceiptInfo(productID),
+            receiptInfo = ReceiptInfo(productIDs),
             storeAppUserID = null
         )
 
@@ -314,7 +314,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             observerMode = false,
-            receiptInfo = ReceiptInfo(productID),
+            receiptInfo = ReceiptInfo(productIDs),
             storeAppUserID = null
         )
 
@@ -444,7 +444,7 @@ class BackendTest {
     @Test
     fun `given multiple post calls for same subscriber, only one is triggered`() {
         val receiptInfo = ReceiptInfo(
-            productID = productID,
+            productIDs,
             offeringIdentifier = "offering_a"
         )
         val (fetchToken, _) = mockPostReceiptResponse(
@@ -455,7 +455,7 @@ class BackendTest {
             delayed = true,
             observerMode = false,
             receiptInfo = ReceiptInfo(
-                productID,
+                productIDs,
                 offeringIdentifier = "offering_a"
             ),
             storeAppUserID = null
@@ -476,7 +476,7 @@ class BackendTest {
             onError = postReceiptErrorCallback
         )
         val productInfo1 = ReceiptInfo(
-            productID = productID,
+            productIDs,
             offeringIdentifier = "offering_a"
         )
         asyncBackend.postReceiptData(
@@ -576,14 +576,14 @@ class BackendTest {
             delayed = true,
             observerMode = false,
             receiptInfo = ReceiptInfo(
-                productID,
+                productIDs,
                 offeringIdentifier = "offering_a"
             ),
             storeAppUserID = null
         )
         val lock = CountDownLatch(2)
         val receiptInfo = ReceiptInfo(
-            productID = productID,
+            productIDs,
             offeringIdentifier = "offering_a"
         )
         asyncBackend.postReceiptData(
@@ -607,13 +607,13 @@ class BackendTest {
             delayed = true,
             observerMode = false,
             receiptInfo = ReceiptInfo(
-                productID,
+                productIDs,
                 offeringIdentifier = "offering_b"
             ),
             storeAppUserID = null
         )
         val productInfo1 = ReceiptInfo(
-            productID = productID,
+            productIDs,
             offeringIdentifier = "offering_b"
         )
         asyncBackend.postReceiptData(
@@ -648,7 +648,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             observerMode = true,
-            receiptInfo = ReceiptInfo(productID),
+            receiptInfo = ReceiptInfo(productIDs),
             storeAppUserID = null
         )
 
@@ -667,7 +667,7 @@ class BackendTest {
             resultBody = null,
             observerMode = true,
             receiptInfo = ReceiptInfo(
-                productID,
+                productIDs,
                 productDetails = productDetails
             ),
             storeAppUserID = null
@@ -687,7 +687,7 @@ class BackendTest {
             delayed = true,
             observerMode = false,
             receiptInfo = ReceiptInfo(
-                productID,
+                productIDs,
                 offeringIdentifier = "offering_a"
             ),
             storeAppUserID = null
@@ -696,12 +696,12 @@ class BackendTest {
         val productDetails = mockProductDetails()
         val productDetails1 = mockProductDetails(price = 350000)
         val receiptInfo = ReceiptInfo(
-            productID,
+            productIDs,
             offeringIdentifier = "offering_a",
             productDetails = productDetails
         )
         val productInfo1 = ReceiptInfo(
-            productID = productID,
+            productIDs,
             offeringIdentifier = "offering_a",
             productDetails = productDetails1
         )
@@ -773,7 +773,7 @@ class BackendTest {
             delayed = true,
             observerMode = false,
             receiptInfo = ReceiptInfo(
-                productID,
+                productIDs,
                 offeringIdentifier = "offering_a"
             ),
             storeAppUserID = null
@@ -783,12 +783,12 @@ class BackendTest {
         val productDetails1 = mockProductDetails(duration = "P2M")
 
         val receiptInfo = ReceiptInfo(
-            productID = productID,
+            productIDs,
             offeringIdentifier = "offering_a",
             productDetails = productDetails
         )
         val productInfo1 = ReceiptInfo(
-            productID,
+            productIDs,
             offeringIdentifier = "offering_a",
             productDetails = productDetails1
         )
@@ -855,7 +855,7 @@ class BackendTest {
         val productDetails = mockProductDetails()
 
         val receiptInfo = ReceiptInfo(
-            productID,
+            productIDs,
             offeringIdentifier = "offering_a",
             productDetails = productDetails
         )
@@ -923,7 +923,7 @@ class BackendTest {
             resultBody = null,
             observerMode = true,
             receiptInfo = ReceiptInfo(
-                productID = productID,
+                productIDs,
                 productDetails = productDetails
             ),
             storeAppUserID = null,
@@ -1110,9 +1110,7 @@ class BackendTest {
     fun `given multiple post calls for same subscriber different store user ID, both are triggered`() {
 
         val lock = CountDownLatch(2)
-        val receiptInfo = ReceiptInfo(
-            productID = productID
-        )
+        val receiptInfo = ReceiptInfo(productIDs)
         val (fetchToken, _) = mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
