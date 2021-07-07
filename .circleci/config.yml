@@ -43,7 +43,7 @@ commands:
             echo -e '\nsource "/home/circleci/.sdkman/bin/sdkman-init.sh"' >> $BASH_ENV
             source $BASH_ENV
       - run:
-          name: Install env
+          name: Setup Java environment
           command: |
             sdk env install
 
