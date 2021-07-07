@@ -722,7 +722,7 @@ class BillingWrapperTest {
         val purchase = stubGooglePurchase(
             purchaseToken = token,
             purchaseTime = time,
-            productId = sku
+            productIds = listOf(sku)
         )
 
         every {
@@ -766,7 +766,7 @@ class BillingWrapperTest {
         val purchase = stubGooglePurchase(
             purchaseToken = token,
             purchaseTime = time,
-            productId = sku
+            productIds = listOf(sku)
         )
 
         every {
@@ -818,7 +818,7 @@ class BillingWrapperTest {
             "offering_a"
         )
 
-        val purchases = listOf(stubGooglePurchase(productId = "product_a"))
+        val purchases = listOf(stubGooglePurchase(productIds = listOf("product_a")))
 
         val slot = slot<List<PurchaseDetails>>()
         every {
@@ -908,7 +908,7 @@ class BillingWrapperTest {
     @Test
     fun `findPurchaseInPurchaseHistory works`() {
         val sku = "aPurchase"
-        val purchaseHistoryRecord = stubPurchaseHistoryRecord(productId = sku)
+        val purchaseHistoryRecord = stubPurchaseHistoryRecord(productIds = listOf(sku))
 
         var recordFound: PurchaseDetails? = null
         wrapper.findPurchaseInPurchaseHistory(
@@ -1523,7 +1523,7 @@ class BillingWrapperTest {
 
     private fun mockPurchaseHistoryRecordWrapper(): PurchaseDetails {
         val oldPurchase = stubPurchaseHistoryRecord(
-            productId = "product_b",
+            productIds = listOf("product_b"),
             purchaseToken = "atoken"
         )
 
@@ -1544,7 +1544,7 @@ class BillingWrapperTest {
         acknowledged: Boolean = false
     ): PurchaseDetails {
         val p = stubGooglePurchase(
-            productId = sku,
+            productIds = listOf(sku),
             purchaseToken = purchaseToken,
             purchaseState = purchaseState,
             acknowledged = acknowledged
@@ -1559,7 +1559,7 @@ class BillingWrapperTest {
         productType: ProductType
     ): PurchaseDetails {
         val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
-            productId = sku,
+            productIds = listOf(sku),
             purchaseToken = purchaseToken
         )
 

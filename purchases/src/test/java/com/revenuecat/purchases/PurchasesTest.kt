@@ -3059,7 +3059,7 @@ class PurchasesTest {
         purchases.allowSharingPlayStoreAccount = true
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
-            productId = "product",
+            productIds = listOf("product"),
             purchaseState = Purchase.PurchaseState.PURCHASED
         )
         val activePurchase = purchase.toRevenueCatPurchaseDetails(ProductType.SUBS, null)
@@ -3121,7 +3121,7 @@ class PurchasesTest {
     fun `when updating pending purchases, if token has not been sent, send it`() {
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
-            productId = "product",
+            productIds = listOf("product"),
             purchaseState = Purchase.PurchaseState.PURCHASED
         )
 
@@ -3155,7 +3155,7 @@ class PurchasesTest {
         val token = "1234token"
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
-            productId = "product"
+            productIds = listOf("product")
         )
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(
@@ -4275,7 +4275,7 @@ class PurchasesTest {
         productType: ProductType
     ): PurchaseDetails {
         val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
-            productId = sku,
+            productIds = listOf(sku),
             purchaseToken = purchaseToken
         )
 
@@ -4291,7 +4291,7 @@ class PurchasesTest {
         acknowledged: Boolean = false
     ): List<PurchaseDetails> {
         val p = stubGooglePurchase(
-            productId = sku,
+            productIds = listOf(sku),
             purchaseToken = purchaseToken,
             purchaseState = purchaseState,
             acknowledged = acknowledged

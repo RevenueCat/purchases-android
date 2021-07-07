@@ -48,5 +48,7 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     PaymentPendingError(20, "The payment is pending."),
     InvalidSubscriberAttributesError(21, "One or more of the attributes sent could not be saved."),
     LogOutWithAnonymousUserError(22, "Called logOut but the current user is anonymous."),
-    ConfigurationError(23, "There is an issue with your configuration. Check the underlying error for more details.")
+    ConfigurationError(23, "There is an issue with your configuration. Check the underlying error for more details."),
+    UnsupportedError(24, "There was a problem with the operation. " +
+        "Looks like RevenueCat doesn't support that yet. Check the underlying error for more details.")
 }
