@@ -72,6 +72,7 @@ class BackendTest {
     private var receivedCreated: Boolean? = null
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
+    private var receivedShouldConsumePurchase: Boolean? = null
 
     private val onReceivePurchaserInfoSuccessHandler: (PurchaserInfo) -> Unit = { info ->
             this@BackendTest.receivedPurchaserInfo = info
@@ -83,8 +84,9 @@ class BackendTest {
         }
 
     private val postReceiptErrorCallback: (PurchasesError, Boolean, JSONObject?) -> Unit =
-        { error, _, _ ->
+        { error, shouldConsumePurchase, _ ->
         this@BackendTest.receivedError = error
+        this@BackendTest.receivedShouldConsumePurchase = shouldConsumePurchase
     }
 
     private val onReceivePurchaserInfoErrorHandler: (PurchasesError) -> Unit = {
@@ -1175,6 +1177,29 @@ class BackendTest {
         verify {
             mockClient.clearCaches()
         }
+    }
+
+    @Test
+    fun `postReceipt calls fail for multiple product ids errors`() {
+        postReceipt(
+            responseCode = 400,
+            isRestore = false,
+            clientException = null,
+            resultBody = """
+                {"code":7662,
+                "message":"The product IDs list provided is not an array or does not contain only a single element."
+                }""".trimIndent(),
+            observerMode = false,
+            receiptInfo = ReceiptInfo(productIDs),
+            storeAppUserID = null
+        )
+
+        assertThat(receivedPurchaserInfo).`as`("Received info is null").isNull()
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+        assertThat(receivedError!!.code)
+            .`as`("Received error code is the right one")
+            .isEqualTo(PurchasesErrorCode.UnsupportedError)
+        assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse()
     }
 
     private fun mockProductDetails(

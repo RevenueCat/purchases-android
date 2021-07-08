@@ -194,9 +194,11 @@ class Backend(
                         if (result.isSuccessful()) {
                             onSuccess(result.body.buildPurchaserInfo(), result.body)
                         } else {
+                            val purchasesError = result.toPurchasesError().also { errorLog(it) }
                             onError(
-                                result.toPurchasesError().also { errorLog(it) },
-                                result.responseCode < RCHTTPStatusCodes.ERROR,
+                                purchasesError,
+                                result.responseCode < RCHTTPStatusCodes.ERROR &&
+                                    purchasesError.code != PurchasesErrorCode.UnsupportedError,
                                 result.body
                             )
                         }
