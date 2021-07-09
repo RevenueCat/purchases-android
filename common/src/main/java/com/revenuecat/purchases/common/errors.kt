@@ -27,7 +27,8 @@ enum class BackendErrorCode(val value: Int) {
     BackendUserIneligibleForPromoOffer(7232),
     BackendInvalidAppleSubscriptionKey(7234),
     BackendInvalidSubscriberAttributes(7263),
-    BackendInvalidSubscriberAttributesBody(7264);
+    BackendInvalidSubscriberAttributesBody(7264),
+    BackendProductIDsMalformed(7662);
 
     companion object {
         fun valueOf(backendErrorCode: Int): BackendErrorCode? {
@@ -85,6 +86,7 @@ fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendInvalidAppleSubscriptionKey,
         BackendErrorCode.BackendBadRequest,
         BackendErrorCode.BackendInternalServerError -> PurchasesErrorCode.UnexpectedBackendResponseError
+        BackendErrorCode.BackendProductIDsMalformed -> PurchasesErrorCode.UnsupportedError
     }
 }
 

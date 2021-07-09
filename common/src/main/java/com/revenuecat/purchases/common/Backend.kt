@@ -162,7 +162,7 @@ class Backend(
 
         val body = mapOf(
             "fetch_token" to purchaseToken,
-            "product_id" to receiptInfo.productID,
+            "product_ids" to receiptInfo.productIDs,
             "app_user_id" to appUserID,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.offeringIdentifier,
@@ -194,9 +194,11 @@ class Backend(
                         if (result.isSuccessful()) {
                             onSuccess(result.body.buildPurchaserInfo(), result.body)
                         } else {
+                            val purchasesError = result.toPurchasesError().also { errorLog(it) }
                             onError(
-                                result.toPurchasesError().also { errorLog(it) },
-                                result.responseCode < RCHTTPStatusCodes.ERROR,
+                                purchasesError,
+                                result.responseCode < RCHTTPStatusCodes.ERROR &&
+                                    purchasesError.code != PurchasesErrorCode.UnsupportedError,
                                 result.body
                             )
                         }

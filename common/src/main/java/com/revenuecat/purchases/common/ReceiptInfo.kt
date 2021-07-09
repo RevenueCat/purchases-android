@@ -3,7 +3,7 @@ package com.revenuecat.purchases.common
 import com.revenuecat.purchases.models.ProductDetails
 
 class ReceiptInfo(
-    val productID: String,
+    val productIDs: List<String>,
     val offeringIdentifier: String? = null,
     val productDetails: ProductDetails? = null
 ) {
@@ -20,7 +20,7 @@ class ReceiptInfo(
 
         other as ReceiptInfo
 
-        if (productID != other.productID) return false
+        if (productIDs != other.productIDs) return false
         if (offeringIdentifier != other.offeringIdentifier) return false
         if (price != other.price) return false
         if (currency != other.currency) return false
@@ -32,7 +32,7 @@ class ReceiptInfo(
     }
 
     override fun hashCode(): Int {
-        var result = productID.hashCode()
+        var result = productIDs.hashCode()
         result = 31 * result + (offeringIdentifier?.hashCode() ?: 0)
         result = 31 * result + (productDetails?.hashCode() ?: 0)
         return result
@@ -40,7 +40,7 @@ class ReceiptInfo(
 
     override fun toString(): String {
         return "ReceiptInfo(" +
-            "productID='$productID', " +
+            "productIDs='${productIDs.joinToString()}', " +
             "offeringIdentifier=$offeringIdentifier, " +
             "price=$price, " +
             "currency=$currency, " +
