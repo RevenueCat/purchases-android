@@ -40,7 +40,7 @@ class ReceiptInfo(
 
     override fun toString(): String {
         return "ReceiptInfo(" +
-            "productIDs='$productIDs', " +
+            "productIDs='${productIDs.joinToString()}', " +
             "offeringIdentifier=$offeringIdentifier, " +
             "price=$price, " +
             "currency=$currency, " +

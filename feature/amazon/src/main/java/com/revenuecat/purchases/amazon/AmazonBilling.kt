@@ -131,6 +131,7 @@ internal class AmazonBilling constructor(
         queryAllPurchases(
             appUserID,
             onReceivePurchaseHistory = {
+                // We get skus[0] because the list is guaranteed to have just one item in Amazon's case.
                 val record: PurchaseDetails? = it.firstOrNull { record -> sku == record.skus[0] }
                 if (record != null) {
                     onCompletion(record)
