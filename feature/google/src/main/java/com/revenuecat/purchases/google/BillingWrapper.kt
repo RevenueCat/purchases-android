@@ -178,7 +178,7 @@ class BillingWrapper(
     ) {
         if (replaceSkuInfo != null) {
             log(LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
-                    .format(replaceSkuInfo.oldPurchase.sku, productDetails.sku))
+                    .format(replaceSkuInfo.oldPurchase.skus[0], productDetails.sku))
         } else {
             log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(productDetails.sku))
         }

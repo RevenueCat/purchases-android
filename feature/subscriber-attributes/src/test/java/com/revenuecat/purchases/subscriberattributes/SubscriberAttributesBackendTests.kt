@@ -247,7 +247,7 @@ class SubscriberAttributesPosterTests {
         mockPostReceiptResponse()
 
         val productInfo = ReceiptInfo(
-            productID = productID
+            productIDs = listOf(productID)
         )
         backend.postReceiptData(
             purchaseToken = fetchToken,
@@ -272,7 +272,7 @@ class SubscriberAttributesPosterTests {
         mockPostReceiptResponse()
 
         val productInfo = ReceiptInfo(
-            productID = productID
+            productIDs = listOf(productID)
         )
         backend.postReceiptData(
             purchaseToken = fetchToken,
@@ -300,7 +300,7 @@ class SubscriberAttributesPosterTests {
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ReceiptInfo(
-            productID = productID
+            productIDs = listOf(productID)
         )
         backend.postReceiptData(
             purchaseToken = fetchToken,
@@ -327,7 +327,7 @@ class SubscriberAttributesPosterTests {
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ReceiptInfo(
-            productID = productID
+            productIDs = listOf(productID)
         )
         backend.postReceiptData(
             purchaseToken = fetchToken,
@@ -354,7 +354,7 @@ class SubscriberAttributesPosterTests {
             responseBody = Responses.subscriberAttributesErrorsPostReceiptResponse
         )
         val productInfo = ReceiptInfo(
-            productID = productID
+            productIDs = listOf(productID)
         )
         backend.postReceiptData(
             purchaseToken = fetchToken,
