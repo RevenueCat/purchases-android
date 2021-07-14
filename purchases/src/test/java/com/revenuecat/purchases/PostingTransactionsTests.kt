@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.toRevenueCatPurchaseDetails
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
@@ -17,6 +18,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
+import com.revenuecat.purchases.utils.stubGooglePurchase
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -259,5 +261,45 @@ class PostingTransactionsTests {
         }
     }
 
-    // endregion
+    @Test
+    fun `product_ids are sent when posting to backend`() {
+        postReceiptSuccess = PostReceiptCompletionContainer()
+        val productIds = listOf("uno", "dos")
+        val purchase =
+            stubGooglePurchase(productIds = productIds).toRevenueCatPurchaseDetails(ProductType.SUBS, null)
+        val mockProductDetails = mockk<ProductDetails>().also {
+            every { it.sku } returns "uno"
+            every { it.priceAmountMicros } returns 2000000
+            every { it.priceCurrencyCode } returns "USD"
+            every { it.subscriptionPeriod } returns ""
+            every { it.introductoryPricePeriod } returns ""
+            every { it.freeTrialPeriod } returns ""
+        }
+
+        underTest.postToBackend(
+            purchase = purchase,
+            productDetails = mockProductDetails,
+            allowSharingPlayStoreAccount = true,
+            consumeAllTransactions = true,
+            appUserID = appUserId,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
+        )
+        assertThat(postedProductInfoSlot.isCaptured).isTrue()
+        assertThat(postedProductInfoSlot.captured.productIDs).isEqualTo(productIds)
+        verify(exactly = 1) {
+            backendMock.postReceiptData(
+                purchaseToken = any(),
+                appUserID = appUserId,
+                isRestore = any(),
+                observerMode = any(),
+                subscriberAttributes = expectedAttributes.toBackendMap(),
+                receiptInfo = any(),
+                storeAppUserID = any(),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
 }

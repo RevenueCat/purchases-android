@@ -236,7 +236,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     allPurchases.forEach { purchase ->
                         val unsyncedSubscriberAttributesByKey =
                             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-                        val productInfo = ReceiptInfo(productID = purchase.sku)
+                        val productInfo = ReceiptInfo(productIDs = purchase.skus)
                         backend.postReceiptData(
                             purchaseToken = purchase.purchaseToken,
                             appUserID = appUserID,
@@ -616,7 +616,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                     subscriberAttributesManager.getUnsyncedSubscriberAttributes(
                                         appUserID
                                     )
-                                val receiptInfo = ReceiptInfo(productID = purchase.sku)
+                                val receiptInfo = ReceiptInfo(productIDs = purchase.skus)
                                 backend.postReceiptData(
                                     purchaseToken = purchase.purchaseToken,
                                     appUserID = appUserID,
@@ -1307,11 +1307,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (purchase.purchaseState == RevenueCatPurchaseState.PURCHASED) {
                 billing.querySkuDetailsAsync(
                     productType = purchase.type,
-                    skus = setOf(purchase.sku),
-                    onReceive = { skuDetailsList ->
+                    skus = purchase.skus.toSet(),
+                    onReceive = { productDetailsList ->
                         postToBackend(
                             purchase = purchase,
-                            productDetails = skuDetailsList.firstOrNull { it.sku == purchase.sku },
+                            productDetails = productDetailsList.takeUnless { it.isEmpty() }?.get(0),
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1353,7 +1353,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val unsyncedSubscriberAttributesByKey =
             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
         val receiptInfo = ReceiptInfo(
-            productID = purchase.sku,
+            productIDs = purchase.skus,
             offeringIdentifier = purchase.presentedOfferingIdentifier,
             productDetails = productDetails
         )
@@ -1530,14 +1530,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { purchaseDetails, info ->
-            getPurchaseCallback(purchaseDetails.sku)?.let { purchaseCallback ->
+            getPurchaseCallback(purchaseDetails.skus[0])?.let { purchaseCallback ->
                 dispatch {
                     purchaseCallback.onCompleted(purchaseDetails, info)
                 }
             }
         }
         val onError: ErrorPurchaseCallback = { purchase, error ->
-            getPurchaseCallback(purchase.sku)?.dispatch(error)
+            getPurchaseCallback(purchase.skus[0])?.dispatch(error)
         }
 
         return Pair(onSuccess, onError)
