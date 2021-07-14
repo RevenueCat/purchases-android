@@ -737,7 +737,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [callback] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    @JvmSynthetic
     fun logIn(
         newAppUserID: String,
         callback: LogInCallback? = null
@@ -771,7 +770,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    @JvmSynthetic
     fun logOut(listener: ReceivePurchaserInfoListener? = null) {
         val error: PurchasesError? = identityManager.logOut()
         if (error != null) {
