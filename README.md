@@ -1,7 +1,4 @@
-<p align="center">
-  <img src="https://d2jzmbury1aqmc.cloudfront.net/assets/images/build.svg" alt="RevenueCat"/>
-</p>
-<h3 align="center">😻 In-app Subscriptions Made Easy 😻</h1>
+<h3 align="center">😻 In-App Subscriptions Made Easy 😻</h1>
 
 [![Release](https://img.shields.io/github/release/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/releases)
 [![License](https://img.shields.io/github/license/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/blob/master/LICENSE)
