@@ -678,6 +678,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
      * @param [listener] An optional listener to listen for successes or errors.
      */
+    @Deprecated(
+        "Use logIn instead",
+        ReplaceWith("Purchases.sharedInstance.logIn(newAppUserID, LogInCallback?)")
+    )
     @JvmOverloads
     fun createAlias(
         newAppUserID: String,
