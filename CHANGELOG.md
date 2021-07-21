@@ -30,6 +30,8 @@ Detailed docs about the new system are available [here](https://docs.revenuecat.
     https://github.com/RevenueCat/purchases-android/pull/335
 - Added `@Throws` annotation to `getPackage`, which could throw `NoSuchElementException`, but it wasn't documented.
     https://github.com/RevenueCat/purchases-android/pull/333
+- Updated BillingClient to version [4.0.0](https://developer.android.com/google/play/billing/release-notes#4-0).
+    https://github.com/RevenueCat/purchases-android/commit/f6554bbf7376c3fd492f0bc67183a9f35889ae78
 
 ## 4.2.1
 
