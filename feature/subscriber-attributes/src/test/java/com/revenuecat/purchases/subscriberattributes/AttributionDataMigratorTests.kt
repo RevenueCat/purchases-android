@@ -406,6 +406,47 @@ class AttributionDataMigratorTests {
         checkCommonAttributes(converted, expectedIdfv = null)
     }
 
+    @Test
+    fun `MParticle attribution is properly converted`() {
+        val jsonObject = getMParticleJSON()
+        val converted =
+            underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.MPARTICLE)
+        assertThat(converted).isNotNull
+        checkCommonAttributes(converted)
+        assertThat(converted[SPECIAL_KEY_MPARTICLE_ID]).isEqualTo(jsonObject.getString(AttributionKeys.MParticle.ID))
+    }
+
+    @Test
+    fun `MParticle attribution gives preference to rc_attribution_network_id over MParticle ID`() {
+        val jsonObject = getMParticleJSON(
+            addNetworkID = true,
+            addMParticleId = true
+        )
+        val converted =
+            underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.MPARTICLE)
+        assertThat(converted).isNotNull
+        checkCommonAttributes(converted)
+        assertThat(converted[SPECIAL_KEY_MPARTICLE_ID]).isEqualTo(jsonObject.getString(AttributionKeys.NETWORK_ID))
+    }
+
+    @Test
+    fun `MParticle attribution works with null rc_idfa`() {
+        val jsonObject = getMParticleJSON(idfa = null)
+        val converted =
+            underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.MPARTICLE)
+        assertThat(converted).isNotNull
+        checkCommonAttributes(converted, expectedIdfa = null)
+    }
+
+    @Test
+    fun `MParticle attribution works with null rc_idfv`() {
+        val jsonObject = getMParticleJSON(idfv = null)
+        val converted =
+            underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.MPARTICLE)
+        assertThat(converted).isNotNull
+        checkCommonAttributes(converted, expectedIdfv = null)
+    }
+
     private fun getAdjustJSON(
         idfa: String? = DEFAULT_IDFA,
         addAdId: Boolean = true,
