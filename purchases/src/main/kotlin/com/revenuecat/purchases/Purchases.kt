@@ -122,6 +122,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     * default. If true treats all purchases as restores, aliasing together appUserIDs that share a
     * Play Store account.
     */
+
+    @Deprecated(
+            "Replaced with configuration in the RevenueCat dashboard",
+            ReplaceWith("configure through the RevenueCat dashboard")
+    )
     var allowSharingPlayStoreAccount: Boolean
         @Synchronized get() =
             state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
@@ -236,7 +241,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     allPurchases.forEach { purchase ->
                         val unsyncedSubscriberAttributesByKey =
                             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-                        val productInfo = ReceiptInfo(productID = purchase.sku)
+                        val productInfo = ReceiptInfo(productIDs = purchase.skus)
                         backend.postReceiptData(
                             purchaseToken = purchase.purchaseToken,
                             appUserID = appUserID,
@@ -616,7 +621,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                     subscriberAttributesManager.getUnsyncedSubscriberAttributes(
                                         appUserID
                                     )
-                                val receiptInfo = ReceiptInfo(productID = purchase.sku)
+                                val receiptInfo = ReceiptInfo(productIDs = purchase.skus)
                                 backend.postReceiptData(
                                     purchaseToken = purchase.purchaseToken,
                                     appUserID = appUserID,
@@ -673,6 +678,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
      * @param [listener] An optional listener to listen for successes or errors.
      */
+    @Deprecated(
+        "Use logIn instead",
+        ReplaceWith("Purchases.sharedInstance.logIn(newAppUserID, LogInCallback?)")
+    )
     @JvmOverloads
     fun createAlias(
         newAppUserID: String,
@@ -700,6 +709,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param newAppUserID The new appUserID that should be linked to the currently user
      * @param [listener] An optional listener to listen for successes or errors.
      */
+    @Deprecated(
+        "Use logIn instead",
+        ReplaceWith("Purchases.sharedInstance.logIn(newAppUserID, LogInCallback?)")
+    )
     @JvmOverloads
     fun identify(
         newAppUserID: String,
@@ -728,8 +741,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [callback] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    @JvmSynthetic
-    internal fun logIn(
+    fun logIn(
         newAppUserID: String,
         callback: LogInCallback? = null
     ) {
@@ -762,8 +774,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    @JvmSynthetic
-    internal fun logOut(listener: ReceivePurchaserInfoListener? = null) {
+    fun logOut(listener: ReceivePurchaserInfoListener? = null) {
         val error: PurchasesError? = identityManager.logOut()
         if (error != null) {
             listener?.onError(error)
@@ -781,6 +792,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * id and save it in the cache.
      * @param [listener] An optional listener to listen for successes or errors.
      */
+    @Deprecated(
+        "Use logOut instead",
+        ReplaceWith("Purchases.sharedInstance.logOut(ReceivePurchaserInfoListener?)")
+    )
     @JvmOverloads
     fun reset(
         listener: ReceivePurchaserInfoListener? = null
@@ -1307,11 +1322,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (purchase.purchaseState == RevenueCatPurchaseState.PURCHASED) {
                 billing.querySkuDetailsAsync(
                     productType = purchase.type,
-                    skus = setOf(purchase.sku),
-                    onReceive = { skuDetailsList ->
+                    skus = purchase.skus.toSet(),
+                    onReceive = { productDetailsList ->
                         postToBackend(
                             purchase = purchase,
-                            productDetails = skuDetailsList.firstOrNull { it.sku == purchase.sku },
+                            productDetails = productDetailsList.takeUnless { it.isEmpty() }?.get(0),
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1353,7 +1368,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val unsyncedSubscriberAttributesByKey =
             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
         val receiptInfo = ReceiptInfo(
-            productID = purchase.sku,
+            productIDs = purchase.skus,
             offeringIdentifier = purchase.presentedOfferingIdentifier,
             productDetails = productDetails
         )
@@ -1530,14 +1545,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { purchaseDetails, info ->
-            getPurchaseCallback(purchaseDetails.sku)?.let { purchaseCallback ->
+            getPurchaseCallback(purchaseDetails.skus[0])?.let { purchaseCallback ->
                 dispatch {
                     purchaseCallback.onCompleted(purchaseDetails, info)
                 }
             }
         }
         val onError: ErrorPurchaseCallback = { purchase, error ->
-            getPurchaseCallback(purchase.sku)?.dispatch(error)
+            getPurchaseCallback(purchase.skus[0])?.dispatch(error)
         }
 
         return Pair(onSuccess, onError)

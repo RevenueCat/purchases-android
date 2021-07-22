@@ -157,7 +157,7 @@ class AmazonBillingTest {
         assertThat(receivedPurchases).isNotNull
         assertThat(receivedPurchases!!.size).isEqualTo(2)
 
-        val purchaseA = receivedPurchases!!.values.first { it.sku == expectedTermSkuA }
+        val purchaseA = receivedPurchases!!.values.first { it.skus[0] == expectedTermSkuA }
         checkPurchaseIsCorrect(
             purchaseA,
             expectedTermSkuA,
@@ -165,7 +165,7 @@ class AmazonBillingTest {
             RevenueCatPurchaseState.UNSPECIFIED_STATE
         )
 
-        val purchaseB = receivedPurchases!!.values.first { it.sku == expectedTermSkuB }
+        val purchaseB = receivedPurchases!!.values.first { it.skus[0] == expectedTermSkuB }
         checkPurchaseIsCorrect(
             purchaseB,
             expectedTermSkuB,
@@ -241,7 +241,7 @@ class AmazonBillingTest {
         assertThat(receivedPurchases).isNotNull
         assertThat(receivedPurchases!!.size).isEqualTo(2)
 
-        val purchaseA = receivedPurchases!!.values.first { it.sku == expectedTermSkuA }
+        val purchaseA = receivedPurchases!!.values.first { it.skus[0] == expectedTermSkuA }
         checkPurchaseIsCorrect(
             purchaseA,
             expectedTermSkuA,
@@ -249,7 +249,7 @@ class AmazonBillingTest {
             RevenueCatPurchaseState.UNSPECIFIED_STATE
         )
 
-        val purchaseB = receivedPurchases!!.values.first { it.sku == "sub_sku_b.monthly" }
+        val purchaseB = receivedPurchases!!.values.first { it.skus[0] == "sub_sku_b.monthly" }
         checkPurchaseIsCorrect(
             purchaseB,
             "sub_sku_b.monthly",
@@ -620,7 +620,7 @@ class AmazonBillingTest {
         purchaseState: RevenueCatPurchaseState
     ) {
         with(purchase) {
-            assertThat(sku).isEqualTo(expectedSku)
+            assertThat(skus[0]).isEqualTo(expectedSku)
             assertThat(presentedOfferingIdentifier).isNull()
             assertThat(purchaseState).isEqualTo(purchaseState)
             assertThat(storeUserID).isEqualTo(dummyUserData.userId)

@@ -21,9 +21,9 @@ data class PurchaseDetails(
     val orderId: String?,
 
     /**
-     * Product Id.
+     * Product Ids.
      */
-    val sku: String,
+    val skus: List<String>,
 
     /**
      * Type of the product associated with the purchase.
@@ -77,7 +77,17 @@ data class PurchaseDetails(
      * One of [PurchaseType] indicating the type of purchase.
      */
     val purchaseType: PurchaseType
-) : Parcelable
+) : Parcelable {
+
+    /**
+     * Product Id.
+     */
+    @Deprecated(
+        message = "Will be removed in a future release in favor of a list of product ids",
+        replaceWith = ReplaceWith("skus[0]"))
+    val sku: String
+        get() = skus[0]
+}
 
 enum class PurchaseType {
     GOOGLE_PURCHASE,

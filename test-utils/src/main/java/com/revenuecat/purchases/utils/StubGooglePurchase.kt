@@ -1,9 +1,10 @@
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.Purchase
+import org.json.JSONArray
 
 fun stubGooglePurchase(
-    productId: String = "com.revenuecat.lifetime",
+    productIds: List<String> = listOf("com.revenuecat.lifetime"),
     purchaseTime: Long = System.currentTimeMillis(),
     purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" +
         "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg",
@@ -16,7 +17,7 @@ fun stubGooglePurchase(
     {
         "orderId": "$orderId",
         "packageName":"com.revenuecat.purchases_sample",
-        "productId":"$productId",
+        "productIds":${JSONArray(productIds)},
         "purchaseTime":$purchaseTime,
         "purchaseState":${if (purchaseState == 2) 4 else 1},
         "purchaseToken":"$purchaseToken",

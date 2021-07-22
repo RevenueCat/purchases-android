@@ -43,8 +43,8 @@ class ReceiptToPurchaseDetailsTest {
             storeUserID = "store_user_id"
         )
 
-        assertThat(purchaseDetails.sku).isEqualTo(expectedTermSku)
-        assertThat(purchaseDetails.sku).isNotEqualTo(receipt.sku)
+        assertThat(purchaseDetails.skus[0]).isEqualTo(expectedTermSku)
+        assertThat(purchaseDetails.skus[0]).isNotEqualTo(receipt.sku)
     }
 
     @Test
