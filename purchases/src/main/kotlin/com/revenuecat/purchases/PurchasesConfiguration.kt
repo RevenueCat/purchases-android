@@ -43,8 +43,7 @@ open class PurchasesConfiguration(builder: Builder) {
             this.service = service
         }
 
-        // TODO: make public
-        internal fun store(store: Store) = apply {
+        fun store(store: Store) = apply {
             this.store = store
         }
 

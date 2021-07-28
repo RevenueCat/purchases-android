@@ -172,13 +172,15 @@ class PurchasesTest {
     }
 
     private fun stubOfferings(sku: String): Pair<ProductDetails, Offerings> {
-        val stubSkuDetails = stubSkuDetails(productId = sku, type = BillingClient.SkuType.SUBS)
-        val productDetails = stubSkuDetails.toProductDetails()
+        val productDetails = mockk<ProductDetails>().also {
+            every { it.sku } returns sku
+            every { it.type } returns ProductType.SUBS
+        }
         val jsonObject = JSONObject(oneOfferingsResponse)
         val packageObject = Package(
             "\$rc_monthly",
             PackageType.MONTHLY,
-            stubSkuDetails,
+            productDetails,
             stubOfferingIdentifier
         )
         val offering = Offering(
@@ -2341,7 +2343,7 @@ class PurchasesTest {
             listOf(BillingFeature.SUBSCRIPTIONS, BillingFeature.IN_APP_ITEMS_ON_VR),
             Callback {
                 receivedCanMakePayments = it
-        })
+            })
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
