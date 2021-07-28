@@ -30,10 +30,22 @@ executors:
     working_directory: ~/purchases-android
     environment:
       JVM_OPTS: -Xmx6g
-      CIRCLE_JDK_VERSION: oraclejdk8
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
 
 commands:
+  install-sdkman:
+    description: Install SDKMAN
+    steps:
+      - run:
+          name: Installing SDKMAN
+          command: |
+            curl -s "https://get.sdkman.io?rcupdate=false" | bash
+            echo -e '\nsource "/home/circleci/.sdkman/bin/sdkman-init.sh"' >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: Setup Java environment
+          command: |
+            sdk env install
 
   android-dependencies:
     steps:
@@ -103,6 +115,7 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - install-sdkman
       - android/accept-licenses
       - android-dependencies
       - android/restore-build-cache
@@ -128,6 +141,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-sdkman
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
       - run:
@@ -149,6 +163,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-sdkman
       - setup-git-credentials
       - trust-github-key
       - install-gems
@@ -159,11 +174,7 @@ jobs:
       - run:
           name: Deployment
           command: |
-            if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
-              echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
-            else
-              bundle exec fastlane android deploy
-            fi
+            bundle exec fastlane android deploy
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
 
@@ -171,6 +182,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-sdkman
       - install-gems
       - setup-git-credentials
       - trust-github-key
@@ -182,6 +194,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-sdkman
       - restore_cache:
           key: 1-gems-{{ checksum "Gemfile.lock" }}
       - run: bundle check || bundle install --path vendor/bundle
@@ -195,17 +208,14 @@ jobs:
       - run:
           name: Deployment
           command: |
-            if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
-              echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
-            else
-              bundle exec fastlane android deploy_snapshot
-            fi
+            bundle exec fastlane android deploy_snapshot
       - android-wordpress-orb/save-gradle-cache
 
   assemble-sample-app:
     executor: android-executor
     steps:
       - checkout
+      - install-sdkman
       - android/accept-licenses
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
@@ -235,6 +245,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-sdkman
       - run:
           name: Replace API_KEY
           working_directory: integration-tests/src/androidTest/java/com/revenuecat/purchases/integrationtests/
