@@ -44,7 +44,7 @@ You can use the `purchase-tester` project in the `examples` folder as a tester a
 RevenueCat API key in the `MainApplication` class. You can also change the package name in the `build.gradle` file
 to your own so you can test with real products.  
 
-#### 5. Create a pull request to revenuecat/develop and request review
+#### 5. Create a pull request to revenuecat/main and request review
 
 Explain in your pull request the work that was done, the reasoning, and that tests passed.
 

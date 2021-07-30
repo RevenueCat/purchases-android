@@ -87,7 +87,7 @@ platform :android do
       name: release_version,
       tag_name: "#{release_version}",
       description: changelog,
-      commitish: "develop",
+      commitish: "main",
       upload_assets: []
     )
 
@@ -151,7 +151,7 @@ platform :android do
     create_pull_request(
       repo: "revenuecat/purchases-android",
       title: "Prepare next version: #{next_version_snapshot}",
-      base: "develop",
+      base: "main",
       api_token: ENV["GITHUB_TOKEN"],
       head: branch_name
     )

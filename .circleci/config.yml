@@ -329,5 +329,5 @@ workflows:
           filters:
             branches:
               only:
-                - develop
+                - main
       - docs-deploy: *release-tags
