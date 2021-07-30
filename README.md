@@ -1,8 +1,8 @@
 <h3 align="center">😻 In-App Subscriptions Made Easy 😻</h1>
 
 [![Release](https://img.shields.io/github/release/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/releases)
-[![License](https://img.shields.io/github/license/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/blob/master/LICENSE)
-[![Coverage Status](https://coveralls.io/repos/github/RevenueCat/purchases-android/badge.svg?branch=master)](https://coveralls.io/github/RevenueCat/purchases-android?branch=master)
+[![License](https://img.shields.io/github/license/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/blob/main/LICENSE)
+[![Coverage Status](https://coveralls.io/repos/github/RevenueCat/purchases-android/badge.svg?branch=main)](https://coveralls.io/github/RevenueCat/purchases-android?branch=main)
 
 ## Purchases.framework
 
