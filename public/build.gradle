@@ -1,4 +1,5 @@
 apply from: "$rootProject.projectDir/library.gradle"
+apply plugin: 'org.jetbrains.dokka'
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
@@ -18,4 +19,16 @@ dependencies {
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation project(":test-utils")
+}
+
+//apply plugin: 'org.jetbrains.dokka'
+
+import org.jetbrains.dokka.gradle.DokkaTaskPartial
+
+tasks.dokkaHtmlPartial.configure {
+    dokkaSourceSets {
+        configureEach {
+//            includes.from("Module.md")
+        }
+    }
 }

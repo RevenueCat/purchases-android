@@ -1,5 +1,6 @@
 apply from: "$rootProject.projectDir/library.gradle"
 apply plugin: 'kotlin-kapt'
+apply plugin: 'org.jetbrains.dokka'
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
@@ -31,56 +32,68 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }
 
-apply plugin: 'com.vanniktech.maven.publish'
-apply plugin: 'org.jetbrains.dokka'
+//apply plugin: 'com.vanniktech.maven.publish'
+////apply plugin: kotlin('jvm')
+//apply plugin: 'org.jetbrains.dokka'
 
-dokka {
-    outputFormat = 'html'
-    outputDirectory = "$rootDir/docs"
 
-    configuration {
-        moduleName = 'purchases'
-        includes = ['README.md']
-        reportUndocumented = true
-        includeNonPublic = false
-        skipDeprecated = true
-        // Allows linking to documentation of the project's dependencies (generated with Javadoc or Dokka)
-        // Repeat for multiple links
-        externalDocumentationLink {
-            // Root URL of the generated documentation to link with. The trailing slash is required!
-            packageListUrl = new URL("https://developer.android.com/reference/package-list")
+import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
-            // If package-list file is located in non-standard location
-            // packageListUrl = new URL("file:///home/user/localdocs/package-list")
-        }
-
-        // Specifies the location of the project source code on the Web.
-        // If provided, Dokka generates "source" links for each declaration.
-        // Repeat for multiple mappings
-        sourceLink {
-            // Source directory
-            path = "src/main/kotlin"
-
-            // URL showing where the source code can be accessed through the web browser
-            url = "https://github.com/revenuecat/purchases-android/blob/main/src/main/kotlin"
-
-            // Suffix which is used to append the line number to the URL. Use #L for GitHub
-            lineSuffix = "#L"
-        }
-        // Suppress a package
-        perPackageOption {
-            prefix = "com.revenuecat.purchases.util"
-            // will match kotlin.internal and all sub-packages of it
-            suppress = true
-        }
-        perPackageOption {
-            prefix = "com.revenuecat.purchases"
-            // will match kotlin.internal and all sub-packages of it
-            suppress = false
+tasks.dokkaHtmlPartial.configure {
+    dokkaSourceSets {
+        configureEach {
+//            includes.from("Module.md")
         }
     }
-
 }
+
+//dokka {
+//    outputFormat = 'html'
+//    outputDirectory = "$rootDir/docs"
+//
+//    configuration {
+//        moduleName = 'purchases'
+//        includes = ['README.md']
+//        reportUndocumented = true
+//        includeNonPublic = false
+//        skipDeprecated = true
+//        // Allows linking to documentation of the project's dependencies (generated with Javadoc or Dokka)
+//        // Repeat for multiple links
+//        externalDocumentationLink {
+//            // Root URL of the generated documentation to link with. The trailing slash is required!
+//            packageListUrl = new URL("https://developer.android.com/reference/package-list")
+//
+//            // If package-list file is located in non-standard location
+//            // packageListUrl = new URL("file:///home/user/localdocs/package-list")
+//        }
+//
+//        // Specifies the location of the project source code on the Web.
+//        // If provided, Dokka generates "source" links for each declaration.
+//        // Repeat for multiple mappings
+//        sourceLink {
+//            // Source directory
+//            path = "src/main/kotlin"
+//
+//            // URL showing where the source code can be accessed through the web browser
+//            url = "https://github.com/revenuecat/purchases-android/blob/master/src/main/kotlin"
+//
+//            // Suffix which is used to append the line number to the URL. Use #L for GitHub
+//            lineSuffix = "#L"
+//        }
+//        // Suppress a package
+//        perPackageOption {
+//            prefix = "com.revenuecat.purchases.util"
+//            // will match kotlin.internal and all sub-packages of it
+//            suppress = true
+//        }
+//        perPackageOption {
+//            prefix = "com.revenuecat.purchases"
+//            // will match kotlin.internal and all sub-packages of it
+//            suppress = false
+//        }
+//    }
+//
+//}
 
 androidExtensions {
     features = ["parcelize"]
