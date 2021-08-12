@@ -146,7 +146,7 @@ jobs:
       - android/restore-build-cache
       - run:
           name: Dokka
-          command: ./gradlew dokka
+          command: ./gradlew dokkaHtml
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
       - run:
