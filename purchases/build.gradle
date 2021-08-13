@@ -32,14 +32,10 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }
 
-
-import org.jetbrains.dokka.gradle.DokkaTaskPartial
-
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
-//        named("purchases")
         configureEach {
-//            includes.from("Module.md")
+            reportUndocumented.set(true)
         }
     }
 }

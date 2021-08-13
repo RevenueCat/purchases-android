@@ -21,15 +21,10 @@ dependencies {
     testImplementation project(":test-utils")
 }
 
-//apply plugin: 'org.jetbrains.dokka'
-
-import org.jetbrains.dokka.gradle.DokkaTaskPartial
-
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
-//        named("purchases")
         configureEach {
-//            includes.from("Module.md")
+            reportUndocumented.set(true)
         }
     }
 }
