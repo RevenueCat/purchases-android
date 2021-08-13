@@ -27,6 +27,7 @@ import org.jetbrains.dokka.gradle.DokkaTaskPartial
 
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
+//        named("purchases")
         configureEach {
 //            includes.from("Module.md")
         }

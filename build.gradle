@@ -70,3 +70,23 @@ task detektAllBaseline(type: io.gitlab.arturbosch.detekt.DetektCreateBaselineTas
     exclude("**/build/**")
     exclude("**/test/**/*.kt")
 }
+
+apply plugin: 'org.jetbrains.dokka'
+
+tasks.dokkaHtmlMultiModule.configure {
+    outputDirectory.set(file("docs"))
+//    dokkaSourceSets {
+////        named("purchases")
+//        configureEach {
+//            sourceRoots.from(file("purchases/src/main/kotlin"))
+////            includes.from("Module.md")
+//        }
+//    }
+//    dokkaSourceSets {
+////        named("public")
+//        configureEach {
+//            sourceRoots.from(file("public/"))
+////            includes.from("Module.md")
+//        }
+//    }
+}
