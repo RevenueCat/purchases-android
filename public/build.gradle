@@ -25,6 +25,8 @@ tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
         configureEach {
             reportUndocumented.set(true)
+            includeNonPublic.set(false)
+            skipDeprecated.set(true)
         }
     }
 }
