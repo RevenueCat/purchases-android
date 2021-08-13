@@ -31,10 +31,6 @@ dependencies {
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
-
 
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {

@@ -27,6 +27,15 @@ tasks.dokkaHtmlPartial.configure {
             reportUndocumented.set(true)
             includeNonPublic.set(false)
             skipDeprecated.set(true)
+
+            externalDocumentationLink {
+                url.set(uri("https://developer.android.com/reference/package-list").toURL())
+            }
+            sourceLink {
+                localDirectory.set(file("src/main/java"))
+                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/master/public/src/main/java").toURL())
+                remoteLineSuffix.set("#L")
+            }
         }
     }
 }
