@@ -33,7 +33,7 @@ tasks.dokkaHtmlPartial.configure {
             }
             sourceLink {
                 localDirectory.set(file("src/main/java"))
-                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/master/public/src/main/java").toURL())
+                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL())
                 remoteLineSuffix.set("#L")
             }
         }
