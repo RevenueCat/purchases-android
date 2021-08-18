@@ -12,7 +12,7 @@ buildscript {
         classpath "com.vanniktech:gradle-maven-publish-plugin:0.15.1"
         classpath "com.android.tools.build:gradle:4.1.1"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:0.10.0"
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:1.4.32"
     }
 }
 
@@ -69,4 +69,11 @@ task detektAllBaseline(type: io.gitlab.arturbosch.detekt.DetektCreateBaselineTas
     include("**/*.kts")
     exclude("**/build/**")
     exclude("**/test/**/*.kt")
+}
+
+apply plugin: 'org.jetbrains.dokka'
+
+tasks.dokkaHtmlMultiModule.configure {
+    outputDirectory.set(file("docs"))
+    includes.from("README.md")
 }

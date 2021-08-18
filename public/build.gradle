@@ -1,4 +1,5 @@
 apply from: "$rootProject.projectDir/library.gradle"
+apply plugin: 'org.jetbrains.dokka'
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
@@ -18,4 +19,23 @@ dependencies {
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation project(":test-utils")
+}
+
+tasks.dokkaHtmlPartial.configure {
+    dokkaSourceSets {
+        configureEach {
+            reportUndocumented.set(true)
+            includeNonPublic.set(false)
+            skipDeprecated.set(true)
+
+            externalDocumentationLink {
+                url.set(uri("https://developer.android.com/reference/package-list").toURL())
+            }
+            sourceLink {
+                localDirectory.set(file("src/main/java"))
+                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL())
+                remoteLineSuffix.set("#L")
+            }
+        }
+    }
 }

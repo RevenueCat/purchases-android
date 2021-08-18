@@ -115,7 +115,6 @@ purchase-tester-java/.classpath
 *.bck
 fastlane/report.xml
 /docs/*
-!/docs/index.html
 integration-tests/keystore
 
 # share settings
