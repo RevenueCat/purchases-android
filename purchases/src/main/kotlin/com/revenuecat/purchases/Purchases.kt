@@ -1904,35 +1904,41 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 .setListener { _, _ -> }
                 .build()
                 .let { billingClient ->
+                    val mainHandler = Handler(context.mainLooper)
                     billingClient.startConnection(
                         object : BillingClientStateListener {
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
-                                try {
-                                    if (!billingResult.isSuccessful()) {
-                                        callback.onReceived(false)
+                                mainHandler.post {
+                                    try {
+                                        if (!billingResult.isSuccessful()) {
+                                            callback.onReceived(false)
+                                            billingClient.endConnection()
+                                            return@post
+                                        }
+
+                                        var featureSupportedResultOk = features.all {
+                                            billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful()
+                                        }
+
                                         billingClient.endConnection()
-                                        return
+
+                                        callback.onReceived(featureSupportedResultOk)
+                                    } catch (e: IllegalArgumentException) {
+                                        // Play Services not available
+                                        callback.onReceived(false)
                                     }
-
-                                    var featureSupportedResultOk = features.all {
-                                        billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful()
-                                    }
-
-                                    billingClient.endConnection()
-
-                                    callback.onReceived(featureSupportedResultOk)
-                                } catch (e: IllegalArgumentException) {
-                                    // Play Services not available
-                                    callback.onReceived(false)
                                 }
                             }
 
                             override fun onBillingServiceDisconnected() {
-                                try {
-                                    billingClient.endConnection()
-                                } catch (e: IllegalArgumentException) {
-                                } finally {
-                                    callback.onReceived(false)
+                                val mainHandler = Handler(context.mainLooper)
+                                mainHandler.post {
+                                    try {
+                                        billingClient.endConnection()
+                                    } catch (e: IllegalArgumentException) {
+                                    } finally {
+                                        callback.onReceived(false)
+                                    }
                                 }
                             }
                         })
@@ -1959,26 +1965,31 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 .setListener { _, _ -> }
                 .build()
                 .let { billingClient ->
+                    val mainHandler = Handler(context.mainLooper)
                     billingClient.startConnection(
                         object : BillingClientStateListener {
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
-                                // It also means that IN-APP items are supported for purchasing
-                                try {
-                                    billingClient.endConnection()
-                                    val resultIsOK = billingResult.isSuccessful()
-                                    callback.onReceived(resultIsOK)
-                                } catch (e: IllegalArgumentException) {
-                                    // Play Services not available
-                                    callback.onReceived(false)
+                                mainHandler.post {
+                                    // It also means that IN-APP items are supported for purchasing
+                                    try {
+                                        billingClient.endConnection()
+                                        val resultIsOK = billingResult.isSuccessful()
+                                        callback.onReceived(resultIsOK)
+                                    } catch (e: IllegalArgumentException) {
+                                        // Play Services not available
+                                        callback.onReceived(false)
+                                    }
                                 }
                             }
 
                             override fun onBillingServiceDisconnected() {
-                                try {
-                                    billingClient.endConnection()
-                                } catch (e: IllegalArgumentException) {
-                                } finally {
-                                    callback.onReceived(false)
+                                mainHandler.post {
+                                    try {
+                                        billingClient.endConnection()
+                                    } catch (e: IllegalArgumentException) {
+                                    } finally {
+                                        callback.onReceived(false)
+                                    }
                                 }
                             }
                         })
@@ -2008,26 +2019,31 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 .setListener { _, _ -> }
                 .build()
                 .let { billingClient ->
+                    val mainHandler = Handler(context.mainLooper)
                     billingClient.startConnection(
                         object : BillingClientStateListener {
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
-                                try {
-                                    val featureSupportedResult = billingClient.isFeatureSupported(feature)
-                                    billingClient.endConnection()
-                                    val responseIsOK = featureSupportedResult.isSuccessful()
-                                    callback.onReceived(responseIsOK)
-                                } catch (e: IllegalArgumentException) {
-                                    // Play Services not available
-                                    callback.onReceived(false)
+                                mainHandler.post {
+                                    try {
+                                        val featureSupportedResult = billingClient.isFeatureSupported(feature)
+                                        billingClient.endConnection()
+                                        val responseIsOK = featureSupportedResult.isSuccessful()
+                                        callback.onReceived(responseIsOK)
+                                    } catch (e: IllegalArgumentException) {
+                                        // Play Services not available
+                                        callback.onReceived(false)
+                                    }
                                 }
                             }
 
                             override fun onBillingServiceDisconnected() {
-                                try {
-                                    billingClient.endConnection()
-                                } catch (e: IllegalArgumentException) {
-                                } finally {
-                                    callback.onReceived(false)
+                                mainHandler.post {
+                                    try {
+                                        billingClient.endConnection()
+                                    } catch (e: IllegalArgumentException) {
+                                    } finally {
+                                        callback.onReceived(false)
+                                    }
                                 }
                             }
                         })
