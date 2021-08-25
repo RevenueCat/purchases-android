@@ -1904,6 +1904,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 .setListener { _, _ -> }
                 .build()
                 .let { billingClient ->
+                    // BillingClient 4 calls the listener functions in a thread instead of in main
+                    // https://github.com/RevenueCat/purchases-android/issues/348
                     val mainHandler = Handler(context.mainLooper)
                     billingClient.startConnection(
                         object : BillingClientStateListener {
@@ -1965,6 +1967,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 .setListener { _, _ -> }
                 .build()
                 .let { billingClient ->
+                    // BillingClient 4 calls the listener functions in a thread instead of in main
+                    // https://github.com/RevenueCat/purchases-android/issues/348
                     val mainHandler = Handler(context.mainLooper)
                     billingClient.startConnection(
                         object : BillingClientStateListener {
@@ -2019,6 +2023,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 .setListener { _, _ -> }
                 .build()
                 .let { billingClient ->
+                    // BillingClient 4 calls the listener functions in a thread instead of in main
+                    // https://github.com/RevenueCat/purchases-android/issues/348
                     val mainHandler = Handler(context.mainLooper)
                     billingClient.startConnection(
                         object : BillingClientStateListener {
