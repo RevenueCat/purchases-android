@@ -8,6 +8,7 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.os.Handler
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -60,6 +61,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkConstructor
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.runs
@@ -835,7 +837,7 @@ class PurchasesTest {
         val skus = listOf(stubProductIdentifier)
         mockProducts()
         mockProductDetails(skus, skus, ProductType.SUBS)
-        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val (_, _) = stubOfferings("onemonth_freetrial")
 
         every {
             mockCache.cachedOfferings
@@ -863,7 +865,7 @@ class PurchasesTest {
         val skus = listOf(stubProductIdentifier)
         mockProducts()
         mockProductDetails(skus, skus, ProductType.SUBS)
-        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val (_, _) = stubOfferings("onemonth_freetrial")
 
         every {
             mockCache.cachedOfferings
@@ -893,7 +895,7 @@ class PurchasesTest {
         val skus = listOf(stubProductIdentifier)
         mockProducts()
         mockProductDetails(skus, skus, ProductType.SUBS)
-        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val (_, _) = stubOfferings("onemonth_freetrial")
 
         every {
             mockCache.cachedOfferings
@@ -2270,6 +2272,7 @@ class PurchasesTest {
         every { mockLocalBillingClient.endConnection() } throws mockk<IllegalArgumentException>()
         val listener = slot<BillingClientStateListener>()
         every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
+        mockHandlerPost()
         Purchases.isBillingSupported(mockContext, Callback {
             receivedIsBillingSupported = it
         })
@@ -2287,6 +2290,8 @@ class PurchasesTest {
         every {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
+
+        mockHandlerPost()
 
         Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS), Callback {
             receivedCanMakePayments = it
@@ -2354,6 +2359,7 @@ class PurchasesTest {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
+        mockHandlerPost()
         Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS), Callback {
             receivedCanMakePayments = it
         })
@@ -3882,7 +3888,7 @@ class PurchasesTest {
             mockActivity,
             receiptInfo.productDetails!!,
             UpgradeInfo(oldPurchase.skus[0]),
-            onError = { error, userCancelled ->
+            onError = { _, _ ->
                 fail("should be success")
             }, onSuccess = { purchase, _ ->
                 callCount++
@@ -3915,8 +3921,8 @@ class PurchasesTest {
             mockActivity,
             receiptInfo.productDetails!!,
             UpgradeInfo(oldPurchase.skus[0]),
-            onError = { error, userCancelled ->
-                receivedError = error
+            onError = { purchaseError, userCancelled ->
+                receivedError = purchaseError
                 receivedUserCancelled = userCancelled
             }, onSuccess = { _, _ ->
                 fail("should be error")
@@ -4007,7 +4013,7 @@ class PurchasesTest {
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             UpgradeInfo(oldPurchase.skus[0]),
-            onError = { error, userCancelled ->
+            onError = { _, _ ->
                 fail("should be success")
             }, onSuccess = { purchase, _ ->
                 callCount++
@@ -4514,6 +4520,17 @@ class PurchasesTest {
         val listener = slot<BillingClientStateListener>()
         every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
         return listener
+    }
+
+    private fun mockHandlerPost() {
+        mockkConstructor(Handler::class)
+        val lst = slot<Runnable>()
+        every {
+            anyConstructed<Handler>().post(capture(lst))
+        } answers {
+            lst.captured.run()
+            true
+        }
     }
 
 // endregion

@@ -511,53 +511,57 @@ class BillingWrapper(
     }
 
     override fun onBillingSetupFinished(billingResult: BillingResult) {
-        when (billingResult.responseCode) {
-            BillingClient.BillingResponseCode.OK -> {
-                log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_SETUP_FINISHED
+        mainHandler.post {
+            when (billingResult.responseCode) {
+                BillingClient.BillingResponseCode.OK -> {
+                    log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_SETUP_FINISHED
                         .format(billingClient?.toString()))
-                stateListener?.onConnected()
-                executePendingRequests()
-            }
-            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
-            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
-                val message =
+                    stateListener?.onConnected()
+                    executePendingRequests()
+                }
+                BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
+                BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
+                    val message =
                         BillingStrings.BILLING_UNAVAILABLE.format(billingResult.toHumanReadableDescription())
-                log(LogIntent.GOOGLE_WARNING, message)
-                // The calls will fail with an error that will be surfaced. We want to surface these errors
-                // Can't call executePendingRequests because it will not do anything since it checks for isReady()
-                synchronized(this@BillingWrapper) {
-                    while (!serviceRequests.isEmpty()) {
-                        serviceRequests.remove().let { serviceRequest ->
-                            mainHandler.post {
-                                serviceRequest(
-                                    billingResult.responseCode
-                                        .billingResponseToPurchasesError(message)
-                                        .also { errorLog(it) }
-                                )
+                    log(LogIntent.GOOGLE_WARNING, message)
+                    // The calls will fail with an error that will be surfaced. We want to surface these errors
+                    // Can't call executePendingRequests because it will not do anything since it checks for isReady()
+                    synchronized(this@BillingWrapper) {
+                        while (!serviceRequests.isEmpty()) {
+                            serviceRequests.remove().let { serviceRequest ->
+                                mainHandler.post {
+                                    serviceRequest(
+                                        billingResult.responseCode
+                                            .billingResponseToPurchasesError(message)
+                                            .also { errorLog(it) }
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
-            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
-            BillingClient.BillingResponseCode.USER_CANCELED,
-            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
-            BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
-            BillingClient.BillingResponseCode.ERROR,
-            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
-            BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
-            BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> {
-                log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_ERROR
+                BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+                BillingClient.BillingResponseCode.USER_CANCELED,
+                BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+                BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
+                BillingClient.BillingResponseCode.ERROR,
+                BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
+                BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
+                BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> {
+                    log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_ERROR
                         .format(billingResult.toHumanReadableDescription()))
-            }
-            BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
-                // Billing service is already trying to connect. Don't do anything.
+                }
+                BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
+                    // Billing service is already trying to connect. Don't do anything.
+                }
             }
         }
     }
 
     override fun onBillingServiceDisconnected() {
-        log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient.toString()))
+        mainHandler.post {
+            log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient.toString()))
+        }
     }
 
     override fun isConnected(): Boolean = billingClient?.isReady ?: false

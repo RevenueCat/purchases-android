@@ -429,7 +429,7 @@ class BillingWrapperTest {
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
-        verify(exactly = 3) {
+        verify(exactly = 4) {
             handler.post(any())
         }
     }
