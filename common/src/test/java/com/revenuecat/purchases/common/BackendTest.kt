@@ -506,7 +506,7 @@ class BackendTest {
             )
         } answers {
             sleep(200)
-            throw Exception()
+            throw IOException()
         }
 
         val newAppUserID = "newId"
