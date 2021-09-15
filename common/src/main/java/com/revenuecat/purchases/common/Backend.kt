@@ -6,12 +6,12 @@
 package com.revenuecat.purchases.common
 
 import android.net.Uri
-import android.util.Log
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -409,7 +409,7 @@ class Backend(
             this[cacheKey] = mutableListOf(functions)
             enqueue(call, randomDelay)
         } else {
-            Log.d("Purchases", "Same call already in progress, adding to callbacks map with key: $cacheKey")
+            debugLog(String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey))
             this[cacheKey]!!.add(functions)
         }
     }
