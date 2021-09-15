@@ -416,6 +416,41 @@ class BackendTest {
     }
 
     @Test
+    fun `given multiple alias calls for same ids, only one is triggered`() {
+        val body = mapOf(
+            "new_app_user_id" to "newId"
+        )
+        mockResponse(
+            "/subscribers/$appUserID/alias",
+            body,
+            200,
+            null,
+            null
+        )
+        val newAppUserID = "newId"
+        val lock = CountDownLatch(2)
+        asyncBackend.createAlias(appUserID, newAppUserID, onSuccessHandler = {
+            lock.countDown()
+        }, onErrorHandler = {
+            fail("Shouldn't be an error")
+        })
+        asyncBackend.createAlias(appUserID, newAppUserID, onSuccessHandler = {
+            lock.countDown()
+        }, onErrorHandler = {
+            fail("Shouldn't be an error")
+        })
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/${Uri.encode(appUserID)}/alias",
+                body,
+                any()
+            )
+        }
+    }
+
+    @Test
     fun `given multiple get calls for same subscriber, only one is triggered`() {
         mockResponse(
             "/subscribers/$appUserID",
@@ -1106,6 +1141,54 @@ class BackendTest {
             }
         )
         assertThat(receivedCreated).isFalse
+    }
+
+    @Test
+    fun `given multiple login calls for same ids, only one is triggered`() {
+        val newAppUserID = "newId"
+        val requestBody = mapOf(
+            "new_app_user_id" to newAppUserID,
+            "app_user_id" to appUserID
+        )
+        val resultBody = Responses.validFullPurchaserResponse
+        mockResponse(
+            "/subscribers/identify",
+            requestBody,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody
+        )
+
+        val lock = CountDownLatch(2)
+        asyncBackend.logIn(
+            appUserID,
+            newAppUserID,
+            { _, _ ->
+                lock.countDown()
+            },
+            {
+                fail("Should have called success")
+            }
+        )
+        asyncBackend.logIn(
+            appUserID,
+            newAppUserID,
+            { _, _ ->
+                lock.countDown()
+            },
+            {
+                fail("Should have called success")
+            }
+        )
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/identify",
+                requestBody,
+                any()
+            )
+        }
     }
 
     @Test
