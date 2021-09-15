@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common
 
 import android.net.Uri
+import android.util.Log
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -408,6 +409,7 @@ class Backend(
             this[cacheKey] = mutableListOf(functions)
             enqueue(call, randomDelay)
         } else {
+            Log.d("Purchases", "Same call already in progress, adding to callbacks map with key: $cacheKey")
             this[cacheKey]!!.add(functions)
         }
     }
