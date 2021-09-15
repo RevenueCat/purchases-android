@@ -498,6 +498,7 @@ class BackendTest {
         val headers = HashMap<String, String>()
         headers["Authorization"] = "Bearer $API_KEY"
 
+        val lockException = CountDownLatch(1)
         every {
             mockClient.performRequest(
                 "/subscribers/$appUserID/alias",
@@ -505,7 +506,7 @@ class BackendTest {
                 headers
             )
         } answers {
-            sleep(200)
+            lockException.await()
             throw IOException()
         }
 
@@ -521,6 +522,7 @@ class BackendTest {
         }, onErrorHandler = {
             lock.countDown()
         })
+        lockException.countDown()
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
