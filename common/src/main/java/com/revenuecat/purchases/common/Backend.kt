@@ -320,11 +320,7 @@ class Backend(
                         onSuccessHandler()
                     }
                 } else {
-                    synchronized(this@Backend) {
-                        createAliasCallbacks.remove(cacheKey)
-                    }?.forEach { (_, onErrorHandler) ->
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
-                    }
+                    onError(result.toPurchasesError().also { errorLog(it) })
                 }
             }
         }
@@ -378,11 +374,7 @@ class Backend(
                         }
                     }
                 } else {
-                    synchronized(this@Backend) {
-                        identifyCallbacks.remove(cacheKey)
-                    }?.forEach { (_, onErrorHandler) ->
-                        onError(result.toPurchasesError().also { errorLog(it) })
-                    }
+                    onError(result.toPurchasesError().also { errorLog(it) })
                 }
             }
         }
