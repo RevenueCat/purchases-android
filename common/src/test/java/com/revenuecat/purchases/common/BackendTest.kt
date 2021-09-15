@@ -16,6 +16,7 @@ import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
 import io.mockk.Called
+import io.mockk.ThrowingAnswer
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -29,6 +30,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
+import java.lang.RuntimeException
 import java.lang.Thread.sleep
 import java.util.HashMap
 import java.util.concurrent.CountDownLatch
@@ -492,14 +494,21 @@ class BackendTest {
         val body = mapOf(
             "new_app_user_id" to "newId"
         )
-        mockResponse(
-            "/subscribers/$appUserID/alias",
-            body,
-            responseCode = 500,
-            clientException = IOException(),
-            resultBody = null,
-            delayed = true
-        )
+
+        val headers = HashMap<String, String>()
+        headers["Authorization"] = "Bearer $API_KEY"
+
+        every {
+            mockClient.performRequest(
+                "/subscribers/$appUserID/alias",
+                body,
+                headers
+            )
+        } answers {
+            sleep(200)
+            throw Exception()
+        }
+
         val newAppUserID = "newId"
         val lock = CountDownLatch(2)
         asyncBackend.createAlias(appUserID, newAppUserID, onSuccessHandler = {
