@@ -423,9 +423,10 @@ class BackendTest {
         mockResponse(
             "/subscribers/$appUserID/alias",
             body,
-            200,
-            null,
-            null
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true
         )
         val newAppUserID = "newId"
         val lock = CountDownLatch(2)
@@ -1156,7 +1157,8 @@ class BackendTest {
             requestBody,
             responseCode = 200,
             clientException = null,
-            resultBody = resultBody
+            resultBody = resultBody,
+            delayed = true
         )
 
         val lock = CountDownLatch(2)
