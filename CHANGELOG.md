@@ -1,3 +1,9 @@
+## 4.3.2
+
+- Makes improvements to prevent multiple HTTP requests with the same parameters to `/identify` and `/alias`. 
+    https://github.com/RevenueCat/purchases-android/pull/358
+    https://github.com/RevenueCat/purchases-android/pull/359
+
 ## 4.3.1
 
 - Moves the code of `onBillingSetupFinished` to the main thread. Changes the callback of `canMakePayments` to the main thread. 
