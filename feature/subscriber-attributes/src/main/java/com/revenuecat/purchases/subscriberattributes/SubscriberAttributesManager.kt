@@ -3,6 +3,7 @@ package com.revenuecat.purchases.subscriberattributes
 import android.app.Application
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.attribution.AttributionFetcherInterface
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.AttributionStrings
@@ -13,7 +14,7 @@ import org.json.JSONObject
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
-    private val attributionFetcher: AttributionFetcher,
+    private val attributionFetcher: AttributionFetcherInterface,
     private val attributionDataMigrator: AttributionDataMigrator
 ) {
 

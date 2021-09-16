@@ -67,7 +67,6 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.PurchaserInfoStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.AttributionDataMigrator
-import com.revenuecat.purchases.subscriberattributes.AttributionFetcher
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
@@ -1857,9 +1856,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 val cache = DeviceCache(prefs, apiKey)
 
                 val billing: BillingAbstract = BillingFactory.createBilling(store, application, backend, cache)
+                val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 
                 val subscriberAttributesCache = SubscriberAttributesCache(cache)
-                val attributionFetcher = AttributionFetcher(dispatcher)
                 val attributionDataMigrator = AttributionDataMigrator()
                 return Purchases(
                     application,

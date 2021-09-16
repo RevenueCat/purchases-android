@@ -8,6 +8,7 @@ import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.attribution.AttributionFetcherInterface
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.AttributionStrings
 import java.io.IOException
@@ -15,13 +16,13 @@ import java.util.concurrent.TimeoutException
 
 class AttributionFetcher(
     private val dispatcher: Dispatcher
-) {
+) : AttributionFetcherInterface {
 
-    fun getDeviceIdentifiers(
+    override fun getDeviceIdentifiers(
         applicationContext: Application,
         completion: (advertisingID: String?, androidID: String) -> Unit
     ) {
-        dispatcher.enqueue(Runnable {
+        dispatcher.enqueue({
             val advertisingID: String? = getAdvertisingID(applicationContext)
             val androidID = getAndroidID(applicationContext)
             completion(advertisingID, androidID)
