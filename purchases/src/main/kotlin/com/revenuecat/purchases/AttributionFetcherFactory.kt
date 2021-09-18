@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.attribution.AttributionFetcherInterface
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.subscriberattributes.AttributionFetcher
+import com.revenuecat.purchases.google.attribution.AttributionFetcher
 
 object AttributionFetcherFactory {
 

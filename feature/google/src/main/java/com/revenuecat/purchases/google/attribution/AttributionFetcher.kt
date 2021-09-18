@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.subscriberattributes
+package com.revenuecat.purchases.google.attribution
 
 import android.annotation.SuppressLint
 import android.app.Application
@@ -20,7 +20,7 @@ class AttributionFetcher(
 
     override fun getDeviceIdentifiers(
         applicationContext: Application,
-        completion: (advertisingID: String?, androidID: String) -> Unit
+        completion: (advertisingID: String?, androidID: String?) -> Unit
     ) {
         dispatcher.enqueue({
             val advertisingID: String? = getAdvertisingID(applicationContext)
@@ -42,20 +42,20 @@ class AttributionFetcher(
             }
         } catch (e: GooglePlayServicesNotAvailableException) {
             log(LogIntent.GOOGLE_ERROR,
-                    AttributionStrings.GOOGLE_PLAY_SERVICES_NOT_INSTALLED_FETCHING_ADVERTISING_IDENTIFIER
-                            .format(e.localizedMessage))
+                AttributionStrings.GOOGLE_PLAY_SERVICES_NOT_INSTALLED_FETCHING_ADVERTISING_IDENTIFIER
+                    .format(e.localizedMessage))
         } catch (e: GooglePlayServicesRepairableException) {
             log(LogIntent.GOOGLE_ERROR,
-                    AttributionStrings.GOOGLE_PLAY_SERVICES_REPAIRABLE_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                            .format(e.localizedMessage))
+                AttributionStrings.GOOGLE_PLAY_SERVICES_REPAIRABLE_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                    .format(e.localizedMessage))
         } catch (e: TimeoutException) {
             log(LogIntent.GOOGLE_ERROR,
-                    AttributionStrings.TIMEOUT_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                            .format(e.localizedMessage))
+                AttributionStrings.TIMEOUT_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                    .format(e.localizedMessage))
         } catch (e: IOException) {
             log(LogIntent.GOOGLE_ERROR,
-                    AttributionStrings.IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                            .format(e.localizedMessage))
+                AttributionStrings.IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                    .format(e.localizedMessage))
         }
         return advertisingID
     }

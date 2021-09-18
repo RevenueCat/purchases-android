@@ -11,7 +11,7 @@ class AttributionFetcher : AttributionFetcherInterface {
 
     override fun getDeviceIdentifiers(
         applicationContext: Application,
-        completion: (advertisingID: String?, androidID: String) -> Unit
+        completion: (advertisingID: String?, androidID: String?) -> Unit
     ) {
         var advertisingID: String? = null
         return try {
@@ -22,11 +22,11 @@ class AttributionFetcher : AttributionFetcherInterface {
             if (!isLimitAdTrackingEnabled) {
                 advertisingID = Settings.Secure.getString(contentResolver, "advertising_id")
             }
-            completion(advertisingID, "")
+            completion(advertisingID, null)
         } catch (e: Settings.SettingNotFoundException) {
             log(LogIntent.AMAZON_ERROR,
                 AttributionStrings.AMAZON_COULD_NOT_GET_ADID.format(e.localizedMessage))
-            completion(null, "")
+            completion(null, null)
         }
     }
 }

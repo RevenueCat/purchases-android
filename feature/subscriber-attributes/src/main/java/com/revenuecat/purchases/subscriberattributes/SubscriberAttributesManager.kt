@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONObject
 
 class SubscriberAttributesManager(
@@ -162,7 +163,7 @@ class SubscriberAttributesManager(
                 SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to advertisingID,
                 SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to androidID,
                 SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
-            ).filterValues { it != null }
+            ).filterNotNullValues()
             completion(deviceIdentifiers)
         }
     }
