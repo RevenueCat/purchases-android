@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.subscriberattributes
+package com.revenuecat.purchases.google.attribution
 
 import android.app.Application
 import android.content.Context
