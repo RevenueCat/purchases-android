@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.attribution.AttributionFetcherInterface
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesPerAppUserIDMap
@@ -27,7 +28,7 @@ class SubscriberAttributesManagerTests {
 
     private val mockDeviceCache: SubscriberAttributesCache = mockk()
     private val mockBackend: SubscriberAttributesPoster = mockk()
-    private val mockAttributionFetcher: AttributionFetcher = mockk()
+    private val mockAttributionFetcher: AttributionFetcherInterface = mockk()
     private val mockAttributionDataMigrator: AttributionDataMigrator = mockk()
     private val appUserID: String = "appUserID"
     private lateinit var underTest: SubscriberAttributesManager
