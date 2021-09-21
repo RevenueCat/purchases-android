@@ -18,11 +18,11 @@ import java.util.concurrent.TimeoutException
 
 class AttributionFetcherTests {
 
-    private lateinit var underTest: AttributionFetcher
+    private lateinit var underTest: GoogleDeviceIdentifiersFetcher
 
     @Before
     fun setup() {
-        underTest = AttributionFetcher(SyncDispatcher())
+        underTest = GoogleDeviceIdentifiersFetcher(SyncDispatcher())
         mockkStatic(Log::class)
         every {
             Log.e(any(), any())

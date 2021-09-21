@@ -1,40 +1,40 @@
-package com.revenuecat.purchases.subscriberattributes
+package com.revenuecat.purchases.common.subscriberattributes
 
 /**
  * Special Attributes
  */
-internal const val SPECIAL_KEY_EMAIL = "\$email"
-internal const val SPECIAL_KEY_DISPLAY_NAME = "\$displayName"
-internal const val SPECIAL_KEY_PHONE_NUMBER = "\$phoneNumber"
-internal const val SPECIAL_KEY_FCM_TOKENS = "\$fcmTokens"
+const val SPECIAL_KEY_EMAIL = "\$email"
+const val SPECIAL_KEY_DISPLAY_NAME = "\$displayName"
+const val SPECIAL_KEY_PHONE_NUMBER = "\$phoneNumber"
+const val SPECIAL_KEY_FCM_TOKENS = "\$fcmTokens"
 
 /**
  * Device Identifiers
  */
-internal const val SPECIAL_KEY_IDFA = "\$idfa"
-internal const val SPECIAL_KEY_IDFV = "\$idfv"
-internal const val SPECIAL_KEY_IP = "\$ip"
-internal const val SPECIAL_KEY_GPS_AD_ID = "\$gpsAdId"
-internal const val SPECIAL_KEY_ANDROID_ID = "\$androidId"
+const val SPECIAL_KEY_IDFA = "\$idfa"
+const val SPECIAL_KEY_IDFV = "\$idfv"
+const val SPECIAL_KEY_IP = "\$ip"
+const val SPECIAL_KEY_GPS_AD_ID = "\$gpsAdId"
+const val SPECIAL_KEY_ANDROID_ID = "\$androidId"
 
 /**
  * Attribution IDs
  */
-internal const val SPECIAL_KEY_ADJUST_ID = "\$adjustId"
-internal const val SPECIAL_KEY_APPSFLYER_ID = "\$appsflyerId"
-internal const val SPECIAL_KEY_FB_ANON_ID = "\$fbAnonId"
-internal const val SPECIAL_KEY_MPARTICLE_ID = "\$mparticleId"
-internal const val SPECIAL_KEY_ONESIGNAL_ID = "\$onesignalId"
+const val SPECIAL_KEY_ADJUST_ID = "\$adjustId"
+const val SPECIAL_KEY_APPSFLYER_ID = "\$appsflyerId"
+const val SPECIAL_KEY_FB_ANON_ID = "\$fbAnonId"
+const val SPECIAL_KEY_MPARTICLE_ID = "\$mparticleId"
+const val SPECIAL_KEY_ONESIGNAL_ID = "\$onesignalId"
 
 /**
  * Optional campaign parameters
  */
-internal const val SPECIAL_KEY_MEDIA_SOURCE = "\$mediaSource"
-internal const val SPECIAL_KEY_CAMPAIGN = "\$campaign"
-internal const val SPECIAL_KEY_AD_GROUP = "\$adGroup"
-internal const val SPECIAL_KEY_AD = "\$ad"
-internal const val SPECIAL_KEY_KEYWORD = "\$keyword"
-internal const val SPECIAL_KEY_CREATIVE = "\$creative"
+const val SPECIAL_KEY_MEDIA_SOURCE = "\$mediaSource"
+const val SPECIAL_KEY_CAMPAIGN = "\$campaign"
+const val SPECIAL_KEY_AD_GROUP = "\$adGroup"
+const val SPECIAL_KEY_AD = "\$ad"
+const val SPECIAL_KEY_KEYWORD = "\$keyword"
+const val SPECIAL_KEY_CREATIVE = "\$creative"
 
 sealed class SubscriberAttributeKey(val backendKey: String) {
 
@@ -87,7 +87,7 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
     }
 }
 
-internal fun String.getSubscriberAttributeKey(): SubscriberAttributeKey = when (this) {
+fun String.getSubscriberAttributeKey(): SubscriberAttributeKey = when (this) {
     SPECIAL_KEY_EMAIL -> SubscriberAttributeKey.Email
     SPECIAL_KEY_DISPLAY_NAME -> SubscriberAttributeKey.DisplayName
     SPECIAL_KEY_PHONE_NUMBER -> SubscriberAttributeKey.PhoneNumber

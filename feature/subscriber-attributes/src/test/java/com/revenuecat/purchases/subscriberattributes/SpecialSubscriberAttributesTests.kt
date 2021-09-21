@@ -1,5 +1,11 @@
 package com.revenuecat.purchases.subscriberattributes
 
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_DISPLAY_NAME
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_EMAIL
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_FCM_TOKENS
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_PHONE_NUMBER
+import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.subscriberattributes.getSubscriberAttributeKey
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 

@@ -5,7 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.attribution.AttributionFetcherInterface
+import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesPerAppUserIDMap
@@ -28,7 +28,7 @@ class SubscriberAttributesManagerTests {
 
     private val mockDeviceCache: SubscriberAttributesCache = mockk()
     private val mockBackend: SubscriberAttributesPoster = mockk()
-    private val mockAttributionFetcher: AttributionFetcherInterface = mockk()
+    private val mockDeviceIdentifiersFetcher: DeviceIdentifiersFetcher = mockk()
     private val mockAttributionDataMigrator: AttributionDataMigrator = mockk()
     private val appUserID: String = "appUserID"
     private lateinit var underTest: SubscriberAttributesManager
@@ -38,7 +38,7 @@ class SubscriberAttributesManagerTests {
         underTest = SubscriberAttributesManager(
             mockDeviceCache,
             mockBackend,
-            mockAttributionFetcher,
+            mockDeviceIdentifiersFetcher,
             mockAttributionDataMigrator
         )
     }
@@ -484,7 +484,7 @@ class SubscriberAttributesManagerTests {
         expectedAndroidID: String
     ) {
         every {
-            mockAttributionFetcher.getDeviceIdentifiers(mockContext, captureLambda())
+            mockDeviceIdentifiersFetcher.getDeviceIdentifiers(mockContext, captureLambda())
         } answers {
             lambda<(String?, String) -> Unit>().captured.also {
                 it.invoke(expectedAdID, expectedAndroidID)

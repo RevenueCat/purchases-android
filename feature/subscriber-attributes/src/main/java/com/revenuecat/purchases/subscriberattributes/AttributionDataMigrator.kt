@@ -1,6 +1,19 @@
 package com.revenuecat.purchases.subscriberattributes
 
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_AD
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_ADJUST_ID
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_AD_GROUP
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_APPSFLYER_ID
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_CAMPAIGN
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_CREATIVE
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_GPS_AD_ID
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_IDFA
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_IDFV
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_IP
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_KEYWORD
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_MEDIA_SOURCE
+import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_MPARTICLE_ID
 import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONObject
 
