@@ -2,6 +2,7 @@ package com.revenuecat.purchases.subscriberattributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
+import com.revenuecat.purchases.common.subscriberattributes.*
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Before

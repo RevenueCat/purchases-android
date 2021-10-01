@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
+import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesPerAppUserIDMap
 import com.revenuecat.purchases.utils.filterNotNullValues
@@ -486,8 +487,13 @@ class SubscriberAttributesManagerTests {
         every {
             mockDeviceIdentifiersFetcher.getDeviceIdentifiers(mockContext, captureLambda())
         } answers {
-            lambda<(String?, String) -> Unit>().captured.also {
-                it.invoke(expectedAdID, expectedAndroidID)
+            lambda<(Map<String, String>) -> Unit>().captured.also {
+                val deviceIdentifiers = mapOf(
+                    SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to expectedAdID,
+                    SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to expectedAndroidID,
+                    SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
+                ).filterNotNullValues()
+                it.invoke(deviceIdentifiers)
             }
         }
     }
