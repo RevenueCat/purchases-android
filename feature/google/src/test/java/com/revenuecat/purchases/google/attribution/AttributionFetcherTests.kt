@@ -6,6 +6,7 @@ import android.provider.Settings
 import android.util.Log
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import com.google.android.gms.common.GooglePlayServicesRepairableException
+import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
@@ -39,12 +40,17 @@ class AttributionFetcherTests {
         )
 
         var completionCalled = false
-        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+        underTest.getDeviceIdentifiers(mockContext) { identifiers ->
             completionCalled = true
+            val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNotNull()
             assertThat(advertisingID).isEqualTo("12345")
 
+            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
             assertThat(androidID).isEqualTo("androidid")
+
+            val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
+            assertThat(ip).isEqualTo("true")
         }
 
         assertThat(completionCalled).isTrue()
@@ -61,11 +67,17 @@ class AttributionFetcherTests {
         )
 
         var completionCalled = false
-        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+        underTest.getDeviceIdentifiers(mockContext) { identifiers ->
             completionCalled = true
 
+            val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
+
+            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
             assertThat(androidID).isEqualTo("androidid")
+
+            val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
+            assertThat(ip).isEqualTo("true")
         }
 
         assertThat(completionCalled).isTrue()
@@ -82,11 +94,17 @@ class AttributionFetcherTests {
         )
 
         var completionCalled = false
-        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+        underTest.getDeviceIdentifiers(mockContext) { identifiers ->
             completionCalled = true
 
+            val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
+
+            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
             assertThat(androidID).isEqualTo("androidid")
+
+            val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
+            assertThat(ip).isEqualTo("true")
         }
 
         assertThat(completionCalled).isTrue()
@@ -103,11 +121,17 @@ class AttributionFetcherTests {
         )
 
         var completionCalled = false
-        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+        underTest.getDeviceIdentifiers(mockContext) { identifiers ->
             completionCalled = true
 
+            val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
+
+            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
             assertThat(androidID).isEqualTo("androidid")
+
+            val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
+            assertThat(ip).isEqualTo("true")
         }
 
         assertThat(completionCalled).isTrue()
@@ -124,11 +148,17 @@ class AttributionFetcherTests {
         )
 
         var completionCalled = false
-        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+        underTest.getDeviceIdentifiers(mockContext) { identifiers ->
             completionCalled = true
 
+            val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
+
+            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
             assertThat(androidID).isEqualTo("androidid")
+
+            val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
+            assertThat(ip).isEqualTo("true")
         }
 
         assertThat(completionCalled).isTrue()
@@ -145,11 +175,17 @@ class AttributionFetcherTests {
         )
 
         var completionCalled = false
-        underTest.getDeviceIdentifiers(mockContext) { advertisingID, androidID ->
+        underTest.getDeviceIdentifiers(mockContext) { identifiers ->
             completionCalled = true
 
+            val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
+
+            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
             assertThat(androidID).isEqualTo("androidid")
+
+            val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
+            assertThat(ip).isEqualTo("true")
         }
 
         assertThat(completionCalled).isTrue()
