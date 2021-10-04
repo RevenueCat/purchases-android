@@ -8,6 +8,7 @@ package com.revenuecat.purchases.google
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
+import androidx.annotation.NonNull
 import androidx.annotation.UiThread
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
@@ -20,6 +21,7 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetailsParams
+import com.android.billingclient.api.SkuDetailsResponseListener
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -141,20 +143,26 @@ class BillingWrapper(
                     .setSkusList(nonEmptySkus).build()
 
                 withConnectedClient {
-                    querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
+                    querySkuDetailsAsyncEnsuringOneResponse(params) { billingResult, skuDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                            log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                    .format(skus.joinToString()))
-                            log(LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
-                                    .format(skuDetailsList?.joinToString { it.toString() }))
+                            log(
+                                LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
+                                    .format(skus.joinToString())
+                            )
+                            log(
+                                LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
+                                    .format(skuDetailsList?.joinToString { it.toString() })
+                            )
                             skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
                                 log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
                             }
 
                             onReceive(skuDetailsList?.map { it.toProductDetails() } ?: emptyList())
                         } else {
-                            log(LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
-                                    .format(billingResult.toHumanReadableDescription()))
+                            log(
+                                LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
+                                    .format(billingResult.toHumanReadableDescription())
+                            )
                             onError(
                                 billingResult.responseCode.billingResponseToPurchasesError(
                                     "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
@@ -177,8 +185,10 @@ class BillingWrapper(
         presentedOfferingIdentifier: String?
     ) {
         if (replaceSkuInfo != null) {
-            log(LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
-                    .format(replaceSkuInfo.oldPurchase.skus[0], productDetails.sku))
+            log(
+                LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
+                    .format(replaceSkuInfo.oldPurchase.skus[0], productDetails.sku)
+            )
         } else {
             log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(productDetails.sku))
         }
@@ -216,8 +226,10 @@ class BillingWrapper(
             launchBillingFlow(activity, params)
                 .takeIf { billingResult -> billingResult.responseCode != BillingClient.BillingResponseCode.OK }
                 ?.let { billingResult ->
-                    log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_INTENT_FAILED
-                            .format(billingResult.toHumanReadableDescription()))
+                    log(
+                        LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_INTENT_FAILED
+                            .format(billingResult.toHumanReadableDescription())
+                    )
                 }
         }
     }
@@ -234,8 +246,10 @@ class BillingWrapper(
                     queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistoryRecordList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
-                                log(LogIntent.RC_PURCHASE_SUCCESS, RestoreStrings.PURCHASE_HISTORY_RETRIEVED
-                                        .format(it.toHumanReadableDescription()))
+                                log(
+                                    LogIntent.RC_PURCHASE_SUCCESS, RestoreStrings.PURCHASE_HISTORY_RETRIEVED
+                                        .format(it.toHumanReadableDescription())
+                                )
                             } ?: log(LogIntent.DEBUG, RestoreStrings.PURCHASE_HISTORY_EMPTY)
                             onReceivePurchaseHistory(purchaseHistoryRecordList ?: emptyList())
                         } else {
@@ -466,8 +480,10 @@ class BillingWrapper(
         val notNullPurchasesList = purchases ?: emptyList()
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
             notNullPurchasesList.map { purchase ->
-                log(LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
-                        .format(purchase.toHumanReadableDescription()))
+                log(
+                    LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
+                        .format(purchase.toHumanReadableDescription())
+                )
                 var type: ProductType?
                 var presentedOffering: String?
                 synchronized(this@BillingWrapper) {
@@ -486,13 +502,15 @@ class BillingWrapper(
             purchasesUpdatedListener?.onPurchasesUpdated(emptyList())
         } else {
             log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
-                    .format(billingResult.toHumanReadableDescription()) +
-                    "${notNullPurchasesList.takeUnless { it.isEmpty() }?.let { purchase ->
-                    "Purchases:" + purchase.joinToString(
-                        ", ",
-                        transform = { it.toHumanReadableDescription() }
-                    )
-                }}"
+                .format(billingResult.toHumanReadableDescription()) +
+                "${
+                    notNullPurchasesList.takeUnless { it.isEmpty() }?.let { purchase ->
+                        "Purchases:" + purchase.joinToString(
+                            ", ",
+                            transform = { it.toHumanReadableDescription() }
+                        )
+                    }
+                }"
             )
 
             val responseCode =
@@ -514,8 +532,10 @@ class BillingWrapper(
         mainHandler.post {
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
-                    log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_SETUP_FINISHED
-                        .format(billingClient?.toString()))
+                    log(
+                        LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_SETUP_FINISHED
+                            .format(billingClient?.toString())
+                    )
                     stateListener?.onConnected()
                     executePendingRequests()
                 }
@@ -548,8 +568,10 @@ class BillingWrapper(
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
                 BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> {
-                    log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_ERROR
-                        .format(billingResult.toHumanReadableDescription()))
+                    log(
+                        LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_ERROR
+                            .format(billingResult.toHumanReadableDescription())
+                    )
                 }
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
                     // Billing service is already trying to connect. Don't do anything.
@@ -577,5 +599,23 @@ class BillingWrapper(
         val printWriter = PrintWriter(stringWriter)
         Throwable().printStackTrace(printWriter)
         return stringWriter.toString()
+    }
+
+    private fun BillingClient.querySkuDetailsAsyncEnsuringOneResponse(
+        params: SkuDetailsParams,
+        listener: SkuDetailsResponseListener
+    ) {
+        var hasResponded = false
+        querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
+            if (hasResponded) {
+                log(
+                    LogIntent.GOOGLE_ERROR,
+                    OfferingStrings.EXTRA_QUERY_SKU_DETAILS_RESPONSE.format(billingResult.responseCode)
+                )
+                return@querySkuDetailsAsync
+            }
+            listener.onSkuDetailsResponse(billingResult, skuDetailsList)
+            hasResponded = true
+        }
     }
 }
