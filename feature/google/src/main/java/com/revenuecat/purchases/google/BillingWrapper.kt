@@ -19,6 +19,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
+import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
@@ -243,7 +244,7 @@ class BillingWrapper(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
-                    queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistoryRecordList ->
+                    queryPurchaseHistoryAsyncEnsuringOneResponse(skuType) { billingResult, purchaseHistoryRecordList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
                                 log(
@@ -615,6 +616,24 @@ class BillingWrapper(
                 return@querySkuDetailsAsync
             }
             listener.onSkuDetailsResponse(billingResult, skuDetailsList)
+            hasResponded = true
+        }
+    }
+
+    private fun BillingClient.queryPurchaseHistoryAsyncEnsuringOneResponse(
+        skuType: String,
+        listener: PurchaseHistoryResponseListener
+    ) {
+        var hasResponded = false
+        queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistory ->
+            if (hasResponded) {
+                log(
+                    LogIntent.GOOGLE_ERROR,
+                    RestoreStrings.EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE.format(billingResult.responseCode)
+                )
+                return@queryPurchaseHistoryAsync
+            }
+            listener.onPurchaseHistoryResponse(billingResult, purchaseHistory)
             hasResponded = true
         }
     }
