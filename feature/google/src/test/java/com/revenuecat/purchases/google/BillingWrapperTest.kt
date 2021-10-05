@@ -1505,6 +1505,59 @@ class BillingWrapperTest {
         }
     }
 
+    @Test
+    fun `querySkuDetailsAsync only calls one response when BillingClient responds twice`() {
+        var numCallbacks = 0
+
+        val slot = slot<SkuDetailsResponseListener>()
+        every {
+            mockClient.querySkuDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        } answers {
+            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+        }
+
+        wrapper.querySkuDetailsAsync(
+            ProductType.SUBS,
+            setOf("", ""),
+            {
+                numCallbacks++
+            }, {
+                numCallbacks++
+            })
+
+        assertThat(numCallbacks == 1)
+    }
+
+    @Test
+    fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice`() {
+        var numCallbacks = 0
+
+        val slot = slot<PurchaseHistoryResponseListener>()
+        every {
+            mockClient.queryPurchaseHistoryAsync(
+                any(),
+                capture(slot)
+            )
+        } answers {
+            slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
+            slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
+        }
+
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.SkuType.SUBS,
+            {
+                numCallbacks++
+            }, {
+                numCallbacks++
+            })
+
+        assertThat(numCallbacks == 1)
+    }
+
     private fun mockNullSkuDetailsResponse() {
         val slot = slot<SkuDetailsResponseListener>()
         every {
