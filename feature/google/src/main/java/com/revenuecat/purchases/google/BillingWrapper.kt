@@ -8,7 +8,6 @@ package com.revenuecat.purchases.google
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
-import androidx.annotation.NonNull
 import androidx.annotation.UiThread
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient

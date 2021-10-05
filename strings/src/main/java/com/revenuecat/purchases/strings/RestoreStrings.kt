@@ -3,7 +3,8 @@ package com.revenuecat.purchases.strings
 object RestoreStrings {
     const val PURCHASE_HISTORY_EMPTY = "Purchase history is empty."
     const val PURCHASE_HISTORY_RETRIEVED = "Purchase history retrieved %s"
-    const val EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE = "BillingClient queryPurchaseHistory has returned more than once: %s"
+    const val EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE = "BillingClient queryPurchaseHistory has returned more than " +
+        "once: %s"
     const val PURCHASE_RESTORED = "Purchase %s restored"
     const val QUERYING_PURCHASE = "Querying purchases"
     const val QUERYING_PURCHASE_WITH_HASH = "Purchase of type %s with hash %s"
