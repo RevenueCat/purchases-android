@@ -20,8 +20,8 @@ class AmazonDeviceIdentifiersFetcher : DeviceIdentifiersFetcher {
             val contentResolver = applicationContext.contentResolver
 
             val limitAdTrackingSetting = Settings.Secure.getInt(contentResolver, "limit_ad_tracking")
-            val isLimitAdTrackingEnabled = limitAdTrackingSetting != 0
-            if (!isLimitAdTrackingEnabled) {
+            val isLimitAdTrackingDisabled = limitAdTrackingSetting == 0
+            if (isLimitAdTrackingDisabled) {
                 advertisingID = Settings.Secure.getString(contentResolver, "advertising_id")
             }
         } catch (e: Settings.SettingNotFoundException) {
