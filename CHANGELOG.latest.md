@@ -1,3 +1,3 @@
-- Moves the code of `onBillingSetupFinished` to the main thread. Changes the callback of `canMakePayments` to the main thread. 
-    https://github.com/RevenueCat/purchases-android/pull/349/
-    https://github.com/RevenueCat/purchases-android/issues/348
+- Makes improvements to prevent multiple HTTP requests with the same parameters to `/identify` and `/alias`. 
+    https://github.com/RevenueCat/purchases-android/pull/358
+    https://github.com/RevenueCat/purchases-android/pull/359

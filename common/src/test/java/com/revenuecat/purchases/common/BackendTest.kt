@@ -10,16 +10,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.models.ProductDetails
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
-import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
@@ -412,6 +409,123 @@ class BackendTest {
 
         verify {
             onSuccess.invoke()
+        }
+    }
+
+    @Test
+    fun `given multiple alias calls for same ids, only one is triggered`() {
+        val body = mapOf(
+            "new_app_user_id" to "newId"
+        )
+        mockResponse(
+            "/subscribers/$appUserID/alias",
+            body,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true
+        )
+        val newAppUserID = "newId"
+        val lock = CountDownLatch(2)
+        asyncBackend.createAlias(appUserID, newAppUserID, onSuccessHandler = {
+            lock.countDown()
+        }, onErrorHandler = {
+            fail("Shouldn't be an error")
+        })
+        asyncBackend.createAlias(appUserID, newAppUserID, onSuccessHandler = {
+            lock.countDown()
+        }, onErrorHandler = {
+            fail("Shouldn't be an error")
+        })
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/${Uri.encode(appUserID)}/alias",
+                body,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple alias calls for same ids, only one is triggered, and all onError callbacks are triggered if 500`() {
+        val body = mapOf(
+            "new_app_user_id" to "newId"
+        )
+        mockResponse(
+            "/subscribers/$appUserID/alias",
+            body,
+            responseCode = 500,
+            clientException = null,
+            resultBody = null,
+            delayed = true
+        )
+        val newAppUserID = "newId"
+        val lock = CountDownLatch(2)
+        asyncBackend.createAlias(appUserID, newAppUserID, onSuccessHandler = {
+            fail("Shouldn't be success")
+        }, onErrorHandler = {
+            lock.countDown()
+        })
+        asyncBackend.createAlias(appUserID, newAppUserID, onSuccessHandler = {
+            fail("Shouldn't be success")
+        }, onErrorHandler = {
+            lock.countDown()
+        })
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/${Uri.encode(appUserID)}/alias",
+                body,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple alias calls for same ids, only one is triggered, and all onError callbacks are triggered if there's an exception`() {
+        val body = mapOf(
+            "new_app_user_id" to "newId"
+        )
+
+        val headers = HashMap<String, String>()
+        headers["Authorization"] = "Bearer $API_KEY"
+
+        val lockException = CountDownLatch(1)
+        every {
+            mockClient.performRequest(
+                "/subscribers/$appUserID/alias",
+                body,
+                headers
+            )
+        } answers {
+            lockException.await()
+            throw IOException()
+        }
+
+        val newAppUserID = "newId"
+        val lock = CountDownLatch(2)
+        asyncBackend.createAlias(appUserID, newAppUserID, onSuccessHandler = {
+            fail("Shouldn't be success")
+        }, onErrorHandler = {
+            lock.countDown()
+        })
+        asyncBackend.createAlias(appUserID, newAppUserID, onSuccessHandler = {
+            fail("Shouldn't be success")
+        }, onErrorHandler = {
+            lock.countDown()
+        })
+        lockException.countDown()
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/${Uri.encode(appUserID)}/alias",
+                body,
+                any()
+            )
         }
     }
 
@@ -1046,7 +1160,7 @@ class BackendTest {
             appUserID,
             newAppUserID,
             { _, _ ->
-                fail("Should have called success")
+                fail("Should have called error")
             },
             onReceiveLoginErrorHandler
         )
@@ -1106,6 +1220,153 @@ class BackendTest {
             }
         )
         assertThat(receivedCreated).isFalse
+    }
+
+    @Test
+    fun `given multiple login calls for same ids, only one is triggered`() {
+        val newAppUserID = "newId"
+        val requestBody = mapOf(
+            "new_app_user_id" to newAppUserID,
+            "app_user_id" to appUserID
+        )
+        val resultBody = Responses.validFullPurchaserResponse
+        mockResponse(
+            "/subscribers/identify",
+            requestBody,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody,
+            delayed = true
+        )
+
+        val lock = CountDownLatch(2)
+        asyncBackend.logIn(
+            appUserID,
+            newAppUserID,
+            { _, _ ->
+                lock.countDown()
+            },
+            {
+                fail("Should have called success")
+            }
+        )
+        asyncBackend.logIn(
+            appUserID,
+            newAppUserID,
+            { _, _ ->
+                lock.countDown()
+            },
+            {
+                fail("Should have called success")
+            }
+        )
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/identify",
+                requestBody,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple login calls for same ids, only one http call is triggered, and all onError callbacks are called if purchaserInfo can't be parsed`() {
+        val newAppUserID = "newId"
+        val requestBody = mapOf(
+            "new_app_user_id" to newAppUserID,
+            "app_user_id" to appUserID
+        )
+        val resultBody = "{}"
+        mockResponse(
+            "/subscribers/identify",
+            requestBody,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody,
+            delayed = true
+        )
+
+        val lock = CountDownLatch(2)
+        asyncBackend.logIn(
+            appUserID,
+            newAppUserID,
+            { _, _ ->
+                fail("Should have called error")
+            },
+            {
+                lock.countDown()
+            }
+        )
+        asyncBackend.logIn(
+            appUserID,
+            newAppUserID,
+            { _, _ ->
+                fail("Should have called error")
+            },
+            {
+                lock.countDown()
+            }
+        )
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/identify",
+                requestBody,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple login calls for same ids, only one http call is triggered, and all onError callbacks are called if call is not successful`() {
+        val newAppUserID = "newId"
+        val requestBody = mapOf(
+            "new_app_user_id" to newAppUserID,
+            "app_user_id" to appUserID
+        )
+        val resultBody = "{}"
+        mockResponse(
+            "/subscribers/identify",
+            requestBody,
+            responseCode = 500,
+            clientException = null,
+            resultBody = resultBody,
+            delayed = true
+        )
+
+        val lock = CountDownLatch(2)
+        asyncBackend.logIn(
+            appUserID,
+            newAppUserID,
+            { _, _ ->
+                fail("Should have called error")
+            },
+            {
+                lock.countDown()
+            }
+        )
+        asyncBackend.logIn(
+            appUserID,
+            newAppUserID,
+            { _, _ ->
+                fail("Should have called error")
+            },
+            {
+                lock.countDown()
+            }
+        )
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/identify",
+                requestBody,
+                any()
+            )
+        }
     }
 
     @Test
