@@ -67,7 +67,7 @@ class AmazonDeviceIdentifiersFetcherTests {
 
         assertThat(completionCalled).isTrue()
         assertThat(receivedDeviceIdentifiers.size).isEqualTo(2)
-        assertThat(receivedDeviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey])
+        assertThat(receivedDeviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.AmazonAdID.backendKey])
             .isEqualTo(expectedAmazonAdID)
         assertThat(receivedDeviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]).isEqualTo("true")
     }

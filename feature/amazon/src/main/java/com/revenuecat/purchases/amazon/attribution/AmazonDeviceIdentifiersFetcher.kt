@@ -29,7 +29,7 @@ class AmazonDeviceIdentifiersFetcher : DeviceIdentifiersFetcher {
                 AttributionStrings.AMAZON_COULD_NOT_GET_ADID.format(e.localizedMessage))
         }
         val deviceIdentifiers = mapOf(
-            SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to advertisingID,
+            SubscriberAttributeKey.DeviceIdentifiers.AmazonAdID.backendKey to advertisingID,
             SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
         ).filterNotNullValues()
         completion(deviceIdentifiers)
