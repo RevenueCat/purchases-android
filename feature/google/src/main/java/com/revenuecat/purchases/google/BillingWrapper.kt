@@ -638,7 +638,6 @@ class BillingWrapper(
                 hasResponded = true
             }
             listener.onPurchaseHistoryResponse(billingResult, purchaseHistory)
-
         }
     }
 }
