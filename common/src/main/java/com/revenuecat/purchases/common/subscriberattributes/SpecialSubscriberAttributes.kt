@@ -54,21 +54,23 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
         object AmazonAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.AMAZON_AD_ID.value)
     }
 
-    sealed class AttributionIds {
-        object Adjust : SubscriberAttributeKey(ReservedSubscriberAttribute.ADJUST_ID.value)
-        object AppsFlyer : SubscriberAttributeKey(ReservedSubscriberAttribute.APPSFLYER_ID.value)
-        object Facebook : SubscriberAttributeKey(ReservedSubscriberAttribute.FB_ANON_ID.value)
-        object Mparticle : SubscriberAttributeKey(ReservedSubscriberAttribute.MPARTICLE_ID.value)
-        object OneSignal : SubscriberAttributeKey(ReservedSubscriberAttribute.ONESIGNAL_ID.value)
+    sealed class AttributionIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
+        object Adjust : AttributionIds(ReservedSubscriberAttribute.ADJUST_ID)
+        object AppsFlyer : AttributionIds(ReservedSubscriberAttribute.APPSFLYER_ID)
+        object Facebook : AttributionIds(ReservedSubscriberAttribute.FB_ANON_ID)
+        object Mparticle : AttributionIds(ReservedSubscriberAttribute.MPARTICLE_ID)
+        object OneSignal : AttributionIds(ReservedSubscriberAttribute.ONESIGNAL_ID)
     }
 
-    sealed class CampaignParameters {
-        object MediaSource : SubscriberAttributeKey(ReservedSubscriberAttribute.MEDIA_SOURCE.value)
-        object Campaign : SubscriberAttributeKey(ReservedSubscriberAttribute.CAMPAIGN.value)
-        object AdGroup : SubscriberAttributeKey(ReservedSubscriberAttribute.AD_GROUP.value)
-        object Ad : SubscriberAttributeKey(ReservedSubscriberAttribute.AD.value)
-        object Keyword : SubscriberAttributeKey(ReservedSubscriberAttribute.KEYWORD.value)
-        object Creative : SubscriberAttributeKey(ReservedSubscriberAttribute.CREATIVE.value)
+    sealed class CampaignParameters(
+        backendKey: ReservedSubscriberAttribute
+    ) : SubscriberAttributeKey(backendKey.value) {
+        object MediaSource : CampaignParameters(ReservedSubscriberAttribute.MEDIA_SOURCE)
+        object Campaign : CampaignParameters(ReservedSubscriberAttribute.CAMPAIGN)
+        object AdGroup : CampaignParameters(ReservedSubscriberAttribute.AD_GROUP)
+        object Ad : CampaignParameters(ReservedSubscriberAttribute.AD)
+        object Keyword : CampaignParameters(ReservedSubscriberAttribute.KEYWORD)
+        object Creative : CampaignParameters(ReservedSubscriberAttribute.CREATIVE)
     }
 
     override fun equals(other: Any?): Boolean {
