@@ -23,6 +23,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
@@ -47,7 +48,12 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.lang.Thread.sleep
 import java.util.ArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -1510,14 +1516,50 @@ class BillingWrapperTest {
         var numCallbacks = 0
 
         val slot = slot<SkuDetailsResponseListener>()
+//        every {
+//            mockClient.querySkuDetailsAsync(
+//                any(),
+//                capture(slot)
+//            )
+//        } answers {
+//            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+//            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+//        }
+
+        wrapper.querySkuDetailsAsync(
+            ProductType.SUBS,
+            setOf("", ""),
+            {
+                sleep(200)
+                numCallbacks++
+            }, {
+                numCallbacks++
+            })
+
+        assertThat(numCallbacks == 1)
+    }
+
+    @Test
+    fun `querySkuDetailsAsync only calls one response when BillingClient responds twice in separate threads`() {
+        var numCallbacks = 0
+
+        val slot = slot<SkuDetailsResponseListener>()
+        val lock = CountDownLatch(2)
         every {
             mockClient.querySkuDetailsAsync(
                 any(),
                 capture(slot)
             )
         } answers {
-            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
-            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+            Thread {
+                slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+                lock.countDown()
+            }.start()
+
+            Thread {
+                slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+                lock.countDown()
+            }.start()
         }
 
         wrapper.querySkuDetailsAsync(
@@ -1528,6 +1570,9 @@ class BillingWrapperTest {
             }, {
                 numCallbacks++
             })
+
+        lock.await()
+        assertThat(lock.count).isEqualTo(0)
 
         assertThat(numCallbacks == 1)
     }

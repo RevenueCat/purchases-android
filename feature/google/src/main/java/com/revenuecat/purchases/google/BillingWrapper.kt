@@ -607,15 +607,17 @@ class BillingWrapper(
     ) {
         var hasResponded = false
         querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
-            if (hasResponded) {
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    OfferingStrings.EXTRA_QUERY_SKU_DETAILS_RESPONSE.format(billingResult.responseCode)
-                )
-                return@querySkuDetailsAsync
+            synchronized(this@BillingWrapper) {
+                if (hasResponded) {
+                    log(
+                        LogIntent.GOOGLE_ERROR,
+                        OfferingStrings.EXTRA_QUERY_SKU_DETAILS_RESPONSE.format(billingResult.responseCode)
+                    )
+                    return@querySkuDetailsAsync
+                }
+                hasResponded = true
             }
             listener.onSkuDetailsResponse(billingResult, skuDetailsList)
-            hasResponded = true
         }
     }
 
@@ -625,15 +627,18 @@ class BillingWrapper(
     ) {
         var hasResponded = false
         queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistory ->
-            if (hasResponded) {
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    RestoreStrings.EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE.format(billingResult.responseCode)
-                )
-                return@queryPurchaseHistoryAsync
+            synchronized(this@BillingWrapper) {
+                if (hasResponded) {
+                    log(
+                        LogIntent.GOOGLE_ERROR,
+                        RestoreStrings.EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE.format(billingResult.responseCode)
+                    )
+                    return@queryPurchaseHistoryAsync
+                }
+                hasResponded = true
             }
             listener.onPurchaseHistoryResponse(billingResult, purchaseHistory)
-            hasResponded = true
+
         }
     }
 }
