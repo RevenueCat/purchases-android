@@ -1,74 +1,74 @@
 package com.revenuecat.purchases.common.subscriberattributes
 
-enum class BackendKey(val value: String) {
+enum class ReservedSubscriberAttribute(val value: String) {
     /**
      * Special Attributes
      */
-    SPECIAL_KEY_EMAIL("\$email"),
-    SPECIAL_KEY_DISPLAY_NAME("\$displayName"),
-    SPECIAL_KEY_PHONE_NUMBER("\$phoneNumber"),
-    SPECIAL_KEY_FCM_TOKENS("\$fcmTokens"),
+    EMAIL("\$email"),
+    DISPLAY_NAME("\$displayName"),
+    PHONE_NUMBER("\$phoneNumber"),
+    FCM_TOKENS("\$fcmTokens"),
 
     /**
      * Device Identifiers
      */
-    SPECIAL_KEY_IDFA("\$idfa"),
-    SPECIAL_KEY_IDFV("\$idfv"),
-    SPECIAL_KEY_IP("\$ip"),
-    SPECIAL_KEY_GPS_AD_ID("\$gpsAdId"),
-    SPECIAL_KEY_ANDROID_ID("\$androidId"),
-    SPECIAL_KEY_AMAZON_AD_ID("\$amazonAdId"),
+    IDFA("\$idfa"),
+    IDFV("\$idfv"),
+    IP("\$ip"),
+    GPS_AD_ID("\$gpsAdId"),
+    ANDROID_ID("\$androidId"),
+    AMAZON_AD_ID("\$amazonAdId"),
 
     /**
      * Attribution IDs
      */
-    SPECIAL_KEY_ADJUST_ID("\$adjustId"),
-    SPECIAL_KEY_APPSFLYER_ID("\$appsflyerId"),
-    SPECIAL_KEY_FB_ANON_ID("\$fbAnonId"),
-    SPECIAL_KEY_MPARTICLE_ID("\$mparticleId"),
-    SPECIAL_KEY_ONESIGNAL_ID("\$onesignalId"),
+    ADJUST_ID("\$adjustId"),
+    APPSFLYER_ID("\$appsflyerId"),
+    FB_ANON_ID("\$fbAnonId"),
+    MPARTICLE_ID("\$mparticleId"),
+    ONESIGNAL_ID("\$onesignalId"),
 
     /**
      * Optional campaign parameters
      */
-    SPECIAL_KEY_MEDIA_SOURCE("\$mediaSource"),
-    SPECIAL_KEY_CAMPAIGN("\$campaign"),
-    SPECIAL_KEY_AD_GROUP("\$adGroup"),
-    SPECIAL_KEY_AD("\$ad"),
-    SPECIAL_KEY_KEYWORD("\$keyword"),
-    SPECIAL_KEY_CREATIVE("\$creative"),
+    MEDIA_SOURCE("\$mediaSource"),
+    CAMPAIGN("\$campaign"),
+    AD_GROUP("\$adGroup"),
+    AD("\$ad"),
+    KEYWORD("\$keyword"),
+    CREATIVE("\$creative"),
 }
 
 sealed class SubscriberAttributeKey(val backendKey: String) {
 
-    object Email : SubscriberAttributeKey(BackendKey.SPECIAL_KEY_EMAIL.value)
-    object DisplayName : SubscriberAttributeKey(BackendKey.SPECIAL_KEY_DISPLAY_NAME.value)
-    object PhoneNumber : SubscriberAttributeKey(BackendKey.SPECIAL_KEY_PHONE_NUMBER.value)
-    object FCMTokens : SubscriberAttributeKey(BackendKey.SPECIAL_KEY_FCM_TOKENS.value)
+    object Email : SubscriberAttributeKey(ReservedSubscriberAttribute.EMAIL.value)
+    object DisplayName : SubscriberAttributeKey(ReservedSubscriberAttribute.DISPLAY_NAME.value)
+    object PhoneNumber : SubscriberAttributeKey(ReservedSubscriberAttribute.PHONE_NUMBER.value)
+    object FCMTokens : SubscriberAttributeKey(ReservedSubscriberAttribute.FCM_TOKENS.value)
     class Custom(value: String) : SubscriberAttributeKey(value)
 
     sealed class DeviceIdentifiers {
-        object GPSAdID : SubscriberAttributeKey(BackendKey.SPECIAL_KEY_GPS_AD_ID.value)
-        object AndroidID : SubscriberAttributeKey(BackendKey.SPECIAL_KEY_ANDROID_ID.value)
-        object IP : SubscriberAttributeKey(BackendKey.SPECIAL_KEY_IP.value)
-        object AmazonAdID : SubscriberAttributeKey(BackendKey.SPECIAL_KEY_AMAZON_AD_ID.value)
+        object GPSAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.GPS_AD_ID.value)
+        object AndroidID : SubscriberAttributeKey(ReservedSubscriberAttribute.ANDROID_ID.value)
+        object IP : SubscriberAttributeKey(ReservedSubscriberAttribute.IP.value)
+        object AmazonAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.AMAZON_AD_ID.value)
     }
 
-    sealed class AttributionIds(backendKey: BackendKey) : SubscriberAttributeKey(backendKey.value) {
-        object Adjust : AttributionIds(BackendKey.SPECIAL_KEY_ADJUST_ID)
-        object AppsFlyer : AttributionIds(BackendKey.SPECIAL_KEY_APPSFLYER_ID)
-        object Facebook : AttributionIds(BackendKey.SPECIAL_KEY_FB_ANON_ID)
-        object Mparticle : AttributionIds(BackendKey.SPECIAL_KEY_MPARTICLE_ID)
-        object OneSignal : AttributionIds(BackendKey.SPECIAL_KEY_ONESIGNAL_ID)
+    sealed class AttributionIds {
+        object Adjust : SubscriberAttributeKey(ReservedSubscriberAttribute.ADJUST_ID.value)
+        object AppsFlyer : SubscriberAttributeKey(ReservedSubscriberAttribute.APPSFLYER_ID.value)
+        object Facebook : SubscriberAttributeKey(ReservedSubscriberAttribute.FB_ANON_ID.value)
+        object Mparticle : SubscriberAttributeKey(ReservedSubscriberAttribute.MPARTICLE_ID.value)
+        object OneSignal : SubscriberAttributeKey(ReservedSubscriberAttribute.ONESIGNAL_ID.value)
     }
 
-    sealed class CampaignParameters(backendKey: BackendKey) : SubscriberAttributeKey(backendKey.value) {
-        object MediaSource : CampaignParameters(BackendKey.SPECIAL_KEY_MEDIA_SOURCE)
-        object Campaign : CampaignParameters(BackendKey.SPECIAL_KEY_CAMPAIGN)
-        object AdGroup : CampaignParameters(BackendKey.SPECIAL_KEY_AD_GROUP)
-        object Ad : CampaignParameters(BackendKey.SPECIAL_KEY_AD)
-        object Keyword : CampaignParameters(BackendKey.SPECIAL_KEY_KEYWORD)
-        object Creative : CampaignParameters(BackendKey.SPECIAL_KEY_CREATIVE)
+    sealed class CampaignParameters {
+        object MediaSource : SubscriberAttributeKey(ReservedSubscriberAttribute.MEDIA_SOURCE.value)
+        object Campaign : SubscriberAttributeKey(ReservedSubscriberAttribute.CAMPAIGN.value)
+        object AdGroup : SubscriberAttributeKey(ReservedSubscriberAttribute.AD_GROUP.value)
+        object Ad : SubscriberAttributeKey(ReservedSubscriberAttribute.AD.value)
+        object Keyword : SubscriberAttributeKey(ReservedSubscriberAttribute.KEYWORD.value)
+        object Creative : SubscriberAttributeKey(ReservedSubscriberAttribute.CREATIVE.value)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -92,9 +92,9 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
 }
 
 fun String.getSubscriberAttributeKey(): SubscriberAttributeKey = when (this) {
-    BackendKey.SPECIAL_KEY_EMAIL.value -> SubscriberAttributeKey.Email
-    BackendKey.SPECIAL_KEY_DISPLAY_NAME.value -> SubscriberAttributeKey.DisplayName
-    BackendKey.SPECIAL_KEY_PHONE_NUMBER.value -> SubscriberAttributeKey.PhoneNumber
-    BackendKey.SPECIAL_KEY_FCM_TOKENS.value -> SubscriberAttributeKey.FCMTokens
+    ReservedSubscriberAttribute.EMAIL.value -> SubscriberAttributeKey.Email
+    ReservedSubscriberAttribute.DISPLAY_NAME.value -> SubscriberAttributeKey.DisplayName
+    ReservedSubscriberAttribute.PHONE_NUMBER.value -> SubscriberAttributeKey.PhoneNumber
+    ReservedSubscriberAttribute.FCM_TOKENS.value -> SubscriberAttributeKey.FCMTokens
     else -> SubscriberAttributeKey.Custom(this)
 }
