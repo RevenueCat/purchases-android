@@ -1,19 +1,7 @@
 package com.revenuecat.purchases.subscriberattributes
 
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_AD
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_ADJUST_ID
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_AD_GROUP
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_APPSFLYER_ID
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_CAMPAIGN
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_CREATIVE
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_GPS_AD_ID
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_IDFA
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_IDFV
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_IP
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_KEYWORD
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_MEDIA_SOURCE
-import com.revenuecat.purchases.common.subscriberattributes.SPECIAL_KEY_MPARTICLE_ID
+import com.revenuecat.purchases.common.subscriberattributes.BackendKey
 import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONObject
 
@@ -58,11 +46,11 @@ class AttributionDataMigrator {
         data: JSONObject,
         network: AttributionNetwork
     ): Map<String, String> {
-        val mappingOfCommonAttribution: Map<Any, String> = mapOf(
-            AttributionKeys.IDFA to SPECIAL_KEY_IDFA,
-            AttributionKeys.IDFV to SPECIAL_KEY_IDFV,
-            AttributionKeys.IP to SPECIAL_KEY_IP,
-            AttributionKeys.GPS_AD_ID to SPECIAL_KEY_GPS_AD_ID
+        val mappingOfCommonAttribution: Map<Any, BackendKey> = mapOf(
+            AttributionKeys.IDFA to BackendKey.SPECIAL_KEY_IDFA,
+            AttributionKeys.IDFV to BackendKey.SPECIAL_KEY_IDFV,
+            AttributionKeys.IP to BackendKey.SPECIAL_KEY_IP,
+            AttributionKeys.GPS_AD_ID to BackendKey.SPECIAL_KEY_GPS_AD_ID
         )
 
         val commonSubscriberAttributes = data.convertToSubscriberAttributes(mappingOfCommonAttribution)
@@ -88,16 +76,16 @@ class AttributionDataMigrator {
     }
 
     private fun convertMParticleAttribution(data: JSONObject): Map<String, String> {
-        val mapping: Map<Any, String> = mapOf(
-            (AttributionKeys.NETWORK_ID or AttributionKeys.MParticle.ID) to SPECIAL_KEY_MPARTICLE_ID,
+        val mapping: Map<Any, BackendKey> = mapOf(
+            (AttributionKeys.NETWORK_ID or AttributionKeys.MParticle.ID) to BackendKey.SPECIAL_KEY_MPARTICLE_ID,
         )
         return data.convertToSubscriberAttributes(mapping)
     }
 
     private fun convertBranchAttribution(data: JSONObject): Map<String, String> {
-        val mapping: Map<Any, String> = mapOf(
-            AttributionKeys.Branch.CHANNEL to SPECIAL_KEY_MEDIA_SOURCE,
-            AttributionKeys.Branch.CAMPAIGN to SPECIAL_KEY_CAMPAIGN
+        val mapping: Map<Any, BackendKey> = mapOf(
+            AttributionKeys.Branch.CHANNEL to BackendKey.SPECIAL_KEY_MEDIA_SOURCE,
+            AttributionKeys.Branch.CAMPAIGN to BackendKey.SPECIAL_KEY_CAMPAIGN
         )
         return data.convertToSubscriberAttributes(mapping)
     }
@@ -112,45 +100,45 @@ class AttributionDataMigrator {
                 data.put(key, innerDataJSONObject[key])
             }
         }
-        val mapping: Map<Any, String> = mapOf(
-            (AttributionKeys.AppsFlyer.ID or AttributionKeys.NETWORK_ID) to SPECIAL_KEY_APPSFLYER_ID,
+        val mapping: Map<Any, BackendKey> = mapOf(
+            (AttributionKeys.AppsFlyer.ID or AttributionKeys.NETWORK_ID) to BackendKey.SPECIAL_KEY_APPSFLYER_ID,
             (AttributionKeys.AppsFlyer.CHANNEL or AttributionKeys.AppsFlyer.MEDIA_SOURCE)
-                to SPECIAL_KEY_MEDIA_SOURCE,
-            AttributionKeys.AppsFlyer.CAMPAIGN to SPECIAL_KEY_CAMPAIGN,
-            AttributionKeys.AppsFlyer.ADSET to SPECIAL_KEY_AD_GROUP,
-            (AttributionKeys.AppsFlyer.AD or AttributionKeys.AppsFlyer.AD_GROUP) to SPECIAL_KEY_AD,
-            AttributionKeys.AppsFlyer.AD_KEYWORDS to SPECIAL_KEY_KEYWORD,
-            AttributionKeys.AppsFlyer.AD_ID to SPECIAL_KEY_CREATIVE
+                to BackendKey.SPECIAL_KEY_MEDIA_SOURCE,
+            AttributionKeys.AppsFlyer.CAMPAIGN to BackendKey.SPECIAL_KEY_CAMPAIGN,
+            AttributionKeys.AppsFlyer.ADSET to BackendKey.SPECIAL_KEY_AD_GROUP,
+            (AttributionKeys.AppsFlyer.AD or AttributionKeys.AppsFlyer.AD_GROUP) to BackendKey.SPECIAL_KEY_AD,
+            AttributionKeys.AppsFlyer.AD_KEYWORDS to BackendKey.SPECIAL_KEY_KEYWORD,
+            AttributionKeys.AppsFlyer.AD_ID to BackendKey.SPECIAL_KEY_CREATIVE
         )
         return data.convertToSubscriberAttributes(mapping)
     }
 
     private fun convertAdjustAttribution(data: JSONObject): Map<String, String> {
-        val mapping: Map<Any, String> = mapOf(
-            (AttributionKeys.Adjust.ID or AttributionKeys.NETWORK_ID) to SPECIAL_KEY_ADJUST_ID,
-            AttributionKeys.Adjust.NETWORK to SPECIAL_KEY_MEDIA_SOURCE,
-            AttributionKeys.Adjust.CAMPAIGN to SPECIAL_KEY_CAMPAIGN,
-            AttributionKeys.Adjust.AD_GROUP to SPECIAL_KEY_AD_GROUP,
-            AttributionKeys.Adjust.CREATIVE to SPECIAL_KEY_CREATIVE,
+        val mapping: Map<Any, BackendKey> = mapOf(
+            (AttributionKeys.Adjust.ID or AttributionKeys.NETWORK_ID) to BackendKey.SPECIAL_KEY_ADJUST_ID,
+            AttributionKeys.Adjust.NETWORK to BackendKey.SPECIAL_KEY_MEDIA_SOURCE,
+            AttributionKeys.Adjust.CAMPAIGN to BackendKey.SPECIAL_KEY_CAMPAIGN,
+            AttributionKeys.Adjust.AD_GROUP to BackendKey.SPECIAL_KEY_AD_GROUP,
+            AttributionKeys.Adjust.CREATIVE to BackendKey.SPECIAL_KEY_CREATIVE,
         )
         return data.convertToSubscriberAttributes(mapping)
     }
 
     private fun JSONObject.convertToSubscriberAttributes(
-        mapping: Map<Any, String>
+        mapping: Map<Any, BackendKey>
     ): Map<String, String> {
         val subscriberAttributes = mutableMapOf<String, String>()
         mapping.forEach { (attributionKey, specialSubscriberAttribute) ->
             when (attributionKey) {
                 is String -> {
                     this.optNullableString(attributionKey)?.let {
-                        subscriberAttributes[specialSubscriberAttribute] = it
+                        subscriberAttributes[specialSubscriberAttribute.value] = it
                     }
                 }
                 is Pair<*, *> -> {
                     val firstOption = this.optNullableString(attributionKey.first as String)
                     val secondOption = this.optNullableString(attributionKey.second as String)
-                    (firstOption ?: secondOption)?.let { subscriberAttributes[specialSubscriberAttribute] = it }
+                    (firstOption ?: secondOption)?.let { subscriberAttributes[specialSubscriberAttribute.value] = it }
                 }
             }
         }
