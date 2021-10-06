@@ -16,6 +16,7 @@ const val SPECIAL_KEY_IDFV = "\$idfv"
 const val SPECIAL_KEY_IP = "\$ip"
 const val SPECIAL_KEY_GPS_AD_ID = "\$gpsAdId"
 const val SPECIAL_KEY_ANDROID_ID = "\$androidId"
+const val SPECIAL_KEY_AMAZON_AD_ID = "\$amazonAdId"
 
 /**
  * Attribution IDs
@@ -48,6 +49,7 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
         object GPSAdID : SubscriberAttributeKey(SPECIAL_KEY_GPS_AD_ID)
         object AndroidID : SubscriberAttributeKey(SPECIAL_KEY_ANDROID_ID)
         object IP : SubscriberAttributeKey(SPECIAL_KEY_IP)
+        object AmazonAdID : SubscriberAttributeKey(SPECIAL_KEY_AMAZON_AD_ID)
     }
 
     sealed class AttributionIds(backendKey: String) : SubscriberAttributeKey(backendKey) {
