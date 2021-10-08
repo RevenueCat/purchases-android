@@ -23,6 +23,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
@@ -47,7 +48,12 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.lang.Thread.sleep
 import java.util.ArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -1503,6 +1509,141 @@ class BillingWrapperTest {
         verify(exactly = 0) {
             mockClient.querySkuDetailsAsync(any(), any())
         }
+    }
+
+    @Test
+    fun `querySkuDetailsAsync only calls one response when BillingClient responds twice`() {
+        var numCallbacks = 0
+
+        val slot = slot<SkuDetailsResponseListener>()
+        every {
+            mockClient.querySkuDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        } answers {
+            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+        }
+
+        wrapper.querySkuDetailsAsync(
+            ProductType.SUBS,
+            setOf("asdf", "asdf"),
+            {
+                sleep(200)
+                numCallbacks++
+            }, {
+                numCallbacks++
+            })
+
+        assertThat(numCallbacks == 1)
+    }
+
+    @Test
+    fun `querySkuDetailsAsync only calls one response when BillingClient responds twice in separate threads`() {
+        var numCallbacks = 0
+
+        val slot = slot<SkuDetailsResponseListener>()
+        val lock = CountDownLatch(2)
+        every {
+            mockClient.querySkuDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        } answers {
+            Thread {
+                slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+                lock.countDown()
+            }.start()
+
+            Thread {
+                slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+                lock.countDown()
+            }.start()
+        }
+
+        wrapper.querySkuDetailsAsync(
+            ProductType.SUBS,
+            setOf("asdf"),
+            {
+                // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
+                handler.post {
+                    numCallbacks++
+                }
+            }, {
+                fail("shouldn't be an error")
+            })
+
+        lock.await()
+        assertThat(lock.count).isEqualTo(0)
+
+        assertThat(numCallbacks).isEqualTo(1)
+    }
+
+    @Test
+    fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice`() {
+        var numCallbacks = 0
+
+        val slot = slot<PurchaseHistoryResponseListener>()
+        every {
+            mockClient.queryPurchaseHistoryAsync(
+                any(),
+                capture(slot)
+            )
+        } answers {
+            slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
+            slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
+        }
+
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.SkuType.SUBS,
+            {
+                numCallbacks++
+            }, {
+                fail("shouldn't be an error")
+            })
+
+        assertThat(numCallbacks == 1)
+    }
+
+    @Test
+    fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice from different threads`() {
+        var numCallbacks = 0
+
+        val slot = slot<PurchaseHistoryResponseListener>()
+        val lock = CountDownLatch(2)
+        every {
+            mockClient.queryPurchaseHistoryAsync(
+                any(),
+                capture(slot)
+            )
+        } answers {
+            Thread {
+                slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
+                lock.countDown()
+            }.start()
+
+            Thread {
+                slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
+                lock.countDown()
+            }.start()
+        }
+
+        wrapper.queryPurchaseHistoryAsync(
+            BillingClient.SkuType.SUBS,
+            {
+                // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
+                handler.post {
+                    numCallbacks++
+                }
+            }, {
+                fail("shouldn't be an error")
+            })
+
+        lock.await()
+        assertThat(lock.count).isEqualTo(0)
+
+        assertThat(numCallbacks).isEqualTo(1)
     }
 
     private fun mockNullSkuDetailsResponse() {
