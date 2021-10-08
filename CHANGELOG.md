@@ -1,3 +1,11 @@
+## 4.3.3
+
+- Patch around BillingClient bug resulting in multiple responses from querySkuDetailsAsync and queryPurchaseHistoryAsync
+    https://github.com/RevenueCat/purchases-android/pull/369
+- Update test dependencies, Gradle plugin and buildToolsVersion
+    https://github.com/RevenueCat/purchases-android/pull/363
+    https://github.com/RevenueCat/purchases-android/pull/365
+
 ## 4.3.2
 
 - Makes improvements to prevent multiple HTTP requests with the same parameters to `/identify` and `/alias`. 
