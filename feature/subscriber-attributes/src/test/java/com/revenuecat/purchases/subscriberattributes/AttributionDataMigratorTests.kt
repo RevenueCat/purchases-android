@@ -31,11 +31,11 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.ADJUST)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_ADJUST_ID]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.NETWORK))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.AD_GROUP))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CREATIVE))
+        assertThat(converted[ReservedSubscriberAttribute.ADJUST_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.NETWORK))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.AD_GROUP))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CREATIVE))
     }
 
     @Test
@@ -48,11 +48,11 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.ADJUST)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_ADJUST_ID]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.NETWORK))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.AD_GROUP))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CREATIVE))
+        assertThat(converted[ReservedSubscriberAttribute.ADJUST_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.NETWORK))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.AD_GROUP))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CREATIVE))
     }
 
     @Test
@@ -65,11 +65,11 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.ADJUST)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_ADJUST_ID]).isEqualTo(jsonObject.getString(AttributionKeys.NETWORK_ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.NETWORK))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.AD_GROUP))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CREATIVE))
+        assertThat(converted[ReservedSubscriberAttribute.ADJUST_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.NETWORK_ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.NETWORK))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.AD_GROUP))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CREATIVE))
     }
 
     @Test
@@ -79,11 +79,11 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.ADJUST)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted, expectedIdfa = null)
-        assertThat(converted[SPECIAL_KEY_ADJUST_ID]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.NETWORK))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.AD_GROUP))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CREATIVE))
+        assertThat(converted[ReservedSubscriberAttribute.ADJUST_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.NETWORK))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.AD_GROUP))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CREATIVE))
     }
 
     @Test
@@ -93,11 +93,11 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.ADJUST)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted, expectedIdfv = null)
-        assertThat(converted[SPECIAL_KEY_ADJUST_ID]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.NETWORK))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.AD_GROUP))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CREATIVE))
+        assertThat(converted[ReservedSubscriberAttribute.ADJUST_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.NETWORK))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.AD_GROUP))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Adjust.CREATIVE))
     }
 
     @Test
@@ -107,13 +107,13 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
-        assertThat(converted[SPECIAL_KEY_AD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
-        assertThat(converted[SPECIAL_KEY_KEYWORD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
+        assertThat(converted[ReservedSubscriberAttribute.AD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
+        assertThat(converted[ReservedSubscriberAttribute.KEYWORD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
     }
 
     @Test
@@ -126,13 +126,13 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
-        assertThat(converted[SPECIAL_KEY_AD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
-        assertThat(converted[SPECIAL_KEY_KEYWORD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
+        assertThat(converted[ReservedSubscriberAttribute.AD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
+        assertThat(converted[ReservedSubscriberAttribute.KEYWORD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
     }
 
     @Test
@@ -145,13 +145,13 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.NETWORK_ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
-        assertThat(converted[SPECIAL_KEY_AD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
-        assertThat(converted[SPECIAL_KEY_KEYWORD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.NETWORK_ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
+        assertThat(converted[ReservedSubscriberAttribute.AD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
+        assertThat(converted[ReservedSubscriberAttribute.KEYWORD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
     }
 
     @Test
@@ -161,13 +161,13 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted, expectedIdfa = null)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
-        assertThat(converted[SPECIAL_KEY_AD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
-        assertThat(converted[SPECIAL_KEY_KEYWORD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
+        assertThat(converted[ReservedSubscriberAttribute.AD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
+        assertThat(converted[ReservedSubscriberAttribute.KEYWORD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
     }
 
     @Test
@@ -177,13 +177,13 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted, expectedIdfv = null)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
-        assertThat(converted[SPECIAL_KEY_AD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
-        assertThat(converted[SPECIAL_KEY_KEYWORD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
+        assertThat(converted[ReservedSubscriberAttribute.AD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
+        assertThat(converted[ReservedSubscriberAttribute.KEYWORD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
     }
 
     @Test
@@ -196,8 +196,8 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.MEDIA_SOURCE))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.MEDIA_SOURCE))
 
         jsonObject = getAppsFlyerJSON(
             addChannel = true,
@@ -207,8 +207,8 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
 
         jsonObject = getAppsFlyerJSON(
             addChannel = true,
@@ -218,8 +218,8 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
     }
 
     @Test
@@ -232,8 +232,8 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_AD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_GROUP))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.AD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_GROUP))
 
         jsonObject = getAppsFlyerJSON(
             addAd = true,
@@ -243,8 +243,8 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_AD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.AD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
 
         jsonObject = getAppsFlyerJSON(
             addAd = true,
@@ -254,8 +254,8 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_AD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.AD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
     }
 
     @Test
@@ -283,13 +283,13 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
-        assertThat(converted[SPECIAL_KEY_AD_GROUP]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
-        assertThat(converted[SPECIAL_KEY_AD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
-        assertThat(converted[SPECIAL_KEY_KEYWORD]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
-        assertThat(converted[SPECIAL_KEY_CREATIVE]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.AD_GROUP.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.ADSET))
+        assertThat(converted[ReservedSubscriberAttribute.AD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD))
+        assertThat(converted[ReservedSubscriberAttribute.KEYWORD.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_KEYWORDS))
+        assertThat(converted[ReservedSubscriberAttribute.CREATIVE.value]).isEqualTo(jsonObject.getString(AttributionKeys.AppsFlyer.AD_ID))
     }
 
     @Test
@@ -317,7 +317,7 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.APPSFLYER)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_APPSFLYER_ID]).isEqualTo(jsonObject.getString(AttributionKeys.NETWORK_ID))
+        assertThat(converted[ReservedSubscriberAttribute.APPSFLYER_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.NETWORK_ID))
     }
 
     @Test
@@ -327,8 +327,8 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.BRANCH)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CHANNEL))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CAMPAIGN))
     }
 
     @Test
@@ -338,8 +338,8 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.BRANCH)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted, expectedIdfa = null)
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CHANNEL))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CAMPAIGN))
     }
 
     @Test
@@ -349,8 +349,8 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.BRANCH)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted, expectedIdfv = null)
-        assertThat(converted[SPECIAL_KEY_MEDIA_SOURCE]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CHANNEL))
-        assertThat(converted[SPECIAL_KEY_CAMPAIGN]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CAMPAIGN))
+        assertThat(converted[ReservedSubscriberAttribute.MEDIA_SOURCE.value]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CHANNEL))
+        assertThat(converted[ReservedSubscriberAttribute.CAMPAIGN.value]).isEqualTo(jsonObject.getString(AttributionKeys.Branch.CAMPAIGN))
     }
 
     @Test
@@ -414,7 +414,7 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.MPARTICLE)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_MPARTICLE_ID]).isEqualTo(jsonObject.getString(AttributionKeys.MParticle.ID))
+        assertThat(converted[ReservedSubscriberAttribute.MPARTICLE_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.MParticle.ID))
     }
 
     @Test
@@ -427,7 +427,7 @@ class AttributionDataMigratorTests {
             underTest.convertAttributionDataToSubscriberAttributes(data = jsonObject, AttributionNetwork.MPARTICLE)
         assertThat(converted).isNotNull
         checkCommonAttributes(converted)
-        assertThat(converted[SPECIAL_KEY_MPARTICLE_ID]).isEqualTo(jsonObject.getString(AttributionKeys.NETWORK_ID))
+        assertThat(converted[ReservedSubscriberAttribute.MPARTICLE_ID.value]).isEqualTo(jsonObject.getString(AttributionKeys.NETWORK_ID))
     }
 
     @Test
@@ -587,9 +587,9 @@ class AttributionDataMigratorTests {
         expectedIP: String = DEFAULT_IP,
         expectedGPSAdId: String = DEFAULT_GPSADID
     ) {
-        assertThat(converted[SPECIAL_KEY_IDFA]).isEqualTo(expectedIdfa)
-        assertThat(converted[SPECIAL_KEY_IDFV]).isEqualTo(expectedIdfv)
-        assertThat(converted[SPECIAL_KEY_IP]).isEqualTo(expectedIP)
-        assertThat(converted[SPECIAL_KEY_GPS_AD_ID]).isEqualTo(expectedGPSAdId)
+        assertThat(converted[ReservedSubscriberAttribute.IDFA.value]).isEqualTo(expectedIdfa)
+        assertThat(converted[ReservedSubscriberAttribute.IDFV.value]).isEqualTo(expectedIdfv)
+        assertThat(converted[ReservedSubscriberAttribute.IP.value]).isEqualTo(expectedIP)
+        assertThat(converted[ReservedSubscriberAttribute.GPS_AD_ID.value]).isEqualTo(expectedGPSAdId)
     }
 }
