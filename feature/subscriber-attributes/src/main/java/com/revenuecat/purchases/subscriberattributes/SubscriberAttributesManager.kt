@@ -3,8 +3,10 @@ package com.revenuecat.purchases.subscriberattributes
 import android.app.Application
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -13,7 +15,7 @@ import org.json.JSONObject
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
-    private val attributionFetcher: AttributionFetcher,
+    private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher,
     private val attributionDataMigrator: AttributionDataMigrator
 ) {
 
@@ -156,12 +158,7 @@ class SubscriberAttributesManager(
         applicationContext: Application,
         completion: (deviceIdentifiers: Map<String, String?>) -> Unit
     ) {
-        attributionFetcher.getDeviceIdentifiers(applicationContext) { advertisingID, androidID ->
-            val deviceIdentifiers = mapOf(
-                SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to advertisingID,
-                SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to androidID,
-                SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
-            ).filterValues { it != null }
+        deviceIdentifiersFetcher.getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
             completion(deviceIdentifiers)
         }
     }

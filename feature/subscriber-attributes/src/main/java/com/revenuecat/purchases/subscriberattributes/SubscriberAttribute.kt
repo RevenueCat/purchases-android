@@ -2,6 +2,8 @@ package com.revenuecat.purchases.subscriberattributes
 
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.subscriberattributes.getSubscriberAttributeKey
 import com.revenuecat.purchases.utils.getNullableString
 import org.json.JSONException
 import org.json.JSONObject

@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.subscriberattributes
 
+import com.revenuecat.purchases.common.subscriberattributes.ReservedSubscriberAttribute
+import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.subscriberattributes.getSubscriberAttributeKey
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -7,28 +10,28 @@ class SpecialSubscriberAttributesTests {
 
     @Test
     fun `given an email key SubscriberAttributeKey can be created`() {
-        assertThat(SPECIAL_KEY_EMAIL.getSubscriberAttributeKey()).isInstanceOf(
+        assertThat(ReservedSubscriberAttribute.EMAIL.value.getSubscriberAttributeKey()).isInstanceOf(
             SubscriberAttributeKey.Email::class.java
         )
     }
 
     @Test
     fun `given a display name key SubscriberAttributeKey can be created`() {
-        assertThat(SPECIAL_KEY_DISPLAY_NAME.getSubscriberAttributeKey()).isInstanceOf(
+        assertThat(ReservedSubscriberAttribute.DISPLAY_NAME.value.getSubscriberAttributeKey()).isInstanceOf(
             SubscriberAttributeKey.DisplayName::class.java
         )
     }
 
     @Test
     fun `given a phone number key SubscriberAttributeKey can be created`() {
-        assertThat(SPECIAL_KEY_PHONE_NUMBER.getSubscriberAttributeKey()).isInstanceOf(
+        assertThat(ReservedSubscriberAttribute.PHONE_NUMBER.value.getSubscriberAttributeKey()).isInstanceOf(
             SubscriberAttributeKey.PhoneNumber::class.java
         )
     }
 
     @Test
     fun `given a fcm tokens key SubscriberAttributeKey can be created`() {
-        assertThat(SPECIAL_KEY_FCM_TOKENS.getSubscriberAttributeKey()).isInstanceOf(
+        assertThat(ReservedSubscriberAttribute.FCM_TOKENS.value.getSubscriberAttributeKey()).isInstanceOf(
             SubscriberAttributeKey.FCMTokens::class.java
         )
     }
