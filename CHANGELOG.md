@@ -1,7 +1,7 @@
 ## 4.4.0
 
 - Added support for Airship integration via `setAirshipChannelID`
-    https://github.com/RevenueCat/purchases-android/pull/373
+    https://github.com/RevenueCat/purchases-android/pull/375
 
 ## 4.3.3
 
