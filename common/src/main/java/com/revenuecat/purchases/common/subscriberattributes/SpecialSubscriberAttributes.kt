@@ -27,6 +27,7 @@ enum class ReservedSubscriberAttribute(val value: String) {
     FB_ANON_ID("\$fbAnonId"),
     MPARTICLE_ID("\$mparticleId"),
     ONESIGNAL_ID("\$onesignalId"),
+    AIRSHIP_CHANNEL_ID("\$airshipChannelId"),
 
     /**
      * Optional campaign parameters
@@ -60,6 +61,7 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
         object Facebook : AttributionIds(ReservedSubscriberAttribute.FB_ANON_ID)
         object Mparticle : AttributionIds(ReservedSubscriberAttribute.MPARTICLE_ID)
         object OneSignal : AttributionIds(ReservedSubscriberAttribute.ONESIGNAL_ID)
+        object Airship : AttributionIds(ReservedSubscriberAttribute.AIRSHIP_CHANNEL_ID)
     }
 
     sealed class CampaignParameters(

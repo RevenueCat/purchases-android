@@ -1046,6 +1046,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the Airship Channel ID
+     * Required for the RevenueCat Airship integration
+     *
+     * @param airshipChannelID null will delete the subscriber attribute
+     */
+    fun setAirshipChannelID(airshipChannelID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAirshipChannelID"))
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Airship,
+            airshipChannelID,
+            appUserID,
+            application
+        )
+    }
+
     // endregion
     // region Campaign parameters
 
