@@ -549,6 +549,13 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setAirshipChannelID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.Airship) { id ->
+            underTest.setAirshipChannelID(id)
+        }
+    }
+
     // endregion
 
     // region Campaign parameters
