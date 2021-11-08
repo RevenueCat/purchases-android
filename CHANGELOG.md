@@ -1,3 +1,8 @@
+## 4.4.0
+
+- Added support for Airship integration via `setAirshipChannelID`
+    https://github.com/RevenueCat/purchases-android/pull/375
+
 ## 4.3.3
 
 - Patch around BillingClient bug resulting in multiple responses from querySkuDetailsAsync and queryPurchaseHistoryAsync

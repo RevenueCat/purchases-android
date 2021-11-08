@@ -970,7 +970,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Subscriber attribute associated with the Adjust Id for the user
      * Required for the RevenueCat Adjust integration
      *
-     * @param adjustID null will delete the subscriber attribute
+     * @param adjustID null or an empty string will delete the subscriber attribute
      */
     fun setAdjustID(adjustID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAdjustID"))
@@ -986,7 +986,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Subscriber attribute associated with the AppsFlyer Id for the user
      * Required for the RevenueCat AppsFlyer integration
      *
-     * @param appsflyerID null will delete the subscriber attribute
+     * @param appsflyerID null or an empty string will delete the subscriber attribute
      */
     fun setAppsflyerID(appsflyerID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAppsflyerID"))
@@ -1002,7 +1002,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Subscriber attribute associated with the Facebook SDK Anonymous Id for the user
      * Recommended for the RevenueCat Facebook integration
      *
-     * @param fbAnonymousID null will delete the subscriber attribute
+     * @param fbAnonymousID null or an empty string will delete the subscriber attribute
      */
     fun setFBAnonymousID(fbAnonymousID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setFBAnonymousID"))
@@ -1018,7 +1018,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Subscriber attribute associated with the mParticle Id for the user
      * Recommended for the RevenueCat mParticle integration
      *
-     * @param mparticleID null will delete the subscriber attribute
+     * @param mparticleID null or an empty string will delete the subscriber attribute
      */
     fun setMparticleID(mparticleID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMparticleID"))
@@ -1034,7 +1034,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Subscriber attribute associated with the OneSignal Player Id for the user
      * Required for the RevenueCat OneSignal integration
      *
-     * @param onesignalID null will delete the subscriber attribute
+     * @param onesignalID null or an empty string will delete the subscriber attribute
      */
     fun setOnesignalID(onesignalID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setOnesignalID"))
@@ -1046,13 +1046,29 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the Airship Channel ID
+     * Required for the RevenueCat Airship integration
+     *
+     * @param airshipChannelID null or an empty string will delete the subscriber attribute
+     */
+    fun setAirshipChannelID(airshipChannelID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAirshipChannelID"))
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Airship,
+            airshipChannelID,
+            appUserID,
+            application
+        )
+    }
+
     // endregion
     // region Campaign parameters
 
     /**
      * Subscriber attribute associated with the install media source for the user
      *
-     * @param mediaSource null will delete the subscriber attribute.
+     * @param mediaSource null or an empty string will delete the subscriber attribute.
      */
     fun setMediaSource(mediaSource: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMediaSource"))
@@ -1066,7 +1082,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Subscriber attribute associated with the install campaign for the user
      *
-     * @param campaign null will delete the subscriber attribute.
+     * @param campaign null or an empty string will delete the subscriber attribute.
      */
     fun setCampaign(campaign: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setCampaign"))
@@ -1080,7 +1096,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Subscriber attribute associated with the install ad group for the user
      *
-     * @param adGroup null will delete the subscriber attribute.
+     * @param adGroup null or an empty string will delete the subscriber attribute.
      */
     fun setAdGroup(adGroup: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAdGroup"))
@@ -1094,7 +1110,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Subscriber attribute associated with the install ad for the user
      *
-     * @param ad null will delete the subscriber attribute.
+     * @param ad null or an empty string will delete the subscriber attribute.
      */
     fun setAd(ad: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAd"))
@@ -1108,7 +1124,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Subscriber attribute associated with the install keyword for the user
      *
-     * @param keyword null will delete the subscriber attribute.
+     * @param keyword null or an empty string will delete the subscriber attribute.
      */
     fun setKeyword(keyword: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("seKeyword"))
@@ -1122,7 +1138,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Subscriber attribute associated with the install ad creative for the user
      *
-     * @param creative null will delete the subscriber attribute.
+     * @param creative null or an empty string will delete the subscriber attribute.
      */
     fun setCreative(creative: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setCreative"))
