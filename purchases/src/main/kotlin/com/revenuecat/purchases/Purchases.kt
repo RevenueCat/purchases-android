@@ -1799,6 +1799,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         var proxyURL: URL? = null
 
         /**
+         * True if [configure] has been called and [Purchases.sharedInstance] is set
+         */
+        @JvmStatic
+        val isConfigured: Boolean
+            get() = this.backingFieldSharedInstance != null
+
+        /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
          * be set as a singleton. You should access the singleton instance using [Purchases.sharedInstance]
          * @param apiKey The API Key generated for your app from https://app.revenuecat.com/

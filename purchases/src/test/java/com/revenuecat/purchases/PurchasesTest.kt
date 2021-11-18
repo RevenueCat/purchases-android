@@ -4090,6 +4090,17 @@ class PurchasesTest {
         assertThat(receivedUserCancelled).isFalse()
     }
 
+    @Test
+    fun `isConfigured is true if there's an instance set`() {
+        assertThat(Purchases.isConfigured).isTrue()
+    }
+
+    @Test
+    fun `isConfigured is false if there's no instance set`() {
+        Purchases.backingFieldSharedInstance = null
+        assertThat(Purchases.isConfigured).isFalse()
+    }
+
     private fun mockBackend(errorGettingPurchaserInfo: PurchasesError? = null) {
         with(mockBackend) {
             if (errorGettingPurchaserInfo != null) {
