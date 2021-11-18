@@ -1,3 +1,8 @@
+## 4.5.0
+
+- Added `isConfigured` to be able to check if there is an instance of Purchases already configured
+    https://github.com/RevenueCat/purchases-android/pull/378
+
 ## 4.4.0
 
 - Added support for Airship integration via `setAirshipChannelID`
