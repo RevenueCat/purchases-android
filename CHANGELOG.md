@@ -1,3 +1,5 @@
+- Added `ownershipType` to `EntitlementInfo` to know if the subscription was purchase by the user or shared to them.
+
 ## 4.5.0
 
 - Added `isConfigured` to be able to check if there is an instance of Purchases already configured

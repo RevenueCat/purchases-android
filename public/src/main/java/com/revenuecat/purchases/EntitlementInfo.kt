@@ -38,7 +38,8 @@ class EntitlementInfo constructor(
     val productIdentifier: String,
     val isSandbox: Boolean,
     val unsubscribeDetectedAt: Date?,
-    val billingIssueDetectedAt: Date?
+    val billingIssueDetectedAt: Date?,
+    val ownershipType: OwnershipType
 ) : Parcelable {
 
     /** @suppress */
@@ -55,7 +56,8 @@ class EntitlementInfo constructor(
             "productIdentifier='$productIdentifier', " +
             "isSandbox=$isSandbox, " +
             "unsubscribeDetectedAt=$unsubscribeDetectedAt, " +
-            "billingIssueDetectedAt=$billingIssueDetectedAt)"
+            "billingIssueDetectedAt=$billingIssueDetectedAt, " +
+            "ownershipType=$ownershipType)"
     }
 
     /** @suppress */
@@ -77,6 +79,7 @@ class EntitlementInfo constructor(
         if (isSandbox != other.isSandbox) return false
         if (unsubscribeDetectedAt != other.unsubscribeDetectedAt) return false
         if (billingIssueDetectedAt != other.billingIssueDetectedAt) return false
+        if (ownershipType != other.ownershipType) return false
 
         return true
     }
@@ -94,6 +97,7 @@ class EntitlementInfo constructor(
         result = 31 * result + isSandbox.hashCode()
         result = 31 * result + (unsubscribeDetectedAt?.hashCode() ?: 0)
         result = 31 * result + (billingIssueDetectedAt?.hashCode() ?: 0)
+        result = 31 * result + ownershipType.hashCode()
         return result
     }
 }
@@ -148,4 +152,22 @@ enum class PeriodType {
      * If the entitlement is under a trial period.
      */
     TRIAL,
+}
+
+/**
+ * Enum of supported ownership types for an entitlement.
+ */
+enum class OwnershipType {
+    /**
+     * If the entitlement was purchaed by the current user.
+     */
+    PURCHASED,
+    /**
+     * If the entitlement was shared to this user.
+     */
+    FAMILY_SHARING,
+    /**
+     * If the entitlement has no or an unknown ownership type.
+     */
+    UNKNOWN,
 }

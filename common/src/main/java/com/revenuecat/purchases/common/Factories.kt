@@ -5,6 +5,7 @@ import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PeriodType
@@ -22,6 +23,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.Collections.emptyMap
 import java.util.Date
+import java.util.Map
 
 /**
  * Builds a PurchaserInfo
@@ -124,6 +126,12 @@ private fun JSONObject.optPeriodType(name: String) = when (optString(name)) {
     else -> PeriodType.NORMAL
 }
 
+private fun JSONObject.getOwnershipType(name: String) = when (getString(name)) {
+    "PURCHASED" -> OwnershipType.PURCHASED
+    "FAMILY_SHARING" -> OwnershipType.FAMILY_SHARING
+    else -> OwnershipType.UNKNOWN
+}
+
 private fun JSONObject.buildEntitlementInfo(
     identifier: String,
     productData: JSONObject,
@@ -148,7 +156,8 @@ private fun JSONObject.buildEntitlementInfo(
         productIdentifier = getString("product_identifier"),
         isSandbox = productData.getBoolean("is_sandbox"),
         unsubscribeDetectedAt = unsubscribeDetectedAt,
-        billingIssueDetectedAt = billingIssueDetectedAt
+        billingIssueDetectedAt = billingIssueDetectedAt,
+        ownershipType = productData.getOwnershipType("ownership_type")
     )
 }
 
