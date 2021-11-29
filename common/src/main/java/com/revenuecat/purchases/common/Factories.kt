@@ -125,7 +125,7 @@ private fun JSONObject.optPeriodType(name: String) = when (optString(name)) {
     else -> PeriodType.NORMAL
 }
 
-private fun JSONObject.getOwnershipType(name: String) = when (getString(name)) {
+private fun JSONObject.optOwnershipType(name: String) = when (optString(name)) {
     "PURCHASED" -> OwnershipType.PURCHASED
     "FAMILY_SHARING" -> OwnershipType.FAMILY_SHARING
     else -> OwnershipType.UNKNOWN
@@ -156,7 +156,7 @@ private fun JSONObject.buildEntitlementInfo(
         isSandbox = productData.getBoolean("is_sandbox"),
         unsubscribeDetectedAt = unsubscribeDetectedAt,
         billingIssueDetectedAt = billingIssueDetectedAt,
-        ownershipType = productData.getOwnershipType("ownership_type")
+        ownershipType = productData.optOwnershipType("ownership_type")
     )
 }
 
