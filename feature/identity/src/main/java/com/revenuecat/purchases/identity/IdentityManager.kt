@@ -30,7 +30,7 @@ class IdentityManager(
         }
 
         val appUserIDToUse = appUserID
-            ?.notEmpty
+            ?.takeUnless { it.isBlank() }
             ?: deviceCache.getCachedAppUserID()
             ?: deviceCache.getLegacyCachedAppUserID()
             ?: generateRandomID()
