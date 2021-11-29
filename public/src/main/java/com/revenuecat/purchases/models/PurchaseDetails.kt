@@ -16,7 +16,7 @@ data class PurchaseDetails(
     /**
      * Unique Google order identifier for the purchased transaction.
      *
-     * Only available for non-restored Google purchases.
+     * Only available for non-restored Google purchases. Not available for Amazon.
      */
     val orderId: String?,
 
@@ -54,7 +54,7 @@ data class PurchaseDetails(
 
     /**
      * String containing the signature of the Google purchase data that was signed with the private key of
-     * the developer.
+     * the developer. Not available for Amazon.
      */
     val signature: String?,
 
