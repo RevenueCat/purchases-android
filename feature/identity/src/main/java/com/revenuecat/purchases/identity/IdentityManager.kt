@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.utils.notEmpty
 import java.util.Locale
 import java.util.UUID
 
@@ -24,7 +25,12 @@ class IdentityManager(
 
     @Synchronized
     fun configure(appUserID: String?) {
+        if (appUserID?.isEmpty() == true) {
+            log(LogIntent.WARNING, IdentityStrings.EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS)
+        }
+
         val appUserIDToUse = appUserID
+            ?.notEmpty
             ?: deviceCache.getCachedAppUserID()
             ?: deviceCache.getLegacyCachedAppUserID()
             ?: generateRandomID()
