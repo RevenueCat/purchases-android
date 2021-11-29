@@ -71,7 +71,8 @@ class ParcelableTests {
             productIdentifier = "product_identifier",
             isSandbox = false,
             unsubscribeDetectedAt = null,
-            billingIssueDetectedAt = null
+            billingIssueDetectedAt = null,
+            ownershipType = OwnershipType.UNKNOWN
         )
     }
 }
