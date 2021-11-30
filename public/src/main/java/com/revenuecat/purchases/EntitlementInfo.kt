@@ -26,7 +26,7 @@ import java.util.Date
  * there is a billing issue. Check the `isActive` property.
  */
 @Parcelize
-class EntitlementInfo constructor(
+data class EntitlementInfo constructor(
     val identifier: String,
     val isActive: Boolean,
     val willRenew: Boolean,
