@@ -41,7 +41,7 @@ private const val API_KEY = "TEST_API_KEY"
 class BackendTest {
 
     @Before
-    fun setup() = mockkStatic("com.revenuecat.purchases.common.FactoriesKt")
+    fun setup() = mockkStatic("com.revenuecat.purchases.common.PurchaserInfoFactoriesKt")
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val dispatcher = SyncDispatcher()

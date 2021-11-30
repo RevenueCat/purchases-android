@@ -137,7 +137,7 @@ class PurchasesTest {
 
     @Before
     fun setup() {
-        mockkStatic("com.revenuecat.purchases.common.FactoriesKt")
+        mockkStatic("com.revenuecat.purchases.common.PurchaserInfoFactoriesKt")
         mockkStatic(ProcessLifecycleOwner::class)
 
         val skus = listOf(stubProductIdentifier)

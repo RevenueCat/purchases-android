@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.factories
+package com.revenuecat.purchases.common
 
 import android.net.Uri
 import com.revenuecat.purchases.EntitlementInfos
@@ -8,6 +8,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.optNullableString
 import com.revenuecat.purchases.utils.parseExpirations

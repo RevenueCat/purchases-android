@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.factories
+package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos

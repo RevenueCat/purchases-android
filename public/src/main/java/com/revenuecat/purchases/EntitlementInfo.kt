@@ -39,7 +39,7 @@ class EntitlementInfo constructor(
     val isSandbox: Boolean,
     val unsubscribeDetectedAt: Date?,
     val billingIssueDetectedAt: Date?,
-    val ownershipType: OwnershipType
+    val ownershipType: OwnershipType,
 ) : Parcelable {
 
     /** @suppress */
