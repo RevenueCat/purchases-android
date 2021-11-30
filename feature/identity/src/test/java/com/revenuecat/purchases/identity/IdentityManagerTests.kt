@@ -62,6 +62,13 @@ class IdentityManagerTests {
     }
 
     @Test
+    fun testConfigureWithEmptyUserIDGeneratesAnAnonymousAppUserID() {
+        mockCleanCaches()
+        identityManager.configure(" ")
+        assertCorrectlyIdentifiedWithAnonymous()
+    }
+
+    @Test
     fun testAnonymousIDsMatchesFormat() {
         mockCleanCaches()
         identityManager.configure(null)
