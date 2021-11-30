@@ -127,7 +127,7 @@ private fun JSONObject.optPeriodType(name: String) = when (optString(name)) {
 
 private fun JSONObject.optOwnershipType(name: String) = when (optString(name)) {
     "PURCHASED" -> OwnershipType.PURCHASED
-    "FAMILY_SHARING" -> OwnershipType.FAMILY_SHARING
+    "FAMILY_SHARED" -> OwnershipType.FAMILY_SHARED
     else -> OwnershipType.UNKNOWN
 }
 

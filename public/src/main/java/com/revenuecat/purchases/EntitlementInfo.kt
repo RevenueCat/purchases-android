@@ -159,15 +159,15 @@ enum class PeriodType {
  */
 enum class OwnershipType {
     /**
-     * If the entitlement was purchaed by the current user.
+     * The purchase was made directly by this user.
      */
     PURCHASED,
     /**
-     * If the entitlement was shared to this user.
+     * The purchase has been shared to this user by a family member.
      */
-    FAMILY_SHARING,
+    FAMILY_SHARED,
     /**
-     * If the entitlement has no or an unknown ownership type.
+     * The purchase has no or an unknown ownership type.
      */
     UNKNOWN,
 }
