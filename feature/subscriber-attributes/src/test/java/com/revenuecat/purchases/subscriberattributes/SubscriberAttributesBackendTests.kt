@@ -90,7 +90,7 @@ class SubscriberAttributesPosterTests {
 
     @Before
     fun setup() {
-        mockkStatic("com.revenuecat.purchases.common.FactoriesKt")
+        mockkStatic("com.revenuecat.purchases.common.PurchaserInfoFactoriesKt")
         receivedError = null
         receivedSyncedSuccessfully = null
         receivedAttributeErrors = null
