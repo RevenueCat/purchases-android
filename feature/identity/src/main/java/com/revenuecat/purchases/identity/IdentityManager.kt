@@ -24,7 +24,12 @@ class IdentityManager(
 
     @Synchronized
     fun configure(appUserID: String?) {
+        if (appUserID?.isBlank() == true) {
+            log(LogIntent.WARNING, IdentityStrings.EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS)
+        }
+
         val appUserIDToUse = appUserID
+            ?.takeUnless { it.isBlank() }
             ?: deviceCache.getCachedAppUserID()
             ?: deviceCache.getLegacyCachedAppUserID()
             ?: generateRandomID()
