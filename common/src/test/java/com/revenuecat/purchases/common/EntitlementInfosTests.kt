@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.utils.Iso8601Utils
@@ -1013,6 +1014,140 @@ class EntitlementInfosTests {
         verifyRenewal(willRenew = false)
     }
 
+    @Test
+    fun `ownershipType from subscription`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date",  "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("ownership_type", "PURCHASED")
+                })
+            }
+        )
+
+        verifyOwnershipType(OwnershipType.PURCHASED)
+
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "intro")
+                    put("purchase_date",  "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("ownership_type", "FAMILY_SHARED")
+                })
+            }
+        )
+
+        verifyOwnershipType(OwnershipType.FAMILY_SHARED)
+
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "trial")
+                    put("purchase_date",  "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("ownership_type", "UNKNOWN")
+                })
+            }
+        )
+
+        verifyOwnershipType(OwnershipType.UNKNOWN)
+    }
+
+    @Test
+    fun `unknown ownershipType from subscription`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("ownership_type", "AN_UNKNOWN_OWNERSHIP_TYPE")
+                })
+            }
+        )
+
+        verifyOwnershipType(OwnershipType.UNKNOWN)
+    }
+
+    @Test
+    fun `missing ownershipType from subscription maps to UNKNOWN`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            }
+        )
+
+        verifyOwnershipType(OwnershipType.UNKNOWN)
+    }
+
+
     private fun verifySubscriberInfo() {
         val subscriberInfo = response.buildPurchaserInfo()
 
@@ -1066,6 +1201,16 @@ class EntitlementInfosTests {
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.store).isEqualTo(matcher)
+    }
+
+    private fun verifyOwnershipType(
+        matcher: OwnershipType = OwnershipType.PURCHASED,
+        entitlement: String = "pro_cat"
+    ) {
+        val subscriberInfo = response.buildPurchaserInfo()
+        val proCat = subscriberInfo.entitlements[entitlement]!!
+
+        assertThat(proCat.ownershipType).isEqualTo(matcher)
     }
 
     private fun verifySandbox(
