@@ -198,7 +198,6 @@ jobs:
     executor: android-executor
     steps:
       - checkout
-      - install-sdkman
       - setup-git-credentials
       - trust-github-key
       - install-gems
@@ -328,9 +327,17 @@ workflows:
             branches:
               only:
                 - main
-      - deploy-amazon:
+      - hold:
+          type: approval
           filters:
             branches:
               only:
-                - amazon-release
+                - amazon-billing-client-3
+      - deploy-amazon:
+          requires:
+            - hold
+          filters:
+            branches:
+              only:
+                - amazon-billing-client-3
       - docs-deploy: *release-tags
