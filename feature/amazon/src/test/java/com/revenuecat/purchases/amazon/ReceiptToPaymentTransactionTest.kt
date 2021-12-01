@@ -19,7 +19,7 @@ class ReceiptToPaymentTransactionTest {
     fun `orderID is always null`() {
         val receipt = dummyReceipt()
 
-        val purchaseDetails = receipt.toRevenueCatPurchaseDetails(
+        val purchaseDetails = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -36,7 +36,7 @@ class ReceiptToPaymentTransactionTest {
 
         val receipt = dummyReceipt(sku = expectedReceiptSku)
 
-        val purchaseDetails = receipt.toRevenueCatPurchaseDetails(
+        val purchaseDetails = receipt.toPaymentTransaction(
             sku = expectedTermSku,
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -51,7 +51,7 @@ class ReceiptToPaymentTransactionTest {
     fun `type is correct for consumables`() {
         var receipt = dummyReceipt(productType = AmazonProductType.SUBSCRIPTION)
 
-        var paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        var paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -62,7 +62,7 @@ class ReceiptToPaymentTransactionTest {
 
         receipt = dummyReceipt(productType = AmazonProductType.CONSUMABLE)
 
-        paymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        paymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -73,7 +73,7 @@ class ReceiptToPaymentTransactionTest {
 
         receipt = dummyReceipt(productType = AmazonProductType.ENTITLED)
 
-        paymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        paymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -88,7 +88,7 @@ class ReceiptToPaymentTransactionTest {
         val expectedPurchaseDate = Date()
         val receipt = dummyReceipt(purchaseDate = expectedPurchaseDate)
 
-        val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -102,7 +102,7 @@ class ReceiptToPaymentTransactionTest {
     fun `purchaseToken is the receipt ID`() {
         val receipt = dummyReceipt(receiptId = "receipt_id")
 
-        val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -117,7 +117,7 @@ class ReceiptToPaymentTransactionTest {
         val receipt = dummyReceipt()
 
         PurchaseState.values().forEach { expectedPurchaseState ->
-            val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+            val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
                 sku = "sku",
                 presentedOfferingIdentifier = "offering",
                 purchaseState = expectedPurchaseState,
@@ -132,7 +132,7 @@ class ReceiptToPaymentTransactionTest {
     fun `isAutoRenewing is false for a canceled subscription`() {
         val receipt = dummyReceipt(productType = AmazonProductType.SUBSCRIPTION, cancelDate = Date())
 
-        val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -146,7 +146,7 @@ class ReceiptToPaymentTransactionTest {
     fun `isAutoRenewing is true for a non canceled subscription`() {
         val receipt = dummyReceipt(productType = AmazonProductType.SUBSCRIPTION, cancelDate = null)
 
-        val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -160,7 +160,7 @@ class ReceiptToPaymentTransactionTest {
     fun `isAutoRenewing is false for non subscriptions`() {
         var receipt = dummyReceipt(productType = AmazonProductType.ENTITLED, cancelDate = null)
 
-        var paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        var paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -171,7 +171,7 @@ class ReceiptToPaymentTransactionTest {
 
         receipt = dummyReceipt(productType = AmazonProductType.CONSUMABLE, cancelDate = null)
 
-        paymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        paymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -185,7 +185,7 @@ class ReceiptToPaymentTransactionTest {
     fun `signature is null`() {
         val receipt = dummyReceipt()
 
-        val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -199,7 +199,7 @@ class ReceiptToPaymentTransactionTest {
     fun `original JSON is correct`() {
         val receipt = dummyReceipt()
 
-        val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -220,7 +220,7 @@ class ReceiptToPaymentTransactionTest {
         val receipt = dummyReceipt()
 
         val expectedPresentedOfferingIdentifier = "offering"
-        val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = expectedPresentedOfferingIdentifier,
             purchaseState = PurchaseState.PURCHASED,
@@ -235,7 +235,7 @@ class ReceiptToPaymentTransactionTest {
         val receipt = dummyReceipt()
 
         val expectedPresentedOfferingIdentifier = null
-        val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = expectedPresentedOfferingIdentifier,
             purchaseState = PurchaseState.PURCHASED,
@@ -251,7 +251,7 @@ class ReceiptToPaymentTransactionTest {
 
         val expectedStoreUserID = "store_user_id"
 
-        val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
+        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
@@ -264,7 +264,7 @@ class ReceiptToPaymentTransactionTest {
     @Test
     fun `purchase type is correct`() {
         val receipt = dummyReceipt()
-        val purchaseDetails = receipt.toRevenueCatPurchaseDetails(
+        val purchaseDetails = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = null,
             purchaseState = PurchaseState.PURCHASED,

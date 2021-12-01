@@ -6,7 +6,7 @@ import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
 
-fun Receipt.toRevenueCatPurchaseDetails(
+fun Receipt.toPaymentTransaction(
     sku: String,
     presentedOfferingIdentifier: String?,
     purchaseState: PurchaseState,

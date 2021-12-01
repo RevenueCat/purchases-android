@@ -388,7 +388,7 @@ class AmazonBillingTest {
     fun `If purchase state is pending, purchase is not fulfilled`() {
         underTest.consumeAndSave(
             shouldTryToConsume = true,
-            purchase = dummyReceipt().toRevenueCatPurchaseDetails(
+            purchase = dummyReceipt().toPaymentTransaction(
                 sku = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PENDING,
@@ -415,7 +415,7 @@ class AmazonBillingTest {
 
         underTest.consumeAndSave(
             shouldTryToConsume = true,
-            purchase = dummyReceipt.toRevenueCatPurchaseDetails(
+            purchase = dummyReceipt.toPaymentTransaction(
                 sku = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PURCHASED,
@@ -446,7 +446,7 @@ class AmazonBillingTest {
 
         underTest.consumeAndSave(
             shouldTryToConsume = false,
-            purchase = dummyReceipt.toRevenueCatPurchaseDetails(
+            purchase = dummyReceipt.toPaymentTransaction(
                 sku = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PURCHASED,

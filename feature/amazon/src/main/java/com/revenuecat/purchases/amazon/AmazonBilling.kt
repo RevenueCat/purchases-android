@@ -215,7 +215,7 @@ internal class AmazonBilling constructor(
             log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
             return@mapNotNull null
         }
-        val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
+        val amazonPurchaseWrapper = receipt.toPaymentTransaction(
             sku = sku,
             presentedOfferingIdentifier = null,
             purchaseState = PurchaseState.UNSPECIFIED_STATE,
@@ -322,7 +322,7 @@ internal class AmazonBilling constructor(
              * For consumables and entitlements, we don't need to fetch de termSku,
              * since there's no terms and we can just use the sku
              */
-            val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
+            val amazonPurchaseWrapper = receipt.toPaymentTransaction(
                 sku = storeProduct.sku,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
                 purchaseState = PurchaseState.PURCHASED,
@@ -337,7 +337,7 @@ internal class AmazonBilling constructor(
             userData.userId,
             onSuccess = { response ->
                 val termSku = response["termSku"] as String
-                val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
+                val amazonPurchaseWrapper = receipt.toPaymentTransaction(
                     sku = termSku,
                     presentedOfferingIdentifier = presentedOfferingIdentifier,
                     purchaseState = PurchaseState.PURCHASED,
