@@ -18,7 +18,7 @@ import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import io.mockk.Runs
 import io.mockk.every
@@ -77,7 +77,7 @@ class AmazonBillingTest {
             lambda<(List<Receipt>, UserData) -> Unit>().captured.invoke(emptyList(), dummyUserData())
         }
 
-        var receivedPurchases: Map<String, PurchaseDetails>? = null
+        var receivedPurchases: Map<String, PaymentTransaction>? = null
         underTest.queryPurchases(
             appUserID,
             onSuccess = {
@@ -104,7 +104,7 @@ class AmazonBillingTest {
 
         mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
 
-        var receivedPurchases: Map<String, PurchaseDetails>? = null
+        var receivedPurchases: Map<String, PaymentTransaction>? = null
         underTest.queryPurchases(
             appUserID,
             onSuccess = {
@@ -143,7 +143,7 @@ class AmazonBillingTest {
 
         mockGetAmazonReceiptData(dummyReceiptB, dummyUserData, expectedTermSkuB)
 
-        var receivedPurchases: Map<String, PurchaseDetails>? = null
+        var receivedPurchases: Map<String, PaymentTransaction>? = null
         underTest.queryPurchases(
             appUserID,
             onSuccess = {
@@ -184,7 +184,7 @@ class AmazonBillingTest {
 
         mockEmptyCache()
 
-        var receivedPurchases: Map<String, PurchaseDetails>? = null
+        var receivedPurchases: Map<String, PaymentTransaction>? = null
         underTest.queryPurchases(
             appUserID,
             onSuccess = {
@@ -224,7 +224,7 @@ class AmazonBillingTest {
 
         mockGetAmazonReceiptData(dummyReceiptB, dummyUserData, "sub_sku_b.monthly")
 
-        var receivedPurchases: Map<String, PurchaseDetails>? = null
+        var receivedPurchases: Map<String, PaymentTransaction>? = null
         underTest.queryPurchases(
             appUserID,
             onSuccess = {
@@ -327,7 +327,7 @@ class AmazonBillingTest {
 
         mockGetAmazonReceiptData(dummySuccessfulReceipt, dummyUserData, "sub_sku_c.monthly")
 
-        lateinit var receivedPurchases: Map<String, PurchaseDetails>
+        lateinit var receivedPurchases: Map<String, PaymentTransaction>
         var successCalled: Boolean = false
         underTest.queryPurchases(
             appUserID,
@@ -475,7 +475,7 @@ class AmazonBillingTest {
 
         mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
 
-        var receivedPurchases: List<PurchaseDetails>? = null
+        var receivedPurchases: List<PaymentTransaction>? = null
         underTest.queryAllPurchases(
             appUserID,
             onReceivePurchaseHistory = {
@@ -508,9 +508,9 @@ class AmazonBillingTest {
             mockPurchasingServiceProvider.registerListener(mockContext, any())
         } just Runs
 
-        var receivedPurchases: List<PurchaseDetails>? = null
+        var receivedPurchases: List<PaymentTransaction>? = null
         underTest.purchasesUpdatedListener = object : BillingAbstract.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<PurchaseDetails>) {
+            override fun onPurchasesUpdated(purchases: List<PaymentTransaction>) {
                 receivedPurchases = purchases
             }
 
@@ -563,9 +563,9 @@ class AmazonBillingTest {
             mockPurchasingServiceProvider.registerListener(mockContext, any())
         } just Runs
 
-        var receivedPurchases: List<PurchaseDetails>? = null
+        var receivedPurchases: List<PaymentTransaction>? = null
         underTest.purchasesUpdatedListener = object : BillingAbstract.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<PurchaseDetails>) {
+            override fun onPurchasesUpdated(purchases: List<PaymentTransaction>) {
                 receivedPurchases = purchases
             }
 
@@ -614,7 +614,7 @@ class AmazonBillingTest {
     }
 
     private fun checkPurchaseIsCorrect(
-        purchase: PurchaseDetails,
+        purchase: PaymentTransaction,
         expectedSku: String,
         dummyUserData: UserData,
         purchaseState: RevenueCatPurchaseState

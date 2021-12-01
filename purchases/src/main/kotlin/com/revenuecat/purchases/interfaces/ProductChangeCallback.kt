@@ -10,7 +10,7 @@ import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.google.originalGooglePurchase
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 
 /**
  * Interface to be implemented when upgrading or downgrading a purchase.
@@ -21,12 +21,12 @@ interface ProductChangeCallback : PurchaseErrorListener {
      * @param purchase PurchaseDetails object for the purchased product. Will be null if the change is deferred.
      * @param purchaserInfo Updated [PurchaserInfo].
      */
-    fun onCompleted(purchase: PurchaseDetails?, purchaserInfo: PurchaserInfo)
+    fun onCompleted(purchase: PaymentTransaction?, purchaserInfo: PurchaserInfo)
 }
 
 internal fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallback {
     return object : ProductChangeCallback {
-        override fun onCompleted(purchase: PurchaseDetails?, purchaserInfo: PurchaserInfo) {
+        override fun onCompleted(purchase: PaymentTransaction?, purchaserInfo: PurchaserInfo) {
             if (purchase == null) {
                 this@toProductChangeCallback.onCompleted(null, purchaserInfo)
             } else {

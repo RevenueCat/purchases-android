@@ -3,7 +3,7 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import org.json.JSONObject
@@ -11,7 +11,7 @@ import org.json.JSONObject
 fun Purchase.toRevenueCatPurchaseDetails(
     productType: ProductType,
     presentedOfferingIdentifier: String?
-): PurchaseDetails = PurchaseDetails(
+): PaymentTransaction = PaymentTransaction(
     orderId = this.orderId,
     skus = this.skus,
     type = productType,
@@ -26,7 +26,7 @@ fun Purchase.toRevenueCatPurchaseDetails(
     purchaseType = PurchaseType.GOOGLE_PURCHASE
 )
 
-val PurchaseDetails.originalGooglePurchase: Purchase?
+val PaymentTransaction.originalGooglePurchase: Purchase?
     get() =
         this.signature
             ?.takeIf { this.purchaseType == PurchaseType.GOOGLE_PURCHASE }
@@ -34,8 +34,8 @@ val PurchaseDetails.originalGooglePurchase: Purchase?
 
 fun PurchaseHistoryRecord.toRevenueCatPurchaseDetails(
     type: ProductType
-): PurchaseDetails {
-    return PurchaseDetails(
+): PaymentTransaction {
+    return PaymentTransaction(
         orderId = null,
         skus = this.skus,
         type = type,

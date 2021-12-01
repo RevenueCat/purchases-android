@@ -58,7 +58,7 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.AttributionStrings
@@ -82,8 +82,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
-typealias SuccessfulPurchaseCallback = (PurchaseDetails, PurchaserInfo) -> Unit
-typealias ErrorPurchaseCallback = (PurchaseDetails, PurchasesError) -> Unit
+typealias SuccessfulPurchaseCallback = (PaymentTransaction, PurchaserInfo) -> Unit
+typealias ErrorPurchaseCallback = (PaymentTransaction, PurchasesError) -> Unit
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -1326,7 +1326,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun postPurchases(
-        purchases: List<PurchaseDetails>,
+        purchases: List<PaymentTransaction>,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
@@ -1372,7 +1372,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     @JvmSynthetic
     internal fun postToBackend(
-        purchase: PurchaseDetails,
+        purchase: PaymentTransaction,
         productDetails: ProductDetails?,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
@@ -1505,7 +1505,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getPurchasesUpdatedListener(): BillingAbstract.PurchasesUpdatedListener {
         return object : BillingAbstract.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<PurchaseDetails>) {
+            override fun onPurchasesUpdated(purchases: List<PaymentTransaction>) {
                 val productChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
                 val productChangeListener: ProductChangeCallback?

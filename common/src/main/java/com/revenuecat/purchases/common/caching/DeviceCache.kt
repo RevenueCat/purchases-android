@@ -15,7 +15,7 @@ import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.strings.ReceiptStrings
 import org.json.JSONException
 import org.json.JSONObject
@@ -235,8 +235,8 @@ open class DeviceCache(
      */
     @Synchronized
     fun getActivePurchasesNotInCache(
-        hashedTokens: Map<String, PurchaseDetails>,
-    ): List<PurchaseDetails> {
+        hashedTokens: Map<String, PaymentTransaction>,
+    ): List<PaymentTransaction> {
         return hashedTokens
             .minus(getPreviouslySentHashedTokens())
             .values.toList()

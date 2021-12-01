@@ -12,7 +12,7 @@ import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.toRevenueCatPurchaseDetails
 import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
@@ -69,7 +69,7 @@ class PostingTransactionsTests {
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
-            lambda<(List<PurchaseDetails>) -> Unit>().captured.also {
+            lambda<(List<PaymentTransaction>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
             }
         }
@@ -227,7 +227,7 @@ class PostingTransactionsTests {
             every { it.introductoryPricePeriod } returns ""
             every { it.freeTrialPeriod } returns ""
         }
-        val purchase: PurchaseDetails = mockk(relaxed = true)
+        val purchase: PaymentTransaction = mockk(relaxed = true)
         val expectedStoreUserID = "a_store_user_id"
         every {
             purchase.storeUserID

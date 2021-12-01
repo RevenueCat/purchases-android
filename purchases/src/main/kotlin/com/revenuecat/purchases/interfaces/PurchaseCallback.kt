@@ -3,7 +3,7 @@ package com.revenuecat.purchases.interfaces
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.google.originalGooglePurchase
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 
 interface PurchaseCallback : PurchaseErrorListener {
     /**
@@ -11,12 +11,12 @@ interface PurchaseCallback : PurchaseErrorListener {
      * @param purchase PurchaseDetails object for the purchased product.
      * @param purchaserInfo Updated [PurchaserInfo].
      */
-    fun onCompleted(purchase: PurchaseDetails, purchaserInfo: PurchaserInfo)
+    fun onCompleted(purchase: PaymentTransaction, purchaserInfo: PurchaserInfo)
 }
 
 internal fun MakePurchaseListener.toPurchaseCallback(): PurchaseCallback {
     return object : PurchaseCallback {
-        override fun onCompleted(purchase: PurchaseDetails, purchaserInfo: PurchaserInfo) {
+        override fun onCompleted(purchase: PaymentTransaction, purchaserInfo: PurchaserInfo) {
             purchase.originalGooglePurchase?.let {
                 this@toPurchaseCallback.onCompleted(it, purchaserInfo)
             } ?: throw IllegalArgumentException("Couldn't find original Google purchase")

@@ -39,7 +39,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.BillingStrings
@@ -269,7 +269,7 @@ class BillingWrapper(
 
     override fun queryAllPurchases(
         appUserID: String,
-        onReceivePurchaseHistory: (List<PurchaseDetails>) -> Unit,
+        onReceivePurchaseHistory: (List<PaymentTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
         queryPurchaseHistoryAsync(
@@ -295,7 +295,7 @@ class BillingWrapper(
 
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
-        purchase: PurchaseDetails
+        purchase: PaymentTransaction
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
             // Would only get here if the purchase was triggered from outside of the app and there was
@@ -374,7 +374,7 @@ class BillingWrapper(
 
     override fun queryPurchases(
         appUserID: String,
-        onSuccess: (Map<String, PurchaseDetails>) -> Unit,
+        onSuccess: (Map<String, PaymentTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         withConnectedClient {
@@ -412,7 +412,7 @@ class BillingWrapper(
 
     private fun List<Purchase>.toMapOfGooglePurchaseWrapper(
         @SkuType skuType: String
-    ): Map<String, PurchaseDetails> {
+    ): Map<String, PaymentTransaction> {
         return this.map { purchase ->
             val hash = purchase.purchaseToken.sha1()
             hash to purchase.toRevenueCatPurchaseDetails(skuType.toProductType(), presentedOfferingIdentifier = null)
@@ -423,7 +423,7 @@ class BillingWrapper(
         appUserID: String,
         productType: ProductType,
         sku: String,
-        onCompletion: (PurchaseDetails) -> Unit,
+        onCompletion: (PaymentTransaction) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         withConnectedClient {

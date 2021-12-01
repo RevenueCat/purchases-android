@@ -30,7 +30,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
@@ -74,7 +74,7 @@ internal class AmazonBilling constructor(
 
     override fun queryAllPurchases(
         appUserID: String,
-        onReceivePurchaseHistory: (List<PurchaseDetails>) -> Unit,
+        onReceivePurchaseHistory: (List<PaymentTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     ) {
         queryPurchases(
@@ -106,7 +106,7 @@ internal class AmazonBilling constructor(
 
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
-        purchase: PurchaseDetails
+        purchase: PaymentTransaction
     ) {
         if (purchase.type == RevenueCatProductType.UNKNOWN) return
 
@@ -124,7 +124,7 @@ internal class AmazonBilling constructor(
         appUserID: String,
         productType: RevenueCatProductType,
         sku: String,
-        onCompletion: (PurchaseDetails) -> Unit,
+        onCompletion: (PaymentTransaction) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
@@ -132,7 +132,7 @@ internal class AmazonBilling constructor(
             appUserID,
             onReceivePurchaseHistory = {
                 // We get skus[0] because the list is guaranteed to have just one item in Amazon's case.
-                val record: PurchaseDetails? = it.firstOrNull { record -> sku == record.skus[0] }
+                val record: PaymentTransaction? = it.firstOrNull { record -> sku == record.skus[0] }
                 if (record != null) {
                     onCompletion(record)
                 } else {
@@ -171,7 +171,7 @@ internal class AmazonBilling constructor(
 
     override fun queryPurchases(
         appUserID: String,
-        onSuccess: (Map<String, PurchaseDetails>) -> Unit,
+        onSuccess: (Map<String, PaymentTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         purchaseUpdatesHandler.queryPurchases(

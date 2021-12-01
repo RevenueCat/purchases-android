@@ -13,12 +13,12 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 
 private typealias PurchaseCompletedFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
-private typealias NewPurchaseCompletedFunction = (purchase: PurchaseDetails, purchaserInfo: PurchaserInfo) -> Unit
+private typealias NewPurchaseCompletedFunction = (purchase: PaymentTransaction, purchaserInfo: PurchaserInfo) -> Unit
 private typealias ProductChangeCompletedFunction = (purchase: Purchase?, purchaserInfo: PurchaserInfo) -> Unit
-private typealias NewProductChangeCompletedFunction = (purchase: PurchaseDetails?, purchaserInfo: PurchaserInfo) -> Unit
+private typealias NewProductChangeCompletedFunction = (purchase: PaymentTransaction?, purchaserInfo: PurchaserInfo) -> Unit
 private typealias ReceiveOfferingsSuccessFunction = (offerings: Offerings) -> Unit
 private typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: PurchaserInfo) -> Unit
 private typealias ReceiveLogInSuccessFunction = (purchaserInfo: PurchaserInfo, created: Boolean) -> Unit
@@ -45,7 +45,7 @@ internal fun purchaseCompletedCallback(
     onSuccess: NewPurchaseCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : PurchaseCallback {
-    override fun onCompleted(purchase: PurchaseDetails, purchaserInfo: PurchaserInfo) {
+    override fun onCompleted(purchase: PaymentTransaction, purchaserInfo: PurchaserInfo) {
         onSuccess(purchase, purchaserInfo)
     }
 
@@ -84,7 +84,7 @@ internal fun productChangeCompletedListener(
     onSuccess: NewProductChangeCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : ProductChangeCallback {
-    override fun onCompleted(purchase: PurchaseDetails?, purchaserInfo: PurchaserInfo) {
+    override fun onCompleted(purchase: PaymentTransaction?, purchaserInfo: PurchaserInfo) {
         onSuccess(purchase, purchaserInfo)
     }
 
