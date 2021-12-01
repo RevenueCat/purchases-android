@@ -12,7 +12,7 @@ import org.json.JSONObject
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-class StoreProduct(
+data class StoreProduct(
     /**
      * The product ID.
      */
@@ -131,53 +131,4 @@ class StoreProduct(
      * `SkuDetails(this.originalJson.toString())`
      */
     val originalJson: JSONObject
-) : Parcelable {
-
-    @SuppressWarnings("ComplexMethod")
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as StoreProduct
-
-        if (sku != other.sku) return false
-        if (type != other.type) return false
-        if (price != other.price) return false
-        if (priceAmountMicros != other.priceAmountMicros) return false
-        if (priceCurrencyCode != other.priceCurrencyCode) return false
-        if (originalPrice != other.originalPrice) return false
-        if (originalPriceAmountMicros != other.originalPriceAmountMicros) return false
-        if (title != other.title) return false
-        if (description != other.description) return false
-        if (subscriptionPeriod != other.subscriptionPeriod) return false
-        if (freeTrialPeriod != other.freeTrialPeriod) return false
-        if (introductoryPrice != other.introductoryPrice) return false
-        if (introductoryPriceAmountMicros != other.introductoryPriceAmountMicros) return false
-        if (introductoryPricePeriod != other.introductoryPricePeriod) return false
-        if (introductoryPriceCycles != other.introductoryPriceCycles) return false
-        if (iconUrl != other.iconUrl) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = sku.hashCode()
-        result = 31 * result + type.hashCode()
-        result = 31 * result + price.hashCode()
-        result = 31 * result + priceAmountMicros.hashCode()
-        result = 31 * result + priceCurrencyCode.hashCode()
-        result = 31 * result + (originalPrice?.hashCode() ?: 0)
-        result = 31 * result + originalPriceAmountMicros.hashCode()
-        result = 31 * result + title.hashCode()
-        result = 31 * result + description.hashCode()
-        result = 31 * result + (subscriptionPeriod?.hashCode() ?: 0)
-        result = 31 * result + (freeTrialPeriod?.hashCode() ?: 0)
-        result = 31 * result + (introductoryPrice?.hashCode() ?: 0)
-        result = 31 * result + introductoryPriceAmountMicros.hashCode()
-        result = 31 * result + (introductoryPricePeriod?.hashCode() ?: 0)
-        result = 31 * result + introductoryPriceCycles
-        result = 31 * result + iconUrl.hashCode()
-        result = 31 * result + originalJson.hashCode()
-        return result
-    }
-}
+) : Parcelable

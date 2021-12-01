@@ -18,7 +18,8 @@ import com.revenuecat.purchases.models.PaymentTransaction
 private typealias PurchaseCompletedFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
 private typealias NewPurchaseCompletedFunction = (purchase: PaymentTransaction, purchaserInfo: PurchaserInfo) -> Unit
 private typealias ProductChangeCompletedFunction = (purchase: Purchase?, purchaserInfo: PurchaserInfo) -> Unit
-private typealias NewProductChangeCompletedFunction = (purchase: PaymentTransaction?, purchaserInfo: PurchaserInfo) -> Unit
+private typealias NewProductChangeCompletedFunction =
+        (purchase: PaymentTransaction?, purchaserInfo: PurchaserInfo) -> Unit
 private typealias ReceiveOfferingsSuccessFunction = (offerings: Offerings) -> Unit
 private typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: PurchaserInfo) -> Unit
 private typealias ReceiveLogInSuccessFunction = (purchaserInfo: PurchaserInfo, created: Boolean) -> Unit
