@@ -131,4 +131,48 @@ data class StoreProduct(
      * `SkuDetails(this.originalJson.toString())`
      */
     val originalJson: JSONObject
-) : Parcelable
+) : Parcelable {
+
+    // We use this to not include the originalJSON in the equals
+    override fun equals(other: Any?) = other is StoreProduct && EssentialData(this) == EssentialData(other)
+}
+
+private data class EssentialData(
+    val sku: String,
+    val type: ProductType,
+    val price: String,
+    val priceAmountMicros: Long,
+    val priceCurrencyCode: String,
+    val originalPrice: String?,
+    val originalPriceAmountMicros: Long,
+    val title: String,
+    val description: String,
+    val subscriptionPeriod: String?,
+    val freeTrialPeriod: String?,
+    val introductoryPrice: String?,
+    val introductoryPriceAmountMicros: Long,
+    val introductoryPricePeriod: String?,
+    val introductoryPriceCycles: Int,
+    val iconUrl: String
+) {
+    constructor(
+        storeProduct: StoreProduct
+    ) : this(
+        sku = storeProduct.sku,
+        type = storeProduct.type,
+        price = storeProduct.price,
+        priceAmountMicros = storeProduct.priceAmountMicros,
+        priceCurrencyCode = storeProduct.priceCurrencyCode,
+        originalPrice = storeProduct.originalPrice,
+        originalPriceAmountMicros = storeProduct.originalPriceAmountMicros,
+        title = storeProduct.title,
+        description = storeProduct.description,
+        subscriptionPeriod = storeProduct.subscriptionPeriod,
+        freeTrialPeriod = storeProduct.freeTrialPeriod,
+        introductoryPrice = storeProduct.introductoryPrice,
+        introductoryPriceAmountMicros = storeProduct.introductoryPriceAmountMicros,
+        introductoryPricePeriod = storeProduct.introductoryPricePeriod,
+        introductoryPriceCycles = storeProduct.introductoryPriceCycles,
+        iconUrl = storeProduct.iconUrl
+    )
+}
