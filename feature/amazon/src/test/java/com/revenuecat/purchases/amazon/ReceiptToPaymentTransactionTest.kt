@@ -5,7 +5,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.PurchaseType
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.PurchaseState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,7 +22,7 @@ class ReceiptToPaymentTransactionTest {
         val purchaseDetails = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -39,7 +39,7 @@ class ReceiptToPaymentTransactionTest {
         val purchaseDetails = receipt.toRevenueCatPurchaseDetails(
             sku = expectedTermSku,
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -54,7 +54,7 @@ class ReceiptToPaymentTransactionTest {
         var paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -65,7 +65,7 @@ class ReceiptToPaymentTransactionTest {
         paymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -76,7 +76,7 @@ class ReceiptToPaymentTransactionTest {
         paymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -91,7 +91,7 @@ class ReceiptToPaymentTransactionTest {
         val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -105,7 +105,7 @@ class ReceiptToPaymentTransactionTest {
         val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -116,7 +116,7 @@ class ReceiptToPaymentTransactionTest {
     fun `purchaseState is correct`() {
         val receipt = dummyReceipt()
 
-        RevenueCatPurchaseState.values().forEach { expectedPurchaseState ->
+        PurchaseState.values().forEach { expectedPurchaseState ->
             val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
                 sku = "sku",
                 presentedOfferingIdentifier = "offering",
@@ -135,7 +135,7 @@ class ReceiptToPaymentTransactionTest {
         val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -149,7 +149,7 @@ class ReceiptToPaymentTransactionTest {
         val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -163,7 +163,7 @@ class ReceiptToPaymentTransactionTest {
         var paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -174,7 +174,7 @@ class ReceiptToPaymentTransactionTest {
         paymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -188,7 +188,7 @@ class ReceiptToPaymentTransactionTest {
         val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -202,7 +202,7 @@ class ReceiptToPaymentTransactionTest {
         val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -223,7 +223,7 @@ class ReceiptToPaymentTransactionTest {
         val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = expectedPresentedOfferingIdentifier,
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -238,7 +238,7 @@ class ReceiptToPaymentTransactionTest {
         val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = expectedPresentedOfferingIdentifier,
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
@@ -254,7 +254,7 @@ class ReceiptToPaymentTransactionTest {
         val paymentTransaction: PaymentTransaction = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = expectedStoreUserID
         )
 
@@ -267,7 +267,7 @@ class ReceiptToPaymentTransactionTest {
         val purchaseDetails = receipt.toRevenueCatPurchaseDetails(
             sku = "sku",
             presentedOfferingIdentifier = null,
-            purchaseState = RevenueCatPurchaseState.PURCHASED,
+            purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 

@@ -40,7 +40,7 @@ import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -302,7 +302,7 @@ class BillingWrapper(
             // an issue getting the purchase type
             return
         }
-        if (purchase.purchaseState == RevenueCatPurchaseState.PENDING) {
+        if (purchase.purchaseState == PurchaseState.PENDING) {
             // PENDING purchases should not be fulfilled
             return
         }

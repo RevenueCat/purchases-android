@@ -5,7 +5,7 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.PurchaseType
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.PurchaseState
 import org.json.JSONObject
 
 fun Purchase.toRevenueCatPurchaseDetails(
@@ -41,7 +41,7 @@ fun PurchaseHistoryRecord.toRevenueCatPurchaseDetails(
         type = type,
         purchaseTime = this.purchaseTime,
         purchaseToken = this.purchaseToken,
-        purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
+        purchaseState = PurchaseState.UNSPECIFIED_STATE,
         isAutoRenewing = null,
         signature = this.signature,
         originalJson = JSONObject(this.originalJson),

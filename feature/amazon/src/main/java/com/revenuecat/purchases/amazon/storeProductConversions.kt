@@ -21,7 +21,7 @@ val StoreProduct.amazonProduct: Product
         .setTitle(originalJson.getString("title"))
         .setCoinsRewardAmount(originalJson.getInt("coinsRewardAmount")).build()
 
-fun Product.toProductDetails(marketplace: String): StoreProduct {
+fun Product.toStoreProduct(marketplace: String): StoreProduct {
     val numberFormat = NumberFormat.getInstance()
 
     val currency = Currency.getInstance(Locale("EN", marketplace))

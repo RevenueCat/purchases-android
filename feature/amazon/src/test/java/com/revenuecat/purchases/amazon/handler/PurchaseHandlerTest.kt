@@ -12,7 +12,7 @@ import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
-import com.revenuecat.purchases.amazon.toProductDetails
+import com.revenuecat.purchases.amazon.toStoreProduct
 import com.revenuecat.purchases.models.StoreProduct
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
@@ -191,7 +191,7 @@ class PurchaseHandlerTest {
     }
 
     private fun dummyProductDetails(): StoreProduct {
-        return dummyAmazonProduct().toProductDetails("US")
+        return dummyAmazonProduct().toStoreProduct("US")
     }
 
     private fun getDummyPurchaseResponse(

@@ -43,7 +43,7 @@ data class PaymentTransaction(
     /**
      * State of the purchase.
      */
-    val purchaseState: RevenueCatPurchaseState,
+    val purchaseState: PurchaseState,
 
     /**
      * Whether the subscription renews automatically.

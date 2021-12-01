@@ -59,7 +59,7 @@ import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -1334,7 +1334,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onError: (ErrorPurchaseCallback)? = null
     ) {
         purchases.forEach { purchase ->
-            if (purchase.purchaseState == RevenueCatPurchaseState.PURCHASED) {
+            if (purchase.purchaseState == PurchaseState.PURCHASED) {
                 billing.querySkuDetailsAsync(
                     productType = purchase.type,
                     skus = purchase.skus.toSet(),

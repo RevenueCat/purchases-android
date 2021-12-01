@@ -19,7 +19,7 @@ import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.PurchaseState
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -121,7 +121,7 @@ class AmazonBillingTest {
             receivedPurchases!!.values.toList()[0],
             expectedTermSku,
             dummyUserData,
-            RevenueCatPurchaseState.UNSPECIFIED_STATE
+            PurchaseState.UNSPECIFIED_STATE
         )
     }
 
@@ -162,7 +162,7 @@ class AmazonBillingTest {
             purchaseA,
             expectedTermSkuA,
             dummyUserData,
-            RevenueCatPurchaseState.UNSPECIFIED_STATE
+            PurchaseState.UNSPECIFIED_STATE
         )
 
         val purchaseB = receivedPurchases!!.values.first { it.skus[0] == expectedTermSkuB }
@@ -170,7 +170,7 @@ class AmazonBillingTest {
             purchaseB,
             expectedTermSkuB,
             dummyUserData,
-            RevenueCatPurchaseState.UNSPECIFIED_STATE
+            PurchaseState.UNSPECIFIED_STATE
         )
     }
 
@@ -203,7 +203,7 @@ class AmazonBillingTest {
             receivedPurchases!!.values.toList()[0],
             expectedSku,
             dummyUserData,
-            RevenueCatPurchaseState.UNSPECIFIED_STATE
+            PurchaseState.UNSPECIFIED_STATE
         )
     }
 
@@ -246,7 +246,7 @@ class AmazonBillingTest {
             purchaseA,
             expectedTermSkuA,
             dummyUserData,
-            RevenueCatPurchaseState.UNSPECIFIED_STATE
+            PurchaseState.UNSPECIFIED_STATE
         )
 
         val purchaseB = receivedPurchases!!.values.first { it.skus[0] == "sub_sku_b.monthly" }
@@ -254,7 +254,7 @@ class AmazonBillingTest {
             purchaseB,
             "sub_sku_b.monthly",
             dummyUserData,
-            RevenueCatPurchaseState.UNSPECIFIED_STATE
+            PurchaseState.UNSPECIFIED_STATE
         )
     }
 
@@ -361,7 +361,7 @@ class AmazonBillingTest {
         }
 
         val marketplaceSlot = slot<String>()
-        val productDetails = listOf(dummyAmazonProduct().toProductDetails(marketplace))
+        val productDetails = listOf(dummyAmazonProduct().toStoreProduct(marketplace))
         every {
             mockProductDataHandler.getProductData(skus, capture(marketplaceSlot), captureLambda(), any())
         } answers {
@@ -391,7 +391,7 @@ class AmazonBillingTest {
             purchase = dummyReceipt().toRevenueCatPurchaseDetails(
                 sku = "sku.monthly",
                 presentedOfferingIdentifier = null,
-                purchaseState = RevenueCatPurchaseState.PENDING,
+                purchaseState = PurchaseState.PENDING,
                 storeUserID = "store_user_id"
             )
         )
@@ -418,7 +418,7 @@ class AmazonBillingTest {
             purchase = dummyReceipt.toRevenueCatPurchaseDetails(
                 sku = "sku.monthly",
                 presentedOfferingIdentifier = null,
-                purchaseState = RevenueCatPurchaseState.PURCHASED,
+                purchaseState = PurchaseState.PURCHASED,
                 storeUserID = "store_user_id"
             )
         )
@@ -449,7 +449,7 @@ class AmazonBillingTest {
             purchase = dummyReceipt.toRevenueCatPurchaseDetails(
                 sku = "sku.monthly",
                 presentedOfferingIdentifier = null,
-                purchaseState = RevenueCatPurchaseState.PURCHASED,
+                purchaseState = PurchaseState.PURCHASED,
                 storeUserID = "store_user_id"
             )
         )
@@ -492,14 +492,14 @@ class AmazonBillingTest {
             receivedPurchases!![0],
             expectedTermSku,
             dummyUserData,
-            RevenueCatPurchaseState.UNSPECIFIED_STATE
+            PurchaseState.UNSPECIFIED_STATE
         )
     }
 
     @Test
     fun `Term sku is used when purchasing subscriptions`() {
         val appUserID = "appUserID"
-        val productDetails = dummyAmazonProduct().toProductDetails("US")
+        val productDetails = dummyAmazonProduct().toStoreProduct("US")
         val dummyReceipt = dummyReceipt()
         val dummyUserData = dummyUserData()
         val expectedTermSku = "sku.monthly"
@@ -541,7 +541,7 @@ class AmazonBillingTest {
             receivedPurchases!![0],
             expectedTermSku,
             dummyUserData,
-            RevenueCatPurchaseState.PURCHASED
+            PurchaseState.PURCHASED
         )
     }
 
@@ -552,7 +552,7 @@ class AmazonBillingTest {
         val productDetails = dummyAmazonProduct(
             sku = sku,
             productType = ProductType.CONSUMABLE
-        ).toProductDetails("US")
+        ).toStoreProduct("US")
         val dummyReceipt = dummyReceipt(
             sku = sku,
             productType = ProductType.CONSUMABLE
@@ -594,7 +594,7 @@ class AmazonBillingTest {
             receivedPurchases!![0],
             sku,
             dummyUserData,
-            RevenueCatPurchaseState.PURCHASED
+            PurchaseState.PURCHASED
         )
     }
 
@@ -617,7 +617,7 @@ class AmazonBillingTest {
         purchase: PaymentTransaction,
         expectedSku: String,
         dummyUserData: UserData,
-        purchaseState: RevenueCatPurchaseState
+        purchaseState: PurchaseState
     ) {
         with(purchase) {
             assertThat(skus[0]).isEqualTo(expectedSku)

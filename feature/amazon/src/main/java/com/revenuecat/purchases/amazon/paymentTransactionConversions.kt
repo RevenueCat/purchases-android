@@ -4,12 +4,12 @@ import com.amazon.device.iap.model.Receipt
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.PurchaseType
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.PurchaseState
 
 fun Receipt.toRevenueCatPurchaseDetails(
     sku: String,
     presentedOfferingIdentifier: String?,
-    purchaseState: RevenueCatPurchaseState,
+    purchaseState: PurchaseState,
     storeUserID: String?
 ): PaymentTransaction {
     val type = this.productType.toRevenueCatProductType()

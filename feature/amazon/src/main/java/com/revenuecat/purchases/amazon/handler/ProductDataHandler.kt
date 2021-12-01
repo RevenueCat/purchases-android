@@ -9,7 +9,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.ProductDataResponseListener
-import com.revenuecat.purchases.amazon.toProductDetails
+import com.revenuecat.purchases.amazon.toStoreProduct
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ProductDetailsListCallback
 import com.revenuecat.purchases.common.log
@@ -88,7 +88,7 @@ class ProductDataHandler(
             log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA_EMPTY)
         }
 
-        val productDetailsList = productData.values.map { it.toProductDetails(marketplace) }
+        val productDetailsList = productData.values.map { it.toStoreProduct(marketplace) }
         onReceive(productDetailsList)
     }
 

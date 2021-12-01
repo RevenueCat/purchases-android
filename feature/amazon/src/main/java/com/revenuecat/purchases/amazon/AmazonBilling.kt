@@ -31,7 +31,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.ProductType as RevenueCatProductType
@@ -111,7 +111,7 @@ internal class AmazonBilling constructor(
         if (purchase.type == RevenueCatProductType.UNKNOWN) return
 
         // PENDING purchases should not be fulfilled
-        if (purchase.purchaseState == RevenueCatPurchaseState.PENDING) return
+        if (purchase.purchaseState == PurchaseState.PENDING) return
 
         if (shouldTryToConsume) {
             purchasingServiceProvider.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
@@ -218,7 +218,7 @@ internal class AmazonBilling constructor(
         val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
             sku = sku,
             presentedOfferingIdentifier = null,
-            purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
+            purchaseState = PurchaseState.UNSPECIFIED_STATE,
             storeUserID = userData.userId
         )
         val hash = receipt.receiptId.sha1()
@@ -325,7 +325,7 @@ internal class AmazonBilling constructor(
             val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
                 sku = storeProduct.sku,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
-                purchaseState = RevenueCatPurchaseState.PURCHASED,
+                purchaseState = PurchaseState.PURCHASED,
                 storeUserID = userData.userId
             )
             purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
@@ -340,7 +340,7 @@ internal class AmazonBilling constructor(
                 val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
                     sku = termSku,
                     presentedOfferingIdentifier = presentedOfferingIdentifier,
-                    purchaseState = RevenueCatPurchaseState.PURCHASED,
+                    purchaseState = PurchaseState.PURCHASED,
                     storeUserID = userData.userId
                 )
                 purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
