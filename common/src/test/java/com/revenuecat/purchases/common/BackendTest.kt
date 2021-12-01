@@ -11,7 +11,7 @@ import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
 import io.mockk.every
@@ -784,7 +784,7 @@ class BackendTest {
             observerMode = true,
             receiptInfo = ReceiptInfo(
                 productIDs,
-                productDetails = productDetails
+                storeProduct = productDetails
             ),
             storeAppUserID = null
         )
@@ -814,12 +814,12 @@ class BackendTest {
         val receiptInfo = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            productDetails = productDetails
+            storeProduct = productDetails
         )
         val productInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            productDetails = productDetails1
+            storeProduct = productDetails1
         )
         mockPostReceiptResponse(
             isRestore = false,
@@ -901,12 +901,12 @@ class BackendTest {
         val receiptInfo = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            productDetails = productDetails
+            storeProduct = productDetails
         )
         val productInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            productDetails = productDetails1
+            storeProduct = productDetails1
         )
         mockPostReceiptResponse(
             isRestore = false,
@@ -973,7 +973,7 @@ class BackendTest {
         val receiptInfo = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            productDetails = productDetails
+            storeProduct = productDetails
         )
         val (fetchToken, _) = mockPostReceiptResponse(
             isRestore = false,
@@ -1040,7 +1040,7 @@ class BackendTest {
             observerMode = true,
             receiptInfo = ReceiptInfo(
                 productIDs,
-                productDetails = productDetails
+                storeProduct = productDetails
             ),
             storeAppUserID = null,
         )
@@ -1468,8 +1468,8 @@ class BackendTest {
         duration: String = "P1M",
         introDuration: String = "P1M",
         trialDuration: String = "P1M"
-    ): ProductDetails {
-        val productDetails = mockk<ProductDetails>()
+    ): StoreProduct {
+        val productDetails = mockk<StoreProduct>()
         every { productDetails.priceAmountMicros } returns price
         every { productDetails.priceCurrencyCode } returns "USD"
         every { productDetails.subscriptionPeriod } returns duration

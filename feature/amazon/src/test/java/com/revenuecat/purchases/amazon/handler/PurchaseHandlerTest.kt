@@ -13,7 +13,7 @@ import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.toProductDetails
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -60,7 +60,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            productDetails = dummyProductDetails(),
+            storeProduct = dummyProductDetails(),
             presentedOfferingIdentifier = null,
             expectedOnSuccess,
             unexpectedOnError
@@ -83,7 +83,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            productDetails = dummyProductDetails(),
+            storeProduct = dummyProductDetails(),
             presentedOfferingIdentifier = null,
             unexpectedOnSuccess,
             expectedOnError
@@ -105,7 +105,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            productDetails = dummyProductDetails(),
+            storeProduct = dummyProductDetails(),
             presentedOfferingIdentifier = null,
             unexpectedOnSuccess,
             expectedOnError
@@ -127,7 +127,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            productDetails = dummyProductDetails(),
+            storeProduct = dummyProductDetails(),
             presentedOfferingIdentifier = null,
             unexpectedOnSuccess,
             expectedOnError
@@ -149,7 +149,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            productDetails = dummyProductDetails(),
+            storeProduct = dummyProductDetails(),
             presentedOfferingIdentifier = null,
             unexpectedOnSuccess,
             expectedOnError
@@ -173,7 +173,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            productDetails = dummyProductDetails(),
+            storeProduct = dummyProductDetails(),
             presentedOfferingIdentifier = null,
             onSuccess = { _, _ ->
                 receivedCount++
@@ -190,7 +190,7 @@ class PurchaseHandlerTest {
         assertThat(receivedCount).isOne
     }
 
-    private fun dummyProductDetails(): ProductDetails {
+    private fun dummyProductDetails(): StoreProduct {
         return dummyAmazonProduct().toProductDetails("US")
     }
 

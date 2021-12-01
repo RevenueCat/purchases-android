@@ -13,7 +13,7 @@ import com.revenuecat.purchases.amazon.toProductDetails
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ProductDetailsListCallback
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 
 class ProductDataHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider
@@ -35,7 +35,7 @@ class ProductDataHandler(
     override fun getProductData(
         skus: Set<String>,
         marketplace: String,
-        onReceive: (List<ProductDetails>) -> Unit,
+        onReceive: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         log(LogIntent.DEBUG, AmazonStrings.REQUESTING_PRODUCTS.format(skus.joinToString()))

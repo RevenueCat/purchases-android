@@ -29,7 +29,7 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -148,7 +148,7 @@ internal class AmazonBilling constructor(
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
@@ -158,10 +158,10 @@ internal class AmazonBilling constructor(
         }
         purchaseHandler.purchase(
             appUserID,
-            productDetails,
+            storeProduct,
             presentedOfferingIdentifier,
             onSuccess = { receipt, userData ->
-                handleReceipt(receipt, userData, productDetails, presentedOfferingIdentifier)
+                handleReceipt(receipt, userData, storeProduct, presentedOfferingIdentifier)
             },
             onError = ::onPurchaseError
         )
@@ -312,7 +312,7 @@ internal class AmazonBilling constructor(
     private fun handleReceipt(
         receipt: Receipt,
         userData: UserData,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?
     ) {
         if (receipt.productType != ProductType.SUBSCRIPTION) {
@@ -323,7 +323,7 @@ internal class AmazonBilling constructor(
              * since there's no terms and we can just use the sku
              */
             val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
-                sku = productDetails.sku,
+                sku = storeProduct.sku,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
                 purchaseState = RevenueCatPurchaseState.PURCHASED,
                 storeUserID = userData.userId

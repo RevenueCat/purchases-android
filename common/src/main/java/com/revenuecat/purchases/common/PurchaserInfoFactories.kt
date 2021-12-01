@@ -7,7 +7,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PurchaserInfo
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.optNullableString
@@ -73,7 +73,7 @@ fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
     )
 }
 
-fun JSONObject.createOfferings(products: Map<String, ProductDetails>): Offerings {
+fun JSONObject.createOfferings(products: Map<String, StoreProduct>): Offerings {
     val jsonOfferings = getJSONArray("offerings")
     val currentOfferingID = getString("current_offering_id")
 
@@ -87,7 +87,7 @@ fun JSONObject.createOfferings(products: Map<String, ProductDetails>): Offerings
     return Offerings(offerings[currentOfferingID], offerings)
 }
 
-fun JSONObject.createOffering(products: Map<String, ProductDetails>): Offering? {
+fun JSONObject.createOffering(products: Map<String, StoreProduct>): Offering? {
     val offeringIdentifier = getString("identifier")
     val jsonPackages = getJSONArray("packages")
 
@@ -106,7 +106,7 @@ fun JSONObject.createOffering(products: Map<String, ProductDetails>): Offering? 
 }
 
 fun JSONObject.createPackage(
-    products: Map<String, ProductDetails>,
+    products: Map<String, StoreProduct>,
     offeringIdentifier: String
 ): Package? {
     return products[getString("platform_product_identifier")]?.let { product ->

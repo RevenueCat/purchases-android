@@ -43,7 +43,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -171,7 +171,7 @@ class PurchasesTest {
         mockSubscriberAttributesManager(userIdToUse)
     }
 
-    private fun stubOfferings(sku: String): Pair<ProductDetails, Offerings> {
+    private fun stubOfferings(sku: String): Pair<StoreProduct, Offerings> {
         val stubSkuDetails = stubSkuDetails(productId = sku, type = BillingClient.SkuType.SUBS)
         val productDetails = stubSkuDetails.toProductDetails()
         val jsonObject = JSONObject(oneOfferingsResponse)
@@ -244,7 +244,7 @@ class PurchasesTest {
     @Test
     fun canMakePurchase() {
         val sku = "onemonth_freetrial"
-        val productDetails = mockk<ProductDetails>().also {
+        val productDetails = mockk<StoreProduct>().also {
             every { it.sku } returns sku
         }
 
@@ -271,7 +271,7 @@ class PurchasesTest {
             productId = sku
         )
 
-        val slot = slot<ProductDetails>()
+        val slot = slot<StoreProduct>()
         every {
             mockBillingAbstract.makePurchaseAsync(any(), any(), capture(slot), any(), any())
         } just Runs
@@ -1676,7 +1676,7 @@ class PurchasesTest {
     fun `when making another purchase for a product for a pending product, error is issued`() {
         purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
 
-        val skuDetails = mockk<ProductDetails>().also {
+        val skuDetails = mockk<StoreProduct>().also {
             every { it.sku } returns "sku"
         }
         purchases.purchaseProductWith(
@@ -1706,7 +1706,7 @@ class PurchasesTest {
 
         mockQueryingSkuDetails(sku, ProductType.SUBS, null)
 
-        val skuDetails = mockk<ProductDetails>().also {
+        val skuDetails = mockk<StoreProduct>().also {
             every { it.sku } returns sku
         }
 
@@ -1737,7 +1737,7 @@ class PurchasesTest {
         mockQueryingSkuDetails(sku1, ProductType.SUBS, null)
         purchases.purchaseProductWith(
             mockActivity,
-            mockk<ProductDetails>().also {
+            mockk<StoreProduct>().also {
                 every { it.sku } returns sku
             },
             onSuccess = { _, _ ->
@@ -1822,14 +1822,14 @@ class PurchasesTest {
     fun `when multiple make purchase callbacks, a failure doesn't throw ConcurrentModificationException`() {
         purchases.purchaseProductWith(
             mockActivity,
-            mockk<ProductDetails>().also {
+            mockk<StoreProduct>().also {
                 every { it.sku } returns "sku"
             }
         ) { _, _ -> }
 
         purchases.purchaseProductWith(
             mockActivity,
-            mockk<ProductDetails>().also {
+            mockk<StoreProduct>().also {
                 every { it.sku } returns "sku"
             }
         ) { _, _ -> }
@@ -3661,7 +3661,7 @@ class PurchasesTest {
 
         purchases.purchaseProduct(
             mockActivity,
-            receiptInfo.productDetails!!.skuDetails,
+            receiptInfo.storeProduct!!.skuDetails,
             UpgradeInfo(oldPurchase.skus[0]),
             object : MakePurchaseListener {
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -3691,7 +3691,7 @@ class PurchasesTest {
 
         purchases.purchaseProduct(
             mockActivity,
-            receiptInfo.productDetails!!.skuDetails,
+            receiptInfo.storeProduct!!.skuDetails,
             UpgradeInfo(oldPurchase.skus[0]),
             object : MakePurchaseListener {
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -3728,7 +3728,7 @@ class PurchasesTest {
         var receivedUserCancelled: Boolean? = null
         purchases.purchaseProduct(
             mockActivity,
-            receiptInfo.productDetails!!.skuDetails,
+            receiptInfo.storeProduct!!.skuDetails,
             UpgradeInfo(oldPurchase.skus[0]),
             object : MakePurchaseListener {
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -3861,7 +3861,7 @@ class PurchasesTest {
 
         purchases.purchaseProductWith(
             mockActivity,
-            receiptInfo.productDetails!!,
+            receiptInfo.storeProduct!!,
             UpgradeInfo(oldPurchase.skus[0]),
             onError = { _, _ ->
                 fail("should be successful")
@@ -3886,7 +3886,7 @@ class PurchasesTest {
         var callCount = 0
         purchases.purchaseProductWith(
             mockActivity,
-            receiptInfo.productDetails!!,
+            receiptInfo.storeProduct!!,
             UpgradeInfo(oldPurchase.skus[0]),
             onError = { _, _ ->
                 fail("should be success")
@@ -3919,7 +3919,7 @@ class PurchasesTest {
 
         purchases.purchaseProductWith(
             mockActivity,
-            receiptInfo.productDetails!!,
+            receiptInfo.storeProduct!!,
             UpgradeInfo(oldPurchase.skus[0]),
             onError = { purchaseError, userCancelled ->
                 receivedError = purchaseError
@@ -3946,7 +3946,7 @@ class PurchasesTest {
 
         purchases.purchaseProductWith(
             mockActivity,
-            receiptInfo.productDetails!!,
+            receiptInfo.storeProduct!!,
             UpgradeInfo(oldPurchase.skus[0]),
             onError = { error, userCancelled ->
                 receivedError = error
@@ -4203,7 +4203,7 @@ class PurchasesTest {
         skus: List<String>,
         skusSuccessfullyFetched: List<String>,
         type: ProductType
-    ): List<ProductDetails> {
+    ): List<StoreProduct> {
         val productDetails = skusSuccessfullyFetched.map { sku ->
             stubSkuDetails(sku, type.toSKUType()!!).toProductDetails()
         }
@@ -4216,7 +4216,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            lambda<(List<ProductDetails>) -> Unit>().captured.invoke(productDetails)
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(productDetails)
         }
         return productDetails
     }
@@ -4438,7 +4438,7 @@ class PurchasesTest {
         val productInfo = ReceiptInfo(
             productIDs = listOf(sku),
             offeringIdentifier = offeringIdentifier,
-            productDetails = skuDetails.toProductDetails()
+            storeProduct = skuDetails.toProductDetails()
         )
 
         every {
@@ -4449,7 +4449,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            lambda<(List<ProductDetails>) -> Unit>().captured.invoke(listOf(skuDetails.toProductDetails()))
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(skuDetails.toProductDetails()))
         }
 
         return productInfo

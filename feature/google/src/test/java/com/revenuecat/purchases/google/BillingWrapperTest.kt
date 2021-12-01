@@ -27,7 +27,7 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
@@ -74,7 +74,7 @@ class BillingWrapperTest {
 
     private lateinit var mockDetailsList: List<SkuDetails>
 
-    private var productDetailsList: List<ProductDetails>? = null
+    private var storeProducts: List<StoreProduct>? = null
 
     private var skuDetailsResponseCalled = 0
 
@@ -177,18 +177,18 @@ class BillingWrapperTest {
             ProductType.SUBS,
             productIDs,
             {
-                this@BillingWrapperTest.productDetailsList = it
+                this@BillingWrapperTest.storeProducts = it
             }, {
                 fail("shouldn't be an error")
             })
 
-        assertThat(productDetailsList).`as`("SKUDetailsList is null").isNull()
+        assertThat(storeProducts).`as`("SKUDetailsList is null").isNull()
 
         every { mockClient.isReady } returns true
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
-        assertThat(productDetailsList).`as`("SKUDetailsList is not null").isNotNull
+        assertThat(storeProducts).`as`("SKUDetailsList is not null").isNotNull
     }
 
     @Test
@@ -583,7 +583,7 @@ class BillingWrapperTest {
 
         val productIDs = setOf("product_a")
 
-        var receivedList: List<ProductDetails>? = null
+        var receivedList: List<StoreProduct>? = null
         wrapper.querySkuDetailsAsync(
             ProductType.SUBS,
             productIDs, {
@@ -1287,7 +1287,7 @@ class BillingWrapperTest {
             ProductType.UNKNOWN,
             productIDs,
             {
-                this@BillingWrapperTest.productDetailsList = it
+                this@BillingWrapperTest.storeProducts = it
             }, {
                 fail("shouldn't be an error")
             })

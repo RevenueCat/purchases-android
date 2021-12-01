@@ -4,10 +4,10 @@ import android.app.Activity
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 
-typealias ProductDetailsListCallback = (List<ProductDetails>) -> Unit
+typealias ProductDetailsListCallback = (List<StoreProduct>) -> Unit
 
 @SuppressWarnings("TooManyFunctions")
 abstract class BillingAbstract {
@@ -68,7 +68,7 @@ abstract class BillingAbstract {
     abstract fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     )

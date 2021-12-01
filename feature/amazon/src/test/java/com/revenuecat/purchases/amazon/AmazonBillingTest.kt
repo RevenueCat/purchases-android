@@ -17,7 +17,7 @@ import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.BillingAbstract
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import io.mockk.Runs
@@ -365,7 +365,7 @@ class AmazonBillingTest {
         every {
             mockProductDataHandler.getProductData(skus, capture(marketplaceSlot), captureLambda(), any())
         } answers {
-            lambda<(List<ProductDetails>) -> Unit>().captured.invoke(productDetails)
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(productDetails)
         }
 
         var onReceiveCalled = false
@@ -530,7 +530,7 @@ class AmazonBillingTest {
         underTest.makePurchaseAsync(
             mockk(),
             appUserID,
-            productDetails = productDetails,
+            storeProduct = productDetails,
             replaceSkuInfo = null,
             presentedOfferingIdentifier = null
         )
@@ -583,7 +583,7 @@ class AmazonBillingTest {
         underTest.makePurchaseAsync(
             mockk(),
             appUserID,
-            productDetails = productDetails,
+            storeProduct = productDetails,
             replaceSkuInfo = null,
             presentedOfferingIdentifier = null
         )

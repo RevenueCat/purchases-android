@@ -12,7 +12,7 @@ import org.json.JSONObject
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-class ProductDetails(
+class StoreProduct(
     /**
      * The product ID.
      */
@@ -138,7 +138,7 @@ class ProductDetails(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as ProductDetails
+        other as StoreProduct
 
         if (sku != other.sku) return false
         if (type != other.type) return false

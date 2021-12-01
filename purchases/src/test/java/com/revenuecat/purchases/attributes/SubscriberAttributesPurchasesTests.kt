@@ -399,7 +399,7 @@ class SubscriberAttributesPurchasesTests {
 
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            productDetails = mockk(relaxed = true),
+            storeProduct = mockk(relaxed = true),
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
@@ -430,7 +430,7 @@ class SubscriberAttributesPurchasesTests {
         )
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            productDetails = mockk(relaxed = true),
+            storeProduct = mockk(relaxed = true),
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
@@ -453,7 +453,7 @@ class SubscriberAttributesPurchasesTests {
 
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            productDetails = mockk(relaxed = true),
+            storeProduct = mockk(relaxed = true),
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
@@ -480,7 +480,7 @@ class SubscriberAttributesPurchasesTests {
 
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            productDetails = mockk(relaxed = true),
+            storeProduct = mockk(relaxed = true),
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,

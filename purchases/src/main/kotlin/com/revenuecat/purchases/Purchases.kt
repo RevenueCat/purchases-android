@@ -57,7 +57,7 @@ import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.skuDetails
@@ -328,8 +328,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: GetSkusResponseListener
     ) {
         getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), object : GetProductDetailsCallback {
-            override fun onReceived(productDetailsList: List<ProductDetails>) {
-                listener.onReceived(productDetailsList.map { it.skuDetails })
+            override fun onReceived(storeProducts: List<StoreProduct>) {
+                listener.onReceived(storeProducts.map { it.skuDetails })
             }
 
             override fun onError(error: PurchasesError) {
@@ -361,8 +361,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: GetSkusResponseListener
     ) {
         getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), object : GetProductDetailsCallback {
-            override fun onReceived(productDetailsList: List<ProductDetails>) {
-                listener.onReceived(productDetailsList.map { it.skuDetails })
+            override fun onReceived(storeProducts: List<StoreProduct>) {
+                listener.onReceived(storeProducts.map { it.skuDetails })
             }
 
             override fun onError(error: PurchasesError) {
@@ -432,13 +432,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmSynthetic
     internal fun purchaseProduct(
         activity: Activity,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
         startProductChange(
             activity,
-            productDetails,
+            storeProduct,
             null,
             upgradeInfo,
             listener
@@ -466,16 +466,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Make a purchase.
      * @param [activity] Current activity
-     * @param [productDetails] The ProductDetails of the product you wish to purchase
+     * @param [storeProduct] The ProductDetails of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
     @JvmSynthetic
     internal fun purchaseProduct(
         activity: Activity,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, productDetails, null, callback)
+        startPurchase(activity, storeProduct, null, callback)
     }
 
     /**
@@ -1259,11 +1259,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun logMissingProducts(
         offerings: Offerings,
-        detailsByID: HashMap<String, ProductDetails>
+        storeProductByIDStore: HashMap<String, StoreProduct>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
         .map { it.product.sku }
-        .filterNot { detailsByID.containsKey(it) }
+        .filterNot { storeProductByIDStore.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
             log(LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
@@ -1341,7 +1341,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     onReceive = { productDetailsList ->
                         postToBackend(
                             purchase = purchase,
-                            productDetails = productDetailsList.takeUnless { it.isEmpty() }?.get(0),
+                            storeProduct = productDetailsList.takeUnless { it.isEmpty() }?.get(0),
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1352,7 +1352,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     onError = {
                         postToBackend(
                             purchase = purchase,
-                            productDetails = null,
+                            storeProduct = null,
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1373,7 +1373,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmSynthetic
     internal fun postToBackend(
         purchase: PaymentTransaction,
-        productDetails: ProductDetails?,
+        storeProduct: StoreProduct?,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
@@ -1385,7 +1385,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val receiptInfo = ReceiptInfo(
             productIDs = purchase.skus,
             offeringIdentifier = purchase.presentedOfferingIdentifier,
-            productDetails = productDetails
+            storeProduct = storeProduct
         )
         backend.postReceiptData(
             purchaseToken = purchase.purchaseToken,
@@ -1422,14 +1422,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getSkuDetails(
         skus: Set<String>,
-        onCompleted: (HashMap<String, ProductDetails>) -> Unit,
+        onCompleted: (HashMap<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
             skus,
             { subscriptionsSKUDetails ->
-                val detailsByID = HashMap<String, ProductDetails>()
+                val detailsByID = HashMap<String, StoreProduct>()
                 val inAPPSkus =
                     skus - subscriptionsSKUDetails
                         .map { details -> details.sku to details }
@@ -1600,12 +1600,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun startPurchase(
         activity: Activity,
-        product: ProductDetails,
+        storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
-                " $product ${presentedOfferingIdentifier?.let {
+                " $storeProduct ${presentedOfferingIdentifier?.let {
                     PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
                 }}"
         ))
@@ -1614,9 +1614,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
-            if (!state.purchaseCallbacks.containsKey(product.sku)) {
+            if (!state.purchaseCallbacks.containsKey(storeProduct.sku)) {
                 state = state.copy(
-                    purchaseCallbacks = state.purchaseCallbacks + mapOf(product.sku to listener)
+                    purchaseCallbacks = state.purchaseCallbacks + mapOf(storeProduct.sku to listener)
                 )
                 userPurchasing = identityManager.currentAppUserID
             }
@@ -1625,7 +1625,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             billing.makePurchaseAsync(
                 activity,
                 appUserID,
-                product,
+                storeProduct,
                 null,
                 presentedOfferingIdentifier
             )
@@ -1634,13 +1634,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun startProductChange(
         activity: Activity,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $productDetails ${offeringIdentifier?.let {
+                " $storeProduct ${offeringIdentifier?.let {
                     PurchaseStrings.OFFERING + "$offeringIdentifier"
                 }} UpgradeInfo: $upgradeInfo"
 
@@ -1657,7 +1657,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
-                productDetails,
+                storeProduct,
                 upgradeInfo,
                 activity,
                 appUserID,
@@ -1668,7 +1668,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun replaceOldPurchaseWithNewProduct(
-        product: ProductDetails,
+        storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
@@ -1677,7 +1677,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         billing.findPurchaseInPurchaseHistory(
             appUserID,
-            product.type,
+            storeProduct.type,
             upgradeInfo.oldSku,
             onCompletion = { purchaseRecord ->
                 log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
@@ -1685,7 +1685,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 billing.makePurchaseAsync(
                     activity,
                     appUserID,
-                    product,
+                    storeProduct,
                     ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier
                 )

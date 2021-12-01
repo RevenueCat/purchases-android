@@ -38,7 +38,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.models.skuDetails
@@ -180,25 +180,25 @@ class BillingWrapper(
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
-                    .format(replaceSkuInfo.oldPurchase.skus[0], productDetails.sku)
+                    .format(replaceSkuInfo.oldPurchase.skus[0], storeProduct.sku)
             )
         } else {
-            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(productDetails.sku))
+            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
         }
         synchronized(this@BillingWrapper) {
-            productTypes[productDetails.sku] = productDetails.type
-            presentedOfferingsByProductIdentifier[productDetails.sku] = presentedOfferingIdentifier
+            productTypes[storeProduct.sku] = storeProduct.type
+            presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
-                .setSkuDetails(productDetails.skuDetails)
+                .setSkuDetails(storeProduct.skuDetails)
                 .apply {
                     replaceSkuInfo?.apply {
                         val subscriptionUpdateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder().apply {
