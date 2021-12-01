@@ -4,7 +4,7 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
-fun SkuDetails.toProductDetails() =
+fun SkuDetails.toStoreProduct() =
     StoreProduct(
         sku,
         type.toProductType(),

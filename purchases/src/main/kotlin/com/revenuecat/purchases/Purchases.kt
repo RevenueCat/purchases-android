@@ -40,7 +40,7 @@ import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.google.toProductDetails
+import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -409,7 +409,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         purchaseProduct(
             activity,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             upgradeInfo,
             listener.toProductChangeCallback()
         )
@@ -423,7 +423,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         purchaseProduct(
             activity,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             upgradeInfo,
             listener.toProductChangeCallback()
         )
@@ -458,7 +458,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         purchaseProduct(
             activity,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             listener.toPurchaseCallback()
         )
     }
@@ -501,7 +501,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         startProductChange(
             activity,
-            packageToPurchase.product.toProductDetails(),
+            packageToPurchase.product.toStoreProduct(),
             packageToPurchase.offering,
             upgradeInfo,
             listener.toProductChangeCallback()
@@ -540,7 +540,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         startProductChange(
             activity,
-            packageToPurchase.product.toProductDetails(),
+            packageToPurchase.product.toStoreProduct(),
             packageToPurchase.offering,
             upgradeInfo,
             callback
@@ -579,7 +579,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         startPurchase(
             activity,
-            packageToPurchase.product.toProductDetails(),
+            packageToPurchase.product.toStoreProduct(),
             packageToPurchase.offering,
             listener
         )

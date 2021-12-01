@@ -157,7 +157,7 @@ class BillingWrapper(
                                 log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
                             }
 
-                            onReceive(skuDetailsList?.map { it.toProductDetails() } ?: emptyList())
+                            onReceive(skuDetailsList?.map { it.toStoreProduct() } ?: emptyList())
                         } else {
                             log(
                                 LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR

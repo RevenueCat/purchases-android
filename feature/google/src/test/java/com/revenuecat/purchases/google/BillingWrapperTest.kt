@@ -258,7 +258,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             activity,
             appUserId,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             mockReplaceSkuInfo(),
             "offering_a"
         )
@@ -326,7 +326,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             activity,
             appUserId,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             upgradeInfo,
             null
         )
@@ -339,7 +339,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockk(),
             appUserId,
-            stubSkuDetails(productId = "product_a").toProductDetails(),
+            stubSkuDetails(productId = "product_a").toStoreProduct(),
             null,
             null
         )
@@ -359,7 +359,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockk(),
             appUserId,
-            stubSkuDetails(productId = "product_a").toProductDetails(),
+            stubSkuDetails(productId = "product_a").toStoreProduct(),
             mockReplaceSkuInfo(),
             null
         )
@@ -385,7 +385,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             activity,
             appUserId,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             mockReplaceSkuInfo(),
             null
         )
@@ -418,7 +418,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             activity,
             appUserId,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             mockReplaceSkuInfo(),
             null
         )
@@ -815,7 +815,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             activity,
             appUserId,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             mockReplaceSkuInfo(),
             "offering_a"
         )

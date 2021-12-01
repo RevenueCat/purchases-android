@@ -33,7 +33,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.sku
-import com.revenuecat.purchases.google.toProductDetails
+import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toRevenueCatPurchaseDetails
 import com.revenuecat.purchases.google.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
@@ -173,7 +173,7 @@ class PurchasesTest {
 
     private fun stubOfferings(sku: String): Pair<StoreProduct, Offerings> {
         val stubSkuDetails = stubSkuDetails(productId = sku, type = BillingClient.SkuType.SUBS)
-        val productDetails = stubSkuDetails.toProductDetails()
+        val productDetails = stubSkuDetails.toStoreProduct()
         val jsonObject = JSONObject(oneOfferingsResponse)
         val packageObject = Package(
             "\$rc_monthly",
@@ -452,7 +452,7 @@ class PurchasesTest {
         )
         purchases.purchaseProductWith(
             mockk(),
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             onError = { error, _ ->
                 errorCalled = true
                 assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
@@ -4205,7 +4205,7 @@ class PurchasesTest {
         type: ProductType
     ): List<StoreProduct> {
         val productDetails = skusSuccessfullyFetched.map { sku ->
-            stubSkuDetails(sku, type.toSKUType()!!).toProductDetails()
+            stubSkuDetails(sku, type.toSKUType()!!).toStoreProduct()
         }
 
         every {
@@ -4438,7 +4438,7 @@ class PurchasesTest {
         val productInfo = ReceiptInfo(
             productIDs = listOf(sku),
             offeringIdentifier = offeringIdentifier,
-            storeProduct = skuDetails.toProductDetails()
+            storeProduct = skuDetails.toStoreProduct()
         )
 
         every {
@@ -4449,7 +4449,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(skuDetails.toProductDetails()))
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(skuDetails.toStoreProduct()))
         }
 
         return productInfo
