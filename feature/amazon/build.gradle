@@ -1,7 +1,7 @@
 apply from: "$rootProject.projectDir/library.gradle"
 
 ext {
-    iapVersion = "2.0.76"
+    amazonVersion = "3.0.2"
 }
 
 dependencies {
@@ -12,43 +12,12 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
 
-    compileOnly files("libs/in-app-purchasing-${iapVersion}.jar")
+    implementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
 
-    testImplementation files("libs/in-app-purchasing-${iapVersion}.jar")
+    testImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
     testImplementation project(":test-utils")
 }
 
-task getAmazonLibrary {
-    ext {
-        downloadURL = "https://amzndevresources.com/iap/sdk/AmazonInAppPurchasing_Android.zip"
-        fileToExtract = "in-app-purchasing-${iapVersion}.jar"
-        destFile = new File( projectDir, "libs/$fileToExtract" )
-    }
-
-    inputs.property( 'downloadURL', downloadURL )
-    inputs.property( 'fileToExtract', fileToExtract )
-    outputs.file( destFile )
-
-    doLast {
-        if(!destFile.exists()) {
-            println 'Downloading Amazon dependency'
-            File destDir = destFile.parentFile
-            destDir.mkdirs()
-
-            File downloadFile = new File( temporaryDir, 'download.zip' )
-            new URL( downloadURL ).withInputStream { is ->
-                downloadFile.withOutputStream { it << is }
-            }
-
-            project.copy {
-                from {
-                    zipTree(downloadFile).matching { include "**/$fileToExtract" }.singleFile
-                }
-
-                into( destDir )
-            }
-        }
-    }
-}
-
-preBuild.dependsOn getAmazonLibrary
+// Not running with this flag causes verification issues due to the way the Amazon jar is compiled
+// https://github.com/robolectric/robolectric-gradle-plugin/issues/144#issuecomment-265899560
+tasks.withType(Test) { jvmArgs += "-noverify" }

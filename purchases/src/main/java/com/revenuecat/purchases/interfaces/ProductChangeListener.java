@@ -14,6 +14,7 @@ import com.revenuecat.purchases.PurchaserInfo;
 /**
  * Interface to be implemented when upgrading or downgrading a purchase.
  */
+@Deprecated
 public interface ProductChangeListener extends PurchaseErrorListener {
     /**
      * Will be called after the product change has been completed

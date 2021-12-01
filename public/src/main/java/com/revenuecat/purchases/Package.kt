@@ -2,9 +2,8 @@ package com.revenuecat.purchases
 
 import android.os.Parcelable
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.parceler.SkuDetailsParceler
+import com.revenuecat.purchases.models.ProductDetails
 import kotlinx.android.parcel.Parcelize
-import kotlinx.android.parcel.TypeParceler
 
 /**
  * Contains information about the product available for the user to purchase. For more info see https://docs.revenuecat.com/docs/entitlements
@@ -13,11 +12,10 @@ import kotlinx.android.parcel.TypeParceler
  * @property product [SkuDetails] assigned to this package.
  */
 @Parcelize
-@TypeParceler<SkuDetails, SkuDetailsParceler>()
 data class Package(
     val identifier: String,
     val packageType: PackageType,
-    val product: SkuDetails,
+    val product: ProductDetails,
     val offering: String
 ) : Parcelable
 

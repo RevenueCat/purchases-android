@@ -150,6 +150,13 @@ platform :android do
       head: branch_name
     )
   end
+
+  desc "Deploy a release"
+  lane :deploy_amazon do |options|
+    version = android_get_version_name(gradle_file: gradle_file_path)
+    is_amazon_version = version.include?("-amazon.")
+    unless is_amazon_version then puts "#{version} is not an amazon version" else deploy end
+  end
 end
 
 def increment_version_in(previous_version, new_version, path)
