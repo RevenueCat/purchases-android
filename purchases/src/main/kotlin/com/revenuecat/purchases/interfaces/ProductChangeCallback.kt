@@ -15,7 +15,7 @@ import com.revenuecat.purchases.models.PaymentTransaction
 /**
  * Interface to be implemented when upgrading or downgrading a purchase.
  */
-interface ProductChangeCallback : PurchaseErrorListener {
+internal interface ProductChangeCallback : PurchaseErrorListener {
     /**
      * Will be called after the product change has been completed
      * @param purchase PurchaseDetails object for the purchased product. Will be null if the change is deferred.

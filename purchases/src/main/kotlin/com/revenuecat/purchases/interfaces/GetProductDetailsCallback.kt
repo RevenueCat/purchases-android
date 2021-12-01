@@ -7,7 +7,7 @@ internal interface GetProductDetailsCallback {
     /**
      * Will be called after ProductDetails have been fetched successfully
      *
-     * @param productDetails List of [StoreProduct] retrieved after a successful call to fetch [StoreProduct]
+     * @param storeProducts List of [StoreProduct] retrieved after a successful call to fetch [StoreProduct]
      */
     fun onReceived(storeProducts: List<StoreProduct>)
 
