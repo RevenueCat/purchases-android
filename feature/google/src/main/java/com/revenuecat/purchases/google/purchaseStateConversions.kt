@@ -1,21 +1,21 @@
 package com.revenuecat.purchases.google
 
-import com.revenuecat.purchases.models.PurchaseState as RevenuecatPurchaseState
+import com.revenuecat.purchases.models.PurchaseState as RevenueCatPurchaseState
 import com.android.billingclient.api.Purchase.PurchaseState as GooglePurchaseState
 
-fun Int.toRevenueCatPurchaseState(): RevenuecatPurchaseState {
+fun Int.toRevenueCatPurchaseState(): RevenueCatPurchaseState {
     return when (this) {
-        GooglePurchaseState.UNSPECIFIED_STATE -> RevenuecatPurchaseState.UNSPECIFIED_STATE
-        GooglePurchaseState.PURCHASED -> RevenuecatPurchaseState.PURCHASED
-        GooglePurchaseState.PENDING -> RevenuecatPurchaseState.PENDING
-        else -> RevenuecatPurchaseState.UNSPECIFIED_STATE
+        GooglePurchaseState.UNSPECIFIED_STATE -> RevenueCatPurchaseState.UNSPECIFIED_STATE
+        GooglePurchaseState.PURCHASED -> RevenueCatPurchaseState.PURCHASED
+        GooglePurchaseState.PENDING -> RevenueCatPurchaseState.PENDING
+        else -> RevenueCatPurchaseState.UNSPECIFIED_STATE
     }
 }
 
-fun RevenuecatPurchaseState.toGooglePurchaseState(): Int {
+fun RevenueCatPurchaseState.toGooglePurchaseState(): Int {
     return when (this) {
-        RevenuecatPurchaseState.UNSPECIFIED_STATE -> GooglePurchaseState.UNSPECIFIED_STATE
-        RevenuecatPurchaseState.PURCHASED -> GooglePurchaseState.PURCHASED
-        RevenuecatPurchaseState.PENDING -> GooglePurchaseState.PENDING
+        RevenueCatPurchaseState.UNSPECIFIED_STATE -> GooglePurchaseState.UNSPECIFIED_STATE
+        RevenueCatPurchaseState.PURCHASED -> GooglePurchaseState.PURCHASED
+        RevenueCatPurchaseState.PENDING -> GooglePurchaseState.PENDING
     }
 }
