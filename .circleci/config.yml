@@ -13,6 +13,7 @@ release-tags: &release-tags
       ignore:
         - /^.*-SNAPSHOT/
         - latest
+        - /^.*-amazon*/
     branches:
       ignore: /.*/
 
@@ -339,7 +340,15 @@ workflows:
             branches:
               only:
                 - main
+      - hold:
+          type: approval
+          filters:
+            branches:
+              only:
+                - amazon-release
       - deploy-amazon:
+          requires:
+            - hold
           filters:
             branches:
               only:
