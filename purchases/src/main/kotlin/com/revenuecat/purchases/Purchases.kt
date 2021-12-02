@@ -1259,11 +1259,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun logMissingProducts(
         offerings: Offerings,
-        storeProductByIDStore: HashMap<String, StoreProduct>
+        storeProductByID: HashMap<String, StoreProduct>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
         .map { it.product.sku }
-        .filterNot { storeProductByIDStore.containsKey(it) }
+        .filterNot { storeProductByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
             log(LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR

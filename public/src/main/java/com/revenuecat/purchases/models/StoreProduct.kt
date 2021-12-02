@@ -134,10 +134,11 @@ data class StoreProduct(
 ) : Parcelable {
 
     // We use this to not include the originalJSON in the equals
-    override fun equals(other: Any?) = other is StoreProduct && EssentialData(this) == EssentialData(other)
+    override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
+    override fun hashCode() = ComparableData(this).hashCode()
 }
 
-private data class EssentialData(
+private data class ComparableData(
     val sku: String,
     val type: ProductType,
     val price: String,
