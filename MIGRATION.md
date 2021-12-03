@@ -1,0 +1,6 @@
+- `Package.product` has been changed from `SkuDetails` to `StoreProduct`. 
+- configure accepts a Builder now
+- `GetSkusResponseListener` deprecated in favor of `GetStoreProductCallback`. You can use `GetSkusResponseListener.toGetStoreProductCallback()` in Kotlin for an easy migration.
+- `MakePurchaseListener` deprecated in favor of `PurchaseCallback`. You can use `MakePurchaseListener.toPurchaseCallback()` in Kotlin for an easy migration.
+- `ProductChangeListener` deprecated in favor of `ProductChangeCallback`. You can use `ProductChangeListener.toProductChangeCallback()` and `MakePurchaseListener.toProductChangeCallback()` in Kotlin for an easy migration.
+- `getSubscriptionSkusWith` and `getNonSubscriptionSkusWith` now receive `storeProducts` instead of `skus`.
