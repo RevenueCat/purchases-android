@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 import android.app.Activity
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
+import com.revenuecat.purchases.interfaces.GetStoreProductCallback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
@@ -94,10 +94,10 @@ internal fun productChangeCompletedListener(
     }
 }
 
-internal fun getProductDetailsCallback(
+internal fun getStoreProductCallback(
     onReceived: (storeProducts: List<StoreProduct>) -> Unit,
     onError: ErrorFunction
-) = object : GetProductDetailsCallback {
+) = object : GetStoreProductCallback {
     override fun onReceived(storeProducts: List<StoreProduct>) {
         onReceived(storeProducts)
     }
@@ -184,7 +184,7 @@ fun Purchases.purchaseProductWith(
 /**
  * Purchase product.
  * @param [activity] Current activity
- * @param [storeProduct] The productDetails of the product you wish to purchase
+ * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
@@ -221,7 +221,7 @@ fun Purchases.purchaseProductWith(
 /**
  * Make a purchase.
  * @param [activity] Current activity
- * @param [storeProduct] The productDetails of the product you wish to purchase
+ * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error

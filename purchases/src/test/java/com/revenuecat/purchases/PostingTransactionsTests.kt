@@ -10,7 +10,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildPurchaserInfo
 import com.revenuecat.purchases.google.BillingWrapper
-import com.revenuecat.purchases.google.toRevenueCatPurchaseDetails
+import com.revenuecat.purchases.google.toRevenueCatPaymentTransaction
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
@@ -139,7 +139,7 @@ class PostingTransactionsTests {
         val expectedSubscriptionPeriod = "P1M"
         val expectedIntroPricePeriod = "P2M"
         val expectedFreeTrialPeriod = "P3M"
-        val mockProductDetails = mockk<StoreProduct>().also {
+        val mockStoreProduct = mockk<StoreProduct>().also {
             every { it.sku } returns "product_id"
             every { it.priceAmountMicros } returns 2000000
             every { it.priceCurrencyCode } returns "USD"
@@ -149,7 +149,7 @@ class PostingTransactionsTests {
         }
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            storeProduct = mockProductDetails,
+            storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
@@ -179,7 +179,7 @@ class PostingTransactionsTests {
     fun `inapps send null durations when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
-        val mockProductDetails = mockk<StoreProduct>().also {
+        val mockStoreProduct = mockk<StoreProduct>().also {
             every { it.sku } returns "product_id"
             every { it.priceAmountMicros } returns 2000000
             every { it.priceCurrencyCode } returns "USD"
@@ -189,7 +189,7 @@ class PostingTransactionsTests {
         }
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
-            storeProduct = mockProductDetails,
+            storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
@@ -219,7 +219,7 @@ class PostingTransactionsTests {
     fun `store user id is sent when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
-        val mockProductDetails = mockk<StoreProduct>().also {
+        val mockStoreProduct = mockk<StoreProduct>().also {
             every { it.sku } returns "product_id"
             every { it.priceAmountMicros } returns 2000000
             every { it.priceCurrencyCode } returns "USD"
@@ -235,7 +235,7 @@ class PostingTransactionsTests {
 
         underTest.postToBackend(
             purchase = purchase,
-            storeProduct = mockProductDetails,
+            storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,
@@ -266,8 +266,8 @@ class PostingTransactionsTests {
         postReceiptSuccess = PostReceiptCompletionContainer()
         val productIds = listOf("uno", "dos")
         val purchase =
-            stubGooglePurchase(productIds = productIds).toRevenueCatPurchaseDetails(ProductType.SUBS, null)
-        val mockProductDetails = mockk<StoreProduct>().also {
+            stubGooglePurchase(productIds = productIds).toRevenueCatPaymentTransaction(ProductType.SUBS, null)
+        val mockStoreProduct = mockk<StoreProduct>().also {
             every { it.sku } returns "uno"
             every { it.priceAmountMicros } returns 2000000
             every { it.priceCurrencyCode } returns "USD"
@@ -278,7 +278,7 @@ class PostingTransactionsTests {
 
         underTest.postToBackend(
             purchase = purchase,
-            storeProduct = mockProductDetails,
+            storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
             appUserID = appUserId,

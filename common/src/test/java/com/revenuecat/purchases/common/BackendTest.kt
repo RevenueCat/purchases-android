@@ -774,7 +774,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes price and currency`() {
-        val productDetails = mockProductDetails()
+        val storeProduct = mockStoreProduct()
 
         val info = postReceipt(
             responseCode = 200,
@@ -784,7 +784,7 @@ class BackendTest {
             observerMode = true,
             receiptInfo = ReceiptInfo(
                 productIDs,
-                storeProduct = productDetails
+                storeProduct = storeProduct
             ),
             storeAppUserID = null
         )
@@ -809,17 +809,17 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        val productDetails = mockProductDetails()
-        val productDetails1 = mockProductDetails(price = 350000)
+        val storeProduct = mockStoreProduct()
+        val storeProduct1 = mockStoreProduct(price = 350000)
         val receiptInfo = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            storeProduct = productDetails
+            storeProduct = storeProduct
         )
         val productInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            storeProduct = productDetails1
+            storeProduct = storeProduct1
         )
         mockPostReceiptResponse(
             isRestore = false,
@@ -895,18 +895,18 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        val productDetails = mockProductDetails()
-        val productDetails1 = mockProductDetails(duration = "P2M")
+        val storeProduct = mockStoreProduct()
+        val storeProduct1 = mockStoreProduct(duration = "P2M")
 
         val receiptInfo = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            storeProduct = productDetails
+            storeProduct = storeProduct
         )
         val productInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            storeProduct = productDetails1
+            storeProduct = storeProduct1
         )
         mockPostReceiptResponse(
             isRestore = false,
@@ -968,12 +968,12 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber same durations, only one is triggered`() {
-        val productDetails = mockProductDetails()
+        val storeProduct = mockStoreProduct()
 
         val receiptInfo = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            storeProduct = productDetails
+            storeProduct = storeProduct
         )
         val (fetchToken, _) = mockPostReceiptResponse(
             isRestore = false,
@@ -1026,7 +1026,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes durations`() {
-        val productDetails = mockProductDetails(
+        val storeProduct = mockStoreProduct(
             duration = "P1M",
             introDuration = "P2M",
             trialDuration = "P3M"
@@ -1040,7 +1040,7 @@ class BackendTest {
             observerMode = true,
             receiptInfo = ReceiptInfo(
                 productIDs,
-                storeProduct = productDetails
+                storeProduct = storeProduct
             ),
             storeAppUserID = null,
         )
@@ -1463,19 +1463,19 @@ class BackendTest {
         assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse()
     }
 
-    private fun mockProductDetails(
+    private fun mockStoreProduct(
         price: Long = 25000000,
         duration: String = "P1M",
         introDuration: String = "P1M",
         trialDuration: String = "P1M"
     ): StoreProduct {
-        val productDetails = mockk<StoreProduct>()
-        every { productDetails.priceAmountMicros } returns price
-        every { productDetails.priceCurrencyCode } returns "USD"
-        every { productDetails.subscriptionPeriod } returns duration
-        every { productDetails.introductoryPricePeriod } returns introDuration
-        every { productDetails.freeTrialPeriod } returns trialDuration
-        return productDetails
+        val storeProduct = mockk<StoreProduct>()
+        every { storeProduct.priceAmountMicros } returns price
+        every { storeProduct.priceCurrencyCode } returns "USD"
+        every { storeProduct.subscriptionPeriod } returns duration
+        every { storeProduct.introductoryPricePeriod } returns introDuration
+        every { storeProduct.freeTrialPeriod } returns trialDuration
+        return storeProduct
     }
 
 }

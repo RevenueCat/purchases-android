@@ -126,7 +126,7 @@ data class StoreProduct(
      * JSONObject representing the original product class from Google.
      *
      * Note: there's a convenience extension property that can be used to get the original
-     * SkuDetails class: `ProductDetails.skuDetails`.
+     * SkuDetails class: `StoreProduct.skuDetails`.
      * Alternatively, the original SkuDetails can be built doing the following:
      * `SkuDetails(this.originalJson.toString())`
      */
