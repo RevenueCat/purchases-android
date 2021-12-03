@@ -404,7 +404,7 @@ class DeviceCacheTest {
         val packageObject = Package(
             "custom",
             PackageType.CUSTOM,
-            storeProduct,
+            storeProduct.skuDetails,
             "offering_a"
         )
         val offering = Offering(
