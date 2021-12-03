@@ -3,7 +3,7 @@ package com.revenuecat.purchases.amazon
 import com.amazon.device.iap.internal.model.ProductBuilder
 import com.amazon.device.iap.model.Product
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 import java.text.NumberFormat
 import java.text.ParseException
@@ -11,7 +11,7 @@ import java.util.Currency
 import java.util.Locale
 import com.amazon.device.iap.model.ProductType as AmazonProductType
 
-val ProductDetails.amazonProduct: Product
+val StoreProduct.amazonProduct: Product
     get() = ProductBuilder()
         .setSku(originalJson.getString("sku"))
         .setProductType(originalJson.getProductType("productType"))
@@ -21,7 +21,7 @@ val ProductDetails.amazonProduct: Product
         .setTitle(originalJson.getString("title"))
         .setCoinsRewardAmount(originalJson.getInt("coinsRewardAmount")).build()
 
-fun Product.toProductDetails(marketplace: String): ProductDetails {
+fun Product.toStoreProduct(marketplace: String): StoreProduct {
     val numberFormat = NumberFormat.getInstance()
 
     val currency = Currency.getInstance(Locale("EN", marketplace))
@@ -40,7 +40,7 @@ fun Product.toProductDetails(marketplace: String): ProductDetails {
             0.0f
         }
 
-    return ProductDetails(
+    return StoreProduct(
         sku,
         productType.toRevenueCatProductType(),
         price,

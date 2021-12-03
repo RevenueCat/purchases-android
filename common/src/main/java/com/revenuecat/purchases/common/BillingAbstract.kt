@@ -4,10 +4,10 @@ import android.app.Activity
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
-import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.PaymentTransaction
 
-typealias ProductDetailsListCallback = (List<ProductDetails>) -> Unit
+typealias ProductDetailsListCallback = (List<StoreProduct>) -> Unit
 
 @SuppressWarnings("TooManyFunctions")
 abstract class BillingAbstract {
@@ -41,7 +41,7 @@ abstract class BillingAbstract {
 
     abstract fun queryAllPurchases(
         appUserID: String,
-        onReceivePurchaseHistory: (List<PurchaseDetails>) -> Unit,
+        onReceivePurchaseHistory: (List<PaymentTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     )
 
@@ -54,21 +54,21 @@ abstract class BillingAbstract {
 
     abstract fun consumeAndSave(
         shouldTryToConsume: Boolean,
-        purchase: PurchaseDetails
+        purchase: PaymentTransaction
     )
 
     abstract fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: ProductType,
         sku: String,
-        onCompletion: (PurchaseDetails) -> Unit,
+        onCompletion: (PaymentTransaction) -> Unit,
         onError: (PurchasesError) -> Unit
     )
 
     abstract fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     )
@@ -78,12 +78,12 @@ abstract class BillingAbstract {
     @SuppressWarnings("ForbiddenComment")
     abstract fun queryPurchases(
         appUserID: String,
-        onSuccess: (Map<String, PurchaseDetails>) -> Unit,
+        onSuccess: (Map<String, PaymentTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit
     )
 
     interface PurchasesUpdatedListener {
-        fun onPurchasesUpdated(purchases: List<PurchaseDetails>)
+        fun onPurchasesUpdated(purchases: List<PaymentTransaction>)
         fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
     }
 }

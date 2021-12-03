@@ -5,7 +5,7 @@ import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.UserDataResponse
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 
 interface ProductDataResponseListener : PurchasingListener {
     override fun onUserDataResponse(response: UserDataResponse) {
@@ -23,7 +23,7 @@ interface ProductDataResponseListener : PurchasingListener {
     fun getProductData(
         skus: Set<String>,
         marketplace: String,
-        onReceive: (List<ProductDetails>) -> Unit,
+        onReceive: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     )
 }

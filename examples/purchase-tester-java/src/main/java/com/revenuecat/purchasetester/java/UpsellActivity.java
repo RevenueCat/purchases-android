@@ -19,11 +19,8 @@ import com.revenuecat.purchases.PurchaserInfo;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.interfaces.MakePurchaseListener;
-import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener;
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener;
-import com.revenuecat.purchases.models.ProductDetails;
-import com.revenuecat.purchases.models.PurchaseDetails;
 
 import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
 

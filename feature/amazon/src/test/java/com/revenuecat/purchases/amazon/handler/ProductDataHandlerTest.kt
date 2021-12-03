@@ -9,7 +9,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.amazon.helpers.MockDeviceCache
 import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -43,21 +43,21 @@ class ProductDataHandlerTest {
 
         underTest.productDataCache.putAll(expectedProductDataInCache)
 
-        var receivedProductList: List<ProductDetails>? = null
+        var receivedStoreProducts: List<StoreProduct>? = null
         underTest.getProductData(
             expectedSkus,
             "US",
             onReceive = {
-                receivedProductList = it
+                receivedStoreProducts = it
             },
             onError = {
                 fail("should be success")
             }
         )
 
-        assertThat(receivedProductList).isNotNull
+        assertThat(receivedStoreProducts).isNotNull
 
-        val receivedSkus = receivedProductList!!.map { it.sku }
+        val receivedSkus = receivedStoreProducts!!.map { it.sku }
         assertThat(receivedSkus).hasSameElementsAs(expectedSkus)
 
         assertThat(purchasingServiceProvider.getProductDataCalledTimes).isZero()
@@ -76,13 +76,13 @@ class ProductDataHandlerTest {
         val dummyRequestId = "a_request_id"
         purchasingServiceProvider.getProductDataRequestId = dummyRequestId
 
-        var receivedProductList: List<ProductDetails>? = null
+        var receivedStoreProducts: List<StoreProduct>? = null
 
         underTest.getProductData(
             expectedProductData.keys,
             "US",
             onReceive = {
-                receivedProductList = it
+                receivedStoreProducts = it
             },
             onError = {
                 fail("should be success")
@@ -96,10 +96,10 @@ class ProductDataHandlerTest {
             )
         )
 
-        assertThat(receivedProductList).isNotNull
+        assertThat(receivedStoreProducts).isNotNull
 
         val expectedSkus = expectedProductData.keys
-        val receivedSkus = receivedProductList!!.map { it.sku }
+        val receivedSkus = receivedStoreProducts!!.map { it.sku }
         assertThat(receivedSkus).hasSameElementsAs(expectedSkus)
 
         assertThat(purchasingServiceProvider.getProductDataCalledTimes).isOne()
@@ -117,13 +117,13 @@ class ProductDataHandlerTest {
         val dummyRequestId = "a_request_id"
         purchasingServiceProvider.getProductDataRequestId = dummyRequestId
 
-        var receivedProductList: List<ProductDetails>? = null
+        var receivedStoreProducts: List<StoreProduct>? = null
 
         underTest.getProductData(
             expectedProductData.keys,
             "US",
             onReceive = {
-                receivedProductList = it
+                receivedStoreProducts = it
             },
             onError = {
                 fail("should be success")
@@ -138,7 +138,7 @@ class ProductDataHandlerTest {
         )
 
         val expectedSkus = expectedProductData.keys
-        val receivedSkus = receivedProductList!!.map { it.sku }
+        val receivedSkus = receivedStoreProducts!!.map { it.sku }
         assertThat(receivedSkus).hasSameElementsAs(expectedSkus)
 
         assertThat(underTest.productDataCache).isNotEmpty
@@ -157,13 +157,13 @@ class ProductDataHandlerTest {
         val dummyRequestId = "a_request_id"
         purchasingServiceProvider.getProductDataRequestId = dummyRequestId
 
-        var receivedProductList: List<ProductDetails>? = null
+        var receivedStoreProducts: List<StoreProduct>? = null
 
         underTest.getProductData(
             expectedProductData.keys,
             "US",
             onReceive = {
-                receivedProductList = it
+                receivedStoreProducts = it
             },
             onError = {
                 fail("should be success")
@@ -180,11 +180,11 @@ class ProductDataHandlerTest {
         val secondDummyRequestId = "a_second_request_id"
         purchasingServiceProvider.getProductDataRequestId = secondDummyRequestId
 
-        var secondReceivedProductList: List<ProductDetails>? = null
+        var secondReceivedStoreProducts: List<StoreProduct>? = null
 
         underTest.getProductData(expectedProductData.keys, "US",
             onReceive = {
-                secondReceivedProductList = it
+                secondReceivedStoreProducts = it
             },
             onError = {
                 fail("should be success")
@@ -198,7 +198,7 @@ class ProductDataHandlerTest {
             )
         )
 
-        assertThat(secondReceivedProductList).hasSameElementsAs(receivedProductList)
+        assertThat(secondReceivedStoreProducts).hasSameElementsAs(receivedStoreProducts)
 
         assertThat(purchasingServiceProvider.getProductDataCalledTimes).isEqualTo(1)
     }
@@ -216,13 +216,13 @@ class ProductDataHandlerTest {
         val dummyRequestId = "a_request_id"
         purchasingServiceProvider.getProductDataRequestId = dummyRequestId
 
-        var receivedProductList: List<ProductDetails>? = null
+        var receivedStoreProducts: List<StoreProduct>? = null
 
         underTest.getProductData(
             expectedProductData.keys,
             marketPlace,
             onReceive = {
-                receivedProductList = it
+                receivedStoreProducts = it
             },
             onError = {
                 fail("should be success")
@@ -236,8 +236,8 @@ class ProductDataHandlerTest {
             )
         )
 
-        assertThat(receivedProductList).isNotEmpty
-        assertThat(receivedProductList!![0].priceCurrencyCode).isEqualTo("EUR")
+        assertThat(receivedStoreProducts).isNotEmpty
+        assertThat(receivedStoreProducts!![0].priceCurrencyCode).isEqualTo("EUR")
     }
 
     @Test

@@ -15,8 +15,8 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.PURCHASER_INFO_SCHEMA_VERSION
-import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.stubSkuDetails
@@ -262,10 +262,10 @@ class DeviceCacheTest {
         every {
             mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "hash2", "token3")
-        val activeSub = mockk<PurchaseDetails>(relaxed = true).also {
+        val activeSub = mockk<PaymentTransaction>(relaxed = true).also {
             every { it.type } returns ProductType.SUBS
         }
-        val inApp = mockk<PurchaseDetails>(relaxed = true).also {
+        val inApp = mockk<PaymentTransaction>(relaxed = true).also {
             every { it.type } returns ProductType.INAPP
         }
         val activePurchasesNotInCache =
@@ -395,7 +395,7 @@ class DeviceCacheTest {
 
     @Test
     fun `caching offerings works`() {
-        val productDetails = mockk<ProductDetails>().also {
+        val productDetails = mockk<StoreProduct>().also {
             val productId = "onemonth_freetrial"
             val stubSkuDetails = stubSkuDetails(productId = productId)
             every { it.sku } returns productId
