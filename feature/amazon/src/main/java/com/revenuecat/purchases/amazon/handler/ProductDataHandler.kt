@@ -11,7 +11,7 @@ import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.ProductDataResponseListener
 import com.revenuecat.purchases.amazon.toStoreProduct
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.ProductDetailsListCallback
+import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.StoreProduct
 
@@ -22,7 +22,7 @@ class ProductDataHandler(
     data class Request(
         val skuList: List<String>,
         val marketplace: String,
-        val onReceive: ProductDetailsListCallback,
+        val onReceive: StoreProductsCallback,
         val onError: PurchasesErrorCallback
     )
 
@@ -80,7 +80,7 @@ class ProductDataHandler(
     private fun handleSuccessfulProductDataResponse(
         productData: Map<String, Product>,
         marketplace: String,
-        onReceive: ProductDetailsListCallback
+        onReceive: StoreProductsCallback
     ) {
         log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA.format(productData))
 
@@ -88,8 +88,8 @@ class ProductDataHandler(
             log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA_EMPTY)
         }
 
-        val productDetailsList = productData.values.map { it.toStoreProduct(marketplace) }
-        onReceive(productDetailsList)
+        val storeProducts = productData.values.map { it.toStoreProduct(marketplace) }
+        onReceive(storeProducts)
     }
 
     private fun handleUnsuccessfulProductDataResponse(

@@ -2,7 +2,7 @@ package com.revenuecat.purchases
 
 import android.os.Parcelable
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import kotlinx.android.parcel.Parcelize
 
 /**
@@ -15,7 +15,7 @@ import kotlinx.android.parcel.Parcelize
 data class Package(
     val identifier: String,
     val packageType: PackageType,
-    val product: ProductDetails,
+    val product: StoreProduct,
     val offering: String
 ) : Parcelable
 

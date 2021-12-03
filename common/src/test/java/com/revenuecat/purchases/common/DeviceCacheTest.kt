@@ -393,13 +393,13 @@ class DeviceCacheTest {
 
     @Test
     fun `caching offerings works`() {
-        val productDetails = mockk<StoreProduct>().also {
+        val storeProduct = mockk<StoreProduct>().also {
             every { it.sku } returns "onemonth_freetrial"
         }
         val packageObject = Package(
             "custom",
             PackageType.CUSTOM,
-            productDetails,
+            storeProduct,
             "offering_a"
         )
         val offering = Offering(

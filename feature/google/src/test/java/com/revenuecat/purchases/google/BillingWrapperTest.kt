@@ -1664,7 +1664,7 @@ class BillingWrapperTest {
             purchaseToken = "atoken"
         )
 
-        return oldPurchase.toRevenueCatPurchaseDetails(type = ProductType.SUBS)
+        return oldPurchase.toRevenueCatPaymentTransaction(type = ProductType.SUBS)
     }
 
     private fun mockReplaceSkuInfo(): ReplaceSkuInfo {
@@ -1687,7 +1687,7 @@ class BillingWrapperTest {
             acknowledged = acknowledged
         )
 
-        return p.toRevenueCatPurchaseDetails(productType, offeringIdentifier)
+        return p.toRevenueCatPaymentTransaction(productType, offeringIdentifier)
     }
 
     private fun getMockedPurchaseHistoryRecordWrapper(
@@ -1700,7 +1700,7 @@ class BillingWrapperTest {
             purchaseToken = purchaseToken
         )
 
-        return p.toRevenueCatPurchaseDetails(
+        return p.toRevenueCatPaymentTransaction(
             type = productType
         )
     }
