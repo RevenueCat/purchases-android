@@ -8,7 +8,7 @@ import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
 import org.json.JSONObject
 
-fun Purchase.toRevenueCatPurchaseDetails(
+fun Purchase.toRevenueCatPaymentTransaction(
     productType: ProductType,
     presentedOfferingIdentifier: String?
 ): PaymentTransaction = PaymentTransaction(
@@ -32,7 +32,7 @@ val PaymentTransaction.originalGooglePurchase: Purchase?
             ?.takeIf { this.purchaseType == PurchaseType.GOOGLE_PURCHASE }
             ?.let { signature -> Purchase(this.originalJson.toString(), signature) }
 
-fun PurchaseHistoryRecord.toRevenueCatPurchaseDetails(
+fun PurchaseHistoryRecord.toRevenueCatPaymentTransaction(
     type: ProductType
 ): PaymentTransaction {
     return PaymentTransaction(

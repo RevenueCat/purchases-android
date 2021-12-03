@@ -63,10 +63,10 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     showUserError(requireActivity(), error)
                 }
             },
-            { purchaseDetails, _ ->
+            { paymentTransaction, _ ->
                 Toast.makeText(
                     requireContext(),
-                    "Successful purchase, order id: ${purchaseDetails.orderId}",
+                    "Successful purchase, order id: ${paymentTransaction.orderId}",
                     Toast.LENGTH_LONG
                 ).show()
 

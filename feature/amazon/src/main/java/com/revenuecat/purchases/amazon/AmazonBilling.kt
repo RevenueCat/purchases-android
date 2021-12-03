@@ -24,7 +24,7 @@ import com.revenuecat.purchases.amazon.listener.UserDataResponseListener
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.ProductDetailsListCallback
+import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
@@ -91,7 +91,7 @@ internal class AmazonBilling constructor(
     override fun querySkuDetailsAsync(
         productType: RevenueCatProductType,
         skus: Set<String>,
-        onReceive: ProductDetailsListCallback,
+        onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
         userDataHandler.getUserData(

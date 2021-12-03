@@ -8,16 +8,16 @@ import com.revenuecat.purchases.models.PaymentTransaction
 internal interface PurchaseCallback : PurchaseErrorListener {
     /**
      * Will be called after the purchase has completed
-     * @param purchase PurchaseDetails object for the purchased product.
+     * @param paymentTransaction PaymentTransaction object for the purchased product.
      * @param purchaserInfo Updated [PurchaserInfo].
      */
-    fun onCompleted(purchase: PaymentTransaction, purchaserInfo: PurchaserInfo)
+    fun onCompleted(paymentTransaction: PaymentTransaction, purchaserInfo: PurchaserInfo)
 }
 
 internal fun MakePurchaseListener.toPurchaseCallback(): PurchaseCallback {
     return object : PurchaseCallback {
-        override fun onCompleted(purchase: PaymentTransaction, purchaserInfo: PurchaserInfo) {
-            purchase.originalGooglePurchase?.let {
+        override fun onCompleted(paymentTransaction: PaymentTransaction, purchaserInfo: PurchaserInfo) {
+            paymentTransaction.originalGooglePurchase?.let {
                 this@toPurchaseCallback.onCompleted(it, purchaserInfo)
             } ?: throw IllegalArgumentException("Couldn't find original Google purchase")
         }

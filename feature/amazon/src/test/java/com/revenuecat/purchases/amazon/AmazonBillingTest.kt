@@ -361,11 +361,11 @@ class AmazonBillingTest {
         }
 
         val marketplaceSlot = slot<String>()
-        val productDetails = listOf(dummyAmazonProduct().toStoreProduct(marketplace))
+        val storeProduct = listOf(dummyAmazonProduct().toStoreProduct(marketplace))
         every {
             mockProductDataHandler.getProductData(skus, capture(marketplaceSlot), captureLambda(), any())
         } answers {
-            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(productDetails)
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProduct)
         }
 
         var onReceiveCalled = false
@@ -499,7 +499,7 @@ class AmazonBillingTest {
     @Test
     fun `Term sku is used when purchasing subscriptions`() {
         val appUserID = "appUserID"
-        val productDetails = dummyAmazonProduct().toStoreProduct("US")
+        val storeProduct = dummyAmazonProduct().toStoreProduct("US")
         val dummyReceipt = dummyReceipt()
         val dummyUserData = dummyUserData()
         val expectedTermSku = "sku.monthly"
@@ -520,7 +520,7 @@ class AmazonBillingTest {
         }
 
         every {
-            mockPurchaseHandler.purchase(appUserID, productDetails, null, captureLambda(), any())
+            mockPurchaseHandler.purchase(appUserID, storeProduct, null, captureLambda(), any())
         } answers {
             lambda<(Receipt, UserData) -> Unit>().captured.invoke(dummyReceipt, dummyUserData)
         }
@@ -530,7 +530,7 @@ class AmazonBillingTest {
         underTest.makePurchaseAsync(
             mockk(),
             appUserID,
-            storeProduct = productDetails,
+            storeProduct = storeProduct,
             replaceSkuInfo = null,
             presentedOfferingIdentifier = null
         )
@@ -549,7 +549,7 @@ class AmazonBillingTest {
     fun `Sku is used when purchasing consumables`() {
         val appUserID = "appUserID"
         val sku = "sku"
-        val productDetails = dummyAmazonProduct(
+        val storeProduct = dummyAmazonProduct(
             sku = sku,
             productType = ProductType.CONSUMABLE
         ).toStoreProduct("US")
@@ -575,7 +575,7 @@ class AmazonBillingTest {
         }
 
         every {
-            mockPurchaseHandler.purchase(appUserID, productDetails, null, captureLambda(), any())
+            mockPurchaseHandler.purchase(appUserID, storeProduct, null, captureLambda(), any())
         } answers {
             lambda<(Receipt, UserData) -> Unit>().captured.invoke(dummyReceipt, dummyUserData)
         }
@@ -583,7 +583,7 @@ class AmazonBillingTest {
         underTest.makePurchaseAsync(
             mockk(),
             appUserID,
-            storeProduct = productDetails,
+            storeProduct = storeProduct,
             replaceSkuInfo = null,
             presentedOfferingIdentifier = null
         )
