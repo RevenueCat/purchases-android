@@ -5,7 +5,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.google.originalGooglePurchase
 import com.revenuecat.purchases.models.PaymentTransaction
 
-internal interface PurchaseCallback : PurchaseErrorListener {
+interface PurchaseCallback : PurchaseErrorListener {
     /**
      * Will be called after the purchase has completed
      * @param paymentTransaction PaymentTransaction object for the purchased product.
@@ -14,7 +14,7 @@ internal interface PurchaseCallback : PurchaseErrorListener {
     fun onCompleted(paymentTransaction: PaymentTransaction, purchaserInfo: PurchaserInfo)
 }
 
-internal fun MakePurchaseListener.toPurchaseCallback(): PurchaseCallback {
+fun MakePurchaseListener.toPurchaseCallback(): PurchaseCallback {
     return object : PurchaseCallback {
         override fun onCompleted(paymentTransaction: PaymentTransaction, purchaserInfo: PurchaserInfo) {
             paymentTransaction.originalGooglePurchase?.let {

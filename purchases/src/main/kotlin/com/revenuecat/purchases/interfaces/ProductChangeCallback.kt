@@ -15,7 +15,7 @@ import com.revenuecat.purchases.models.PaymentTransaction
 /**
  * Interface to be implemented when upgrading or downgrading a purchase.
  */
-internal interface ProductChangeCallback : PurchaseErrorListener {
+interface ProductChangeCallback : PurchaseErrorListener {
     /**
      * Will be called after the product change has been completed
      * @param paymentTransaction PaymentTransaction object for the purchased product. Will be null if the change is deferred.
@@ -24,7 +24,7 @@ internal interface ProductChangeCallback : PurchaseErrorListener {
     fun onCompleted(paymentTransaction: PaymentTransaction?, purchaserInfo: PurchaserInfo)
 }
 
-internal fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallback {
+fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallback {
     return object : ProductChangeCallback {
         override fun onCompleted(paymentTransaction: PaymentTransaction?, purchaserInfo: PurchaserInfo) {
             if (paymentTransaction == null) {
@@ -42,7 +42,7 @@ internal fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallb
     }
 }
 
-internal fun MakePurchaseListener.toProductChangeCallback(): ProductChangeCallback {
+fun MakePurchaseListener.toProductChangeCallback(): ProductChangeCallback {
     return object : ProductChangeListener {
         override fun onCompleted(purchase: Purchase?, purchaserInfo: PurchaserInfo) {
             if (purchase == null) {
