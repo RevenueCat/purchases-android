@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.subscriberattributes
+package com.revenuecat.purchases.google.attribution
 
 import android.annotation.SuppressLint
 import android.app.Application
@@ -8,23 +8,31 @@ import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.strings.AttributionStrings
+import com.revenuecat.purchases.utils.filterNotNullValues
 import java.io.IOException
 import java.util.concurrent.TimeoutException
 
-class AttributionFetcher(
+class GoogleDeviceIdentifiersFetcher(
     private val dispatcher: Dispatcher
-) {
+) : DeviceIdentifiersFetcher {
 
-    fun getDeviceIdentifiers(
+    override fun getDeviceIdentifiers(
         applicationContext: Application,
-        completion: (advertisingID: String?, androidID: String) -> Unit
+        completion: (deviceIdentifiers: Map<String, String>) -> Unit
     ) {
-        dispatcher.enqueue(Runnable {
+        dispatcher.enqueue({
             val advertisingID: String? = getAdvertisingID(applicationContext)
             val androidID = getAndroidID(applicationContext)
-            completion(advertisingID, androidID)
+            val deviceIdentifiers = mapOf(
+                SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to advertisingID,
+                SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to androidID,
+                SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
+            ).filterNotNullValues()
+            completion(deviceIdentifiers)
         })
     }
 
@@ -41,20 +49,20 @@ class AttributionFetcher(
             }
         } catch (e: GooglePlayServicesNotAvailableException) {
             log(LogIntent.GOOGLE_ERROR,
-                    AttributionStrings.GOOGLE_PLAY_SERVICES_NOT_INSTALLED_FETCHING_ADVERTISING_IDENTIFIER
-                            .format(e.localizedMessage))
+                AttributionStrings.GOOGLE_PLAY_SERVICES_NOT_INSTALLED_FETCHING_ADVERTISING_IDENTIFIER
+                    .format(e.localizedMessage))
         } catch (e: GooglePlayServicesRepairableException) {
             log(LogIntent.GOOGLE_ERROR,
-                    AttributionStrings.GOOGLE_PLAY_SERVICES_REPAIRABLE_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                            .format(e.localizedMessage))
+                AttributionStrings.GOOGLE_PLAY_SERVICES_REPAIRABLE_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                    .format(e.localizedMessage))
         } catch (e: TimeoutException) {
             log(LogIntent.GOOGLE_ERROR,
-                    AttributionStrings.TIMEOUT_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                            .format(e.localizedMessage))
+                AttributionStrings.TIMEOUT_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                    .format(e.localizedMessage))
         } catch (e: IOException) {
             log(LogIntent.GOOGLE_ERROR,
-                    AttributionStrings.IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                            .format(e.localizedMessage))
+                AttributionStrings.IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                    .format(e.localizedMessage))
         }
         return advertisingID
     }

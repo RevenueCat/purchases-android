@@ -7,5 +7,5 @@ import com.android.billingclient.api.SkuDetails
 /**
  * Returns the original SkuDetails that was used to build the ProductDetails object.
  */
-val ProductDetails.skuDetails: SkuDetails
+val StoreProduct.skuDetails: SkuDetails
     get() = SkuDetails(this.originalJson.toString())

@@ -12,7 +12,7 @@ import org.json.JSONObject
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-class ProductDetails(
+data class StoreProduct(
     /**
      * The product ID.
      */
@@ -137,51 +137,47 @@ class ProductDetails(
     val originalJson: JSONObject
 ) : Parcelable {
 
-    @SuppressWarnings("ComplexMethod")
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+    // We use this to not include the originalJSON in the equals
+    override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
+    override fun hashCode() = ComparableData(this).hashCode()
+}
 
-        other as ProductDetails
-
-        if (sku != other.sku) return false
-        if (type != other.type) return false
-        if (price != other.price) return false
-        if (priceAmountMicros != other.priceAmountMicros) return false
-        if (priceCurrencyCode != other.priceCurrencyCode) return false
-        if (originalPrice != other.originalPrice) return false
-        if (originalPriceAmountMicros != other.originalPriceAmountMicros) return false
-        if (title != other.title) return false
-        if (description != other.description) return false
-        if (subscriptionPeriod != other.subscriptionPeriod) return false
-        if (freeTrialPeriod != other.freeTrialPeriod) return false
-        if (introductoryPrice != other.introductoryPrice) return false
-        if (introductoryPriceAmountMicros != other.introductoryPriceAmountMicros) return false
-        if (introductoryPricePeriod != other.introductoryPricePeriod) return false
-        if (introductoryPriceCycles != other.introductoryPriceCycles) return false
-        if (iconUrl != other.iconUrl) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = sku.hashCode()
-        result = 31 * result + type.hashCode()
-        result = 31 * result + price.hashCode()
-        result = 31 * result + priceAmountMicros.hashCode()
-        result = 31 * result + priceCurrencyCode.hashCode()
-        result = 31 * result + (originalPrice?.hashCode() ?: 0)
-        result = 31 * result + originalPriceAmountMicros.hashCode()
-        result = 31 * result + title.hashCode()
-        result = 31 * result + description.hashCode()
-        result = 31 * result + (subscriptionPeriod?.hashCode() ?: 0)
-        result = 31 * result + (freeTrialPeriod?.hashCode() ?: 0)
-        result = 31 * result + (introductoryPrice?.hashCode() ?: 0)
-        result = 31 * result + introductoryPriceAmountMicros.hashCode()
-        result = 31 * result + (introductoryPricePeriod?.hashCode() ?: 0)
-        result = 31 * result + introductoryPriceCycles
-        result = 31 * result + iconUrl.hashCode()
-        result = 31 * result + originalJson.hashCode()
-        return result
-    }
+private data class ComparableData(
+    val sku: String,
+    val type: ProductType,
+    val price: String,
+    val priceAmountMicros: Long,
+    val priceCurrencyCode: String,
+    val originalPrice: String?,
+    val originalPriceAmountMicros: Long,
+    val title: String,
+    val description: String,
+    val subscriptionPeriod: String?,
+    val freeTrialPeriod: String?,
+    val introductoryPrice: String?,
+    val introductoryPriceAmountMicros: Long,
+    val introductoryPricePeriod: String?,
+    val introductoryPriceCycles: Int,
+    val iconUrl: String
+) {
+    constructor(
+        storeProduct: StoreProduct
+    ) : this(
+        sku = storeProduct.sku,
+        type = storeProduct.type,
+        price = storeProduct.price,
+        priceAmountMicros = storeProduct.priceAmountMicros,
+        priceCurrencyCode = storeProduct.priceCurrencyCode,
+        originalPrice = storeProduct.originalPrice,
+        originalPriceAmountMicros = storeProduct.originalPriceAmountMicros,
+        title = storeProduct.title,
+        description = storeProduct.description,
+        subscriptionPeriod = storeProduct.subscriptionPeriod,
+        freeTrialPeriod = storeProduct.freeTrialPeriod,
+        introductoryPrice = storeProduct.introductoryPrice,
+        introductoryPriceAmountMicros = storeProduct.introductoryPriceAmountMicros,
+        introductoryPricePeriod = storeProduct.introductoryPricePeriod,
+        introductoryPriceCycles = storeProduct.introductoryPriceCycles,
+        iconUrl = storeProduct.iconUrl
+    )
 }

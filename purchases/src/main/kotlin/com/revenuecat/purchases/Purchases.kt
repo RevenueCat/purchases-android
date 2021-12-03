@@ -39,7 +39,8 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
-import com.revenuecat.purchases.google.toProductDetails
+import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -56,9 +57,9 @@ import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
-import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -67,8 +68,6 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.PurchaserInfoStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.AttributionDataMigrator
-import com.revenuecat.purchases.subscriberattributes.AttributionFetcher
-import com.revenuecat.purchases.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -83,8 +82,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
-typealias SuccessfulPurchaseCallback = (PurchaseDetails, PurchaserInfo) -> Unit
-typealias ErrorPurchaseCallback = (PurchaseDetails, PurchasesError) -> Unit
+typealias SuccessfulPurchaseCallback = (PaymentTransaction, PurchaserInfo) -> Unit
+typealias ErrorPurchaseCallback = (PaymentTransaction, PurchasesError) -> Unit
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -337,8 +336,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: GetSkusResponseListener
     ) {
         getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), object : GetProductDetailsCallback {
-            override fun onReceived(productDetailsList: List<ProductDetails>) {
-                listener.onReceived(productDetailsList.map { it.skuDetails })
+            override fun onReceived(storeProducts: List<StoreProduct>) {
+                listener.onReceived(storeProducts.map { it.skuDetails })
             }
 
             override fun onError(error: PurchasesError) {
@@ -373,8 +372,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         listener: GetSkusResponseListener
     ) {
         getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), object : GetProductDetailsCallback {
-            override fun onReceived(productDetailsList: List<ProductDetails>) {
-                listener.onReceived(productDetailsList.map { it.skuDetails })
+            override fun onReceived(storeProducts: List<StoreProduct>) {
+                listener.onReceived(storeProducts.map { it.skuDetails })
             }
 
             override fun onError(error: PurchasesError) {
@@ -421,7 +420,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         purchaseProduct(
             activity,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             upgradeInfo,
             listener.toProductChangeCallback()
         )
@@ -443,7 +442,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         purchaseProduct(
             activity,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             upgradeInfo,
             listener.toProductChangeCallback()
         )
@@ -451,13 +450,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     fun purchaseProduct(
         activity: Activity,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
         startProductChange(
             activity,
-            productDetails,
+            storeProduct,
             null,
             upgradeInfo,
             listener
@@ -486,7 +485,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         purchaseProduct(
             activity,
-            skuDetails.toProductDetails(),
+            skuDetails.toStoreProduct(),
             listener.toPurchaseCallback()
         )
     }
@@ -494,15 +493,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Make a purchase.
      * @param [activity] Current activity
-     * @param [productDetails] The ProductDetails of the product you wish to purchase
+     * @param [storeProduct] The ProductDetails of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
     fun purchaseProduct(
         activity: Activity,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, productDetails, null, callback)
+        startPurchase(activity, storeProduct, null, callback)
     }
 
     /**
@@ -1007,7 +1006,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Subscriber attribute associated with the Adjust Id for the user
      * Required for the RevenueCat Adjust integration
      *
-     * @param adjustID null will delete the subscriber attribute
+     * @param adjustID null or an empty string will delete the subscriber attribute
      */
     fun setAdjustID(adjustID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAdjustID"))
@@ -1023,7 +1022,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Subscriber attribute associated with the AppsFlyer Id for the user
      * Required for the RevenueCat AppsFlyer integration
      *
-     * @param appsflyerID null will delete the subscriber attribute
+     * @param appsflyerID null or an empty string will delete the subscriber attribute
      */
     fun setAppsflyerID(appsflyerID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAppsflyerID"))
@@ -1039,7 +1038,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Subscriber attribute associated with the Facebook SDK Anonymous Id for the user
      * Recommended for the RevenueCat Facebook integration
      *
-     * @param fbAnonymousID null will delete the subscriber attribute
+     * @param fbAnonymousID null or an empty string will delete the subscriber attribute
      */
     fun setFBAnonymousID(fbAnonymousID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setFBAnonymousID"))
@@ -1055,7 +1054,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Subscriber attribute associated with the mParticle Id for the user
      * Recommended for the RevenueCat mParticle integration
      *
-     * @param mparticleID null will delete the subscriber attribute
+     * @param mparticleID null or an empty string will delete the subscriber attribute
      */
     fun setMparticleID(mparticleID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMparticleID"))
@@ -1071,7 +1070,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Subscriber attribute associated with the OneSignal Player Id for the user
      * Required for the RevenueCat OneSignal integration
      *
-     * @param onesignalID null will delete the subscriber attribute
+     * @param onesignalID null or an empty string will delete the subscriber attribute
      */
     fun setOnesignalID(onesignalID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setOnesignalID"))
@@ -1083,13 +1082,29 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the Airship Channel ID
+     * Required for the RevenueCat Airship integration
+     *
+     * @param airshipChannelID null or an empty string will delete the subscriber attribute
+     */
+    fun setAirshipChannelID(airshipChannelID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAirshipChannelID"))
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Airship,
+            airshipChannelID,
+            appUserID,
+            application
+        )
+    }
+
     // endregion
     // region Campaign parameters
 
     /**
      * Subscriber attribute associated with the install media source for the user
      *
-     * @param mediaSource null will delete the subscriber attribute.
+     * @param mediaSource null or an empty string will delete the subscriber attribute.
      */
     fun setMediaSource(mediaSource: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMediaSource"))
@@ -1103,7 +1118,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Subscriber attribute associated with the install campaign for the user
      *
-     * @param campaign null will delete the subscriber attribute.
+     * @param campaign null or an empty string will delete the subscriber attribute.
      */
     fun setCampaign(campaign: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setCampaign"))
@@ -1117,7 +1132,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Subscriber attribute associated with the install ad group for the user
      *
-     * @param adGroup null will delete the subscriber attribute.
+     * @param adGroup null or an empty string will delete the subscriber attribute.
      */
     fun setAdGroup(adGroup: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAdGroup"))
@@ -1131,7 +1146,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Subscriber attribute associated with the install ad for the user
      *
-     * @param ad null will delete the subscriber attribute.
+     * @param ad null or an empty string will delete the subscriber attribute.
      */
     fun setAd(ad: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAd"))
@@ -1145,7 +1160,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Subscriber attribute associated with the install keyword for the user
      *
-     * @param keyword null will delete the subscriber attribute.
+     * @param keyword null or an empty string will delete the subscriber attribute.
      */
     fun setKeyword(keyword: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("seKeyword"))
@@ -1159,7 +1174,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Subscriber attribute associated with the install ad creative for the user
      *
-     * @param creative null will delete the subscriber attribute.
+     * @param creative null or an empty string will delete the subscriber attribute.
      */
     fun setCreative(creative: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setCreative"))
@@ -1280,11 +1295,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun logMissingProducts(
         offerings: Offerings,
-        detailsByID: HashMap<String, ProductDetails>
+        storeProductByID: HashMap<String, StoreProduct>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
         .map { it.product.sku }
-        .filterNot { detailsByID.containsKey(it) }
+        .filterNot { storeProductByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
             log(LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
@@ -1347,7 +1362,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun postPurchases(
-        purchases: List<PurchaseDetails>,
+        purchases: List<PaymentTransaction>,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
@@ -1355,14 +1370,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onError: (ErrorPurchaseCallback)? = null
     ) {
         purchases.forEach { purchase ->
-            if (purchase.purchaseState == RevenueCatPurchaseState.PURCHASED) {
+            if (purchase.purchaseState == PurchaseState.PURCHASED) {
                 billing.querySkuDetailsAsync(
                     productType = purchase.type,
                     skus = purchase.skus.toSet(),
                     onReceive = { productDetailsList ->
                         postToBackend(
                             purchase = purchase,
-                            productDetails = productDetailsList.takeUnless { it.isEmpty() }?.get(0),
+                            storeProduct = productDetailsList.takeUnless { it.isEmpty() }?.get(0),
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1373,7 +1388,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     onError = {
                         postToBackend(
                             purchase = purchase,
-                            productDetails = null,
+                            storeProduct = null,
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1393,8 +1408,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     @JvmSynthetic
     internal fun postToBackend(
-        purchase: PurchaseDetails,
-        productDetails: ProductDetails?,
+        purchase: PaymentTransaction,
+        storeProduct: StoreProduct?,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
@@ -1406,7 +1421,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         val receiptInfo = ReceiptInfo(
             productIDs = purchase.skus,
             offeringIdentifier = purchase.presentedOfferingIdentifier,
-            productDetails = productDetails
+            storeProduct = storeProduct
         )
         backend.postReceiptData(
             purchaseToken = purchase.purchaseToken,
@@ -1443,14 +1458,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getSkuDetails(
         skus: Set<String>,
-        onCompleted: (HashMap<String, ProductDetails>) -> Unit,
+        onCompleted: (HashMap<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
             skus,
             { subscriptionsSKUDetails ->
-                val detailsByID = HashMap<String, ProductDetails>()
+                val detailsByID = HashMap<String, StoreProduct>()
                 val inAPPSkus =
                     skus - subscriptionsSKUDetails
                         .map { details -> details.sku to details }
@@ -1526,7 +1541,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getPurchasesUpdatedListener(): BillingAbstract.PurchasesUpdatedListener {
         return object : BillingAbstract.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<PurchaseDetails>) {
+            override fun onPurchasesUpdated(purchases: List<PaymentTransaction>) {
                 val productChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
                 val productChangeListener: ProductChangeCallback?
@@ -1621,12 +1636,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun startPurchase(
         activity: Activity,
-        product: ProductDetails,
+        storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
-                " $product ${presentedOfferingIdentifier?.let {
+                " $storeProduct ${presentedOfferingIdentifier?.let {
                     PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
                 }}"
         ))
@@ -1635,9 +1650,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
-            if (!state.purchaseCallbacks.containsKey(product.sku)) {
+            if (!state.purchaseCallbacks.containsKey(storeProduct.sku)) {
                 state = state.copy(
-                    purchaseCallbacks = state.purchaseCallbacks + mapOf(product.sku to listener)
+                    purchaseCallbacks = state.purchaseCallbacks + mapOf(storeProduct.sku to listener)
                 )
                 userPurchasing = identityManager.currentAppUserID
             }
@@ -1646,7 +1661,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             billing.makePurchaseAsync(
                 activity,
                 appUserID,
-                product,
+                storeProduct,
                 null,
                 presentedOfferingIdentifier
             )
@@ -1655,13 +1670,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun startProductChange(
         activity: Activity,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $productDetails ${offeringIdentifier?.let {
+                " $storeProduct ${offeringIdentifier?.let {
                     PurchaseStrings.OFFERING + "$offeringIdentifier"
                 }} UpgradeInfo: $upgradeInfo"
 
@@ -1678,7 +1693,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
-                productDetails,
+                storeProduct,
                 upgradeInfo,
                 activity,
                 appUserID,
@@ -1689,7 +1704,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun replaceOldPurchaseWithNewProduct(
-        product: ProductDetails,
+        storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
@@ -1698,7 +1713,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         billing.findPurchaseInPurchaseHistory(
             appUserID,
-            product.type,
+            storeProduct.type,
             upgradeInfo.oldSku,
             onCompletion = { purchaseRecord ->
                 log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
@@ -1706,7 +1721,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 billing.makePurchaseAsync(
                     activity,
                     appUserID,
-                    product,
+                    storeProduct,
                     ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier
                 )
@@ -1820,6 +1835,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         var proxyURL: URL? = null
 
         /**
+         * True if [configure] has been called and [Purchases.sharedInstance] is set
+         */
+        @JvmStatic
+        val isConfigured: Boolean
+            get() = this.backingFieldSharedInstance != null
+
+        /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
          * be set as a singleton. You should access the singleton instance using [Purchases.sharedInstance]
          * @param apiKey The API Key generated for your app from https://app.revenuecat.com/
@@ -1892,9 +1914,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 val cache = DeviceCache(prefs, apiKey)
 
                 val billing: BillingAbstract = BillingFactory.createBilling(store, application, backend, cache)
+                val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 
                 val subscriberAttributesCache = SubscriberAttributesCache(cache)
-                val attributionFetcher = AttributionFetcher(dispatcher)
                 val attributionDataMigrator = AttributionDataMigrator()
                 return Purchases(
                     application,

@@ -1,18 +1,18 @@
 package com.revenuecat.purchases.common
 
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 
 class ReceiptInfo(
     val productIDs: List<String>,
     val offeringIdentifier: String? = null,
-    val productDetails: ProductDetails? = null
+    val storeProduct: StoreProduct? = null
 ) {
 
-    val price: Double? = productDetails?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble())
-    val currency: String? = productDetails?.priceCurrencyCode
-    val duration: String? = productDetails?.subscriptionPeriod?.takeUnless { it.isEmpty() }
-    val introDuration: String? = productDetails?.introductoryPricePeriod?.takeUnless { it.isEmpty() }
-    val trialDuration: String? = productDetails?.freeTrialPeriod?.takeUnless { it.isEmpty() }
+    val price: Double? = storeProduct?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble())
+    val currency: String? = storeProduct?.priceCurrencyCode
+    val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }
+    val introDuration: String? = storeProduct?.introductoryPricePeriod?.takeUnless { it.isEmpty() }
+    val trialDuration: String? = storeProduct?.freeTrialPeriod?.takeUnless { it.isEmpty() }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -34,7 +34,7 @@ class ReceiptInfo(
     override fun hashCode(): Int {
         var result = productIDs.hashCode()
         result = 31 * result + (offeringIdentifier?.hashCode() ?: 0)
-        result = 31 * result + (productDetails?.hashCode() ?: 0)
+        result = 31 * result + (storeProduct?.hashCode() ?: 0)
         return result
     }
 

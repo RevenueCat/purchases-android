@@ -1,20 +1,20 @@
 package com.revenuecat.purchases.interfaces
 
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 
-interface GetProductDetailsCallback {
+internal interface GetProductDetailsCallback {
     /**
      * Will be called after ProductDetails have been fetched successfully
      *
-     * @param productDetails List of [ProductDetails] retrieved after a successful call to fetch [ProductDetails]
+     * @param storeProducts List of [StoreProduct] retrieved after a successful call to fetch [StoreProduct]
      */
-    fun onReceived(productDetailsList: List<ProductDetails>)
+    fun onReceived(storeProducts: List<StoreProduct>)
 
     /**
      * Will be called after the purchase has completed with error
      *
-     * @param error A [PurchasesError] containing the reason for the failure when fetching the [ProductDetails]
+     * @param error A [PurchasesError] containing the reason for the failure when fetching the [StoreProduct]
      */
     fun onError(error: PurchasesError)
 }

@@ -1,3 +1,28 @@
+## 4.6.0
+
+- Added `EntitlementInfo.ownershipType`, which can be used to determine whether an entitlement was granted by a direct purchase or shared through a family member.
+    https://github.com/RevenueCat/purchases-android/pull/382
+- Added a log warning when `configure` is called with an empty string as `appUserID`, to make it clear that the user will be considered an anonymous user.
+    https://github.com/RevenueCat/purchases-android/pull/384
+
+## 4.5.0
+
+- Added `isConfigured` to be able to check if there is an instance of Purchases already configured
+    https://github.com/RevenueCat/purchases-android/pull/378
+
+## 4.4.0
+
+- Added support for Airship integration via `setAirshipChannelID`
+    https://github.com/RevenueCat/purchases-android/pull/375
+
+## 4.3.3
+
+- Patch around BillingClient bug resulting in multiple responses from querySkuDetailsAsync and queryPurchaseHistoryAsync
+    https://github.com/RevenueCat/purchases-android/pull/369
+- Update test dependencies, Gradle plugin and buildToolsVersion
+    https://github.com/RevenueCat/purchases-android/pull/363
+    https://github.com/RevenueCat/purchases-android/pull/365
+
 ## 4.3.2
 
 - Makes improvements to prevent multiple HTTP requests with the same parameters to `/identify` and `/alias`. 
