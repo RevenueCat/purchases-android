@@ -24,7 +24,7 @@ class LoginFragment : Fragment() {
                     .logInWith(
                         userId,
                         { error -> showUserError(requireActivity(), error) },
-                        { _, created -> if (created) { advanceToOverviewFragment() } }
+                        { _, _ -> advanceToOverviewFragment() }
                     )
             }
         }
