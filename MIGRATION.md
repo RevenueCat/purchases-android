@@ -1,0 +1,3 @@
+- `identify` has been removed
+- `reset` has been removed
+- `createAlias` has been removed

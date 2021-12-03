@@ -295,37 +295,6 @@ fun Purchases.restorePurchasesWith(
 }
 
 /**
- * This function will alias two appUserIDs together.
- * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
- * @param [onSuccess] Will be called after the call has completed.
- * @param [onError] Will be called after the call has completed with an error.
- */
-@Suppress("unused")
-fun Purchases.createAliasWith(
-    newAppUserID: String,
-    onError: ErrorFunction = ON_ERROR_STUB,
-    onSuccess: ReceivePurchaserInfoSuccessFunction
-) {
-    createAlias(newAppUserID, receivePurchaserInfoListener(onSuccess, onError))
-}
-
-/**
- * This function will change the current appUserID.
- * Typically this would be used after a log out to identify a new user without calling configure
- * @param appUserID The new appUserID that should be linked to the currently user
- * @param [onSuccess] Will be called after the call has completed.
- * @param [onError] Will be called after the call has completed with an error.
- */
-@Suppress("unused")
-fun Purchases.identifyWith(
-    appUserID: String,
-    onError: ErrorFunction = ON_ERROR_STUB,
-    onSuccess: ReceivePurchaserInfoSuccessFunction
-) {
-    identify(appUserID, receivePurchaserInfoListener(onSuccess, onError))
-}
-
-/**
  * This function will change the current appUserID.
  * Typically this would be used after a log out to identify a new user without calling configure
  * @param appUserID The new appUserID that should be linked to the currently user
@@ -353,20 +322,6 @@ fun Purchases.logOutWith(
     onSuccess: ReceivePurchaserInfoSuccessFunction
 ) {
     logOut(receivePurchaserInfoListener(onSuccess, onError))
-}
-
-/**
- * Resets the Purchases client clearing the save appUserID. This will generate a random user
- * id and save it in the cache.
- * @param [onSuccess] Will be called after the call has completed.
- * @param [onError] Will be called after the call has completed with an error.
- */
-@Suppress("unused")
-fun Purchases.resetWith(
-    onError: ErrorFunction = ON_ERROR_STUB,
-    onSuccess: ReceivePurchaserInfoSuccessFunction
-) {
-    reset(receivePurchaserInfoListener(onSuccess, onError))
 }
 
 /**

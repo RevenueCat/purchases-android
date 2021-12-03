@@ -20,7 +20,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getPurchaserInfoWith
-import com.revenuecat.purchases.resetWith
+import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchasetester.databinding.FragmentOverviewBinding
 
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener {
@@ -46,7 +46,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         }
 
         binding.purchaserInfoLogoutButton.setOnClickListener {
-            Purchases.sharedInstance.resetWith(
+            Purchases.sharedInstance.logOutWith(
                 { error -> showUserError(requireActivity(), error) },
                 { findNavController().navigateUp() }
             )
