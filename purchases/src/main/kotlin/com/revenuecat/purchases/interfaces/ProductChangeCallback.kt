@@ -18,7 +18,8 @@ import com.revenuecat.purchases.models.PaymentTransaction
 interface ProductChangeCallback : PurchaseErrorListener {
     /**
      * Will be called after the product change has been completed
-     * @param paymentTransaction PaymentTransaction object for the purchased product. Will be null if the change is deferred.
+     * @param paymentTransaction PaymentTransaction object for the purchased product.
+     * Will be null if the change is deferred.
      * @param purchaserInfo Updated [PurchaserInfo].
      */
     fun onCompleted(paymentTransaction: PaymentTransaction?, purchaserInfo: PurchaserInfo)

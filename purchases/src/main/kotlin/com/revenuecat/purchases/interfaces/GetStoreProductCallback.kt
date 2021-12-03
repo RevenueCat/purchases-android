@@ -1,9 +1,6 @@
 package com.revenuecat.purchases.interfaces
 
-import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.google.originalGooglePurchase
-import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.skuDetails
 
