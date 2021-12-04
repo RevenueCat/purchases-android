@@ -4,10 +4,8 @@
 //
 package com.revenuecat.purchases.interfaces
 
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.toPurchaserInfo
 
 /**
  * Interface to be implemented when making calls that return a [PurchaserInfo]
