@@ -622,7 +622,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     dispatch { listener?.onError(error) }
                 }
             )
-        } ?: retrievePurchaseInfo(identityManager.currentAppUserID, listener)
+        } ?: retrieveCustomerInfo(identityManager.currentAppUserID, listener)
     }
 
     /**
@@ -653,7 +653,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     dispatch { listener?.onError(error) }
                 }
             )
-        } ?: retrievePurchaseInfo(identityManager.currentAppUserID, listener)
+        } ?: retrieveCustomerInfo(identityManager.currentAppUserID, listener)
     }
 
     /**
@@ -680,7 +680,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     dispatch { callback?.onError(error) }
                 })
         }
-            ?: retrievePurchaseInfo(identityManager.currentAppUserID, receiveCustomerInfoListener(
+            ?: retrieveCustomerInfo(identityManager.currentAppUserID, receiveCustomerInfoListener(
                 onSuccess = { customerInfo ->
                     dispatch { callback?.onReceived(customerInfo, false) }
                 },
@@ -755,10 +755,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun getCustomerInfo(
         listener: ReceiveCustomerInfoListener
     ) {
-        retrievePurchaseInfo(identityManager.currentAppUserID, listener)
+        retrieveCustomerInfo(identityManager.currentAppUserID, listener)
     }
 
-    private fun retrievePurchaseInfo(
+    private fun retrieveCustomerInfo(
         appUserID: String,
         listener: ReceiveCustomerInfoListener? = null
     ) {
@@ -1237,7 +1237,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 dispatch { completion?.onReceived(info) }
             },
             { error ->
-                Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
+                Log.e("Purchases", "Error fetching customer data: ${error.message}")
                 deviceCache.clearCustomerInfoCacheTimestamp(appUserID)
                 dispatch { completion?.onError(error) }
             })
