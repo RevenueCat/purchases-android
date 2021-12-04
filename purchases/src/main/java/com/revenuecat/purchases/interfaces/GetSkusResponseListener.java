@@ -13,6 +13,10 @@ import java.util.List;
 
 /**
  * Interface to be implemented when making calls to fetch [SkuDetails]
+ * @deprecated
+ * <p>Use {@link GetStoreProductCallback}, which returns a list
+ * of {@link com.revenuecat.purchases.models.StoreProduct} instead of a list of {@link SkuDetails}</p>
+ * <p>Use `GetSkusResponseListener.toGetStoreProductCallback()` in Kotlin for an easy migration.</p>
  */
 @Deprecated
 public interface GetSkusResponseListener {

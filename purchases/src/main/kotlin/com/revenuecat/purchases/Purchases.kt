@@ -1841,6 +1841,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmOverloads
         @JvmStatic
+        @Deprecated(
+            message = "Parameters have been replaced with a Builder",
+            replaceWith = ReplaceWith("Purchases.configure(PurchasesConfiguration)")
+        )
         fun configure(
             context: Context,
             apiKey: String,

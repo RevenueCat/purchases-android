@@ -13,9 +13,10 @@ import com.revenuecat.purchases.PurchaserInfo;
 /**
  * Interface to be implemented when making purchases.
  * @deprecated
- * This interface has been replaced with PurchaseCallback
- * <p> Use {@link PurchaseCallback} instead.
-= */
+ * <p> Use {@link PurchaseCallback}, which returns a
+ * {@link com.revenuecat.purchases.models.PaymentTransaction} instead of a {@link Purchase}.</p>
+ * <p>You can use `MakePurchaseListener.toPurchaseCallback()` in Kotlin for an easy migration.</p>
+ */
 @Deprecated()
 public interface MakePurchaseListener extends PurchaseErrorListener {
     /**

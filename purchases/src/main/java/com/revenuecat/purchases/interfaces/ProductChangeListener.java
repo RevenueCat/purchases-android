@@ -13,6 +13,10 @@ import com.revenuecat.purchases.PurchaserInfo;
 
 /**
  * Interface to be implemented when upgrading or downgrading a purchase.
+ * @deprecated
+ * <p>Use {@link ProductChangeCallback}, which returns a
+ * {@link com.revenuecat.purchases.models.PaymentTransaction} instead of a {@link Purchase}.</p>
+ * <p>You can use `ProductChangeListener.toProductChangeCallback()` in Kotlin for an easy migration.</p>
  */
 @Deprecated
 public interface ProductChangeListener extends PurchaseErrorListener {
