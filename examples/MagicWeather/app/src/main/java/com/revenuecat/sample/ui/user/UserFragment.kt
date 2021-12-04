@@ -73,7 +73,7 @@ class UserFragment : Fragment() {
         } else {
             identityButton.text = "Log Out"
         }
-    }m
+    }
 
     /*
     How to restore purchases using the Purchases SDK. Read more about restoring purchases here: https://docs.revenuecat.com/docs/making-purchases#restoring-purchases
