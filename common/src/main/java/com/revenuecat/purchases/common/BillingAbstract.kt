@@ -7,7 +7,7 @@ import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 
-typealias ProductDetailsListCallback = (List<StoreProduct>) -> Unit
+typealias StoreProductsCallback = (List<StoreProduct>) -> Unit
 
 @SuppressWarnings("TooManyFunctions")
 abstract class BillingAbstract {
@@ -48,7 +48,7 @@ abstract class BillingAbstract {
     abstract fun querySkuDetailsAsync(
         productType: ProductType,
         skus: Set<String>,
-        onReceive: ProductDetailsListCallback,
+        onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     )
 

@@ -60,7 +60,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            storeProduct = dummyProductDetails(),
+            storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
             expectedOnSuccess,
             unexpectedOnError
@@ -83,7 +83,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            storeProduct = dummyProductDetails(),
+            storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
             unexpectedOnSuccess,
             expectedOnError
@@ -105,7 +105,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            storeProduct = dummyProductDetails(),
+            storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
             unexpectedOnSuccess,
             expectedOnError
@@ -127,7 +127,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            storeProduct = dummyProductDetails(),
+            storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
             unexpectedOnSuccess,
             expectedOnError
@@ -149,7 +149,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            storeProduct = dummyProductDetails(),
+            storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
             unexpectedOnSuccess,
             expectedOnError
@@ -173,7 +173,7 @@ class PurchaseHandlerTest {
 
         underTest.purchase(
             appUserID = "app_user_id",
-            storeProduct = dummyProductDetails(),
+            storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
             onSuccess = { _, _ ->
                 receivedCount++
@@ -190,7 +190,7 @@ class PurchaseHandlerTest {
         assertThat(receivedCount).isOne
     }
 
-    private fun dummyProductDetails(): StoreProduct {
+    private fun dummyStoreProduct(): StoreProduct {
         return dummyAmazonProduct().toStoreProduct("US")
     }
 

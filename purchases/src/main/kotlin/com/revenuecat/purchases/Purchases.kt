@@ -44,7 +44,7 @@ import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
-import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
+import com.revenuecat.purchases.interfaces.GetStoreProductCallback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
@@ -55,6 +55,7 @@ import com.revenuecat.purchases.interfaces.PurchaseErrorListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.interfaces.toGetStoreProductCallback
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.models.StoreProduct
@@ -327,26 +328,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), object : GetProductDetailsCallback {
-            override fun onReceived(storeProducts: List<StoreProduct>) {
-                listener.onReceived(storeProducts.map { it.skuDetails })
-            }
-
-            override fun onError(error: PurchasesError) {
-                listener.onError(error)
-            }
-        })
+        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), listener.toGetStoreProductCallback())
     }
 
     /**
-     * Gets the ProductDetails for the given list of subscription skus.
+     * Gets the StoreProduct for the given list of subscription skus.
      * @param [skus] List of skus
      * @param [callback] Response callback
      */
     @JvmSynthetic
     internal fun getSubscriptionSkus(
         skus: List<String>,
-        callback: GetProductDetailsCallback
+        callback: GetStoreProductCallback
     ) {
         getSkus(skus.toSet(), ProductType.SUBS, callback)
     }
@@ -360,15 +353,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), object : GetProductDetailsCallback {
-            override fun onReceived(storeProducts: List<StoreProduct>) {
-                listener.onReceived(storeProducts.map { it.skuDetails })
-            }
-
-            override fun onError(error: PurchasesError) {
-                listener.onError(error)
-            }
-        })
+        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), listener.toGetStoreProductCallback())
     }
 
     /**
@@ -379,7 +364,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     @JvmSynthetic
     internal fun getNonSubscriptionSkus(
         skus: List<String>,
-        callback: GetProductDetailsCallback
+        callback: GetStoreProductCallback
     ) {
         getSkus(skus.toSet(), ProductType.INAPP, callback)
     }
@@ -435,7 +420,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Make a purchase.
      * @param [activity] Current activity
-     * @param [storeProduct] The ProductDetails of the product you wish to purchase
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
     @JvmSynthetic
@@ -1212,14 +1197,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun getSkus(
         skus: Set<String>,
         productType: ProductType,
-        callback: GetProductDetailsCallback
+        callback: GetStoreProductCallback
     ) {
         billing.querySkuDetailsAsync(
             productType,
             skus,
-            { productDetailsList ->
+            { storeProducts ->
                 dispatch {
-                    callback.onReceived(productDetailsList)
+                    callback.onReceived(storeProducts)
                 }
             }, {
                 dispatch {
@@ -1277,10 +1262,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 billing.querySkuDetailsAsync(
                     productType = purchase.type,
                     skus = purchase.skus.toSet(),
-                    onReceive = { productDetailsList ->
+                    onReceive = { storeProducts ->
                         postToBackend(
                             purchase = purchase,
-                            storeProduct = productDetailsList.takeUnless { it.isEmpty() }?.get(0),
+                            storeProduct = storeProducts.takeUnless { it.isEmpty() }?.get(0),
                             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                             consumeAllTransactions = consumeAllTransactions,
                             appUserID = appUserID,
@@ -1498,10 +1483,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
-        val onSuccess: SuccessfulPurchaseCallback = { purchaseDetails, info ->
-            getPurchaseCallback(purchaseDetails.skus[0])?.let { purchaseCallback ->
+        val onSuccess: SuccessfulPurchaseCallback = { paymentTransaction, info ->
+            getPurchaseCallback(paymentTransaction.skus[0])?.let { purchaseCallback ->
                 dispatch {
-                    purchaseCallback.onCompleted(purchaseDetails, info)
+                    purchaseCallback.onCompleted(paymentTransaction, info)
                 }
             }
         }
@@ -1515,10 +1500,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun getProductChangeCompletedCallbacks(
         productChangeListener: ProductChangeCallback?
     ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
-        val onSuccess: SuccessfulPurchaseCallback = { purchaseDetails, info ->
+        val onSuccess: SuccessfulPurchaseCallback = { paymentTransaction, info ->
             productChangeListener?.let { productChangeCallback ->
                 dispatch {
-                    productChangeCallback.onCompleted(purchaseDetails, info)
+                    productChangeCallback.onCompleted(paymentTransaction, info)
                 }
             }
         }

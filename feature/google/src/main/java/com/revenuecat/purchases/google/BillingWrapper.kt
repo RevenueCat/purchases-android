@@ -28,7 +28,7 @@ import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.ProductDetailsListCallback
+import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -124,7 +124,7 @@ class BillingWrapper(
     override fun querySkuDetailsAsync(
         productType: ProductType,
         skus: Set<String>,
-        onReceive: ProductDetailsListCallback,
+        onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
         val nonEmptySkus = skus.filter { it.isNotEmpty() }
@@ -280,9 +280,9 @@ class BillingWrapper(
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
                             subsPurchasesList.map {
-                                it.toRevenueCatPurchaseDetails(ProductType.SUBS)
+                                it.toRevenueCatPaymentTransaction(ProductType.SUBS)
                             } + inAppPurchasesList.map {
-                                it.toRevenueCatPurchaseDetails(ProductType.INAPP)
+                                it.toRevenueCatPaymentTransaction(ProductType.INAPP)
                             }
                         )
                     },
@@ -415,7 +415,7 @@ class BillingWrapper(
     ): Map<String, PaymentTransaction> {
         return this.map { purchase ->
             val hash = purchase.purchaseToken.sha1()
-            hash to purchase.toRevenueCatPurchaseDetails(skuType.toProductType(), presentedOfferingIdentifier = null)
+            hash to purchase.toRevenueCatPaymentTransaction(skuType.toProductType(), presentedOfferingIdentifier = null)
         }.toMap()
     }
 
@@ -433,7 +433,7 @@ class BillingWrapper(
                     if (result.isSuccessful()) {
                         val purchaseHistoryRecordWrapper =
                             purchasesList?.firstOrNull { it.skus.contains(sku) }
-                                ?.toRevenueCatPurchaseDetails(productType)
+                                ?.toRevenueCatPaymentTransaction(productType)
 
                         if (purchaseHistoryRecordWrapper != null) {
                             onCompletion(purchaseHistoryRecordWrapper)
@@ -490,7 +490,7 @@ class BillingWrapper(
                     type = productTypes[purchase.sku]
                     presentedOffering = presentedOfferingsByProductIdentifier[purchase.sku]
                 }
-                purchase.toRevenueCatPurchaseDetails(
+                purchase.toRevenueCatPaymentTransaction(
                     type ?: getPurchaseType(purchase.purchaseToken),
                     presentedOffering
                 )

@@ -19,14 +19,14 @@ class ReceiptToPaymentTransactionTest {
     fun `orderID is always null`() {
         val receipt = dummyReceipt()
 
-        val purchaseDetails = receipt.toPaymentTransaction(
+        val paymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(purchaseDetails.orderId).isNull()
+        assertThat(paymentTransaction.orderId).isNull()
     }
 
     @Test
@@ -36,15 +36,15 @@ class ReceiptToPaymentTransactionTest {
 
         val receipt = dummyReceipt(sku = expectedReceiptSku)
 
-        val purchaseDetails = receipt.toPaymentTransaction(
+        val paymentTransaction = receipt.toPaymentTransaction(
             sku = expectedTermSku,
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(purchaseDetails.skus[0]).isEqualTo(expectedTermSku)
-        assertThat(purchaseDetails.skus[0]).isNotEqualTo(receipt.sku)
+        assertThat(paymentTransaction.skus[0]).isEqualTo(expectedTermSku)
+        assertThat(paymentTransaction.skus[0]).isNotEqualTo(receipt.sku)
     }
 
     @Test
@@ -264,13 +264,13 @@ class ReceiptToPaymentTransactionTest {
     @Test
     fun `purchase type is correct`() {
         val receipt = dummyReceipt()
-        val purchaseDetails = receipt.toPaymentTransaction(
+        val paymentTransaction = receipt.toPaymentTransaction(
             sku = "sku",
             presentedOfferingIdentifier = null,
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(purchaseDetails.purchaseType).isEqualTo(PurchaseType.AMAZON_PURCHASE)
+        assertThat(paymentTransaction.purchaseType).isEqualTo(PurchaseType.AMAZON_PURCHASE)
     }
 }
