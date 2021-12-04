@@ -54,7 +54,9 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
+import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.interfaces.toGetStoreProductCallback
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
@@ -150,7 +152,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @Synchronized get() = identityManager.currentAppUserID
 
     /**
-     * The listener is responsible for handling changes to purchaser information.
+     * The listener is responsible for handling changes to customer information.
      * Make sure [removeUpdatedCustomerInfoListener] is called when the listener needs to be destroyed.
      */
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
@@ -854,7 +856,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * Invalidates the cache for purchaser information.
+     * Invalidates the cache for customer information.
      *
      * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
      * Refer to https://docs.revenuecat.com/docs/purchaserinfo#section-get-user-information for more information on
@@ -1718,6 +1720,118 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     // endregion
+
+    // region Deprecated
+
+    /**
+     * The listener is responsible for handling changes to purchaser information.
+     * Make sure [removeUpdatedPurchaserInfoListener] is called when the listener needs to be destroyed.
+     */
+    @Deprecated(
+        "Renamed to updatedCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith("updatedCustomerInfoListener")
+    )
+    var updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null
+        @JvmName("-deprecated_getUpdatedPurchaserInfoListener")
+        get
+        @JvmName("-deprecated_setUpdatedPurchaserInfoListener")
+        set
+
+    /**
+     * Get latest available purchaser info.
+     * @param listener A listener called when purchaser info is available and not stale.
+     * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
+     */
+    @JvmName("-deprecated_getPurchaserInfo")
+    @Deprecated(
+        "Listener has been replaced with ReceiveCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith(
+            expression = "Purchases.sharedInstance.getCustomerInfo(ReceiveCustomerInfoListener)",
+            imports = ["com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener"]
+        )
+    )
+    fun getPurchaserInfo(
+        listener: ReceivePurchaserInfoListener
+    ) {
+        // no-op
+    }
+
+    /**
+     * Restores purchases made with the current Play Store account for the current user.
+     * This method will post all purchases associated with the current Play Store account to
+     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
+     * used by an existing user, the current `appUserID` will be aliased together with the
+     * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
+     * the same user.
+     *
+     * You shouldn't use this method if you have your own account system. In that case
+     * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
+     * @param [listener] The listener that will be called when purchase restore completes.
+     */
+    @JvmName("-deprecated_restorePurchases")
+    @Deprecated(
+        "Listener has been replaced with ReceiveCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith("Purchases.sharedInstance.restorePurchases(ReceiveCustomerInfoListener)")
+    )
+    fun restorePurchases(
+        listener: ReceivePurchaserInfoListener
+    ) {
+        // no-op
+    }
+
+    /**
+     * Resets the Purchases client clearing the save appUserID. This will generate a random user
+     * id and save it in the cache.
+     * @param [listener] An optional listener to listen for successes or errors.
+     */
+    @JvmName("-deprecated_logOut")
+    @Deprecated(
+        "Listener has been replaced with ReceiveCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith(
+            expression = "Purchases.sharedInstance.logOut(ReceiveCustomerInfoListener)",
+            imports = ["com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener"]
+        )
+    )
+    fun logOut(listener: ReceivePurchaserInfoListener) {
+        // no-op
+    }
+
+    /**
+     * Invalidates the cache for purchaser information.
+     *
+     * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
+     * Refer to https://docs.revenuecat.com/docs/purchaserinfo#section-get-user-information for more information on
+     * using the cache properly.
+     *
+     * This is useful for cases where purchaser information might have been updated outside of the
+     * app, like if a promotional subscription is granted through the RevenueCat dashboard.
+     */
+    @JvmName("-deprecated_invalidatePurchaserInfoCache")
+    @Deprecated(
+        "Renamed to invalidateCustomerInfoCache",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith("Purchases.sharedInstance.invalidateCustomerInfoCache()")
+    )
+    fun invalidatePurchaserInfoCache() {
+        // no-op
+    }
+
+    @JvmName("-deprecated_removeUpdatedPurchaserInfoListener")
+    @Deprecated(
+        "Renamed to removeUpdatedCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith("Purchases.sharedInstance.removeUpdatedCustomerInfoListener()")
+    )
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun removeUpdatedPurchaserInfoListener() {
+        // no-op
+    }
+    // endregion
+
     // region Static
     companion object {
 

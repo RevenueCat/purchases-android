@@ -15,7 +15,7 @@ import com.revenuecat.purchases.CustomerInfo;
 public interface UpdatedCustomerInfoListener {
     /**
      * Called when a new purchaser info has been received
-     * @param customerInfo Updated purchaser info
+     * @param customerInfo Updated customer info
      */
     void onReceived(@NonNull CustomerInfo customerInfo);
 }

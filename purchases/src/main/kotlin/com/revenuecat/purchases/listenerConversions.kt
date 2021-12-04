@@ -23,10 +23,10 @@ private typealias NewProductChangeCompletedFunction =
 private typealias ReceiveOfferingsSuccessFunction = (offerings: Offerings) -> Unit
 private typealias ReceiveCustomerInfoSuccessFunction = (customerInfo: CustomerInfo) -> Unit
 private typealias ReceiveLogInSuccessFunction = (customerInfo: CustomerInfo, created: Boolean) -> Unit
-private typealias ErrorFunction = (error: PurchasesError) -> Unit
+internal typealias ErrorFunction = (error: PurchasesError) -> Unit
 private typealias PurchaseErrorFunction = (error: PurchasesError, userCancelled: Boolean) -> Unit
 
-private val ON_ERROR_STUB: ErrorFunction = {}
+internal val ON_ERROR_STUB: ErrorFunction = {}
 private val ON_PURCHASE_ERROR_STUB: PurchaseErrorFunction = { _, _ -> }
 
 internal fun purchaseCompletedListener(
