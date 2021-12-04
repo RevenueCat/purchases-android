@@ -1759,6 +1759,26 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
+     * Get latest available purchaser info.
+     * @param listener A listener called when purchaser info is available and not stale.
+     * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
+     */
+    @JvmName("-deprecated_getPurchaserInfo-ReceiveCustomerInfoListener")
+    @Deprecated(
+        "Function has been renamed to getCustomerInfo and listener has been replaced" +
+            " with ReceiveCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith(
+            expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
+        )
+    )
+    fun getPurchaserInfo(
+        listener: ReceiveCustomerInfoListener
+    ) {
+        // no-op
+    }
+
+    /**
      * Restores purchases made with the current Play Store account for the current user.
      * This method will post all purchases associated with the current Play Store account to
      * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
