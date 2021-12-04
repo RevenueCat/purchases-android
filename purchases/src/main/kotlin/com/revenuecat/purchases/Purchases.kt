@@ -1745,11 +1745,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @JvmName("-deprecated_getPurchaserInfo")
     @Deprecated(
-        "Listener has been replaced with ReceiveCustomerInfoListener",
+        "Function has been renamed to getCustomerInfo and listener has been replaced" +
+            " with ReceiveCustomerInfoListener",
         level = DeprecationLevel.ERROR,
         replaceWith = ReplaceWith(
-            expression = "Purchases.sharedInstance.getCustomerInfo(ReceiveCustomerInfoListener)",
-            imports = ["com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener"]
+            expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
         )
     )
     fun getPurchaserInfo(
