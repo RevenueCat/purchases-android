@@ -3,7 +3,7 @@ package com.revenuecat.purchases.integrationtests
 import androidx.test.ext.junit.rules.activityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.getPurchaserInfoWith
+import com.revenuecat.purchases.getCustomerInfoWith
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
@@ -42,12 +42,12 @@ class IntegrationTest {
     }
 
     @Test
-    fun purchaserInfoCanBeFetched() {
+    fun customerInfoCanBeFetched() {
         val lock = CountDownLatch(1)
 
         val scenario = activityScenarioRule.scenario
         scenario.onActivity {
-            Purchases.sharedInstance.getPurchaserInfoWith({
+            Purchases.sharedInstance.getCustomerInfoWith({
                 fail("should be success. Error: ${it.message}")
             }) {
                 lock.countDown()

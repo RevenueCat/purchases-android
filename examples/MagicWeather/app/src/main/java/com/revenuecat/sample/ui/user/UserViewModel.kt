@@ -2,7 +2,7 @@ package com.revenuecat.sample.ui.user
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 
 class UserViewModel : ViewModel() {
     companion object {
@@ -10,12 +10,12 @@ class UserViewModel : ViewModel() {
     }
 
     /*
-    The latest PurchaserInfo from RevenueCat.
+    The latest CustomerInfo from RevenueCat.
 
     Updated by PurchasesDelegate whenever the Purchases SDK updates the cache
     */
-    val purchaserInfo: MutableLiveData<PurchaserInfo> by lazy {
-        MutableLiveData<PurchaserInfo>().apply {
+    val customerInfo: MutableLiveData<CustomerInfo> by lazy {
+        MutableLiveData<CustomerInfo>().apply {
             value = null
         }
     }

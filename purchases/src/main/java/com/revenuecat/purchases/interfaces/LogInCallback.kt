@@ -4,7 +4,7 @@
 //
 package com.revenuecat.purchases.interfaces
 
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 
 /**
@@ -13,11 +13,11 @@ import com.revenuecat.purchases.PurchasesError
 interface LogInCallback {
     /**
      * Will be called after the call has completed.
-     * @param purchaserInfo [PurchaserInfo] class sent back when the call has completed
+     * @param customerInfo [CustomerInfo] class sent back when the call has completed
      * @param created [Boolean] true if a new user has been registered in the backend,
      * false if the user had already been registered.
      */
-    fun onReceived(purchaserInfo: PurchaserInfo, created: Boolean)
+    fun onReceived(customerInfo: CustomerInfo, created: Boolean)
 
     /**
      * Will be called after the call has completed with an error.

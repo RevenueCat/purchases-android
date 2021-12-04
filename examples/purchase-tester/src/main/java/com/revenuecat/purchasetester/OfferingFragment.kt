@@ -14,7 +14,7 @@ import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.getPurchaserInfoWith
+import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchasetester.databinding.FragmentOfferingBinding
 
@@ -36,7 +36,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        Purchases.sharedInstance.getPurchaserInfoWith {
+        Purchases.sharedInstance.getCustomerInfoWith {
             activeSubscriptions = it.activeSubscriptions
         }
 

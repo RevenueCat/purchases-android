@@ -6,7 +6,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.utils.Iso8601Utils
@@ -18,11 +18,11 @@ import org.json.JSONObject
 import java.util.Collections.emptyMap
 
 /**
- * Builds a PurchaserInfo
+ * Builds a CustomerInfo
  * @throws [JSONException] If the json is invalid.
  */
 @Throws(JSONException::class)
-fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
+fun JSONObject.buildCustomerInfo(): CustomerInfo {
     val subscriber = getJSONObject("subscriber")
 
     val nonSubscriptions = subscriber.getJSONObject("non_subscriptions")
@@ -58,7 +58,7 @@ fun JSONObject.buildPurchaserInfo(): PurchaserInfo {
         Iso8601Utils.parse(it) ?: null
     }
 
-    return PurchaserInfo(
+    return CustomerInfo(
         entitlements = entitlementInfos,
         purchasedNonSubscriptionSkus = nonSubscriptions.keys().asSequence().toSet(),
         allExpirationDatesByProduct = expirationDatesByProduct,

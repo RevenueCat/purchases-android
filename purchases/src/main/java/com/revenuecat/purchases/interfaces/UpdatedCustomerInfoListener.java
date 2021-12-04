@@ -6,16 +6,16 @@
 package com.revenuecat.purchases.interfaces;
 
 import androidx.annotation.NonNull;
-import com.revenuecat.purchases.PurchaserInfo;
+import com.revenuecat.purchases.CustomerInfo;
 
 /**
  * Used to handle async updates from [Purchases]. This interface should be implemented to receive updates
- * when the [PurchaserInfo] changes.
+ * when the [CustomerInfo] changes.
  */
-public interface UpdatedPurchaserInfoListener {
+public interface UpdatedCustomerInfoListener {
     /**
      * Called when a new purchaser info has been received
-     * @param purchaserInfo Updated purchaser info
+     * @param customerInfo Updated purchaser info
      */
-    void onReceived(@NonNull PurchaserInfo purchaserInfo);
+    void onReceived(@NonNull CustomerInfo customerInfo);
 }

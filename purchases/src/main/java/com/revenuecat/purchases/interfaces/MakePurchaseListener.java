@@ -8,7 +8,7 @@ package com.revenuecat.purchases.interfaces;
 import androidx.annotation.NonNull;
 
 import com.android.billingclient.api.Purchase;
-import com.revenuecat.purchases.PurchaserInfo;
+import com.revenuecat.purchases.CustomerInfo;
 
 /**
  * Interface to be implemented when making purchases.
@@ -17,8 +17,8 @@ public interface MakePurchaseListener extends PurchaseErrorListener {
     /**
      * Will be called after the purchase has completed
      * @param purchase Purchase object for the purchased product.
-     * @param purchaserInfo Updated [PurchaserInfo].
+     * @param customerInfo Updated [CustomerInfo].
      */
-    void onCompleted(@NonNull Purchase purchase, @NonNull PurchaserInfo purchaserInfo);
+    void onCompleted(@NonNull Purchase purchase, @NonNull CustomerInfo customerInfo);
 
 }

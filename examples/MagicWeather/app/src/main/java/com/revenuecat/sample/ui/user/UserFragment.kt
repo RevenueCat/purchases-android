@@ -43,7 +43,7 @@ class UserFragment : Fragment() {
         /*
         Observe changes to weather data
          */
-        userViewModel.purchaserInfo.observe(viewLifecycleOwner, Observer {
+        userViewModel.customerInfo.observe(viewLifecycleOwner, Observer {
             it?.let {
                 updateUserDetails(it)
             }
@@ -52,7 +52,7 @@ class UserFragment : Fragment() {
         return root
     }
 
-    private fun updateUserDetails(info: PurchaserInfo) {
+    private fun updateUserDetails(info: CustomerInfo) {
         val appUserIdLabel = root.findViewById<TextView>(R.id.text_user_id)
         appUserIdLabel.text = Purchases.sharedInstance.appUserID
 
@@ -73,7 +73,7 @@ class UserFragment : Fragment() {
         } else {
             identityButton.text = "Log Out"
         }
-    }
+    }m
 
     /*
     How to restore purchases using the Purchases SDK. Read more about restoring purchases here: https://docs.revenuecat.com/docs/making-purchases#restoring-purchases

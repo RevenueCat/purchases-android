@@ -7,12 +7,12 @@ package com.revenuecat.purchases.common.caching
 
 import android.content.SharedPreferences
 import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.attribution.AttributionNetwork
-import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.PaymentTransaction
@@ -38,8 +38,8 @@ open class DeviceCache(
     val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.tokens" }
 
-    private val purchaserInfoCachesLastUpdatedCacheBaseKey: String by lazy {
-        "$SHARED_PREFERENCES_PREFIX$apiKey.purchaserInfoLastUpdated"
+    private val customerInfoCachesLastUpdatedCacheBaseKey: String by lazy {
+        "$SHARED_PREFERENCES_PREFIX$apiKey.customerInfoLastUpdated"
     }
 
     // region app user id
@@ -58,19 +58,19 @@ open class DeviceCache(
     @Synchronized
     fun clearCachesForAppUserID(appUserID: String) {
         preferences.edit()
-            .clearPurchaserInfo()
+            .clearCustomerInfo()
             .clearAppUserID()
-            .clearPurchaserInfoCacheTimestamp(appUserID)
+            .clearCustomerInfoCacheTimestamp(appUserID)
             .apply()
         clearOfferingsCache()
     }
 
-    private fun SharedPreferences.Editor.clearPurchaserInfo(): SharedPreferences.Editor {
+    private fun SharedPreferences.Editor.clearCustomerInfo(): SharedPreferences.Editor {
         getCachedAppUserID()?.let {
-            remove(purchaserInfoCacheKey(it))
+            remove(customerInfoCacheKey(it))
         }
         getLegacyCachedAppUserID()?.let {
-            remove(purchaserInfoCacheKey(it))
+            remove(customerInfoCacheKey(it))
         }
         return this
     }
@@ -81,26 +81,26 @@ open class DeviceCache(
         return this
     }
 
-    private fun SharedPreferences.Editor.clearPurchaserInfoCacheTimestamp(appUserID: String): SharedPreferences.Editor {
-        remove(purchaserInfoLastUpdatedCacheKey(appUserID))
+    private fun SharedPreferences.Editor.clearCustomerInfoCacheTimestamp(appUserID: String): SharedPreferences.Editor {
+        remove(customerInfoLastUpdatedCacheKey(appUserID))
         return this
     }
 
     // endregion
 
     // region purchaser info
-    fun purchaserInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
+    fun customerInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
 
-    fun purchaserInfoLastUpdatedCacheKey(appUserID: String) = "$purchaserInfoCachesLastUpdatedCacheBaseKey.$appUserID"
+    fun customerInfoLastUpdatedCacheKey(appUserID: String) = "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
 
-    fun getCachedPurchaserInfo(appUserID: String): PurchaserInfo? {
-        return preferences.getString(purchaserInfoCacheKey(appUserID), null)
+    fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
+        return preferences.getString(customerInfoCacheKey(appUserID), null)
             ?.let { json ->
                 try {
                     val cachedJSONObject = JSONObject(json)
                     val schemaVersion = cachedJSONObject.optInt("schema_version")
                     return if (schemaVersion == PURCHASER_INFO_SCHEMA_VERSION) {
-                        cachedJSONObject.buildPurchaserInfo()
+                        cachedJSONObject.buildCustomerInfo()
                     } else {
                         null
                     }
@@ -111,49 +111,49 @@ open class DeviceCache(
     }
 
     @Synchronized
-    fun cachePurchaserInfo(appUserID: String, info: PurchaserInfo) {
+    fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
         val jsonObject = info.jsonObject.also {
             it.put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
         }
         preferences.edit()
             .putString(
-                purchaserInfoCacheKey(appUserID),
+                customerInfoCacheKey(appUserID),
                 jsonObject.toString()
             ).apply()
 
-        setPurchaserInfoCacheTimestampToNow(appUserID)
+        setCustomerInfoCacheTimestampToNow(appUserID)
     }
 
     @Synchronized
-    fun isPurchaserInfoCacheStale(appUserID: String, appInBackground: Boolean) =
-        getPurchaserInfoCachesLastUpdated(appUserID).isStale(appInBackground)
+    fun isCustomerInfoCacheStale(appUserID: String, appInBackground: Boolean) =
+        getCustomerInfoCachesLastUpdated(appUserID).isStale(appInBackground)
 
     @Synchronized
-    fun clearPurchaserInfoCacheTimestamp(appUserID: String) {
-        preferences.edit().clearPurchaserInfoCacheTimestamp(appUserID).apply()
+    fun clearCustomerInfoCacheTimestamp(appUserID: String) {
+        preferences.edit().clearCustomerInfoCacheTimestamp(appUserID).apply()
     }
 
     @Synchronized
-    fun clearPurchaserInfoCache(appUserID: String) {
+    fun clearCustomerInfoCache(appUserID: String) {
         val editor = preferences.edit()
-        editor.clearPurchaserInfoCacheTimestamp(appUserID)
-        editor.remove(purchaserInfoCacheKey(appUserID))
+        editor.clearCustomerInfoCacheTimestamp(appUserID)
+        editor.remove(customerInfoCacheKey(appUserID))
         editor.apply()
     }
 
     @Synchronized
-    fun setPurchaserInfoCacheTimestampToNow(appUserID: String) {
-        setPurchaserInfoCacheTimestamp(appUserID, Date())
+    fun setCustomerInfoCacheTimestampToNow(appUserID: String) {
+        setCustomerInfoCacheTimestamp(appUserID, Date())
     }
 
     @Synchronized
-    fun setPurchaserInfoCacheTimestamp(appUserID: String, date: Date) {
-        preferences.edit().putLong(purchaserInfoLastUpdatedCacheKey(appUserID), date.time).apply()
+    fun setCustomerInfoCacheTimestamp(appUserID: String, date: Date) {
+        preferences.edit().putLong(customerInfoLastUpdatedCacheKey(appUserID), date.time).apply()
     }
 
     @Synchronized
-    fun getPurchaserInfoCachesLastUpdated(appUserID: String): Date? {
-        return Date(preferences.getLong(purchaserInfoLastUpdatedCacheKey(appUserID), 0))
+    fun getCustomerInfoCachesLastUpdated(appUserID: String): Date? {
+        return Date(preferences.getLong(customerInfoLastUpdatedCacheKey(appUserID), 0))
     }
 
     // endregion
