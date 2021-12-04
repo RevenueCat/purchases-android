@@ -3,7 +3,7 @@
   <Blacklist timestamp="1547755406296"></Blacklist>
   <Whitelist timestamp="1548884545081">
     <ID>LargeClass:Purchases.kt$Purchases</ID>
-    <ID>LongParameterList:Backend.kt$Backend$( purchaseToken: String, appUserID: String, productID: String, isRestore: Boolean, onSuccess: (PurchaserInfo) -&gt; Unit, onError: (PurchasesError) -&gt; Unit )</ID>
+    <ID>LongParameterList:Backend.kt$Backend$( purchaseToken: String, appUserID: String, productID: String, isRestore: Boolean, onSuccess: (CustomerInfo) -&gt; Unit, onError: (PurchasesError) -&gt; Unit )</ID>
     <ID>LongParameterList:listenerConversions.kt$( activity: Activity, sku: String, @BillingClient.SkuType skuType: String, oldSkus: ArrayList&lt;String&gt;, onError: ErrorFunction = onErrorStub, onSuccess: PurchaseCompletedSuccessFunction )</ID>
     <ID>MagicNumber:Purchases.kt$Purchases.AttributionNetwork.BRANCH$3</ID>
     <ID>MagicNumber:Purchases.kt$Purchases.AttributionNetwork.TENJIN$4</ID>

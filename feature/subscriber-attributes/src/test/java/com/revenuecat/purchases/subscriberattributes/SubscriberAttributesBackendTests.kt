@@ -1,14 +1,14 @@
 package com.revenuecat.purchases.subscriberattributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -40,7 +40,7 @@ class SubscriberAttributesPosterTests {
     private var receivedError: PurchasesError? = null
     private var receivedSyncedSuccessfully: Boolean? = null
     private var receivedAttributeErrors: List<SubscriberAttributeError>? = null
-    private var receivedPurchaserInfo: PurchaserInfo? = null
+    private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedOnSuccess = false
 
     private val expectedOnError: (PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit =
@@ -57,9 +57,9 @@ class SubscriberAttributesPosterTests {
             receivedAttributeErrors = body.getAttributeErrors()
         }
 
-    private val expectedOnSuccessPostReceipt: (PurchaserInfo, body: JSONObject?) -> Unit =
+    private val expectedOnSuccessPostReceipt: (CustomerInfo, body: JSONObject?) -> Unit =
         { info, body ->
-            receivedPurchaserInfo = info
+            receivedCustomerInfo = info
             receivedAttributeErrors = body.getAttributeErrors()
         }
 
@@ -78,7 +78,7 @@ class SubscriberAttributesPosterTests {
             fail("Shouldn't be success.")
         }
 
-    private val unexpectedOnSuccessPostReceipt: (PurchaserInfo, body: JSONObject?) -> Unit =
+    private val unexpectedOnSuccessPostReceipt: (CustomerInfo, body: JSONObject?) -> Unit =
         { _, _ ->
             fail("Shouldn't be success.")
         }
@@ -90,11 +90,11 @@ class SubscriberAttributesPosterTests {
 
     @Before
     fun setup() {
-        mockkStatic("com.revenuecat.purchases.common.PurchaserInfoFactoriesKt")
+        mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
         receivedError = null
         receivedSyncedSuccessfully = null
         receivedAttributeErrors = null
-        receivedPurchaserInfo = null
+        receivedCustomerInfo = null
         receivedOnSuccess = false
     }
 
@@ -261,7 +261,7 @@ class SubscriberAttributesPosterTests {
             onError = unexpectedOnErrorPostReceipt
         )
 
-        assertThat(receivedPurchaserInfo).isNotNull
+        assertThat(receivedCustomerInfo).isNotNull
         val actualPostReceiptBody = actualPostReceiptBodySlot.captured
         assertThat(actualPostReceiptBody).isNotNull()
         assertThat(actualPostReceiptBody["attributes"]).isNotNull
@@ -286,7 +286,7 @@ class SubscriberAttributesPosterTests {
             onError = unexpectedOnErrorPostReceipt
         )
 
-        assertThat(receivedPurchaserInfo).isNotNull
+        assertThat(receivedCustomerInfo).isNotNull
         assertThat(receivedAttributeErrors).isEmpty()
         val actualPostReceiptBody = actualPostReceiptBodySlot.captured
         assertThat(actualPostReceiptBody).isNotNull()
@@ -314,7 +314,7 @@ class SubscriberAttributesPosterTests {
             onError = unexpectedOnErrorPostReceipt
         )
 
-        assertThat(receivedPurchaserInfo).isNotNull
+        assertThat(receivedCustomerInfo).isNotNull
         assertThat(receivedAttributeErrors).isNotEmpty
         assertThat(receivedAttributeErrors?.get(0)?.keyName).isEqualTo("invalid_name")
         assertThat(receivedAttributeErrors?.get(0)?.message).isEqualTo("Attribute key name is not valid.")
@@ -341,7 +341,7 @@ class SubscriberAttributesPosterTests {
             onError = expectedOnErrorPostReceipt
         )
 
-        assertThat(receivedPurchaserInfo).isNull()
+        assertThat(receivedCustomerInfo).isNull()
         assertThat(receivedAttributeErrors).isNotEmpty
         assertThat(receivedAttributeErrors?.get(0)?.keyName).isEqualTo("invalid_name")
         assertThat(receivedAttributeErrors?.get(0)?.message).isEqualTo("Attribute key name is not valid.")
@@ -368,7 +368,7 @@ class SubscriberAttributesPosterTests {
             onError = expectedOnErrorPostReceipt
         )
 
-        assertThat(receivedPurchaserInfo).isNull()
+        assertThat(receivedCustomerInfo).isNull()
         assertThat(receivedAttributeErrors).isNotEmpty
         assertThat(receivedAttributeErrors?.get(0)?.keyName).isEqualTo("invalid_name")
         assertThat(receivedAttributeErrors?.get(0)?.message).isEqualTo("Attribute key name is not valid.")
@@ -413,7 +413,7 @@ class SubscriberAttributesPosterTests {
         } answers {
             HTTPResult(responseCode, responseBody).also {
                 every {
-                    it.body.buildPurchaserInfo()
+                    it.body.buildCustomerInfo()
                 } returns mockk()
             }
         }
