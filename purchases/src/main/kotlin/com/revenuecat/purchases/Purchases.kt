@@ -1753,6 +1753,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     )
     fun getPurchaserInfo(
+        @Suppress("UnusedPrivateMember")
         listener: ReceivePurchaserInfoListener
     ) {
         // no-op
@@ -1773,6 +1774,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     )
     fun getPurchaserInfo(
+        @Suppress("UnusedPrivateMember")
         listener: ReceiveCustomerInfoListener
     ) {
         // no-op
@@ -1797,6 +1799,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         replaceWith = ReplaceWith("Purchases.sharedInstance.restorePurchases(ReceiveCustomerInfoListener)")
     )
     fun restorePurchases(
+        @Suppress("UnusedPrivateMember")
         listener: ReceivePurchaserInfoListener
     ) {
         // no-op
@@ -1816,7 +1819,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             imports = ["com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener"]
         )
     )
-    fun logOut(listener: ReceivePurchaserInfoListener) {
+    fun logOut(
+        @Suppress("UnusedPrivateMember")
+        listener: ReceivePurchaserInfoListener
+    ) {
         // no-op
     }
 
