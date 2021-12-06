@@ -6,7 +6,7 @@
 package com.revenuecat.purchases.interfaces
 
 import com.android.billingclient.api.Purchase
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.google.originalGooglePurchase
@@ -20,19 +20,19 @@ interface ProductChangeCallback : PurchaseErrorListener {
      * Will be called after the product change has been completed
      * @param paymentTransaction PaymentTransaction object for the purchased product.
      * Will be null if the change is deferred.
-     * @param purchaserInfo Updated [PurchaserInfo].
+     * @param customerInfo Updated [CustomerInfo].
      */
-    fun onCompleted(paymentTransaction: PaymentTransaction?, purchaserInfo: PurchaserInfo)
+    fun onCompleted(paymentTransaction: PaymentTransaction?, customerInfo: CustomerInfo)
 }
 
 fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallback {
     return object : ProductChangeCallback {
-        override fun onCompleted(paymentTransaction: PaymentTransaction?, purchaserInfo: PurchaserInfo) {
+        override fun onCompleted(paymentTransaction: PaymentTransaction?, customerInfo: CustomerInfo) {
             if (paymentTransaction == null) {
-                this@toProductChangeCallback.onCompleted(null, purchaserInfo)
+                this@toProductChangeCallback.onCompleted(null, customerInfo)
             } else {
                 paymentTransaction.originalGooglePurchase?.let {
-                    this@toProductChangeCallback.onCompleted(it, purchaserInfo)
+                    this@toProductChangeCallback.onCompleted(it, customerInfo)
                 } ?: throw IllegalArgumentException("Couldn't find original Google purchase")
             }
         }
@@ -45,7 +45,7 @@ fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallback {
 
 fun MakePurchaseListener.toProductChangeCallback(): ProductChangeCallback {
     return object : ProductChangeListener {
-        override fun onCompleted(purchase: Purchase?, purchaserInfo: PurchaserInfo) {
+        override fun onCompleted(purchase: Purchase?, customerInfo: CustomerInfo) {
             if (purchase == null) {
                 this@toProductChangeCallback.onError(
                     PurchasesError(
@@ -54,7 +54,7 @@ fun MakePurchaseListener.toProductChangeCallback(): ProductChangeCallback {
                     ), false
                 )
             } else {
-                this@toProductChangeCallback.onCompleted(purchase, purchaserInfo)
+                this@toProductChangeCallback.onCompleted(purchase, customerInfo)
             }
         }
 

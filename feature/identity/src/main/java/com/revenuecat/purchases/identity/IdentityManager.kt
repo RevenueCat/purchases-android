@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.identity
 
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
@@ -38,28 +38,9 @@ class IdentityManager(
         subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
     }
 
-    fun identify(
-        appUserID: String,
-        onSuccess: () -> Unit,
-        onError: (PurchasesError) -> Unit
-    ) {
-        if (currentUserIsAnonymous()) {
-            log(LogIntent.USER, IdentityStrings.IDENTIFYING_ANON_ID.format(appUserID))
-            createAlias(appUserID, onSuccess, onError)
-        } else {
-            synchronized(this@IdentityManager) {
-                log(LogIntent.USER, IdentityStrings.CHANGING_APP_USER_ID.format(currentAppUserID, appUserID))
-                deviceCache.clearCachesForAppUserID(currentAppUserID)
-                subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
-                deviceCache.cacheAppUserID(appUserID)
-            }
-            onSuccess()
-        }
-    }
-
     fun logIn(
         newAppUserID: String,
-        onSuccess: (PurchaserInfo, Boolean) -> Unit,
+        onSuccess: (CustomerInfo, Boolean) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         if (newAppUserID.isBlank()) {
@@ -75,7 +56,7 @@ class IdentityManager(
         backend.logIn(
             oldAppUserID,
             newAppUserID,
-            { purchaserInfo, created ->
+            { customerInfo, created ->
                 synchronized(this@IdentityManager) {
                     log(
                         LogIntent.USER,
@@ -85,38 +66,16 @@ class IdentityManager(
                     subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                     deviceCache.cacheAppUserID(newAppUserID)
-                    deviceCache.cachePurchaserInfo(newAppUserID, purchaserInfo)
+                    deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
                 }
-                onSuccess(purchaserInfo, created)
-            },
-            onError
-        )
-    }
-
-    fun createAlias(
-        newAppUserID: String,
-        onSuccess: () -> Unit,
-        onError: (PurchasesError) -> Unit
-    ) {
-        log(LogIntent.USER, IdentityStrings.CREATING_ALIAS.format(currentAppUserID, newAppUserID))
-        backend.createAlias(
-            currentAppUserID,
-            newAppUserID,
-            {
-                synchronized(this@IdentityManager) {
-                    log(LogIntent.USER, IdentityStrings.CREATING_ALIAS_SUCCESS)
-                    deviceCache.clearCachesForAppUserID(currentAppUserID)
-                    subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
-                    deviceCache.cacheAppUserID(newAppUserID)
-                }
-                onSuccess()
+                onSuccess(customerInfo, created)
             },
             onError
         )
     }
 
     @Synchronized
-    fun reset() {
+    private fun reset() {
         deviceCache.clearCachesForAppUserID(currentAppUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         deviceCache.cacheAppUserID(generateRandomID())

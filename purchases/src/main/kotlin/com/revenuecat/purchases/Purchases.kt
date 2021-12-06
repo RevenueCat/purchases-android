@@ -53,7 +53,9 @@ import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.interfaces.toGetStoreProductCallback
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
@@ -61,12 +63,11 @@ import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.PurchaseState
-import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
-import com.revenuecat.purchases.strings.PurchaserInfoStrings
+import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.AttributionDataMigrator
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -83,7 +84,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
-typealias SuccessfulPurchaseCallback = (PaymentTransaction, PurchaserInfo) -> Unit
+typealias SuccessfulPurchaseCallback = (PaymentTransaction, CustomerInfo) -> Unit
 typealias ErrorPurchaseCallback = (PaymentTransaction, PurchasesError) -> Unit
 
 /**
@@ -151,14 +152,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @Synchronized get() = identityManager.currentAppUserID
 
     /**
-     * The listener is responsible for handling changes to purchaser information.
-     * Make sure [removeUpdatedPurchaserInfoListener] is called when the listener needs to be destroyed.
+     * The listener is responsible for handling changes to customer information.
+     * Make sure [removeUpdatedCustomerInfoListener] is called when the listener needs to be destroyed.
      */
-    var updatedPurchaserInfoListener: UpdatedPurchaserInfoListener?
-        @Synchronized get() = state.updatedPurchaserInfoListener
+    var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
+        @Synchronized get() = state.updatedCustomerInfoListener
         set(value) {
             synchronized(this@Purchases) {
-                state = state.copy(updatedPurchaserInfoListener = value)
+                state = state.copy(updatedCustomerInfoListener = value)
             }
             afterSetListener(value)
         }
@@ -208,9 +209,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             state = state.copy(appInBackground = false, firstTimeInForeground = false)
         }
         log(LogIntent.DEBUG, ConfigureStrings.APP_FOREGROUNDED)
-        if (firstTimeInForeground || deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)) {
-            log(LogIntent.DEBUG, PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_FOREGROUND)
-            fetchAndCachePurchaserInfo(identityManager.currentAppUserID, appInBackground = false)
+        if (firstTimeInForeground || deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground = false)) {
+            log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
+            fetchAndCacheCustomerInfo(identityManager.currentAppUserID, appInBackground = false)
         }
         if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
             log(LogIntent.DEBUG, OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
@@ -257,8 +258,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                     body.getAttributeErrors()
                                 )
                                 deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-                                cachePurchaserInfo(info)
-                                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                                cacheCustomerInfo(info)
+                                sendUpdatedCustomerInfoToDelegateIfChanged(info)
                                 log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
                             },
                             onError = { error, errorIsFinishable, body ->
@@ -379,38 +380,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         getSkus(skus.toSet(), ProductType.INAPP, callback)
     }
 
-    /**
-     * Purchase a product.
-     * @param [activity] Current activity
-     * @param [skuDetails] The skuDetails of the product you wish to purchase
-     * @param [upgradeInfo] The UpgradeInfo you wish to upgrade from containing the
-     * oldSku and the optional prorationMode.
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Deprecated(
-        message = "SkuDetails replaced with StoreProduct and " +
-            "the listener has changed to accept a null Purchase on the onCompleted",
-        replaceWith = ReplaceWith(
-            expression = """
-                Purchases.sharedInstance.purchaseProduct(activity, StoreProduct, upgradeInfo, 
-                    ProductChangeListener)
-            """
-        )
-    )
-    fun purchaseProduct(
-        activity: Activity,
-        skuDetails: SkuDetails,
-        upgradeInfo: UpgradeInfo,
-        listener: MakePurchaseListener
-    ) {
-        purchaseProduct(
-            activity,
-            skuDetails.toStoreProduct(),
-            upgradeInfo,
-            listener.toProductChangeCallback()
-        )
-    }
-
     @Deprecated(
         message = "SkuDetails replaced with StoreProduct and ProductChangeListener " +
             "replaced with ProductChangeCallback",
@@ -487,36 +456,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         callback: PurchaseCallback
     ) {
         startPurchase(activity, storeProduct, null, callback)
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [packageToPurchase] The Package you wish to purchase
-     * @param [upgradeInfo] The UpgradeInfo you wish to upgrade from containing the oldSku
-     * and the optional prorationMode.
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Deprecated(
-        message = "The listener has changed to accept a null Purchase on the onCompleted",
-        replaceWith = ReplaceWith(
-            expression = "Purchases.sharedInstance.purchasePackage(" +
-                    "activity, packageToPurchase, upgradeInfo, ProductChangeListener)"
-        )
-    )
-    fun purchasePackage(
-        activity: Activity,
-        packageToPurchase: Package,
-        upgradeInfo: UpgradeInfo,
-        listener: MakePurchaseListener
-    ) {
-        startProductChange(
-            activity,
-            packageToPurchase.product,
-            packageToPurchase.offering,
-            upgradeInfo,
-            listener.toProductChangeCallback()
-        )
     }
 
     /**
@@ -619,7 +558,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] The listener that will be called when purchase restore completes.
      */
     fun restorePurchases(
-        listener: ReceivePurchaserInfoListener
+        listener: ReceiveCustomerInfoListener
     ) {
         log(LogIntent.DEBUG, RestoreStrings.RESTORING_PURCHASE)
         if (!allowSharingPlayStoreAccount) {
@@ -633,7 +572,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 appUserID,
                 onReceivePurchaseHistory = { allPurchases ->
                     if (allPurchases.isEmpty()) {
-                        getPurchaserInfo(listener)
+                        getCustomerInfo(listener)
                     } else {
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                             sortedByTime.forEach { purchase ->
@@ -657,8 +596,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                             body.getAttributeErrors()
                                         )
                                         billing.consumeAndSave(finishTransactions, purchase)
-                                        cachePurchaserInfo(info)
-                                        sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                                        cacheCustomerInfo(info)
+                                        sendUpdatedCustomerInfoToDelegateIfChanged(info)
                                         log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                         if (sortedByTime.last() == purchase) {
                                             dispatch { listener.onReceived(info) }
@@ -694,67 +633,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * This function will alias two appUserIDs together.
-     * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
-     * @param [listener] An optional listener to listen for successes or errors.
-     */
-    @Deprecated(
-        "Use logIn instead",
-        ReplaceWith("Purchases.sharedInstance.logIn(newAppUserID, LogInCallback?)")
-    )
-    @JvmOverloads
-    fun createAlias(
-        newAppUserID: String,
-        listener: ReceivePurchaserInfoListener? = null
-    ) {
-        identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            identityManager.createAlias(
-                newAppUserID,
-                {
-                    synchronized(this@Purchases) {
-                        state = state.copy(purchaseCallbacks = emptyMap())
-                    }
-                    updateAllCaches(newAppUserID, listener)
-                },
-                { error ->
-                    dispatch { listener?.onError(error) }
-                }
-            )
-        } ?: retrievePurchaseInfo(identityManager.currentAppUserID, listener)
-    }
-
-    /**
-     * This function will change the current appUserID.
-     * Typically this would be used after a log out to identify a new user without calling configure
-     * @param newAppUserID The new appUserID that should be linked to the currently user
-     * @param [listener] An optional listener to listen for successes or errors.
-     */
-    @Deprecated(
-        "Use logIn instead",
-        ReplaceWith("Purchases.sharedInstance.logIn(newAppUserID, LogInCallback?)")
-    )
-    @JvmOverloads
-    fun identify(
-        newAppUserID: String,
-        listener: ReceivePurchaserInfoListener? = null
-    ) {
-        identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            identityManager.identify(
-                newAppUserID,
-                {
-                    synchronized(this@Purchases) {
-                        state = state.copy(purchaseCallbacks = emptyMap())
-                    }
-                    updateAllCaches(newAppUserID, listener)
-                },
-                { error ->
-                    dispatch { listener?.onError(error) }
-                }
-            )
-        } ?: retrievePurchaseInfo(identityManager.currentAppUserID, listener)
-    }
-
-    /**
      * This function will change the current appUserID.
      * Typically this would be used after a log out to identify a new user without calling configure
      * @param newAppUserID The new appUserID that should be linked to the currently user
@@ -767,10 +645,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
             identityManager.logIn(newAppUserID,
-                onSuccess = { purchaserInfo, created ->
+                onSuccess = { customerInfo, created ->
                     dispatch {
-                        callback?.onReceived(purchaserInfo, created)
-                        sendUpdatedPurchaserInfoToDelegateIfChanged(purchaserInfo)
+                        callback?.onReceived(customerInfo, created)
+                        sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
                     }
                     fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                 },
@@ -778,9 +656,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     dispatch { callback?.onError(error) }
                 })
         }
-            ?: retrievePurchaseInfo(identityManager.currentAppUserID, receivePurchaserInfoListener(
-                onSuccess = { purchaserInfo ->
-                    dispatch { callback?.onReceived(purchaserInfo, false) }
+            ?: retrieveCustomerInfo(identityManager.currentAppUserID, receiveCustomerInfoListener(
+                onSuccess = { customerInfo ->
+                    dispatch { callback?.onReceived(customerInfo, false) }
                 },
                 onError = { error ->
                     dispatch { callback?.onError(error) }
@@ -794,7 +672,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    fun logOut(listener: ReceivePurchaserInfoListener? = null) {
+    fun logOut(listener: ReceiveCustomerInfoListener? = null) {
         val error: PurchasesError? = identityManager.logOut()
         if (error != null) {
             listener?.onError(error)
@@ -808,28 +686,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * Resets the Purchases client clearing the save appUserID. This will generate a random user
-     * id and save it in the cache.
-     * @param [listener] An optional listener to listen for successes or errors.
-     */
-    @Deprecated(
-        "Use logOut instead",
-        ReplaceWith("Purchases.sharedInstance.logOut(ReceivePurchaserInfoListener?)")
-    )
-    @JvmOverloads
-    fun reset(
-        listener: ReceivePurchaserInfoListener? = null
-    ) {
-        deviceCache.clearLatestAttributionData(identityManager.currentAppUserID)
-        identityManager.reset()
-        backend.clearCaches()
-        synchronized(this@Purchases) {
-            state = state.copy(purchaseCallbacks = emptyMap())
-        }
-        updateAllCaches(identityManager.currentAppUserID, listener)
-    }
-
-    /**
      * Call close when you are done with this instance of Purchases
      */
     fun close() {
@@ -838,7 +694,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
         this.backend.close()
         billing.purchasesUpdatedListener = null
-        updatedPurchaserInfoListener = null // Do not call on state since the setter does more stuff
+        updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
 
         dispatch {
             ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleHandler)
@@ -850,48 +706,48 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param listener A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    fun getPurchaserInfo(
-        listener: ReceivePurchaserInfoListener
+    fun getCustomerInfo(
+        listener: ReceiveCustomerInfoListener
     ) {
-        retrievePurchaseInfo(identityManager.currentAppUserID, listener)
+        retrieveCustomerInfo(identityManager.currentAppUserID, listener)
     }
 
-    private fun retrievePurchaseInfo(
+    private fun retrieveCustomerInfo(
         appUserID: String,
-        listener: ReceivePurchaserInfoListener? = null
+        listener: ReceiveCustomerInfoListener? = null
     ) {
-        val cachedPurchaserInfo = deviceCache.getCachedPurchaserInfo(appUserID)
-        if (cachedPurchaserInfo != null) {
-            log(LogIntent.DEBUG, PurchaserInfoStrings.VENDING_CACHE)
-            dispatch { listener?.onReceived(cachedPurchaserInfo) }
+        val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
+        if (cachedCustomerInfo != null) {
+            log(LogIntent.DEBUG, CustomerInfoStrings.VENDING_CACHE)
+            dispatch { listener?.onReceived(cachedCustomerInfo) }
             state.appInBackground.let { appInBackground ->
-                if (deviceCache.isPurchaserInfoCacheStale(appUserID, appInBackground)) {
+                if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
                     log(LogIntent.DEBUG,
-                            if (appInBackground) PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_BACKGROUND
-                            else PurchaserInfoStrings.PURCHASERINFO_STALE_UPDATING_FOREGROUND)
-                    fetchAndCachePurchaserInfo(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.PURCHASERINFO_UPDATED_FROM_NETWORK)
+                            if (appInBackground) CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_BACKGROUND
+                            else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
+                    fetchAndCacheCustomerInfo(appUserID, appInBackground)
+                    log(LogIntent.RC_SUCCESS, CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK)
                 }
             }
         } else {
-            log(LogIntent.DEBUG, PurchaserInfoStrings.NO_CACHED_PURCHASERINFO)
-            fetchAndCachePurchaserInfo(appUserID, state.appInBackground, listener)
-            log(LogIntent.RC_SUCCESS, PurchaserInfoStrings.PURCHASERINFO_UPDATED_FROM_NETWORK)
+            log(LogIntent.DEBUG, CustomerInfoStrings.NO_CACHED_CUSTOMERINFO)
+            fetchAndCacheCustomerInfo(appUserID, state.appInBackground, listener)
+            log(LogIntent.RC_SUCCESS, CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK)
         }
     }
 
     /**
-     * Call this when you are finished using the [UpdatedPurchaserInfoListener]. You should call this
+     * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this
      * to avoid memory leaks.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    fun removeUpdatedPurchaserInfoListener() {
+    fun removeUpdatedCustomerInfoListener() {
         // Don't set on state directly since setter does more things
-        this.updatedPurchaserInfoListener = null
+        this.updatedCustomerInfoListener = null
     }
 
     /**
-     * Invalidates the cache for purchaser information.
+     * Invalidates the cache for customer information.
      *
      * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
      * Refer to https://docs.revenuecat.com/docs/purchaserinfo#section-get-user-information for more information on
@@ -900,9 +756,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * This is useful for cases where purchaser information might have been updated outside of the
      * app, like if a promotional subscription is granted through the RevenueCat dashboard.
      */
-    fun invalidatePurchaserInfoCache() {
-        log(LogIntent.DEBUG, PurchaserInfoStrings.INVALIDATING_PURCHASERINFO_CACHE)
-        deviceCache.clearPurchaserInfoCache(appUserID)
+    fun invalidateCustomerInfoCache() {
+        log(LogIntent.DEBUG, CustomerInfoStrings.INVALIDATING_CUSTOMERINFO_CACHE)
+        deviceCache.clearCustomerInfoCache(appUserID)
     }
 
     // region Subscriber Attributes
@@ -1312,38 +1168,38 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun updateAllCaches(
         appUserID: String,
-        completion: ReceivePurchaserInfoListener? = null
+        completion: ReceiveCustomerInfoListener? = null
     ) {
         state.appInBackground.let { appInBackground ->
-            fetchAndCachePurchaserInfo(appUserID, appInBackground, completion)
+            fetchAndCacheCustomerInfo(appUserID, appInBackground, completion)
             fetchAndCacheOfferings(appUserID, appInBackground)
         }
     }
 
-    private fun fetchAndCachePurchaserInfo(
+    private fun fetchAndCacheCustomerInfo(
         appUserID: String,
         appInBackground: Boolean,
-        completion: ReceivePurchaserInfoListener? = null
+        completion: ReceiveCustomerInfoListener? = null
     ) {
-        deviceCache.setPurchaserInfoCacheTimestampToNow(appUserID)
-        backend.getPurchaserInfo(
+        deviceCache.setCustomerInfoCacheTimestampToNow(appUserID)
+        backend.getCustomerInfo(
             appUserID,
             appInBackground,
             { info ->
-                cachePurchaserInfo(info)
-                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                cacheCustomerInfo(info)
+                sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 dispatch { completion?.onReceived(info) }
             },
             { error ->
-                Log.e("Purchases", "Error fetching subscriber data: ${error.message}")
-                deviceCache.clearPurchaserInfoCacheTimestamp(appUserID)
+                Log.e("Purchases", "Error fetching customer data: ${error.message}")
+                deviceCache.clearCustomerInfoCacheTimestamp(appUserID)
                 dispatch { completion?.onError(error) }
             })
     }
 
     @Synchronized
-    private fun cachePurchaserInfo(info: PurchaserInfo) {
-        deviceCache.cachePurchaserInfo(identityManager.currentAppUserID, info)
+    private fun cacheCustomerInfo(info: CustomerInfo) {
+        deviceCache.cacheCustomerInfo(identityManager.currentAppUserID, info)
     }
 
     private fun postPurchases(
@@ -1423,8 +1279,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     body.getAttributeErrors()
                 )
                 billing.consumeAndSave(consumeAllTransactions, purchase)
-                cachePurchaserInfo(info)
-                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                cacheCustomerInfo(info)
+                sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
             },
             onError = { error, errorIsFinishable, body ->
@@ -1476,26 +1332,26 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             })
     }
 
-    private fun afterSetListener(listener: UpdatedPurchaserInfoListener?) {
+    private fun afterSetListener(listener: UpdatedCustomerInfoListener?) {
         if (listener != null) {
             log(LogIntent.DEBUG, ConfigureStrings.LISTENER_SET)
-            deviceCache.getCachedPurchaserInfo(identityManager.currentAppUserID)?.let {
-                this.sendUpdatedPurchaserInfoToDelegateIfChanged(it)
+            deviceCache.getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
+                this.sendUpdatedCustomerInfoToDelegateIfChanged(it)
             }
         }
     }
 
-    private fun sendUpdatedPurchaserInfoToDelegateIfChanged(info: PurchaserInfo) {
-        synchronized(this@Purchases) { state.updatedPurchaserInfoListener to state.lastSentPurchaserInfo }
-            .let { (listener, lastSentPurchaserInfo) ->
-                if (listener != null && lastSentPurchaserInfo != info) {
-                    if (lastSentPurchaserInfo != null) {
-                        log(LogIntent.DEBUG, PurchaserInfoStrings.PURCHASERINFO_UPDATED_NOTIFYING_LISTENER)
+    private fun sendUpdatedCustomerInfoToDelegateIfChanged(info: CustomerInfo) {
+        synchronized(this@Purchases) { state.updatedCustomerInfoListener to state.lastSentCustomerInfo }
+            .let { (listener, lastSentCustomerInfo) ->
+                if (listener != null && lastSentCustomerInfo != info) {
+                    if (lastSentCustomerInfo != null) {
+                        log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER)
                     } else {
-                        log(LogIntent.DEBUG, PurchaserInfoStrings.SENDING_LATEST_PURCHASERINFO_TO_LISTENER)
+                        log(LogIntent.DEBUG, CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER)
                     }
                     synchronized(this@Purchases) {
-                        state = state.copy(lastSentPurchaserInfo = info)
+                        state = state.copy(lastSentCustomerInfo = info)
                     }
                     dispatch { listener.onReceived(info) }
                 }
@@ -1544,11 +1400,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                 if (productChangeInProgress && purchases.isEmpty()) {
                     // Can happen if the product change is ProrationMode.DEFERRED
-                    invalidatePurchaserInfoCache()
-                    getPurchaserInfoWith { purchaserInfo ->
+                    invalidateCustomerInfoCache()
+                    getCustomerInfoWith { customerInfo ->
                         productChangeListener?.let { callback ->
                             dispatch {
-                                callback.onCompleted(null, purchaserInfo)
+                                callback.onCompleted(null, customerInfo)
                             }
                         }
                     }
@@ -1755,6 +1611,165 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     // endregion
+
+    // region Deprecated
+
+    /**
+     * The listener is responsible for handling changes to purchaser information.
+     * Make sure [removeUpdatedPurchaserInfoListener] is called when the listener needs to be destroyed.
+     */
+    @Deprecated(
+        "Renamed to updatedCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith("updatedCustomerInfoListener")
+    )
+    var updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null
+        @JvmName("-deprecated_getUpdatedPurchaserInfoListener")
+        get
+        @JvmName("-deprecated_setUpdatedPurchaserInfoListener")
+        set
+
+    /**
+     * Get latest available purchaser info.
+     * @param listener A listener called when purchaser info is available and not stale.
+     * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
+     */
+    @JvmName("-deprecated_getPurchaserInfo")
+    @Deprecated(
+        "Function has been renamed to getCustomerInfo and listener has been replaced" +
+            " with ReceiveCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith(
+            expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
+        )
+    )
+    fun getPurchaserInfo(
+        @Suppress("UnusedPrivateMember")
+        listener: ReceivePurchaserInfoListener
+    ) {
+        // no-op
+    }
+
+    /**
+     * Get latest available purchaser info.
+     * @param listener A listener called when purchaser info is available and not stale.
+     * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
+     */
+    @JvmName("-deprecated_getPurchaserInfo_ReceiveCustomerInfoListener")
+    @Deprecated(
+        "Function has been renamed to getCustomerInfo and listener has been replaced" +
+            " with ReceiveCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith(
+            expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
+        )
+    )
+    fun getPurchaserInfo(
+        @Suppress("UnusedPrivateMember")
+        listener: ReceiveCustomerInfoListener
+    ) {
+        // no-op
+    }
+
+    /**
+     * Get latest available purchaser info.
+     * @param listener A listener called when purchaser info is available and not stale.
+     * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
+     */
+    @JvmName("-deprecated_getCustomerInfo_ReceivePurchaserInfoListener")
+    @Deprecated(
+        "Function has been renamed to getCustomerInfo and listener has been replaced" +
+            " with ReceiveCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith(
+            expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
+        )
+    )
+    fun getCustomerInfo(
+        @Suppress("UnusedPrivateMember")
+        listener: ReceivePurchaserInfoListener
+    ) {
+        // no-op
+    }
+
+    /**
+     * Restores purchases made with the current Play Store account for the current user.
+     * This method will post all purchases associated with the current Play Store account to
+     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
+     * used by an existing user, the current `appUserID` will be aliased together with the
+     * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
+     * the same user.
+     *
+     * You shouldn't use this method if you have your own account system. In that case
+     * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
+     * @param [listener] The listener that will be called when purchase restore completes.
+     */
+    @JvmName("-deprecated_restorePurchases")
+    @Deprecated(
+        "Listener has been replaced with ReceiveCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith("Purchases.sharedInstance.restorePurchases(ReceiveCustomerInfoListener)")
+    )
+    fun restorePurchases(
+        @Suppress("UnusedPrivateMember")
+        listener: ReceivePurchaserInfoListener
+    ) {
+        // no-op
+    }
+
+    /**
+     * Resets the Purchases client clearing the save appUserID. This will generate a random user
+     * id and save it in the cache.
+     * @param [listener] An optional listener to listen for successes or errors.
+     */
+    @JvmName("-deprecated_logOut")
+    @Deprecated(
+        "Listener has been replaced with ReceiveCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith(
+            expression = "Purchases.sharedInstance.logOut(ReceiveCustomerInfoListener)",
+            imports = ["com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener"]
+        )
+    )
+    fun logOut(
+        @Suppress("UnusedPrivateMember")
+        listener: ReceivePurchaserInfoListener
+    ) {
+        // no-op
+    }
+
+    /**
+     * Invalidates the cache for purchaser information.
+     *
+     * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
+     * Refer to https://docs.revenuecat.com/docs/purchaserinfo#section-get-user-information for more information on
+     * using the cache properly.
+     *
+     * This is useful for cases where purchaser information might have been updated outside of the
+     * app, like if a promotional subscription is granted through the RevenueCat dashboard.
+     */
+    @JvmName("-deprecated_invalidatePurchaserInfoCache")
+    @Deprecated(
+        "Renamed to invalidateCustomerInfoCache",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith("Purchases.sharedInstance.invalidateCustomerInfoCache()")
+    )
+    fun invalidatePurchaserInfoCache() {
+        // no-op
+    }
+
+    @JvmName("-deprecated_removeUpdatedPurchaserInfoListener")
+    @Deprecated(
+        "Renamed to removeUpdatedCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith("Purchases.sharedInstance.removeUpdatedCustomerInfoListener()")
+    )
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun removeUpdatedPurchaserInfoListener() {
+        // no-op
+    }
+    // endregion
+
     // region Static
     companion object {
 

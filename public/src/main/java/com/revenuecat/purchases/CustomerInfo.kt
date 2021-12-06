@@ -1,5 +1,3 @@
-@file:JvmName("-deprecated_PurchaserInfo")
-
 //  Purchases
 //
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.
@@ -35,11 +33,7 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-@Deprecated(
-    "Renamed to CustomerInfo",
-    replaceWith = ReplaceWith(expression = "CustomerInfo")
-)
-data class PurchaserInfo constructor(
+data class CustomerInfo constructor(
     val entitlements: EntitlementInfos,
     @Deprecated(
         "Use nonSubscriptionTransactions instead",
@@ -150,7 +144,7 @@ data class PurchaserInfo constructor(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as PurchaserInfo
+        other as CustomerInfo
 
         if (nonSubscriptionTransactions != other.nonSubscriptionTransactions) return false
         if (allExpirationDatesByProduct != other.allExpirationDatesByProduct) return false
@@ -167,15 +161,15 @@ data class PurchaserInfo constructor(
      * @hide
      */
     override fun toString() =
-        "<PurchaserInfo\n " +
-            "latestExpirationDate: $latestExpirationDate\n" +
-            "activeSubscriptions:  ${activeSubscriptions.map {
-                it to mapOf("expiresDate" to getExpirationDateForSku(it))
-            }.toMap()},\n" +
-            "activeEntitlements: ${entitlements.active.map { it.toString() }},\n" +
-            "entitlements: ${entitlements.all.map { it.toString() }},\n" +
-            "nonSubscriptionTransactions: $nonSubscriptionTransactions,\n" +
-            "requestDate: $requestDate\n>"
+        "<CustomerInfo\n " +
+                "latestExpirationDate: $latestExpirationDate\n" +
+                "activeSubscriptions:  ${activeSubscriptions.map {
+                    it to mapOf("expiresDate" to getExpirationDateForSku(it))
+                }.toMap()},\n" +
+                "activeEntitlements: ${entitlements.active.map { it.toString() }},\n" +
+                "entitlements: ${entitlements.all.map { it.toString() }},\n" +
+                "nonSubscriptionTransactions: $nonSubscriptionTransactions,\n" +
+                "requestDate: $requestDate\n>"
 
     override fun hashCode(): Int {
         var result = entitlements.hashCode()

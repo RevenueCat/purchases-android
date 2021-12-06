@@ -2,7 +2,7 @@ package com.revenuecat.purchases.attributes
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -14,7 +14,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.identity.IdentityManager
@@ -66,7 +66,7 @@ class SubscriberAttributesPurchasesTests {
     )
 
     internal data class PostReceiptCompletionContainer(
-        val info: PurchaserInfo = JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo(),
+        val info: CustomerInfo = JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo(),
         val body: JSONObject = JSONObject(Responses.validFullPurchaserResponse)
     )
 
