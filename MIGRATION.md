@@ -1,0 +1,1 @@
+- Removed deprecated `purchaseProduct` and `purchasePackage` accepting `UpgradeInfo` and `MakePurchaseListener`

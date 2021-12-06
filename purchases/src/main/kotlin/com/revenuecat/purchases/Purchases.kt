@@ -370,37 +370,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         getSkus(skus.toSet(), ProductType.INAPP, callback)
     }
 
-    /**
-     * Purchase a product.
-     * @param [activity] Current activity
-     * @param [skuDetails] The skuDetails of the product you wish to purchase
-     * @param [upgradeInfo] The UpgradeInfo you wish to upgrade from containing the
-     * oldSku and the optional prorationMode.
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Deprecated(
-        message = "The listener has changed to accept a null Purchase on the onCompleted",
-        replaceWith = ReplaceWith(
-            expression = """
-                Purchases.sharedInstance.purchaseProduct(activity, skuDetails, upgradeInfo, 
-                    ProductChangeListener)
-            """
-        )
-    )
-    fun purchaseProduct(
-        activity: Activity,
-        skuDetails: SkuDetails,
-        upgradeInfo: UpgradeInfo,
-        listener: MakePurchaseListener
-    ) {
-        purchaseProduct(
-            activity,
-            skuDetails.toStoreProduct(),
-            upgradeInfo,
-            listener.toProductChangeCallback()
-        )
-    }
-
     fun purchaseProduct(
         activity: Activity,
         skuDetails: SkuDetails,
@@ -462,36 +431,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         callback: PurchaseCallback
     ) {
         startPurchase(activity, storeProduct, null, callback)
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [packageToPurchase] The Package you wish to purchase
-     * @param [upgradeInfo] The UpgradeInfo you wish to upgrade from containing the oldSku
-     * and the optional prorationMode.
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Deprecated(
-        message = "The listener has changed to accept a null Purchase on the onCompleted",
-        replaceWith = ReplaceWith(
-            expression = "Purchases.sharedInstance.purchasePackage(" +
-                    "activity, packageToPurchase, upgradeInfo, ProductChangeListener)"
-        )
-    )
-    fun purchasePackage(
-        activity: Activity,
-        packageToPurchase: Package,
-        upgradeInfo: UpgradeInfo,
-        listener: MakePurchaseListener
-    ) {
-        startProductChange(
-            activity,
-            packageToPurchase.product.toStoreProduct(),
-            packageToPurchase.offering,
-            upgradeInfo,
-            listener.toProductChangeCallback()
-        )
     }
 
     /**
