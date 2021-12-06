@@ -32,8 +32,6 @@ typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> U
 /** @suppress */
 typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, body: JSONObject?) -> Unit
 /** @suppress */
-typealias CreateAliasCallback = Pair<() -> Unit, (PurchasesError) -> Unit>
-/** @suppress */
 typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
 
 class Backend(
@@ -52,9 +50,6 @@ class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var offeringsCallbacks = mutableMapOf<String, MutableList<OfferingsCallback>>()
-
-    @get:Synchronized @set:Synchronized
-    @Volatile var createAliasCallbacks = mutableMapOf<CallbackCacheKey, MutableList<CreateAliasCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
@@ -283,50 +278,6 @@ class Backend(
 
     private fun encode(string: String): String {
         return Uri.encode(string)
-    }
-
-    fun createAlias(
-        appUserID: String,
-        newAppUserID: String,
-        onSuccessHandler: () -> Unit,
-        onErrorHandler: (PurchasesError) -> Unit
-    ) {
-        val cacheKey = listOfNotNull(
-            appUserID,
-            newAppUserID
-        )
-        val call = object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPResult {
-                return httpClient.performRequest(
-                    "/subscribers/" + encode(appUserID) + "/alias",
-                    mapOf("new_app_user_id" to newAppUserID),
-                    authenticationHeaders
-                )
-            }
-
-            override fun onError(error: PurchasesError) {
-                synchronized(this@Backend) {
-                    createAliasCallbacks.remove(cacheKey)
-                }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
-                }
-            }
-
-            override fun onCompletion(result: HTTPResult) {
-                if (result.isSuccessful()) {
-                    synchronized(this@Backend) {
-                        createAliasCallbacks.remove(cacheKey)
-                    }?.forEach { (onSuccessHandler, _) ->
-                        onSuccessHandler()
-                    }
-                } else {
-                    onError(result.toPurchasesError().also { errorLog(it) })
-                }
-            }
-        }
-        synchronized(this@Backend) {
-            createAliasCallbacks.addCallback(call, cacheKey, onSuccessHandler to onErrorHandler)
-        }
     }
 
     fun logIn(

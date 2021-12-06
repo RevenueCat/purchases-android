@@ -598,67 +598,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * This function will alias two appUserIDs together.
-     * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
-     * @param [listener] An optional listener to listen for successes or errors.
-     */
-    @Deprecated(
-        "Use logIn instead",
-        ReplaceWith("Purchases.sharedInstance.logIn(newAppUserID, LogInCallback?)")
-    )
-    @JvmOverloads
-    fun createAlias(
-        newAppUserID: String,
-        listener: ReceiveCustomerInfoListener? = null
-    ) {
-        identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            identityManager.createAlias(
-                newAppUserID,
-                {
-                    synchronized(this@Purchases) {
-                        state = state.copy(purchaseCallbacks = emptyMap())
-                    }
-                    updateAllCaches(newAppUserID, listener)
-                },
-                { error ->
-                    dispatch { listener?.onError(error) }
-                }
-            )
-        } ?: retrieveCustomerInfo(identityManager.currentAppUserID, listener)
-    }
-
-    /**
-     * This function will change the current appUserID.
-     * Typically this would be used after a log out to identify a new user without calling configure
-     * @param newAppUserID The new appUserID that should be linked to the currently user
-     * @param [listener] An optional listener to listen for successes or errors.
-     */
-    @Deprecated(
-        "Use logIn instead",
-        ReplaceWith("Purchases.sharedInstance.logIn(newAppUserID, LogInCallback?)")
-    )
-    @JvmOverloads
-    fun identify(
-        newAppUserID: String,
-        listener: ReceiveCustomerInfoListener? = null
-    ) {
-        identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            identityManager.identify(
-                newAppUserID,
-                {
-                    synchronized(this@Purchases) {
-                        state = state.copy(purchaseCallbacks = emptyMap())
-                    }
-                    updateAllCaches(newAppUserID, listener)
-                },
-                { error ->
-                    dispatch { listener?.onError(error) }
-                }
-            )
-        } ?: retrieveCustomerInfo(identityManager.currentAppUserID, listener)
-    }
-
-    /**
      * This function will change the current appUserID.
      * Typically this would be used after a log out to identify a new user without calling configure
      * @param newAppUserID The new appUserID that should be linked to the currently user
@@ -709,28 +648,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
             updateAllCaches(identityManager.currentAppUserID, listener)
         }
-    }
-
-    /**
-     * Resets the Purchases client clearing the save appUserID. This will generate a random user
-     * id and save it in the cache.
-     * @param [listener] An optional listener to listen for successes or errors.
-     */
-    @Deprecated(
-        "Use logOut instead",
-        ReplaceWith("Purchases.sharedInstance.logOut(ReceiveCustomerInfoListener?)")
-    )
-    @JvmOverloads
-    fun reset(
-        listener: ReceiveCustomerInfoListener? = null
-    ) {
-        deviceCache.clearLatestAttributionData(identityManager.currentAppUserID)
-        identityManager.reset()
-        backend.clearCaches()
-        synchronized(this@Purchases) {
-            state = state.copy(purchaseCallbacks = emptyMap())
-        }
-        updateAllCaches(identityManager.currentAppUserID, listener)
     }
 
     /**

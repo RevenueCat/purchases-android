@@ -38,25 +38,6 @@ class IdentityManager(
         subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
     }
 
-    fun identify(
-        appUserID: String,
-        onSuccess: () -> Unit,
-        onError: (PurchasesError) -> Unit
-    ) {
-        if (currentUserIsAnonymous()) {
-            log(LogIntent.USER, IdentityStrings.IDENTIFYING_ANON_ID.format(appUserID))
-            createAlias(appUserID, onSuccess, onError)
-        } else {
-            synchronized(this@IdentityManager) {
-                log(LogIntent.USER, IdentityStrings.CHANGING_APP_USER_ID.format(currentAppUserID, appUserID))
-                deviceCache.clearCachesForAppUserID(currentAppUserID)
-                subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
-                deviceCache.cacheAppUserID(appUserID)
-            }
-            onSuccess()
-        }
-    }
-
     fun logIn(
         newAppUserID: String,
         onSuccess: (CustomerInfo, Boolean) -> Unit,
@@ -93,30 +74,8 @@ class IdentityManager(
         )
     }
 
-    fun createAlias(
-        newAppUserID: String,
-        onSuccess: () -> Unit,
-        onError: (PurchasesError) -> Unit
-    ) {
-        log(LogIntent.USER, IdentityStrings.CREATING_ALIAS.format(currentAppUserID, newAppUserID))
-        backend.createAlias(
-            currentAppUserID,
-            newAppUserID,
-            {
-                synchronized(this@IdentityManager) {
-                    log(LogIntent.USER, IdentityStrings.CREATING_ALIAS_SUCCESS)
-                    deviceCache.clearCachesForAppUserID(currentAppUserID)
-                    subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
-                    deviceCache.cacheAppUserID(newAppUserID)
-                }
-                onSuccess()
-            },
-            onError
-        )
-    }
-
     @Synchronized
-    fun reset() {
+    private fun reset() {
         deviceCache.clearCachesForAppUserID(currentAppUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         deviceCache.cacheAppUserID(generateRandomID())

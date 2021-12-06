@@ -6,10 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.identifyWith
-import com.revenuecat.purchases.resetWith
+import com.revenuecat.purchases.logInWith
+import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchasetester.databinding.FragmentLoginBinding
 
 class LoginFragment : Fragment() {
@@ -22,25 +21,25 @@ class LoginFragment : Fragment() {
         binding.loginButton.setOnClickListener {
             binding.loginUsernameEditText.text?.toString()?.let { userId ->
                 Purchases.sharedInstance
-                    .identifyWith(
+                    .logInWith(
                         userId,
                         { error -> showUserError(requireActivity(), error) },
-                        ::advanceToOverviewFragment
+                        { _, _ -> advanceToOverviewFragment() }
                     )
             }
         }
 
         binding.anonymousUserButton.setOnClickListener {
-            Purchases.sharedInstance.resetWith(
+            Purchases.sharedInstance.logOutWith(
                 { error -> showUserError(requireActivity(), error) },
-                ::advanceToOverviewFragment
+                { advanceToOverviewFragment() }
             )
         }
 
         return binding.root
     }
 
-    private fun advanceToOverviewFragment(customerInfo: CustomerInfo) {
+    private fun advanceToOverviewFragment() {
         val directions = LoginFragmentDirections.actionLoginFragmentToOverviewFragment()
         findNavController().navigate(directions)
     }
