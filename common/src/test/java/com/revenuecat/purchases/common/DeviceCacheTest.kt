@@ -15,8 +15,8 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.PURCHASER_INFO_SCHEMA_VERSION
-import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.stubSkuDetails
@@ -41,13 +41,13 @@ import java.util.Date
 @Config(manifest = Config.NONE)
 class DeviceCacheTest {
 
-    private val validCachedPurchaserInfo by lazy {
+    private val validCachedCustomerInfo by lazy {
         JSONObject(Responses.validFullPurchaserResponse).apply {
             put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
         }.toString()
     }
 
-    private val oldCachedPurchaserInfo =
+    private val oldCachedCustomerInfo =
         "{'schema_version': 0, 'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
 
     private lateinit var cache: DeviceCache
@@ -92,44 +92,44 @@ class DeviceCacheTest {
 
     @Test
     fun `given no cached info, cached purchased info is null`() {
-        mockString(cache.purchaserInfoCacheKey(appUserID), null)
-        val info = cache.getCachedPurchaserInfo(appUserID)
+        mockString(cache.customerInfoCacheKey(appUserID), null)
+        val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is null").isNull()
     }
 
     @Test
     fun `given a purchaser info, the key in the cache is correct`() {
-        mockString(cache.purchaserInfoCacheKey(appUserID), Responses.validFullPurchaserResponse.toString())
-        cache.getCachedPurchaserInfo(appUserID)
+        mockString(cache.customerInfoCacheKey(appUserID), Responses.validFullPurchaserResponse.toString())
+        cache.getCachedCustomerInfo(appUserID)
         verify {
-            mockPrefs.getString(cache.purchaserInfoCacheKey(appUserID), isNull())
+            mockPrefs.getString(cache.customerInfoCacheKey(appUserID), isNull())
         }
     }
 
     @Test
     fun `given a valid purchaser info, the JSON is parsed correctly`() {
-        mockString(cache.purchaserInfoCacheKey(appUserID), validCachedPurchaserInfo)
-        val info = cache.getCachedPurchaserInfo(appUserID)
+        mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
+        val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
     }
 
     @Test
     fun `given a invalid purchaser info, the information is null`() {
-        mockString(cache.purchaserInfoCacheKey(appUserID), "not json")
-        val info = cache.getCachedPurchaserInfo(appUserID)
+        mockString(cache.customerInfoCacheKey(appUserID), "not json")
+        val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is null").isNull()
     }
 
     @Test
     fun `given a purchaser info, the information is cached`() {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val info = jsonObject.buildPurchaserInfo()
+        val info = jsonObject.buildCustomerInfo()
 
-        cache.cachePurchaserInfo(appUserID, info)
+        cache.cacheCustomerInfo(appUserID, info)
         assertThat(slotForPutLong.captured).isNotNull()
         verifyAll {
-            mockEditor.putString(cache.purchaserInfoCacheKey(appUserID), any())
-            mockEditor.putLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), slotForPutLong.captured)
+            mockEditor.putString(cache.customerInfoCacheKey(appUserID), any())
+            mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), slotForPutLong.captured)
             mockEditor.apply()
         }
     }
@@ -137,17 +137,17 @@ class DeviceCacheTest {
     @Test
     fun `given a purchaser info, the information is cached with a schema version`() {
         every {
-            mockEditor.putLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), any())
+            mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), any())
         } returns mockEditor
 
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val info = jsonObject.buildPurchaserInfo()
+        val info = jsonObject.buildCustomerInfo()
         val infoJSONSlot = slot<String>()
 
         every {
             mockEditor.putString(any(), capture(infoJSONSlot))
         } returns mockEditor
-        cache.cachePurchaserInfo(appUserID, info)
+        cache.cacheCustomerInfo(appUserID, info)
 
         val cachedJSON = JSONObject(infoJSONSlot.captured)
         assertThat(cachedJSON.has("schema_version"))
@@ -156,15 +156,15 @@ class DeviceCacheTest {
 
     @Test
     fun `given an older version of purchaser info, nothing is returned`() {
-        mockString(cache.purchaserInfoCacheKey(appUserID), oldCachedPurchaserInfo)
-        val info = cache.getCachedPurchaserInfo(appUserID)
+        mockString(cache.customerInfoCacheKey(appUserID), oldCachedCustomerInfo)
+        val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is null").isNull()
     }
 
     @Test
     fun `given a valid version purchaser info, it is returned`() {
-        mockString(cache.purchaserInfoCacheKey(appUserID), validCachedPurchaserInfo)
-        val info = cache.getCachedPurchaserInfo(appUserID)
+        mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
+        val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull()
     }
 
@@ -262,10 +262,10 @@ class DeviceCacheTest {
         every {
             mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "hash2", "token3")
-        val activeSub = mockk<PurchaseDetails>(relaxed = true).also {
+        val activeSub = mockk<PaymentTransaction>(relaxed = true).also {
             every { it.type } returns ProductType.SUBS
         }
-        val inApp = mockk<PurchaseDetails>(relaxed = true).also {
+        val inApp = mockk<PaymentTransaction>(relaxed = true).also {
             every { it.type } returns ProductType.INAPP
         }
         val activePurchasesNotInCache =
@@ -275,48 +275,48 @@ class DeviceCacheTest {
 
     @Test
     fun `invalidating purchaser info caches`() {
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), Date(0).time)
-        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)).isTrue()
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), Date().time)
-        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)).isFalse()
-        cache.clearPurchaserInfoCacheTimestamp(appUserID)
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), 0L)
-        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)).isTrue()
+        mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date(0).time)
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue()
+        mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date().time)
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isFalse()
+        cache.clearCustomerInfoCacheTimestamp(appUserID)
+        mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), 0L)
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue()
     }
 
     @Test
     fun `clearing caches clears all user ID data`() {
         every {
-            mockEditor.putLong(cache.purchaserInfoLastUpdatedCacheKey("appUserID"), capture(slot()))
+            mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey("appUserID"), capture(slot()))
         } returns mockEditor
         mockString(cache.appUserIDCacheKey, "appUserID")
         mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
-        mockString(cache.purchaserInfoCacheKey(appUserID), null)
+        mockString(cache.customerInfoCacheKey(appUserID), null)
 
         cache.clearCachesForAppUserID("appUserID")
 
         verify { mockEditor.remove(cache.appUserIDCacheKey) }
         verify { mockEditor.remove(cache.legacyAppUserIDCacheKey) }
-        verify { mockEditor.remove(cache.purchaserInfoCacheKey("appUserID")) }
-        verify { mockEditor.remove(cache.purchaserInfoCacheKey("legacyAppUserID")) }
+        verify { mockEditor.remove(cache.customerInfoCacheKey("appUserID")) }
+        verify { mockEditor.remove(cache.customerInfoCacheKey("legacyAppUserID")) }
     }
 
     @Test
     fun `clearing caches clears timestamps`() {
         val date = Date()
         every {
-            mockEditor.putLong(cache.purchaserInfoLastUpdatedCacheKey("appUserID"), date.time)
+            mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey("appUserID"), date.time)
         } returns mockEditor
-        cache.setPurchaserInfoCacheTimestamp("appUserID", date)
+        cache.setCustomerInfoCacheTimestamp("appUserID", date)
         cache.setOfferingsCacheTimestampToNow()
 
         mockString(cache.appUserIDCacheKey, "appUserID")
         mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
-        mockString(cache.purchaserInfoCacheKey(appUserID), null)
+        mockString(cache.customerInfoCacheKey(appUserID), null)
 
         cache.clearCachesForAppUserID("appUserID")
         verify {
-            mockEditor.remove(cache.purchaserInfoLastUpdatedCacheKey("appUserID"))
+            mockEditor.remove(cache.customerInfoLastUpdatedCacheKey("appUserID"))
         }
         assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue()
     }
@@ -333,26 +333,26 @@ class DeviceCacheTest {
     @Test
     fun `stale if no caches`() {
         assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue()
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), 0L)
-        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)).isTrue()
+        mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), 0L)
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue()
     }
 
     @Test
-    fun `isPurchaserInfoCacheStale returns true if the cached object is stale`() {
-        cache.cachePurchaserInfo(appUserID, mockk(relaxed = true))
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), Date(0).time)
-        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)).isTrue()
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), Date().time)
-        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = false)).isFalse()
+    fun `isCustomerInfoCacheStale returns true if the cached object is stale`() {
+        cache.cacheCustomerInfo(appUserID, mockk(relaxed = true))
+        mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date(0).time)
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue()
+        mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date().time)
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isFalse()
     }
 
     @Test
-    fun `isPurchaserInfoCacheStale in background returns true if the cached object is stale`() {
-        cache.cachePurchaserInfo(appUserID, mockk(relaxed = true))
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), Date(0).time)
-        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = true)).isTrue()
-        mockLong(cache.purchaserInfoLastUpdatedCacheKey(appUserID), Date().time)
-        assertThat(cache.isPurchaserInfoCacheStale(appUserID, appInBackground = true)).isFalse()
+    fun `isCustomerInfoCacheStale in background returns true if the cached object is stale`() {
+        cache.cacheCustomerInfo(appUserID, mockk(relaxed = true))
+        mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date(0).time)
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = true)).isTrue()
+        mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date().time)
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = true)).isFalse()
     }
 
     @Test
@@ -395,7 +395,7 @@ class DeviceCacheTest {
 
     @Test
     fun `caching offerings works`() {
-        val productDetails = mockk<ProductDetails>().also {
+        val storeProduct = mockk<StoreProduct>().also {
             val productId = "onemonth_freetrial"
             val stubSkuDetails = stubSkuDetails(productId = productId)
             every { it.sku } returns productId
@@ -404,7 +404,7 @@ class DeviceCacheTest {
         val packageObject = Package(
             "custom",
             PackageType.CUSTOM,
-            productDetails.skuDetails,
+            storeProduct.skuDetails,
             "offering_a"
         )
         val offering = Offering(
@@ -423,17 +423,17 @@ class DeviceCacheTest {
 
     @Test
     fun `timestamp is set when caching purchaser info`() {
-        cache.cachePurchaserInfo("waldo", mockk(relaxed = true))
+        cache.cacheCustomerInfo("waldo", mockk(relaxed = true))
         assertThat(slotForPutLong.captured).isNotNull()
     }
 
     @Test
     fun `clearing purchaser info caches clears the shared preferences`() {
-        cache.cachePurchaserInfo(appUserID, mockk(relaxed = true))
+        cache.cacheCustomerInfo(appUserID, mockk(relaxed = true))
         assertThat(slotForPutLong.captured).isNotNull()
 
-        cache.clearPurchaserInfoCache(appUserID)
-        verify { mockEditor.remove(cache.purchaserInfoCacheKey(appUserID)) }
+        cache.clearCustomerInfoCache(appUserID)
+        verify { mockEditor.remove(cache.customerInfoCacheKey(appUserID)) }
     }
 
     @Test

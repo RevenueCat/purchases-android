@@ -6,20 +6,20 @@
 package com.revenuecat.purchases.interfaces;
 
 
-import com.revenuecat.purchases.PurchaserInfo;
+import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.PurchasesError;
 
 import androidx.annotation.NonNull;
 
 /**
- * Interface to be implemented when making calls that return a [PurchaserInfo]
+ * Interface to be implemented when making calls that return a [CustomerInfo]
  */
-public interface ReceivePurchaserInfoListener {
+public interface ReceiveCustomerInfoListener {
     /**
      * Will be called after the call has completed.
-     * @param purchaserInfo [PurchaserInfo] class sent back when the call has completed
+     * @param customerInfo [CustomerInfo] class sent back when the call has completed
      */
-    void onReceived(@NonNull PurchaserInfo purchaserInfo);
+    void onReceived(@NonNull CustomerInfo customerInfo);
 
      /**
      * Will be called after the call has completed with an error.

@@ -6,7 +6,7 @@
 package com.revenuecat.purchases.common
 
 import android.net.Uri
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -19,7 +19,7 @@ const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
 
 /** @suppress */
-internal typealias PurchaserInfoCallback = Pair<(PurchaserInfo) -> Unit, (PurchasesError) -> Unit>
+internal typealias CustomerInfoCallback = Pair<(CustomerInfo) -> Unit, (PurchasesError) -> Unit>
 
 /** @suppress */
 typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, PostReceiptDataErrorCallback>
@@ -28,11 +28,11 @@ typealias CallbackCacheKey = List<String>
 /** @suppress */
 typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
 /** @suppress */
-typealias PostReceiptDataSuccessCallback = (PurchaserInfo, body: JSONObject) -> Unit
+typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> Unit
 /** @suppress */
 typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, body: JSONObject?) -> Unit
 /** @suppress */
-typealias IdentifyCallback = Pair<(PurchaserInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
+typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
 
 class Backend(
     private val apiKey: String,
@@ -43,7 +43,7 @@ class Backend(
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
     @get:Synchronized @set:Synchronized
-    @Volatile var callbacks = mutableMapOf<CallbackCacheKey, MutableList<PurchaserInfoCallback>>()
+    @Volatile var callbacks = mutableMapOf<CallbackCacheKey, MutableList<CustomerInfoCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
@@ -97,10 +97,10 @@ class Backend(
         }
     }
 
-    fun getPurchaserInfo(
+    fun getCustomerInfo(
         appUserID: String,
         appInBackground: Boolean,
-        onSuccess: (PurchaserInfo) -> Unit,
+        onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         val path = "/subscribers/" + encode(appUserID)
@@ -121,7 +121,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     try {
                         if (result.isSuccessful()) {
-                            onSuccess(result.body.buildPurchaserInfo())
+                            onSuccess(result.body.buildCustomerInfo())
                         } else {
                             onError(result.toPurchasesError().also { errorLog(it) })
                         }
@@ -198,7 +198,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     try {
                         if (result.isSuccessful()) {
-                            onSuccess(result.body.buildPurchaserInfo(), result.body)
+                            onSuccess(result.body.buildCustomerInfo(), result.body)
                         } else {
                             val purchasesError = result.toPurchasesError().also { errorLog(it) }
                             onError(
@@ -283,7 +283,7 @@ class Backend(
     fun logIn(
         appUserID: String,
         newAppUserID: String,
-        onSuccessHandler: (PurchaserInfo, Boolean) -> Unit,
+        onSuccessHandler: (CustomerInfo, Boolean) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit
     ) {
         val cacheKey = listOfNotNull(
@@ -317,8 +317,8 @@ class Backend(
                     }?.forEach { (onSuccessHandler, onErrorHandler) ->
                         val created = result.responseCode == RCHTTPStatusCodes.CREATED
                         if (result.body.length() > 0) {
-                            val purchaserInfo = result.body.buildPurchaserInfo()
-                            onSuccessHandler(purchaserInfo, created)
+                            val customerInfo = result.body.buildCustomerInfo()
+                            onSuccessHandler(customerInfo, created)
                         } else {
                             onErrorHandler(PurchasesError(PurchasesErrorCode.UnknownError)
                                 .also { errorLog(it) })

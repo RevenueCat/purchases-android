@@ -10,7 +10,7 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.getPurchaserInfoWith
+import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.sample.R
 import com.revenuecat.sample.data.Constants
 import com.revenuecat.sample.data.SampleWeatherData
@@ -70,7 +70,7 @@ class WeatherFragment : Fragment() {
         /*
         We should check if we can magically change the weather (subscription active) and if not, display the paywall.
         */
-        Purchases.sharedInstance.getPurchaserInfoWith({
+        Purchases.sharedInstance.getCustomerInfoWith({
             buildError(context, it.message)
         }, {
             if (it.entitlements[Constants.ENTITLEMENT_ID]?.isActive == true) {

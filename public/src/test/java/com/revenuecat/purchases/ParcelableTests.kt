@@ -25,8 +25,8 @@ class ParcelableTests {
     )
 
     @Test
-    fun `PurchaserInfo is Parcelable`() = testParcelization(
-        PurchaserInfo(
+    fun `CustomerInfo is Parcelable`() = testParcelization(
+        CustomerInfo(
             entitlements = EntitlementInfos(mapOf("an_identifier" to getEntitlementInfo(identifier = "an_identifier"))),
             purchasedNonSubscriptionSkus = setOf(),
             allExpirationDatesByProduct = mapOf("a_product" to Date(System.currentTimeMillis())),
