@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.identifyWith
 import com.revenuecat.purchases.resetWith
@@ -40,7 +40,7 @@ class LoginFragment : Fragment() {
         return binding.root
     }
 
-    private fun advanceToOverviewFragment(purchaserInfo: PurchaserInfo) {
+    private fun advanceToOverviewFragment(customerInfo: CustomerInfo) {
         val directions = LoginFragmentDirections.actionLoginFragmentToOverviewFragment()
         findNavController().navigate(directions)
     }

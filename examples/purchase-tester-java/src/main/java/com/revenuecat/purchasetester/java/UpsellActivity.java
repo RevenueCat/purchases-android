@@ -15,12 +15,12 @@ import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Package;
-import com.revenuecat.purchases.PurchaserInfo;
+import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.interfaces.MakePurchaseListener;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener;
-import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener;
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 
 import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
 
@@ -46,10 +46,10 @@ public class UpsellActivity extends AppCompatActivity {
                 Navigator.startCatsActivity(UpsellActivity.this, false);
             }
         });
-        Purchases.getSharedInstance().setUpdatedPurchaserInfoListener(new UpdatedPurchaserInfoListener() {
+        Purchases.getSharedInstance().setUpdatedCustomerInfoListener(new UpdatedCustomerInfoListener() {
             @Override
-            public void onReceived(@NonNull PurchaserInfo purchaserInfo) {
-                checkForProEntitlement(purchaserInfo);
+            public void onReceived(@NonNull CustomerInfo customerInfo) {
+                checkForProEntitlement(customerInfo);
             }
         });
     }
@@ -109,9 +109,9 @@ public class UpsellActivity extends AppCompatActivity {
         showLoading(button, true);
         Purchases.getSharedInstance().purchasePackage(this, packageToPurchase, new MakePurchaseListener() {
             @Override
-            public void onCompleted(@NonNull Purchase purchase, @NonNull PurchaserInfo purchaserInfo) {
+            public void onCompleted(@NonNull Purchase purchase, @NonNull CustomerInfo customerInfo) {
                 showLoading(button, false);
-                checkForProEntitlement(purchaserInfo);
+                checkForProEntitlement(customerInfo);
             }
 
             @Override
@@ -123,8 +123,8 @@ public class UpsellActivity extends AppCompatActivity {
         });
     }
 
-    private void checkForProEntitlement(PurchaserInfo purchaserInfo) {
-        EntitlementInfo proEntitlement = purchaserInfo.getEntitlements().get(PREMIUM_ENTITLEMENT_ID);
+    private void checkForProEntitlement(CustomerInfo customerInfo) {
+        EntitlementInfo proEntitlement = customerInfo.getEntitlements().get(PREMIUM_ENTITLEMENT_ID);
         if (proEntitlement != null && proEntitlement.isActive()) {
             Navigator.startCatsActivity(UpsellActivity.this, false);
         }

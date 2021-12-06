@@ -19,7 +19,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getOfferingsWith
-import com.revenuecat.purchases.getPurchaserInfoWith
+import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.resetWith
 import com.revenuecat.purchasetester.databinding.FragmentOverviewBinding
 
@@ -30,11 +30,11 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = FragmentOverviewBinding.inflate(inflater)
 
-        binding.purchaserInfoCard.setOnClickListener {
-            with(binding.purchaserInfoDetailsContainer) {
+        binding.customerInfoCard.setOnClickListener {
+            with(binding.customerInfoDetailsContainer) {
                 visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
 
-                binding.purchaserInfoCardExpandButton
+                binding.customerInfoCardExpandButton
                     .animate()
                     .rotationBy(
                         if (visibility == View.GONE) -ANIMATION_HALF_ROTATION_DEGREES
@@ -45,7 +45,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             }
         }
 
-        binding.purchaserInfoLogoutButton.setOnClickListener {
+        binding.customerInfoLogoutButton.setOnClickListener {
             Purchases.sharedInstance.resetWith(
                 { error -> showUserError(requireActivity(), error) },
                 { findNavController().navigateUp() }
@@ -60,22 +60,22 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         postponeEnterTransition()
         view.doOnPreDraw { startPostponedEnterTransition() }
 
-        Purchases.sharedInstance.getPurchaserInfoWith(::showError) { info ->
+        Purchases.sharedInstance.getCustomerInfoWith(::showError) { info ->
             with(binding) {
-                purchaserInfo = info
+                customerInfo = info
 
-                purchaserInfoCopyUserIdButton.setOnClickListener {
+                customerInfoCopyUserIdButton.setOnClickListener {
                     val clipboard = getSystemService(requireContext(), ClipboardManager::class.java)
                     val clip = ClipData.newPlainText("RevenueCat userId", info.originalAppUserId)
                     clipboard?.primaryClip = clip
                 }
 
-                purchaserInfoJsonObject.detail = info.jsonObject.toString(JSON_FORMATTER_INDENT_SPACES)
+                customerInfoJsonObject.detail = info.jsonObject.toString(JSON_FORMATTER_INDENT_SPACES)
 
-                purchaserInfoActiveEntitlements.detail = formatEntitlements(info.entitlements.active.values)
-                purchaserInfoAllEntitlements.detail = formatEntitlements(info.entitlements.all.values)
+                customerInfoActiveEntitlements.detail = formatEntitlements(info.entitlements.active.values)
+                customerInfoAllEntitlements.detail = formatEntitlements(info.entitlements.all.values)
 
-                binding.purchaserInfoManageButton.setOnClickListener {
+                binding.customerInfoManageButton.setOnClickListener {
                     info.managementURL?.let {
                         val intent = Intent(Intent.ACTION_VIEW)
                         intent.data = it

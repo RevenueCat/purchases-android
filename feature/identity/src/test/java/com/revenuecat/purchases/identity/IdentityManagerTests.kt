@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.identity
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
@@ -204,47 +204,47 @@ class IdentityManagerTests {
     }
 
     @Test
-    fun `login passes received created and purchaserInfo from backend`() {
+    fun `login passes received created and customerInfo from backend`() {
         val randomCreated: Boolean = Random.nextBoolean()
-        val mockPurchaserInfo: PurchaserInfo = mockk()
+        val mockCustomerInfo: CustomerInfo = mockk()
         every {
             mockBackend.logIn(stubAnonymousID, "new", captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(
-                    mockPurchaserInfo, randomCreated
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(
+                    mockCustomerInfo, randomCreated
             )
         }
-        every { mockDeviceCache.cachePurchaserInfo(any(), any()) } just Runs
+        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
         var receivedError: PurchasesError? = null
-        var receivedPurchaserInfo: PurchaserInfo? = null
+        var receivedCustomerInfo: CustomerInfo? = null
         var receivedCreated: Boolean? = null
         mockCachedAnonymousUser()
 
-        identityManager.logIn("new", { purchaserInfo, created ->
-            receivedPurchaserInfo = purchaserInfo
+        identityManager.logIn("new", { customerInfo, created ->
+            receivedCustomerInfo = customerInfo
             receivedCreated = created
         }, { error -> receivedError = error })
 
         assertThat(receivedError).isNull()
-        assertThat(receivedPurchaserInfo).isNotNull
-        assertThat(receivedPurchaserInfo).isEqualTo(mockPurchaserInfo)
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo).isEqualTo(mockCustomerInfo)
         assertThat(receivedCreated).isEqualTo(randomCreated)
     }
 
     @Test
     fun `login clears caches for old appUserID on successful completion`() {
         val randomCreated: Boolean = Random.nextBoolean()
-        val mockPurchaserInfo: PurchaserInfo = mockk()
+        val mockCustomerInfo: CustomerInfo = mockk()
         mockCachedAnonymousUser()
         val oldAppUserID = stubAnonymousID
         every {
             mockBackend.logIn(oldAppUserID, "new", captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(
-                    mockPurchaserInfo, randomCreated
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(
+                    mockCustomerInfo, randomCreated
             )
         }
-        every { mockDeviceCache.cachePurchaserInfo(any(), any()) } just Runs
+        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
 
         identityManager.logIn("new", { _, _ -> }, { _ -> })
 
@@ -255,25 +255,25 @@ class IdentityManagerTests {
     }
 
     @Test
-    fun `login caches purchaserInfo and appUserID for new user on successful completion`() {
+    fun `login caches customerInfo and appUserID for new user on successful completion`() {
         val randomCreated: Boolean = Random.nextBoolean()
-        val mockPurchaserInfo: PurchaserInfo = mockk()
+        val mockCustomerInfo: CustomerInfo = mockk()
         mockCachedAnonymousUser()
         val oldAppUserID = stubAnonymousID
         val newAppUserID = "new"
         every {
             mockBackend.logIn(oldAppUserID, newAppUserID, captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(
-                    mockPurchaserInfo, randomCreated
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(
+                    mockCustomerInfo, randomCreated
             )
         }
-        every { mockDeviceCache.cachePurchaserInfo(any(), any()) } just Runs
+        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
 
         identityManager.logIn(newAppUserID, { _, _ -> }, { _ -> })
 
         verify(exactly = 1) { mockDeviceCache.cacheAppUserID(newAppUserID) }
-        verify(exactly = 1) { mockDeviceCache.cachePurchaserInfo(newAppUserID, mockPurchaserInfo) }
+        verify(exactly = 1) { mockDeviceCache.cacheCustomerInfo(newAppUserID, mockCustomerInfo) }
     }
 
     @Test

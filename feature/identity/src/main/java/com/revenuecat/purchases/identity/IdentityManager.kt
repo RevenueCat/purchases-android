@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.identity
 
-import com.revenuecat.purchases.PurchaserInfo
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
@@ -59,7 +59,7 @@ class IdentityManager(
 
     fun logIn(
         newAppUserID: String,
-        onSuccess: (PurchaserInfo, Boolean) -> Unit,
+        onSuccess: (CustomerInfo, Boolean) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         if (newAppUserID.isBlank()) {
@@ -75,7 +75,7 @@ class IdentityManager(
         backend.logIn(
             oldAppUserID,
             newAppUserID,
-            { purchaserInfo, created ->
+            { customerInfo, created ->
                 synchronized(this@IdentityManager) {
                     log(
                         LogIntent.USER,
@@ -85,9 +85,9 @@ class IdentityManager(
                     subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                     deviceCache.cacheAppUserID(newAppUserID)
-                    deviceCache.cachePurchaserInfo(newAppUserID, purchaserInfo)
+                    deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
                 }
-                onSuccess(purchaserInfo, created)
+                onSuccess(customerInfo, created)
             },
             onError
         )

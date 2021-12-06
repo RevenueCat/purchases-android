@@ -8,7 +8,7 @@ import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.toRevenueCatPaymentTransaction
 import com.revenuecat.purchases.models.StoreProduct
@@ -57,7 +57,7 @@ class PostingTransactionsTests {
     )
 
     internal data class PostReceiptCompletionContainer(
-        val info: PurchaserInfo = JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo(),
+        val info: CustomerInfo = JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo(),
         val body: JSONObject = JSONObject(Responses.validFullPurchaserResponse)
     )
 

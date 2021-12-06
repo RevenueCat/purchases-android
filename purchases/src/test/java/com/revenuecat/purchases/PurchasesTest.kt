@@ -28,7 +28,7 @@ import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
-import com.revenuecat.purchases.common.buildPurchaserInfo
+import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
@@ -41,8 +41,8 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
-import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
-import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.skuDetails
@@ -92,7 +92,7 @@ class PurchasesTest {
     private val mockBillingAbstract: BillingAbstract = mockk()
     private val mockBackend: Backend = mockk()
     private val mockCache: DeviceCache = mockk()
-    private val updatedPurchaserInfoListener: UpdatedPurchaserInfoListener = mockk()
+    private val updatedCustomerInfoListener: UpdatedCustomerInfoListener = mockk()
     private val mockApplication = mockk<Application>(relaxed = true)
     private val mockContext = mockk<Context>(relaxed = true).apply {
         every {
@@ -114,7 +114,7 @@ class PurchasesTest {
     private lateinit var purchases: Purchases
     private var receivedSkus: List<SkuDetails>? = null
     private var receivedOfferings: Offerings? = null
-    private val mockInfo = mockk<PurchaserInfo>()
+    private val mockInfo = mockk<CustomerInfo>()
 
     private val stubOfferingIdentifier = "offering_a"
     private val stubProductIdentifier = "monthly_freetrial"
@@ -137,7 +137,7 @@ class PurchasesTest {
 
     @Before
     fun setup() {
-        mockkStatic("com.revenuecat.purchases.common.PurchaserInfoFactoriesKt")
+        mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
         mockkStatic(ProcessLifecycleOwner::class)
 
         val skus = listOf(stubProductIdentifier)
@@ -147,7 +147,7 @@ class PurchasesTest {
         mockStoreProduct(skus, skus, ProductType.SUBS)
 
         every {
-            updatedPurchaserInfoListener.onReceived(any())
+            updatedCustomerInfoListener.onReceived(any())
         } just Runs
         every {
             mockIdentityManager.configure(any())
@@ -466,13 +466,13 @@ class PurchasesTest {
     @Test
     fun doesNotGetSubscriberInfoOnCreated() {
         verify(exactly = 0) {
-            mockBackend.getPurchaserInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
+            mockBackend.getCustomerInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
     }
 
     @Test
     fun `fetch purchaser info on foregrounded if it's stale`() {
-        mockCacheStale(purchaserInfoStale = true)
+        mockCacheStale(customerInfoStale = true)
         mockSuccessfulQueryPurchases(
             queriedSUBS = emptyMap(),
             queriedINAPP = emptyMap(),
@@ -481,7 +481,7 @@ class PurchasesTest {
         mockSynchronizeSubscriberAttributesForAllUsers()
         Purchases.sharedInstance.onAppForegrounded()
         verify(exactly = 1) {
-            mockBackend.getPurchaserInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
+            mockBackend.getCustomerInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
     }
 
@@ -521,10 +521,10 @@ class PurchasesTest {
         purchases.state = purchases.state.copy(firstTimeInForeground = false)
         Purchases.sharedInstance.onAppForegrounded()
         verify(exactly = 0) {
-            mockBackend.getPurchaserInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
+            mockBackend.getCustomerInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            mockCache.isPurchaserInfoCacheStale(appInBackground = false, appUserID = appUserId)
+            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         }
     }
 
@@ -767,7 +767,7 @@ class PurchasesTest {
             }
         }
 
-        val mockInfo = JSONObject(Responses.validFullPurchaserResponse).buildPurchaserInfo()
+        val mockInfo = JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo()
         every {
             mockBackend.postReceiptData(
                 purchaseToken = any(),
@@ -801,7 +801,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun receivedPurchaserInfoShouldBeCached() {
+    fun receivedCustomerInfoShouldBeCached() {
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
@@ -825,7 +825,7 @@ class PurchasesTest {
             )
         }
         verify(exactly = 1) {
-            mockCache.cachePurchaserInfo(
+            mockCache.cacheCustomerInfo(
                 any(),
                 any()
             )
@@ -1392,7 +1392,7 @@ class PurchasesTest {
             lambda<(List<Purchase>) -> Unit>().captured.invoke(emptyList())
         }
 
-        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
         purchases.restorePurchases(mockCompletion)
 
         verify {
@@ -1412,15 +1412,15 @@ class PurchasesTest {
             lambda<() -> Unit>().captured.invoke()
         }
         every {
-            mockBackend.getPurchaserInfo(any(), any(), captureLambda(), any())
+            mockBackend.getCustomerInfo(any(), any(), captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
         }
         every {
-            mockCache.setPurchaserInfoCacheTimestampToNow("new_id")
+            mockCache.setCustomerInfoCacheTimestampToNow("new_id")
         } just Runs
 
-        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
         purchases.createAlias(
             "new_id",
             mockCompletion
@@ -1443,13 +1443,13 @@ class PurchasesTest {
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(purchasesError)
         }
-        val mockReceivePurchaserInfoListener = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        val mockReceiveCustomerInfoListener = mockk<ReceiveCustomerInfoListener>(relaxed = true)
         purchases.createAlias(
             "new_id",
-            mockReceivePurchaserInfoListener
+            mockReceiveCustomerInfoListener
         )
         verify {
-            mockReceivePurchaserInfoListener.onError(eq(purchasesError))
+            mockReceiveCustomerInfoListener.onError(eq(purchasesError))
         }
     }
 
@@ -1465,29 +1465,29 @@ class PurchasesTest {
             lambda<() -> Unit>().captured.invoke()
         }
         every {
-            mockBackend.getPurchaserInfo(any(), any(), captureLambda(), any())
+            mockBackend.getCustomerInfo(any(), any(), captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
         }
 
         every {
-            mockCache.setPurchaserInfoCacheTimestampToNow("new_id")
+            mockCache.setCustomerInfoCacheTimestampToNow("new_id")
         } just Runs
 
-        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
         purchases.createAlias(
             "new_id",
             mockCompletion
         )
 
         verify(exactly = 1) {
-            mockCache.setPurchaserInfoCacheTimestampToNow("new_id")
+            mockCache.setCustomerInfoCacheTimestampToNow("new_id")
         }
         verify(exactly = 1) {
             mockCache.setOfferingsCacheTimestampToNow()
         }
         verify(exactly = 1) {
-            mockBackend.getPurchaserInfo("new_id", false, any(), any())
+            mockBackend.getCustomerInfo("new_id", false, any(), any())
         }
         verify(exactly = 1) {
             mockBackend.getOfferings("new_id", false, any(), any())
@@ -1502,7 +1502,7 @@ class PurchasesTest {
             lambda<() -> Unit>().captured.invoke()
         }
         every {
-            mockCache.setPurchaserInfoCacheTimestampToNow("new_id")
+            mockCache.setCustomerInfoCacheTimestampToNow("new_id")
         } just Runs
         purchases.identify("new_id")
 
@@ -1510,13 +1510,13 @@ class PurchasesTest {
             mockIdentityManager.identify("new_id", any(), any())
         }
         verify(exactly = 1) {
-            mockCache.setPurchaserInfoCacheTimestampToNow("new_id")
+            mockCache.setCustomerInfoCacheTimestampToNow("new_id")
         }
         verify(exactly = 1) {
             mockCache.setOfferingsCacheTimestampToNow()
         }
         verify(exactly = 1) {
-            mockBackend.getPurchaserInfo("new_id", any(), any(), any())
+            mockBackend.getCustomerInfo("new_id", any(), any(), any())
         }
         verify(exactly = 1) {
             mockBackend.getOfferings("new_id", any(), any(), any())
@@ -1548,13 +1548,13 @@ class PurchasesTest {
         purchases.reset()
 
         verify(exactly = 1) {
-            mockCache.setPurchaserInfoCacheTimestampToNow("fakeUserID")
+            mockCache.setCustomerInfoCacheTimestampToNow("fakeUserID")
         }
         verify(exactly = 1) {
             mockCache.setOfferingsCacheTimestampToNow()
         }
         verify(exactly = 1) {
-            mockBackend.getPurchaserInfo("fakeUserID", any(), any(), any())
+            mockBackend.getCustomerInfo("fakeUserID", any(), any(), any())
         }
         verify(exactly = 1) {
             mockBackend.getOfferings("fakeUserID", any(), any(), any())
@@ -1589,10 +1589,10 @@ class PurchasesTest {
 
     @Test
     fun `when setting listener, caches are retrieved`() {
-        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
+        purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         verify {
-            updatedPurchaserInfoListener.onReceived(any())
+            updatedCustomerInfoListener.onReceived(any())
         }
     }
 
@@ -1605,26 +1605,26 @@ class PurchasesTest {
 
     @Test
     fun `when setting listener, listener is called`() {
-        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
+        purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         verify(exactly = 1) {
-            updatedPurchaserInfoListener.onReceived(any())
+            updatedCustomerInfoListener.onReceived(any())
         }
     }
 
     @Test
     fun `when setting listener for anonymous user, listener is called`() {
         anonymousSetup(true)
-        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
+        purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         verify(exactly = 1) {
-            updatedPurchaserInfoListener.onReceived(any())
+            updatedCustomerInfoListener.onReceived(any())
         }
     }
 
     @Test
     fun `given a random purchase update, listener is called if purchaser info has changed`() {
-        val info = mockk<PurchaserInfo>()
+        val info = mockk<CustomerInfo>()
 
         every {
             mockBackend.postReceiptData(
@@ -1644,7 +1644,7 @@ class PurchasesTest {
                 JSONObject(Responses.validFullPurchaserResponse)
             )
         }
-        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
+        purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
         mockQueryingSkuDetails(sku, ProductType.SUBS, null)
@@ -1653,13 +1653,13 @@ class PurchasesTest {
         )
 
         verify(exactly = 2) {
-            updatedPurchaserInfoListener.onReceived(any())
+            updatedCustomerInfoListener.onReceived(any())
         }
     }
 
     @Test
     fun `given a random purchase update, listener is not called if purchaser info has not changed`() {
-        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
+        purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
         mockQueryingSkuDetails(sku, ProductType.SUBS, null)
@@ -1668,13 +1668,13 @@ class PurchasesTest {
         )
 
         verify(exactly = 1) {
-            updatedPurchaserInfoListener.onReceived(any())
+            updatedCustomerInfoListener.onReceived(any())
         }
     }
 
     @Test
     fun `when making another purchase for a product for a pending product, error is issued`() {
-        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
+        purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         val skuDetails = mockk<StoreProduct>().also {
             every { it.sku } returns "sku"
@@ -1754,13 +1754,13 @@ class PurchasesTest {
     @Test
     fun `sends cached purchaser info to getter`() {
         every {
-            mockBackend.getPurchaserInfo(any(), any(), captureLambda(), any())
+            mockBackend.getCustomerInfo(any(), any(), captureLambda(), any())
         } answers {
             // Timeout
         }
 
-        var receivedInfo: PurchaserInfo? = null
-        purchases.getPurchaserInfoWith(onSuccess = {
+        var receivedInfo: CustomerInfo? = null
+        purchases.getCustomerInfoWith(onSuccess = {
             receivedInfo = it
         }, onError = {
             fail("supposed to be successful")
@@ -1772,23 +1772,23 @@ class PurchasesTest {
     @Test
     fun `given no cached purchaser info, backend is called again`() {
         every {
-            mockCache.getCachedPurchaserInfo(any())
+            mockCache.getCachedCustomerInfo(any())
         } returns null
         every {
-            mockBackend.getPurchaserInfo(any(), any(), captureLambda(), any())
+            mockBackend.getCustomerInfo(any(), any(), captureLambda(), any())
         } answers {
             // Timeout
         }
 
-        var receivedInfo: PurchaserInfo? = null
-        purchases.getPurchaserInfoWith(onSuccess = {
+        var receivedInfo: CustomerInfo? = null
+        purchases.getCustomerInfoWith(onSuccess = {
             receivedInfo = it
         }, onError = {
             fail("supposed to be successful")
         })
 
         assertThat(receivedInfo).isEqualTo(null)
-        verify(exactly = 1) { mockBackend.getPurchaserInfo(any(), any(), any(), any()) }
+        verify(exactly = 1) { mockBackend.getCustomerInfo(any(), any(), any(), any()) }
     }
 
     @Test
@@ -1807,13 +1807,13 @@ class PurchasesTest {
 
     @Test
     fun `don't identify if the new app user id is the same`() {
-        var receivedInfo: PurchaserInfo? = null
+        var receivedInfo: CustomerInfo? = null
         purchases.identifyWith(appUserId) {
             receivedInfo = it
         }
 
         verify(exactly = 1) {
-            mockCache.getCachedPurchaserInfo(appUserId)
+            mockCache.getCachedCustomerInfo(appUserId)
         }
         assertThat(receivedInfo).isEqualTo(mockInfo)
     }
@@ -1843,10 +1843,10 @@ class PurchasesTest {
     }
 
     @Test
-    fun `login with the same appUserID as the current, fetches purchaserInfo and calls onSuccess if successful`() {
+    fun `login with the same appUserID as the current, fetches customerInfo and calls onSuccess if successful`() {
         val appUserID = "myUser"
-        every { mockCache.isPurchaserInfoCacheStale(appUserID, any()) } returns true
-        every { mockCache.setPurchaserInfoCacheTimestampToNow(appUserID) } just Runs
+        every { mockCache.isCustomerInfoCacheStale(appUserID, any()) } returns true
+        every { mockCache.setCustomerInfoCacheTimestampToNow(appUserID) } just Runs
         every { mockIdentityManager.currentAppUserID } returns appUserID
 
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
@@ -1855,15 +1855,15 @@ class PurchasesTest {
 
         verify(exactly = 1) {
             mockCompletion.onReceived(any(), any())
-            mockBackend.getPurchaserInfo(appUserID, any(), any(), any())
+            mockBackend.getCustomerInfo(appUserID, any(), any(), any())
         }
     }
 
     @Test
     fun `login with the same appUserID as the current, calls onSuccess with created false if successful`() {
         val appUserID = "myUser"
-        every { mockCache.isPurchaserInfoCacheStale(appUserID, any()) } returns true
-        every { mockCache.setPurchaserInfoCacheTimestampToNow(appUserID) } just Runs
+        every { mockCache.isCustomerInfoCacheStale(appUserID, any()) } returns true
+        every { mockCache.setCustomerInfoCacheTimestampToNow(appUserID) } just Runs
         every { mockIdentityManager.currentAppUserID } returns appUserID
 
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
@@ -1876,16 +1876,16 @@ class PurchasesTest {
     }
 
     @Test
-    fun `login with the same appUserID as the current, fetches purchaserInfo and calls onError if failed`() {
+    fun `login with the same appUserID as the current, fetches customerInfo and calls onError if failed`() {
         val appUserID = "myUser"
-        every { mockCache.getCachedPurchaserInfo(appUserID) } returns null
-        every { mockCache.isPurchaserInfoCacheStale(appUserID, any()) } returns true
-        every { mockCache.setPurchaserInfoCacheTimestampToNow(appUserID) } just Runs
-        every { mockCache.clearPurchaserInfoCacheTimestamp(appUserID) } just Runs
+        every { mockCache.getCachedCustomerInfo(appUserID) } returns null
+        every { mockCache.isCustomerInfoCacheStale(appUserID, any()) } returns true
+        every { mockCache.setCustomerInfoCacheTimestampToNow(appUserID) } just Runs
+        every { mockCache.clearCustomerInfoCacheTimestamp(appUserID) } just Runs
         every { mockIdentityManager.currentAppUserID } returns appUserID
 
         val purchasesError = PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
-        mockBackend(errorGettingPurchaserInfo = purchasesError)
+        mockBackend(errorGettingCustomerInfo = purchasesError)
 
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
 
@@ -1903,7 +1903,7 @@ class PurchasesTest {
         every {
             mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
 
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
@@ -1943,7 +1943,7 @@ class PurchasesTest {
         every {
             mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
 
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
@@ -1956,8 +1956,8 @@ class PurchasesTest {
     }
 
     @Test
-    fun `login successful with new appUserID calls delegate if purchaserInfo changed`() {
-        purchases.updatedPurchaserInfoListener = updatedPurchaserInfoListener
+    fun `login successful with new appUserID calls delegate if customerInfo changed`() {
+        purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         val mockCreated = Random.nextBoolean()
         every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
@@ -1965,7 +1965,7 @@ class PurchasesTest {
         every {
             mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
 
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
@@ -1973,7 +1973,7 @@ class PurchasesTest {
         purchases.logIn(newAppUserID, mockCompletion)
 
         verify(exactly = 1) {
-            updatedPurchaserInfoListener.onReceived(mockInfo)
+            updatedCustomerInfoListener.onReceived(mockInfo)
         }
     }
 
@@ -1985,7 +1985,7 @@ class PurchasesTest {
         every {
             mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
 
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
@@ -2006,17 +2006,17 @@ class PurchasesTest {
         every {
             mockIdentityManager.logOut()
         } returns null
-        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
         purchases.logOut(mockCompletion)
 
         verify(exactly = 1) {
-            mockCache.setPurchaserInfoCacheTimestampToNow(appUserID)
+            mockCache.setCustomerInfoCacheTimestampToNow(appUserID)
         }
         verify(exactly = 1) {
             mockCache.setOfferingsCacheTimestampToNow()
         }
         verify(exactly = 1) {
-            mockBackend.getPurchaserInfo(appUserID, any(), any(), any())
+            mockBackend.getCustomerInfo(appUserID, any(), any(), any())
         }
         verify(exactly = 1) {
             mockBackend.getOfferings(appUserID, any(), any(), any())
@@ -2044,7 +2044,7 @@ class PurchasesTest {
             mockCache.clearLatestAttributionData(appUserId)
         } just Runs
         val mockError = mockk<PurchasesError>(relaxed = true)
-        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
         every {
             mockIdentityManager.logOut()
         } returns mockError
@@ -2056,18 +2056,18 @@ class PurchasesTest {
     }
 
     @Test
-    fun `logOut calls completion with new purchaserInfo when successful`() {
+    fun `logOut calls completion with new customerInfo when successful`() {
         every {
             mockCache.clearLatestAttributionData(appUserId)
         } just Runs
 
         every {
-            mockBackend.getPurchaserInfo(any(), any(), onSuccess = captureLambda(), any())
+            mockBackend.getCustomerInfo(any(), any(), onSuccess = captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
         }
 
-        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
         every {
             mockIdentityManager.logOut()
         } returns null
@@ -2081,22 +2081,22 @@ class PurchasesTest {
     @Test
     fun `logOut clears backend caches when successful`() {
         setup()
-        val mockInfo = mockk<PurchaserInfo>()
+        val mockInfo = mockk<CustomerInfo>()
 
         every {
             mockCache.clearLatestAttributionData(appUserId)
         } just Runs
 
         every {
-            mockBackend.getPurchaserInfo(any(), any(), onSuccess = captureLambda(), any())
+            mockBackend.getCustomerInfo(any(), any(), onSuccess = captureLambda(), any())
         } answers {
-            lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
         }
         every {
             mockBackend.clearCaches()
         } just Runs
 
-        val mockCompletion = mockk<ReceivePurchaserInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
         every {
             mockIdentityManager.logOut()
         } returns null
@@ -2998,7 +2998,7 @@ class PurchasesTest {
         mockBackend(PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"))
 
         val lock = CountDownLatch(1)
-        purchases.getPurchaserInfoWith(onSuccess = {
+        purchases.getCustomerInfoWith(onSuccess = {
             lock.countDown()
         }, onError = {
             fail("supposed to be successful")
@@ -3323,9 +3323,9 @@ class PurchasesTest {
 
     @Test
     fun `invalidate purchaser info caches`() {
-        Purchases.sharedInstance.invalidatePurchaserInfoCache()
+        Purchases.sharedInstance.invalidateCustomerInfoCache()
         verify(exactly = 1) {
-            mockCache.clearPurchaserInfoCache(appUserId)
+            mockCache.clearCustomerInfoCache(appUserId)
         }
     }
 
@@ -3333,17 +3333,17 @@ class PurchasesTest {
     fun `error when fetching purchaser info`() {
         mockBackend(PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"))
         every {
-            mockCache.getCachedPurchaserInfo(any())
+            mockCache.getCachedCustomerInfo(any())
         } returns null
         val lock = CountDownLatch(1)
-        purchases.getPurchaserInfoWith(onSuccess = {
+        purchases.getCustomerInfoWith(onSuccess = {
             fail("supposed to be error")
         }, onError = {
             lock.countDown()
         })
         lock.await(200, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isZero()
-        verify(exactly = 1) { mockCache.clearPurchaserInfoCacheTimestamp(appUserId) }
+        verify(exactly = 1) { mockCache.clearCustomerInfoCacheTimestamp(appUserId) }
     }
 
     @Test
@@ -3585,10 +3585,10 @@ class PurchasesTest {
         Purchases.sharedInstance.onAppForegrounded()
         assertThat(purchases.state.firstTimeInForeground).isFalse()
         verify(exactly = 1) {
-            mockBackend.getPurchaserInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
+            mockBackend.getCustomerInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 0) {
-            mockCache.isPurchaserInfoCacheStale(appInBackground = false, appUserID = appUserId)
+            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         }
     }
 
@@ -3600,16 +3600,16 @@ class PurchasesTest {
             notInCache = emptyList()
         )
         every {
-            mockCache.isPurchaserInfoCacheStale(appInBackground = false, appUserID = appUserId)
+            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         } returns false
         purchases.state = purchases.state.copy(appInBackground = false, firstTimeInForeground = false)
         Purchases.sharedInstance.onAppForegrounded()
         assertThat(purchases.state.firstTimeInForeground).isFalse()
         verify(exactly = 0) {
-            mockBackend.getPurchaserInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
+            mockBackend.getCustomerInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            mockCache.isPurchaserInfoCacheStale(appInBackground = false, appUserID = appUserId)
+            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         }
     }
 
@@ -3621,16 +3621,16 @@ class PurchasesTest {
             notInCache = emptyList()
         )
         every {
-            mockCache.isPurchaserInfoCacheStale(appInBackground = false, appUserID = appUserId)
+            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         } returns true
         purchases.state = purchases.state.copy(appInBackground = false, firstTimeInForeground = false)
         Purchases.sharedInstance.onAppForegrounded()
         assertThat(purchases.state.firstTimeInForeground).isFalse()
         verify(exactly = 1) {
-            mockBackend.getPurchaserInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
+            mockBackend.getCustomerInfo(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            mockCache.isPurchaserInfoCacheStale(appInBackground = false, appUserID = appUserId)
+            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         }
     }
 
@@ -3887,19 +3887,19 @@ class PurchasesTest {
         assertThat(Purchases.isConfigured).isFalse()
     }
 
-    private fun mockBackend(errorGettingPurchaserInfo: PurchasesError? = null) {
+    private fun mockBackend(errorGettingCustomerInfo: PurchasesError? = null) {
         with(mockBackend) {
-            if (errorGettingPurchaserInfo != null) {
+            if (errorGettingCustomerInfo != null) {
                 every {
-                    getPurchaserInfo(any(), any(), any(), captureLambda())
+                    getCustomerInfo(any(), any(), any(), captureLambda())
                 } answers {
-                    lambda<(PurchasesError) -> Unit>().captured.invoke(errorGettingPurchaserInfo)
+                    lambda<(PurchasesError) -> Unit>().captured.invoke(errorGettingCustomerInfo)
                 }
             } else {
                 every {
-                    getPurchaserInfo(any(), any(), captureLambda(), any())
+                    getCustomerInfo(any(), any(), captureLambda(), any())
                 } answers {
-                    lambda<(PurchaserInfo) -> Unit>().captured.invoke(mockInfo)
+                    lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
                 }
             }
             mockProducts()
@@ -3936,10 +3936,10 @@ class PurchasesTest {
                 getCachedAppUserID()
             } returns null
             every {
-                getCachedPurchaserInfo(any())
+                getCachedCustomerInfo(any())
             } returns mockInfo
             every {
-                cachePurchaserInfo(any(), any())
+                cacheCustomerInfo(any(), any())
             } just Runs
             every {
                 cacheAppUserID(any())
@@ -3948,22 +3948,22 @@ class PurchasesTest {
                 getCachedAttributionData(CommonAttributionNetwork.APPSFLYER, appUserId)
             } returns null
             every {
-                setPurchaserInfoCacheTimestampToNow(appUserId)
+                setCustomerInfoCacheTimestampToNow(appUserId)
             } just Runs
             every {
                 setOfferingsCacheTimestampToNow()
             } just Runs
             every {
-                clearPurchaserInfoCacheTimestamp(appUserId)
+                clearCustomerInfoCacheTimestamp(appUserId)
             } just Runs
             every {
-                clearPurchaserInfoCache(appUserId)
+                clearCustomerInfoCache(appUserId)
             } just Runs
             every {
                 clearOfferingsCacheTimestamp()
             } just Runs
             every {
-                isPurchaserInfoCacheStale(appUserId, any())
+                isCustomerInfoCacheStale(appUserId, any())
             } returns false
             every {
                 isOfferingsCacheStale(any())
@@ -4052,7 +4052,7 @@ class PurchasesTest {
         verify {
             mockBackend.close()
         }
-        assertThat(purchases.updatedPurchaserInfoListener).isNull()
+        assertThat(purchases.updatedCustomerInfoListener).isNull()
         verify(exactly = 1) {
             mockLifecycle.removeObserver(any())
         }
@@ -4179,7 +4179,7 @@ class PurchasesTest {
         sku: String,
         purchaseToken: String,
         observerMode: Boolean,
-        mockInfo: PurchaserInfo,
+        mockInfo: CustomerInfo,
         offeringIdentifier: String?,
         type: ProductType,
         restore: Boolean = false
@@ -4242,13 +4242,13 @@ class PurchasesTest {
     }
 
     private fun mockCacheStale(
-        purchaserInfoStale: Boolean = false,
+        customerInfoStale: Boolean = false,
         offeringsStale: Boolean = false,
         appInBackground: Boolean = false
     ) {
         every {
-            mockCache.isPurchaserInfoCacheStale(appUserId, appInBackground)
-        } returns purchaserInfoStale
+            mockCache.isCustomerInfoCacheStale(appUserId, appInBackground)
+        } returns customerInfoStale
         every {
             mockCache.isOfferingsCacheStale(appInBackground)
         } returns offeringsStale

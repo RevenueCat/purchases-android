@@ -33,7 +33,7 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class PurchaserInfo constructor(
+data class CustomerInfo constructor(
     val entitlements: EntitlementInfos,
     @Deprecated(
         "Use nonSubscriptionTransactions instead",
@@ -144,7 +144,7 @@ data class PurchaserInfo constructor(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as PurchaserInfo
+        other as CustomerInfo
 
         if (nonSubscriptionTransactions != other.nonSubscriptionTransactions) return false
         if (allExpirationDatesByProduct != other.allExpirationDatesByProduct) return false
@@ -161,7 +161,7 @@ data class PurchaserInfo constructor(
      * @hide
      */
     override fun toString() =
-        "<PurchaserInfo\n " +
+        "<CustomerInfo\n " +
                 "latestExpirationDate: $latestExpirationDate\n" +
                 "activeSubscriptions:  ${activeSubscriptions.map {
                     it to mapOf("expiresDate" to getExpirationDateForSku(it))
