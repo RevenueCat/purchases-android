@@ -17,7 +17,7 @@ import com.revenuecat.purchases.CustomerInfo;
  * {@link com.revenuecat.purchases.models.PaymentTransaction} instead of a {@link Purchase}.</p>
  * <p>You can use `MakePurchaseListener.toPurchaseCallback()` in Kotlin for an easy migration.</p>
  */
-@Deprecated()
+@Deprecated
 public interface MakePurchaseListener extends PurchaseErrorListener {
     /**
      * Will be called after the purchase has completed
