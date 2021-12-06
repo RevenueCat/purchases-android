@@ -1703,7 +1703,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param listener A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    @JvmName("-deprecated_getPurchaserInfo-ReceiveCustomerInfoListener")
+    @JvmName("-deprecated_getPurchaserInfo_ReceiveCustomerInfoListener")
     @Deprecated(
         "Function has been renamed to getCustomerInfo and listener has been replaced" +
             " with ReceiveCustomerInfoListener",
@@ -1715,6 +1715,27 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun getPurchaserInfo(
         @Suppress("UnusedPrivateMember")
         listener: ReceiveCustomerInfoListener
+    ) {
+        // no-op
+    }
+
+    /**
+     * Get latest available purchaser info.
+     * @param listener A listener called when purchaser info is available and not stale.
+     * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
+     */
+    @JvmName("-deprecated_getCustomerInfo_ReceivePurchaserInfoListener")
+    @Deprecated(
+        "Function has been renamed to getCustomerInfo and listener has been replaced" +
+            " with ReceiveCustomerInfoListener",
+        level = DeprecationLevel.ERROR,
+        replaceWith = ReplaceWith(
+            expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
+        )
+    )
+    fun getCustomerInfo(
+        @Suppress("UnusedPrivateMember")
+        listener: ReceivePurchaserInfoListener
     ) {
         // no-op
     }
