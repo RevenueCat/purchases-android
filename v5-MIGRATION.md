@@ -14,3 +14,4 @@
   You can use `GetSkusResponseListener.toGetStoreProductCallback()` in Kotlin for an easy migration.  
 - `getSubscriptionSkusWith` and `getNonSubscriptionSkusWith` now receive `storeProducts` instead of `skus`.
 - `purchaseProductWith` now accepts a `StoreProduct` instead of a`SkuDetails`
+- `PurchaserInfo` has been renamed to `CustomerInfo`
