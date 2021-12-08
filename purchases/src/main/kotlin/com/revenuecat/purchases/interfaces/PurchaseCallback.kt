@@ -15,6 +15,7 @@ interface PurchaseCallback : PurchaseErrorListener {
     fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo)
 }
 
+@Deprecated("Deprecated in favor of PurchaseCallback. This helper will be removed in a future release.")
 fun MakePurchaseListener.toPurchaseCallback(): PurchaseCallback {
     return object : PurchaseCallback {
         override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {

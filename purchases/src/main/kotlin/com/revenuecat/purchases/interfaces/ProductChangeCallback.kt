@@ -24,6 +24,7 @@ interface ProductChangeCallback : PurchaseErrorListener {
     fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo)
 }
 
+@Deprecated("Deprecated in favor of ProductChangeCallback. This helper will be removed in a future release.")
 fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallback {
     return object : ProductChangeCallback {
         override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {

@@ -20,6 +20,7 @@ interface GetStoreProductCallback {
     fun onError(error: PurchasesError)
 }
 
+@Deprecated("Deprecated in favor of GetStoreProductCallback. This helper will be removed in a future release.")
 fun GetSkusResponseListener.toGetStoreProductCallback(): GetStoreProductCallback {
     return object : GetStoreProductCallback {
         override fun onReceived(storeProducts: List<StoreProduct>) {
