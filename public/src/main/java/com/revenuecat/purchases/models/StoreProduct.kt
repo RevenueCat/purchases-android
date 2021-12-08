@@ -54,7 +54,7 @@ data class StoreProduct(
      * Returns the original price in micro-units, where 1,000,000 micro-units equal one unit
      * of the currency.
      *
-     * Note: returned only for Google products. Not available for Amazon.
+     * Note: returned only for Google products. Always 0 for Amazon subscriptions.
      */
     val originalPriceAmountMicros: Long,
 
@@ -98,7 +98,7 @@ data class StoreProduct(
      * Introductory price in micro-units. The currency is the same as price_currency_code.
      *
      * Note: Returns 0 if the product is not Google a subscription or doesn't
-     * have an introductory period. 0 for Amazon subscriptions.
+     * have an introductory period. Always 0 for Amazon subscriptions.
      */
     val introductoryPriceAmountMicros: Long,
 
@@ -115,7 +115,7 @@ data class StoreProduct(
      * introductory price, such as 3.
      *
      * Note: Returns 0 if the SKU is not a Google subscription or doesn't
-     * have an introductory period. 0 for Amazon subscriptions.
+     * have an introductory period. Always 0 for Amazon subscriptions.
      */
     val introductoryPriceCycles: Int,
 

@@ -16,7 +16,7 @@ data class PaymentTransaction(
     /**
      * Unique Google order identifier for the purchased transaction.
      *
-     * Only available for non-restored Google purchases. Not available for Amazon.
+     * Only available for non-restored Google purchases. Always null for Amazon.
      */
     val orderId: String?,
 
@@ -54,7 +54,7 @@ data class PaymentTransaction(
 
     /**
      * String containing the signature of the Google purchase data that was signed with the private key of
-     * the developer. Not available for Amazon.
+     * the developer. Always null for Amazon.
      */
     val signature: String?,
 
@@ -64,7 +64,7 @@ data class PaymentTransaction(
     val originalJson: JSONObject,
 
     /**
-     * Offering that was presented when making the purchase. Not available for restored purchases.
+     * Offering that was presented when making the purchase. Always null for restored purchases.
      */
     val presentedOfferingIdentifier: String?,
 
