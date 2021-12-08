@@ -7,6 +7,7 @@ package com.revenuecat.purchases.interfaces
 
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.google.originalGooglePurchase
@@ -54,7 +55,7 @@ fun MakePurchaseListener.toProductChangeCallback(): ProductChangeCallback {
                     ), false
                 )
             } else {
-                this@toProductChangeCallback.onCompleted(purchase, customerInfo)
+                this@toProductChangeCallback.onCompleted(purchase, PurchaserInfo(customerInfo))
             }
         }
 
