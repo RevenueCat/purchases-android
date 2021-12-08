@@ -5,11 +5,9 @@
 
 package com.revenuecat.purchases.interfaces
 
-import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.google.originalGooglePurchase
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -30,10 +28,10 @@ fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallback {
     return object : ProductChangeCallback {
         override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
             if (storeTransaction == null) {
-                this@toProductChangeCallback.onCompleted(null, customerInfo)
+                this@toProductChangeCallback.onCompleted(null, PurchaserInfo(customerInfo))
             } else {
                 storeTransaction.originalGooglePurchase?.let {
-                    this@toProductChangeCallback.onCompleted(it, customerInfo)
+                    this@toProductChangeCallback.onCompleted(it, PurchaserInfo(customerInfo))
                 } ?: throw IllegalArgumentException("Couldn't find original Google purchase")
             }
         }
@@ -42,25 +40,4 @@ fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallback {
             this@toProductChangeCallback.onError(error, userCancelled)
         }
     }
-}
-
-fun MakePurchaseListener.toProductChangeCallback(): ProductChangeCallback {
-    return object : ProductChangeListener {
-        override fun onCompleted(purchase: Purchase?, customerInfo: CustomerInfo) {
-            if (purchase == null) {
-                this@toProductChangeCallback.onError(
-                    PurchasesError(
-                        PurchasesErrorCode.PaymentPendingError,
-                        "The product change has been deferred."
-                    ), false
-                )
-            } else {
-                this@toProductChangeCallback.onCompleted(purchase, PurchaserInfo(customerInfo))
-            }
-        }
-
-        override fun onError(error: PurchasesError, userCancelled: Boolean) {
-            this@toProductChangeCallback.onError(error, userCancelled)
-        }
-    }.toProductChangeCallback()
 }

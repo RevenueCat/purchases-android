@@ -100,7 +100,7 @@ data class PurchaserInfo constructor(
         nonSubscriptionTransactionList.sortedBy { it.purchaseDate }
     }
 
-    constructor(customerInfo: CustomerInfo): this(
+    constructor(customerInfo: CustomerInfo) : this(
         customerInfo.entitlements,
         customerInfo.purchasedNonSubscriptionSkus,
         customerInfo.allExpirationDatesByProduct,

@@ -17,8 +17,8 @@ import com.revenuecat.purchases.models.StoreTransaction
 @Deprecated("Purchase replaced with StoreTransaction and PurchaserInfo with CustomerInfo")
 private typealias DeprecatedPurchaseCompletedFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
 private typealias PurchaseCompletedFunction = (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
-@Deprecated("Purchase replaced with StoreTransaction")
-private typealias DeprecatedProductChangeCompletedFunction = (purchase: Purchase?, customerInfo: CustomerInfo) -> Unit
+@Deprecated("Purchase replaced with StoreTransaction and PurchaserInfo with CustomerInfo")
+private typealias DeprecatedProductChangeCompletedFunction = (purchase: Purchase?, purchaserInfo: PurchaserInfo) -> Unit
 private typealias ProductChangeCompletedFunction = (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 private typealias ReceiveOfferingsSuccessFunction = (offerings: Offerings) -> Unit
 private typealias ReceiveCustomerInfoSuccessFunction = (customerInfo: CustomerInfo) -> Unit
@@ -61,8 +61,8 @@ internal fun deprecatedProductChangeCompletedListener(
     onSuccess: DeprecatedProductChangeCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : ProductChangeListener {
-    override fun onCompleted(purchase: Purchase?, customerInfo: CustomerInfo) {
-        onSuccess(purchase, customerInfo)
+    override fun onCompleted(purchase: Purchase?, purchaserInfo: PurchaserInfo) {
+        onSuccess(purchase, purchaserInfo)
     }
 
     override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -202,7 +202,8 @@ fun Purchases.purchaseProductWith(
  * @param [onError] Will be called after the purchase has completed with error
  */
 @Deprecated(
-    message = "SkuDetails parameter replaced with StoreProduct. The callback now returns a StoreProduct.",
+    message = "SkuDetails parameter replaced with StoreProduct. " +
+        "The callback now returns a StoreProduct and a CustomerInfo.",
     replaceWith = ReplaceWith(
         "purchaseProductWith(activity, storeProduct, onError, onSuccess)"
     )
