@@ -12,14 +12,14 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 
-@Deprecated("Purchase replaced with PaymentTransaction")
+@Deprecated("Purchase replaced with StoreTransaction")
 private typealias DeprecatedPurchaseCompletedFunction = (purchase: Purchase, customerInfo: CustomerInfo) -> Unit
-private typealias PurchaseCompletedFunction = (purchase: PaymentTransaction, customerInfo: CustomerInfo) -> Unit
-@Deprecated("Purchase replaced with PaymentTransaction")
+private typealias PurchaseCompletedFunction = (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
+@Deprecated("Purchase replaced with StoreTransaction")
 private typealias DeprecatedProductChangeCompletedFunction = (purchase: Purchase?, customerInfo: CustomerInfo) -> Unit
-private typealias ProductChangeCompletedFunction = (purchase: PaymentTransaction?, customerInfo: CustomerInfo) -> Unit
+private typealias ProductChangeCompletedFunction = (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 private typealias ReceiveOfferingsSuccessFunction = (offerings: Offerings) -> Unit
 private typealias ReceiveCustomerInfoSuccessFunction = (customerInfo: CustomerInfo) -> Unit
 private typealias ReceiveLogInSuccessFunction = (customerInfo: CustomerInfo, created: Boolean) -> Unit
@@ -29,7 +29,7 @@ private typealias PurchaseErrorFunction = (error: PurchasesError, userCancelled:
 internal val ON_ERROR_STUB: ErrorFunction = {}
 private val ON_PURCHASE_ERROR_STUB: PurchaseErrorFunction = { _, _ -> }
 
-@Deprecated("onCompleted Purchase changed with PaymentTransaction")
+@Deprecated("onCompleted Purchase changed with StoreTransaction")
 internal fun deprecatedPurchaseCompletedListener(
     onSuccess: DeprecatedPurchaseCompletedFunction,
     onError: PurchaseErrorFunction
@@ -47,7 +47,7 @@ internal fun purchaseCompletedCallback(
     onSuccess: PurchaseCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : PurchaseCallback {
-    override fun onCompleted(purchase: PaymentTransaction, customerInfo: CustomerInfo) {
+    override fun onCompleted(purchase: StoreTransaction, customerInfo: CustomerInfo) {
         onSuccess(purchase, customerInfo)
     }
 
@@ -56,7 +56,7 @@ internal fun purchaseCompletedCallback(
     }
 }
 
-@Deprecated("onCompleted Purchase changed with PaymentTransaction")
+@Deprecated("onCompleted Purchase changed with StoreTransaction")
 internal fun deprecatedProductChangeCompletedListener(
     onSuccess: DeprecatedProductChangeCompletedFunction,
     onError: PurchaseErrorFunction
@@ -74,7 +74,7 @@ internal fun productChangeCompletedListener(
     onSuccess: ProductChangeCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : ProductChangeCallback {
-    override fun onCompleted(purchase: PaymentTransaction?, customerInfo: CustomerInfo) {
+    override fun onCompleted(purchase: StoreTransaction?, customerInfo: CustomerInfo) {
         onSuccess(purchase, customerInfo)
     }
 

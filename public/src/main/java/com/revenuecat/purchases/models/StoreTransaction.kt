@@ -12,7 +12,7 @@ import org.json.JSONObject
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class PaymentTransaction(
+data class StoreTransaction(
     /**
      * Unique Google order identifier for the purchased transaction.
      *

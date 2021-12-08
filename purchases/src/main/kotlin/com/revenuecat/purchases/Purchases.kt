@@ -61,7 +61,7 @@ import com.revenuecat.purchases.interfaces.toGetStoreProductCallback
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -84,8 +84,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
-typealias SuccessfulPurchaseCallback = (PaymentTransaction, CustomerInfo) -> Unit
-typealias ErrorPurchaseCallback = (PaymentTransaction, PurchasesError) -> Unit
+typealias SuccessfulPurchaseCallback = (StoreTransaction, CustomerInfo) -> Unit
+typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -468,7 +468,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] The listener that will be called when the purchase of the new product completes.
      */
     @Deprecated(
-        message = "The listener has changed to receive a PaymentTransaction on the onCompleted",
+        message = "The listener has changed to receive a StoreTransaction on the onCompleted",
         replaceWith = ReplaceWith(
             expression = "Purchases.sharedInstance.purchasePackage(" +
                 "activity, packageToPurchase, upgradeInfo, ProductChangeCallback)"
@@ -510,7 +510,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        message = "The callback now returns a PaymentTransaction object",
+        message = "The callback now returns a StoreTransaction object",
         replaceWith =
             ReplaceWith("purchasePackage(activity, packageToPurchase, PurchaseCallback)")
     )
@@ -1203,7 +1203,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun postPurchases(
-        purchases: List<PaymentTransaction>,
+        purchases: List<StoreTransaction>,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
@@ -1249,7 +1249,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     @JvmSynthetic
     internal fun postToBackend(
-        purchase: PaymentTransaction,
+        purchase: StoreTransaction,
         storeProduct: StoreProduct?,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
@@ -1382,7 +1382,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getPurchasesUpdatedListener(): BillingAbstract.PurchasesUpdatedListener {
         return object : BillingAbstract.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<PaymentTransaction>) {
+            override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
                 val productChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
                 val productChangeListener: ProductChangeCallback?
@@ -1436,10 +1436,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
-        val onSuccess: SuccessfulPurchaseCallback = { paymentTransaction, info ->
-            getPurchaseCallback(paymentTransaction.skus[0])?.let { purchaseCallback ->
+        val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
+            getPurchaseCallback(storeTransaction.skus[0])?.let { purchaseCallback ->
                 dispatch {
-                    purchaseCallback.onCompleted(paymentTransaction, info)
+                    purchaseCallback.onCompleted(storeTransaction, info)
                 }
             }
         }
@@ -1453,10 +1453,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun getProductChangeCompletedCallbacks(
         productChangeListener: ProductChangeCallback?
     ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
-        val onSuccess: SuccessfulPurchaseCallback = { paymentTransaction, info ->
+        val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
             productChangeListener?.let { productChangeCallback ->
                 dispatch {
-                    productChangeCallback.onCompleted(paymentTransaction, info)
+                    productChangeCallback.onCompleted(storeTransaction, info)
                 }
             }
         }

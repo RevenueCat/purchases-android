@@ -10,7 +10,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.google.originalGooglePurchase
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 
 /**
  * Interface to be implemented when upgrading or downgrading a purchase.
@@ -18,20 +18,20 @@ import com.revenuecat.purchases.models.PaymentTransaction
 interface ProductChangeCallback : PurchaseErrorListener {
     /**
      * Will be called after the product change has been completed
-     * @param paymentTransaction PaymentTransaction object for the purchased product.
+     * @param storeTransaction StoreTransaction object for the purchased product.
      * Will be null if the change is deferred.
      * @param customerInfo Updated [CustomerInfo].
      */
-    fun onCompleted(paymentTransaction: PaymentTransaction?, customerInfo: CustomerInfo)
+    fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo)
 }
 
 fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallback {
     return object : ProductChangeCallback {
-        override fun onCompleted(paymentTransaction: PaymentTransaction?, customerInfo: CustomerInfo) {
-            if (paymentTransaction == null) {
+        override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
+            if (storeTransaction == null) {
                 this@toProductChangeCallback.onCompleted(null, customerInfo)
             } else {
-                paymentTransaction.originalGooglePurchase?.let {
+                storeTransaction.originalGooglePurchase?.let {
                     this@toProductChangeCallback.onCompleted(it, customerInfo)
                 } ?: throw IllegalArgumentException("Couldn't find original Google purchase")
             }

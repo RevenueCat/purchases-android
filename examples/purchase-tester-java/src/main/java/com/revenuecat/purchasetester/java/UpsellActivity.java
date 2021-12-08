@@ -19,7 +19,7 @@ import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
-import com.revenuecat.purchases.models.PaymentTransaction;
+import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.StoreProduct;
 
 import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
@@ -109,7 +109,7 @@ public class UpsellActivity extends AppCompatActivity {
         showLoading(button, true);
         Purchases.getSharedInstance().purchasePackage(this, packageToPurchase, new PurchaseCallback() {
             @Override
-            public void onCompleted(@NonNull PaymentTransaction purchase, @NonNull CustomerInfo customerInfo) {
+            public void onCompleted(@NonNull StoreTransaction purchase, @NonNull CustomerInfo customerInfo) {
                 showLoading(button, false);
                 checkForProEntitlement(customerInfo);
             }

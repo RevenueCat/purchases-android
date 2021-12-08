@@ -4,7 +4,7 @@
 - `createAlias` has been removed
 - `Package.product` has been changed from `SkuDetails` to `StoreProduct`. 
 - `configure` accepts a Builder now. Previous function deprecated. 
-- `purchasePackage` and `purchaseProduct` callbacks has been changed to return a `PaymentTransaction` instead of a `Purchase`. 
+- `purchasePackage` and `purchaseProduct` callbacks has been changed to return a `StoreTransaction` instead of a `Purchase`.
   This means that`MakePurchaseListener` deprecated in favor of `PurchaseCallback`. 
   You can use `MakePurchaseListener.toPurchaseCallback()` in Kotlin for an easy migration.
   For purchasing functions that accept an `UpgradeInfo`, `ProductChangeListener` has been deprecated in favor of `ProductChangeCallback`. 

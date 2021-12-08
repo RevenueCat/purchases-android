@@ -28,7 +28,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubSkuDetails
@@ -439,7 +439,7 @@ class BillingWrapperTest {
     @Test
     fun purchasesUpdatedCallsAreForwarded() {
         val purchases = listOf(stubGooglePurchase())
-        val slot = slot<List<PaymentTransaction>>()
+        val slot = slot<List<StoreTransaction>>()
         every {
             mockPurchasesListener.onPurchasesUpdated(capture(slot))
         } just Runs
@@ -455,7 +455,7 @@ class BillingWrapperTest {
 
     @Test
     fun `purchasesUpdatedCalls are forwarded with empty list if result is ok but with a null purchase`() {
-        val slot = slot<List<PaymentTransaction>>()
+        val slot = slot<List<StoreTransaction>>()
         every {
             mockPurchasesListener.onPurchasesUpdated(capture(slot))
         } just Runs
@@ -671,7 +671,7 @@ class BillingWrapperTest {
             )
         }
 
-        var receivedPurchases = listOf<PaymentTransaction>()
+        var receivedPurchases = listOf<StoreTransaction>()
         wrapper.queryAllPurchases("appUserID", {
             receivedPurchases = it
         }, { fail("Shouldn't be error") })
@@ -699,7 +699,7 @@ class BillingWrapperTest {
             mockClient.queryPurchases(any())
         } returns Purchase.PurchasesResult(billingClientOKResult, null)
 
-        var purchasesByHashedToken: Map<String, PaymentTransaction>? = null
+        var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
             onSuccess = {
@@ -735,7 +735,7 @@ class BillingWrapperTest {
             mockClient.queryPurchases(BillingClient.SkuType.SUBS)
         } returns Purchase.PurchasesResult(billingClientOKResult, emptyList())
 
-        var purchasesByHashedToken: Map<String, PaymentTransaction>? = null
+        var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
             onSuccess = {
@@ -779,7 +779,7 @@ class BillingWrapperTest {
             mockClient.queryPurchases(BillingClient.SkuType.INAPP)
         } returns Purchase.PurchasesResult(resultCode.buildResult(), emptyList())
 
-        var purchasesByHashedToken: Map<String, PaymentTransaction>? = null
+        var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
             onSuccess = {
@@ -822,7 +822,7 @@ class BillingWrapperTest {
 
         val purchases = listOf(stubGooglePurchase(productIds = listOf("product_a")))
 
-        val slot = slot<List<PaymentTransaction>>()
+        val slot = slot<List<StoreTransaction>>()
         every {
             mockPurchasesListener.onPurchasesUpdated(capture(slot))
         } just Runs
@@ -912,7 +912,7 @@ class BillingWrapperTest {
         val sku = "aPurchase"
         val purchaseHistoryRecord = stubPurchaseHistoryRecord(productIds = listOf(sku))
 
-        var recordFound: PaymentTransaction? = null
+        var recordFound: StoreTransaction? = null
         wrapper.findPurchaseInPurchaseHistory(
             appUserId,
             ProductType.SUBS,
@@ -1658,13 +1658,13 @@ class BillingWrapperTest {
         return BillingResult.newBuilder().setResponseCode(this).build()
     }
 
-    private fun mockPurchaseHistoryRecordWrapper(): PaymentTransaction {
+    private fun mockPurchaseHistoryRecordWrapper(): StoreTransaction {
         val oldPurchase = stubPurchaseHistoryRecord(
             productIds = listOf("product_b"),
             purchaseToken = "atoken"
         )
 
-        return oldPurchase.toRevenueCatPaymentTransaction(type = ProductType.SUBS)
+        return oldPurchase.toStoreTransaction(type = ProductType.SUBS)
     }
 
     private fun mockReplaceSkuInfo(): ReplaceSkuInfo {
@@ -1679,7 +1679,7 @@ class BillingWrapperTest {
         offeringIdentifier: String? = null,
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
         acknowledged: Boolean = false
-    ): PaymentTransaction {
+    ): StoreTransaction {
         val p = stubGooglePurchase(
             productIds = listOf(sku),
             purchaseToken = purchaseToken,
@@ -1687,20 +1687,20 @@ class BillingWrapperTest {
             acknowledged = acknowledged
         )
 
-        return p.toRevenueCatPaymentTransaction(productType, offeringIdentifier)
+        return p.toStoreTransaction(productType, offeringIdentifier)
     }
 
     private fun getMockedPurchaseHistoryRecordWrapper(
         sku: String,
         purchaseToken: String,
         productType: ProductType
-    ): PaymentTransaction {
+    ): StoreTransaction {
         val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
             productIds = listOf(sku),
             purchaseToken = purchaseToken
         )
 
-        return p.toRevenueCatPaymentTransaction(
+        return p.toStoreTransaction(
             type = productType
         )
     }
