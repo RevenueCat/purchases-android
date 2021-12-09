@@ -25,6 +25,7 @@ interface ReceiveCustomerInfoCallback {
     fun onError(error: PurchasesError)
 }
 
+@Deprecated("Deprecated in favor of ReceiveCustomerInfoCallback. This helper will be removed in a future release.")
 fun ReceivePurchaserInfoListener.toReceiveCustomerInfoCallback(): ReceiveCustomerInfoCallback {
     return object : ReceiveCustomerInfoCallback {
         override fun onReceived(customerInfo: CustomerInfo) {

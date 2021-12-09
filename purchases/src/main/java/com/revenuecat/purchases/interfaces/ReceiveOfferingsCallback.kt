@@ -26,6 +26,7 @@ interface ReceiveOfferingsCallback {
     fun onError(error: PurchasesError)
 }
 
+@Deprecated("Deprecated in favor of ReceiveOfferingsCallback. This helper will be removed in a future release.")
 fun ReceiveOfferingsListener.toReceiveOfferingsCallback(): ReceiveOfferingsCallback {
     return object : ReceiveOfferingsCallback {
         override fun onReceived(offerings: Offerings) {
