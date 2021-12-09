@@ -25,8 +25,8 @@ internal fun purchaseCompletedCallback(
     onSuccess: PurchaseCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : PurchaseCallback {
-    override fun onCompleted(purchase: StoreTransaction, customerInfo: CustomerInfo) {
-        onSuccess(purchase, customerInfo)
+    override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+        onSuccess(storeTransaction, customerInfo)
     }
 
     override fun onError(error: PurchasesError, userCancelled: Boolean) {
