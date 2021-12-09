@@ -6,7 +6,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
-import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -60,10 +60,10 @@ internal fun getStoreProductCallback(
     }
 }
 
-internal fun receiveOfferingsListener(
+internal fun receiveOfferingsCallback(
     onSuccess: ReceiveOfferingsSuccessFunction,
     onError: ErrorFunction
-) = object : ReceiveOfferingsListener {
+) = object : ReceiveOfferingsCallback {
     override fun onReceived(offerings: Offerings) {
         onSuccess(offerings)
     }
@@ -115,7 +115,7 @@ fun Purchases.getOfferingsWith(
     onError: ErrorFunction = ON_ERROR_STUB,
     onSuccess: ReceiveOfferingsSuccessFunction
 ) {
-    getOfferings(receiveOfferingsListener(onSuccess, onError))
+    getOfferings(receiveOfferingsCallback(onSuccess, onError))
 }
 
 /**

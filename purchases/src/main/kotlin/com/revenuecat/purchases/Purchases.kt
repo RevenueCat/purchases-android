@@ -54,6 +54,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
@@ -61,6 +62,7 @@ import com.revenuecat.purchases.interfaces.toGetStoreProductCallback
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.interfaces.toReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.toReceiveOfferingsCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseState
@@ -279,7 +281,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] Called when offerings are available. Called immediately if offerings are cached.
      */
     fun getOfferings(
-        listener: ReceiveOfferingsListener
+        listener: ReceiveOfferingsCallback
     ) {
         val (appUserID, cachedOfferings) = synchronized(this@Purchases) {
             identityManager.currentAppUserID to deviceCache.cachedOfferings
@@ -921,7 +923,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun fetchAndCacheOfferings(
         appUserID: String,
         appInBackground: Boolean,
-        completion: ReceiveOfferingsListener? = null
+        completion: ReceiveOfferingsCallback? = null
     ) {
         deviceCache.setOfferingsCacheTimestampToNow()
         backend.getOfferings(
@@ -971,7 +973,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun handleErrorFetchingOfferings(
         error: PurchasesError,
-        completion: ReceiveOfferingsListener?
+        completion: ReceiveOfferingsCallback?
     ) {
         log(LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error))
         deviceCache.clearOfferingsCacheTimestamp()
@@ -1796,6 +1798,24 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             packageToPurchase,
             listener.toPurchaseCallback()
         )
+    }
+
+    /**
+     * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
+     * products vis RevenueCat and greatly simplifies management. See
+     * [the guide](https://docs.revenuecat.com/offerings) for more info.
+     *
+     * Offerings will be fetched and cached on instantiation so that, by the time they are needed,
+     * your prices are loaded for your purchase flow. Time is money.
+     *
+     * @param [listener] Called when offerings are available. Called immediately if offerings are cached.
+     */
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("ReceiveOfferingsListener replaced with ReceiveOfferingsCallback")
+    fun getOfferings(
+        listener: ReceiveOfferingsListener
+    ) {
+        getOfferings(listener.toReceiveOfferingsCallback())
     }
 
     // endregion

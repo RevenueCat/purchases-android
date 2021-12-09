@@ -1,6 +1,6 @@
 //  Purchases
 //
-//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//  Copyright © 2021 RevenueCat, Inc. All rights reserved.
 //
 package com.revenuecat.purchases.interfaces
 
@@ -10,11 +10,7 @@ import com.revenuecat.purchases.PurchasesError
 /**
  * Interface to be implemented when making calls to fetch [Offering].
  */
-@Deprecated(
-    "Renamed to ReceiveOfferingsCallback",
-    ReplaceWith("ReceiveOfferingsCallback")
-)
-interface ReceiveOfferingsListener {
+interface ReceiveOfferingsCallback {
     /**
      * Will be called after a successful fetch of offerings.
      *
@@ -28,4 +24,16 @@ interface ReceiveOfferingsListener {
      * @param error A [PurchasesError] containing the reason for the failure when fetching offerings.
      */
     fun onError(error: PurchasesError)
+}
+
+fun ReceiveOfferingsListener.toReceiveOfferingsCallback(): ReceiveOfferingsCallback {
+    return object : ReceiveOfferingsCallback {
+        override fun onReceived(offerings: Offerings) {
+            this@toReceiveOfferingsCallback.onReceived(offerings)
+        }
+
+        override fun onError(error: PurchasesError) {
+            this@toReceiveOfferingsCallback.onError(error)
+        }
+    }
 }

@@ -1,5 +1,7 @@
 package com.revenuecat.purchasetester.java;
 
+import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -9,20 +11,18 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Package;
-import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.interfaces.PurchaseCallback;
-import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener;
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
-import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.StoreProduct;
-
-import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
+import com.revenuecat.purchases.models.StoreTransaction;
 
 public class UpsellActivity extends AppCompatActivity {
 
@@ -57,7 +57,7 @@ public class UpsellActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Purchases.getSharedInstance().getOfferings(new ReceiveOfferingsListener() {
+        Purchases.getSharedInstance().getOfferings(new ReceiveOfferingsCallback() {
             @Override
             public void onReceived(@NonNull Offerings offerings) {
                 showScreen(offerings);
