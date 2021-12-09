@@ -28,15 +28,3 @@ interface ReceivePurchaserInfoListener {
      */
     fun onError(error: PurchasesError)
 }
-
-fun ReceivePurchaserInfoListener.toReceiveCustomerInfoCallback(): ReceiveCustomerInfoCallback {
-    return object : ReceiveCustomerInfoCallback {
-        override fun onReceived(customerInfo: CustomerInfo) {
-            this@toReceiveCustomerInfoCallback.onReceived(PurchaserInfo(customerInfo))
-        }
-
-        override fun onError(error: PurchasesError) {
-            this@toReceiveCustomerInfoCallback.onError(error)
-        }
-    }
-}
