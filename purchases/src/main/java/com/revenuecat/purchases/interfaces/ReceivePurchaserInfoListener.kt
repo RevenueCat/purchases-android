@@ -4,7 +4,6 @@
 //
 package com.revenuecat.purchases.interfaces
 
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 
