@@ -51,7 +51,7 @@ import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.interfaces.PurchaseErrorListener
+import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
@@ -1312,7 +1312,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         return Pair(onSuccess, onError)
     }
 
-    private fun PurchaseErrorListener.dispatch(error: PurchasesError) {
+    private fun PurchaseErrorCallback.dispatch(error: PurchasesError) {
         dispatch {
             onError(
                 error,
@@ -1396,7 +1396,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
-        listener: PurchaseErrorListener
+        listener: PurchaseErrorCallback
     ) {
         billing.findPurchaseInPurchaseHistory(
             appUserID,
