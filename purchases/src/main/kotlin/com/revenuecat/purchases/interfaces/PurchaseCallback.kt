@@ -6,7 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.google.originalGooglePurchase
 import com.revenuecat.purchases.models.StoreTransaction
 
-interface PurchaseCallback : PurchaseErrorListener {
+interface PurchaseCallback : PurchaseErrorCallback {
     /**
      * Will be called after the purchase has completed
      * @param storeTransaction StoreTransaction object for the purchased product.

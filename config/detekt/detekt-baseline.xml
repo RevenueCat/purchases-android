@@ -7,7 +7,7 @@
     <ID>EmptyCatchBlock:Purchases.kt$Purchases.Companion.&lt;no name provided>${ }</ID>
     <ID>EmptyFunctionBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${}</ID>
     <ID>LargeClass:Purchases.kt$Purchases : LifecycleDelegate</ID>
-    <ID>LongMethod:Purchases.kt$Purchases$ fun restorePurchases( listener: ReceiveCustomerInfoListener )</ID>
+    <ID>LongMethod:Purchases.kt$Purchases$ fun restorePurchases( callback: ReceiveCustomerInfoCallback )</ID>
     <ID>LongParameterList:StubGooglePurchase.kt$( productIds: List&lt;String> = listOf("com.revenuecat.lifetime"), purchaseTime: Long = System.currentTimeMillis(), purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" + "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg", signature: String = "signature${System.currentTimeMillis()}", purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = true, orderId: String = "GPA.3372-4150-8203-17209" )</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
