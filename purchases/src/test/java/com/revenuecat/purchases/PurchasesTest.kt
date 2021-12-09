@@ -39,6 +39,7 @@ import com.revenuecat.purchases.google.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
+import com.revenuecat.purchases.interfaces.GetStoreProductCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -110,7 +111,7 @@ class PurchasesTest {
     private val appUserId = "fakeUserID"
     private val adID = "123"
     private lateinit var purchases: Purchases
-    private var receivedSkus: List<SkuDetails>? = null
+    private var receivedProducts: List<StoreProduct>? = null
     private var receivedOfferings: Offerings? = null
     private val mockInfo = mockk<CustomerInfo>()
 
@@ -208,9 +209,9 @@ class PurchasesTest {
         val skuDetails = mockStoreProduct(skus, listOf(), ProductType.SUBS)
 
         purchases.getSubscriptionSkus(skus,
-            object : GetSkusResponseListener {
-                override fun onReceived(skus: MutableList<SkuDetails>) {
-                    receivedSkus = skus
+            object : GetStoreProductCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
                 }
 
                 override fun onError(error: PurchasesError) {
@@ -218,7 +219,7 @@ class PurchasesTest {
                 }
             })
 
-        assertThat(receivedSkus).isEqualTo(skuDetails)
+        assertThat(receivedProducts).isEqualTo(skuDetails)
     }
 
     @Test
@@ -228,9 +229,9 @@ class PurchasesTest {
         val skuDetails = mockStoreProduct(skus, listOf(), ProductType.INAPP)
 
         purchases.getNonSubscriptionSkus(skus,
-            object : GetSkusResponseListener {
-                override fun onReceived(skus: MutableList<SkuDetails>) {
-                    receivedSkus = skus
+            object : GetStoreProductCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
                 }
 
                 override fun onError(error: PurchasesError) {
@@ -238,7 +239,7 @@ class PurchasesTest {
                 }
             })
 
-        assertThat(receivedSkus).isEqualTo(skuDetails)
+        assertThat(receivedProducts).isEqualTo(skuDetails)
     }
 
     @Test

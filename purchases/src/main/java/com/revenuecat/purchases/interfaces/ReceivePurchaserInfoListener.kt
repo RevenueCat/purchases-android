@@ -4,6 +4,7 @@
 //
 package com.revenuecat.purchases.interfaces
 
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 
@@ -13,7 +14,6 @@ import com.revenuecat.purchases.PurchasesError
 @Suppress("unused")
 @Deprecated(
     "Renamed to ReceiveCustomerInfoListener",
-    level = DeprecationLevel.WARNING,
     replaceWith = ReplaceWith("ReceiveCustomerInfoListener")
 )
 interface ReceivePurchaserInfoListener {
@@ -28,4 +28,16 @@ interface ReceivePurchaserInfoListener {
      * @param error A [PurchasesError] containing the reason for the failure of the call
      */
     fun onError(error: PurchasesError)
+}
+
+fun ReceivePurchaserInfoListener.toReceiveCustomerInfoListener(): ReceiveCustomerInfoListener {
+    return object : ReceiveCustomerInfoListener {
+        override fun onReceived(customerInfo: CustomerInfo) {
+            this@toReceiveCustomerInfoListener.onReceived(PurchaserInfo(customerInfo))
+        }
+
+        override fun onError(error: PurchasesError) {
+            this@toReceiveCustomerInfoListener.onError(error)
+        }
+    }
 }

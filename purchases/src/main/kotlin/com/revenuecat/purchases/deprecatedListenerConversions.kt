@@ -9,12 +9,11 @@ package com.revenuecat.purchases
 @Suppress("unused")
 @Deprecated(
     "Renamed to getCustomerInfoWith",
-    level = DeprecationLevel.ERROR,
     replaceWith = ReplaceWith("Purchases.sharedInstance.getCustomerInfoWith(onError, onSuccess)")
 )
 fun Purchases.getPurchaserInfoWith(
     onError: ErrorFunction = ON_ERROR_STUB,
     onSuccess: (purchaserInfo: PurchaserInfo) -> Unit
 ) {
-    // No-op
+    getCustomerInfoWith(onError, onSuccess = ::PurchaserInfo)
 }

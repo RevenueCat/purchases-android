@@ -60,6 +60,7 @@ import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.interfaces.toGetStoreProductCallback
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
+import com.revenuecat.purchases.interfaces.toReceiveCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseState
@@ -327,11 +328,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @Deprecated(
         message = "GetSkusResponseListener replaced with GetStoreProductCallback",
-        replaceWith = ReplaceWith(
-            expression = """
-                Purchases.sharedInstance.getSubscriptionSkus(skus, GetStoreProductCallback)
-            """
-        )
     )
     fun getSubscriptionSkus(
         skus: List<String>,
@@ -359,7 +355,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     @Deprecated(
         message = "GetSkusResponseListener replaced with GetStoreProductCallback",
-        replaceWith = ReplaceWith("getNonSubscriptionSkus(skus, GetStoreProductCallback)")
     )
     fun getNonSubscriptionSkus(
         skus: List<String>,
@@ -384,7 +379,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         message = "SkuDetails replaced with StoreProduct and ProductChangeListener " +
             "replaced with ProductChangeCallback",
         replaceWith = ReplaceWith(
-            expression = "purchaseProduct(activity, StoreProduct, " +
+            "Purchases.sharedInstance.purchaseProduct(activity, StoreProduct, " +
                 "upgradeInfo, ProductChangeCallback)"
         )
     )
@@ -399,6 +394,46 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             skuDetails.toStoreProduct(),
             upgradeInfo,
             listener.toProductChangeCallback()
+        )
+    }
+
+    @Deprecated(
+        message = "ProductChangeListener replaced with ProductChangeCallback",
+        replaceWith = ReplaceWith(
+            expression = "purchaseProduct(activity, storeProduct, upgradeInfo, ProductChangeCallback)"
+        )
+    )
+    fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeListener
+    ) {
+        purchaseProduct(
+            activity,
+            storeProduct,
+            upgradeInfo,
+            listener.toProductChangeCallback()
+        )
+    }
+
+    @Deprecated(
+        message = "SkuDetails replaced with StoreProduct",
+        replaceWith = ReplaceWith(
+            expression = "purchaseProduct(activity, storeProduct, upgradeInfo, listener)"
+        )
+    )
+    fun purchaseProduct(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeCallback
+    ) {
+        purchaseProduct(
+            activity,
+            skuDetails.toStoreProduct(),
+            upgradeInfo,
+            listener
         )
     }
 
@@ -424,13 +459,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        message = "SkuDetails replaced with StoreProduct and MakePurchaseListener " +
-            "replaced with PurchaseCallback",
-        replaceWith = ReplaceWith(
-            expression = """
-                purchaseProduct(activity, StoreProduct, PurchaseCallback)
-            """
-        )
+        message = """
+           SkuDetails replaced with StoreProduct and MakePurchaseListener replaced with PurchaseCallback 
+        """,
+        replaceWith = ReplaceWith("purchaseProduct(activity, StoreProduct, PurchaseCallback")
     )
     fun purchaseProduct(
         activity: Activity,
@@ -439,8 +471,52 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         purchaseProduct(
             activity,
-            skuDetails.toStoreProduct(),
+            skuDetails,
             listener.toPurchaseCallback()
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [storeProduct] The storeProduct you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    @Deprecated(
+        message = "MakePurchaseListener replaced with PurchaseCallback",
+        replaceWith = ReplaceWith("purchaseProduct(activity, storeProduct, PurchaseCallback)")
+    )
+    fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        listener: MakePurchaseListener
+    ) {
+        purchaseProduct(
+            activity,
+            storeProduct,
+            listener.toPurchaseCallback()
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [skuDetails] The skuDetails of the product you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    @Deprecated(
+        message = "SkuDetails replaced with StoreProduct",
+        replaceWith = ReplaceWith("purchaseProduct(activity, storeProduct, listener)")
+    )
+    fun purchaseProduct(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        listener: PurchaseCallback
+    ) {
+        purchaseProduct(
+            activity,
+            skuDetails.toStoreProduct(),
+            listener
         )
     }
 
@@ -1614,31 +1690,41 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     // region Deprecated
 
+    private var _updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null
+        @Synchronized get
+        @Synchronized set
+
     /**
      * The listener is responsible for handling changes to purchaser information.
      * Make sure [removeUpdatedPurchaserInfoListener] is called when the listener needs to be destroyed.
      */
     @Deprecated(
         "Renamed to updatedCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
         replaceWith = ReplaceWith("updatedCustomerInfoListener")
     )
-    var updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null
-        @JvmName("-deprecated_getUpdatedPurchaserInfoListener")
-        get
-        @JvmName("-deprecated_setUpdatedPurchaserInfoListener")
-        set
+    var updatedPurchaserInfoListener: UpdatedPurchaserInfoListener?
+        @Synchronized get() = _updatedPurchaserInfoListener
+        set(value) {
+            _updatedPurchaserInfoListener = value
+            val converted = value?.let {
+                UpdatedCustomerInfoListener { customerInfo ->
+                    it.onReceived(PurchaserInfo(customerInfo))
+                }
+            }
+            synchronized(this@Purchases) {
+                state = state.copy(updatedCustomerInfoListener = converted)
+            }
+            afterSetListener(converted)
+        }
 
     /**
      * Get latest available purchaser info.
      * @param listener A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    @JvmName("-deprecated_getPurchaserInfo")
     @Deprecated(
         "Function has been renamed to getCustomerInfo and listener has been replaced" +
             " with ReceiveCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
         replaceWith = ReplaceWith(
             expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
         )
@@ -1647,7 +1733,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @Suppress("UnusedPrivateMember")
         listener: ReceivePurchaserInfoListener
     ) {
-        // no-op
+        getPurchaserInfo(listener.toReceiveCustomerInfoListener())
     }
 
     /**
@@ -1655,11 +1741,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param listener A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    @JvmName("-deprecated_getPurchaserInfo_ReceiveCustomerInfoListener")
     @Deprecated(
         "Function has been renamed to getCustomerInfo and listener has been replaced" +
             " with ReceiveCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
         replaceWith = ReplaceWith(
             expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
         )
@@ -1668,7 +1752,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @Suppress("UnusedPrivateMember")
         listener: ReceiveCustomerInfoListener
     ) {
-        // no-op
+        getCustomerInfo(listener)
     }
 
     /**
@@ -1676,11 +1760,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param listener A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    @JvmName("-deprecated_getCustomerInfo_ReceivePurchaserInfoListener")
     @Deprecated(
         "Function has been renamed to getCustomerInfo and listener has been replaced" +
             " with ReceiveCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
         replaceWith = ReplaceWith(
             expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
         )
@@ -1689,7 +1771,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @Suppress("UnusedPrivateMember")
         listener: ReceivePurchaserInfoListener
     ) {
-        // no-op
+        getCustomerInfo(listener.toReceiveCustomerInfoListener())
     }
 
     /**
@@ -1704,17 +1786,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
      * @param [listener] The listener that will be called when purchase restore completes.
      */
-    @JvmName("-deprecated_restorePurchases")
     @Deprecated(
         "Listener has been replaced with ReceiveCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
         replaceWith = ReplaceWith("Purchases.sharedInstance.restorePurchases(ReceiveCustomerInfoListener)")
     )
     fun restorePurchases(
         @Suppress("UnusedPrivateMember")
         listener: ReceivePurchaserInfoListener
     ) {
-        // no-op
+        restorePurchases(listener.toReceiveCustomerInfoListener())
     }
 
     /**
@@ -1722,10 +1802,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * id and save it in the cache.
      * @param [listener] An optional listener to listen for successes or errors.
      */
-    @JvmName("-deprecated_logOut")
     @Deprecated(
         "Listener has been replaced with ReceiveCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
         replaceWith = ReplaceWith(
             expression = "Purchases.sharedInstance.logOut(ReceiveCustomerInfoListener)",
             imports = ["com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener"]
@@ -1735,7 +1813,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @Suppress("UnusedPrivateMember")
         listener: ReceivePurchaserInfoListener
     ) {
-        // no-op
+        logOut(listener.toReceiveCustomerInfoListener())
     }
 
     /**
@@ -1748,25 +1826,22 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * This is useful for cases where purchaser information might have been updated outside of the
      * app, like if a promotional subscription is granted through the RevenueCat dashboard.
      */
-    @JvmName("-deprecated_invalidatePurchaserInfoCache")
     @Deprecated(
         "Renamed to invalidateCustomerInfoCache",
-        level = DeprecationLevel.ERROR,
         replaceWith = ReplaceWith("Purchases.sharedInstance.invalidateCustomerInfoCache()")
     )
     fun invalidatePurchaserInfoCache() {
-        // no-op
+        invalidateCustomerInfoCache()
     }
 
-    @JvmName("-deprecated_removeUpdatedPurchaserInfoListener")
     @Deprecated(
         "Renamed to removeUpdatedCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
         replaceWith = ReplaceWith("Purchases.sharedInstance.removeUpdatedCustomerInfoListener()")
     )
     @Suppress("MemberVisibilityCanBePrivate")
     fun removeUpdatedPurchaserInfoListener() {
-        // no-op
+        _updatedPurchaserInfoListener = null
+        removeUpdatedCustomerInfoListener()
     }
     // endregion
 

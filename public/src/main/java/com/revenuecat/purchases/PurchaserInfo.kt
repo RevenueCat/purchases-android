@@ -1,5 +1,3 @@
-@file:JvmName("-deprecated_PurchaserInfo")
-
 //  Purchases
 //
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.
