@@ -5,7 +5,7 @@ import com.revenuecat.purchases.interfaces.GetStoreProductCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -73,10 +73,10 @@ internal fun receiveOfferingsListener(
     }
 }
 
-internal fun receiveCustomerInfoListener(
+internal fun receiveCustomerInfoCallback(
     onSuccess: ReceiveCustomerInfoSuccessFunction?,
     onError: ErrorFunction?
-) = object : ReceiveCustomerInfoListener {
+) = object : ReceiveCustomerInfoCallback {
     override fun onReceived(customerInfo: CustomerInfo) {
         onSuccess?.invoke(customerInfo)
     }
@@ -203,7 +203,7 @@ fun Purchases.restorePurchasesWith(
     onError: ErrorFunction = ON_ERROR_STUB,
     onSuccess: ReceiveCustomerInfoSuccessFunction
 ) {
-    restorePurchases(receiveCustomerInfoListener(onSuccess, onError))
+    restorePurchases(receiveCustomerInfoCallback(onSuccess, onError))
 }
 
 /**
@@ -233,7 +233,7 @@ fun Purchases.logOutWith(
     onError: ErrorFunction = ON_ERROR_STUB,
     onSuccess: ReceiveCustomerInfoSuccessFunction
 ) {
-    logOut(receiveCustomerInfoListener(onSuccess, onError))
+    logOut(receiveCustomerInfoCallback(onSuccess, onError))
 }
 
 /**
@@ -247,7 +247,7 @@ fun Purchases.getCustomerInfoWith(
     onError: ErrorFunction = ON_ERROR_STUB,
     onSuccess: ReceiveCustomerInfoSuccessFunction
 ) {
-    getCustomerInfo(receiveCustomerInfoListener(onSuccess, onError))
+    getCustomerInfo(receiveCustomerInfoCallback(onSuccess, onError))
 }
 
 /**

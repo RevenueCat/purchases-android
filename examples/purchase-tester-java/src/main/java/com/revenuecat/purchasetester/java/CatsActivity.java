@@ -1,5 +1,7 @@
 package com.revenuecat.purchasetester.java;
 
+import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
+
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,16 +13,14 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.CustomerInfo;
+import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener;
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 
 import java.text.DateFormat;
 import java.util.Date;
-
-import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
 
 public class CatsActivity extends AppCompatActivity {
     Button restoreView;
@@ -42,7 +42,7 @@ public class CatsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 restoreView.setText("Loading...");
-                Purchases.getSharedInstance().restorePurchases(new ReceiveCustomerInfoListener() {
+                Purchases.getSharedInstance().restorePurchases(new ReceiveCustomerInfoCallback() {
                     @Override
                     public void onReceived(@NonNull CustomerInfo customerInfo) {
                         restoreView.setText("Restore Purchases");

@@ -11,10 +11,9 @@ import com.revenuecat.purchases.PurchasesError
 /**
  * Interface to be implemented when making calls that return a [PurchaserInfo]
  */
-@Suppress("unused")
 @Deprecated(
-    "Renamed to ReceiveCustomerInfoListener",
-    replaceWith = ReplaceWith("ReceiveCustomerInfoListener")
+    "Renamed to ReceiveCustomerInfoCallback",
+    replaceWith = ReplaceWith("ReceiveCustomerInfoCallback")
 )
 interface ReceivePurchaserInfoListener {
     /**
@@ -30,14 +29,14 @@ interface ReceivePurchaserInfoListener {
     fun onError(error: PurchasesError)
 }
 
-fun ReceivePurchaserInfoListener.toReceiveCustomerInfoListener(): ReceiveCustomerInfoListener {
-    return object : ReceiveCustomerInfoListener {
+fun ReceivePurchaserInfoListener.toReceiveCustomerInfoCallback(): ReceiveCustomerInfoCallback {
+    return object : ReceiveCustomerInfoCallback {
         override fun onReceived(customerInfo: CustomerInfo) {
-            this@toReceiveCustomerInfoListener.onReceived(PurchaserInfo(customerInfo))
+            this@toReceiveCustomerInfoCallback.onReceived(PurchaserInfo(customerInfo))
         }
 
         override fun onError(error: PurchasesError) {
-            this@toReceiveCustomerInfoListener.onError(error)
+            this@toReceiveCustomerInfoCallback.onError(error)
         }
     }
 }

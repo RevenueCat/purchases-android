@@ -18,7 +18,6 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -38,10 +37,9 @@ import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.google.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
-import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.GetStoreProductCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -1393,7 +1391,7 @@ class PurchasesTest {
             lambda<(List<Purchase>) -> Unit>().captured.invoke(emptyList())
         }
 
-        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         purchases.restorePurchases(mockCompletion)
 
         verify {
@@ -1799,7 +1797,7 @@ class PurchasesTest {
         every {
             mockIdentityManager.logOut()
         } returns null
-        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         purchases.logOut(mockCompletion)
 
         verify(exactly = 1) {
@@ -1837,7 +1835,7 @@ class PurchasesTest {
             mockCache.clearLatestAttributionData(appUserId)
         } just Runs
         val mockError = mockk<PurchasesError>(relaxed = true)
-        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         every {
             mockIdentityManager.logOut()
         } returns mockError
@@ -1860,7 +1858,7 @@ class PurchasesTest {
             lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
         }
 
-        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         every {
             mockIdentityManager.logOut()
         } returns null
@@ -1889,7 +1887,7 @@ class PurchasesTest {
             mockBackend.clearCaches()
         } just Runs
 
-        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         every {
             mockIdentityManager.logOut()
         } returns null
