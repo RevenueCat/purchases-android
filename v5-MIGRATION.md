@@ -15,3 +15,4 @@
 - `getSubscriptionSkusWith` and `getNonSubscriptionSkusWith` now receive `storeProducts` instead of `skus`.
 - `purchaseProductWith` now accepts a `StoreProduct` instead of a`SkuDetails`
 - `PurchaserInfo` has been renamed to `CustomerInfo`
+- `ReceiveOfferingsListener` migrated to `ReceiveOfferingsCallback`
