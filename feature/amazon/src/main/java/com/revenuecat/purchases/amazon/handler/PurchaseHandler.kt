@@ -12,7 +12,7 @@ import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.models.ProductDetails
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 class PurchaseHandler(
@@ -26,18 +26,18 @@ class PurchaseHandler(
 
     override fun purchase(
         appUserID: String,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(productDetails.sku))
+        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
 
-        val requestId = purchasingServiceProvider.purchase(productDetails.sku)
+        val requestId = purchasingServiceProvider.purchase(storeProduct.sku)
         synchronized(this@PurchaseHandler) {
             purchaseCallbacks[requestId] = onSuccess to onError
-            productTypes[productDetails.sku] = productDetails.type
-            presentedOfferingsByProductIdentifier[productDetails.sku] = presentedOfferingIdentifier
+            productTypes[storeProduct.sku] = storeProduct.type
+            presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
     }
 

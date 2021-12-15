@@ -2,18 +2,18 @@ package com.revenuecat.purchases.amazon
 
 import com.amazon.device.iap.model.Receipt
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.PurchaseType
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.PurchaseState
 
-fun Receipt.toRevenueCatPurchaseDetails(
+fun Receipt.toPaymentTransaction(
     sku: String,
     presentedOfferingIdentifier: String?,
-    purchaseState: RevenueCatPurchaseState,
+    purchaseState: PurchaseState,
     storeUserID: String?
-): PurchaseDetails {
+): PaymentTransaction {
     val type = this.productType.toRevenueCatProductType()
-    return PurchaseDetails(
+    return PaymentTransaction(
         orderId = null,
         skus = listOf(sku),
         type = type,

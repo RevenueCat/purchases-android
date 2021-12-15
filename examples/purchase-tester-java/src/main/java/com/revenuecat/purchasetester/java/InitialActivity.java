@@ -7,10 +7,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.revenuecat.purchases.EntitlementInfo;
-import com.revenuecat.purchases.PurchaserInfo;
+import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
-import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener;
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener;
 
 import static com.revenuecat.purchasetester.java.MainApplication.PREMIUM_ENTITLEMENT_ID;
 
@@ -26,10 +26,10 @@ public class InitialActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        Purchases.getSharedInstance().getPurchaserInfo(new ReceivePurchaserInfoListener() {
+        Purchases.getSharedInstance().getCustomerInfo(new ReceiveCustomerInfoListener() {
             @Override
-            public void onReceived(@NonNull PurchaserInfo purchaserInfo) {
-                EntitlementInfo proEntitlement = purchaserInfo.getEntitlements().get(PREMIUM_ENTITLEMENT_ID);
+            public void onReceived(@NonNull CustomerInfo customerInfo) {
+                EntitlementInfo proEntitlement = customerInfo.getEntitlements().get(PREMIUM_ENTITLEMENT_ID);
                 if (proEntitlement != null && proEntitlement.isActive()) {
                     Navigator.startCatsActivity(InitialActivity.this, true);
                 } else {

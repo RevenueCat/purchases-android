@@ -24,14 +24,14 @@ import com.revenuecat.purchases.amazon.listener.UserDataResponseListener
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.ProductDetailsListCallback
+import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
-import com.revenuecat.purchases.models.RevenueCatPurchaseState
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.ProductType as RevenueCatProductType
@@ -74,7 +74,7 @@ internal class AmazonBilling constructor(
 
     override fun queryAllPurchases(
         appUserID: String,
-        onReceivePurchaseHistory: (List<PurchaseDetails>) -> Unit,
+        onReceivePurchaseHistory: (List<PaymentTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     ) {
         queryPurchases(
@@ -91,7 +91,7 @@ internal class AmazonBilling constructor(
     override fun querySkuDetailsAsync(
         productType: RevenueCatProductType,
         skus: Set<String>,
-        onReceive: ProductDetailsListCallback,
+        onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
         userDataHandler.getUserData(
@@ -106,12 +106,12 @@ internal class AmazonBilling constructor(
 
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
-        purchase: PurchaseDetails
+        purchase: PaymentTransaction
     ) {
         if (purchase.type == RevenueCatProductType.UNKNOWN) return
 
         // PENDING purchases should not be fulfilled
-        if (purchase.purchaseState == RevenueCatPurchaseState.PENDING) return
+        if (purchase.purchaseState == PurchaseState.PENDING) return
 
         if (shouldTryToConsume) {
             purchasingServiceProvider.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
@@ -124,7 +124,7 @@ internal class AmazonBilling constructor(
         appUserID: String,
         productType: RevenueCatProductType,
         sku: String,
-        onCompletion: (PurchaseDetails) -> Unit,
+        onCompletion: (PaymentTransaction) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
@@ -132,7 +132,7 @@ internal class AmazonBilling constructor(
             appUserID,
             onReceivePurchaseHistory = {
                 // We get skus[0] because the list is guaranteed to have just one item in Amazon's case.
-                val record: PurchaseDetails? = it.firstOrNull { record -> sku == record.skus[0] }
+                val record: PaymentTransaction? = it.firstOrNull { record -> sku == record.skus[0] }
                 if (record != null) {
                     onCompletion(record)
                 } else {
@@ -148,7 +148,7 @@ internal class AmazonBilling constructor(
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
@@ -158,10 +158,10 @@ internal class AmazonBilling constructor(
         }
         purchaseHandler.purchase(
             appUserID,
-            productDetails,
+            storeProduct,
             presentedOfferingIdentifier,
             onSuccess = { receipt, userData ->
-                handleReceipt(receipt, userData, productDetails, presentedOfferingIdentifier)
+                handleReceipt(receipt, userData, storeProduct, presentedOfferingIdentifier)
             },
             onError = ::onPurchaseError
         )
@@ -171,7 +171,7 @@ internal class AmazonBilling constructor(
 
     override fun queryPurchases(
         appUserID: String,
-        onSuccess: (Map<String, PurchaseDetails>) -> Unit,
+        onSuccess: (Map<String, PaymentTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         purchaseUpdatesHandler.queryPurchases(
@@ -215,10 +215,10 @@ internal class AmazonBilling constructor(
             log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
             return@mapNotNull null
         }
-        val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
+        val amazonPurchaseWrapper = receipt.toPaymentTransaction(
             sku = sku,
             presentedOfferingIdentifier = null,
-            purchaseState = RevenueCatPurchaseState.UNSPECIFIED_STATE,
+            purchaseState = PurchaseState.UNSPECIFIED_STATE,
             storeUserID = userData.userId
         )
         val hash = receipt.receiptId.sha1()
@@ -312,7 +312,7 @@ internal class AmazonBilling constructor(
     private fun handleReceipt(
         receipt: Receipt,
         userData: UserData,
-        productDetails: ProductDetails,
+        storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?
     ) {
         if (receipt.productType != ProductType.SUBSCRIPTION) {
@@ -322,10 +322,10 @@ internal class AmazonBilling constructor(
              * For consumables and entitlements, we don't need to fetch de termSku,
              * since there's no terms and we can just use the sku
              */
-            val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
-                sku = productDetails.sku,
+            val amazonPurchaseWrapper = receipt.toPaymentTransaction(
+                sku = storeProduct.sku,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
-                purchaseState = RevenueCatPurchaseState.PURCHASED,
+                purchaseState = PurchaseState.PURCHASED,
                 storeUserID = userData.userId
             )
             purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
@@ -337,10 +337,10 @@ internal class AmazonBilling constructor(
             userData.userId,
             onSuccess = { response ->
                 val termSku = response["termSku"] as String
-                val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
+                val amazonPurchaseWrapper = receipt.toPaymentTransaction(
                     sku = termSku,
                     presentedOfferingIdentifier = presentedOfferingIdentifier,
-                    purchaseState = RevenueCatPurchaseState.PURCHASED,
+                    purchaseState = PurchaseState.PURCHASED,
                     storeUserID = userData.userId
                 )
                 purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))

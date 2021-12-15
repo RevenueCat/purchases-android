@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 import android.app.Activity
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.interfaces.GetProductDetailsCallback
+import com.revenuecat.purchases.interfaces.GetStoreProductCallback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
@@ -11,29 +11,30 @@ import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
-import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
-import com.revenuecat.purchases.models.ProductDetails
-import com.revenuecat.purchases.models.PurchaseDetails
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.PaymentTransaction
 
-private typealias PurchaseCompletedFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
-private typealias NewPurchaseCompletedFunction = (purchase: PurchaseDetails, purchaserInfo: PurchaserInfo) -> Unit
-private typealias ProductChangeCompletedFunction = (purchase: Purchase?, purchaserInfo: PurchaserInfo) -> Unit
-private typealias NewProductChangeCompletedFunction = (purchase: PurchaseDetails?, purchaserInfo: PurchaserInfo) -> Unit
+private typealias PurchaseCompletedFunction = (purchase: Purchase, customerInfo: CustomerInfo) -> Unit
+private typealias NewPurchaseCompletedFunction = (purchase: PaymentTransaction, customerInfo: CustomerInfo) -> Unit
+private typealias ProductChangeCompletedFunction = (purchase: Purchase?, customerInfo: CustomerInfo) -> Unit
+private typealias NewProductChangeCompletedFunction =
+        (purchase: PaymentTransaction?, customerInfo: CustomerInfo) -> Unit
 private typealias ReceiveOfferingsSuccessFunction = (offerings: Offerings) -> Unit
-private typealias ReceivePurchaserInfoSuccessFunction = (purchaserInfo: PurchaserInfo) -> Unit
-private typealias ReceiveLogInSuccessFunction = (purchaserInfo: PurchaserInfo, created: Boolean) -> Unit
-private typealias ErrorFunction = (error: PurchasesError) -> Unit
+private typealias ReceiveCustomerInfoSuccessFunction = (customerInfo: CustomerInfo) -> Unit
+private typealias ReceiveLogInSuccessFunction = (customerInfo: CustomerInfo, created: Boolean) -> Unit
+internal typealias ErrorFunction = (error: PurchasesError) -> Unit
 private typealias PurchaseErrorFunction = (error: PurchasesError, userCancelled: Boolean) -> Unit
 
-private val ON_ERROR_STUB: ErrorFunction = {}
+internal val ON_ERROR_STUB: ErrorFunction = {}
 private val ON_PURCHASE_ERROR_STUB: PurchaseErrorFunction = { _, _ -> }
 
 internal fun purchaseCompletedListener(
     onSuccess: PurchaseCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : MakePurchaseListener {
-    override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {
-        onSuccess(purchase, purchaserInfo)
+    override fun onCompleted(purchase: Purchase, customerInfo: CustomerInfo) {
+        onSuccess(purchase, customerInfo)
     }
 
     override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -45,8 +46,8 @@ internal fun purchaseCompletedCallback(
     onSuccess: NewPurchaseCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : PurchaseCallback {
-    override fun onCompleted(purchase: PurchaseDetails, purchaserInfo: PurchaserInfo) {
-        onSuccess(purchase, purchaserInfo)
+    override fun onCompleted(purchase: PaymentTransaction, customerInfo: CustomerInfo) {
+        onSuccess(purchase, customerInfo)
     }
 
     override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -58,8 +59,8 @@ internal fun productChangeCompletedListener(
     onSuccess: ProductChangeCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : ProductChangeListener {
-    override fun onCompleted(purchase: Purchase?, purchaserInfo: PurchaserInfo) {
-        onSuccess(purchase, purchaserInfo)
+    override fun onCompleted(purchase: Purchase?, customerInfo: CustomerInfo) {
+        onSuccess(purchase, customerInfo)
     }
 
     override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -84,8 +85,8 @@ internal fun productChangeCompletedListener(
     onSuccess: NewProductChangeCompletedFunction,
     onError: PurchaseErrorFunction
 ) = object : ProductChangeCallback {
-    override fun onCompleted(purchase: PurchaseDetails?, purchaserInfo: PurchaserInfo) {
-        onSuccess(purchase, purchaserInfo)
+    override fun onCompleted(purchase: PaymentTransaction?, customerInfo: CustomerInfo) {
+        onSuccess(purchase, customerInfo)
     }
 
     override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -93,12 +94,12 @@ internal fun productChangeCompletedListener(
     }
 }
 
-internal fun getProductDetailsCallback(
-    onReceived: (skus: List<ProductDetails>) -> Unit,
+internal fun getStoreProductCallback(
+    onReceived: (storeProducts: List<StoreProduct>) -> Unit,
     onError: ErrorFunction
-) = object : GetProductDetailsCallback {
-    override fun onReceived(skus: List<ProductDetails>) {
-        onReceived(skus)
+) = object : GetStoreProductCallback {
+    override fun onReceived(storeProducts: List<StoreProduct>) {
+        onReceived(storeProducts)
     }
 
     override fun onError(error: PurchasesError) {
@@ -119,12 +120,12 @@ internal fun receiveOfferingsListener(
     }
 }
 
-internal fun receivePurchaserInfoListener(
-    onSuccess: ReceivePurchaserInfoSuccessFunction?,
+internal fun receiveCustomerInfoListener(
+    onSuccess: ReceiveCustomerInfoSuccessFunction?,
     onError: ErrorFunction?
-) = object : ReceivePurchaserInfoListener {
-    override fun onReceived(purchaserInfo: PurchaserInfo) {
-        onSuccess?.invoke(purchaserInfo)
+) = object : ReceiveCustomerInfoListener {
+    override fun onReceived(customerInfo: CustomerInfo) {
+        onSuccess?.invoke(customerInfo)
     }
 
     override fun onError(error: PurchasesError) {
@@ -136,8 +137,8 @@ internal fun logInSuccessListener(
     onSuccess: ReceiveLogInSuccessFunction?,
     onError: ErrorFunction?
 ) = object : LogInCallback {
-    override fun onReceived(purchaserInfo: PurchaserInfo, created: Boolean) {
-        onSuccess?.invoke(purchaserInfo, created)
+    override fun onReceived(customerInfo: CustomerInfo, created: Boolean) {
+        onSuccess?.invoke(customerInfo, created)
     }
 
     override fun onError(error: PurchasesError) {
@@ -183,18 +184,18 @@ fun Purchases.purchaseProductWith(
 /**
  * Purchase product.
  * @param [activity] Current activity
- * @param [productDetails] The productDetails of the product you wish to purchase
+ * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
 @JvmSynthetic
 internal fun Purchases.purchaseProductWith(
     activity: Activity,
-    productDetails: ProductDetails,
+    storeProduct: StoreProduct,
     onError: PurchaseErrorFunction = ON_PURCHASE_ERROR_STUB,
     onSuccess: NewPurchaseCompletedFunction
 ) {
-    purchaseProduct(activity, productDetails, purchaseCompletedCallback(onSuccess, onError))
+    purchaseProduct(activity, storeProduct, purchaseCompletedCallback(onSuccess, onError))
 }
 
 /**
@@ -220,7 +221,7 @@ fun Purchases.purchaseProductWith(
 /**
  * Make a purchase.
  * @param [activity] Current activity
- * @param [productDetails] The productDetails of the product you wish to purchase
+ * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
@@ -228,12 +229,12 @@ fun Purchases.purchaseProductWith(
 @JvmSynthetic
 internal fun Purchases.purchaseProductWith(
     activity: Activity,
-    productDetails: ProductDetails,
+    storeProduct: StoreProduct,
     upgradeInfo: UpgradeInfo,
     onError: PurchaseErrorFunction = ON_PURCHASE_ERROR_STUB,
     onSuccess: NewProductChangeCompletedFunction
 ) {
-    purchaseProduct(activity, productDetails, upgradeInfo,
+    purchaseProduct(activity, storeProduct, upgradeInfo,
         productChangeCompletedListener(onSuccess, onError)
     )
 }
@@ -289,40 +290,9 @@ fun Purchases.purchasePackageWith(
  */
 fun Purchases.restorePurchasesWith(
     onError: ErrorFunction = ON_ERROR_STUB,
-    onSuccess: ReceivePurchaserInfoSuccessFunction
+    onSuccess: ReceiveCustomerInfoSuccessFunction
 ) {
-    restorePurchases(receivePurchaserInfoListener(onSuccess, onError))
-}
-
-/**
- * This function will alias two appUserIDs together.
- * @param [newAppUserID] The current user id will be aliased to the app user id passed in this parameter
- * @param [onSuccess] Will be called after the call has completed.
- * @param [onError] Will be called after the call has completed with an error.
- */
-@Suppress("unused")
-fun Purchases.createAliasWith(
-    newAppUserID: String,
-    onError: ErrorFunction = ON_ERROR_STUB,
-    onSuccess: ReceivePurchaserInfoSuccessFunction
-) {
-    createAlias(newAppUserID, receivePurchaserInfoListener(onSuccess, onError))
-}
-
-/**
- * This function will change the current appUserID.
- * Typically this would be used after a log out to identify a new user without calling configure
- * @param appUserID The new appUserID that should be linked to the currently user
- * @param [onSuccess] Will be called after the call has completed.
- * @param [onError] Will be called after the call has completed with an error.
- */
-@Suppress("unused")
-fun Purchases.identifyWith(
-    appUserID: String,
-    onError: ErrorFunction = ON_ERROR_STUB,
-    onSuccess: ReceivePurchaserInfoSuccessFunction
-) {
-    identify(appUserID, receivePurchaserInfoListener(onSuccess, onError))
+    restorePurchases(receiveCustomerInfoListener(onSuccess, onError))
 }
 
 /**
@@ -350,23 +320,9 @@ fun Purchases.logInWith(
 @Suppress("unused")
 fun Purchases.logOutWith(
     onError: ErrorFunction = ON_ERROR_STUB,
-    onSuccess: ReceivePurchaserInfoSuccessFunction
+    onSuccess: ReceiveCustomerInfoSuccessFunction
 ) {
-    logOut(receivePurchaserInfoListener(onSuccess, onError))
-}
-
-/**
- * Resets the Purchases client clearing the save appUserID. This will generate a random user
- * id and save it in the cache.
- * @param [onSuccess] Will be called after the call has completed.
- * @param [onError] Will be called after the call has completed with an error.
- */
-@Suppress("unused")
-fun Purchases.resetWith(
-    onError: ErrorFunction = ON_ERROR_STUB,
-    onSuccess: ReceivePurchaserInfoSuccessFunction
-) {
-    reset(receivePurchaserInfoListener(onSuccess, onError))
+    logOut(receiveCustomerInfoListener(onSuccess, onError))
 }
 
 /**
@@ -376,11 +332,11 @@ fun Purchases.resetWith(
  * @param onError Will be called after the call has completed with an error.
  */
 @Suppress("unused")
-fun Purchases.getPurchaserInfoWith(
+fun Purchases.getCustomerInfoWith(
     onError: ErrorFunction = ON_ERROR_STUB,
-    onSuccess: ReceivePurchaserInfoSuccessFunction
+    onSuccess: ReceiveCustomerInfoSuccessFunction
 ) {
-    getPurchaserInfo(receivePurchaserInfoListener(onSuccess, onError))
+    getCustomerInfo(receiveCustomerInfoListener(onSuccess, onError))
 }
 
 /**
