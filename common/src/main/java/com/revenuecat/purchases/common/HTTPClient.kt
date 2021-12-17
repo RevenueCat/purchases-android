@@ -58,8 +58,12 @@ class HTTPClient(
     private fun getInputStream(connection: HttpURLConnection): InputStream? {
         return try {
             connection.inputStream
-        } catch (e: IOException) {
-            connection.errorStream
+        } catch(e: Exception) {
+            when (e) {
+                is IllegalArgumentException,
+                is IOException -> connection.errorStream
+                else -> throw e
+            }
         }
     }
 
