@@ -61,7 +61,10 @@ class HTTPClient(
         } catch(e: Exception) {
             when (e) {
                 is IllegalArgumentException,
-                is IOException -> connection.errorStream
+                is IOException -> {
+                    log(LogIntent.WARNING, NetworkStrings.PROBLEM_CONNECTING.format(e.message))
+                    connection.errorStream
+                }
                 else -> throw e
             }
         }
