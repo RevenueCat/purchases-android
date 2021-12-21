@@ -4,5 +4,5 @@ object Config {
 
     var debugLogsEnabled = false
 
-    const val frameworkVersion = "5.0.0-amazon.alpha.4"
+    const val frameworkVersion = "5.0.0-amazon.alpha.5"
 }
