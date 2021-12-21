@@ -8,9 +8,8 @@ package com.revenuecat.purchases.common
 import android.os.Build
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.networking.ETagManager
-import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPRequest
-import com.revenuecat.purchases.common.networking.getETagHeader
+import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
@@ -55,10 +54,11 @@ class HTTPClient(
         return sb.toString()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun getInputStream(connection: HttpURLConnection): InputStream? {
         return try {
             connection.inputStream
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             when (e) {
                 is IllegalArgumentException,
                 is IOException -> {
