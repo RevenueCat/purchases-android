@@ -356,7 +356,7 @@ workflows:
             branches:
               only:
                 - amazon-release
-                - release/5.0.0-amazon.alpha.*
+                - /^release\/5.0.0-amazon.alpha.*/
       - deploy-amazon:
           requires:
             - hold
@@ -364,5 +364,5 @@ workflows:
             branches:
               only:
                 - amazon-release
-                - release/5.0.0-amazon.alpha.*
+                - /^release\/5.0.0-amazon.alpha.*/
       - docs-deploy: *release-tags
