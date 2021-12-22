@@ -131,9 +131,9 @@ platform :android do
     fail ArgumentError, "missing version" unless release_version
 
     begin
-      changelog = File.read("../CHANGELOG.latest.md")
+      instructions = File.read("../AMAZON-INSTRUCTIONS.md")
     rescue
-      fail "please add a CHANGELOG.latest.md file before calling this lane"
+      fail "please add a AMAZON-INSTRUCTIONS.md file before calling this lane"
     end
 
     add_git_tag(
@@ -152,7 +152,7 @@ platform :android do
       api_token: ENV["GITHUB_TOKEN"],
       name: release_version,
       tag_name: "#{release_version}",
-      description: changelog,
+      description: instructions,
       commitish: "main",
       upload_assets: [],
       is_prerelease: true
@@ -233,7 +233,6 @@ platform :android do
       UI.user_error!("#{version} is not an amazon version")
     end
 
-    version = android_get_version_name(gradle_file: gradle_file_path)
     gradleProperties = {
       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
       "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
