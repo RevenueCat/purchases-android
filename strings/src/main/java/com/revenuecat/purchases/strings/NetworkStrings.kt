@@ -9,4 +9,5 @@ object NetworkStrings {
     const val ETAG_CALL_ALREADY_RETRIED = "We can't find the cached response, but call has already been retried. " +
         "Returning result from backend: %s"
     const val SAME_CALL_ALREADY_IN_PROGRESS = "Same call already in progress, adding to callbacks map with key: %s"
+    const val PROBLEM_CONNECTING = "Unable to start a network connection due to a network configuration issue: %s"
 }
