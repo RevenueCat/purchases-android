@@ -228,7 +228,11 @@ platform :android do
   lane :deploy_amazon do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
     is_amazon_version = version.include?("-amazon.")
-    unless is_amazon_version then puts "#{version} is not an amazon version" else deploy end
+
+    if !is_amazon_version
+      UI.user_error!("#{version} is not an amazon version")
+    end
+
     version = android_get_version_name(gradle_file: gradle_file_path)
     gradleProperties = {
       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
