@@ -46,12 +46,6 @@ fun Exception.toPurchasesError(): PurchasesError {
         is JSONException, is IOException -> {
             PurchasesError(PurchasesErrorCode.NetworkError, localizedMessage)
         }
-            if (this is UnknownHostException) {
-                PurchasesError(PurchasesErrorCode.UnknownHostError, localizedMessage)
-            } else {
-                PurchasesError(PurchasesErrorCode.NetworkError, localizedMessage)
-            }
-        }
         is SecurityException -> {
             PurchasesError(PurchasesErrorCode.InsufficientPermissionsError, localizedMessage)
         }
