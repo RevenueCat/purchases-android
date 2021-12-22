@@ -190,11 +190,6 @@ platform :android do
     end
   end
 
-  desc "Temporary lane to upload and close an amazon pre-release"
-  lane :deploy_amazon do |options|
-
-  end
-
   desc "Upload a snapshot release"
   lane :deploy_snapshot do |options|
     version = android_get_version_name(gradle_file: gradle_file_path)
