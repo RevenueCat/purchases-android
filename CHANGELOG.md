@@ -1,3 +1,8 @@
+## 4.6.1
+
+- Added `exported` attribute to ResponseReceiver, for builds targeting SDK 31
+  https://github.com/RevenueCat/purchases-android/pull/404
+  
 ## 4.6.0
 
 - Added `EntitlementInfo.ownershipType`, which can be used to determine whether an entitlement was granted by a direct purchase or shared through a family member.
