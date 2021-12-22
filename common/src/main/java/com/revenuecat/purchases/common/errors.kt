@@ -40,7 +40,12 @@ enum class BackendErrorCode(val value: Int) {
 
 fun Exception.toPurchasesError(): PurchasesError {
     return when (this) {
+        is UnknownHostException -> {
+          PurchasesError(PurchasesErrorCode.UnknownHostError, localizedMessage)
+        }
         is JSONException, is IOException -> {
+            PurchasesError(PurchasesErrorCode.NetworkError, localizedMessage)
+        }
             if (this is UnknownHostException) {
                 PurchasesError(PurchasesErrorCode.UnknownHostError, localizedMessage)
             } else {
