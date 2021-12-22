@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import org.json.JSONException
 import java.io.IOException
+import java.net.UnknownHostException
 
 enum class BackendErrorCode(val value: Int) {
     BackendInvalidPlatform(7000),
@@ -40,7 +41,11 @@ enum class BackendErrorCode(val value: Int) {
 fun Exception.toPurchasesError(): PurchasesError {
     return when (this) {
         is JSONException, is IOException -> {
-            PurchasesError(PurchasesErrorCode.NetworkError, localizedMessage)
+            if (this is UnknownHostException) {
+                PurchasesError(PurchasesErrorCode.UnknownHostError, localizedMessage)
+            } else {
+                PurchasesError(PurchasesErrorCode.NetworkError, localizedMessage)
+            }
         }
         is SecurityException -> {
             PurchasesError(PurchasesErrorCode.InsufficientPermissionsError, localizedMessage)
