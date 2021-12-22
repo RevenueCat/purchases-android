@@ -49,7 +49,7 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     InvalidSubscriberAttributesError(21, "One or more of the attributes sent could not be saved."),
     LogOutWithAnonymousUserError(22, "Called logOut but the current user is anonymous."),
     ConfigurationError(23, "There is an issue with your configuration. Check the underlying error for more details."),
-    UnsupportedError(24, "There was a problem with the operation. Looks like we doesn't support " +
+    UnsupportedError(24, "There was a problem with the operation. Looks like we don't support " +
         "that yet. Check the underlying error for more details."),
     UnknownHostError(25,  "It looks like requests to RevenueCat are being blocked. See: " +
         "https://rev.cat/dnsBlocking for more info.")
