@@ -5,11 +5,9 @@ import com.revenuecat.purchases.Offerings;
 
 import java.util.Map;
 
-@SuppressWarnings({"ConstantConditions", "unused"})
+@SuppressWarnings({"unused"})
 final class OfferingsAPI {
-    static void check() {
-        final Offerings offerings = null;
-
+    static void check(final Offerings offerings) {
         final Offering current = offerings.getCurrent();
         final Map<String, Offering> all = offerings.getAll();
         final Offering o1 = offerings.getOffering("");

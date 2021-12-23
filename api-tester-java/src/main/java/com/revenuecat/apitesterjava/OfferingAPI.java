@@ -5,11 +5,9 @@ import com.revenuecat.purchases.Package;
 
 import java.util.List;
 
-@SuppressWarnings({"ConstantConditions", "unused"})
+@SuppressWarnings({"unused"})
 final class OfferingAPI {
-    static void check() {
-        final Offering offering = null;
-
+    static void check(final Offering offering) {
         final String identifier = offering.getIdentifier();
         final String serverDescription = offering.getServerDescription();
         final List<Package> availablePackages = offering.getAvailablePackages();

@@ -8,10 +8,8 @@ import java.util.Date
 
 @Suppress("unused")
 private class EntitlementInfoAPI {
-    fun check() {
-        val entitlementInfo: EntitlementInfo? = null
-
-        val identifier: String = entitlementInfo!!.identifier
+    fun check(entitlementInfo: EntitlementInfo) {
+        val identifier: String = entitlementInfo.identifier
         val active: Boolean = entitlementInfo.isActive
         val willRenew: Boolean = entitlementInfo.willRenew
         val periodType: PeriodType = entitlementInfo.periodType

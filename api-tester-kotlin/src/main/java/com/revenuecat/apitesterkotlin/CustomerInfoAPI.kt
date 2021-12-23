@@ -8,10 +8,8 @@ import java.util.Date
 
 @Suppress("unused")
 private class CustomerInfoAPI {
-    fun check() {
-        val customerInfo: CustomerInfo? = null
-
-        val entitlementInfo: EntitlementInfos = customerInfo!!.entitlements
+    fun check(customerInfo: CustomerInfo) {
+        val entitlementInfo: EntitlementInfos = customerInfo.entitlements
         val asubs = customerInfo.activeSubscriptions
         val skus: Set<String> = customerInfo.allPurchasedSkus
         val led: Date? = customerInfo.latestExpirationDate

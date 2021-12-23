@@ -10,11 +10,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-@SuppressWarnings({"ConstantConditions", "unused", "SpellCheckingInspection"})
+@SuppressWarnings({"unused", "SpellCheckingInspection"})
 final class CustomerInfoAPI {
-    static void check() {
-        final CustomerInfo customerInfo = null;
-
+    static void check(final CustomerInfo customerInfo) {
         final EntitlementInfos entitlementInfo = customerInfo.getEntitlements();
         final Set<String> asubs = customerInfo.getActiveSubscriptions();
         final Set<String> skus = customerInfo.getAllPurchasedSkus();

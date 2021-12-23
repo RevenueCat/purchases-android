@@ -7,10 +7,8 @@ import com.revenuecat.purchases.PackageType
 
 @Suppress("unused")
 private class OfferingAPI {
-    fun check() {
-        val offering: Offering? = null
-
-        val identifier: String = offering!!.identifier
+    fun check(offering: Offering) {
+        val identifier: String = offering.identifier
         val serverDescription: String = offering.serverDescription
         val availablePackages: List<Package> = offering.availablePackages
         val lifetime: Package? = offering.lifetime
