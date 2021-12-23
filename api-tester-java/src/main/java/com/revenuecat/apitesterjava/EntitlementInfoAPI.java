@@ -36,4 +36,20 @@ final class EntitlementInfoAPI {
             case AMAZON:
         }
     }
+
+    static void periodType(final PeriodType type) {
+        switch (type) {
+            case NORMAL:
+            case INTRO:
+            case TRIAL:
+        }
+    }
+
+    static void ownershipType(final OwnershipType type) {
+        switch (type) {
+            case PURCHASED:
+            case FAMILY_SHARED:
+            case UNKNOWN:
+        }
+    }
 }

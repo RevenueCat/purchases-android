@@ -36,4 +36,21 @@ private class EntitlementInfoAPI {
             -> {}
         }
     }
+
+    fun periodType(type: PeriodType) {
+        when (type) {
+            PeriodType.NORMAL,
+            PeriodType.INTRO,
+            PeriodType.TRIAL
+            -> {}
+        }
+    }
+
+    fun ownershipType(type: OwnershipType) {
+        when (type) {
+            OwnershipType.PURCHASED,
+            OwnershipType.FAMILY_SHARED,
+            OwnershipType.UNKNOWN -> {}
+        }
+    }
 }
