@@ -2,5 +2,6 @@ apply from: "$rootProject.projectDir/library.gradle"
 
 dependencies {
     implementation project(path: ':public')
+    implementation project(path: ':purchases')
     implementation 'com.android.billingclient:billing-ktx:4.0.0'
 }
