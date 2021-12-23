@@ -158,7 +158,7 @@ platform :android do
       is_prerelease: true
     )
 
-    tag_release_with_latest_if_needed(release_version: release_version)
+    tag_release_with_amazon_latest_if_needed(release_version: release_version)
   end
 
   desc "Upload and close a release"

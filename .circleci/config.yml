@@ -13,6 +13,8 @@ release-tags: &release-tags
       ignore:
         - /^.*-SNAPSHOT/
         - latest
+        - /^5.0.0-amazon.alpha.*/
+        - amazon-latest
     branches:
       ignore: /.*/
 
