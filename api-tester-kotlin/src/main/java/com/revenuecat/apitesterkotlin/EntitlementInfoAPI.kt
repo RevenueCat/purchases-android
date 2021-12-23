@@ -25,4 +25,17 @@ private class EntitlementInfoAPI {
         val billingIssueDetectedAt: Date? = entitlementInfo.billingIssueDetectedAt
         val ownershipType: OwnershipType = entitlementInfo.ownershipType
     }
+
+    fun store(store: Store) {
+        when (store) {
+            Store.APP_STORE,
+            Store.MAC_APP_STORE,
+            Store.PLAY_STORE,
+            Store.STRIPE,
+            Store.PROMOTIONAL,
+            Store.UNKNOWN_STORE,
+            Store.AMAZON
+            -> {}
+        }
+    }
 }

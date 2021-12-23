@@ -7,11 +7,9 @@ import com.revenuecat.purchases.Store;
 
 import java.util.Date;
 
-@SuppressWarnings({"ConstantConditions", "unused", "SpellCheckingInspection"})
+@SuppressWarnings({"unused"})
 final class EntitlementInfoAPI {
-    static void check() {
-        final EntitlementInfo entitlementInfo = null;
-
+    static void check(final EntitlementInfo entitlementInfo) {
         final String identifier = entitlementInfo.getIdentifier();
         final boolean active = entitlementInfo.isActive();
         final boolean willRenew = entitlementInfo.getWillRenew();
@@ -25,5 +23,17 @@ final class EntitlementInfoAPI {
         final Date unsubscribeDetectedAt = entitlementInfo.getUnsubscribeDetectedAt();
         final Date billingIssueDetectedAt = entitlementInfo.getBillingIssueDetectedAt();
         final OwnershipType ownershipType = entitlementInfo.getOwnershipType();
+    }
+
+    static void store(final Store store) {
+        switch (store) {
+            case APP_STORE:
+            case MAC_APP_STORE:
+            case PLAY_STORE:
+            case STRIPE:
+            case PROMOTIONAL:
+            case UNKNOWN_STORE:
+            case AMAZON:
+        }
     }
 }
