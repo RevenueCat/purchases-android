@@ -6,7 +6,7 @@ import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import java.util.Date
 
-@Suppress("unused")
+@Suppress("unused", "UNUSED_VARIABLE")
 private class EntitlementInfoAPI {
     fun check(entitlementInfo: EntitlementInfo) {
         val identifier: String = entitlementInfo.identifier

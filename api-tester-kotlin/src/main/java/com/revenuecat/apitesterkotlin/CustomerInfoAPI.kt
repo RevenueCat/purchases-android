@@ -6,7 +6,7 @@ import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.models.Transaction
 import java.util.Date
 
-@Suppress("unused")
+@Suppress("unused", "UNUSED_VARIABLE")
 private class CustomerInfoAPI {
     fun check(customerInfo: CustomerInfo) {
         val entitlementInfo: EntitlementInfos = customerInfo.entitlements

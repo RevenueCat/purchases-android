@@ -5,7 +5,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 
-@Suppress("unused")
+@Suppress("unused", "UNUSED_VARIABLE")
 private class OfferingAPI {
     fun check(offering: Offering) {
         val identifier: String = offering.identifier

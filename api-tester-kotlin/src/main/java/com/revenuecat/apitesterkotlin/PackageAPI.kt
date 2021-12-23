@@ -4,7 +4,7 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 
-@Suppress("unused")
+@Suppress("unused", "UNUSED_VARIABLE")
 private class PackageAPI {
     fun check(p: Package) {
         val identifier: String = p.identifier

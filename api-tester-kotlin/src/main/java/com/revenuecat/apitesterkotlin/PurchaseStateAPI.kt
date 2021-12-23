@@ -2,7 +2,7 @@ package com.revenuecat.apitesterkotlin
 
 import com.revenuecat.purchases.models.PurchaseState
 
-@Suppress("unused")
+@Suppress("unused", "UNUSED_VARIABLE")
 private class PurchaseStateAPI {
     fun check(state: PurchaseState) {
         when (state) {

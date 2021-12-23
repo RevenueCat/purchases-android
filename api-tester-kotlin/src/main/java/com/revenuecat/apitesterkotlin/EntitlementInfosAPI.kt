@@ -3,7 +3,7 @@ package com.revenuecat.apitesterkotlin
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
 
-@Suppress("unused")
+@Suppress("unused", "UNUSED_VARIABLE")
 private class EntitlementInfosAPI {
     fun check(infos: EntitlementInfos) {
         val active: Map<String, EntitlementInfo> = infos.active

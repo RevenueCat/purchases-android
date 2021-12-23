@@ -3,7 +3,7 @@ package com.revenuecat.apitesterkotlin
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 
-@Suppress("unused")
+@Suppress("unused", "UNUSED_VARIABLE")
 private class PurchasesErrorAPI {
     fun check(error: PurchasesError) {
         val code: PurchasesErrorCode = error.code

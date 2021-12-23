@@ -4,7 +4,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
-@Suppress("unused")
+@Suppress("unused", "UNUSED_VARIABLE")
 private class StoreProductAPI {
     fun check(product: StoreProduct) {
         val sku: String = product.sku

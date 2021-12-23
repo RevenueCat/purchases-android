@@ -3,7 +3,7 @@ package com.revenuecat.apitesterkotlin
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 
-@Suppress("unused")
+@Suppress("unused", "UNUSED_VARIABLE")
 private class OfferingsAPI {
     fun check(offerings: Offerings) {
         val current: Offering? = offerings.current

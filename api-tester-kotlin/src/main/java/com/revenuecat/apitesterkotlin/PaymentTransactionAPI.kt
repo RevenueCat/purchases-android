@@ -6,7 +6,7 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import org.json.JSONObject
 
-@Suppress("unused")
+@Suppress("unused", "UNUSED_VARIABLE")
 private class PaymentTransactionAPI {
     fun check(transaction: PaymentTransaction) {
         val orderId: String? = transaction.orderId
