@@ -1,4 +1,4 @@
-package com.revenuecat.api_tester_kotlin
+package com.revenuecat.apitesterkotlin
 
 import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo

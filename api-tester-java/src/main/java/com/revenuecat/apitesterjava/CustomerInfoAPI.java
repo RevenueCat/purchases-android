@@ -1,4 +1,4 @@
-package com.revenuecat.api_tester_java;
+package com.revenuecat.apitesterjava;
 
 import android.net.Uri;
 
