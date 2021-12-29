@@ -11,6 +11,10 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
+import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.getNonSubscriptionSkusWith
+import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.getSubscriptionSkusWith
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
@@ -18,6 +22,11 @@ import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.logInWith
+import com.revenuecat.purchases.logOutWith
+import com.revenuecat.purchases.purchasePackageWith
+import com.revenuecat.purchases.purchaseProductWith
+import com.revenuecat.purchases.restorePurchasesWith
 import java.net.URL
 import java.util.ArrayList
 import java.util.concurrent.ExecutorService
@@ -84,6 +93,73 @@ private class PurchasesAPI {
 
         purchases.onAppBackgrounded()
         purchases.onAppForegrounded()
+    }
+
+    @Suppress("RedundantLambdaArrow")
+    fun checkListenerConversions(
+        purchases: Purchases,
+        activity: Activity,
+        packageToPurchase: Package,
+        skuDetails: SkuDetails,
+        upgradeInfo: UpgradeInfo
+    ) {
+        purchases.getOfferingsWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: Offerings -> }
+        )
+        purchases.purchaseProductWith(
+            activity,
+            skuDetails,
+            onError = { _: PurchasesError, _: Boolean -> },
+            onSuccess = { _: Purchase, _: CustomerInfo -> }
+        )
+        purchases.purchaseProductWith(
+            activity,
+            skuDetails,
+            upgradeInfo,
+            onError = { _: PurchasesError, _: Boolean -> },
+            onSuccess = { _: Purchase?, _: CustomerInfo -> }
+        )
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase,
+            upgradeInfo,
+            onError = { _: PurchasesError, _: Boolean -> },
+            onSuccess = { _: Purchase?, _: CustomerInfo -> }
+        )
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase,
+            onError = { _: PurchasesError, _: Boolean -> },
+            onSuccess = { _: Purchase?, _: CustomerInfo -> }
+        )
+        purchases.restorePurchasesWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: CustomerInfo -> }
+        )
+        purchases.logInWith(
+            "",
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: CustomerInfo, _: Boolean -> }
+        )
+        purchases.logOutWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: CustomerInfo -> }
+        )
+        purchases.getCustomerInfoWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: CustomerInfo -> }
+        )
+        purchases.getSubscriptionSkusWith(
+            ArrayList<String>(),
+            onError = { _: PurchasesError -> },
+            onReceiveSkus = { _: List<SkuDetails> -> }
+        )
+        purchases.getNonSubscriptionSkusWith(
+            ArrayList<String>(),
+            onError = { _: PurchasesError -> },
+            onReceiveSkus = { _: List<SkuDetails> -> }
+        )
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
