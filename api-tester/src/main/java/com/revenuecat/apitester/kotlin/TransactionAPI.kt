@@ -6,8 +6,10 @@ import java.util.Date
 @Suppress("unused", "UNUSED_VARIABLE")
 private class TransactionAPI {
     fun check(transaction: Transaction) {
-        val revenuecatId: String = transaction.revenuecatId
-        val productId: String = transaction.productId
-        val purchaseDate: Date = transaction.purchaseDate
+        with(transaction) {
+            val revenuecatId: String = revenuecatId
+            val productId: String = productId
+            val purchaseDate: Date = purchaseDate
+        }
     }
 }

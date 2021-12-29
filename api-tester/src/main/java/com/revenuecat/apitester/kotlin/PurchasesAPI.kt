@@ -9,8 +9,6 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.Purchases.Companion.canMakePayments
-import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
@@ -20,6 +18,7 @@ import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import java.net.URL
 import java.util.ArrayList
 import java.util.concurrent.ExecutorService
 
@@ -88,24 +87,26 @@ private class PurchasesAPI {
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
-        purchases.setAttributes(attributes)
-        purchases.setEmail("")
-        purchases.setPhoneNumber("")
-        purchases.setDisplayName("")
-        purchases.setPushToken("")
-        purchases.collectDeviceIdentifiers()
-        purchases.setAdjustID("")
-        purchases.setAppsflyerID("")
-        purchases.setFBAnonymousID("")
-        purchases.setMparticleID("")
-        purchases.setOnesignalID("")
-        purchases.setAirshipChannelID("")
-        purchases.setMediaSource("")
-        purchases.setCampaign("")
-        purchases.setAdGroup("")
-        purchases.setAd("")
-        purchases.setKeyword("")
-        purchases.setCreative("")
+        with(purchases) {
+            setAttributes(attributes)
+            setEmail("")
+            setPhoneNumber("")
+            setDisplayName("")
+            setPushToken("")
+            collectDeviceIdentifiers()
+            setAdjustID("")
+            setAppsflyerID("")
+            setFBAnonymousID("")
+            setMparticleID("")
+            setOnesignalID("")
+            setAirshipChannelID("")
+            setMediaSource("")
+            setCampaign("")
+            setAdGroup("")
+            setAd("")
+            setKeyword("")
+            setCreative("")
+        }
     }
 
     @Suppress("RemoveRedundantQualifierName", "RedundantLambdaArrow")
@@ -113,13 +114,21 @@ private class PurchasesAPI {
         val features: List<BillingFeature> = ArrayList()
         val configured: Boolean = Purchases.isConfigured
 
-        configure(context, "")
-        configure(context, "", "")
-        configure(context, "", "", true)
-        configure(context, "", "", false, executorService)
+        Purchases.configure(context, "")
+        Purchases.configure(context, "", "")
+        Purchases.configure(context, "", "", true)
+        Purchases.configure(context, "", "", false, executorService)
 
-        canMakePayments(context, features) { _: Boolean -> }
-        canMakePayments(context) { _: Boolean -> }
+        Purchases.canMakePayments(context, features) { _: Boolean -> }
+        Purchases.canMakePayments(context) { _: Boolean -> }
+
+        Purchases.debugLogsEnabled = false
+        val debugLogs: Boolean = Purchases.debugLogsEnabled
+
+        Purchases.proxyURL = URL("")
+        val url: URL? = Purchases.proxyURL
+
+        val instance: Purchases = Purchases.sharedInstance
     }
 
     fun check(network: Purchases.AttributionNetwork) {

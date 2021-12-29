@@ -7,10 +7,12 @@ import com.revenuecat.purchases.PackageType
 @Suppress("unused", "UNUSED_VARIABLE")
 private class PackageAPI {
     fun check(p: Package) {
-        val identifier: String = p.identifier
-        val packageType: PackageType = p.packageType
-        val product: SkuDetails = p.product
-        val offering: String = p.offering
+        with(p) {
+            val identifier: String = identifier
+            val packageType: PackageType = packageType
+            val product: SkuDetails = product
+            val offering: String = offering
+        }
     }
 
     fun check(type: PackageType) {

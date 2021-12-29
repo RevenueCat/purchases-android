@@ -8,6 +8,7 @@ import com.revenuecat.purchases.models.Transaction;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @SuppressWarnings({"unused", "SpellCheckingInspection"})
@@ -29,5 +30,7 @@ final class CustomerInfoAPI {
         final Date pds = customerInfo.getPurchaseDateForSku("");
         final Date ede = customerInfo.getExpirationDateForEntitlement("");
         final Date pde = customerInfo.getPurchaseDateForEntitlement("");
+        final Map<String, Date> allExpirationDatesByProduct = customerInfo.getAllExpirationDatesByProduct();
+        final Map<String, Date> allPurchaseDatesByProduct = customerInfo.getAllPurchaseDatesByProduct();
     }
 }

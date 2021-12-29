@@ -9,18 +9,20 @@ import org.json.JSONObject
 @Suppress("unused", "UNUSED_VARIABLE")
 private class PaymentTransactionAPI {
     fun check(transaction: PaymentTransaction) {
-        val orderId: String? = transaction.orderId
-        val skus: List<String> = transaction.skus
-        val type: ProductType = transaction.type
-        val purchaseTime: Long = transaction.purchaseTime
-        val purchaseToken: String = transaction.purchaseToken
-        val purchaseState: PurchaseState = transaction.purchaseState
-        val autoRenewing: Boolean? = transaction.isAutoRenewing
-        val signature: String? = transaction.signature
-        val originalJson: JSONObject = transaction.originalJson
-        val presentedOfferingIdentifier: String? = transaction.presentedOfferingIdentifier
-        val su1: String? = transaction.storeUserID
-        val purchaseType: PurchaseType = transaction.purchaseType
+        with(transaction) {
+            val orderId: String? = orderId
+            val skus: List<String> = skus
+            val type: ProductType = type
+            val purchaseTime: Long = purchaseTime
+            val purchaseToken: String = purchaseToken
+            val purchaseState: PurchaseState = purchaseState
+            val autoRenewing: Boolean? = isAutoRenewing
+            val signature: String? = signature
+            val originalJson: JSONObject = originalJson
+            val presentedOfferingIdentifier: String? = presentedOfferingIdentifier
+            val su1: String? = storeUserID
+            val purchaseType: PurchaseType = purchaseType
+        }
     }
 
     fun check(type: PurchaseType) {

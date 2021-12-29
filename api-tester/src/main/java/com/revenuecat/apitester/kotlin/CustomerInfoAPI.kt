@@ -9,19 +9,23 @@ import java.util.Date
 @Suppress("unused", "UNUSED_VARIABLE")
 private class CustomerInfoAPI {
     fun check(customerInfo: CustomerInfo) {
-        val entitlementInfo: EntitlementInfos = customerInfo.entitlements
-        val asubs = customerInfo.activeSubscriptions
-        val skus: Set<String> = customerInfo.allPurchasedSkus
-        val led: Date? = customerInfo.latestExpirationDate
-        val nst: List<Transaction> = customerInfo.nonSubscriptionTransactions
-        val opd: Date? = customerInfo.originalPurchaseDate
-        val rd: Date = customerInfo.requestDate
-        val fs: Date = customerInfo.firstSeen
-        val oaui: String = customerInfo.originalAppUserId
-        val mu: Uri? = customerInfo.managementURL
-        val eds: Date? = customerInfo.getExpirationDateForSku("")
-        val pds: Date? = customerInfo.getPurchaseDateForSku("")
-        val ede: Date? = customerInfo.getExpirationDateForEntitlement("")
-        val pde: Date? = customerInfo.getPurchaseDateForEntitlement("")
+        with(customerInfo) {
+            val entitlementInfo: EntitlementInfos = entitlements
+            val asubs = activeSubscriptions
+            val skus: Set<String> = allPurchasedSkus
+            val led: Date? = latestExpirationDate
+            val nst: List<Transaction> = nonSubscriptionTransactions
+            val opd: Date? = originalPurchaseDate
+            val rd: Date = requestDate
+            val fs: Date = firstSeen
+            val oaui: String = originalAppUserId
+            val mu: Uri? = managementURL
+            val eds: Date? = getExpirationDateForSku("")
+            val pds: Date? = getPurchaseDateForSku("")
+            val ede: Date? = getExpirationDateForEntitlement("")
+            val pde: Date? = getPurchaseDateForEntitlement("")
+            val allExpirationDatesByProduct: Map<String, Date?> = allExpirationDatesByProduct
+            val allPurchaseDatesByProduct: Map<String, Date?> = allPurchaseDatesByProduct
+        }
     }
 }

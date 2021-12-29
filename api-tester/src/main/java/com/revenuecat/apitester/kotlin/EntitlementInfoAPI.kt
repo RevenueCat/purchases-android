@@ -9,19 +9,21 @@ import java.util.Date
 @Suppress("unused", "UNUSED_VARIABLE")
 private class EntitlementInfoAPI {
     fun check(entitlementInfo: EntitlementInfo) {
-        val identifier: String = entitlementInfo.identifier
-        val active: Boolean = entitlementInfo.isActive
-        val willRenew: Boolean = entitlementInfo.willRenew
-        val periodType: PeriodType = entitlementInfo.periodType
-        val latestPurchaseDate: Date = entitlementInfo.latestPurchaseDate
-        val originalPurchaseDate: Date = entitlementInfo.originalPurchaseDate
-        val expirationDate: Date? = entitlementInfo.expirationDate
-        val store: Store = entitlementInfo.store
-        val productIdentifier: String = entitlementInfo.productIdentifier
-        val sandbox: Boolean = entitlementInfo.isSandbox
-        val unsubscribeDetectedAt: Date? = entitlementInfo.unsubscribeDetectedAt
-        val billingIssueDetectedAt: Date? = entitlementInfo.billingIssueDetectedAt
-        val ownershipType: OwnershipType = entitlementInfo.ownershipType
+        with(entitlementInfo) {
+            val identifier: String = identifier
+            val active: Boolean = isActive
+            val willRenew: Boolean = willRenew
+            val periodType: PeriodType = periodType
+            val latestPurchaseDate: Date = latestPurchaseDate
+            val originalPurchaseDate: Date = originalPurchaseDate
+            val expirationDate: Date? = expirationDate
+            val store: Store = store
+            val productIdentifier: String = productIdentifier
+            val sandbox: Boolean = isSandbox
+            val unsubscribeDetectedAt: Date? = unsubscribeDetectedAt
+            val billingIssueDetectedAt: Date? = billingIssueDetectedAt
+            val ownershipType: OwnershipType = ownershipType
+        }
     }
 
     fun store(store: Store) {
