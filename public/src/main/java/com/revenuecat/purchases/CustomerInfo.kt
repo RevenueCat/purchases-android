@@ -184,8 +184,6 @@ data class CustomerInfo constructor(
         result = 31 * result + nonSubscriptionTransactions.hashCode()
         result = 31 * result + allExpirationDatesByProduct.hashCode()
         result = 31 * result + allPurchaseDatesByProduct.hashCode()
-        result = 31 * result + requestDate.hashCode()
-        result = 31 * result + jsonObject.hashCode()
         result = 31 * result + schemaVersion
         result = 31 * result + firstSeen.hashCode()
         result = 31 * result + originalAppUserId.hashCode()
