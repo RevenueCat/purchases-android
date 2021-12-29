@@ -31,6 +31,6 @@ private class PaymentTransactionAPI {
             PurchaseType.GOOGLE_RESTORED_PURCHASE,
             PurchaseType.AMAZON_PURCHASE
             -> {}
-        }
+        }.exhaustive
     }
 }

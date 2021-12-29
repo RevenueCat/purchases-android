@@ -129,7 +129,6 @@ final class PurchasesAPI {
         Purchases.canMakePayments(context, (Boolean result) -> {});
     }
 
-
     static void check(final Purchases.AttributionNetwork network) {
         switch (network) {
             case ADJUST:

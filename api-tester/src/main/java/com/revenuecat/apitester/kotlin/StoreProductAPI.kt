@@ -34,6 +34,6 @@ private class StoreProductAPI {
             ProductType.INAPP,
             ProductType.UNKNOWN
             -> {}
-        }
+        }.exhaustive
     }
 }

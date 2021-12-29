@@ -38,6 +38,6 @@ private class PurchasesErrorAPI {
             PurchasesErrorCode.ConfigurationError,
             PurchasesErrorCode.UnsupportedError
             -> {}
-        }
+        }.exhaustive
     }
 }

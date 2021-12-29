@@ -10,6 +10,6 @@ private class PurchaseStateAPI {
             PurchaseState.PURCHASED,
             PurchaseState.PENDING
             -> {}
-        }
+        }.exhaustive
     }
 }

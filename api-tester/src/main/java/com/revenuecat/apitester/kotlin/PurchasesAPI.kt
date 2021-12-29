@@ -140,6 +140,6 @@ private class PurchasesAPI {
             Purchases.AttributionNetwork.FACEBOOK,
             Purchases.AttributionNetwork.MPARTICLE
             -> {}
-        }
+        }.exhaustive
     }
 }

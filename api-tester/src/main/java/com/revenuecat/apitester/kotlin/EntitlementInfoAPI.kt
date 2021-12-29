@@ -36,7 +36,7 @@ private class EntitlementInfoAPI {
             Store.UNKNOWN_STORE,
             Store.AMAZON
             -> {}
-        }
+        }.exhaustive
     }
 
     fun periodType(type: PeriodType) {
@@ -45,7 +45,7 @@ private class EntitlementInfoAPI {
             PeriodType.INTRO,
             PeriodType.TRIAL
             -> {}
-        }
+        }.exhaustive
     }
 
     fun ownershipType(type: OwnershipType) {
