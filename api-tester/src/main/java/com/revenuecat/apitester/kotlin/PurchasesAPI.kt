@@ -109,7 +109,7 @@ private class PurchasesAPI {
         }
     }
 
-    @Suppress("RemoveRedundantQualifierName", "RedundantLambdaArrow")
+    @Suppress("RemoveRedundantQualifierName", "RedundantLambdaArrow", "ForbiddenComment")
     fun checkConfiguration(context: Context, executorService: ExecutorService) {
         val features: List<BillingFeature> = ArrayList()
         val configured: Boolean = Purchases.isConfigured
@@ -129,6 +129,8 @@ private class PurchasesAPI {
         val url: URL? = Purchases.proxyURL
 
         val instance: Purchases = Purchases.sharedInstance
+
+        // TODO: add the builder version once amazon is merged
     }
 
     fun check(network: Purchases.AttributionNetwork) {
