@@ -43,7 +43,9 @@ data class CustomerInfo constructor(
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
     val requestDate: Date,
-    val jsonObject: JSONObject,
+    @Deprecated(
+        "Use rawData instead"
+    ) val jsonObject: JSONObject,
     val schemaVersion: Int,
     val firstSeen: Date,
     val originalAppUserId: String,

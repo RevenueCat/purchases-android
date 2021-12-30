@@ -48,6 +48,7 @@ data class EntitlementInfo constructor(
     val ownershipType: OwnershipType,
     val jsonObject: JSONObject
 ) : Parcelable, RawDataContainer<JSONObject> {
+
     @IgnoredOnParcel
     override val rawData: JSONObject
         get() = jsonObject
