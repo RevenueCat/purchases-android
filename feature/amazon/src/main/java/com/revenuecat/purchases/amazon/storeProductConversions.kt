@@ -7,6 +7,8 @@ import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
+import java.text.NumberFormat
+import java.text.ParseException
 import java.util.Currency
 import java.util.Locale
 import java.util.regex.Pattern
@@ -26,7 +28,10 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct {
     // By default, Amazon automatically converts the base list price of your IAP items into
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
     val (currencyCode, priceAmountMicros) =
-        price.extractPrice(Currency.getInstance(Locale("EN", marketplace)))
+        price.extractPrice(
+            currency = Currency.getInstance(Locale("EN", marketplace)),
+            numberFormat = NumberFormat.getInstance()
+        )
 
     return StoreProduct(
         sku,
@@ -50,11 +55,13 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct {
 }
 
 internal fun String.extractPrice(
-    currency: Currency
+    currency: Currency,
+    numberFormat: NumberFormat
 ): Price {
     debugLog("Received price is $this. Extracting currency and amount.")
 
-    val (priceNumeric, currencySymbol) = this.parsePriceAndCurrencySymbolUsingRegex() ?: 0.0f to currency.symbol
+    val (priceNumeric, currencySymbol) =
+        this.parsePriceAndCurrencySymbolUsingRegex(numberFormat) ?: 0.0f to currency.symbol
 
     debugLog("Extracted price is: $priceNumeric. Currency symbol is $currencySymbol")
 
@@ -98,26 +105,28 @@ internal data class Price(
 // The lasts two are englobed in []*, as they can be repeated 0 or n times.
 private val pattern: Pattern = Pattern.compile("(\\d+[[\\.,\\s]\\d+]*)")
 
-internal fun String.parsePriceAndCurrencySymbolUsingRegex(): Pair<Float, String>? {
+internal fun String.parsePriceAndCurrencySymbolUsingRegex(numberFormat: NumberFormat): Pair<Float, String>? {
     val matcher = pattern.matcher(this)
     return if (matcher.find()) {
         val price: String = matcher.group()
-        var convertiblePrice = price.trim()
-        if (price.contains(",")) {
-            convertiblePrice =
-                if (price.contains(".") || price.length - price.replace(",", "").length > 1) {
-                    // 1,000,000.00 or 1,000,000
-                    price.replace(",", "")
-                } else {
-                    // 1,00
-                    price.replace(",", ".")
-                }
-        }
-
         val currencySymbol = this.replace(price, "").trim()
+        val priceNumeric = extractPriceNumber(price, numberFormat)
 
-        convertiblePrice.trim().toFloat() to currencySymbol
+        priceNumeric to currencySymbol
     } else null
+}
+
+private fun extractPriceNumber(
+    price: String,
+    numberFormat: NumberFormat
+): Float {
+    return price.trim().let { formattedPriceWithoutSymbol ->
+        try {
+            numberFormat.parse(formattedPriceWithoutSymbol).toFloat()
+        } catch (e: ParseException) {
+            0.0f
+        }
+    }
 }
 
 private fun JSONObject.getProductType(productType: String) =
