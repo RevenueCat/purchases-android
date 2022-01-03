@@ -3,11 +3,14 @@ package com.revenuecat.purchases.amazon
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Currency
+import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class PriceExtractorTest {
@@ -129,11 +132,20 @@ class PriceExtractorTest {
 
     @Test
     fun `Inconsistent case with IN marketplace but price in dollars, sets symbol as currency code`() {
+        mockkStatic(Currency::class)
+
+        val availableCurrencies = mutableSetOf<Currency>()
+        availableCurrencies.add(Currency.getInstance(Locale.US))
+        every {
+            Currency.getAvailableCurrencies()
+        } returns availableCurrencies
+
         mockCurrency("₹", "INR")
 
-        val (currencyCode, priceAmountMicros) = " US$ 7.00".extractPrice(mockCurrency)
+        val (currencyCode, priceAmountMicros) = "US$ 7.00".extractPrice(mockCurrency)
         assertThat(currencyCode).isEqualTo("US$")
         assertThat(priceAmountMicros).isEqualTo(7_000_000)
+        unmockkStatic(Currency::class)
     }
 
     @Test
