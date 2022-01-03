@@ -46,7 +46,10 @@ data class EntitlementInfo constructor(
     val unsubscribeDetectedAt: Date?,
     val billingIssueDetectedAt: Date?,
     val ownershipType: OwnershipType,
-    val jsonObject: JSONObject
+    @Deprecated(
+        "Use rawData instead",
+        replaceWith = ReplaceWith("rawData")
+    ) val jsonObject: JSONObject
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     @IgnoredOnParcel

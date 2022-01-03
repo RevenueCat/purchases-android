@@ -44,7 +44,8 @@ data class CustomerInfo constructor(
     val allPurchaseDatesByProduct: Map<String, Date?>,
     val requestDate: Date,
     @Deprecated(
-        "Use rawData instead"
+        "Use rawData instead",
+        replaceWith = ReplaceWith("rawData")
     ) val jsonObject: JSONObject,
     val schemaVersion: Int,
     val firstSeen: Date,
