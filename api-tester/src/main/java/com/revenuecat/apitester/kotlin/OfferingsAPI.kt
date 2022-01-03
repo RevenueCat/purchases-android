@@ -6,9 +6,11 @@ import com.revenuecat.purchases.Offerings
 @Suppress("unused", "UNUSED_VARIABLE")
 private class OfferingsAPI {
     fun check(offerings: Offerings) {
-        val current: Offering? = offerings.current
-        val all: Map<String, Offering> = offerings.all
-        val o1: Offering? = offerings.getOffering("")
-        val o2: Offering? = offerings[""]
+        with(offerings) {
+            val current: Offering? = current
+            val all: Map<String, Offering> = all
+            val o1: Offering? = getOffering("")
+            val o2: Offering? = this[""]
+        }
     }
 }

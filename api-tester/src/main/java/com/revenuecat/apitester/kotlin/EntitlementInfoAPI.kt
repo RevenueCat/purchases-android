@@ -53,6 +53,6 @@ private class EntitlementInfoAPI {
             OwnershipType.PURCHASED,
             OwnershipType.FAMILY_SHARED,
             OwnershipType.UNKNOWN -> {}
-        }
+        }.exhaustive
     }
 }
