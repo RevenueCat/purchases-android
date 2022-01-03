@@ -25,6 +25,8 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -115,7 +117,8 @@ final class PurchasesAPI {
         purchases.setCreative("");
     }
 
-    static void checkConfiguration(final Context context, final ExecutorService executorService) {
+    static void checkConfiguration(final Context context,
+                                   final ExecutorService executorService) throws MalformedURLException {
         final List<? extends BillingFeature> features = new ArrayList<>();
 
         final boolean configured = Purchases.isConfigured();
@@ -127,6 +130,16 @@ final class PurchasesAPI {
 
         Purchases.canMakePayments(context, features, (Boolean result) -> {});
         Purchases.canMakePayments(context, (Boolean result) -> {});
+
+        Purchases.setDebugLogsEnabled(false);
+        final boolean debugLogs = Purchases.getDebugLogsEnabled();
+
+        Purchases.setProxyURL(new URL(""));
+        final URL proxyURL = Purchases.getProxyURL();
+
+        final Purchases instance = Purchases.getSharedInstance();
+
+        // TODO: add the builder version once amazon is merged
     }
 
     static void check(final Purchases.AttributionNetwork network) {
