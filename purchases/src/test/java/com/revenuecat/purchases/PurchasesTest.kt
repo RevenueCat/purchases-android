@@ -40,12 +40,10 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.LogInCallback
-import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
-import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -1073,27 +1071,6 @@ class PurchasesTest {
         verify {
             mockCache.cacheOfferings(any())
         }
-    }
-
-    @Test
-    fun getOfferingsErrorIsNotCalledIfSkuDetailsMissing() {
-        every {
-            mockCache.cachedOfferings
-        } returns null
-
-        val skus = listOf(stubProductIdentifier)
-        mockProducts()
-        mockStoreProduct(skus, ArrayList(), ProductType.SUBS)
-        mockStoreProduct(skus, ArrayList(), ProductType.INAPP)
-
-        val errorMessage = emptyArray<PurchasesError>()
-
-        purchases.getOfferingsWith({ errorMessage[0] = it }) {
-            receivedOfferings = it
-        }
-
-        assertThat(errorMessage.size).isZero()
-        assertThat(this.receivedOfferings).isNotNull
     }
 
     @Test
