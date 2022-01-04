@@ -46,6 +46,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.PaymentTransaction
 import com.revenuecat.purchases.models.skuDetails
+import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.util.AdvertisingIdClient
@@ -58,6 +59,7 @@ import io.mockk.Call
 import io.mockk.CapturingSlot
 import io.mockk.MockKAnswerScope
 import io.mockk.Runs
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -124,6 +126,11 @@ class PurchasesTest {
         "'packages': [" +
         "{'identifier': '\$rc_monthly','platform_product_identifier': '$stubProductIdentifier'}" +
         "]}]," +
+        "'current_offering_id': '$stubOfferingIdentifier'}"
+    private val noOfferingsResponse = "{'offerings': [" +
+        "{'identifier': '$stubOfferingIdentifier', " +
+        "'description': 'This is the base offering', " +
+        "'packages': []}]," +
         "'current_offering_id': '$stubOfferingIdentifier'}"
 
     private val mockLifecycle = mockk<Lifecycle>()
@@ -911,6 +918,63 @@ class PurchasesTest {
         assertThat(receivedOfferings).isNotNull
         assertThat(receivedOfferings!!.all.size).isEqualTo(1)
         assertThat(receivedOfferings!![stubOfferingIdentifier]!!.monthly!!.product).isNotNull
+    }
+
+    @Test
+    fun `configuration error if no products are found`() {
+        mockProducts(noOfferingsResponse)
+
+        every {
+            mockCache.cachedOfferings
+        } returns null
+
+        var purchasesError: PurchasesError? = null
+
+        purchases.getOfferingsWith({ error ->
+            purchasesError = error
+        }) {
+            fail("should be an error")
+        }
+
+        assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(purchasesError!!.underlyingErrorMessage).contains(
+            OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS
+        )
+        verify(exactly = 1) {
+            mockCache.clearOfferingsCacheTimestamp()
+        }
+    }
+
+    @Test
+    fun `configuration error if products are not set up`() {
+        val skus = listOf(stubProductIdentifier)
+
+        mockProducts()
+        clearMocks(mockBillingAbstract)
+        mockStoreProduct(skus, listOf(), ProductType.SUBS)
+        mockStoreProduct(skus, listOf(), ProductType.INAPP)
+
+        every {
+            mockCache.cachedOfferings
+        } returns null
+
+        var purchasesError: PurchasesError? = null
+
+        purchases.getOfferingsWith({ error ->
+            purchasesError = error
+        }) {
+            fail("should be an error")
+        }
+
+        assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(purchasesError!!.underlyingErrorMessage).contains(
+            OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+        )
+        verify(exactly = 1) {
+            mockCache.clearOfferingsCacheTimestamp()
+        }
     }
 
     @Test
@@ -3769,11 +3833,11 @@ class PurchasesTest {
         }
     }
 
-    private fun mockProducts() {
+    private fun mockProducts(response: String = oneOfferingsResponse) {
         every {
             mockBackend.getOfferings(any(), any(), captureLambda(), any())
         } answers {
-            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(oneOfferingsResponse))
+            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(response))
         }
     }
 
