@@ -7,7 +7,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import org.json.JSONException
 import java.io.IOException
 
-enum class BackendErrorCode(val value: Int) {
+private enum class BackendErrorCode(val value: Int) {
     BackendInvalidPlatform(7000),
     BackendStoreProblem(7101),
     BackendCannotTransferPurchase(7102),
@@ -49,7 +49,7 @@ fun Exception.toPurchasesError(): PurchasesError {
     }
 }
 
-fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
+private fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
     PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
 
 fun HTTPResult.toPurchasesError(): PurchasesError {
@@ -64,7 +64,7 @@ fun HTTPResult.toPurchasesError(): PurchasesError {
 }
 
 @Suppress("ComplexMethod")
-fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
+private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
     return when (this) {
         BackendErrorCode.BackendStoreProblem -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendCannotTransferPurchase -> PurchasesErrorCode.ReceiptAlreadyInUseError
