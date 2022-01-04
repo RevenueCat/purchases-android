@@ -73,6 +73,9 @@ fun JSONObject.buildCustomerInfo(): CustomerInfo {
     )
 }
 
+/**
+ * Note: this may return an empty Offerings.
+ */
 fun JSONObject.createOfferings(products: Map<String, StoreProduct>): Offerings {
     val jsonOfferings = getJSONArray("offerings")
     val currentOfferingID = getString("current_offering_id")
