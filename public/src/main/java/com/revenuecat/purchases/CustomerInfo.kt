@@ -165,6 +165,9 @@ data class CustomerInfo constructor(
 
 /**
  * Contains fields to be used for equality, which ignores requestDate and jsonObject.
+ * requestDate is excluded so that two CustomerInfo objects that are otherwise identical
+ * won't be considered different if they were refreshed at a different point in time
+ * jsonObject is excluded because we're already using the parsed fields for comparisons.
  */
 private data class ComparableData(
     val entitlements: EntitlementInfos,
