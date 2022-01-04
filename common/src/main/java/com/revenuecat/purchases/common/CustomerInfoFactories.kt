@@ -1,14 +1,15 @@
 package com.revenuecat.purchases.common
 
 import android.net.Uri
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.skuDetails
+import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.optNullableString
 import com.revenuecat.purchases.utils.parseExpirations
@@ -84,6 +85,10 @@ fun JSONObject.createOfferings(products: Map<String, StoreProduct>): Offerings {
     for (i in 0 until jsonOfferings.length()) {
         jsonOfferings.getJSONObject(i).createOffering(products)?.let {
             offerings[it.identifier] = it
+
+            if (it.availablePackages.isEmpty()) {
+                warnLog(OfferingStrings.OFFERING_EMPTY.format(it.identifier))
+            }
         }
     }
 
