@@ -148,26 +148,6 @@ data class CustomerInfo constructor(
     /**
      * @hide
      */
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as CustomerInfo
-
-        if (nonSubscriptionTransactions != other.nonSubscriptionTransactions) return false
-        if (allExpirationDatesByProduct != other.allExpirationDatesByProduct) return false
-        if (allPurchaseDatesByProduct != other.allPurchaseDatesByProduct) return false
-        if (entitlements != other.entitlements) return false
-        if (schemaVersion != other.schemaVersion) return false
-        if (firstSeen != other.firstSeen) return false
-        if (originalAppUserId != other.originalAppUserId) return false
-
-        return true
-    }
-
-    /**
-     * @hide
-     */
     override fun toString() =
         "<CustomerInfo\n " +
                 "latestExpirationDate: $latestExpirationDate\n" +
@@ -179,16 +159,34 @@ data class CustomerInfo constructor(
                 "nonSubscriptionTransactions: $nonSubscriptionTransactions,\n" +
                 "requestDate: $requestDate\n>"
 
-    override fun hashCode(): Int {
-        var result = entitlements.hashCode()
-        result = 31 * result + nonSubscriptionTransactions.hashCode()
-        result = 31 * result + allExpirationDatesByProduct.hashCode()
-        result = 31 * result + allPurchaseDatesByProduct.hashCode()
-        result = 31 * result + requestDate.hashCode()
-        result = 31 * result + jsonObject.hashCode()
-        result = 31 * result + schemaVersion
-        result = 31 * result + firstSeen.hashCode()
-        result = 31 * result + originalAppUserId.hashCode()
-        return result
-    }
+    override fun equals(other: Any?) = other is CustomerInfo && ComparableData(this) == ComparableData(other)
+    override fun hashCode() = ComparableData(this).hashCode()
+}
+
+/**
+ * Contains fields to be used for equality, which ignores requestDate and jsonObject.
+ * requestDate is excluded so that two CustomerInfo objects that are otherwise identical
+ * won't be considered different if they were refreshed at a different point in time
+ * jsonObject is excluded because we're already using the parsed fields for comparisons.
+ */
+private data class ComparableData(
+    val entitlements: EntitlementInfos,
+    val allExpirationDatesByProduct: Map<String, Date?>,
+    val allPurchaseDatesByProduct: Map<String, Date?>,
+    val schemaVersion: Int,
+    val firstSeen: Date,
+    val originalAppUserId: String,
+    val originalPurchaseDate: Date?
+) {
+    constructor(
+        customerInfo: CustomerInfo
+    ) : this(
+        entitlements = customerInfo.entitlements,
+        allExpirationDatesByProduct = customerInfo.allExpirationDatesByProduct,
+        allPurchaseDatesByProduct = customerInfo.allPurchaseDatesByProduct,
+        schemaVersion = customerInfo.schemaVersion,
+        firstSeen = customerInfo.firstSeen,
+        originalAppUserId = customerInfo.originalAppUserId,
+        originalPurchaseDate = customerInfo.originalPurchaseDate
+    )
 }
