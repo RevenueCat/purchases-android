@@ -7,6 +7,7 @@ package com.revenuecat.purchases
 
 import android.net.Uri
 import android.os.Parcelable
+import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.android.parcel.IgnoredOnParcel
@@ -42,13 +43,16 @@ data class CustomerInfo constructor(
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
     val requestDate: Date,
-    val jsonObject: JSONObject,
+    @Deprecated(
+        "Use rawData instead",
+        replaceWith = ReplaceWith("rawData")
+    ) val jsonObject: JSONObject,
     val schemaVersion: Int,
     val firstSeen: Date,
     val originalAppUserId: String,
     val managementURL: Uri?,
     val originalPurchaseDate: Date?
-) : Parcelable {
+) : Parcelable, RawDataContainer<JSONObject> {
 
     /**
      * @return Set of active subscription skus
@@ -129,6 +133,10 @@ data class CustomerInfo constructor(
     fun getPurchaseDateForEntitlement(entitlement: String): Date? {
         return entitlements.all[entitlement]?.latestPurchaseDate
     }
+
+    @IgnoredOnParcel
+    override val rawData: JSONObject
+        get() = jsonObject
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
         return expirations.filterValues { date -> date == null || date.after(requestDate) }.keys

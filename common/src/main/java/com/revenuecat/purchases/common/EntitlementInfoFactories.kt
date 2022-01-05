@@ -86,7 +86,8 @@ internal fun JSONObject.buildEntitlementInfo(
         isSandbox = productData.getBoolean("is_sandbox"),
         unsubscribeDetectedAt = unsubscribeDetectedAt,
         billingIssueDetectedAt = billingIssueDetectedAt,
-        ownershipType = productData.optOwnershipType("ownership_type")
+        ownershipType = productData.optOwnershipType("ownership_type"),
+        jsonObject = this
     )
 }
 
