@@ -78,7 +78,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.net.URL
-import java.util.ArrayList
 import java.util.Collections.emptyList
 import java.util.ConcurrentModificationException
 import java.util.concurrent.CountDownLatch
@@ -125,7 +124,7 @@ class PurchasesTest {
         "{'identifier': '\$rc_monthly','platform_product_identifier': '$stubProductIdentifier'}" +
         "]}]," +
         "'current_offering_id': '$stubOfferingIdentifier'}"
-    private val noOfferingsResponse = "{'offerings': [" +
+    private val oneOfferingWithNoProductsResponse = "{'offerings': [" +
         "{'identifier': '$stubOfferingIdentifier', " +
         "'description': 'This is the base offering', " +
         "'packages': []}]," +
@@ -920,7 +919,7 @@ class PurchasesTest {
 
     @Test
     fun `configuration error if no products are found`() {
-        mockProducts(noOfferingsResponse)
+        mockProducts(oneOfferingWithNoProductsResponse)
 
         every {
             mockCache.cachedOfferings

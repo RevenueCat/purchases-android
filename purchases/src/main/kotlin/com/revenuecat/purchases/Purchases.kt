@@ -1061,6 +1061,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         getSkuDetails(skus, { detailsByID ->
                             val offerings = offeringsJSON.createOfferings(detailsByID)
 
+                            logMissingProducts(offerings, detailsByID)
+
                             if (offerings.all.isEmpty()) {
                                 handleErrorFetchingOfferings(
                                     PurchasesError(
@@ -1070,7 +1072,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                     completion
                                 )
                             } else {
-                                logMissingProducts(offerings, detailsByID)
                                 synchronized(this@Purchases) {
                                     deviceCache.cacheOfferings(offerings)
                                 }
@@ -1117,7 +1118,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         error: PurchasesError,
         completion: ReceiveOfferingsListener?
     ) {
-        log(LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error))
+        val errorCausedByPurchases = setOf(
+            PurchasesErrorCode.ConfigurationError,
+            PurchasesErrorCode.UnexpectedBackendResponseError
+        )
+            .contains(error)
+
+        log(
+            if (errorCausedByPurchases) LogIntent.RC_ERROR else LogIntent.GOOGLE_ERROR,
+            OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error)
+        )
+
         deviceCache.clearOfferingsCacheTimestamp()
         dispatch {
             completion?.onError(error)
