@@ -36,4 +36,5 @@ object AmazonStrings {
         "Iterating over all available currencies to find the currency code."
     const val PRICE_EXTRACTION_USING_CURRENCY_SYMBOL = "Couldn't determine currencyCode. Setting currencyCode to " +
         "symbol sent by Amazon"
+    const val PRICE_EXTRACTION_PARSE_EXCEPTION = "Exception parsing number. Price is %s"
 }

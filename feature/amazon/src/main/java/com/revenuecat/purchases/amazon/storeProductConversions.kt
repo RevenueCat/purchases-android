@@ -5,6 +5,7 @@ import com.amazon.device.iap.internal.model.ProductBuilder
 import com.amazon.device.iap.model.Product
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 import java.text.NumberFormat
@@ -116,6 +117,7 @@ private fun extractPriceNumber(
         try {
             numberFormat.parse(formattedPriceWithoutSymbol).toFloat()
         } catch (e: ParseException) {
+            warnLog(AmazonStrings.PRICE_EXTRACTION_PARSE_EXCEPTION.format(price))
             0.0f
         }
     }
