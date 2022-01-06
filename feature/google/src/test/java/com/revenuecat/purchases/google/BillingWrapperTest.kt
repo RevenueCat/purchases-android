@@ -1642,6 +1642,39 @@ class BillingWrapperTest {
         assertThat(numCallbacks).isEqualTo(1)
     }
 
+    @Test
+    fun `test BillingClients launchBillingFlow activity never has null intent`() {
+        val slot = slot<Activity>()
+
+        mockkStatic(BillingFlowParams::class)
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.newBuilder()
+        } returns mockBuilder
+
+        every {
+            mockBuilder.setSkuDetails(any())
+        } returns mockBuilder
+
+        val params = mockk<BillingFlowParams>(relaxed = true)
+        every {
+            mockBuilder.build()
+        } returns params
+
+        every {
+            mockClient.launchBillingFlow(capture(slot), params)
+        } returns billingClientOKResult
+
+        val activityWithNullIntent = Activity().apply { intent = null }
+        wrapper.makePurchaseAsync(activityWithNullIntent,
+            "",
+            stubSkuDetails(productId = "product_a").toStoreProduct(),
+            null,
+            null)
+
+        assertThat(slot.captured.intent != null)
+    }
+
     private fun mockNullSkuDetailsResponse() {
         val slot = slot<SkuDetailsResponseListener>()
         every {
