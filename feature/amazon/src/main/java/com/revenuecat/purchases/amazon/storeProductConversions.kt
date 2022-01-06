@@ -58,22 +58,16 @@ internal fun String.extractPrice(
     currency: Currency,
     numberFormat: NumberFormat
 ): Price {
-    debugLog("Received price is $this. Extracting currency and amount.")
-
     val (priceNumeric, currencySymbol) =
         this.parsePriceAndCurrencySymbolUsingRegex(numberFormat) ?: 0.0f to currency.symbol
 
-    debugLog("Extracted price is: $priceNumeric. Currency symbol is $currencySymbol")
-
     var foundCurrencyCode: String? = null
     if (currencySymbol == currency.symbol) {
-        debugLog("Currency symbol matches Locale's.")
         foundCurrencyCode = currency.currencyCode
     } else {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             // We've seen cases the price being as "US$", but the marketplace currency code being "INR"
-            debugLog("Currency symbol is not the same as Locale's. Iterating over all available currencies to find " +
-                "the currency code.")
+            debugLog(AmazonStrings.PRICE_EXTRACTION_ITERATING_OVER_AVAILABLE_CURRENCIES)
             foundCurrencyCode =
                 Currency.getAvailableCurrencies()
                     .firstOrNull { it.symbol == currencySymbol }?.currencyCode
@@ -81,11 +75,9 @@ internal fun String.extractPrice(
     }
 
     val currencyCode = foundCurrencyCode ?: run {
-        debugLog("Couldn't determine currencyCode. Setting currencyCode to symbol sent by Amazon")
+        debugLog(AmazonStrings.PRICE_EXTRACTION_USING_CURRENCY_SYMBOL)
         currencySymbol
     }
-
-    debugLog("Currency code is $currencyCode")
 
     return Price(
         currencyCode,

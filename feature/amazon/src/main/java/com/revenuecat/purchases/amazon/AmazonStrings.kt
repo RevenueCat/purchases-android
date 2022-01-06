@@ -32,4 +32,8 @@ object AmazonStrings {
         "Failed to get user data. Call is not supported."
     const val ERROR_USER_DATA_STORE_PROBLEM =
         "Failed to get user data. There was an Amazon store problem."
+    const val PRICE_EXTRACTION_ITERATING_OVER_AVAILABLE_CURRENCIES = "Currency symbol is not the same as Locale's. " +
+        "Iterating over all available currencies to find the currency code."
+    const val PRICE_EXTRACTION_USING_CURRENCY_SYMBOL = "Couldn't determine currencyCode. Setting currencyCode to " +
+        "symbol sent by Amazon"
 }
