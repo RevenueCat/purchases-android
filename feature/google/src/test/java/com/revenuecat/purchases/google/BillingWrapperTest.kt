@@ -2,7 +2,6 @@ package com.revenuecat.purchases.google
 
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.AcknowledgePurchaseParams
@@ -81,7 +80,6 @@ class BillingWrapperTest {
 
     private val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
     private val appUserId = "jerry"
-    private var mockActivity = mockk<Activity>()
 
     @Before
     fun setup() {
@@ -147,10 +145,6 @@ class BillingWrapperTest {
                 onConnectedCalled = true
             }
         }
-
-        every {
-            mockActivity.intent
-        } returns Intent()
     }
 
     @Test
@@ -258,9 +252,11 @@ class BillingWrapperTest {
 
         val skuDetails = stubSkuDetails(productId = "product_a")
 
+        val activity: Activity = mockk()
+
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         wrapper.makePurchaseAsync(
-            mockActivity,
+            activity,
             appUserId,
             skuDetails.toStoreProduct(),
             mockReplaceSkuInfo(),
@@ -269,7 +265,7 @@ class BillingWrapperTest {
 
         verify {
             mockClient.launchBillingFlow(
-                eq(mockActivity),
+                eq(activity),
                 any()
             )
         }
@@ -309,11 +305,12 @@ class BillingWrapperTest {
         @BillingClient.SkuType val skuType = BillingClient.SkuType.SUBS
 
         val upgradeInfo = mockReplaceSkuInfo()
+        val activity: Activity = mockk()
         val skuDetails = stubSkuDetails(productId = sku, type = skuType)
 
         val slot = slot<BillingFlowParams>()
         every {
-            mockClient.launchBillingFlow(eq(mockActivity), capture(slot))
+            mockClient.launchBillingFlow(eq(activity), capture(slot))
         } answers {
             val capturedSkuDetails = skuDetailsSlot.captured
 
@@ -327,7 +324,7 @@ class BillingWrapperTest {
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         wrapper.makePurchaseAsync(
-            mockActivity,
+            activity,
             appUserId,
             skuDetails.toStoreProduct(),
             upgradeInfo,
@@ -340,7 +337,7 @@ class BillingWrapperTest {
         val mockBuilder = setUpForObfuscatedAccountIDTests()
 
         wrapper.makePurchaseAsync(
-            mockActivity,
+            mockk(),
             appUserId,
             stubSkuDetails(productId = "product_a").toStoreProduct(),
             null,
@@ -360,7 +357,7 @@ class BillingWrapperTest {
         val mockBuilder = setUpForObfuscatedAccountIDTests()
 
         wrapper.makePurchaseAsync(
-            mockActivity,
+            mockk(),
             appUserId,
             stubSkuDetails(productId = "product_a").toStoreProduct(),
             mockReplaceSkuInfo(),
@@ -382,10 +379,11 @@ class BillingWrapperTest {
 
         every { mockClient.isReady } returns false
 
+        val activity: Activity = mockk()
         val skuDetails = stubSkuDetails(productId = "product_a")
 
         wrapper.makePurchaseAsync(
-            mockActivity,
+            activity,
             appUserId,
             skuDetails.toStoreProduct(),
             mockReplaceSkuInfo(),
@@ -393,7 +391,7 @@ class BillingWrapperTest {
         )
 
         verify(exactly = 0) {
-            mockClient.launchBillingFlow(eq(mockActivity), any())
+            mockClient.launchBillingFlow(eq(activity), any())
         }
 
         every { mockClient.isReady } returns true
@@ -401,7 +399,7 @@ class BillingWrapperTest {
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
         verify(exactly = 1) {
-            mockClient.launchBillingFlow(eq(mockActivity), any())
+            mockClient.launchBillingFlow(eq(activity), any())
         }
     }
 
@@ -415,8 +413,10 @@ class BillingWrapperTest {
 
         val skuDetails = stubSkuDetails(productId = "product_a")
 
+        val activity: Activity = mockk()
+
         wrapper.makePurchaseAsync(
-            mockActivity,
+            activity,
             appUserId,
             skuDetails.toStoreProduct(),
             mockReplaceSkuInfo(),
@@ -809,9 +809,11 @@ class BillingWrapperTest {
 
         val skuDetails = stubSkuDetails(productId = "product_a")
 
+        val activity: Activity = mockk()
+
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
         wrapper.makePurchaseAsync(
-            mockActivity,
+            activity,
             appUserId,
             skuDetails.toStoreProduct(),
             mockReplaceSkuInfo(),
