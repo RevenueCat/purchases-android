@@ -7,7 +7,6 @@ package com.revenuecat.purchases.google
 
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.os.Handler
 import androidx.annotation.UiThread
 import com.android.billingclient.api.AcknowledgePurchaseParams
@@ -224,7 +223,6 @@ class BillingWrapper(
         params: BillingFlowParams
     ) {
         if (activity.intent == null) {
-            activity.intent = Intent()
             log(LogIntent.WARNING, BillingStrings.NULL_ACTIVITY_INTENT)
         }
         withConnectedClient {
