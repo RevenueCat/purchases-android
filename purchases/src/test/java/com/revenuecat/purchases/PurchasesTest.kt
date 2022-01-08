@@ -65,6 +65,7 @@ import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
@@ -3340,6 +3341,15 @@ class PurchasesTest {
             every {
                 isConnected()
             } returns true
+        }
+    }
+
+
+    @Test
+    fun `canMakePayments returns false for Amazon configurations`() {
+        purchases.appConfig = AppConfig(mockContext, false, PlatformInfo("", null), null, Store.AMAZON)
+        Purchases.canMakePayments(mockContext, listOf()) {
+            Assertions.assertThat(it).isFalse()
         }
     }
 

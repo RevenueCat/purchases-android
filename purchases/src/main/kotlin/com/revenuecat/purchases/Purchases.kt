@@ -67,6 +67,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.strings.AttributionStrings
+import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -1995,11 +1996,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
+         * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
+         * Calling from an Amazon-configured app will return false.
+         *
          * Check if billing is supported for the current Play user (meaning IN-APP purchases are supported)
-         * and optionally, whether a list of specified feature types are supported. This method is asynchronous
-         * since it requires a connected BillingClient.
+         * and optionally, whether all features in the list of specified feature types are supported. This method is
+         * asynchronous since it requires a connected BillingClient.
          * @param context A context object that will be used to connect to the billing client
-         * @param feature A list of feature types to check for support. Feature types must be one of [BillingFeature]
+         * @param features A list of feature types to check for support. Feature types must be one of [BillingFeature]
          *                 By default, is an empty list and no specific feature support will be checked.
          * @param callback Callback that will be notified when the check is complete.
          */
@@ -2010,6 +2014,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>
         ) {
+            if (sharedInstance.appConfig.store != Store.PLAY_STORE) {
+                log(
+                    LogIntent.RC_ERROR,
+                    BillingStrings.CANNOT_CALL_METHOD_FROM_STORE.format(
+                        "canMakePayments",
+                        sharedInstance.appConfig.store.toString()
+                    ) + " Returning false."
+                )
+                callback.onReceived(false)
+                return
+            }
+
             BillingClient.newBuilder(context)
                 .enablePendingPurchases()
                 .setListener { _, _ -> }
@@ -2059,6 +2075,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
+         * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
+         *
          * Check if billing is supported in the device. This method is asynchronous since it tries
          * to connect the billing client and checks for the result of the connection.
          * If billing is supported, IN-APP purchases are supported.
@@ -2112,6 +2130,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
+         * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
+         *
          * Use this method if you want to check if Subscriptions or other type defined in
          * [BillingClient.FeatureType] is supported.
          * This method is asynchronous since it requires a connected billing client.
