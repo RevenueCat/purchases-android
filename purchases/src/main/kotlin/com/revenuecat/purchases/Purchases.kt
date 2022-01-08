@@ -1908,10 +1908,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
         /**
          * Check if billing is supported for the current Play user (meaning IN-APP purchases are supported)
-         * and optionally, whether a list of specified feature types are supported. This method is asynchronous
+         * and optionally, whether a list of specified feature types are all supported. This method is asynchronous
          * since it requires a connected BillingClient.
          * @param context A context object that will be used to connect to the billing client
-         * @param feature A list of feature types to check for support. Feature types must be one of [BillingFeature]
+         * @param features A list of feature types to check for support. Feature types must be one of [BillingFeature]
          *                 By default, is an empty list and no specific feature support will be checked.
          * @param callback Callback that will be notified when the check is complete.
          */
@@ -1956,7 +1956,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             }
 
                             override fun onBillingServiceDisconnected() {
-                                val mainHandler = Handler(context.mainLooper)
                                 mainHandler.post {
                                     try {
                                         billingClient.endConnection()
