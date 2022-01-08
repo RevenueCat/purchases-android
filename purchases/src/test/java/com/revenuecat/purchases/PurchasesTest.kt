@@ -2073,6 +2073,27 @@ class PurchasesTest {
         verify(exactly = 1) { mockBuilder.enablePendingPurchases() }
     }
 
+    fun `canMakePayments returns false for Amazon configurations`() {
+        purchases.appConfig = AppConfig(mockContext, false, PlatformInfo("", null), null, Store.AMAZON)
+        Purchases.canMakePayments(mockContext, listOf()) {
+            assertThat(it).isFalse()
+        }
+    }
+
+    fun `isBillingSupported returns false for Amazon configurations`() {
+        purchases.appConfig = AppConfig(mockContext, false, PlatformInfo("", null), null, Store.AMAZON)
+        Purchases.isBillingSupported(mockContext) {
+            assertThat(it).isFalse()
+        }
+    }
+
+    fun `isFeatureSupported returns false for Amazon configurations`() {
+        purchases.appConfig = AppConfig(mockContext, false, PlatformInfo("", null), null, Store.AMAZON)
+        Purchases.isFeatureSupported("Subscriptions", mockContext) {
+            assertThat(it).isFalse()
+        }
+    }
+
     @Test
     fun `when billing is not supported, canMakePayments is false`() {
         var receivedCanMakePayments = true
@@ -3341,15 +3362,6 @@ class PurchasesTest {
             every {
                 isConnected()
             } returns true
-        }
-    }
-
-
-    @Test
-    fun `canMakePayments returns false for Amazon configurations`() {
-        purchases.appConfig = AppConfig(mockContext, false, PlatformInfo("", null), null, Store.AMAZON)
-        Purchases.canMakePayments(mockContext, listOf()) {
-            Assertions.assertThat(it).isFalse()
         }
     }
 

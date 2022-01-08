@@ -2014,16 +2014,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>
         ) {
-            if (sharedInstance.appConfig.store != Store.PLAY_STORE) {
-                log(
-                    LogIntent.RC_ERROR,
-                    BillingStrings.CANNOT_CALL_METHOD_FROM_STORE.format(
-                        "canMakePayments",
-                        sharedInstance.appConfig.store.toString()
-                    ) + " Returning false."
-                )
+            if (!checkMethodAvailability(
+                    listOf(Store.PLAY_STORE),
+                    "canMakePayments",
+                    "returning false")) {
                 callback.onReceived(false)
-                return
             }
 
             BillingClient.newBuilder(context)
@@ -2091,6 +2086,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
         @JvmStatic
         fun isBillingSupported(context: Context, callback: Callback<Boolean>) {
+            if (!checkMethodAvailability(
+                    listOf(Store.PLAY_STORE),
+                    "isBillingSupported",
+                    "returning false")) {
+                callback.onReceived(false)
+            }
+
             BillingClient.newBuilder(context)
                 .enablePendingPurchases()
                 .setListener { _, _ -> }
@@ -2149,6 +2151,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             context: Context,
             callback: Callback<Boolean>
         ) {
+            if (!checkMethodAvailability(
+                    listOf(Store.PLAY_STORE),
+                    "isFeatureSupported",
+                    "Returning false")) {
+                callback.onReceived(false)
+            }
+
             BillingClient.newBuilder(context)
                 .enablePendingPurchases()
                 .setListener { _, _ -> }
@@ -2297,4 +2306,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 internal fun Purchases.AttributionNetwork.convert(): CommonAttributionNetwork {
     return CommonAttributionNetwork.values()
         .first { attributionNetwork -> attributionNetwork.serverValue == this.serverValue }
+}
+
+private fun checkMethodAvailability(
+    supportedStores: List<Store>,
+    methodName: String,
+    resolution: String
+): Boolean {
+    val currentStore = Purchases.sharedInstance.appConfig.store
+    return if (supportedStores.contains(currentStore)) true else {
+        log(
+            LogIntent.RC_ERROR,
+            BillingStrings.CANNOT_CALL_METHOD_FROM_STORE.format(
+                methodName,
+                currentStore.toString(),
+                resolution
+            )
+        )
+        false
+    }
 }
