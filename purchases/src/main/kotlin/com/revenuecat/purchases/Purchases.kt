@@ -2017,7 +2017,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (!checkMethodAvailability(
                     listOf(Store.PLAY_STORE),
                     "canMakePayments",
-                    "returning false")) {
+                    "Returning false.")) {
                 callback.onReceived(false)
                 return
             }
@@ -2091,7 +2091,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (!checkMethodAvailability(
                     listOf(Store.PLAY_STORE),
                     "isBillingSupported",
-                    "returning false")) {
+                    "Returning false.")) {
                 callback.onReceived(false)
                 return
             }
@@ -2158,7 +2158,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (!checkMethodAvailability(
                     listOf(Store.PLAY_STORE),
                     "isFeatureSupported",
-                    "Returning false")) {
+                    "Returning false.")) {
                 callback.onReceived(false)
                 return
             }

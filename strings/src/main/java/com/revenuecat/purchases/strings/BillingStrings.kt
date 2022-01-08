@@ -15,5 +15,5 @@ object BillingStrings {
         "PurchaseHistoryRecord, but only one will be used."
     const val BILLING_PURCHASE_MORE_THAN_ONE_SKU = "There's more than one sku in the PurchaseHistoryRecord, " +
         "but only one will be used."
-    const val CANNOT_CALL_METHOD_FROM_STORE = "%s cannot be called from %s. %s."
+    const val CANNOT_CALL_METHOD_FROM_STORE = "%s cannot be called from %s. %s"
 }
