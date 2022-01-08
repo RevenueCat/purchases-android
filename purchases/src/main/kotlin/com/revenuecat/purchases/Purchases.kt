@@ -2019,6 +2019,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     "canMakePayments",
                     "returning false")) {
                 callback.onReceived(false)
+                return
             }
 
             BillingClient.newBuilder(context)
@@ -2071,6 +2072,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
+         * Calling from an Amazon-configured app will return false.
          *
          * Check if billing is supported in the device. This method is asynchronous since it tries
          * to connect the billing client and checks for the result of the connection.
@@ -2091,6 +2093,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     "isBillingSupported",
                     "returning false")) {
                 callback.onReceived(false)
+                return
             }
 
             BillingClient.newBuilder(context)
@@ -2133,6 +2136,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
+         * Calling from an Amazon-configured app will return false.
          *
          * Use this method if you want to check if Subscriptions or other type defined in
          * [BillingClient.FeatureType] is supported.
@@ -2156,6 +2160,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     "isFeatureSupported",
                     "Returning false")) {
                 callback.onReceived(false)
+                return
             }
 
             BillingClient.newBuilder(context)
