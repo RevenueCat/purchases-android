@@ -88,7 +88,7 @@ private class DeprecatedPurchasesAPI {
         purchases.invalidatePurchaserInfoCache()
         purchases.removeUpdatedPurchaserInfoListener()
 
-        val updatedCustomerInfoListener: UpdatedPurchaserInfoListener? = purchases.updatedPurchaserInfoListener
+        val updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = purchases.updatedPurchaserInfoListener
         purchases.updatedPurchaserInfoListener = object : UpdatedPurchaserInfoListener {
             override fun onReceived(purchaserInfo: PurchaserInfo) {
             }
