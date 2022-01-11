@@ -222,6 +222,9 @@ class BillingWrapper(
         activity: Activity,
         params: BillingFlowParams
     ) {
+        if (activity.intent == null) {
+            log(LogIntent.WARNING, BillingStrings.NULL_ACTIVITY_INTENT)
+        }
         withConnectedClient {
             launchBillingFlow(activity, params)
                 .takeIf { billingResult -> billingResult.responseCode != BillingClient.BillingResponseCode.OK }
