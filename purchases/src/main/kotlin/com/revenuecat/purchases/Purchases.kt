@@ -45,7 +45,7 @@ import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.GetStoreProductCallback
+import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
@@ -58,7 +58,7 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
-import com.revenuecat.purchases.interfaces.toGetStoreProductCallback
+import com.revenuecat.purchases.interfaces.toGetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.interfaces.toReceiveCustomerInfoCallback
@@ -313,7 +313,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     fun getSubscriptionSkus(
         skus: List<String>,
-        callback: GetStoreProductCallback
+        callback: GetStoreProductsCallback
     ) {
         getSkus(skus.toSet(), ProductType.SUBS, callback)
     }
@@ -325,7 +325,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      */
     fun getNonSubscriptionSkus(
         skus: List<String>,
-        callback: GetStoreProductCallback
+        callback: GetStoreProductsCallback
     ) {
         getSkus(skus.toSet(), ProductType.INAPP, callback)
     }
@@ -1034,7 +1034,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun getSkus(
         skus: Set<String>,
         productType: ProductType,
-        callback: GetStoreProductCallback
+        callback: GetStoreProductsCallback
     ) {
         billing.querySkuDetailsAsync(
             productType,
@@ -1653,12 +1653,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] Response listener
      */
     @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("GetSkusResponseListener replaced with GetStoreProductCallback")
+    @Deprecated("GetSkusResponseListener replaced with GetStoreProductsCallback")
     fun getSubscriptionSkus(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), listener.toGetStoreProductCallback())
+        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), listener.toGetStoreProductsCallback())
     }
 
     /**
@@ -1667,12 +1667,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] Response listener
      */
     @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("GetSkusResponseListener replaced with GetStoreProductCallback")
+    @Deprecated("GetSkusResponseListener replaced with GetStoreProductsCallback")
     fun getNonSubscriptionSkus(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), listener.toGetStoreProductCallback())
+        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), listener.toGetStoreProductsCallback())
     }
 
     @Suppress("DeprecatedCallableAddReplaceWith")

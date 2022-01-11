@@ -1,7 +1,7 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
-import com.revenuecat.purchases.interfaces.GetStoreProductCallback
+import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -47,10 +47,10 @@ internal fun productChangeCompletedListener(
     }
 }
 
-internal fun getStoreProductCallback(
+internal fun getStoreProductsCallback(
     onReceived: (storeProducts: List<StoreProduct>) -> Unit,
     onError: ErrorFunction
-) = object : GetStoreProductCallback {
+) = object : GetStoreProductsCallback {
     override fun onReceived(storeProducts: List<StoreProduct>) {
         onReceived(storeProducts)
     }
@@ -261,7 +261,7 @@ fun Purchases.getSubscriptionSkusWith(
     onError: ErrorFunction = ON_ERROR_STUB,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getSubscriptionSkus(skus, getStoreProductCallback(onReceiveSkus, onError))
+    getSubscriptionSkus(skus, getStoreProductsCallback(onReceiveSkus, onError))
 }
 
 /**
@@ -275,5 +275,5 @@ fun Purchases.getNonSubscriptionSkusWith(
     onError: ErrorFunction,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getNonSubscriptionSkus(skus, getStoreProductCallback(onReceiveSkus, onError))
+    getNonSubscriptionSkus(skus, getStoreProductsCallback(onReceiveSkus, onError))
 }
