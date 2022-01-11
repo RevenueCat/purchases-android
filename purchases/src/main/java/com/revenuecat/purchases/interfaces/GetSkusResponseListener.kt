@@ -12,10 +12,10 @@ import com.revenuecat.purchases.PurchasesError
  */
 @Deprecated(
     """
-       Replace with GetStoreProductCallback, which returns a list of StoreProducts instead of a list of SkuDetails. 
-       You can use `GetSkusResponseListener.toGetStoreProductCallback()` in Kotlin for an easy migration 
+       Replace with GetStoreProductsCallback, which returns a list of StoreProducts instead of a list of SkuDetails. 
+       You can use `GetSkusResponseListener.toGetStoreProductsCallback()` in Kotlin for an easy migration 
     """,
-    replaceWith = ReplaceWith("GetStoreProductCallback")
+    replaceWith = ReplaceWith("GetStoreProductsCallback")
 )
 interface GetSkusResponseListener {
     /**
