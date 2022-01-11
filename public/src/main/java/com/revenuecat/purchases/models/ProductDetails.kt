@@ -40,6 +40,8 @@ class ProductDetails(
      * Returns ISO 4217 currency code for price and original price.
      *
      * For example, if price is specified in British pounds sterling, price_currency_code is "GBP".
+     *
+     * If currency code cannot be determined, currency symbol is returned.
      */
     val priceCurrencyCode: String,
 
