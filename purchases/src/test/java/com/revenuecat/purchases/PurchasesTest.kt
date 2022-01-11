@@ -31,12 +31,10 @@ import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.google.sku
 import com.revenuecat.purchases.google.toSKUType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
-import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -67,7 +65,6 @@ import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
@@ -1942,176 +1939,66 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when checking if Billing is supported, an OK response when starting connection means it's supported`() {
-        var receivedIsBillingSupported = false
-
+    fun `when calling canMakePayments and billing service disconnects, return false`() {
+        var receivedCanMakePayments = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
 
-        Purchases.isBillingSupported(mockContext, Callback {
-            receivedIsBillingSupported = it
-        })
+        val listener = setUpBillingClientAndGetListener(mockLocalBillingClient)
+
+        Purchases.canMakePayments(mockContext, listOf()) {
+            receivedCanMakePayments = it
+        }
+        listener.captured.onBillingServiceDisconnected()
+        assertThat(receivedCanMakePayments).isFalse
+        verify(exactly = 1) { mockLocalBillingClient.endConnection() }
+    }
+
+    @Test
+    fun `canMakePayments with no features and OK BillingResponse returns true`() {
+        var receivedCanMakePayments = false
+        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
+        val listener = setUpBillingClientAndGetListener(mockLocalBillingClient)
+
+        Purchases.canMakePayments(mockContext, listOf()) {
+            receivedCanMakePayments = it
+        }
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
-        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isTrue()
-        verify(exactly = 1) { mockLocalBillingClient.endConnection() }
+
+        assertThat(receivedCanMakePayments).isTrue
     }
 
     @Test
-    fun `when checking if Billing is supported, disconnections mean billing is not supported`() {
-        var receivedIsBillingSupported = true
+    fun `when no play services, canMakePayments returns false`() {
+        var receivedCanMakePayments = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
-
-        Purchases.isBillingSupported(mockContext, Callback {
-            receivedIsBillingSupported = it
-        })
-        listener.captured.onBillingServiceDisconnected()
-        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
-        verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when checking if Billing is supported, a non OK response when starting connection means it's not supported`() {
-        var receivedIsBillingSupported = true
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
-
-        Purchases.isBillingSupported(mockContext, Callback {
-            receivedIsBillingSupported = it
-        })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
-        verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when checking if feature is supported, an OK response when starting connection means it's supported`() {
-        var featureSupported = false
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        every {
-            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
-        } returns BillingClient.BillingResponseCode.OK.buildResult()
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
-
-        Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
-            featureSupported = it
-        })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
-        AssertionsForClassTypes.assertThat(featureSupported).isTrue()
-        verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when checking if feature is supported, disconnections mean billing is not supported`() {
-        var featureSupported = true
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
-
-        Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
-            featureSupported = it
-        })
-        listener.captured.onBillingServiceDisconnected()
-        AssertionsForClassTypes.assertThat(featureSupported).isFalse()
-        verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when checking if feature is supported, a non OK response when starting connection means it's not supported`() {
-        var featureSupported = true
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        every {
-            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
-        } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
-
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
-
-        Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
-            featureSupported = it
-        })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(featureSupported).isFalse()
-        verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when no play services, feature is not supported`() {
-        var featureSupported = true
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
-        every {
-            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
-        } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
+        val listener = setUpBillingClientAndGetListener(mockLocalBillingClient)
 
         every { mockLocalBillingClient.endConnection() } throws mockk<IllegalArgumentException>()
-        Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
-            featureSupported = it
-        })
+        Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS)) {
+            receivedCanMakePayments = it
+        }
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(featureSupported).isFalse()
+        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
     @Test
-    fun `when calling isFeatureSupported, enablePendingPurchases is called`() {
-        var featureSupported = true
+    fun `when calling canMakePayments, enablePendingPurchases is called`() {
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         every {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
         } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
+
         mockkStatic(BillingClient::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
         every { mockBuilder.enablePendingPurchases() } returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
-        val listener = slot<BillingClientStateListener>()
-        every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
+        every { mockLocalBillingClient.startConnection(any()) } just Runs
 
-        every { mockLocalBillingClient.endConnection() } throws mockk<IllegalArgumentException>()
-        Purchases.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS, mockContext, Callback {
-            featureSupported = it
-        })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(featureSupported).isFalse()
-        verify(exactly = 1) { mockBuilder.enablePendingPurchases() }
-    }
-
-    @Test
-    fun `when no play services, billing is not supported`() {
-        var receivedIsBillingSupported = true
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
-
-        every { mockLocalBillingClient.endConnection() } throws mockk<IllegalArgumentException>()
-        Purchases.isBillingSupported(mockContext, Callback {
-            receivedIsBillingSupported = it
-        })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
-        verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-    }
-
-    @Test
-    fun `when calling isBillingSupported, enablePendingPurchases is called`() {
-        var receivedIsBillingSupported = true
-        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        mockkStatic(BillingClient::class)
-        val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
-        every { BillingClient.newBuilder(any()) } returns mockBuilder
-        every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.enablePendingPurchases() } returns mockBuilder
-        every { mockBuilder.build() } returns mockLocalBillingClient
-        every { mockLocalBillingClient.endConnection() } throws mockk<IllegalArgumentException>()
-        val listener = slot<BillingClientStateListener>()
-        every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
-        mockHandlerPost()
-        Purchases.isBillingSupported(mockContext, Callback {
-            receivedIsBillingSupported = it
-        })
-        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(receivedIsBillingSupported).isFalse()
+        Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS)) {}
         verify(exactly = 1) { mockBuilder.enablePendingPurchases() }
     }
 
@@ -2122,25 +2009,11 @@ class PurchasesTest {
         }
     }
 
-    fun `isBillingSupported returns false for Amazon configurations`() {
-        purchases.appConfig = AppConfig(mockContext, false, PlatformInfo("", null), null, Store.AMAZON)
-        Purchases.isBillingSupported(mockContext) {
-            assertThat(it).isFalse()
-        }
-    }
-
-    fun `isFeatureSupported returns false for Amazon configurations`() {
-        purchases.appConfig = AppConfig(mockContext, false, PlatformInfo("", null), null, Store.AMAZON)
-        Purchases.isFeatureSupported("Subscriptions", mockContext) {
-            assertThat(it).isFalse()
-        }
-    }
-
     @Test
     fun `when billing is not supported, canMakePayments is false`() {
         var receivedCanMakePayments = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
+        val listener = setUpBillingClientAndGetListener(mockLocalBillingClient)
 
         every {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
@@ -2148,13 +2021,13 @@ class PurchasesTest {
 
         mockHandlerPost()
 
-        Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS), Callback {
+        Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS)) {
             receivedCanMakePayments = it
-        })
+        }
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult())
 
-        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse()
+        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -2162,19 +2035,19 @@ class PurchasesTest {
     fun `when feature is not supported, canMakePayments is false`() {
         var receivedCanMakePayments = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
+        val listener = setUpBillingClientAndGetListener(mockLocalBillingClient)
 
         every {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
         } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
 
-        Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS), Callback {
+        Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS)) {
             receivedCanMakePayments = it
-        })
+        }
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
-        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse()
+        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -2182,7 +2055,7 @@ class PurchasesTest {
     fun `when one feature in list is not supported, canMakePayments is false`() {
         var receivedCanMakePayments = true
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
+        val listener = setUpBillingClientAndGetListener(mockLocalBillingClient)
 
         every {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
@@ -2192,48 +2065,47 @@ class PurchasesTest {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.IN_APP_ITEMS_ON_VR)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
-        Purchases.canMakePayments(mockContext,
-            listOf(BillingFeature.SUBSCRIPTIONS, BillingFeature.IN_APP_ITEMS_ON_VR),
-            Callback {
-                receivedCanMakePayments = it
-            })
+        Purchases.canMakePayments(
+            mockContext,
+            listOf(BillingFeature.SUBSCRIPTIONS,
+                BillingFeature.IN_APP_ITEMS_ON_VR)
+        ) {
+            receivedCanMakePayments = it
+        }
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
-        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse()
+        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
     @Test
     fun `when feature is supported and billing is supported, canMakePayments is true`() {
-        var receivedCanMakePayments = true
+        var receivedCanMakePayments = false
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
+        val listener = setUpBillingClientAndGetListener(mockLocalBillingClient)
 
         every {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
         mockHandlerPost()
-        Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS), Callback {
+        Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS)) {
             receivedCanMakePayments = it
-        })
+        }
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
-        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isTrue()
+        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isTrue
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
     @Test
-    fun `when feature list is empty, canMakePayments does not check billing client`() {
-        var receivedCanMakePayments = true
+    fun `when feature list is empty, canMakePayments does not check billing client for feature support`() {
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
-        val listener = isBillingSupportedSetup(mockLocalBillingClient)
+        val listener = setUpBillingClientAndGetListener(mockLocalBillingClient)
 
-        Purchases.canMakePayments(mockContext, listOf(), Callback {
-            receivedCanMakePayments = it
-        })
+        Purchases.canMakePayments(mockContext, listOf()) {}
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
@@ -4162,7 +4034,9 @@ class PurchasesTest {
         return oldPurchase
     }
 
-    private fun isBillingSupportedSetup(mockLocalBillingClient: BillingClient): CapturingSlot<BillingClientStateListener> {
+    private fun setUpBillingClientAndGetListener(
+        mockLocalBillingClient: BillingClient
+    ): CapturingSlot<BillingClientStateListener> {
         mockkStatic(BillingClient::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
