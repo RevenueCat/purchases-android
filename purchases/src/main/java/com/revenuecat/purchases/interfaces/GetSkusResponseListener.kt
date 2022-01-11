@@ -23,7 +23,7 @@ interface GetSkusResponseListener {
      *
      * @param skus List of [SkuDetails] retrieved after a successful call to fetch [SkuDetails]
      */
-    fun onReceived(skus: List<SkuDetails?>)
+    fun onReceived(skus: List<SkuDetails>)
 
     /**
      * Will be called after the purchase has completed with error
