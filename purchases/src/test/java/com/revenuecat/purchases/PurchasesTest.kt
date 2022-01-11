@@ -32,9 +32,9 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.sku
+import com.revenuecat.purchases.google.toSKUType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
-import com.revenuecat.purchases.google.toSKUType
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductCallback
@@ -43,6 +43,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.util.AdvertisingIdClient
@@ -55,6 +56,7 @@ import io.mockk.Call
 import io.mockk.CapturingSlot
 import io.mockk.MockKAnswerScope
 import io.mockk.Runs
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -75,7 +77,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.net.URL
-import java.util.ArrayList
 import java.util.Collections.emptyList
 import java.util.ConcurrentModificationException
 import java.util.concurrent.CountDownLatch
@@ -121,6 +122,11 @@ class PurchasesTest {
         "'packages': [" +
         "{'identifier': '\$rc_monthly','platform_product_identifier': '$stubProductIdentifier'}" +
         "]}]," +
+        "'current_offering_id': '$stubOfferingIdentifier'}"
+    private val oneOfferingWithNoProductsResponse = "{'offerings': [" +
+        "{'identifier': '$stubOfferingIdentifier', " +
+        "'description': 'This is the base offering', " +
+        "'packages': []}]," +
         "'current_offering_id': '$stubOfferingIdentifier'}"
 
     private val mockLifecycle = mockk<Lifecycle>()
@@ -913,6 +919,63 @@ class PurchasesTest {
     }
 
     @Test
+    fun `configuration error if no products are found`() {
+        mockProducts(oneOfferingWithNoProductsResponse)
+
+        every {
+            mockCache.cachedOfferings
+        } returns null
+
+        var purchasesError: PurchasesError? = null
+
+        purchases.getOfferingsWith({ error ->
+            purchasesError = error
+        }) {
+            fail("should be an error")
+        }
+
+        assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(purchasesError!!.underlyingErrorMessage).contains(
+            OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS
+        )
+        verify(exactly = 1) {
+            mockCache.clearOfferingsCacheTimestamp()
+        }
+    }
+
+    @Test
+    fun `configuration error if products are not set up`() {
+        val skus = listOf(stubProductIdentifier)
+
+        mockProducts()
+        clearMocks(mockBillingAbstract)
+        mockStoreProduct(skus, listOf(), ProductType.SUBS)
+        mockStoreProduct(skus, listOf(), ProductType.INAPP)
+
+        every {
+            mockCache.cachedOfferings
+        } returns null
+
+        var purchasesError: PurchasesError? = null
+
+        purchases.getOfferingsWith({ error ->
+            purchasesError = error
+        }) {
+            fail("should be an error")
+        }
+
+        assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(purchasesError!!.underlyingErrorMessage).contains(
+            OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+        )
+        verify(exactly = 1) {
+            mockCache.clearOfferingsCacheTimestamp()
+        }
+    }
+
+    @Test
     fun `if cached offerings are not stale`() {
         mockProducts()
         mockStoreProduct(listOf(), listOf(), ProductType.SUBS)
@@ -1008,27 +1071,6 @@ class PurchasesTest {
         verify {
             mockCache.cacheOfferings(any())
         }
-    }
-
-    @Test
-    fun getOfferingsErrorIsNotCalledIfSkuDetailsMissing() {
-        every {
-            mockCache.cachedOfferings
-        } returns null
-
-        val skus = listOf(stubProductIdentifier)
-        mockProducts()
-        mockStoreProduct(skus, ArrayList(), ProductType.SUBS)
-        mockStoreProduct(skus, ArrayList(), ProductType.INAPP)
-
-        val errorMessage = emptyArray<PurchasesError>()
-
-        purchases.getOfferingsWith({ errorMessage[0] = it }) {
-            receivedOfferings = it
-        }
-
-        assertThat(errorMessage.size).isZero()
-        assertThat(this.receivedOfferings).isNotNull
     }
 
     @Test
@@ -3768,11 +3810,11 @@ class PurchasesTest {
         }
     }
 
-    private fun mockProducts() {
+    private fun mockProducts(response: String = oneOfferingsResponse) {
         every {
             mockBackend.getOfferings(any(), any(), captureLambda(), any())
         } answers {
-            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(oneOfferingsResponse))
+            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(response))
         }
     }
 

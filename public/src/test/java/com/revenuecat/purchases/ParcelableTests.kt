@@ -72,7 +72,8 @@ class ParcelableTests {
             isSandbox = false,
             unsubscribeDetectedAt = null,
             billingIssueDetectedAt = null,
-            ownershipType = OwnershipType.UNKNOWN
+            ownershipType = OwnershipType.UNKNOWN,
+            jsonObject = JSONObject(Responses.validFullPurchaserResponse)
         )
     }
 }

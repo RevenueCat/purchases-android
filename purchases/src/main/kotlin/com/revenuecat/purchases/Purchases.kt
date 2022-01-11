@@ -40,21 +40,21 @@ import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toProductType
+import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
-import com.revenuecat.purchases.interfaces.GetStoreProductCallback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
+import com.revenuecat.purchases.interfaces.GetStoreProductCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
-import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
@@ -63,14 +63,14 @@ import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
 import com.revenuecat.purchases.interfaces.toReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.toReceiveOfferingsCallback
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
-import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.AttributionDataMigrator
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -931,31 +931,41 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             appInBackground,
             { offeringsJSON ->
                 try {
-                    val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-                    val skus = mutableSetOf<String>()
-                    for (i in 0 until jsonArrayOfOfferings.length()) {
-                        val jsonPackagesArray =
-                            jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
-                        for (j in 0 until jsonPackagesArray.length()) {
-                            skus.add(
-                                jsonPackagesArray.getJSONObject(j)
-                                    .getString("platform_product_identifier")
-                            )
-                        }
+                    val skus = extractSkus(offeringsJSON)
+                    if (skus.isEmpty()) {
+                        handleErrorFetchingOfferings(
+                            PurchasesError(
+                                PurchasesErrorCode.ConfigurationError,
+                                OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS
+                            ),
+                            completion
+                        )
+                    } else {
+                        getSkuDetails(skus, { detailsByID ->
+                            val offerings = offeringsJSON.createOfferings(detailsByID)
+
+                            logMissingProducts(offerings, detailsByID)
+
+                            if (offerings.all.isEmpty()) {
+                                handleErrorFetchingOfferings(
+                                    PurchasesError(
+                                        PurchasesErrorCode.ConfigurationError,
+                                        OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+                                    ),
+                                    completion
+                                )
+                            } else {
+                                synchronized(this@Purchases) {
+                                    deviceCache.cacheOfferings(offerings)
+                                }
+                                dispatch {
+                                    completion?.onReceived(offerings)
+                                }
+                            }
+                        }, { error ->
+                            handleErrorFetchingOfferings(error, completion)
+                        })
                     }
-                    getSkuDetails(skus, { detailsByID ->
-                        val offerings =
-                            offeringsJSON.createOfferings(detailsByID)
-                        logMissingProducts(offerings, detailsByID)
-                        synchronized(this@Purchases) {
-                            deviceCache.cacheOfferings(offerings)
-                        }
-                        dispatch {
-                            completion?.onReceived(offerings)
-                        }
-                    }, { error ->
-                        handleErrorFetchingOfferings(error, completion)
-                    })
                 } catch (error: JSONException) {
                     log(LogIntent.RC_ERROR, OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage))
                     handleErrorFetchingOfferings(
@@ -971,11 +981,37 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             })
     }
 
+    private fun extractSkus(offeringsJSON: JSONObject): Set<String> {
+        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
+        val skus = mutableSetOf<String>()
+        for (i in 0 until jsonArrayOfOfferings.length()) {
+            val jsonPackagesArray =
+                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+            for (j in 0 until jsonPackagesArray.length()) {
+                skus.add(
+                    jsonPackagesArray.getJSONObject(j)
+                        .getString("platform_product_identifier")
+                )
+            }
+        }
+        return skus
+    }
+
     private fun handleErrorFetchingOfferings(
         error: PurchasesError,
         completion: ReceiveOfferingsCallback?
     ) {
-        log(LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error))
+        val errorCausedByPurchases = setOf(
+            PurchasesErrorCode.ConfigurationError,
+            PurchasesErrorCode.UnexpectedBackendResponseError
+        )
+            .contains(error)
+
+        log(
+            if (errorCausedByPurchases) LogIntent.RC_ERROR else LogIntent.GOOGLE_ERROR,
+            OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error)
+        )
+
         deviceCache.clearOfferingsCacheTimestamp()
         dispatch {
             completion?.onError(error)
