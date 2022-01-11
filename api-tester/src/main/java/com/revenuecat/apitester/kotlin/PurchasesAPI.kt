@@ -14,7 +14,7 @@ import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getNonSubscriptionSkusWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getSubscriptionSkusWith
-import com.revenuecat.purchases.interfaces.GetStoreProductCallback
+import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -46,7 +46,7 @@ private class PurchasesAPI {
             override fun onReceived(offerings: Offerings) {}
             override fun onError(error: PurchasesError) {}
         }
-        val skusResponseCallback = object : GetStoreProductCallback {
+        val skusResponseCallback = object : GetStoreProductsCallback {
             override fun onReceived(storeProducts: List<StoreProduct>) {}
             override fun onError(error: PurchasesError) {}
         }
