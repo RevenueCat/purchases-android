@@ -1,7 +1,12 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
+import com.revenuecat.purchases.models.RawDataContainer
+import com.revenuecat.purchases.parceler.JSONObjectParceler
+import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.android.parcel.Parcelize
+import kotlinx.android.parcel.TypeParceler
+import org.json.JSONObject
 import java.util.Date
 
 /**
@@ -26,6 +31,7 @@ import java.util.Date
  * there is a billing issue. Check the `isActive` property.
  */
 @Parcelize
+@TypeParceler<JSONObject, JSONObjectParceler>()
 data class EntitlementInfo constructor(
     val identifier: String,
     val isActive: Boolean,
@@ -40,7 +46,15 @@ data class EntitlementInfo constructor(
     val unsubscribeDetectedAt: Date?,
     val billingIssueDetectedAt: Date?,
     val ownershipType: OwnershipType,
-) : Parcelable {
+    @Deprecated(
+        "Use rawData instead",
+        replaceWith = ReplaceWith("rawData")
+    ) val jsonObject: JSONObject
+) : Parcelable, RawDataContainer<JSONObject> {
+
+    @IgnoredOnParcel
+    override val rawData: JSONObject
+        get() = jsonObject
 
     /** @suppress */
     override fun toString(): String {
