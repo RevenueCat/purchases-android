@@ -35,7 +35,7 @@ import com.revenuecat.purchases.google.toSKUType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
-import com.revenuecat.purchases.interfaces.GetStoreProductCallback
+import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -211,7 +211,7 @@ class PurchasesTest {
         val skuDetails = mockStoreProduct(skus, listOf(), ProductType.SUBS)
 
         purchases.getSubscriptionSkus(skus,
-            object : GetStoreProductCallback {
+            object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
                     receivedProducts = storeProducts
                 }
@@ -231,7 +231,7 @@ class PurchasesTest {
         val skuDetails = mockStoreProduct(skus, listOf(), ProductType.INAPP)
 
         purchases.getNonSubscriptionSkus(skus,
-            object : GetStoreProductCallback {
+            object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
                     receivedProducts = storeProducts
                 }
