@@ -108,7 +108,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    @JvmSynthetic internal var appConfig: AppConfig
+    @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig
 ) : LifecycleDelegate {
 
     /** @suppress */
