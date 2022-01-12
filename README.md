@@ -24,3 +24,7 @@
 ## Installation
 
 Please follow the [Quickstart Guide](https://docs.revenuecat.com/docs/) for more information on how to use the SDK
+
+## Requirements
+
+`purchases` works on Android 4.0+ (API level 14+) and Java 8+.

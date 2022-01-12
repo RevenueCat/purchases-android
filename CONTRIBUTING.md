@@ -1,5 +1,17 @@
 ## Contributing
 
+### You can do this!
+We've tagged a number of issues as [you can do this!](https://github.com/RevenueCat/purchases-android/labels/you%20can%20do%20this%21). These will generally not require much (or any!) working knowledge of our SDK.
+
+If you decide you want to help, that [you can do this!](https://github.com/RevenueCat/purchases-android/labels/you%20can%20do%20this%21) tag is a good place to start. Now, here's how you can actually get going:
+
+- Follow the directions from [2. Create a fork/branch.](#2-create-a-forkbranch) to setup your environment.
+- Find an issue that speaks to you, and comment in it "I've got this" or something like that 😄.
+- If the issue isn't clear enough, feel free to tag in sdk team `@RevenueCat/sdk` asking for clarification.
+- Work on the issue! 
+- If that builds, then follow [the final steps (Create a pull request to RevenueCat)](#5-create-a-pull-request-to-revenuecatmain-and-request-review)
+- Done!
+
 ## Environment Setup
 
 We use sdkman to specify the environment that should be used when developing. Install sdkman using  their 
