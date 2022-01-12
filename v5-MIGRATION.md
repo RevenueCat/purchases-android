@@ -10,8 +10,8 @@
   For purchasing functions that accept an `UpgradeInfo`, `ProductChangeListener` has been deprecated in favor of `ProductChangeCallback`. 
   You can use `ProductChangeListener.toProductChangeCallback()` and `MakePurchaseListener.toProductChangeCallback()` in Kotlin for an easy migration.
 - `getSubscriptionSkus` and `getNonSubscriptionSkus` callbacks has been changed to return `StoreProduct` objects instead 
-  of `SkuDetails`. This means that `GetSkusResponseListener` has been deprecated in favor of `GetStoreProductCallback`. 
-  You can use `GetSkusResponseListener.toGetStoreProductCallback()` in Kotlin for an easy migration.  
+  of `SkuDetails`. This means that `GetSkusResponseListener` has been deprecated in favor of `GetStoreProductsCallback`. 
+  You can use `GetSkusResponseListener.toGetStoreProductsCallback()` in Kotlin for an easy migration.  
 - `getSubscriptionSkusWith` and `getNonSubscriptionSkusWith` now receive `storeProducts` instead of `skus`.
 - `purchaseProductWith` now accepts a `StoreProduct` instead of a`SkuDetails`
 - `PurchaserInfo` has been renamed to `CustomerInfo`

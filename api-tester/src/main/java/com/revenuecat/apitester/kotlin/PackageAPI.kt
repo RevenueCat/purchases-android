@@ -1,8 +1,8 @@
 package com.revenuecat.apitester.kotlin
 
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.models.StoreProduct
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class PackageAPI {
@@ -10,7 +10,7 @@ private class PackageAPI {
         with(p) {
             val identifier: String = identifier
             val packageType: PackageType = packageType
-            val product: SkuDetails = product
+            val product: StoreProduct = product
             val offering: String = offering
         }
     }
