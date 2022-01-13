@@ -81,6 +81,8 @@ platform :android do
       fail "please add a CHANGELOG.latest.md file before calling this lane"
     end
 
+    is_prerelease = new_version_number.include?("-")
+
     set_github_release(
       repository_name: "revenuecat/purchases-android",
       api_token: ENV["GITHUB_TOKEN"],
@@ -88,7 +90,8 @@ platform :android do
       tag_name: "#{release_version}",
       description: changelog,
       commitish: "main",
-      upload_assets: []
+      upload_assets: [],
+      is_prerelease: is_prerelease
     )
 
     tag_release_with_latest_if_needed(release_version: release_version)
