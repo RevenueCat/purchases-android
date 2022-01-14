@@ -1,10 +1,13 @@
-package com.revenuecat.purchases.google
+package com.revenuecat.purchases.common
 
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.BillingStrings
+
+fun Purchase.toHumanReadableDescription() =
+    "skus: ${
+        this.skus.joinToString(prefix = "[", postfix = "]")
+    }, orderId: ${this.orderId}, purchaseToken: ${this.purchaseToken}"
 
 /**
  * **Important**: until multi-line subscriptions are released,

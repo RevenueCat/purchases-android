@@ -17,7 +17,15 @@ android {
     buildFeatures {
         dataBinding true
     }
-
+    flavorDimensions "billing"
+    productFlavors {
+        oldBilling {
+            dimension "billing"
+        }
+        newBilling {
+            dimension "billing"
+        }
+    }
     defaultConfig {
         applicationId "com.revenuecat.purchase_tester"
         minSdkVersion 21

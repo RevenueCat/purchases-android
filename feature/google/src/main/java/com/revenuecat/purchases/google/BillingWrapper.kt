@@ -34,6 +34,7 @@ import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
+import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
@@ -200,14 +201,8 @@ class BillingWrapper(
             val params = BillingFlowParams.newBuilder()
                 .setSkuDetails(storeProduct.skuDetails)
                 .apply {
-                    replaceSkuInfo?.apply {
-                        val subscriptionUpdateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder().apply {
-                            setOldSkuPurchaseToken(oldPurchase.purchaseToken)
-                            prorationMode?.let { prorationMode ->
-                                setReplaceSkusProrationMode(prorationMode)
-                            }
-                        }
-                        setSubscriptionUpdateParams(subscriptionUpdateParams.build())
+                    replaceSkuInfo?.let {
+                        setUpgradeInfo(it)
                     } ?: setObfuscatedAccountId(appUserID.sha256())
                     // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
                     // https://issuetracker.google.com/issues/155005449
@@ -435,7 +430,7 @@ class BillingWrapper(
                 queryPurchaseHistoryAsync(skuType) { result, purchasesList ->
                     if (result.isSuccessful()) {
                         val purchaseHistoryRecordWrapper =
-                            purchasesList?.firstOrNull { it.skus.contains(sku) }
+                            purchasesList?.firstOrNull { it.listOfSkus.contains(sku) }
                                 ?.toStoreTransaction(productType)
 
                         if (purchaseHistoryRecordWrapper != null) {
