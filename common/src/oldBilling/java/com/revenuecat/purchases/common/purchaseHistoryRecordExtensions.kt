@@ -9,3 +9,6 @@ fun PurchaseHistoryRecord.toHumanReadableDescription() =
 
 val PurchaseHistoryRecord.listOfSkus: List<String>
     get() = listOf(this.sku)
+
+val PurchaseHistoryRecord.firstSku: String
+    get() = sku

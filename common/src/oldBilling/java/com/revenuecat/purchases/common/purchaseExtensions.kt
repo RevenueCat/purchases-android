@@ -7,5 +7,8 @@ fun Purchase.toHumanReadableDescription() =
         this.sku
     }, orderId: ${this.orderId}, purchaseToken: ${this.purchaseToken}"
 
-val Purchase.skus: List<String>
+val Purchase.firstSku: String
+    get() = sku
+
+val Purchase.listOfSkus: List<String>
     get() = listOf(this.sku)

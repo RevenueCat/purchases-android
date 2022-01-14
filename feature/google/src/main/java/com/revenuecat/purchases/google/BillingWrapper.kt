@@ -33,12 +33,12 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
-import com.revenuecat.purchases.common.sku
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -486,8 +486,8 @@ class BillingWrapper(
                 var type: ProductType?
                 var presentedOffering: String?
                 synchronized(this@BillingWrapper) {
-                    type = productTypes[purchase.sku]
-                    presentedOffering = presentedOfferingsByProductIdentifier[purchase.sku]
+                    type = productTypes[purchase.firstSku]
+                    presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
                 }
                 purchase.toStoreTransaction(
                     type ?: getPurchaseType(purchase.purchaseToken),
