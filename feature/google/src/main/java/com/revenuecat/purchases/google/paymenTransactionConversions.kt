@@ -3,6 +3,8 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.common.listOfSkus
+import com.revenuecat.purchases.common.skus
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
@@ -37,7 +39,7 @@ fun PurchaseHistoryRecord.toStoreTransaction(
 ): StoreTransaction {
     return StoreTransaction(
         orderId = null,
-        skus = this.skus,
+        skus = this.listOfSkus,
         type = type,
         purchaseTime = this.purchaseTime,
         purchaseToken = this.purchaseToken,

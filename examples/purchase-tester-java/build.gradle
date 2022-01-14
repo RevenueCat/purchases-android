@@ -13,7 +13,15 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
-
+    flavorDimensions "billing"
+    productFlavors {
+        oldBilling {
+            dimension "billing"
+        }
+        newBilling {
+            dimension "billing"
+        }
+    }
     buildTypes {
         release {
             minifyEnabled true
