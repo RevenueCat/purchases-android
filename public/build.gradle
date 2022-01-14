@@ -8,7 +8,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation 'androidx.core:core-ktx:1.3.1'
     newBillingImplementation "com.android.billingclient:billing:$billingVersion"
-    oldBillingImplementation "com.android.billingclient:billing:3.0.2"
+    oldBillingImplementation "com.android.billingclient:billing:$oldBillingVersion"
     testImplementation 'androidx.test:core:1.2.0'
     testImplementation 'androidx.test:runner:1.2.0'
     testImplementation 'androidx.test:rules:1.2.0'
@@ -17,7 +17,7 @@ dependencies {
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.2.0'
     testImplementation 'org.mockito:mockito-core:3.0.0'
     testNewBillingImplementation "com.android.billingclient:billing:$billingVersion"
-    testOldBillingImplementation "com.android.billingclient:billing:3.0.2"
+    testOldBillingImplementation "com.android.billingclient:billing:$oldBillingVersion"
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation project(":test-utils")
