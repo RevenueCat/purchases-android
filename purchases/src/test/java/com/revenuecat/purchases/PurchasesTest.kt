@@ -18,7 +18,6 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -33,17 +32,17 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.sku
-import com.revenuecat.purchases.google.toStoreProduct
-import com.revenuecat.purchases.google.toRevenueCatPaymentTransaction
 import com.revenuecat.purchases.google.toSKUType
+import com.revenuecat.purchases.google.toStoreProduct
+import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
-import com.revenuecat.purchases.interfaces.GetSkusResponseListener
+import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -104,14 +103,14 @@ class PurchasesTest {
 
     private var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
-    private val capturedConsumePurchaseWrapper = slot<PaymentTransaction>()
+    private val capturedConsumePurchaseWrapper = slot<StoreTransaction>()
     private val capturedShouldTryToConsume = slot<Boolean>()
 
     private val randomAppUserId = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
     private val appUserId = "fakeUserID"
     private val adID = "123"
     private lateinit var purchases: Purchases
-    private var receivedSkus: List<SkuDetails>? = null
+    private var receivedProducts: List<StoreProduct>? = null
     private var receivedOfferings: Offerings? = null
     private val mockInfo = mockk<CustomerInfo>()
 
@@ -176,13 +175,15 @@ class PurchasesTest {
     }
 
     private fun stubOfferings(sku: String): Pair<StoreProduct, Offerings> {
-        val stubSkuDetails = stubSkuDetails(productId = sku, type = BillingClient.SkuType.SUBS)
-        val storeProduct = stubSkuDetails.toStoreProduct()
+        val storeProduct = mockk<StoreProduct>().also {
+            every { it.sku } returns sku
+            every { it.type } returns ProductType.SUBS
+        }
         val jsonObject = JSONObject(oneOfferingsResponse)
         val packageObject = Package(
             "\$rc_monthly",
             PackageType.MONTHLY,
-            stubSkuDetails,
+            storeProduct,
             stubOfferingIdentifier
         )
         val offering = Offering(
@@ -212,9 +213,9 @@ class PurchasesTest {
         val skuDetails = mockStoreProduct(skus, listOf(), ProductType.SUBS)
 
         purchases.getSubscriptionSkus(skus,
-            object : GetSkusResponseListener {
-                override fun onReceived(skus: MutableList<SkuDetails>) {
-                    receivedSkus = skus
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
                 }
 
                 override fun onError(error: PurchasesError) {
@@ -222,7 +223,7 @@ class PurchasesTest {
                 }
             })
 
-        assertThat(receivedSkus).isEqualTo(skuDetails)
+        assertThat(receivedProducts).isEqualTo(skuDetails)
     }
 
     @Test
@@ -232,9 +233,9 @@ class PurchasesTest {
         val skuDetails = mockStoreProduct(skus, listOf(), ProductType.INAPP)
 
         purchases.getNonSubscriptionSkus(skus,
-            object : GetSkusResponseListener {
-                override fun onReceived(skus: MutableList<SkuDetails>) {
-                    receivedSkus = skus
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
                 }
 
                 override fun onError(error: PurchasesError) {
@@ -242,7 +243,7 @@ class PurchasesTest {
                 }
             })
 
-        assertThat(receivedSkus).isEqualTo(skuDetails)
+        assertThat(receivedProducts).isEqualTo(skuDetails)
     }
 
     @Test
@@ -641,7 +642,7 @@ class PurchasesTest {
 
     @Test
     fun restoringPurchasesGetsHistory() {
-        var capturedLambda: ((List<PaymentTransaction>) -> Unit)? = null
+        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
@@ -649,7 +650,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PaymentTransaction>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
             }
         }
@@ -673,7 +674,7 @@ class PurchasesTest {
         val skuSub = "sub"
         val purchaseTokenSub = "token_sub"
 
-        var capturedLambda: ((List<PaymentTransaction>) -> Unit)? = null
+        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
@@ -681,7 +682,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PaymentTransaction>) -> Unit>().captured
+            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured
             capturedLambda?.invoke(
                 getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
                     getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
@@ -755,7 +756,7 @@ class PurchasesTest {
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
-        var capturedLambda: ((List<PaymentTransaction>) -> Unit)? = null
+        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
@@ -763,7 +764,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PaymentTransaction>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(
                     getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
                         getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
@@ -1283,7 +1284,7 @@ class PurchasesTest {
         val purchaseRecords = getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
             getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
 
-        var capturedRestoreLambda: ((List<PaymentTransaction>) -> Unit)? = null
+        var capturedRestoreLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
@@ -1291,7 +1292,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedRestoreLambda = lambda<(List<PaymentTransaction>) -> Unit>().captured
+            capturedRestoreLambda = lambda<(List<StoreTransaction>) -> Unit>().captured
             capturedRestoreLambda?.invoke(purchaseRecords)
         }
 
@@ -1361,7 +1362,7 @@ class PurchasesTest {
         val purchaseRecords = getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
             getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
 
-        var capturedRestoreLambda: ((List<PaymentTransaction>) -> Unit)? = null
+        var capturedRestoreLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
@@ -1369,7 +1370,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedRestoreLambda = lambda<(List<PaymentTransaction>) -> Unit>().captured
+            capturedRestoreLambda = lambda<(List<StoreTransaction>) -> Unit>().captured
             capturedRestoreLambda?.invoke(purchaseRecords)
         }
 
@@ -1432,7 +1433,7 @@ class PurchasesTest {
             lambda<(List<Purchase>) -> Unit>().captured.invoke(emptyList())
         }
 
-        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         purchases.restorePurchases(mockCompletion)
 
         verify {
@@ -1838,7 +1839,7 @@ class PurchasesTest {
         every {
             mockIdentityManager.logOut()
         } returns null
-        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         purchases.logOut(mockCompletion)
 
         verify(exactly = 1) {
@@ -1876,7 +1877,7 @@ class PurchasesTest {
             mockCache.clearLatestAttributionData(appUserId)
         } just Runs
         val mockError = mockk<PurchasesError>(relaxed = true)
-        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         every {
             mockIdentityManager.logOut()
         } returns mockError
@@ -1899,7 +1900,7 @@ class PurchasesTest {
             lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
         }
 
-        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         every {
             mockIdentityManager.logOut()
         } returns null
@@ -1928,7 +1929,7 @@ class PurchasesTest {
             mockBackend.clearCaches()
         } just Runs
 
-        val mockCompletion = mockk<ReceiveCustomerInfoListener>(relaxed = true)
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         every {
             mockIdentityManager.logOut()
         } returns null
@@ -2173,7 +2174,7 @@ class PurchasesTest {
             listOf(BillingFeature.SUBSCRIPTIONS, BillingFeature.IN_APP_ITEMS_ON_VR),
             Callback {
                 receivedCanMakePayments = it
-        })
+            })
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
@@ -2393,7 +2394,7 @@ class PurchasesTest {
         val purchaseRecords = getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
             getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
 
-        var capturedRestoreLambda: ((List<PaymentTransaction>) -> Unit)? = null
+        var capturedRestoreLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
@@ -2401,7 +2402,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedRestoreLambda = lambda<(List<PaymentTransaction>) -> Unit>().captured
+            capturedRestoreLambda = lambda<(List<StoreTransaction>) -> Unit>().captured
             capturedRestoreLambda?.invoke(purchaseRecords)
         }
 
@@ -2431,7 +2432,7 @@ class PurchasesTest {
         val skuSub = "onemonth_freetrial_sub"
         val purchaseTokenSub = "crazy_purchase_token_sub"
 
-        var capturedLambda: ((List<PaymentTransaction>) -> Unit)? = null
+        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
@@ -2439,7 +2440,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PaymentTransaction>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(
                     getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
                         getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
@@ -2491,7 +2492,7 @@ class PurchasesTest {
         val purchaseTokenSub = "crazy_purchase_token_sub"
         purchases.allowSharingPlayStoreAccount = true
 
-        var capturedLambda: ((List<PaymentTransaction>) -> Unit)? = null
+        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
@@ -2499,7 +2500,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PaymentTransaction>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(
                     getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP) +
                         getMockedPurchaseHistoryList(skuSub, purchaseTokenSub, ProductType.SUBS)
@@ -2549,7 +2550,7 @@ class PurchasesTest {
         val purchaseToken = "crazy_purchase_token"
         purchases.allowSharingPlayStoreAccount = true
 
-        var capturedLambda: ((List<PaymentTransaction>) -> Unit)? = null
+        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
@@ -2557,7 +2558,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedLambda = lambda<(List<PaymentTransaction>) -> Unit>().captured.also {
+            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(getMockedPurchaseHistoryList(sku, purchaseToken, ProductType.INAPP))
             }
         }
@@ -2900,7 +2901,7 @@ class PurchasesTest {
             productIds = listOf("product"),
             purchaseState = Purchase.PurchaseState.PURCHASED
         )
-        val activePurchase = purchase.toRevenueCatPaymentTransaction(ProductType.SUBS, null)
+        val activePurchase = purchase.toStoreTransaction(ProductType.SUBS, null)
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(purchase.purchaseToken.sha1() to activePurchase),
             queriedINAPP = emptyMap(),
@@ -2963,7 +2964,7 @@ class PurchasesTest {
             purchaseState = Purchase.PurchaseState.PURCHASED
         )
 
-        val purchaseWrapper = purchase.toRevenueCatPaymentTransaction(ProductType.SUBS, null)
+        val purchaseWrapper = purchase.toStoreTransaction(ProductType.SUBS, null)
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(purchase.purchaseToken.sha1() to purchaseWrapper),
             queriedINAPP = emptyMap(),
@@ -2997,7 +2998,7 @@ class PurchasesTest {
         )
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(
-                purchase.purchaseToken.sha1() to purchase.toRevenueCatPaymentTransaction(
+                purchase.purchaseToken.sha1() to purchase.toStoreTransaction(
                     ProductType.SUBS,
                     null
                 )
@@ -3335,7 +3336,7 @@ class PurchasesTest {
     fun `Deferred downgrade`() {
         val (_, offerings) = stubOfferings("onemonth_freetrial")
 
-        val oldPurchase = mockk<PaymentTransaction>()
+        val oldPurchase = mockk<StoreTransaction>()
         every { oldPurchase.skus[0] } returns "oldSku"
         every { oldPurchase.type } returns ProductType.SUBS
 
@@ -3348,7 +3349,7 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            lambda<(PaymentTransaction) -> Unit>().captured.invoke(oldPurchase)
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldPurchase)
         }
 
         purchases.purchasePackageWith(
@@ -3898,23 +3899,23 @@ class PurchasesTest {
         sku: String,
         purchaseToken: String,
         productType: ProductType
-    ): List<PaymentTransaction> {
+    ): List<StoreTransaction> {
         val purchaseHistoryRecordWrapper =
-            getMockedPaymentTransaction(sku, purchaseToken, productType)
+            getMockedStoreTransaction(sku, purchaseToken, productType)
         return listOf(purchaseHistoryRecordWrapper)
     }
 
-    private fun getMockedPaymentTransaction(
+    private fun getMockedStoreTransaction(
         sku: String,
         purchaseToken: String,
         productType: ProductType
-    ): PaymentTransaction {
+    ): StoreTransaction {
         val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
             productIds = listOf(sku),
             purchaseToken = purchaseToken
         )
 
-        return p.toRevenueCatPaymentTransaction(productType)
+        return p.toStoreTransaction(productType)
     }
 
     private fun getMockedPurchaseList(
@@ -3924,7 +3925,7 @@ class PurchasesTest {
         offeringIdentifier: String? = null,
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
         acknowledged: Boolean = false
-    ): List<PaymentTransaction> {
+    ): List<StoreTransaction> {
         val p = stubGooglePurchase(
             productIds = listOf(sku),
             purchaseToken = purchaseToken,
@@ -3932,13 +3933,13 @@ class PurchasesTest {
             acknowledged = acknowledged
         )
 
-        return listOf(p.toRevenueCatPaymentTransaction(productType, offeringIdentifier))
+        return listOf(p.toStoreTransaction(productType, offeringIdentifier))
     }
 
     private fun mockSuccessfulQueryPurchases(
-        queriedSUBS: Map<String, PaymentTransaction>,
-        queriedINAPP: Map<String, PaymentTransaction>,
-        notInCache: List<PaymentTransaction>
+        queriedSUBS: Map<String, StoreTransaction>,
+        queriedINAPP: Map<String, StoreTransaction>,
+        notInCache: List<StoreTransaction>
     ) {
         val purchasesByHashedToken = queriedSUBS + queriedINAPP
         every {
@@ -3951,7 +3952,7 @@ class PurchasesTest {
         every {
             mockBillingAbstract.queryPurchases(appUserId, captureLambda(), any())
         } answers {
-            lambda<(Map<String, PaymentTransaction>) -> Unit>().captured(purchasesByHashedToken)
+            lambda<(Map<String, StoreTransaction>) -> Unit>().captured(purchasesByHashedToken)
         }
     }
 
@@ -4114,8 +4115,8 @@ class PurchasesTest {
         )
     }
 
-    private fun mockPurchaseFound(error: PurchasesError? = null): PaymentTransaction {
-        val oldPurchase = getMockedPaymentTransaction(
+    private fun mockPurchaseFound(error: PurchasesError? = null): StoreTransaction {
+        val oldPurchase = getMockedStoreTransaction(
             sku = "oldSku",
             purchaseToken = "another_purchase_token",
             productType = ProductType.SUBS
@@ -4133,7 +4134,7 @@ class PurchasesTest {
             if (error != null) {
                 lambda<(PurchasesError) -> Unit>().captured.invoke(error)
             } else {
-                lambda<(PaymentTransaction) -> Unit>().captured.invoke(oldPurchase)
+                lambda<(StoreTransaction) -> Unit>().captured.invoke(oldPurchase)
             }
         }
         return oldPurchase

@@ -1,5 +1,3 @@
-@file:JvmName("-deprecated_PurchaserInfo")
-
 //  Purchases
 //
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.
@@ -99,6 +97,20 @@ data class PurchaserInfo constructor(
         }
         nonSubscriptionTransactionList.sortedBy { it.purchaseDate }
     }
+
+    constructor(customerInfo: CustomerInfo) : this(
+        customerInfo.entitlements,
+        customerInfo.purchasedNonSubscriptionSkus,
+        customerInfo.allExpirationDatesByProduct,
+        customerInfo.allPurchaseDatesByProduct,
+        customerInfo.requestDate,
+        customerInfo.jsonObject,
+        customerInfo.schemaVersion,
+        customerInfo.firstSeen,
+        customerInfo.originalAppUserId,
+        customerInfo.managementURL,
+        customerInfo.originalPurchaseDate
+    )
 
     /**
      * Get the expiration date for a given sku

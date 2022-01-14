@@ -8,7 +8,6 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.optNullableString
@@ -120,7 +119,7 @@ fun JSONObject.createPackage(
     return products[getString("platform_product_identifier")]?.let { product ->
         val identifier = getString("identifier")
         val packageType = identifier.toPackageType()
-        return Package(identifier, packageType, product.skuDetails, offeringIdentifier)
+        return Package(identifier, packageType, product, offeringIdentifier)
     }
 }
 

@@ -3,7 +3,7 @@ package com.revenuecat.purchases.amazon
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
 import org.assertj.core.api.Assertions.assertThat
@@ -13,20 +13,20 @@ import java.util.Date
 import com.amazon.device.iap.model.ProductType as AmazonProductType
 
 @RunWith(AndroidJUnit4::class)
-class ReceiptToPaymentTransactionTest {
+class ReceiptToStoreTransactionTest {
 
     @Test
     fun `orderID is always null`() {
         val receipt = dummyReceipt()
 
-        val paymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.orderId).isNull()
+        assertThat(storeTransaction.orderId).isNull()
     }
 
     @Test
@@ -36,51 +36,51 @@ class ReceiptToPaymentTransactionTest {
 
         val receipt = dummyReceipt(sku = expectedReceiptSku)
 
-        val paymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction = receipt.toStoreTransaction(
             sku = expectedTermSku,
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.skus[0]).isEqualTo(expectedTermSku)
-        assertThat(paymentTransaction.skus[0]).isNotEqualTo(receipt.sku)
+        assertThat(storeTransaction.skus[0]).isEqualTo(expectedTermSku)
+        assertThat(storeTransaction.skus[0]).isNotEqualTo(receipt.sku)
     }
 
     @Test
     fun `type is correct for consumables`() {
         var receipt = dummyReceipt(productType = AmazonProductType.SUBSCRIPTION)
 
-        var paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        var storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.type).isEqualTo(ProductType.SUBS)
+        assertThat(storeTransaction.type).isEqualTo(ProductType.SUBS)
 
         receipt = dummyReceipt(productType = AmazonProductType.CONSUMABLE)
 
-        paymentTransaction = receipt.toPaymentTransaction(
+        storeTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.type).isEqualTo(ProductType.INAPP)
+        assertThat(storeTransaction.type).isEqualTo(ProductType.INAPP)
 
         receipt = dummyReceipt(productType = AmazonProductType.ENTITLED)
 
-        paymentTransaction = receipt.toPaymentTransaction(
+        storeTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.type).isEqualTo(ProductType.INAPP)
+        assertThat(storeTransaction.type).isEqualTo(ProductType.INAPP)
     }
 
     @Test
@@ -88,28 +88,28 @@ class ReceiptToPaymentTransactionTest {
         val expectedPurchaseDate = Date()
         val receipt = dummyReceipt(purchaseDate = expectedPurchaseDate)
 
-        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.purchaseTime).isEqualTo(expectedPurchaseDate.time)
+        assertThat(storeTransaction.purchaseTime).isEqualTo(expectedPurchaseDate.time)
     }
 
     @Test
     fun `purchaseToken is the receipt ID`() {
         val receipt = dummyReceipt(receiptId = "receipt_id")
 
-        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.purchaseToken).isEqualTo(receipt.receiptId)
+        assertThat(storeTransaction.purchaseToken).isEqualTo(receipt.receiptId)
     }
 
     @Test
@@ -117,14 +117,14 @@ class ReceiptToPaymentTransactionTest {
         val receipt = dummyReceipt()
 
         PurchaseState.values().forEach { expectedPurchaseState ->
-            val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+            val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
                 sku = "sku",
                 presentedOfferingIdentifier = "offering",
                 purchaseState = expectedPurchaseState,
                 storeUserID = "store_user_id"
             )
 
-            assertThat(paymentTransaction.purchaseState).isEqualTo(expectedPurchaseState)
+            assertThat(storeTransaction.purchaseState).isEqualTo(expectedPurchaseState)
         }
     }
 
@@ -132,81 +132,81 @@ class ReceiptToPaymentTransactionTest {
     fun `isAutoRenewing is false for a canceled subscription`() {
         val receipt = dummyReceipt(productType = AmazonProductType.SUBSCRIPTION, cancelDate = Date())
 
-        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.isAutoRenewing).isFalse
+        assertThat(storeTransaction.isAutoRenewing).isFalse
     }
 
     @Test
     fun `isAutoRenewing is true for a non canceled subscription`() {
         val receipt = dummyReceipt(productType = AmazonProductType.SUBSCRIPTION, cancelDate = null)
 
-        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.isAutoRenewing).isTrue
+        assertThat(storeTransaction.isAutoRenewing).isTrue
     }
 
     @Test
     fun `isAutoRenewing is false for non subscriptions`() {
         var receipt = dummyReceipt(productType = AmazonProductType.ENTITLED, cancelDate = null)
 
-        var paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        var storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.isAutoRenewing).isFalse
+        assertThat(storeTransaction.isAutoRenewing).isFalse
 
         receipt = dummyReceipt(productType = AmazonProductType.CONSUMABLE, cancelDate = null)
 
-        paymentTransaction = receipt.toPaymentTransaction(
+        storeTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.isAutoRenewing).isFalse
+        assertThat(storeTransaction.isAutoRenewing).isFalse
     }
 
     @Test
     fun `signature is null`() {
         val receipt = dummyReceipt()
 
-        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.signature).isNull()
+        assertThat(storeTransaction.signature).isNull()
     }
 
     @Test
     fun `original JSON is correct`() {
         val receipt = dummyReceipt()
 
-        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        val receivedJSON = paymentTransaction.originalJson
+        val receivedJSON = storeTransaction.originalJson
         val expectedJSON = receipt.toJSON()
         assertThat(receivedJSON.length()).isEqualTo(expectedJSON.length())
 
@@ -220,14 +220,14 @@ class ReceiptToPaymentTransactionTest {
         val receipt = dummyReceipt()
 
         val expectedPresentedOfferingIdentifier = "offering"
-        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = expectedPresentedOfferingIdentifier,
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.presentedOfferingIdentifier).isEqualTo(expectedPresentedOfferingIdentifier)
+        assertThat(storeTransaction.presentedOfferingIdentifier).isEqualTo(expectedPresentedOfferingIdentifier)
     }
 
     @Test
@@ -235,14 +235,14 @@ class ReceiptToPaymentTransactionTest {
         val receipt = dummyReceipt()
 
         val expectedPresentedOfferingIdentifier = null
-        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = expectedPresentedOfferingIdentifier,
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.presentedOfferingIdentifier).isEqualTo(expectedPresentedOfferingIdentifier)
+        assertThat(storeTransaction.presentedOfferingIdentifier).isEqualTo(expectedPresentedOfferingIdentifier)
     }
 
     @Test
@@ -251,26 +251,26 @@ class ReceiptToPaymentTransactionTest {
 
         val expectedStoreUserID = "store_user_id"
 
-        val paymentTransaction: PaymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = expectedStoreUserID
         )
 
-        assertThat(paymentTransaction.storeUserID).isEqualTo(expectedStoreUserID)
+        assertThat(storeTransaction.storeUserID).isEqualTo(expectedStoreUserID)
     }
 
     @Test
     fun `purchase type is correct`() {
         val receipt = dummyReceipt()
-        val paymentTransaction = receipt.toPaymentTransaction(
+        val storeTransaction = receipt.toStoreTransaction(
             sku = "sku",
             presentedOfferingIdentifier = null,
             purchaseState = PurchaseState.PURCHASED,
             storeUserID = "store_user_id"
         )
 
-        assertThat(paymentTransaction.purchaseType).isEqualTo(PurchaseType.AMAZON_PURCHASE)
+        assertThat(storeTransaction.purchaseType).isEqualTo(PurchaseType.AMAZON_PURCHASE)
     }
 }

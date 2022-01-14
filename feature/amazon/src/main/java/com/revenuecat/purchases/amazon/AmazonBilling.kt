@@ -30,7 +30,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
@@ -74,7 +74,7 @@ internal class AmazonBilling constructor(
 
     override fun queryAllPurchases(
         appUserID: String,
-        onReceivePurchaseHistory: (List<PaymentTransaction>) -> Unit,
+        onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     ) {
         queryPurchases(
@@ -106,7 +106,7 @@ internal class AmazonBilling constructor(
 
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
-        purchase: PaymentTransaction
+        purchase: StoreTransaction
     ) {
         if (purchase.type == RevenueCatProductType.UNKNOWN) return
 
@@ -124,7 +124,7 @@ internal class AmazonBilling constructor(
         appUserID: String,
         productType: RevenueCatProductType,
         sku: String,
-        onCompletion: (PaymentTransaction) -> Unit,
+        onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
@@ -132,7 +132,7 @@ internal class AmazonBilling constructor(
             appUserID,
             onReceivePurchaseHistory = {
                 // We get skus[0] because the list is guaranteed to have just one item in Amazon's case.
-                val record: PaymentTransaction? = it.firstOrNull { record -> sku == record.skus[0] }
+                val record: StoreTransaction? = it.firstOrNull { record -> sku == record.skus[0] }
                 if (record != null) {
                     onCompletion(record)
                 } else {
@@ -171,7 +171,7 @@ internal class AmazonBilling constructor(
 
     override fun queryPurchases(
         appUserID: String,
-        onSuccess: (Map<String, PaymentTransaction>) -> Unit,
+        onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         purchaseUpdatesHandler.queryPurchases(
@@ -215,7 +215,7 @@ internal class AmazonBilling constructor(
             log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FINDING_RECEIPT_SKU)
             return@mapNotNull null
         }
-        val amazonPurchaseWrapper = receipt.toPaymentTransaction(
+        val amazonPurchaseWrapper = receipt.toStoreTransaction(
             sku = sku,
             presentedOfferingIdentifier = null,
             purchaseState = PurchaseState.UNSPECIFIED_STATE,
@@ -322,7 +322,7 @@ internal class AmazonBilling constructor(
              * For consumables and entitlements, we don't need to fetch de termSku,
              * since there's no terms and we can just use the sku
              */
-            val amazonPurchaseWrapper = receipt.toPaymentTransaction(
+            val amazonPurchaseWrapper = receipt.toStoreTransaction(
                 sku = storeProduct.sku,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
                 purchaseState = PurchaseState.PURCHASED,
@@ -337,7 +337,7 @@ internal class AmazonBilling constructor(
             userData.userId,
             onSuccess = { response ->
                 val termSku = response["termSku"] as String
-                val amazonPurchaseWrapper = receipt.toPaymentTransaction(
+                val amazonPurchaseWrapper = receipt.toStoreTransaction(
                     sku = termSku,
                     presentedOfferingIdentifier = presentedOfferingIdentifier,
                     purchaseState = PurchaseState.PURCHASED,

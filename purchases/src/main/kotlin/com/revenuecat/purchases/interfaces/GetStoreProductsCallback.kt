@@ -4,7 +4,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.skuDetails
 
-internal interface GetStoreProductCallback {
+interface GetStoreProductsCallback {
     /**
      * Will be called after products have been fetched successfully
      *
@@ -20,14 +20,15 @@ internal interface GetStoreProductCallback {
     fun onError(error: PurchasesError)
 }
 
-internal fun GetSkusResponseListener.toGetStoreProductCallback(): GetStoreProductCallback {
-    return object : GetStoreProductCallback {
+@Deprecated("Deprecated in favor of GetStoreProductsCallback. This helper will be removed in a future release.")
+fun GetSkusResponseListener.toGetStoreProductsCallback(): GetStoreProductsCallback {
+    return object : GetStoreProductsCallback {
         override fun onReceived(storeProducts: List<StoreProduct>) {
-            this@toGetStoreProductCallback.onReceived(storeProducts.map { it.skuDetails })
+            this@toGetStoreProductsCallback.onReceived(storeProducts.map { it.skuDetails })
         }
 
         override fun onError(error: PurchasesError) {
-            this@toGetStoreProductCallback.onError(error)
+            this@toGetStoreProductsCallback.onError(error)
         }
     }
 }

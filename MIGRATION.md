@@ -1,4 +1,0 @@
-- Removed deprecated `purchaseProduct` and `purchasePackage` accepting `UpgradeInfo` and `MakePurchaseListener`
-- `identify` has been removed
-- `reset` has been removed
-- `createAlias` has been removed

@@ -2,17 +2,17 @@ package com.revenuecat.purchases.amazon
 
 import android.content.Context
 import com.revenuecat.purchases.PurchasesConfiguration
+import com.revenuecat.purchases.Store
 
-// TODO: make public
-internal class AmazonConfiguration(builder: Builder) : PurchasesConfiguration(builder) {
-
-    init {
-        // TODO: uncomment
-        // this.store = Store.AMAZON
-    }
+class AmazonConfiguration(builder: Builder) : PurchasesConfiguration(builder) {
 
     class Builder(
         context: Context,
         apiKey: String
-    ) : PurchasesConfiguration.Builder(context, apiKey)
+    ) : PurchasesConfiguration.Builder(context, apiKey) {
+
+        init {
+            this.store(Store.AMAZON)
+        }
+    }
 }
