@@ -10,9 +10,9 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.google.BillingWrapper
-import com.revenuecat.purchases.google.toRevenueCatPaymentTransaction
+import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
@@ -69,7 +69,7 @@ class PostingTransactionsTests {
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
-            lambda<(List<PaymentTransaction>) -> Unit>().captured.also {
+            lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
             }
         }
@@ -227,7 +227,7 @@ class PostingTransactionsTests {
             every { it.introductoryPricePeriod } returns ""
             every { it.freeTrialPeriod } returns ""
         }
-        val purchase: PaymentTransaction = mockk(relaxed = true)
+        val purchase: StoreTransaction = mockk(relaxed = true)
         val expectedStoreUserID = "a_store_user_id"
         every {
             purchase.storeUserID
@@ -266,7 +266,7 @@ class PostingTransactionsTests {
         postReceiptSuccess = PostReceiptCompletionContainer()
         val productIds = listOf("uno", "dos")
         val purchase =
-            stubGooglePurchase(productIds = productIds).toRevenueCatPaymentTransaction(ProductType.SUBS, null)
+            stubGooglePurchase(productIds = productIds).toStoreTransaction(ProductType.SUBS, null)
         val mockStoreProduct = mockk<StoreProduct>().also {
             every { it.sku } returns "uno"
             every { it.priceAmountMicros } returns 2000000

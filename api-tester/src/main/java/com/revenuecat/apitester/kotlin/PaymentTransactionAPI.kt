@@ -1,14 +1,14 @@
 package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import org.json.JSONObject
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class PaymentTransactionAPI {
-    fun check(transaction: PaymentTransaction) {
+    fun check(transaction: StoreTransaction) {
         with(transaction) {
             val orderId: String? = orderId
             val skus: List<String> = skus

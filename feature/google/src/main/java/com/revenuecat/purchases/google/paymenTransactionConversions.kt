@@ -3,15 +3,15 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
 import org.json.JSONObject
 
-fun Purchase.toRevenueCatPaymentTransaction(
+fun Purchase.toStoreTransaction(
     productType: ProductType,
     presentedOfferingIdentifier: String?
-): PaymentTransaction = PaymentTransaction(
+): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
     skus = this.skus,
     type = productType,
@@ -26,16 +26,16 @@ fun Purchase.toRevenueCatPaymentTransaction(
     purchaseType = PurchaseType.GOOGLE_PURCHASE
 )
 
-val PaymentTransaction.originalGooglePurchase: Purchase?
+val StoreTransaction.originalGooglePurchase: Purchase?
     get() =
         this.signature
             ?.takeIf { this.purchaseType == PurchaseType.GOOGLE_PURCHASE }
             ?.let { signature -> Purchase(this.originalJson.toString(), signature) }
 
-fun PurchaseHistoryRecord.toRevenueCatPaymentTransaction(
+fun PurchaseHistoryRecord.toStoreTransaction(
     type: ProductType
-): PaymentTransaction {
-    return PaymentTransaction(
+): StoreTransaction {
+    return StoreTransaction(
         orderId = null,
         skus = this.skus,
         type = type,

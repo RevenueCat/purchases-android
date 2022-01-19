@@ -40,13 +40,15 @@ data class StoreProduct(
      * Returns ISO 4217 currency code for price and original price.
      *
      * For example, if price is specified in British pounds sterling, price_currency_code is "GBP".
+     *
+     * If currency code cannot be determined, currency symbol is returned.
      */
     val priceCurrencyCode: String,
 
     /**
      * Formatted original price of the item, including its currency sign.
      *
-     * Note: returned only for Google products.
+     * Note: returned only for Google products. Not available for Amazon.
      */
     val originalPrice: String?,
 
@@ -54,7 +56,7 @@ data class StoreProduct(
      * Returns the original price in micro-units, where 1,000,000 micro-units equal one unit
      * of the currency.
      *
-     * Note: returned only for Google products.
+     * Note: returned only for Google products. Always 0 for Amazon subscriptions.
      */
     val originalPriceAmountMicros: Long,
 
@@ -73,7 +75,7 @@ data class StoreProduct(
      * P1M equates to one month, P3M equates to three months, P6M equates to six months,
      * and P1Y equates to one year.
      *
-     * Note: Returned only for subscriptions.
+     * Note: Returned only for Google subscriptions. Not available for Amazon.
      */
     val subscriptionPeriod: String?,
 
@@ -82,7 +84,7 @@ data class StoreProduct(
      * P1M equates to one month, P3M equates to three months, P6M equates to six months,
      * and P1Y equates to one year.
      *
-     * Note: null for non subscriptions.
+     * Note: Returned only for Google subscriptions. Not available for Amazon.
      */
     val freeTrialPeriod: String?,
 
@@ -90,6 +92,7 @@ data class StoreProduct(
      * The billing period of the introductory price, specified in ISO 8601 format.
      *
      * Note: Returned only for Google subscriptions which have an introductory period configured.
+     * Not available for Amazon.
      */
     val introductoryPrice: String?,
 
@@ -97,7 +100,7 @@ data class StoreProduct(
      * Introductory price in micro-units. The currency is the same as price_currency_code.
      *
      * Note: Returns 0 if the product is not Google a subscription or doesn't
-     * have an introductory period.
+     * have an introductory period. Always 0 for Amazon subscriptions.
      */
     val introductoryPriceAmountMicros: Long,
 
@@ -105,6 +108,7 @@ data class StoreProduct(
      * The billing period of the introductory price, specified in ISO 8601 format.
      *
      * Note: Returned only for Google subscriptions which have an introductory period configured.
+     * Not available for Amazon.
      */
     val introductoryPricePeriod: String?,
 
@@ -113,7 +117,7 @@ data class StoreProduct(
      * introductory price, such as 3.
      *
      * Note: Returns 0 if the SKU is not a Google subscription or doesn't
-     * have an introductory period.
+     * have an introductory period. Always 0 for Amazon subscriptions.
      */
     val introductoryPriceCycles: Int,
 
@@ -123,12 +127,14 @@ data class StoreProduct(
     val iconUrl: String,
 
     /**
-     * JSONObject representing the original product class from Google.
+     * JSONObject representing the original product class from Google or Amazon.
      *
      * Note: there's a convenience extension property that can be used to get the original
      * SkuDetails class: `StoreProduct.skuDetails`.
      * Alternatively, the original SkuDetails can be built doing the following:
      * `SkuDetails(this.originalJson.toString())`
+     *
+     * For Amazon, the original Product can be obtained using `StoreProduct.amazonProduct`
      */
     val originalJson: JSONObject
 ) : Parcelable {

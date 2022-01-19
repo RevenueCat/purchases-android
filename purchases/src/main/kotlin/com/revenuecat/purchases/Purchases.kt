@@ -45,24 +45,27 @@ import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.GetStoreProductCallback
+import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.interfaces.PurchaseErrorListener
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener
+import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
-import com.revenuecat.purchases.interfaces.toGetStoreProductCallback
+import com.revenuecat.purchases.interfaces.toGetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
 import com.revenuecat.purchases.interfaces.toPurchaseCallback
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.interfaces.toReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.toReceiveOfferingsCallback
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
@@ -84,8 +87,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
-typealias SuccessfulPurchaseCallback = (PaymentTransaction, CustomerInfo) -> Unit
-typealias ErrorPurchaseCallback = (PaymentTransaction, PurchasesError) -> Unit
+typealias SuccessfulPurchaseCallback = (StoreTransaction, CustomerInfo) -> Unit
+typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -105,7 +108,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    @JvmSynthetic internal var appConfig: AppConfig
+    @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig
 ) : LifecycleDelegate {
 
     /** @suppress */
@@ -116,23 +119,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @JvmSynthetic @Synchronized get() = field
         @JvmSynthetic @Synchronized set(value) {
             field = value
-        }
-
-    /*
-    * If it should allow sharing Play Store accounts. False by
-    * default. If true treats all purchases as restores, aliasing together appUserIDs that share a
-    * Play Store account.
-    */
-
-    @Deprecated(
-            "Replaced with configuration in the RevenueCat dashboard",
-            ReplaceWith("configure through the RevenueCat dashboard")
-    )
-    var allowSharingPlayStoreAccount: Boolean
-        @Synchronized get() =
-            state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
-        @Synchronized set(value) {
-            state = state.copy(allowSharingPlayStoreAccount = value)
         }
 
     /**
@@ -295,7 +281,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [listener] Called when offerings are available. Called immediately if offerings are cached.
      */
     fun getOfferings(
-        listener: ReceiveOfferingsListener
+        listener: ReceiveOfferingsCallback
     ) {
         val (appUserID, cachedOfferings) = synchronized(this@Purchases) {
             identityManager.currentAppUserID to deviceCache.cachedOfferings
@@ -321,26 +307,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * Gets the SKUDetails for the given list of subscription skus.
-     * @param [skus] List of skus
-     * @param [listener] Response listener
-     */
-    fun getSubscriptionSkus(
-        skus: List<String>,
-        listener: GetSkusResponseListener
-    ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), listener.toGetStoreProductCallback())
-    }
-
-    /**
      * Gets the StoreProduct for the given list of subscription skus.
      * @param [skus] List of skus
      * @param [callback] Response callback
      */
-    @JvmSynthetic
-    internal fun getSubscriptionSkus(
+    fun getSubscriptionSkus(
         skus: List<String>,
-        callback: GetStoreProductCallback
+        callback: GetStoreProductsCallback
     ) {
         getSkus(skus.toSet(), ProductType.SUBS, callback)
     }
@@ -348,44 +321,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Gets the SKUDetails for the given list of non-subscription skus.
      * @param [skus] List of skus
-     * @param [listener] Response listener
+     * @param [callback] Response callback
      */
     fun getNonSubscriptionSkus(
         skus: List<String>,
-        listener: GetSkusResponseListener
-    ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), listener.toGetStoreProductCallback())
-    }
-
-    /**
-     * Gets the SKUDetails for the given list of non-subscription skus.
-     * @param [skus] List of skus
-     * @param [callback] Response callback
-     */
-    @JvmSynthetic
-    internal fun getNonSubscriptionSkus(
-        skus: List<String>,
-        callback: GetStoreProductCallback
+        callback: GetStoreProductsCallback
     ) {
         getSkus(skus.toSet(), ProductType.INAPP, callback)
     }
 
     fun purchaseProduct(
-        activity: Activity,
-        skuDetails: SkuDetails,
-        upgradeInfo: UpgradeInfo,
-        listener: ProductChangeListener
-    ) {
-        purchaseProduct(
-            activity,
-            skuDetails.toStoreProduct(),
-            upgradeInfo,
-            listener.toProductChangeCallback()
-        )
-    }
-
-    @JvmSynthetic
-    internal fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
@@ -403,29 +348,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Make a purchase.
      * @param [activity] Current activity
-     * @param [skuDetails] The skuDetails of the product you wish to purchase
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    fun purchaseProduct(
-        activity: Activity,
-        skuDetails: SkuDetails,
-        listener: MakePurchaseListener
-    ) {
-        purchaseProduct(
-            activity,
-            skuDetails.toStoreProduct(),
-            listener.toPurchaseCallback()
-        )
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
-    @JvmSynthetic
-    internal fun purchaseProduct(
+    fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         callback: PurchaseCallback
@@ -433,31 +359,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         startPurchase(activity, storeProduct, null, callback)
     }
 
-    /**
-     * Change the product from [productChangeInfo] with the one in [packageToPurchase].
-     *
-     * @param [activity] Current activity
-     * @param [packageToPurchase] The new package to purchase
-     * @param [upgradeInfo] The oldProduct of this object will be replaced with the product in [packageToPurchase].
-     * An optional [BillingFlowParams.ProrationMode] can also be specified.
-     * @param [listener] The listener that will be called when the purchase of the new product completes.
-     */
     fun purchasePackage(
-        activity: Activity,
-        packageToPurchase: Package,
-        upgradeInfo: UpgradeInfo,
-        listener: ProductChangeListener
-    ) {
-        purchasePackage(
-            activity,
-            packageToPurchase,
-            upgradeInfo,
-            listener.toProductChangeCallback()
-        )
-    }
-
-    @JvmSynthetic
-    internal fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         upgradeInfo: UpgradeInfo,
@@ -465,7 +367,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     ) {
         startProductChange(
             activity,
-            packageToPurchase.product.toStoreProduct(),
+            packageToPurchase.product,
             packageToPurchase.offering,
             upgradeInfo,
             callback
@@ -481,30 +383,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
-        listener: MakePurchaseListener
-    ) {
-        purchasePackage(
-            activity,
-            packageToPurchase,
-            listener.toPurchaseCallback()
-        )
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [packageToPurchase] The Package you wish to purchase
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @JvmSynthetic
-    internal fun purchasePackage(
-        activity: Activity,
-        packageToPurchase: Package,
         listener: PurchaseCallback
     ) {
         startPurchase(
             activity,
-            packageToPurchase.product.toStoreProduct(),
+            packageToPurchase.product,
             packageToPurchase.offering,
             listener
         )
@@ -520,10 +403,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      *
      * You shouldn't use this method if you have your own account system. In that case
      * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
-     * @param [listener] The listener that will be called when purchase restore completes.
+     * @param [callback] The listener that will be called when purchase restore completes.
      */
     fun restorePurchases(
-        listener: ReceiveCustomerInfoListener
+        callback: ReceiveCustomerInfoCallback
     ) {
         log(LogIntent.DEBUG, RestoreStrings.RESTORING_PURCHASE)
         if (!allowSharingPlayStoreAccount) {
@@ -537,7 +420,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 appUserID,
                 onReceivePurchaseHistory = { allPurchases ->
                     if (allPurchases.isEmpty()) {
-                        getCustomerInfo(listener)
+                        getCustomerInfo(callback)
                     } else {
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                             sortedByTime.forEach { purchase ->
@@ -565,7 +448,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                         sendUpdatedCustomerInfoToDelegateIfChanged(info)
                                         log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                         if (sortedByTime.last() == purchase) {
-                                            dispatch { listener.onReceived(info) }
+                                            dispatch { callback.onReceived(info) }
                                         }
                                     },
                                     onError = { error, errorIsFinishable, body ->
@@ -582,7 +465,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                                 .format(purchase, error)
                                         )
                                         if (sortedByTime.last() == purchase) {
-                                            dispatch { listener.onError(error) }
+                                            dispatch { callback.onError(error) }
                                         }
                                     }
                                 )
@@ -591,7 +474,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     }
                 },
                 onReceivePurchaseHistoryError = { error ->
-                    dispatch { listener.onError(error) }
+                    dispatch { callback.onError(error) }
                 }
             )
         }
@@ -621,7 +504,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     dispatch { callback?.onError(error) }
                 })
         }
-            ?: retrieveCustomerInfo(identityManager.currentAppUserID, receiveCustomerInfoListener(
+            ?: retrieveCustomerInfo(identityManager.currentAppUserID, receiveCustomerInfoCallback(
                 onSuccess = { customerInfo ->
                     dispatch { callback?.onReceived(customerInfo, false) }
                 },
@@ -634,19 +517,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Resets the Purchases client clearing the save appUserID. This will generate a random user
      * id and save it in the cache.
-     * @param [listener] An optional listener to listen for successes or errors.
+     * @param [callback] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    fun logOut(listener: ReceiveCustomerInfoListener? = null) {
+    fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
         val error: PurchasesError? = identityManager.logOut()
         if (error != null) {
-            listener?.onError(error)
+            callback?.onError(error)
         } else {
             backend.clearCaches()
             synchronized(this@Purchases) {
                 state = state.copy(purchaseCallbacks = emptyMap())
             }
-            updateAllCaches(identityManager.currentAppUserID, listener)
+            updateAllCaches(identityManager.currentAppUserID, callback)
         }
     }
 
@@ -668,23 +551,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /**
      * Get latest available purchaser info.
-     * @param listener A listener called when purchaser info is available and not stale.
+     * @param callback A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
     fun getCustomerInfo(
-        listener: ReceiveCustomerInfoListener
+        callback: ReceiveCustomerInfoCallback
     ) {
-        retrieveCustomerInfo(identityManager.currentAppUserID, listener)
+        retrieveCustomerInfo(identityManager.currentAppUserID, callback)
     }
 
     private fun retrieveCustomerInfo(
         appUserID: String,
-        listener: ReceiveCustomerInfoListener? = null
+        callback: ReceiveCustomerInfoCallback? = null
     ) {
         val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
         if (cachedCustomerInfo != null) {
             log(LogIntent.DEBUG, CustomerInfoStrings.VENDING_CACHE)
-            dispatch { listener?.onReceived(cachedCustomerInfo) }
+            dispatch { callback?.onReceived(cachedCustomerInfo) }
             state.appInBackground.let { appInBackground ->
                 if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
                     log(LogIntent.DEBUG,
@@ -696,7 +579,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             }
         } else {
             log(LogIntent.DEBUG, CustomerInfoStrings.NO_CACHED_CUSTOMERINFO)
-            fetchAndCacheCustomerInfo(appUserID, state.appInBackground, listener)
+            fetchAndCacheCustomerInfo(appUserID, state.appInBackground, callback)
             log(LogIntent.RC_SUCCESS, CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK)
         }
     }
@@ -993,7 +876,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     //endregion
     //endregion
-
+    //endregion
     // region Internal Methods
 
     @JvmSynthetic
@@ -1040,7 +923,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun fetchAndCacheOfferings(
         appUserID: String,
         appInBackground: Boolean,
-        completion: ReceiveOfferingsListener? = null
+        completion: ReceiveOfferingsCallback? = null
     ) {
         deviceCache.setOfferingsCacheTimestampToNow()
         backend.getOfferings(
@@ -1116,7 +999,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun handleErrorFetchingOfferings(
         error: PurchasesError,
-        completion: ReceiveOfferingsListener?
+        completion: ReceiveOfferingsCallback?
     ) {
         val errorCausedByPurchases = setOf(
             PurchasesErrorCode.ConfigurationError,
@@ -1151,7 +1034,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun getSkus(
         skus: Set<String>,
         productType: ProductType,
-        callback: GetStoreProductCallback
+        callback: GetStoreProductsCallback
     ) {
         billing.querySkuDetailsAsync(
             productType,
@@ -1169,7 +1052,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun updateAllCaches(
         appUserID: String,
-        completion: ReceiveCustomerInfoListener? = null
+        completion: ReceiveCustomerInfoCallback? = null
     ) {
         state.appInBackground.let { appInBackground ->
             fetchAndCacheCustomerInfo(appUserID, appInBackground, completion)
@@ -1180,7 +1063,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun fetchAndCacheCustomerInfo(
         appUserID: String,
         appInBackground: Boolean,
-        completion: ReceiveCustomerInfoListener? = null
+        completion: ReceiveCustomerInfoCallback? = null
     ) {
         deviceCache.setCustomerInfoCacheTimestampToNow(appUserID)
         backend.getCustomerInfo(
@@ -1204,7 +1087,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun postPurchases(
-        purchases: List<PaymentTransaction>,
+        purchases: List<StoreTransaction>,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
         appUserID: String,
@@ -1250,7 +1133,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     @JvmSynthetic
     internal fun postToBackend(
-        purchase: PaymentTransaction,
+        purchase: StoreTransaction,
         storeProduct: StoreProduct?,
         allowSharingPlayStoreAccount: Boolean,
         consumeAllTransactions: Boolean,
@@ -1383,7 +1266,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun getPurchasesUpdatedListener(): BillingAbstract.PurchasesUpdatedListener {
         return object : BillingAbstract.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<PaymentTransaction>) {
+            override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
                 val productChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
                 val productChangeListener: ProductChangeCallback?
@@ -1437,10 +1320,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
-        val onSuccess: SuccessfulPurchaseCallback = { paymentTransaction, info ->
-            getPurchaseCallback(paymentTransaction.skus[0])?.let { purchaseCallback ->
+        val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
+            getPurchaseCallback(storeTransaction.skus[0])?.let { purchaseCallback ->
                 dispatch {
-                    purchaseCallback.onCompleted(paymentTransaction, info)
+                    purchaseCallback.onCompleted(storeTransaction, info)
                 }
             }
         }
@@ -1454,10 +1337,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private fun getProductChangeCompletedCallbacks(
         productChangeListener: ProductChangeCallback?
     ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
-        val onSuccess: SuccessfulPurchaseCallback = { paymentTransaction, info ->
+        val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
             productChangeListener?.let { productChangeCallback ->
                 dispatch {
-                    productChangeCallback.onCompleted(paymentTransaction, info)
+                    productChangeCallback.onCompleted(storeTransaction, info)
                 }
             }
         }
@@ -1467,7 +1350,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         return Pair(onSuccess, onError)
     }
 
-    private fun PurchaseErrorListener.dispatch(error: PurchasesError) {
+    private fun PurchaseErrorCallback.dispatch(error: PurchasesError) {
         dispatch {
             onError(
                 error,
@@ -1551,7 +1434,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
-        listener: PurchaseErrorListener
+        listener: PurchaseErrorCallback
     ) {
         billing.findPurchaseInPurchaseHistory(
             appUserID,
@@ -1615,61 +1498,79 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     // region Deprecated
 
+    private var _updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null
+        @Synchronized get
+        @Synchronized set
+
     /**
      * The listener is responsible for handling changes to purchaser information.
      * Make sure [removeUpdatedPurchaserInfoListener] is called when the listener needs to be destroyed.
      */
     @Deprecated(
         "Renamed to updatedCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
-        replaceWith = ReplaceWith("updatedCustomerInfoListener")
+        ReplaceWith("updatedCustomerInfoListener")
     )
-    var updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null
-        @JvmName("-deprecated_getUpdatedPurchaserInfoListener")
-        get
-        @JvmName("-deprecated_setUpdatedPurchaserInfoListener")
-        set
+    var updatedPurchaserInfoListener: UpdatedPurchaserInfoListener?
+        @Synchronized get() = _updatedPurchaserInfoListener
+        set(value) {
+            _updatedPurchaserInfoListener = value
+            val converted = value?.let {
+                UpdatedCustomerInfoListener { customerInfo ->
+                    it.onReceived(PurchaserInfo(customerInfo))
+                }
+            }
+            synchronized(this@Purchases) {
+                state = state.copy(updatedCustomerInfoListener = converted)
+            }
+            afterSetListener(converted)
+        }
+
+    /**
+     * If it should allow sharing Play Store accounts. False by
+     * default. If true treats all purchases as restores, aliasing together appUserIDs that share a
+     * Play Store account.
+     */
+    @Deprecated(
+        "Replaced with configuration in the RevenueCat dashboard",
+        ReplaceWith("configure through the RevenueCat dashboard")
+    )
+    var allowSharingPlayStoreAccount: Boolean
+        @Synchronized get() =
+            state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
+        @Synchronized set(value) {
+            state = state.copy(allowSharingPlayStoreAccount = value)
+        }
 
     /**
      * Get latest available purchaser info.
      * @param listener A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    @JvmName("-deprecated_getPurchaserInfo")
     @Deprecated(
-        "Function has been renamed to getCustomerInfo and listener has been replaced" +
-            " with ReceiveCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
-        replaceWith = ReplaceWith(
-            expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
-        )
+        """
+            Function has been renamed to getCustomerInfo and listener has been replaced with ReceiveCustomerInfoCallback
+            """,
+        ReplaceWith("Purchases.sharedInstance.getCustomerInfo(listener)")
     )
     fun getPurchaserInfo(
-        @Suppress("UnusedPrivateMember")
         listener: ReceivePurchaserInfoListener
     ) {
-        // no-op
+        getPurchaserInfo(listener.toReceiveCustomerInfoCallback())
     }
 
     /**
      * Get latest available purchaser info.
-     * @param listener A listener called when purchaser info is available and not stale.
+     * @param callback A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    @JvmName("-deprecated_getPurchaserInfo_ReceiveCustomerInfoListener")
     @Deprecated(
-        "Function has been renamed to getCustomerInfo and listener has been replaced" +
-            " with ReceiveCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
-        replaceWith = ReplaceWith(
-            expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
-        )
+        "Function has been renamed to getCustomerInfo",
+        ReplaceWith("Purchases.sharedInstance.getCustomerInfo(listener)")
     )
     fun getPurchaserInfo(
-        @Suppress("UnusedPrivateMember")
-        listener: ReceiveCustomerInfoListener
+        callback: ReceiveCustomerInfoCallback
     ) {
-        // no-op
+        getCustomerInfo(callback)
     }
 
     /**
@@ -1677,20 +1578,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param listener A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    @JvmName("-deprecated_getCustomerInfo_ReceivePurchaserInfoListener")
-    @Deprecated(
-        "Function has been renamed to getCustomerInfo and listener has been replaced" +
-            " with ReceiveCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
-        replaceWith = ReplaceWith(
-            expression = "Purchases.sharedInstance.getCustomerInfo(listener)"
-        )
-    )
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("Listener has been replaced with ReceiveCustomerInfoCallback")
     fun getCustomerInfo(
-        @Suppress("UnusedPrivateMember")
         listener: ReceivePurchaserInfoListener
     ) {
-        // no-op
+        getCustomerInfo(listener.toReceiveCustomerInfoCallback())
     }
 
     /**
@@ -1705,17 +1598,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
      * @param [listener] The listener that will be called when purchase restore completes.
      */
-    @JvmName("-deprecated_restorePurchases")
-    @Deprecated(
-        "Listener has been replaced with ReceiveCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
-        replaceWith = ReplaceWith("Purchases.sharedInstance.restorePurchases(ReceiveCustomerInfoListener)")
-    )
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("Listener has been replaced with ReceiveCustomerInfoCallback")
     fun restorePurchases(
-        @Suppress("UnusedPrivateMember")
         listener: ReceivePurchaserInfoListener
     ) {
-        // no-op
+        restorePurchases(listener.toReceiveCustomerInfoCallback())
     }
 
     /**
@@ -1723,20 +1611,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * id and save it in the cache.
      * @param [listener] An optional listener to listen for successes or errors.
      */
-    @JvmName("-deprecated_logOut")
-    @Deprecated(
-        "Listener has been replaced with ReceiveCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
-        replaceWith = ReplaceWith(
-            expression = "Purchases.sharedInstance.logOut(ReceiveCustomerInfoListener)",
-            imports = ["com.revenuecat.purchases.interfaces.ReceiveCustomerInfoListener"]
-        )
-    )
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("Listener has been replaced with ReceiveCustomerInfoCallback")
     fun logOut(
-        @Suppress("UnusedPrivateMember")
         listener: ReceivePurchaserInfoListener
     ) {
-        // no-op
+        logOut(listener.toReceiveCustomerInfoCallback())
     }
 
     /**
@@ -1749,26 +1629,231 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * This is useful for cases where purchaser information might have been updated outside of the
      * app, like if a promotional subscription is granted through the RevenueCat dashboard.
      */
-    @JvmName("-deprecated_invalidatePurchaserInfoCache")
     @Deprecated(
         "Renamed to invalidateCustomerInfoCache",
-        level = DeprecationLevel.ERROR,
-        replaceWith = ReplaceWith("Purchases.sharedInstance.invalidateCustomerInfoCache()")
+        ReplaceWith("Purchases.sharedInstance.invalidateCustomerInfoCache()")
     )
     fun invalidatePurchaserInfoCache() {
-        // no-op
+        invalidateCustomerInfoCache()
     }
 
-    @JvmName("-deprecated_removeUpdatedPurchaserInfoListener")
     @Deprecated(
         "Renamed to removeUpdatedCustomerInfoListener",
-        level = DeprecationLevel.ERROR,
-        replaceWith = ReplaceWith("Purchases.sharedInstance.removeUpdatedCustomerInfoListener()")
+        ReplaceWith("Purchases.sharedInstance.removeUpdatedCustomerInfoListener()")
     )
     @Suppress("MemberVisibilityCanBePrivate")
     fun removeUpdatedPurchaserInfoListener() {
-        // no-op
+        _updatedPurchaserInfoListener = null
+        removeUpdatedCustomerInfoListener()
     }
+
+    /**
+     * Gets the SKUDetails for the given list of subscription skus.
+     * @param [skus] List of skus
+     * @param [listener] Response listener
+     */
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("GetSkusResponseListener replaced with GetStoreProductsCallback")
+    fun getSubscriptionSkus(
+        skus: List<String>,
+        listener: GetSkusResponseListener
+    ) {
+        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), listener.toGetStoreProductsCallback())
+    }
+
+    /**
+     * Gets the SKUDetails for the given list of non-subscription skus.
+     * @param [skus] List of skus
+     * @param [listener] Response listener
+     */
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("GetSkusResponseListener replaced with GetStoreProductsCallback")
+    fun getNonSubscriptionSkus(
+        skus: List<String>,
+        listener: GetSkusResponseListener
+    ) {
+        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), listener.toGetStoreProductsCallback())
+    }
+
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated(
+        """
+            SkuDetails replaced with StoreProduct and ProductChangeListener replaced with ProductChangeCallback
+            """
+    )
+    fun purchaseProduct(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeListener
+    ) {
+        purchaseProduct(
+            activity,
+            skuDetails.toStoreProduct(),
+            upgradeInfo,
+            listener.toProductChangeCallback()
+        )
+    }
+
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("ProductChangeListener replaced with ProductChangeCallback")
+    fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeListener
+    ) {
+        purchaseProduct(
+            activity,
+            storeProduct,
+            upgradeInfo,
+            listener.toProductChangeCallback()
+        )
+    }
+
+    @Deprecated(
+        "SkuDetails replaced with StoreProduct",
+        ReplaceWith("Purchases.sharedInstance.purchaseProduct(activity, StoreProduct, upgradeInfo, listener)")
+    )
+    fun purchaseProduct(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeCallback
+    ) {
+        purchaseProduct(
+            activity,
+            skuDetails.toStoreProduct(),
+            upgradeInfo,
+            listener
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [skuDetails] The skuDetails of the product you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("SkuDetails replaced with StoreProduct and MakePurchaseListener replaced with PurchaseCallback")
+    fun purchaseProduct(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        listener: MakePurchaseListener
+    ) {
+        purchaseProduct(
+            activity,
+            skuDetails,
+            listener.toPurchaseCallback()
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [storeProduct] The storeProduct you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("MakePurchaseListener replaced with PurchaseCallback")
+    fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        listener: MakePurchaseListener
+    ) {
+        purchaseProduct(
+            activity,
+            storeProduct,
+            listener.toPurchaseCallback()
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [skuDetails] The skuDetails of the product you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    @Deprecated(
+        "SkuDetails replaced with StoreProduct",
+        ReplaceWith("Purchases.sharedInstance.purchaseProduct(activity, StoreProduct, listener)")
+    )
+    fun purchaseProduct(
+        activity: Activity,
+        skuDetails: SkuDetails,
+        listener: PurchaseCallback
+    ) {
+        purchaseProduct(
+            activity,
+            skuDetails.toStoreProduct(),
+            listener
+        )
+    }
+
+    /**
+     * Change the product from [upgradeInfo] with the one in [packageToPurchase].
+     *
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The new package to purchase
+     * @param [upgradeInfo] The oldProduct of this object will be replaced with the product in [packageToPurchase].
+     * An optional [BillingFlowParams.ProrationMode] can also be specified.
+     * @param [listener] The listener that will be called when the purchase of the new product completes.
+     */
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("MakePurchaseListener replaced with ProductChangeCallback")
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeListener
+    ) {
+        purchasePackage(
+            activity,
+            packageToPurchase,
+            upgradeInfo,
+            listener.toProductChangeCallback()
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("MakePurchaseListener replaced with PurchaseCallback")
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        listener: MakePurchaseListener
+    ) {
+        purchasePackage(
+            activity,
+            packageToPurchase,
+            listener.toPurchaseCallback()
+        )
+    }
+
+    /**
+     * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
+     * products vis RevenueCat and greatly simplifies management. See
+     * [the guide](https://docs.revenuecat.com/offerings) for more info.
+     *
+     * Offerings will be fetched and cached on instantiation so that, by the time they are needed,
+     * your prices are loaded for your purchase flow. Time is money.
+     *
+     * @param [listener] Called when offerings are available. Called immediately if offerings are cached.
+     */
+    @Suppress("DeprecatedCallableAddReplaceWith")
+    @Deprecated("ReceiveOfferingsListener replaced with ReceiveOfferingsCallback")
+    fun getOfferings(
+        listener: ReceiveOfferingsListener
+    ) {
+        getOfferings(listener.toReceiveOfferingsCallback())
+    }
+
     // endregion
 
     // region Static
@@ -1857,6 +1942,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          */
         @JvmOverloads
         @JvmStatic
+        @Deprecated(
+            message = "Parameters have been replaced with a Builder",
+            replaceWith = ReplaceWith("Purchases.configure(PurchasesConfiguration)")
+        )
         fun configure(
             context: Context,
             apiKey: String,
@@ -1879,8 +1968,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
         @JvmStatic
-        @JvmSynthetic
-        internal fun configure(
+        fun configure(
             configuration: PurchasesConfiguration
         ): Purchases {
             with(configuration) {
