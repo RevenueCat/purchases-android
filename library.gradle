@@ -52,7 +52,7 @@ dependencies {
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.2.0'
     testImplementation 'org.mockito:mockito-core:3.0.0'
     testNewBillingImplementation "com.android.billingclient:billing:$billingVersion"
-    testOldBillingImplementation "com.android.billingclient:billing:$oldBillingVersion"
+    testOldBillingCompileOnly "com.android.billingclient:billing:$oldBillingVersion"
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }

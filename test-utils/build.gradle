@@ -5,7 +5,7 @@ dependencies {
     implementation project(":common")
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     newBillingImplementation "com.android.billingclient:billing:$billingVersion"
-    oldBillingImplementation "com.android.billingclient:billing:$oldBillingVersion"
+    oldBillingCompileOnly "com.android.billingclient:billing:$oldBillingVersion"
     implementation 'org.assertj:assertj-core:3.13.2'
     implementation 'io.mockk:mockk:1.10.0'
     implementation 'androidx.test.ext:junit:1.1.2'
