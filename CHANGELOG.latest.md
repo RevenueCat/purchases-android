@@ -1,2 +1,3 @@
-- Added `exported` attribute to ResponseReceiver, for builds targeting SDK 31
-  https://github.com/RevenueCat/purchases-android/pull/404
+- Added Amazon support
+- Renamed `PurchaserInfo` to `CustomerInfo`, removed some deprecated functions, and deprecated, checkout
+  the full list of changes in [migrations/v5-MIGRATION.md]
