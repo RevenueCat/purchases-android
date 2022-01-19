@@ -2077,8 +2077,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                             return@post
                                         }
                                         // If billing is supported, IN-APP purchases are supported.
-
-
                                         var featureSupportedResultOk = features.all {
                                             billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful()
                                         }
