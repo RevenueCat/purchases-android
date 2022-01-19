@@ -108,13 +108,27 @@ platform :android do
       "mavenCentralPassword" => ENV['SONATYPE_NEXUS_TOKEN_PASSWORD'],
       "RELEASE_SIGNING_ENABLED" => true
     }
-    puts "Deploying #{version}"
+    UI.verbose("Deploying #{version}")
     gradle(
       tasks: [
         "androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
       ],
       properties: gradleProperties
     )
+
+    UI.verbose("Creating version with BillingClient 3 for version: #{version}")
+    gradleProperties["PUBLISH_VARIANT"] = "oldBillingRelease"
+    
+    UI.verbose("Adding -unityiap to artifact ids")
+    
+
+    gradle(
+      tasks: [
+        "androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
+      ],
+      properties: gradleProperties
+    )
+    
     unless is_snapshot_version?(version)
       gradle(
         tasks: [

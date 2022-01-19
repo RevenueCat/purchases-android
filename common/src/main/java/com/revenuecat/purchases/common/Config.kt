@@ -4,5 +4,5 @@ object Config {
 
     var debugLogsEnabled = false
 
-    const val frameworkVersion = "4.7.0-SNAPSHOT"
+    const val frameworkVersion = "0.0.0.4-SNAPSHOT"
 }
