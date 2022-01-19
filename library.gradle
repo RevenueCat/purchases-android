@@ -57,8 +57,15 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }
 
+def artifactId = project.property("POM_ARTIFACT_ID")
+def publishVariant = project.property("PUBLISH_VARIANT")
+if (publishVariant == "oldBillingRelease") {
+    project.ext.POM_ARTIFACT_ID = artifactId + "-unityiap"
+}
+println "$project.ext.POM_ARTIFACT_ID"
+
 apply plugin: 'com.vanniktech.maven.publish'
 
 mavenPublish {
-    androidVariantToPublish = "newBillingRelease"
+    androidVariantToPublish = project.property("PUBLISH_VARIANT")
 }
