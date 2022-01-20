@@ -30,31 +30,23 @@ public class CatsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cats);
 
-        findViewById(R.id.go_premium).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
-            }
-        });
+        findViewById(R.id.go_premium).setOnClickListener(v -> finish());
 
         restoreView = findViewById(R.id.purchase_restore);
-        restoreView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                restoreView.setText("Loading...");
-                Purchases.getSharedInstance().restorePurchases(new ReceiveCustomerInfoCallback() {
-                    @Override
-                    public void onReceived(@NonNull CustomerInfo customerInfo) {
-                        restoreView.setText("Restore Purchases");
-                        configureContent(customerInfo);
-                    }
+        restoreView.setOnClickListener(v -> {
+            restoreView.setText("Loading...");
+            Purchases.getSharedInstance().restorePurchases(new ReceiveCustomerInfoCallback() {
+                @Override
+                public void onReceived(@NonNull CustomerInfo customerInfo) {
+                    restoreView.setText("Restore Purchases");
+                    configureContent(customerInfo);
+                }
 
-                    @Override
-                    public void onError(@NonNull PurchasesError error) {
-                        Log.e("Purchase Tester Java", error.getMessage());
-                    }
-                });
-            }
+                @Override
+                public void onError(@NonNull PurchasesError error) {
+                    Log.e("Purchase Tester Java", error.getMessage());
+                }
+            });
         });
     }
 
@@ -93,14 +85,11 @@ public class CatsActivity extends AppCompatActivity {
 
         if (customerInfo.getManagementURL() != null) {
             manageSubscriptionButton.setVisibility(View.VISIBLE);
-            manageSubscriptionButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    try {
-                        startActivity(new Intent(Intent.ACTION_VIEW, customerInfo.getManagementURL()));
-                    } catch (ActivityNotFoundException exception) {
-                        exception.printStackTrace();
-                    }
+            manageSubscriptionButton.setOnClickListener(v -> {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, customerInfo.getManagementURL()));
+                } catch (ActivityNotFoundException exception) {
+                    exception.printStackTrace();
                 }
             });
         } else {

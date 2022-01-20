@@ -40,18 +40,12 @@ public class UpsellActivity extends AppCompatActivity {
         unlimitedPurchaseView = findViewById(R.id.unlimited_purchase);
 
         showScreen(null);
-        findViewById(R.id.skip).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Navigator.startCatsActivity(UpsellActivity.this, false);
-            }
-        });
-        Purchases.getSharedInstance().setUpdatedCustomerInfoListener(new UpdatedCustomerInfoListener() {
-            @Override
-            public void onReceived(@NonNull CustomerInfo customerInfo) {
-                checkForProEntitlement(customerInfo);
-            }
-        });
+        findViewById(R.id.skip).setOnClickListener(v -> Navigator.startCatsActivity(
+                UpsellActivity.this,
+                false));
+        Purchases.getSharedInstance().setUpdatedCustomerInfoListener(customerInfo ->
+                checkForProEntitlement(customerInfo)
+        );
     }
 
     @Override
@@ -94,12 +88,7 @@ public class UpsellActivity extends AppCompatActivity {
             String loadedText = "Buy " + aPackage.getPackageType() + " - " + product.getPriceCurrencyCode() + " " + product.getPrice();
             button.setTag(loadedText);
             showLoading(button, false);
-            button.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    makePurchase(aPackage, button);
-                }
-            });
+            button.setOnClickListener(v -> makePurchase(aPackage, button));
         } else {
             Log.e("Purchase Tester Java", "Error loading package");
         }
