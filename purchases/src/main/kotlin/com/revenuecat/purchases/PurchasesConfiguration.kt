@@ -11,6 +11,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val observerMode: Boolean
     val service: ExecutorService?
     val store: Store
+    val dangerousSetting: DangerousSetting?
 
     init {
         this.context = builder.context
@@ -19,6 +20,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.observerMode = builder.observerMode
         this.service = builder.service
         this.store = builder.store
+        this.dangerousSetting = builder.dangerousSetting
     }
 
     open class Builder(
@@ -30,6 +32,7 @@ open class PurchasesConfiguration(builder: Builder) {
         internal var observerMode: Boolean = false
         internal var service: ExecutorService? = null
         internal var store: Store = Store.PLAY_STORE
+        internal var dangerousSetting: DangerousSetting? = null
 
         fun appUserID(appUserID: String?) = apply {
             this.appUserID = appUserID
@@ -46,6 +49,10 @@ open class PurchasesConfiguration(builder: Builder) {
         // TODO: make public
         internal fun store(store: Store) = apply {
             this.store = store
+        }
+
+        fun dangerousSetting(dangerousSetting: DangerousSetting?) = apply {
+            this.dangerousSetting = dangerousSetting
         }
 
         open fun build(): PurchasesConfiguration {

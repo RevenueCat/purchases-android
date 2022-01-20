@@ -1670,7 +1670,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     @JvmSynthetic
     internal fun updatePendingPurchaseQueue() {
-        if (billing.isConnected()) {
+        if (appConfig.autoSync && billing.isConnected()) {
             log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
             dispatcher.enqueue({
                 appUserID.let { appUserID ->
@@ -1788,12 +1788,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             apiKey: String,
             appUserID: String? = null,
             observerMode: Boolean = false,
-            service: ExecutorService = createDefaultExecutor()
+            service: ExecutorService = createDefaultExecutor(),
+            dangerousSetting: DangerousSetting? = null
         ): Purchases {
             val builtConfiguration = PurchasesConfiguration.Builder(context, apiKey)
                 .appUserID(appUserID)
                 .observerMode(observerMode)
                 .service(service)
+                .dangerousSetting(dangerousSetting)
                 .build()
             return configure(builtConfiguration)
         }
@@ -1823,7 +1825,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     observerMode,
                     platformInfo,
                     proxyURL,
-                    store
+                    store,
+                    autoSync = configuration.dangerousSetting != DangerousSetting.AUTO_SYNC_OFF
                 )
 
                 val prefs = PreferenceManager.getDefaultSharedPreferences(application)

@@ -10,7 +10,8 @@ class AppConfig(
     observerMode: Boolean,
     val platformInfo: PlatformInfo,
     proxyURL: URL?,
-    val store: Store
+    val store: Store,
+    val autoSync: Boolean
 ) {
 
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""
@@ -27,6 +28,8 @@ class AppConfig(
         other as AppConfig
 
         if (platformInfo != other.platformInfo) return false
+        if (store != other.store) return false
+        if (autoSync != other.autoSync) return false
         if (languageTag != other.languageTag) return false
         if (versionName != other.versionName) return false
         if (finishTransactions != other.finishTransactions) return false
@@ -37,6 +40,8 @@ class AppConfig(
 
     override fun hashCode(): Int {
         var result = platformInfo.hashCode()
+        result = 31 * result + store.hashCode()
+        result = 31 * result + autoSync.hashCode()
         result = 31 * result + languageTag.hashCode()
         result = 31 * result + versionName.hashCode()
         result = 31 * result + finishTransactions.hashCode()
@@ -47,6 +52,8 @@ class AppConfig(
     override fun toString(): String {
         return "AppConfig(" +
             "platformInfo=$platformInfo, " +
+            "store=$store, " +
+            "autoSync=$autoSync, " +
             "languageTag='$languageTag', " +
             "versionName='$versionName', " +
             "finishTransactions=$finishTransactions, " +
