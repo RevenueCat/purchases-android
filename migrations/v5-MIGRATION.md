@@ -19,7 +19,7 @@ with our iOS SDK, which recently [migrated from ObjC to Swift](https://github.co
 
 ### Deprecated + New APIs
 
-- The `configure` function has been changed to accept a PurchasesConfiguration.Builder. The previous function is deprecated. The new function can be used like this:
+- The `configure` function has been changed to accept a `PurchasesConfiguration.Builder`. The previous function is deprecated. The new function can be used like this:
 
 ```
 Purchases.configure(PurchasesConfiguration.Builder(this, "public_google_sdk_key").build())
