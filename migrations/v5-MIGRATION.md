@@ -1,4 +1,7 @@
-## API changes
+## v5 API changes
+
+There were various updates to our API in this release, in order to best support the Amazon Store and to maintain parity 
+with our iOS SDK, which recently [migrated from ObjC to Swift](https://github.com/RevenueCat/purchases-ios/blob/main/docs/V4_API_Updates.md).
 
 | Removed APIs |
 |---------------------------------------------------------------------------|
@@ -72,4 +75,10 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
   You can use `GetSkusResponseListener.toGetStoreProductCallback()` in Kotlin for an easy migration.
   For the same reasons, `getSubscriptionSkusWith` and `getNonSubscriptionSkusWith` now receive `storeProducts` instead of `skus`.
 - `ReceiveOfferingsListener` and `PurchasesErrorListener` have been renamed to `ReceiveOfferingsCallback` and `PurchasesErrorCallback`
+## Other changes:
 
+- Our library now requires Java 8
+
+## Reporting undocumented issues:
+
+Feel free to file an issue! [New RevenueCat Issue](https://github.com/RevenueCat/purchases-android/issues/new/).
