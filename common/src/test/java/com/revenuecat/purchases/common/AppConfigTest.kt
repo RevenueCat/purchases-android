@@ -27,7 +27,8 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -45,7 +46,8 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -65,7 +67,8 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -84,7 +87,8 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -96,7 +100,8 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         assertThat(appConfig.finishTransactions).isTrue()
     }
@@ -108,7 +113,8 @@ class AppConfigTest {
             observerMode = true,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         assertThat(appConfig.finishTransactions).isFalse()
     }
@@ -121,7 +127,8 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = expected,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
@@ -134,7 +141,8 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
@@ -146,14 +154,16 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
 
         assertThat(x).isEqualTo(y)
@@ -166,14 +176,16 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         var y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = true,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -183,7 +195,8 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.1.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -193,7 +206,19 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = URL("https://a.com"),
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
+        )
+
+        assertThat(x).isNotEqualTo(y)
+
+        y = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            autoSync = false
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -206,14 +231,16 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         assertThat(x.hashCode() == y.hashCode())
     }
@@ -225,7 +252,8 @@ class AppConfigTest {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         assertThat(x.toString()).isNotNull()
     }
