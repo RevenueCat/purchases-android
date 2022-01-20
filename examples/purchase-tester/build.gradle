@@ -1,6 +1,5 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
+apply from: "$rootProject.projectDir/base-application.gradle"
+
 apply plugin: 'androidx.navigation.safeargs.kotlin'
 
 buildscript {
@@ -15,8 +14,6 @@ buildscript {
 
 
 android {
-    compileSdkVersion compileVersion
-
     buildFeatures {
         dataBinding true
     }
@@ -24,10 +21,8 @@ android {
     defaultConfig {
         applicationId "com.revenuecat.purchase_tester"
         minSdkVersion 21
-        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
     signingConfigs {
@@ -47,14 +42,6 @@ android {
         }
     }
     testBuildType obtainTestBuildType()
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8.toString()
-    }
 }
 
 def obtainTestBuildType() {
@@ -72,7 +59,6 @@ repositories {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(path: ':purchases')
     implementation project(path: ':feature:amazon')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
