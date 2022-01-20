@@ -1,4 +1,4 @@
-## 5.0.0-RC1
+## 5.0.0-rc1
 
 - Added Amazon support
 - A number of type renames, removal of some deprecated functions, and a change to configuration. Checkout
