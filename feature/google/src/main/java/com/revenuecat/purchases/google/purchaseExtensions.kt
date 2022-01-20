@@ -13,7 +13,7 @@ import com.revenuecat.purchases.strings.BillingStrings
  */
 val PurchaseHistoryRecord.sku: String
     get() = skus[0].also {
-        if (skus.size > 0) {
+        if (skus.size > 1) {
             log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_PURCHASE_HISTORY_RECORD_MORE_THAN_ONE_SKU)
         }
     }
@@ -25,7 +25,7 @@ val PurchaseHistoryRecord.sku: String
  */
 val Purchase.sku: String
     get() = skus[0].also {
-        if (skus.size > 0) {
+        if (skus.size > 1) {
             log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_PURCHASE_MORE_THAN_ONE_SKU)
         }
     }
