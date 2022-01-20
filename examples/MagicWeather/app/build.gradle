@@ -4,7 +4,6 @@ android {
     defaultConfig {
         applicationId "com.revenuecat.purchases_sample"
         minSdkVersion 26
-        targetSdkVersion compileVersion
         versionCode 1
         versionName "1.0"
     }
