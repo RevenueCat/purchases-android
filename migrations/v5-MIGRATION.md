@@ -3,10 +3,23 @@
 There were various updates to our API in this release, in order to best support the Amazon Store and to maintain parity 
 with our iOS SDK, which recently [migrated from ObjC to Swift](https://github.com/RevenueCat/purchases-ios/blob/main/docs/V4_API_Updates.md).
 
+### Type Changes
+- `PurchaserInfo` has been deprecated and renamed to `CustomerInfo`. This rename also affects to all functions that had
+  `...PurchaserInfo...` in their name, like `getPurchaserInfo` which has been renamed to `getCustomerInfo`.
+- `ReceiveOfferingsListener` and `PurchasesErrorListener` have been renamed to `ReceiveOfferingsCallback` and `PurchasesErrorCallback`
+
+| Old type name | New type name |
+|------------|------|
+| `PurchaserInfo` | `CustomerInfo` |
+| `ReceivePurchaserInfoListener` | `ReceiveCustomerInfoCallback` |
+| `UpdatedPurchaserInfoListener` | `UpdatedCustomerInfoListener` |
+| `ReceiveOfferingsListener` | `ReceiveOfferingsCallback` |
+| `PurchasesErrorListener` | `PurchasesErrorCallback` |
+
 ### Removed APIs
-- Some deprecated functions have been removed: `identify`, `reset`, `createAlias`, and the versions of `purchaseProduct`,
-  `purchasePackage` accepting `UpgradeInfo` and `MakePurchaseListener`
-  
+- Some deprecated functions have been removed: `identify`, `reset`, `createAlias`, and the versions of `purchaseProduct`/`purchasePackage` accepting `UpgradeInfo` and `MakePurchaseListener`
+
+| Removed APIs |  
 |---------------------------------------------------------------------------|
 | `purchaseProduct(Activity, SkuDetails, UpgradeInfo, MakePurchaseListener)` |
 | `purchasePackage(Activity, Package, UpgradeInfo, MakePurchaseListener)` |
@@ -17,7 +30,7 @@ with our iOS SDK, which recently [migrated from ObjC to Swift](https://github.co
 | `identifyWith(String, (PurchasesError) -> Unit, (PurchaserInfo) -> Unit)` |
 | `resetWith((PurchasesError) -> Unit, (PurchaserInfo) -> Unit)` |
 
-### Renamed APIs
+### Deprecated APIs
 - `Package.product` has been changed from being a `SkuDetails` to `StoreProduct`.
 - The `configure` function has been changed to accept a PurchasesConfiguration.Builder. The previous function is deprecated. The new function can be used like this:
 
@@ -64,19 +77,6 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchasePackage(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 | `purchaseProductWith(Activity, SkuDetails, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchaseProductWith(Activity, StoreProduct, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 | `purchaseProductWith(Activity, SkuDetails, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchaseProductWith(Activity, StoreProduct, UpgradeInfo, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
-
-### Type Changes
-- `PurchaserInfo` has been deprecated and renamed to `CustomerInfo`. This rename also affects to all functions that had
-  `...PurchaserInfo...` in their name, like `getPurchaserInfo` which has been renamed to `getCustomerInfo`.
-- `ReceiveOfferingsListener` and `PurchasesErrorListener` have been renamed to `ReceiveOfferingsCallback` and `PurchasesErrorCallback`
-
-| Old type name | New type name |
-|------------|------|
-| `PurchaserInfo` | `CustomerInfo` |
-| `ReceivePurchaserInfoListener` | `ReceiveCustomerInfoCallback` |
-| `UpdatedPurchaserInfoListener` | `UpdatedCustomerInfoListener` |
-| `ReceiveOfferingsListener` | `ReceiveOfferingsCallback` |
-| `PurchasesErrorListener` | `PurchasesErrorCallback` |
 
 ### Other changes:
 
