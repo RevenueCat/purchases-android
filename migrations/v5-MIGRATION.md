@@ -68,7 +68,7 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | `purchaseProductWith(Activity, SkuDetails, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchaseProductWith(Activity, StoreProduct, UpgradeInfo, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 
 ### Removed APIs
-- Some deprecated functions have been removed: `identify`, `reset`, `createAlias`, and the versions of `purchaseProduct`/`purchasePackage` accepting `UpgradeInfo` and `MakePurchaseListener`
+- Some deprecated functions have been removed: `identify`, `reset`, `createAlias`, `isBillingSupported`, `isFeatureSupported`, and the versions of `purchaseProduct`/`purchasePackage` accepting `UpgradeInfo` and `MakePurchaseListener`
 
 | Removed APIs |  
 |---------------------------------------------------------------------------|
@@ -80,6 +80,8 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | `createAliasWith(String, (PurchasesError) -> Unit, (PurchaserInfo) -> Unit)` |
 | `identifyWith(String, (PurchasesError) -> Unit, (PurchaserInfo) -> Unit)` |
 | `resetWith((PurchasesError) -> Unit, (PurchaserInfo) -> Unit)` |
+| `isBillingSupported(Context, Callback<Boolean>)` |
+| `isFeatureSupported(BillingClient.FeatureType, Context, Callback<Boolean>)` |
 
 ### Other changes:
 
