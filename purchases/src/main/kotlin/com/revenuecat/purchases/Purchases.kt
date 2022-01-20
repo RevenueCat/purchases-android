@@ -1793,13 +1793,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             appUserID: String? = null,
             observerMode: Boolean = false,
             service: ExecutorService = createDefaultExecutor(),
-            dangerousSetting: DangerousSetting? = null
+            dangerousSettings: Set<DangerousSetting> = emptySet()
         ): Purchases {
             val builtConfiguration = PurchasesConfiguration.Builder(context, apiKey)
                 .appUserID(appUserID)
                 .observerMode(observerMode)
                 .service(service)
-                .dangerousSetting(dangerousSetting)
+                .dangerousSettings(dangerousSettings)
                 .build()
             return configure(builtConfiguration)
         }
@@ -1830,7 +1830,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     platformInfo,
                     proxyURL,
                     store,
-                    autoSync = configuration.dangerousSetting != DangerousSetting.AUTO_SYNC_OFF
+                    autoSync = !configuration.dangerousSettings.contains(DangerousSetting.AUTO_SYNC_OFF)
                 )
 
                 val prefs = PreferenceManager.getDefaultSharedPreferences(application)
