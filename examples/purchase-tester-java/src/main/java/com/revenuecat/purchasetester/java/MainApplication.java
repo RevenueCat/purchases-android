@@ -4,6 +4,7 @@ import android.app.Application;
 import android.os.StrictMode;
 
 import com.revenuecat.purchases.Purchases;
+import com.revenuecat.purchases.PurchasesConfiguration;
 
 public class MainApplication extends Application {
 
@@ -18,7 +19,7 @@ public class MainApplication extends Application {
                 .penaltyDeath()
                 .build());
         Purchases.setDebugLogsEnabled(true);
-        Purchases.configure(this, "api_key");
+        Purchases.configure(new PurchasesConfiguration.Builder(this,"api_key").build());
     }
 
 }

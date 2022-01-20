@@ -93,14 +93,11 @@ public class CatsActivity extends AppCompatActivity {
 
         if (customerInfo.getManagementURL() != null) {
             manageSubscriptionButton.setVisibility(View.VISIBLE);
-            manageSubscriptionButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    try {
-                        startActivity(new Intent(Intent.ACTION_VIEW, customerInfo.getManagementURL()));
-                    } catch (ActivityNotFoundException exception) {
-                        exception.printStackTrace();
-                    }
+            manageSubscriptionButton.setOnClickListener(v -> {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, customerInfo.getManagementURL()));
+                } catch (ActivityNotFoundException exception) {
+                    exception.printStackTrace();
                 }
             });
         } else {

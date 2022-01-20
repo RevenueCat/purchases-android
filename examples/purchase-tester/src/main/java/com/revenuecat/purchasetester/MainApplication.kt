@@ -7,6 +7,7 @@ import android.os.StrictMode.VmPolicy
 import android.util.Log
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 
 class MainApplication : Application() {
@@ -21,7 +22,7 @@ class MainApplication : Application() {
                 .build()
         )
         Purchases.debugLogsEnabled = true
-        Purchases.configure(this, "api_key")
+        Purchases.configure(PurchasesConfiguration.Builder(this, "api_key").build())
         // set attributes to store additional, structured information for a user in RevenueCat.
         // More info: https://docs.revenuecat.com/docs/user-attributes
         Purchases.sharedInstance.setAttributes(mapOf("favorite_cat" to "garfield"))
