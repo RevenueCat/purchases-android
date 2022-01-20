@@ -78,6 +78,7 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 ## Other changes:
 
 - Our library now requires Java 8
+- Amazon support (see [instructions doc](https://github.com/RevenueCat/purchases-android/blob/main/AMAZON-INSTRUCTIONS.md))
 
 ## Reporting undocumented issues:
 
