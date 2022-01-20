@@ -125,7 +125,8 @@ class PostingTransactionsTests {
                     version = "3.2.0"
                 ),
                 proxyURL = null,
-                store = Store.PLAY_STORE
+                store = Store.PLAY_STORE,
+                autoSync = true
             )
         )
     }

@@ -74,7 +74,8 @@ class HTTPClientTest {
             observerMode = false,
             platformInfo = expectedPlatformInfo,
             proxyURL = baseURL,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
         client = HTTPClient(appConfig, mockETagManager)
     }
@@ -193,7 +194,8 @@ class HTTPClientTest {
             observerMode = false,
             platformInfo = PlatformInfo("native", null),
             proxyURL = baseURL,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            autoSync = true
         )
 
         val expectedResult = HTTPResult(200, "{}")
