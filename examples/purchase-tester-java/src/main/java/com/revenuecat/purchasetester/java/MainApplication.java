@@ -19,7 +19,7 @@ public class MainApplication extends Application {
                 .penaltyDeath()
                 .build());
         Purchases.setDebugLogsEnabled(true);
-        Purchases.configure(new PurchasesConfiguration.Builder(this,"api_key").build());
+        Purchases.configure(new PurchasesConfiguration.Builder(this, "api_key").build());
     }
 
 }
