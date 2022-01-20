@@ -2050,12 +2050,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>
         ) {
-            if (!checkMethodAvailability(
-                    listOf(Store.PLAY_STORE),
-                    "canMakePayments",
-                    "Returning false.")) {
-                callback.onReceived(false)
-                return
+            val currentStore = sharedInstance.appConfig.store
+            if (currentStore != Store.PLAY_STORE)  {
+                log(LogIntent.RC_ERROR, BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS)
+                callback.onReceived(true)
             }
 
             BillingClient.newBuilder(context)
@@ -2216,23 +2214,4 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 internal fun Purchases.AttributionNetwork.convert(): CommonAttributionNetwork {
     return CommonAttributionNetwork.values()
         .first { attributionNetwork -> attributionNetwork.serverValue == this.serverValue }
-}
-
-private fun checkMethodAvailability(
-    supportedStores: List<Store>,
-    methodName: String,
-    resolution: String
-): Boolean {
-    val currentStore = Purchases.sharedInstance.appConfig.store
-    return if (supportedStores.contains(currentStore)) true else {
-        log(
-            LogIntent.RC_ERROR,
-            BillingStrings.CANNOT_CALL_METHOD_FROM_STORE.format(
-                methodName,
-                currentStore.toString(),
-                resolution
-            )
-        )
-        false
-    }
 }
