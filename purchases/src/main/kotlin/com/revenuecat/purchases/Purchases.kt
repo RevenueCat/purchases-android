@@ -2054,6 +2054,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             if (currentStore != Store.PLAY_STORE)  {
                 log(LogIntent.RC_ERROR, BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS)
                 callback.onReceived(true)
+                return
             }
 
             BillingClient.newBuilder(context)
