@@ -37,7 +37,7 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
   Similarly, you can use `ProductChangeListener.toProductChangeCallback()` and `MakePurchaseListener.toProductChangeCallback()` in Kotlin for an easy migration.
   Due to the same change, Kotlin helper `purchaseProductWith` now accepts a `StoreProduct` instead of a`SkuDetails`
 - `getSubscriptionSkus` and `getNonSubscriptionSkus` callbacks has been changed to return `StoreProduct` objects instead
-  of `SkuDetails`. This means that `GetSkusResponseListener` has been deprecated in favor of `GetStoreProductCallback`.
+  of `SkuDetails`. This means that `GetSkusResponseListener` has been deprecated in favor of `GetStoreProductsCallback`.
   You can use `GetSkusResponseListener.toGetStoreProductCallback()` in Kotlin for an easy migration.
   For the same reasons, `getSubscriptionSkusWith` and `getNonSubscriptionSkusWith` now receive `storeProducts` instead of `skus`.
 
