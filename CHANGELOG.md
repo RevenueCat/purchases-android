@@ -1,7 +1,7 @@
 ## 5.0.0-RC1
 
 - Added Amazon support
-- Renamed `PurchaserInfo` to `CustomerInfo` and removed some deprecated functions. Checkout
+- A number of type renames, removal of some deprecated functions, and a change to configuration. Checkout
   the full list of changes in [migrations/v5-MIGRATION.md]
 
 ## 4.6.1
