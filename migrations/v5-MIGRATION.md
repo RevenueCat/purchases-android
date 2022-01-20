@@ -54,6 +54,8 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | `purchaseProduct(Activity, SkuDetails, UpgradeInfo, ProductChangeListener)` | `purchaseProduct(Activity, StoreProduct, UpgradeInfo, ProductChangeCallback)` |
 | `purchasePackage(Activity, Package, MakePurchaseListener)` | `purchasePackage(Activity, Package, PurchaseCallback)` |
 | `purchasePackage(Activity, Package, UpgradeInfo, ProductChangeListener)` | `purchasePackage(Activity, Package, UpgradeInfo, ProductChangeCallback)` |
+| `getSubscriptionSkus(List<String>, GetSkusResponseListener)` | `getSubscriptionSkus(List<String>, GetStoreProductsCallback)` |
+| `getNonSubscriptionSkus(List<String>, GetSkusResponseListener)` | `getNonSubscriptionSkus(List<String>, GetStoreProductsCallback)` |
 
 ### Kotlin Helpers Changes
 
