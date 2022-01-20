@@ -1,9 +1,9 @@
 package com.revenuecat.apitester.java;
 
 import com.revenuecat.purchases.ProductType;
-import com.revenuecat.purchases.models.PaymentTransaction;
 import com.revenuecat.purchases.models.PurchaseState;
 import com.revenuecat.purchases.models.PurchaseType;
+import com.revenuecat.purchases.models.StoreTransaction;
 
 import org.json.JSONObject;
 
@@ -11,7 +11,7 @@ import java.util.List;
 
 @SuppressWarnings({"unused"})
 final class PaymentTransactionAPI {
-    static void check(final PaymentTransaction transaction) {
+    static void check(final StoreTransaction transaction) {
         final String orderId = transaction.getOrderId();
         final List<String> skus = transaction.getSkus();
         final ProductType type = transaction.getType();

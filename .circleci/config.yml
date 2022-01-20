@@ -13,6 +13,7 @@ release-tags: &release-tags
       ignore:
         - /^.*-SNAPSHOT/
         - latest
+        - /^.*-amazon*/
     branches:
       ignore: /.*/
 
@@ -102,12 +103,6 @@ commands:
           paths:
             - vendor/bundle
 
-  download-amazon-dependency:
-    steps:
-      - run:
-          name: Download Amazon Dependency
-          command: ./gradlew getAmazonLibrary
-
 jobs:
 
   test:
@@ -119,7 +114,6 @@ jobs:
       - android/accept-licenses
       - android-dependencies
       - android/restore-build-cache
-      - download-amazon-dependency
       - run:
           name: Run Tests
           command: ./gradlew lint test
@@ -170,7 +164,6 @@ jobs:
       - prepare-signing-key
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
-      - download-amazon-dependency
       - run:
           name: Deployment
           command: |
@@ -204,7 +197,6 @@ jobs:
             - vendor/bundle
       - android-wordpress-orb/restore-gradle-cache
       - prepare-signing-key
-      - download-amazon-dependency
       - run:
           name: Deployment
           command: |
@@ -219,7 +211,6 @@ jobs:
       - android/accept-licenses
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
-      - download-amazon-dependency
       - run:
           name: Replace API_KEY
           working_directory: examples/purchase-tester

@@ -10,11 +10,9 @@ import com.revenuecat.purchases.PurchasesError
 /**
  * Interface to be implemented when making calls that return a [PurchaserInfo]
  */
-@Suppress("unused")
 @Deprecated(
-    "Renamed to ReceiveCustomerInfoListener",
-    level = DeprecationLevel.WARNING,
-    replaceWith = ReplaceWith("ReceiveCustomerInfoListener")
+    "Renamed to ReceiveCustomerInfoCallback",
+    replaceWith = ReplaceWith("ReceiveCustomerInfoCallback")
 )
 interface ReceivePurchaserInfoListener {
     /**

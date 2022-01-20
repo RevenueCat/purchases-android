@@ -13,7 +13,6 @@ import com.revenuecat.purchases.PurchaserInfo
 @Suppress("unused")
 @Deprecated(
     "Renamed to UpdatedCustomerInfoListener",
-    level = DeprecationLevel.WARNING,
     replaceWith = ReplaceWith("UpdatedCustomerInfoListener")
 )
 interface UpdatedPurchaserInfoListener {

@@ -39,7 +39,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.BillingStrings
@@ -272,7 +272,7 @@ class BillingWrapper(
 
     override fun queryAllPurchases(
         appUserID: String,
-        onReceivePurchaseHistory: (List<PaymentTransaction>) -> Unit,
+        onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
         queryPurchaseHistoryAsync(
@@ -283,9 +283,9 @@ class BillingWrapper(
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
                             subsPurchasesList.map {
-                                it.toRevenueCatPaymentTransaction(ProductType.SUBS)
+                                it.toStoreTransaction(ProductType.SUBS)
                             } + inAppPurchasesList.map {
-                                it.toRevenueCatPaymentTransaction(ProductType.INAPP)
+                                it.toStoreTransaction(ProductType.INAPP)
                             }
                         )
                     },
@@ -298,7 +298,7 @@ class BillingWrapper(
 
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
-        purchase: PaymentTransaction
+        purchase: StoreTransaction
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
             // Would only get here if the purchase was triggered from outside of the app and there was
@@ -377,7 +377,7 @@ class BillingWrapper(
 
     override fun queryPurchases(
         appUserID: String,
-        onSuccess: (Map<String, PaymentTransaction>) -> Unit,
+        onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         withConnectedClient {
@@ -415,10 +415,10 @@ class BillingWrapper(
 
     private fun List<Purchase>.toMapOfGooglePurchaseWrapper(
         @SkuType skuType: String
-    ): Map<String, PaymentTransaction> {
+    ): Map<String, StoreTransaction> {
         return this.map { purchase ->
             val hash = purchase.purchaseToken.sha1()
-            hash to purchase.toRevenueCatPaymentTransaction(skuType.toProductType(), presentedOfferingIdentifier = null)
+            hash to purchase.toStoreTransaction(skuType.toProductType(), presentedOfferingIdentifier = null)
         }.toMap()
     }
 
@@ -426,7 +426,7 @@ class BillingWrapper(
         appUserID: String,
         productType: ProductType,
         sku: String,
-        onCompletion: (PaymentTransaction) -> Unit,
+        onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         withConnectedClient {
@@ -436,7 +436,7 @@ class BillingWrapper(
                     if (result.isSuccessful()) {
                         val purchaseHistoryRecordWrapper =
                             purchasesList?.firstOrNull { it.skus.contains(sku) }
-                                ?.toRevenueCatPaymentTransaction(productType)
+                                ?.toStoreTransaction(productType)
 
                         if (purchaseHistoryRecordWrapper != null) {
                             onCompletion(purchaseHistoryRecordWrapper)
@@ -493,7 +493,7 @@ class BillingWrapper(
                     type = productTypes[purchase.sku]
                     presentedOffering = presentedOfferingsByProductIdentifier[purchase.sku]
                 }
-                purchase.toRevenueCatPaymentTransaction(
+                purchase.toStoreTransaction(
                     type ?: getPurchaseType(purchase.purchaseToken),
                     presentedOffering
                 )

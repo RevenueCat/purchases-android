@@ -18,7 +18,7 @@ import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.identity.IdentityManager
-import com.revenuecat.purchases.models.PaymentTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -78,7 +78,7 @@ class SubscriberAttributesPurchasesTests {
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
-            lambda<(List<PaymentTransaction>) -> Unit>().captured.also {
+            lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
             }
         }

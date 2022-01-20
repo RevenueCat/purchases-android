@@ -17,7 +17,7 @@ class ParcelableTests {
         RevenueCatPackage(
             identifier = "test_package",
             packageType = PackageType.MONTHLY,
-            product = stubSkuDetails(),
+            product = stubSkuDetails().toStoreProduct(),
             offering = "test"
         )
     )
@@ -27,7 +27,7 @@ class ParcelableTests {
         val aPackage = RevenueCatPackage(
             identifier = "test_package",
             packageType = PackageType.MONTHLY,
-            product = stubSkuDetails(),
+            product = stubSkuDetails().toStoreProduct(),
             offering = "test"
         )
         testParcelization(
@@ -38,5 +38,4 @@ class ParcelableTests {
             )
         )
     }
-
 }
