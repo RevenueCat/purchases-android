@@ -1,2 +1,4 @@
-- Added `exported` attribute to ResponseReceiver, for builds targeting SDK 31
-  https://github.com/RevenueCat/purchases-android/pull/404
+- Added Amazon support
+- A number of type renames, removal of some deprecated functions, and a change to configuration. Checkout
+  the full list of changes in [migrations/v5-MIGRATION.md]
+
