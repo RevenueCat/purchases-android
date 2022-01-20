@@ -2051,7 +2051,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             callback: Callback<Boolean>
         ) {
             val currentStore = sharedInstance.appConfig.store
-            if (currentStore != Store.PLAY_STORE)  {
+            if (currentStore != Store.PLAY_STORE) {
                 log(LogIntent.RC_ERROR, BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS)
                 callback.onReceived(true)
                 return
