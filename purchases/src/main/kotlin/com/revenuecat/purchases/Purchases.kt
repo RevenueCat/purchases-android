@@ -2033,7 +2033,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
-         * Calling from an Amazon-configured app will return false.
+         * Calling from an Amazon-configured app will return true.
          *
          * Check if billing is supported for the current Play user (meaning IN-APP purchases are supported)
          * and optionally, whether all features in the list of specified feature types are supported. This method is

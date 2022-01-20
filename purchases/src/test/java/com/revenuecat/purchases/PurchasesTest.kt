@@ -2003,7 +2003,7 @@ class PurchasesTest {
         verify(exactly = 1) { mockBuilder.enablePendingPurchases() }
     }
 
-    fun `canMakePayments returns rue for Amazon configurations`() {
+    fun `canMakePayments returns true for Amazon configurations`() {
         purchases.appConfig = AppConfig(
             mockContext,
             false,
