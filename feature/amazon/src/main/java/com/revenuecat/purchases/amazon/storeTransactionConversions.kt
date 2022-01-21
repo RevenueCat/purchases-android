@@ -25,6 +25,8 @@ fun Receipt.toStoreTransaction(
         originalJson = this.toJSON(),
         presentedOfferingIdentifier = presentedOfferingIdentifier,
         storeUserID = storeUserID,
-        purchaseType = PurchaseType.AMAZON_PURCHASE
+        purchaseType = PurchaseType.AMAZON_PURCHASE,
+        // TODO check if amazon has multi-quantity
+        quantity = 1
     )
 }

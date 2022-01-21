@@ -10,12 +10,14 @@ import java.util.Date
 data class Transaction(
     val revenuecatId: String,
     val productId: String,
-    val purchaseDate: Date
+    val purchaseDate: Date,
+    val quantity: Int
 ) : Parcelable {
 
     internal constructor(productId: String, jsonObject: JSONObject) : this(
         revenuecatId = jsonObject.getString("id"),
         productId = productId,
-        purchaseDate = jsonObject.getDate("purchase_date")
+        purchaseDate = jsonObject.getDate("purchase_date"),
+        quantity = jsonObject.getInt("quantity")
     )
 }

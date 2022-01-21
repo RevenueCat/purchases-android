@@ -76,7 +76,14 @@ data class StoreTransaction(
     /**
      * One of [PurchaseType] indicating the type of purchase.
      */
-    val purchaseType: PurchaseType
+    val purchaseType: PurchaseType,
+
+    /**
+     * The quantity of purchases in the transaction. For subscriptions, this will always be 1. Multi-quantity purchasing
+     * must be enabled per-product via the Play Console.
+     * See https://developer.android.com/google/play/billing/integrate#mq for more details.
+     */
+    val quantity: Int
 ) : Parcelable {
 
     /**
