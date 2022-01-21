@@ -2,6 +2,7 @@ package com.revenuecat.sample
 
 import android.app.Application
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.sample.data.Constants
 import com.revenuecat.sample.ui.user.UserViewModel
@@ -21,7 +22,10 @@ class MainApplication : Application() {
         - appUserID is nil, so an anonymous ID will be generated automatically by the Purchases SDK. Read more about Identifying Users here: https://docs.revenuecat.com/docs/user-ids
         - observerMode is false, so Purchases will automatically handle finishing transactions. Read more about Observer Mode here: https://docs.revenuecat.com/docs/observer-mode
         */
-        Purchases.configure(this, Constants.API_KEY, null, false)
+        val builder = PurchasesConfiguration.Builder(this, Constants.API_KEY)
+            .appUserID(null)
+            .observerMode(false)
+        Purchases.configure(builder.build())
 
         /*
         Whenever the `sharedInstance` of Purchases updates the CustomerInfo cache, this method will be called.
