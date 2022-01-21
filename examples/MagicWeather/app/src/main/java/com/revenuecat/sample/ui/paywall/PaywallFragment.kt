@@ -21,7 +21,7 @@ class PaywallFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         root = inflater.inflate(R.layout.fragment_paywall, container, false)
 
         recyclerView = root.findViewById(R.id.paywall_list)
