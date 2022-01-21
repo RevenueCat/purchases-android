@@ -81,7 +81,7 @@ platform :android do
       fail "please add a CHANGELOG.latest.md file before calling this lane"
     end
 
-    is_prerelease = new_version_number.include?("-")
+    is_prerelease = release_version.include?("-")
 
     set_github_release(
       repository_name: "revenuecat/purchases-android",
