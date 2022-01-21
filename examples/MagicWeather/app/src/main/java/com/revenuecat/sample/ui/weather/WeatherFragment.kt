@@ -26,7 +26,7 @@ class WeatherFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         weatherViewModel = WeatherViewModel.shared
 
         root = inflater.inflate(R.layout.fragment_weather, container, false)
