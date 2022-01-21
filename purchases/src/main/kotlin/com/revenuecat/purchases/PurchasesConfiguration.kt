@@ -51,6 +51,9 @@ open class PurchasesConfiguration(builder: Builder) {
             this.store = store
         }
 
+        /**
+         * Only use a Dangerous Setting if suggested by RevenueCat support team.
+         */
         fun dangerousSettings(dangerousSettings: Set<DangerousSetting>) = apply {
             this.dangerousSettings = dangerousSettings
         }
