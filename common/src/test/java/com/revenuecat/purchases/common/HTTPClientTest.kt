@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.networking.ETAG_HEADER_NAME
 import com.revenuecat.purchases.common.networking.ETagManager
@@ -74,8 +75,7 @@ class HTTPClientTest {
             observerMode = false,
             platformInfo = expectedPlatformInfo,
             proxyURL = baseURL,
-            store = Store.PLAY_STORE,
-            autoSync = true
+            store = Store.PLAY_STORE
         )
         client = HTTPClient(appConfig, mockETagManager)
     }
@@ -194,8 +194,7 @@ class HTTPClientTest {
             observerMode = false,
             platformInfo = PlatformInfo("native", null),
             proxyURL = baseURL,
-            store = Store.PLAY_STORE,
-            autoSync = true
+            store = Store.PLAY_STORE
         )
 
         val expectedResult = HTTPResult(200, "{}")

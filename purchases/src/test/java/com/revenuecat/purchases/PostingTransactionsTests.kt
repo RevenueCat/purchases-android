@@ -125,8 +125,7 @@ class PostingTransactionsTests {
                     version = "3.2.0"
                 ),
                 proxyURL = null,
-                store = Store.PLAY_STORE,
-                dangerousSettings = DangerousSettings(autoSyncPurchases = true)
+                store = Store.PLAY_STORE
             )
         )
     }

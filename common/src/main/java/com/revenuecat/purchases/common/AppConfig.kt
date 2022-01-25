@@ -12,7 +12,7 @@ class AppConfig(
     val platformInfo: PlatformInfo,
     proxyURL: URL?,
     val store: Store,
-    val dangerousSettings: DangerousSettings
+    val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true)
 ) {
 
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""
