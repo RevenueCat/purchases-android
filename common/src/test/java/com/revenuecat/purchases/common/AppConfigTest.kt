@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
 import io.mockk.every
 import io.mockk.mockk
@@ -28,7 +29,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -47,7 +48,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -68,7 +69,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -88,7 +89,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -101,7 +102,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         assertThat(appConfig.finishTransactions).isTrue()
     }
@@ -114,7 +115,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         assertThat(appConfig.finishTransactions).isFalse()
     }
@@ -128,7 +129,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = expected,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
@@ -142,7 +143,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
@@ -155,7 +156,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
@@ -163,7 +164,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
 
         assertThat(x).isEqualTo(y)
@@ -177,7 +178,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         var y = AppConfig(
             context = mockk(relaxed = true),
@@ -185,7 +186,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -196,7 +197,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.1.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -207,7 +208,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = URL("https://a.com"),
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -218,7 +219,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = false
+            dangerousSettings = DangerousSettings(autoSyncPurchases = false)
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -232,7 +233,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
@@ -240,7 +241,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         assertThat(x.hashCode() == y.hashCode())
     }
@@ -253,7 +254,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            autoSync = true
+            dangerousSettings = DangerousSettings(autoSyncPurchases = true)
         )
         assertThat(x.toString()).isNotNull()
     }

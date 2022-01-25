@@ -1670,7 +1670,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     @JvmSynthetic
     internal fun updatePendingPurchaseQueue() {
-        if (!appConfig.autoSync) {
+        if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.DEBUG, PurchaseStrings.SKIPPING_AUTOMATIC_SYNC)
             return
         }
@@ -1794,7 +1794,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             appUserID: String? = null,
             observerMode: Boolean = false,
             service: ExecutorService = createDefaultExecutor(),
-            dangerousSettings: Set<DangerousSetting> = emptySet()
+            dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true)
         ): Purchases {
             val builtConfiguration = PurchasesConfiguration.Builder(context, apiKey)
                 .appUserID(appUserID)
@@ -1831,7 +1831,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     platformInfo,
                     proxyURL,
                     store,
-                    autoSync = !configuration.dangerousSettings.contains(DangerousSetting.AUTO_SYNC_OFF)
+                    dangerousSettings
                 )
 
                 val prefs = PreferenceManager.getDefaultSharedPreferences(application)

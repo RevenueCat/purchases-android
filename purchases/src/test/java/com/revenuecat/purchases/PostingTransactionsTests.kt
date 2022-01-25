@@ -126,7 +126,7 @@ class PostingTransactionsTests {
                 ),
                 proxyURL = null,
                 store = Store.PLAY_STORE,
-                autoSync = true
+                dangerousSettings = DangerousSettings(autoSyncPurchases = true)
             )
         )
     }

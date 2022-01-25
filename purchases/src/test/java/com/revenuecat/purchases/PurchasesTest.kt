@@ -4396,7 +4396,7 @@ class PurchasesTest {
                 platformInfo = PlatformInfo("native", "3.2.0"),
                 proxyURL = null,
                 store = Store.PLAY_STORE,
-                autoSync = autoSync
+                dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             )
         )
         Purchases.sharedInstance = purchases
