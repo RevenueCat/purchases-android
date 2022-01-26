@@ -1785,6 +1785,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     @JvmSynthetic
     internal fun updatePendingPurchaseQueue() {
+        if (!appConfig.dangerousSettings.autoSyncPurchases) {
+            log(LogIntent.DEBUG, PurchaseStrings.SKIPPING_AUTOMATIC_SYNC)
+            return
+        }
         if (billing.isConnected()) {
             log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
             dispatcher.enqueue({
@@ -1894,6 +1898,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * subscription system and you want to use RevenueCat's backend only. If set to TRUE, you should
          * be consuming and acknowledging transactions outside of the Purchases SDK.
          * @param service Optional [ExecutorService] to use for the backend calls.
+         * @param dangerousSettings Only use a Dangerous Setting if suggested by RevenueCat support team.
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
         @JvmOverloads
@@ -1903,12 +1908,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             apiKey: String,
             appUserID: String? = null,
             observerMode: Boolean = false,
-            service: ExecutorService = createDefaultExecutor()
+            service: ExecutorService = createDefaultExecutor(),
+            dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true)
         ): Purchases {
             val builtConfiguration = PurchasesConfiguration.Builder(context, apiKey)
                 .appUserID(appUserID)
                 .observerMode(observerMode)
                 .service(service)
+                .dangerousSettings(dangerousSettings)
                 .build()
             return configure(builtConfiguration)
         }
@@ -1937,7 +1944,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     observerMode,
                     platformInfo,
                     proxyURL,
-                    store
+                    store,
+                    dangerousSettings
                 )
 
                 val prefs = PreferenceManager.getDefaultSharedPreferences(application)

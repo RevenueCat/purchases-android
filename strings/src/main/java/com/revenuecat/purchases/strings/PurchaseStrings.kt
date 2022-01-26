@@ -31,4 +31,5 @@ object PurchaseStrings {
     const val UPGRADING_SKU = "Moving from old SKU %s to sku %s"
     const val UPGRADING_SKU_ERROR = "There was an error trying to upgrade. BillingResponseCode: %s"
     const val NOT_RECOGNIZED_PRODUCT_TYPE = "Type of product not recognized."
+    const val SKIPPING_AUTOMATIC_SYNC = "Skipping automatic synchronization."
 }

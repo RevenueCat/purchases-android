@@ -11,6 +11,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val observerMode: Boolean
     val service: ExecutorService?
     val store: Store
+    val dangerousSettings: DangerousSettings
 
     init {
         this.context = builder.context
@@ -19,6 +20,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.observerMode = builder.observerMode
         this.service = builder.service
         this.store = builder.store
+        this.dangerousSettings = builder.dangerousSettings
     }
 
     open class Builder(
@@ -30,6 +32,7 @@ open class PurchasesConfiguration(builder: Builder) {
         internal var observerMode: Boolean = false
         internal var service: ExecutorService? = null
         internal var store: Store = Store.PLAY_STORE
+        internal var dangerousSettings: DangerousSettings = DangerousSettings()
 
         fun appUserID(appUserID: String?) = apply {
             this.appUserID = appUserID
@@ -45,6 +48,13 @@ open class PurchasesConfiguration(builder: Builder) {
 
         fun store(store: Store) = apply {
             this.store = store
+        }
+
+        /**
+         * Only use a Dangerous Setting if suggested by RevenueCat support team.
+         */
+        fun dangerousSettings(dangerousSettings: DangerousSettings) = apply {
+            this.dangerousSettings = dangerousSettings
         }
 
         open fun build(): PurchasesConfiguration {

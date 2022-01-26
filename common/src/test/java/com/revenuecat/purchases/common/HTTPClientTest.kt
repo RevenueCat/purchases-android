@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.networking.ETAG_HEADER_NAME
 import com.revenuecat.purchases.common.networking.ETagManager
