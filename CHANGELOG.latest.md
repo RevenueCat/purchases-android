@@ -1,6 +1,3 @@
-- Temporarily disable ETags
-     https://github.com/RevenueCat/purchases-android/pull/322
-- Converts attribution data to use subscriber attributes
-     https://github.com/RevenueCat/purchases-android/pull/315
-- Clarify usage of sharedInstance
-     https://github.com/RevenueCat/purchases-android/pull/320
+- Added a setting to disable automatic syncinc of purchases. This setting will prevent RevenueCat from calling
+  BillingClient's `queryPurchases` so you should only use if suggested by RevenueCat support team.
+    https://github.com/RevenueCat/purchases-android/pull/451
