@@ -599,7 +599,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Invalidates the cache for customer information.
      *
      * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
-     * Refer to https://docs.revenuecat.com/docs/purchaserinfo#section-get-user-information for more information on
+     * Refer to https://rev.cat/customer-info-cache for more information on
      * using the cache properly.
      *
      * This is useful for cases where purchaser information might have been updated outside of the
