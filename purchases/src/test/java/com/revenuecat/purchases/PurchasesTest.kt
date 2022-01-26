@@ -153,7 +153,7 @@ class PurchasesTest {
         anonymousSetup(false)
     }
 
-    fun anonymousSetup(anonymous: Boolean) {
+    private fun anonymousSetup(anonymous: Boolean) {
         val userIdToUse = if (anonymous) randomAppUserId else appUserId
 
         every {
@@ -3131,6 +3131,51 @@ class PurchasesTest {
     }
 
     @Test
+    fun `skip updating pending purchases if autosync is off`() {
+        buildPurchases(anonymous = true, autoSync = false)
+        purchases.updatePendingPurchaseQueue()
+        verify(exactly = 0) {
+            mockBillingAbstract.queryPurchases(appUserId, any(), any())
+        }
+        verify(exactly = 0) {
+            mockBackend.postReceiptData(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `post pending purchases if autosync is on`() {
+        buildPurchases(anonymous = true, autoSync = true)
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productId = "product",
+            purchaseState = Purchase.PurchaseState.PURCHASED
+        )
+        val activePurchase = purchase.toRevenueCatPurchaseDetails(ProductType.SUBS, null)
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = mapOf(purchase.purchaseToken.sha1() to activePurchase),
+            queriedINAPP = emptyMap(),
+            notInCache = listOf(activePurchase)
+        )
+        val productInfo = mockQueryingSkuDetails("product", ProductType.SUBS, null)
+
+        purchases.updatePendingPurchaseQueue()
+
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = "token",
+                appUserID = appUserId,
+                isRestore = false,
+                observerMode = false,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
     fun `when updating pending purchases, if token has not been sent, send it`() {
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
@@ -4335,7 +4380,7 @@ class PurchasesTest {
         }
     }
 
-    private fun buildPurchases(anonymous: Boolean) {
+    private fun buildPurchases(anonymous: Boolean, autoSync: Boolean = true) {
         purchases = Purchases(
             mockApplication,
             if (anonymous) null else appUserId,
@@ -4350,7 +4395,8 @@ class PurchasesTest {
                 observerMode = false,
                 platformInfo = PlatformInfo("native", "3.2.0"),
                 proxyURL = null,
-                store = Store.PLAY_STORE
+                store = Store.PLAY_STORE,
+                dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             )
         )
         Purchases.sharedInstance = purchases

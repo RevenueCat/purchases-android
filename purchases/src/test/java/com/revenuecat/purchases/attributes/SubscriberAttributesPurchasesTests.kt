@@ -2,6 +2,7 @@ package com.revenuecat.purchases.attributes
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError

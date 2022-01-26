@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
 import io.mockk.every
 import io.mockk.mockk
@@ -194,6 +195,17 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = URL("https://a.com"),
             store = Store.PLAY_STORE
+        )
+
+        assertThat(x).isNotEqualTo(y)
+
+        y = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            dangerousSettings = DangerousSettings(autoSyncPurchases = false)
         )
 
         assertThat(x).isNotEqualTo(y)
