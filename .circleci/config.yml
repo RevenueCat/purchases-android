@@ -312,6 +312,11 @@ workflows:
 
   deploy:
     jobs:
+      - hold:
+          type: approval
+      - deploy:
+          requires:
+            - hold
       - deploy: *release-tags
       - prepare-next-version: *release-tags
       - deploy-snapshot:
