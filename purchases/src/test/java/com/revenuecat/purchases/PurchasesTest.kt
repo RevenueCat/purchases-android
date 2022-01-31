@@ -2874,10 +2874,10 @@ class PurchasesTest {
         buildPurchases(anonymous = true, autoSync = true)
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
-            productId = "product",
+            productIds = listOf("product"),
             purchaseState = Purchase.PurchaseState.PURCHASED
         )
-        val activePurchase = purchase.toRevenueCatPurchaseDetails(ProductType.SUBS, null)
+        val activePurchase = purchase.toStoreTransaction(ProductType.SUBS, null)
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(purchase.purchaseToken.sha1() to activePurchase),
             queriedINAPP = emptyMap(),
