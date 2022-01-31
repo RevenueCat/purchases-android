@@ -5,13 +5,13 @@ apply plugin: 'kotlin-android-extensions'
 android {
     compileSdkVersion compileVersion
     buildToolsVersion buildToolsVersion
-    flavorDimensions "billing"
+    flavorDimensions "billingClientVersion"
     productFlavors {
-        oldBilling {
-            dimension "billing"
+        billingClient3 {
+            dimension "billingClientVersion"
         }
-        newBilling {
-            dimension "billing"
+        billingClient4 {
+            dimension "billingClientVersion"
         }
     }
     defaultConfig {
@@ -51,15 +51,15 @@ dependencies {
     testImplementation 'org.robolectric:robolectric:4.6.1'
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.2.0'
     testImplementation 'org.mockito:mockito-core:3.0.0'
-    testNewBillingImplementation "com.android.billingclient:billing:$billingVersion"
-    testOldBillingCompileOnly "com.android.billingclient:billing:$oldBillingVersion"
+    testBillingClient4Implementation "com.android.billingclient:billing:$billingVersion"
+    testBillingClient3CompileOnly "com.android.billingclient:billing:$billingClient3Version"
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }
 
 def artifactId = project.property("POM_ARTIFACT_ID")
 def publishVariant = project.property("PUBLISH_VARIANT")
-if (publishVariant == "oldBillingRelease") {
+if (publishVariant == "billingClient3Release") {
     project.ext.POM_ARTIFACT_ID = artifactId + "-unityiap"
 }
 println "$project.ext.POM_ARTIFACT_ID"

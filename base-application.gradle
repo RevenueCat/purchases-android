@@ -21,13 +21,13 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
-    flavorDimensions "billing"
+    flavorDimensions "billingClientVersion"
     productFlavors {
-        oldBilling {
-            dimension "billing"
+        billingClient3 {
+            dimension "billingClientVersion"
         }
-        newBilling {
-            dimension "billing"
+        billingClient4 {
+            dimension "billingClientVersion"
         }
     }
 }

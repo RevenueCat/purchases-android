@@ -117,7 +117,7 @@ platform :android do
     )
 
     UI.verbose("Creating version with BillingClient 3 for version: #{version}")
-    gradleProperties["PUBLISH_VARIANT"] = "oldBillingRelease"
+    gradleProperties["PUBLISH_VARIANT"] = "billingClient3Release"
     
     UI.verbose("Adding -unityiap to artifact ids")
     

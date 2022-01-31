@@ -4,8 +4,8 @@ dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation project(":common")
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    newBillingImplementation "com.android.billingclient:billing:$billingVersion"
-    oldBillingCompileOnly "com.android.billingclient:billing:$oldBillingVersion"
+    billingClient4Implementation "com.android.billingclient:billing:$billingVersion"
+    billingClient3CompileOnly "com.android.billingclient:billing:$billingClient3Version"
     implementation 'org.assertj:assertj-core:3.13.2'
     implementation 'io.mockk:mockk:1.10.0'
     implementation 'androidx.test.ext:junit:1.1.2'
