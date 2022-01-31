@@ -7,8 +7,8 @@ fun PurchaseHistoryRecord.toHumanReadableDescription() =
         this.sku
     }, purchaseTime: ${this.purchaseTime}, purchaseToken: ${this.purchaseToken}"
 
-val PurchaseHistoryRecord.listOfSkus: List<String>
-    get() = listOf(this.sku)
-
 val PurchaseHistoryRecord.firstSku: String
     get() = sku
+
+val PurchaseHistoryRecord.listOfSkus: List<String>
+    get() = listOf(this.sku)

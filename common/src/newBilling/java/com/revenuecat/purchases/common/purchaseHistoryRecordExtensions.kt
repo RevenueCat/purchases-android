@@ -9,9 +9,6 @@ fun PurchaseHistoryRecord.toHumanReadableDescription() =
         this.skus.joinToString(prefix = "[", postfix = "]")
     }, purchaseTime: ${this.purchaseTime}, purchaseToken: ${this.purchaseToken}"
 
-val PurchaseHistoryRecord.listOfSkus: ArrayList<String>
-    get() = this.skus
-
 /**
  * **Important**: until multi-line subscriptions are released,
  * we assume that there will be only a single sku in the purchase.
@@ -19,7 +16,10 @@ val PurchaseHistoryRecord.listOfSkus: ArrayList<String>
  */
 val PurchaseHistoryRecord.firstSku: String
     get() = skus[0].also {
-        if (skus.size > 0) {
+        if (skus.size > 1) {
             log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_PURCHASE_HISTORY_RECORD_MORE_THAN_ONE_SKU)
         }
     }
+
+val PurchaseHistoryRecord.listOfSkus: ArrayList<String>
+    get() = this.skus
