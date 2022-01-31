@@ -56,7 +56,7 @@
                 android:id="@+id/anonymous_user_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Continue as new random user"
+                android:text="Continue as random user"
                 app:layout_constraintTop_toBottomOf="@+id/login_button"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />
