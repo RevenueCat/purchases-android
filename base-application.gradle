@@ -21,6 +21,15 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
+    flavorDimensions "billing"
+    productFlavors {
+        oldBilling {
+            dimension "billing"
+        }
+        newBilling {
+            dimension "billing"
+        }
+    }
 }
 
 dependencies {

@@ -17,15 +17,6 @@ android {
             keyPassword project.properties['releaseKeyPassword']
         }
     }
-    flavorDimensions "billing"
-    productFlavors {
-        oldBilling {
-            dimension "billing"
-        }
-        newBilling {
-            dimension "billing"
-        }
-    }
     buildTypes {
         release {
             minifyEnabled true
