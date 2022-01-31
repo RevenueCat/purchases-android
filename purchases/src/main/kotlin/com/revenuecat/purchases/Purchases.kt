@@ -1943,7 +1943,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
          * subscription system and you want to use RevenueCat's backend only. If set to TRUE, you should
          * be consuming and acknowledging transactions outside of the Purchases SDK.
          * @param service Optional [ExecutorService] to use for the backend calls.
-         * @param dangerousSettings Only use a Dangerous Setting if suggested by RevenueCat support team.
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
         @JvmOverloads
@@ -1957,14 +1956,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             apiKey: String,
             appUserID: String? = null,
             observerMode: Boolean = false,
-            service: ExecutorService = createDefaultExecutor(),
-            dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true)
+            service: ExecutorService = createDefaultExecutor()
         ): Purchases {
             val builtConfiguration = PurchasesConfiguration.Builder(context, apiKey)
                 .appUserID(appUserID)
                 .observerMode(observerMode)
                 .service(service)
-                .dangerousSettings(dangerousSettings)
                 .build()
             return configure(builtConfiguration)
         }
