@@ -26,16 +26,15 @@ class MainApplication : Application() {
         */
         val builder = when (BuildConfig.STORE) {
             "amazon" -> AmazonConfiguration.Builder(this, Constants.AMAZON_API_KEY)
-                .observerMode(false)
-                .appUserID(null)
             "google" -> PurchasesConfiguration.Builder(this, Constants.GOOGLE_API_KEY)
+            else -> throw IllegalArgumentException("Invalid store.")
+        }
+        Purchases.configure(
+            builder
                 .observerMode(false)
                 .appUserID(null)
-            else -> {
-                throw IllegalArgumentException("Invalid store.")
-            }
-        }
-        Purchases.configure(builder.build())
+                .build()
+        )
 
         /*
         Whenever the `sharedInstance` of Purchases updates the CustomerInfo cache, this method will be called.
