@@ -32,15 +32,6 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         binding.customerInfoCard.setOnClickListener {
             with(binding.customerInfoDetailsContainer) {
                 visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
-
-                binding.customerInfoCardExpandButton
-                    .animate()
-                    .rotationBy(
-                        if (visibility == View.GONE) -ANIMATION_HALF_ROTATION_DEGREES
-                        else ANIMATION_HALF_ROTATION_DEGREES
-                    )
-                    .setDuration(resources.getInteger(R.integer.transition_duration).toLong())
-                    .start()
             }
         }
 
