@@ -120,6 +120,16 @@
                             app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container"
                             app:layout_constraintHorizontal_bias="0"/>
 
+                    <com.google.android.material.button.MaterialButton
+                            android:id="@+id/customer_info_restore_purchases_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="@dimen/padding_tiny"
+                            android:text="Restore"
+                            app:layout_constraintStart_toStartOf="@+id/customer_info_manage_button"
+                            app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
+                            app:layout_constraintTop_toBottomOf="@+id/customer_info_manage_button"/>
+
                     <androidx.constraintlayout.widget.Barrier
                             android:id="@+id/customer_info_card_barrier"
                             android:layout_width="wrap_content"

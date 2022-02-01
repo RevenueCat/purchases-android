@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.FragmentNavigatorExtras
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.logOutWith
+import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchasetester.databinding.FragmentOverviewBinding
 
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener {
@@ -84,6 +86,19 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             }
         }
 
+        binding.customerInfoRestorePurchasesButton.setOnClickListener {
+            Purchases.sharedInstance.restorePurchasesWith(onSuccess = {
+                binding.customerInfo = it
+                Toast.makeText(
+                    requireContext(),
+                    "Restoring purchases successful, check for new customer info",
+                    Toast.LENGTH_LONG
+                ).show()
+            }, onError = {
+                showError(it)
+            })
+        }
+
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
     }
 
@@ -97,7 +112,8 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(
             offerings.all.values.toList(),
             offerings.current,
-            this)
+            this
+        )
     }
 
     private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
