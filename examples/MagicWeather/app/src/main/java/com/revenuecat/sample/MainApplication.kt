@@ -6,6 +6,8 @@ import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.sample.data.Constants
 import com.revenuecat.sample.ui.user.UserViewModel
+import com.revenuecat.purchases.amazon.AmazonConfiguration
+import java.lang.IllegalArgumentException
 
 class MainApplication : Application() {
     override fun onCreate() {
@@ -22,9 +24,17 @@ class MainApplication : Application() {
         - appUserID is nil, so an anonymous ID will be generated automatically by the Purchases SDK. Read more about Identifying Users here: https://docs.revenuecat.com/docs/user-ids
         - observerMode is false, so Purchases will automatically handle finishing transactions. Read more about Observer Mode here: https://docs.revenuecat.com/docs/observer-mode
         */
-        val builder = PurchasesConfiguration.Builder(this, Constants.API_KEY)
-            .appUserID(null)
-            .observerMode(false)
+        val builder = when (BuildConfig.STORE) {
+            "amazon" -> AmazonConfiguration.Builder(this, Constants.AMAZON_API_KEY)
+                .observerMode(false)
+                .appUserID(null)
+            "google" -> PurchasesConfiguration.Builder(this, Constants.GOOGLE_API_KEY)
+                .observerMode(false)
+                .appUserID(null)
+            else -> {
+                throw IllegalArgumentException("Invalid store.")
+            }
+        }
         Purchases.configure(builder.build())
 
         /*
