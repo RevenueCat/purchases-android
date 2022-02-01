@@ -78,6 +78,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         }
 
         binding.customerInfoRestorePurchasesButton.setOnClickListener {
+            binding.customerInfoRestoreProgress.visibility = View.VISIBLE
             Purchases.sharedInstance.restorePurchasesWith(onSuccess = {
                 binding.customerInfo = it
                 Toast.makeText(
@@ -85,8 +86,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                     "Restoring purchases successful, check for new customer info",
                     Toast.LENGTH_LONG
                 ).show()
+                binding.customerInfoRestoreProgress.visibility = View.GONE
             }, onError = {
                 showError(it)
+                binding.customerInfoRestoreProgress.visibility = View.GONE
             })
         }
 
