@@ -1,13 +1,10 @@
 package com.revenuecat.purchasetester
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.FragmentNavigatorExtras
@@ -18,8 +15,8 @@ import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchasetester.databinding.FragmentOverviewBinding
 
@@ -46,10 +43,14 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         }
 
         binding.customerInfoLogoutButton.setOnClickListener {
-            Purchases.sharedInstance.logOutWith(
-                { error -> showUserError(requireActivity(), error) },
-                { findNavController().navigateUp() }
-            )
+            if (Purchases.sharedInstance.isAnonymous) {
+                findNavController().navigateUp()
+            } else {
+                Purchases.sharedInstance.logOutWith(
+                    { error -> showUserError(requireActivity(), error) },
+                    { findNavController().navigateUp() }
+                )
+            }
         }
 
         return binding.root
@@ -65,12 +66,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                 customerInfo = info
 
                 customerInfoCopyUserIdButton.setOnClickListener {
-                    val clipboard = getSystemService(requireContext(), ClipboardManager::class.java)
-                    val clip = ClipData.newPlainText("RevenueCat userId", info.originalAppUserId)
-                    clipboard?.primaryClip = clip
+                    copyToClipboard(requireContext(), "RevenueCat userId", info.originalAppUserId)
                 }
 
-                customerInfoJsonObject.detail = info.jsonObject.toString(JSON_FORMATTER_INDENT_SPACES)
+                customerInfoJsonObject.detail = info.rawData.toString(JSON_FORMATTER_INDENT_SPACES)
 
                 customerInfoActiveEntitlements.detail = formatEntitlements(info.entitlements.active.values)
                 customerInfoAllEntitlements.detail = formatEntitlements(info.entitlements.all.values)

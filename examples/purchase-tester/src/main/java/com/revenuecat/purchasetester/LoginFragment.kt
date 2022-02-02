@@ -30,10 +30,14 @@ class LoginFragment : Fragment() {
         }
 
         binding.anonymousUserButton.setOnClickListener {
-            Purchases.sharedInstance.logOutWith(
-                { error -> showUserError(requireActivity(), error) },
-                { advanceToOverviewFragment() }
-            )
+            if (Purchases.sharedInstance.isAnonymous) {
+                advanceToOverviewFragment()
+            } else {
+                Purchases.sharedInstance.logOutWith(
+                    { error -> showUserError(requireActivity(), error) },
+                    { advanceToOverviewFragment() }
+                )
+            }
         }
 
         return binding.root
