@@ -140,6 +140,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
     /**
+     * Exposes the observerMode configuration option
+     */
+    val observerMode: Boolean
+        @Synchronized get() = !appConfig.finishTransactions
+
+    /**
      * The passed in or generated app user ID
      */
     val appUserID: String

@@ -6,6 +6,7 @@ import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
@@ -596,6 +597,21 @@ class AmazonBillingTest {
             dummyUserData,
             RevenueCatPurchaseState.PURCHASED
         )
+    }
+
+    @Test
+    fun `if observerMode, registerListener not called`() {
+        verify(exactly = 0) {
+            mockPurchasingServiceProvider.registerListener(any(), any())
+        }
+    }
+
+    @Test
+    fun `if not observerMode, registerListener called`() {
+
+        verify(exactly = 1) {
+            mockPurchasingServiceProvider.registerListener(any(), any())
+        }
     }
 
     private fun verifyBackendCalled(

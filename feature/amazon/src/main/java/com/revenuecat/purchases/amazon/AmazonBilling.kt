@@ -10,6 +10,7 @@ import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataResponse
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -65,7 +66,12 @@ internal class AmazonBilling constructor(
     var connected = false
 
     override fun startConnection() {
-        purchasingServiceProvider.registerListener(applicationContext, this)
+        if (!Purchases.sharedInstance.observerMode) {
+            purchasingServiceProvider.registerListener(applicationContext, this)
+        } else {
+            LogIntent.AMAZON_ERROR(AmazonStrings.ERROR_OBSERVER_MODE_NOT_SUPPORTED)
+        }
+
         connected = true
     }
 
