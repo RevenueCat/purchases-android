@@ -100,6 +100,10 @@ internal class AmazonBilling constructor(
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
+        if (observerMode) {
+            log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_OBSERVER_MODE_NOT_SUPPORTED)
+            return
+        }
         userDataHandler.getUserData(
             onSuccess = { userData ->
                 productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
@@ -158,6 +162,11 @@ internal class AmazonBilling constructor(
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
+        if (observerMode) {
+            log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_OBSERVER_MODE_NOT_SUPPORTED)
+            return
+        }
+        
         if (replaceSkuInfo != null) {
             log(LogIntent.AMAZON_WARNING, AmazonStrings.PRODUCT_CHANGES_NOT_SUPPORTED)
             return
@@ -180,6 +189,10 @@ internal class AmazonBilling constructor(
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
+        if (observerMode) {
+            log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_OBSERVER_MODE_NOT_SUPPORTED)
+            return
+        }
         purchaseUpdatesHandler.queryPurchases(
             onSuccess = onSuccess@{ receipts, userData ->
                 if (receipts.isEmpty()) {
@@ -358,4 +371,5 @@ internal class AmazonBilling constructor(
     private fun onPurchaseError(error: PurchasesError) {
         purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
     }
+
 }
