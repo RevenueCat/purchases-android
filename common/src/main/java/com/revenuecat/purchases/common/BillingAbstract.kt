@@ -75,10 +75,21 @@ abstract class BillingAbstract {
 
     abstract fun isConnected(): Boolean
 
-    @SuppressWarnings("ForbiddenComment")
     abstract fun queryPurchases(
         appUserID: String,
         onSuccess: (Map<String, PurchaseDetails>) -> Unit,
+        onError: (PurchasesError) -> Unit
+    )
+
+    /**
+     * Amazon has the concept of term and parent product ID. This function will return
+     * the correct product ID the RevenueCat backend expects for a specific purchase
+     */
+    abstract fun getProperProductID(
+        productID: String,
+        purchaseToken: String,
+        amazonUserID: String?,
+        onSuccess: (sku: String) -> Unit,
         onError: (PurchasesError) -> Unit
     )
 

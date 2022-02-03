@@ -53,7 +53,7 @@ class AmazonCacheTest {
             "4321abcdreceiptid" to "com.revenuecat.subscription.monthly"
         )
 
-        underTest.setReceiptSkus(expected)
+        underTest.cacheReceiptSkus(expected)
 
         val actualStoredJSON = JSONObject(cache.stubCache[underTest.amazonPostedTokensKey])
         val actualStoredMapAsJSON = actualStoredJSON["receiptsToSkus"] as JSONObject
@@ -75,7 +75,7 @@ class AmazonCacheTest {
             "4321abcdreceiptid" to "com.revenuecat.subscription.monthly"
         )
 
-        underTest.setReceiptSkus(newToCache)
+        underTest.cacheReceiptSkus(newToCache)
 
         val actualStoredJSON = JSONObject(cache.stubCache[underTest.amazonPostedTokensKey])
         val actualStoredMapAsJSON = actualStoredJSON["receiptsToSkus"] as JSONObject
@@ -100,7 +100,7 @@ class AmazonCacheTest {
             "1234abcdreceiptid" to "com.revenuecat.subscription.monthly"
         )
 
-        underTest.setReceiptSkus(expected)
+        underTest.cacheReceiptSkus(expected)
 
         val actualStoredJSON = JSONObject(cache.stubCache[underTest.amazonPostedTokensKey])
         val actualStoredMapAsJSON = actualStoredJSON["receiptsToSkus"] as JSONObject
