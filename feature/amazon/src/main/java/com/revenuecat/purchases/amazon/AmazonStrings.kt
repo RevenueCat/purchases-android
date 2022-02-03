@@ -38,6 +38,6 @@ object AmazonStrings {
         "symbol sent by Amazon"
     const val PRICE_EXTRACTION_PARSE_EXCEPTION = "Exception parsing number. Price is %s"
     const val ERROR_OBSERVER_MODE_NOT_SUPPORTED =
-        "Attempting to connect to Amazon App Store with an Amazon Purchases configuration in observer mode, " +
+        "Attempting to interact with Amazon App Store with an Amazon Purchases configuration in observer mode, " +
             "but observer mode is not yet supported."
 }
