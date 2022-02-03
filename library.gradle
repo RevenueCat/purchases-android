@@ -59,7 +59,7 @@ dependencies {
 
 def artifactId = project.property("POM_ARTIFACT_ID")
 def publishVariant = project.property("PUBLISH_VARIANT")
-if (publishVariant == "billingClient3Release") {
+if (publishVariant == "unityIAPRelease") {
     project.ext.POM_ARTIFACT_ID = artifactId + "-unityiap"
 }
 println "$project.ext.POM_ARTIFACT_ID"
