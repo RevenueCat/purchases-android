@@ -5,13 +5,13 @@ apply plugin: 'kotlin-android-extensions'
 android {
     compileSdkVersion compileVersion
     buildToolsVersion buildToolsVersion
-    flavorDimensions "billingClientVersion"
+    flavorDimensions "dependencyVersions"
     productFlavors {
-        billingClient3 {
-            dimension "billingClientVersion"
+        unityIAP {
+            dimension "dependencyVersions"
         }
-        billingClient4 {
-            dimension "billingClientVersion"
+        latestDependencies {
+            dimension "dependencyVersions"
         }
     }
     defaultConfig {
@@ -51,8 +51,8 @@ dependencies {
     testImplementation 'org.robolectric:robolectric:4.6.1'
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.2.0'
     testImplementation 'org.mockito:mockito-core:3.0.0'
-    testBillingClient4Implementation "com.android.billingclient:billing:$billingVersion"
-    testBillingClient3CompileOnly "com.android.billingclient:billing:$billingClient3Version"
+    testLatestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
+    testUnityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }

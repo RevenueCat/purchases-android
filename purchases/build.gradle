@@ -14,8 +14,8 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
     implementation 'androidx.annotation:annotation:1.1.0'
-    billingClient4Api "com.android.billingclient:billing:$billingVersion"
-    billingClient3Api "com.android.billingclient:billing:$billingClient3Version"
+    latestDependenciesApi "com.android.billingclient:billing:$billingVersion"
+    unityIAPApi "com.android.billingclient:billing:$billingClient3Version"
     implementation "androidx.lifecycle:lifecycle-runtime:$lifecycleVersion"
     kapt "androidx.lifecycle:lifecycle-compiler:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-process:$lifecycleVersion"
@@ -28,8 +28,8 @@ dependencies {
     testImplementation 'org.robolectric:robolectric:4.3'
     testImplementation 'com.squareup.okhttp3:mockwebserver:4.2.0'
     testImplementation 'org.mockito:mockito-core:3.0.0'
-    testBillingClient4Implementation "com.android.billingclient:billing:$billingVersion"
-    testBillingClient3CompileOnly "com.android.billingclient:billing:$billingClient3Version"
+    testLatestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
+    testUnityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }
