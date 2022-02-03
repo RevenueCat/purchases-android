@@ -113,7 +113,7 @@ internal class AmazonBilling constructor(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction
     ) {
-        if (purchase.type == RevenueCatProductType.UNKNOWN) return
+        if (checkObserverMode() || purchase.type == RevenueCatProductType.UNKNOWN) return
 
         // PENDING purchases should not be fulfilled
         if (purchase.purchaseState == PurchaseState.PENDING) return
@@ -237,18 +237,22 @@ internal class AmazonBilling constructor(
     // compile as long as all of the functions are implemented, otherwise it doesn't know which delegated
     // implementation to take
     override fun onUserDataResponse(response: UserDataResponse) {
+        if(checkObserverMode()) return
         userDataHandler.onUserDataResponse(response)
     }
 
     override fun onProductDataResponse(response: ProductDataResponse) {
+        if(checkObserverMode()) return
         productDataHandler.onProductDataResponse(response)
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
+        if(checkObserverMode()) return
         purchaseHandler.onPurchaseResponse(response)
     }
 
     override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
+        if(checkObserverMode()) return
         purchaseUpdatesHandler.onPurchaseUpdatesResponse(response)
     }
 
