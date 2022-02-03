@@ -17,7 +17,7 @@ class BillingFactoryTest {
         val mockBackend = mockk<Backend>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
 
-        BillingFactory.createBilling(Store.PLAY_STORE, mockApplication, mockBackend, mockCache)
+        BillingFactory.createBilling(Store.PLAY_STORE, mockApplication, mockBackend, mockCache, false)
     }
 
 }

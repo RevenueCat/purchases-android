@@ -10,7 +10,6 @@ import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataResponse
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -42,6 +41,7 @@ internal class AmazonBilling constructor(
     private val applicationContext: Context,
     private val amazonBackend: AmazonBackend,
     private val cache: AmazonCache,
+    private val observerMode: Boolean = false,
     private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
     private val productDataHandler: ProductDataResponseListener = ProductDataHandler(purchasingServiceProvider),
     private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(purchasingServiceProvider),
@@ -60,18 +60,18 @@ internal class AmazonBilling constructor(
     constructor(
         applicationContext: Context,
         backend: Backend,
-        cache: DeviceCache
-    ) : this(applicationContext, AmazonBackend(backend), AmazonCache(cache))
+        cache: DeviceCache,
+        observerMode: Boolean
+    ) : this(applicationContext, AmazonBackend(backend), AmazonCache(cache), observerMode)
 
     var connected = false
 
     override fun startConnection() {
-        if (!Purchases.sharedInstance.observerMode) {
-            purchasingServiceProvider.registerListener(applicationContext, this)
-        } else {
-            LogIntent.AMAZON_ERROR(AmazonStrings.ERROR_OBSERVER_MODE_NOT_SUPPORTED)
+        if (observerMode) {
+            log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_OBSERVER_MODE_NOT_SUPPORTED)
+            return
         }
-
+        purchasingServiceProvider.registerListener(applicationContext, this)
         connected = true
     }
 

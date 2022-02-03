@@ -133,12 +133,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
     /**
-     * Exposes the observerMode configuration option
-     */
-    val observerMode: Boolean
-        @Synchronized get() = !appConfig.finishTransactions
-
-    /**
      * The passed in or generated app user ID
      */
     val appUserID: String
@@ -2010,7 +2004,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                 val cache = DeviceCache(prefs, apiKey)
 
-                val billing: BillingAbstract = BillingFactory.createBilling(store, application, backend, cache)
+                val billing: BillingAbstract = BillingFactory.createBilling(
+                    store,
+                    application,
+                    backend,
+                    cache,
+                    observerMode
+                )
                 val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 
                 val subscriberAttributesCache = SubscriberAttributesCache(cache)
