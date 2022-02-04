@@ -8,8 +8,6 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import android.os.Build
 import android.util.Base64
-import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingResult
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -91,10 +89,5 @@ fun String.sha256() =
             String(Base64.encode(it, Base64.NO_WRAP))
         }
 
-fun BillingResult.toHumanReadableDescription() =
-    "DebugMessage: $debugMessage. ErrorCode: ${responseCode.getBillingResponseCodeName()}."
-
 val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
-
-fun BillingResult.isSuccessful() = responseCode == BillingClient.BillingResponseCode.OK

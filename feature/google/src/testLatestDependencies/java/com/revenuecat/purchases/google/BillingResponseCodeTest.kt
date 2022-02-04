@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
@@ -61,5 +61,4 @@ class BillingResponseCodeTest {
             assertThat(billingResponseCode.getBillingResponseCodeName()).isEqualTo(name)
         }
     }
-
 }
