@@ -29,7 +29,8 @@
                     android:layout_margin="@dimen/padding_small"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
+                    app:layout_constraintTop_toTopOf="parent"
+                    android:onClick="@{() -> viewModel.onCardClicked()}">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/customer_info_content"
@@ -78,7 +79,8 @@
                             app:layout_constraintBottom_toBottomOf="@+id/customer_info_app_user_id"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintTop_toTopOf="@+id/customer_info_app_user_id"
-                            app:srcCompat="@drawable/ic_copy" />
+                            app:srcCompat="@drawable/ic_copy"
+                            android:onClick="@{() -> viewModel.onCopyClicked()}"/>
 
                     <include
                             android:id="@+id/customer_info_active_entitlements"
@@ -108,6 +110,7 @@
                             android:layout_height="wrap_content"
                             android:layout_margin="@dimen/padding_tiny"
                             android:text="Manage"
+                            android:onClick="@{() -> viewModel.onManageClicked()}"
                             android:visibility="@{viewModel.customerInfo.managementURL != null ? View.VISIBLE : View.GONE}"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container" />
@@ -171,7 +174,8 @@
                                 app:layout_constraintEnd_toEndOf="parent"
                                 app:layout_constraintStart_toStartOf="parent"
                                 app:layout_constraintTop_toTopOf="parent"
-                                bind:header="@{`JSON Object`}" />
+                                bind:header="@{`JSON Object`}"
+                                bind:detail="@{viewModel.customerInfoJson}"/>
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
 

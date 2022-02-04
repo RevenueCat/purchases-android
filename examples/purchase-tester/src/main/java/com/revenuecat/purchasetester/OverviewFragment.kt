@@ -1,6 +1,7 @@
 package com.revenuecat.purchasetester
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -32,12 +33,6 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = FragmentOverviewBinding.inflate(inflater)
 
-        binding.customerInfoCard.setOnClickListener {
-            with(binding.customerInfoDetailsContainer) {
-                visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
-            }
-        }
-
         binding.customerInfoLogoutButton.setOnClickListener {
             if (Purchases.sharedInstance.isAnonymous) {
                 findNavController().navigateUp()
@@ -65,20 +60,6 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             with(binding) {
                 viewModel?.customerInfo?.value = info
 
-                // TODO move more of this into binding
-                customerInfoCopyUserIdButton.setOnClickListener {
-                    copyToClipboard(requireContext(), "RevenueCat userId", info.originalAppUserId)
-                }
-
-                customerInfoJsonObject.detail = info.rawData.toString(JSON_FORMATTER_INDENT_SPACES)
-
-                binding.customerInfoManageButton.setOnClickListener {
-                    info.managementURL?.let {
-                        val intent = Intent(Intent.ACTION_VIEW)
-                        intent.data = it
-                        startActivity(intent)
-                    }
-                }
             }
         }
 
@@ -123,5 +104,21 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             message,
             Toast.LENGTH_LONG
         ).show()
+    }
+
+    override fun toggleCard() {
+        with(binding.customerInfoDetailsContainer) {
+            visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
+        }
+    }
+
+    override fun copyToClipboard(text: String) {
+        copyToClipboard(requireContext(), "RevenueCat userId", text)
+    }
+
+    override fun launchURL(url: Uri) {
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.data = url
+        startActivity(intent)
     }
 }

@@ -1,5 +1,6 @@
 package com.revenuecat.purchasetester
 
+import android.net.Uri
 import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.MediatorLiveData
@@ -11,7 +12,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.restorePurchasesWith
 
-class OverviewViewModel(val interactionHandler: OverviewInteractionHandler) : ViewModel() {
+class OverviewViewModel(private val interactionHandler: OverviewInteractionHandler) : ViewModel() {
 
     val customerInfo: MutableLiveData<CustomerInfo> by lazy {
         MutableLiveData<CustomerInfo>().apply {
@@ -25,6 +26,8 @@ class OverviewViewModel(val interactionHandler: OverviewInteractionHandler) : Vi
 
     val allEntitlements = MediatorLiveData<String>()
 
+    val customerInfoJson = MediatorLiveData<String>()
+
     init {
         activeEntitlements.addSource(customerInfo) { info ->
             activeEntitlements.value = formatEntitlements(info.entitlements.active.values)
@@ -33,10 +36,10 @@ class OverviewViewModel(val interactionHandler: OverviewInteractionHandler) : Vi
         allEntitlements.addSource(customerInfo) { info ->
             allEntitlements.value = formatEntitlements(info.entitlements.all.values)
         }
-    }
 
-    private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
-        return entitlementInfos.joinToString(separator = "\n") { it.toBriefString() }
+        customerInfoJson.addSource(customerInfo) { info ->
+            customerInfoJson.value = info.rawData.toString(JSON_FORMATTER_INDENT_SPACES)
+        }
     }
 
     fun onRestoreClicked() {
@@ -50,9 +53,30 @@ class OverviewViewModel(val interactionHandler: OverviewInteractionHandler) : Vi
             isRestoring.value = false
         })
     }
+
+    fun onCardClicked() = interactionHandler.toggleCard()
+
+    fun onCopyClicked() {
+        customerInfo.value?.originalAppUserId?.let {
+            interactionHandler.copyToClipboard(it)
+        }
+    }
+
+    fun onManageClicked() {
+        customerInfo.value?.managementURL?.let {
+            interactionHandler.launchURL(it)
+        }
+    }
+
+    private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
+        return entitlementInfos.joinToString(separator = "\n") { it.toBriefString() }
+    }
 }
 
 interface OverviewInteractionHandler {
     fun displayError(error: PurchasesError)
     fun showToast(message: String)
+    fun toggleCard()
+    fun copyToClipboard(text: String)
+    fun launchURL(url: Uri)
 }
