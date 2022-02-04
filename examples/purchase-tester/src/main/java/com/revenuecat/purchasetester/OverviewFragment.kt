@@ -17,13 +17,14 @@ import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchasetester.databinding.FragmentOverviewBinding
 
-class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener {
+class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener, OverviewInteractionHandler {
 
     private lateinit var viewModel: OverviewViewModel
     private lateinit var binding: FragmentOverviewBinding
@@ -48,7 +49,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             }
         }
 
-        viewModel = OverviewViewModel()
+        viewModel = OverviewViewModel(this)
         binding.lifecycleOwner = this
         binding.viewModel = viewModel
 
@@ -81,22 +82,6 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             }
         }
 
-        binding.customerInfoRestorePurchasesButton.setOnClickListener {
-            binding.customerInfoRestoreProgress.visibility = View.VISIBLE
-            Purchases.sharedInstance.restorePurchasesWith(onSuccess = {
-                viewModel.customerInfo.postValue(it)
-                Toast.makeText(
-                    requireContext(),
-                    "Restoring purchases successful, check for new customer info",
-                    Toast.LENGTH_LONG
-                ).show()
-                binding.customerInfoRestoreProgress.visibility = View.GONE
-            }, onError = {
-                showError(it)
-                binding.customerInfoRestoreProgress.visibility = View.GONE
-            })
-        }
-
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
     }
 
@@ -126,5 +111,17 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         val extras = FragmentNavigatorExtras(cardView to offeringCardTransitionName)
         val directions = OverviewFragmentDirections.actionOverviewFragmentToOfferingFragment(offering)
         findNavController().navigate(directions, extras)
+    }
+
+    override fun displayError(error: PurchasesError) {
+        showError(error)
+    }
+
+    override fun showToast(message: String) {
+        Toast.makeText(
+            requireContext(),
+            message,
+            Toast.LENGTH_LONG
+        ).show()
     }
 }

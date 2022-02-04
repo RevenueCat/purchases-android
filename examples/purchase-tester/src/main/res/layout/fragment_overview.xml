@@ -128,6 +128,8 @@
                             android:layout_height="wrap_content"
                             android:layout_margin="@dimen/padding_tiny"
                             android:text="Restore"
+                            android:onClick="@{() -> viewModel.onRestoreClicked()}"
+                            android:enabled="@{!viewModel.isRestoring()}"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toEndOf="@+id/customer_info_logout_button"
                             app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container" />
@@ -138,7 +140,7 @@
                             android:layout_height="match_parent"
                             android:layout_margin="2dp"
                             android:elevation="2dp"
-                            android:visibility="gone"
+                            android:visibility="@{viewModel.isRestoring() ? View.VISIBLE : View.GONE}"
                             app:layout_constraintBottom_toBottomOf="@id/customer_info_restore_purchases_button"
                             app:layout_constraintEnd_toEndOf="@id/customer_info_restore_purchases_button"
                             app:layout_constraintStart_toStartOf="@+id/customer_info_restore_purchases_button"
