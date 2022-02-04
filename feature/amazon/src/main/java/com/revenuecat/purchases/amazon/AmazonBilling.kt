@@ -237,22 +237,22 @@ internal class AmazonBilling constructor(
     // compile as long as all of the functions are implemented, otherwise it doesn't know which delegated
     // implementation to take
     override fun onUserDataResponse(response: UserDataResponse) {
-        if(checkObserverMode()) return
+        if (checkObserverMode()) return
         userDataHandler.onUserDataResponse(response)
     }
 
     override fun onProductDataResponse(response: ProductDataResponse) {
-        if(checkObserverMode()) return
+        if (checkObserverMode()) return
         productDataHandler.onProductDataResponse(response)
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
-        if(checkObserverMode()) return
+        if (checkObserverMode()) return
         purchaseHandler.onPurchaseResponse(response)
     }
 
     override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
-        if(checkObserverMode()) return
+        if (checkObserverMode()) return
         purchaseUpdatesHandler.onPurchaseUpdatesResponse(response)
     }
 
