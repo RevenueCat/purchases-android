@@ -393,18 +393,6 @@ class BillingWrapper(
         }
     }
 
-    override fun getProperProductID(
-        productID: String,
-        purchaseToken: String,
-        amazonUserID: String?,
-        onSuccess: (properProductID: String) -> Unit,
-        onError: (PurchasesError) -> Unit
-    ) {
-        // This function actually does something in Amazon and gets the term SKU.
-        // In Google, there's no such concept
-        onSuccess(productID)
-    }
-
     private fun List<Purchase>.toMapOfGooglePurchaseWrapper(
         @SkuType skuType: String
     ): Map<String, PurchaseDetails> {

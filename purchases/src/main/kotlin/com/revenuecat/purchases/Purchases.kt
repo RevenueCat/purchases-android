@@ -289,7 +289,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [productID] Product ID associated to the purchase.
      * @param [purchaseToken] Token that represents the purchase. This should be [purchaseToken] for Google purchases
      * and the [receiptId] for Amazon purchases.
-     * @param [amazonUserID] Amazon only. Amazon's userID.
+     * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
      */
     fun syncPurchase(
         productID: String,
@@ -297,57 +297,63 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         amazonUserID: String?
     ) {
         amazonUserID?.let {
-            log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE.format(purchaseToken, amazonUserID))
-        } ?: log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(purchaseToken, amazonUserID))
+            log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(purchaseToken, it))
+        } ?: log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE.format(purchaseToken))
 
         val appUserID = identityManager.currentAppUserID
         val unsyncedSubscriberAttributesByKey =
             subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-        billing.getProperProductID(productID, purchaseToken, amazonUserID, { properProductID ->
-            backend.postReceiptData(
-                purchaseToken = purchaseToken,
-                appUserID = appUserID,
-                isRestore = this.allowSharingPlayStoreAccount,
-                observerMode = !this.finishTransactions,
-                subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                receiptInfo = ReceiptInfo(properProductID),
-                storeAppUserID = amazonUserID,
-                onSuccess = { info, body ->
-                    subscriberAttributesManager.markAsSynced(
-                        appUserID,
-                        unsyncedSubscriberAttributesByKey,
-                        body.getAttributeErrors()
-                    )
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                    cachePurchaserInfo(info)
-                    sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                    val logMessage = amazonUserID?.let {
-                            PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(purchaseToken, amazonUserID)
-                    } ?: PurchaseStrings.PURCHASE_SYNCED.format(purchaseToken)
-                    log(LogIntent.PURCHASE, logMessage)
-                },
-                onError = { error, errorIsFinishable, body ->
-                    if (errorIsFinishable) {
+        billing.normalizePurchaseData(
+            productID,
+            purchaseToken,
+            amazonUserID,
+            { normalizedProductID, storeUserID ->
+                backend.postReceiptData(
+                    purchaseToken = purchaseToken,
+                    appUserID = appUserID,
+                    isRestore = this.allowSharingPlayStoreAccount,
+                    observerMode = !this.finishTransactions,
+                    subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+                    receiptInfo = ReceiptInfo(normalizedProductID),
+                    storeAppUserID = storeUserID,
+                    onSuccess = { info, body ->
                         subscriberAttributesManager.markAsSynced(
                             appUserID,
                             unsyncedSubscriberAttributesByKey,
                             body.getAttributeErrors()
                         )
                         deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                        cachePurchaserInfo(info)
+                        sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                        val logMessage = storeUserID?.let {
+                            PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(purchaseToken, amazonUserID)
+                        } ?: PurchaseStrings.PURCHASE_SYNCED.format(purchaseToken)
+                        log(LogIntent.PURCHASE, logMessage)
+                    },
+                    onError = { error, errorIsFinishable, body ->
+                        if (errorIsFinishable) {
+                            subscriberAttributesManager.markAsSynced(
+                                appUserID,
+                                unsyncedSubscriberAttributesByKey,
+                                body.getAttributeErrors()
+                            )
+                            deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                        }
+                        val logMessage = storeUserID?.let {
+                            PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID
+                                .format(purchaseToken, storeUserID, error)
+                        } ?: PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS.format(purchaseToken, error)
+                        log(LogIntent.RC_ERROR, logMessage)
                     }
-                    val logMessage = amazonUserID?.let {
-                        PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID
-                            .format(purchaseToken, amazonUserID, error)
-                    } ?: PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS.format(purchaseToken, error)
-                    log(LogIntent.RC_ERROR, logMessage)
-                }
-            )
-        }, { error ->
-            val logMessage = amazonUserID?.let {
-                PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(purchaseToken, amazonUserID, error)
-            } ?: PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS.format(purchaseToken, error)
-            log(LogIntent.RC_ERROR, logMessage)
-        })
+                )
+            },
+            { error ->
+                val logMessage = amazonUserID?.let {
+                    PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(purchaseToken, amazonUserID, error)
+                } ?: PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS.format(purchaseToken, error)
+                log(LogIntent.RC_ERROR, logMessage)
+            }
+        )
     }
 
     /**

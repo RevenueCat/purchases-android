@@ -85,13 +85,15 @@ abstract class BillingAbstract {
      * Amazon has the concept of term and parent product ID. This function will return
      * the correct product ID the RevenueCat backend expects for a specific purchase
      */
-    abstract fun getProperProductID(
+    open fun normalizePurchaseData(
         productID: String,
         purchaseToken: String,
-        amazonUserID: String?,
-        onSuccess: (sku: String) -> Unit,
+        storeUserID: String?,
+        onSuccess: (normalizedProductID: String, storeUserID: String?) -> Unit,
         onError: (PurchasesError) -> Unit
-    )
+    ) {
+        onSuccess(productID, null)
+    }
 
     interface PurchasesUpdatedListener {
         fun onPurchasesUpdated(purchases: List<PurchaseDetails>)

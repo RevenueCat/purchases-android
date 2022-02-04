@@ -88,37 +88,35 @@ internal class AmazonBilling constructor(
         )
     }
 
-    override fun getProperProductID(
+    override fun normalizePurchaseData(
         productID: String,
         purchaseToken: String,
-        amazonUserID: String?,
-        onSuccess: (properProductID: String) -> Unit,
+        storeUserID: String?,
+        onSuccess: (correctProductID: String, storeUserID: String?) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        if (amazonUserID == null) {
+        if (storeUserID == null) {
             onError(missingAmazonUserIdError())
             return
         }
 
         val currentlyCachedTokensToSkus = cache.getReceiptSkus()
 
-        if (currentlyCachedTokensToSkus.containsKey(purchaseToken)) {
-            currentlyCachedTokensToSkus[purchaseToken]?.let {
-                onSuccess(it)
-                return
-            }
+        currentlyCachedTokensToSkus[purchaseToken]?.let { sku ->
+            onSuccess(sku, storeUserID)
+            return
         }
 
         amazonBackend.getAmazonReceiptData(
             purchaseToken,
-            amazonUserID,
+            storeUserID,
             onSuccess = { response ->
                 log(LogIntent.DEBUG, AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()))
 
                 if (response.has(TERM_SKU_JSON_KEY)) {
                     val termSku = response[TERM_SKU_JSON_KEY] as String
                     cache.cacheReceiptSkus(mapOf(purchaseToken to termSku))
-                    onSuccess(termSku)
+                    onSuccess(termSku, storeUserID)
                 } else {
                     onError(missingTermSkuError(response))
                 }
