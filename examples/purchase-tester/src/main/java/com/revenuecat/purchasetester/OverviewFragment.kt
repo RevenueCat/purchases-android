@@ -9,12 +9,10 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.transition.MaterialElevationScale
-import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
@@ -22,7 +20,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.logOutWith
-import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchasetester.databinding.FragmentOverviewBinding
 
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener, OverviewInteractionHandler {
@@ -59,7 +56,6 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         Purchases.sharedInstance.getCustomerInfoWith(::showError) { info ->
             with(binding) {
                 viewModel?.customerInfo?.value = info
-
             }
         }
 

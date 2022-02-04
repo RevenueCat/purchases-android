@@ -1,8 +1,6 @@
 package com.revenuecat.purchasetester
 
 import android.net.Uri
-import android.view.View
-import android.widget.Toast
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
