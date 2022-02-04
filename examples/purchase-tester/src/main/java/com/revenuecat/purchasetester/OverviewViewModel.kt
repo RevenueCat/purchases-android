@@ -46,7 +46,7 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
         isRestoring.value = true
         Purchases.sharedInstance.restorePurchasesWith(onSuccess = {
             customerInfo.postValue(it)
-            interactionHandler.showToast("Restoring purchases successful, check for new customer info")
+            interactionHandler.showToast("Restoring successful")
             isRestoring.value = false
         }, onError = {
             interactionHandler.displayError(it)
