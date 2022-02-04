@@ -3474,9 +3474,6 @@ class PurchasesTest {
                 fail("should be error")
             })
 
-        val purchase = mockk<Purchase>(relaxed = true)
-        every { purchase.sku } returns sku
-
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
 
@@ -3597,9 +3594,6 @@ class PurchasesTest {
                 fail("should be error")
             }
         )
-
-        val purchase = mockk<Purchase>(relaxed = true)
-        every { purchase.sku } returns sku
 
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
