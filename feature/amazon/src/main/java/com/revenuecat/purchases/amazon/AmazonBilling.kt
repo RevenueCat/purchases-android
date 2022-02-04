@@ -371,5 +371,4 @@ internal class AmazonBilling constructor(
             true
         } else false
     }
-
 }
