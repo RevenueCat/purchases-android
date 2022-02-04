@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Observer
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,7 +25,8 @@ import com.revenuecat.purchasetester.databinding.FragmentOverviewBinding
 
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener {
 
-    lateinit var binding: FragmentOverviewBinding
+    private lateinit var viewModel: OverviewViewModel
+    private lateinit var binding: FragmentOverviewBinding
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = FragmentOverviewBinding.inflate(inflater)
@@ -46,6 +48,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             }
         }
 
+        viewModel = OverviewViewModel()
+        binding.lifecycleOwner = this
+        binding.viewModel = viewModel
+
         return binding.root
     }
 
@@ -56,16 +62,14 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
         Purchases.sharedInstance.getCustomerInfoWith(::showError) { info ->
             with(binding) {
-                customerInfo = info
+                viewModel?.customerInfo?.value = info
 
+                // TODO move more of this into binding
                 customerInfoCopyUserIdButton.setOnClickListener {
                     copyToClipboard(requireContext(), "RevenueCat userId", info.originalAppUserId)
                 }
 
                 customerInfoJsonObject.detail = info.rawData.toString(JSON_FORMATTER_INDENT_SPACES)
-
-                customerInfoActiveEntitlements.detail = formatEntitlements(info.entitlements.active.values)
-                customerInfoAllEntitlements.detail = formatEntitlements(info.entitlements.all.values)
 
                 binding.customerInfoManageButton.setOnClickListener {
                     info.managementURL?.let {
@@ -80,7 +84,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         binding.customerInfoRestorePurchasesButton.setOnClickListener {
             binding.customerInfoRestoreProgress.visibility = View.VISIBLE
             Purchases.sharedInstance.restorePurchasesWith(onSuccess = {
-                binding.customerInfo = it
+                viewModel.customerInfo.postValue(it)
                 Toast.makeText(
                     requireContext(),
                     "Restoring purchases successful, check for new customer info",
@@ -108,10 +112,6 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             offerings.current,
             this
         )
-    }
-
-    private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
-        return entitlementInfos.joinToString(separator = "\n") { it.toBriefString() }
     }
 
     override fun onOfferingClicked(cardView: View, offering: Offering) {

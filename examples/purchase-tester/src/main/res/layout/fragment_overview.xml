@@ -5,10 +5,9 @@
         xmlns:tools="http://schemas.android.com/tools">
 
     <data>
-
         <variable
-                name="customerInfo"
-                type="com.revenuecat.purchases.CustomerInfo" />
+                name="viewModel"
+                type="com.revenuecat.purchasetester.OverviewViewModel" />
 
         <import type="android.view.View" />
     </data>
@@ -54,8 +53,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="@dimen/padding_small"
-                            android:text="@{` as of ` + customerInfo.requestDate}"
-                            android:visibility="@{customerInfo.requestDate != null ? View.VISIBLE : View.GONE}"
+                            android:text="@{` as of ` + viewModel.customerInfo.requestDate}"
+                            android:visibility="@{viewModel.customerInfo.requestDate != null ? View.VISIBLE : View.GONE}"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/customer_info_label" />
 
@@ -68,7 +67,7 @@
                             app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/customer_info_request_date"
-                            bind:detail="@{customerInfo.originalAppUserId}"
+                            bind:detail="@{viewModel.customerInfo.originalAppUserId}"
                             bind:header="@{`Original App User Id: `}" />
 
                     <androidx.appcompat.widget.AppCompatImageButton
@@ -89,7 +88,8 @@
                             app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/customer_info_app_user_id"
-                            bind:header="@{`Active Entitlements: `}" />
+                            bind:header="@{`Active Entitlements: `}"
+                            bind:detail="@{viewModel.activeEntitlements}"/>
 
                     <include
                             android:id="@+id/customer_info_all_entitlements"
@@ -99,7 +99,8 @@
                             app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/customer_info_active_entitlements"
-                            bind:header="@{`All Entitlements: `}" />
+                            bind:header="@{`All Entitlements: `}"
+                            bind:detail="@{viewModel.allEntitlements}"/>
 
                     <com.google.android.material.button.MaterialButton
                             android:id="@+id/customer_info_manage_button"
@@ -107,7 +108,7 @@
                             android:layout_height="wrap_content"
                             android:layout_margin="@dimen/padding_tiny"
                             android:text="Manage"
-                            android:visibility="@{customerInfo.managementURL != null ? View.VISIBLE : View.GONE}"
+                            android:visibility="@{viewModel.customerInfo.managementURL != null ? View.VISIBLE : View.GONE}"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container" />
 
