@@ -9,7 +9,9 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/Theme.Purchasesandroid">
-        <activity android:name="com.revenuecat.purchases.integrationtests.MainActivity" android:exported="true"/>
+        <activity
+                android:name="com.revenuecat.purchases.integrationtests.MainActivity"
+                android:exported="true" />
     </application>
 
 </manifest>
