@@ -17,7 +17,6 @@ android {
     buildFeatures {
         dataBinding true
     }
-
     defaultConfig {
         applicationId "com.revenuecat.purchase_tester"
         minSdkVersion 21

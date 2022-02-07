@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.firstSku
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
@@ -290,7 +291,8 @@ class BillingWrapperTest {
             mockBuilder.setSkuDetails(capture(skuDetailsSlot))
         } returns mockBuilder
 
-        val mockSubscriptionUpdateParamsBuilder = mockk<BillingFlowParams.SubscriptionUpdateParams.Builder>(relaxed = true)
+        val mockSubscriptionUpdateParamsBuilder =
+            mockk<BillingFlowParams.SubscriptionUpdateParams.Builder>(relaxed = true)
         every {
             BillingFlowParams.SubscriptionUpdateParams.newBuilder()
         } returns mockSubscriptionUpdateParamsBuilder
@@ -927,7 +929,7 @@ class BillingWrapperTest {
             listOf(purchaseHistoryRecord)
         )
         assertThat(recordFound).isNotNull
-        assertThat(recordFound!!.skus[0]).isEqualTo(purchaseHistoryRecord.sku)
+        assertThat(recordFound!!.skus[0]).isEqualTo(purchaseHistoryRecord.firstSku)
         assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
         assertThat(recordFound!!.purchaseToken).isEqualTo(purchaseHistoryRecord.purchaseToken)
     }
@@ -936,7 +938,7 @@ class BillingWrapperTest {
     fun `findPurchaseInPurchaseHistory returns error if not found`() {
         val sku = "aPurchase"
         val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
-            every { it.sku } returns sku + "somethingrandom"
+            every { it.firstSku } returns sku + "somethingrandom"
         }
 
         var errorReturned: PurchasesError? = null
