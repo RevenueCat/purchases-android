@@ -36,10 +36,10 @@ import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
@@ -67,6 +67,7 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.AttributionStrings
+import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -598,7 +599,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Invalidates the cache for customer information.
      *
      * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
-     * Refer to https://docs.revenuecat.com/docs/purchaserinfo#section-get-user-information for more information on
+     * Refer to https://rev.cat/customer-info-cache for more information on
      * using the cache properly.
      *
      * This is useful for cases where purchaser information might have been updated outside of the
@@ -2031,11 +2032,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         /**
+         * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
+         * Calling from an Amazon-configured app will return true.
+         *
          * Check if billing is supported for the current Play user (meaning IN-APP purchases are supported)
-         * and optionally, whether a list of specified feature types are supported. This method is asynchronous
-         * since it requires a connected BillingClient.
+         * and optionally, whether all features in the list of specified feature types are supported. This method is
+         * asynchronous since it requires a connected BillingClient.
          * @param context A context object that will be used to connect to the billing client
-         * @param feature A list of feature types to check for support. Feature types must be one of [BillingFeature]
+         * @param features A list of feature types to check for support. Feature types must be one of [BillingFeature]
          *                 By default, is an empty list and no specific feature support will be checked.
          * @param callback Callback that will be notified when the check is complete.
          */
@@ -2046,6 +2050,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>
         ) {
+            val currentStore = sharedInstance.appConfig.store
+            if (currentStore != Store.PLAY_STORE) {
+                log(LogIntent.RC_ERROR, BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS)
+                callback.onReceived(true)
+                return
+            }
+
             BillingClient.newBuilder(context)
                 .enablePendingPurchases()
                 .setListener { _, _ -> }
@@ -2064,7 +2075,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                             billingClient.endConnection()
                                             return@post
                                         }
-
+                                        // If billing is supported, IN-APP purchases are supported.
                                         var featureSupportedResultOk = features.all {
                                             billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful()
                                         }
@@ -2081,115 +2092,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                             override fun onBillingServiceDisconnected() {
                                 val mainHandler = Handler(context.mainLooper)
-                                mainHandler.post {
-                                    try {
-                                        billingClient.endConnection()
-                                    } catch (e: IllegalArgumentException) {
-                                    } finally {
-                                        callback.onReceived(false)
-                                    }
-                                }
-                            }
-                        })
-                }
-        }
-
-        /**
-         * Check if billing is supported in the device. This method is asynchronous since it tries
-         * to connect the billing client and checks for the result of the connection.
-         * If billing is supported, IN-APP purchases are supported.
-         * If you want to check if SUBSCRIPTIONS or other type defined in [BillingClient.FeatureType],
-         * call [isFeatureSupported].
-         * @param context A context object that will be used to connect to the billing client
-         * @param callback Callback that will be notified when the check is complete.
-         */
-        @Deprecated(
-            message = "use canMakePayments instead",
-            replaceWith = ReplaceWith("canMakePayments(context, features, Callback<Boolean>)")
-        )
-        @JvmStatic
-        fun isBillingSupported(context: Context, callback: Callback<Boolean>) {
-            BillingClient.newBuilder(context)
-                .enablePendingPurchases()
-                .setListener { _, _ -> }
-                .build()
-                .let { billingClient ->
-                    // BillingClient 4 calls the listener functions in a thread instead of in main
-                    // https://github.com/RevenueCat/purchases-android/issues/348
-                    val mainHandler = Handler(context.mainLooper)
-                    billingClient.startConnection(
-                        object : BillingClientStateListener {
-                            override fun onBillingSetupFinished(billingResult: BillingResult) {
-                                mainHandler.post {
-                                    // It also means that IN-APP items are supported for purchasing
-                                    try {
-                                        billingClient.endConnection()
-                                        val resultIsOK = billingResult.isSuccessful()
-                                        callback.onReceived(resultIsOK)
-                                    } catch (e: IllegalArgumentException) {
-                                        // Play Services not available
-                                        callback.onReceived(false)
-                                    }
-                                }
-                            }
-
-                            override fun onBillingServiceDisconnected() {
-                                mainHandler.post {
-                                    try {
-                                        billingClient.endConnection()
-                                    } catch (e: IllegalArgumentException) {
-                                    } finally {
-                                        callback.onReceived(false)
-                                    }
-                                }
-                            }
-                        })
-                }
-        }
-
-        /**
-         * Use this method if you want to check if Subscriptions or other type defined in
-         * [BillingClient.FeatureType] is supported.
-         * This method is asynchronous since it requires a connected billing client.
-         * @param feature A feature type to check for support. Must be one of [BillingClient.FeatureType]
-         * @param context A context object that will be used to connect to the billing client
-         * @param callback Callback that will be notified when the check is complete.
-         */
-        @Deprecated(
-            message = "use canMakePayments instead",
-            replaceWith = ReplaceWith("canMakePayments(context, features, Callback<Boolean>)")
-        )
-        @JvmStatic
-        fun isFeatureSupported(
-            @BillingClient.FeatureType feature: String,
-            context: Context,
-            callback: Callback<Boolean>
-        ) {
-            BillingClient.newBuilder(context)
-                .enablePendingPurchases()
-                .setListener { _, _ -> }
-                .build()
-                .let { billingClient ->
-                    // BillingClient 4 calls the listener functions in a thread instead of in main
-                    // https://github.com/RevenueCat/purchases-android/issues/348
-                    val mainHandler = Handler(context.mainLooper)
-                    billingClient.startConnection(
-                        object : BillingClientStateListener {
-                            override fun onBillingSetupFinished(billingResult: BillingResult) {
-                                mainHandler.post {
-                                    try {
-                                        val featureSupportedResult = billingClient.isFeatureSupported(feature)
-                                        billingClient.endConnection()
-                                        val responseIsOK = featureSupportedResult.isSuccessful()
-                                        callback.onReceived(responseIsOK)
-                                    } catch (e: IllegalArgumentException) {
-                                        // Play Services not available
-                                        callback.onReceived(false)
-                                    }
-                                }
-                            }
-
-                            override fun onBillingServiceDisconnected() {
                                 mainHandler.post {
                                     try {
                                         billingClient.endConnection()

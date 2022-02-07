@@ -25,7 +25,7 @@ class UserFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         userViewModel = UserViewModel.shared
 
         root = inflater.inflate(R.layout.fragment_user, container, false)
@@ -106,11 +106,11 @@ class UserFragment : Fragment() {
                     /*
                     Call `identify` with the Purchases SDK with the unique user ID
                      */
-                    Purchases.sharedInstance.identifyWith(input.text.toString(),
+                    Purchases.sharedInstance.logInWith(input.text.toString(),
                             onError = { error ->
                                 buildError(context, error.message)
                             },
-                            onSuccess = { info ->
+                            onSuccess = { info, _ ->
                                 updateUserDetails(info)
                             })
                 }
@@ -119,7 +119,7 @@ class UserFragment : Fragment() {
 
             alert.show()
         } else {
-            Purchases.sharedInstance.resetWith {}
+            Purchases.sharedInstance.logOut()
         }
     }
 }

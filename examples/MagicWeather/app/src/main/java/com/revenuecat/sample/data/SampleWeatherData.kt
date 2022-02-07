@@ -47,7 +47,7 @@ class SampleWeatherData(val emoji: String, val temperature: String) {
         fun generateSampleData(environment: Environment, temperature: Int?): SampleWeatherData {
             val temp: Int = temperature ?: Random.nextInt(-20, 120)
 
-            var emoji: String
+            val emoji: String
             when (temp) {
                 in 0..32 -> {
                     emoji = "❄️"
