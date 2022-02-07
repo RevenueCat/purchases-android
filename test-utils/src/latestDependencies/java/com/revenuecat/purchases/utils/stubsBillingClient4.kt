@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchaseHistoryRecord
 import org.json.JSONArray
 
 fun stubGooglePurchase(
