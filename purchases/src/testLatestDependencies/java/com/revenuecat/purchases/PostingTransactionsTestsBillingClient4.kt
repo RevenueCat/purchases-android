@@ -301,5 +301,4 @@ class PostingTransactionsTests {
             )
         }
     }
-
 }

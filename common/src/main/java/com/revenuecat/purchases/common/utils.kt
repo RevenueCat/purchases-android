@@ -8,19 +8,10 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import android.os.Build
 import android.util.Base64
-import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchaseHistoryRecord
 import java.security.MessageDigest
 import java.util.Locale
 
 const val MICROS_MULTIPLIER = 1_000_000
-
-fun Purchase.toHumanReadableDescription() =
-    "skus: ${
-        this.skus.joinToString(prefix = "[", postfix = "]")
-    }, orderId: ${this.orderId}, purchaseToken: ${this.purchaseToken}"
 
 fun Context.getLocale(): Locale? =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -98,15 +89,5 @@ fun String.sha256() =
             String(Base64.encode(it, Base64.NO_WRAP))
         }
 
-fun BillingResult.toHumanReadableDescription() =
-    "DebugMessage: $debugMessage. ErrorCode: ${responseCode.getBillingResponseCodeName()}."
-
-fun PurchaseHistoryRecord.toHumanReadableDescription() =
-    "skus: ${
-        this.skus.joinToString(prefix = "[", postfix = "]")
-    }, purchaseTime: ${this.purchaseTime}, purchaseToken: ${this.purchaseToken}"
-
 val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
-
-fun BillingResult.isSuccessful() = responseCode == BillingClient.BillingResponseCode.OK
