@@ -1,6 +1,7 @@
 apply from: "$rootProject.projectDir/base-application.gradle"
 
 android {
+    compileSdkVersion 30
     defaultConfig {
         applicationId "com.revenuecat.purchases.integrationtests"
         minSdkVersion 16
