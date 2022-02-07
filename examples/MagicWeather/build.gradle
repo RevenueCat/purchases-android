@@ -2,6 +2,7 @@
 buildscript {
     ext.kotlin_version = "1.3.72"
     ext.purchases_version = "5.0.0-rc1"
+    ext.navigation_version = "2.4.0"
     repositories {
         google()
         mavenCentral()
