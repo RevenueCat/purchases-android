@@ -1,46 +1,34 @@
 package com.revenuecat.purchasetester
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.transition.MaterialElevationScale
-import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchasetester.databinding.FragmentOverviewBinding
 
-class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener {
+class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener, OverviewInteractionHandler {
 
-    lateinit var binding: FragmentOverviewBinding
+    private lateinit var viewModel: OverviewViewModel
+    private lateinit var binding: FragmentOverviewBinding
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = FragmentOverviewBinding.inflate(inflater)
-
-        binding.customerInfoCard.setOnClickListener {
-            with(binding.customerInfoDetailsContainer) {
-                visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
-
-                binding.customerInfoCardExpandButton
-                    .animate()
-                    .rotationBy(
-                        if (visibility == View.GONE) -ANIMATION_HALF_ROTATION_DEGREES
-                        else ANIMATION_HALF_ROTATION_DEGREES
-                    )
-                    .setDuration(resources.getInteger(R.integer.transition_duration).toLong())
-                    .start()
-            }
-        }
 
         binding.customerInfoLogoutButton.setOnClickListener {
             if (Purchases.sharedInstance.isAnonymous) {
@@ -53,6 +41,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             }
         }
 
+        viewModel = OverviewViewModel(this)
+        binding.lifecycleOwner = this
+        binding.viewModel = viewModel
+
         return binding.root
     }
 
@@ -63,24 +55,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
         Purchases.sharedInstance.getCustomerInfoWith(::showError) { info ->
             with(binding) {
-                customerInfo = info
-
-                customerInfoCopyUserIdButton.setOnClickListener {
-                    copyToClipboard(requireContext(), "RevenueCat userId", info.originalAppUserId)
-                }
-
-                customerInfoJsonObject.detail = info.rawData.toString(JSON_FORMATTER_INDENT_SPACES)
-
-                customerInfoActiveEntitlements.detail = formatEntitlements(info.entitlements.active.values)
-                customerInfoAllEntitlements.detail = formatEntitlements(info.entitlements.all.values)
-
-                binding.customerInfoManageButton.setOnClickListener {
-                    info.managementURL?.let {
-                        val intent = Intent(Intent.ACTION_VIEW)
-                        intent.data = it
-                        startActivity(intent)
-                    }
-                }
+                viewModel?.customerInfo?.value = info
             }
         }
 
@@ -97,11 +72,8 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(
             offerings.all.values.toList(),
             offerings.current,
-            this)
-    }
-
-    private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
-        return entitlementInfos.joinToString(separator = "\n") { it.toBriefString() }
+            this
+        )
     }
 
     override fun onOfferingClicked(cardView: View, offering: Offering) {
@@ -116,5 +88,33 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         val extras = FragmentNavigatorExtras(cardView to offeringCardTransitionName)
         val directions = OverviewFragmentDirections.actionOverviewFragmentToOfferingFragment(offering)
         findNavController().navigate(directions, extras)
+    }
+
+    override fun displayError(error: PurchasesError) {
+        showError(error)
+    }
+
+    override fun showToast(message: String) {
+        Toast.makeText(
+            requireContext(),
+            message,
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    override fun toggleCard() {
+        with(binding.customerInfoDetailsContainer) {
+            visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
+        }
+    }
+
+    override fun copyToClipboard(text: String) {
+        copyToClipboard(requireContext(), "RevenueCat userId", text)
+    }
+
+    override fun launchURL(url: Uri) {
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.data = url
+        startActivity(intent)
     }
 }
