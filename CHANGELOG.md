@@ -3,9 +3,9 @@
 - Disabled Amazon observer mode since it's not supported yet
     https://github.com/RevenueCat/purchases-android/pull/469
 - Updated `canMakePayments` to always return `true` if called on Amazon
-    https://github.com/RevenueCat/purchases-android/pull/431/files
+    https://github.com/RevenueCat/purchases-android/pull/431
 - Updated doc links to use rev.cat style links
-    https://github.com/RevenueCat/purchases-android/pull/460/files
+    https://github.com/RevenueCat/purchases-android/pull/460
 - Updated MagicWeather to reflect configuration changes and Amazon configuration
     https://github.com/RevenueCat/purchases-android/pull/456
     https://github.com/RevenueCat/purchases-android/pull/458
