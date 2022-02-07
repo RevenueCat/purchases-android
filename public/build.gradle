@@ -1,6 +1,10 @@
 apply from: "$rootProject.projectDir/library.gradle"
 apply plugin: 'org.jetbrains.dokka'
 
+android {
+    namespace 'com.revenuecat.purchases'
+}
+
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation project(":utils")

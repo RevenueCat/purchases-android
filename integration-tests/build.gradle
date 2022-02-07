@@ -28,6 +28,7 @@ android {
         }
     }
     testBuildType obtainTestBuildType()
+    namespace 'com.revenuecat.purchases.integrationtests'
 }
 
 dependencies {

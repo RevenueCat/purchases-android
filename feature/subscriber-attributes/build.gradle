@@ -1,4 +1,7 @@
 apply from: "$rootProject.projectDir/library.gradle"
+android {
+    namespace 'com.revenuecat.purchases.subscriberattributes'
+}
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
