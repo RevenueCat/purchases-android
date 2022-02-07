@@ -24,7 +24,7 @@ class PurchasesError(
 enum class PurchasesErrorCode(val code: Int, val description: String) {
     UnknownError(0, "Unknown error."),
     PurchaseCancelledError(1, "Purchase was cancelled."),
-    StoreProblemError(2, "There was a problem with the Play Store."),
+    StoreProblemError(2, "There was a problem with the store."),
     PurchaseNotAllowedError(3, "The device or user is not allowed to make the purchase."),
     PurchaseInvalidError(4, "One or more of the arguments provided are invalid."),
     ProductNotAvailableForPurchaseError(5, "The product is not available for purchase."),
