@@ -6,6 +6,7 @@ import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
@@ -57,6 +58,7 @@ class AmazonBillingTest {
             applicationContext = mockContext,
             amazonBackend = mockAmazonBackend,
             cache = mockCache,
+            observerMode = false,
             purchasingServiceProvider = mockPurchasingServiceProvider,
             productDataHandler = mockProductDataHandler,
             purchaseHandler = mockPurchaseHandler,
@@ -595,6 +597,45 @@ class AmazonBillingTest {
             sku,
             dummyUserData,
             PurchaseState.PURCHASED
+        )
+    }
+
+    @Test
+    fun `if observerMode, registerListener not called`() {
+        observerModeSetup()
+        every {
+            mockPurchasingServiceProvider.registerListener(mockContext, any())
+        } just Runs
+
+        underTest.startConnection()
+        verify(exactly = 0) {
+            mockPurchasingServiceProvider.registerListener(any(), any())
+        }
+    }
+
+    @Test
+    fun `if not observerMode, registerListener called`() {
+        every {
+            mockPurchasingServiceProvider.registerListener(mockContext, any())
+        } just Runs
+
+        underTest.startConnection()
+        verify(exactly = 1) {
+            mockPurchasingServiceProvider.registerListener(any(), any())
+        }
+    }
+
+    private fun observerModeSetup() {
+        underTest = AmazonBilling(
+            applicationContext = mockContext,
+            amazonBackend = mockAmazonBackend,
+            cache = mockCache,
+            observerMode = true,
+            purchasingServiceProvider = mockPurchasingServiceProvider,
+            productDataHandler = mockProductDataHandler,
+            purchaseHandler = mockPurchaseHandler,
+            purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
+            userDataHandler = mockUserDataHandler
         )
     }
 
