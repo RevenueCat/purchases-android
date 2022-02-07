@@ -64,11 +64,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 }
             },
             { storeTransaction, _ ->
-                Toast.makeText(
-                    requireContext(),
-                    "Successful purchase, order id: ${storeTransaction.orderId}",
-                    Toast.LENGTH_LONG
-                ).show()
+                context?.let {
+                    Toast.makeText(
+                        it,
+                        "Successful purchase, order id: ${storeTransaction.orderId}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
 
                 findNavController().navigateUp()
             })
