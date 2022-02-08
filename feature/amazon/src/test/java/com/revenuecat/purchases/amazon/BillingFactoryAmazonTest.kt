@@ -19,6 +19,6 @@ class BillingFactoryAmazonTest {
         val mockBackend = mockk<Backend>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
 
-        BillingFactory.createBilling(Store.AMAZON, mockApplication, mockBackend, mockCache)
+        BillingFactory.createBilling(Store.AMAZON, mockApplication, mockBackend, mockCache, false)
     }
 }

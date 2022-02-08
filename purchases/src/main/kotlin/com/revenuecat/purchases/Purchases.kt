@@ -1841,7 +1841,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                 val cache = DeviceCache(prefs, apiKey)
 
-                val billing: BillingAbstract = BillingFactory.createBilling(store, application, backend, cache)
+                val billing: BillingAbstract = BillingFactory.createBilling(
+                    store,
+                    application,
+                    backend,
+                    cache,
+                    observerMode
+                )
 
                 val subscriberAttributesCache = SubscriberAttributesCache(cache)
                 val attributionFetcher = AttributionFetcher(dispatcher)

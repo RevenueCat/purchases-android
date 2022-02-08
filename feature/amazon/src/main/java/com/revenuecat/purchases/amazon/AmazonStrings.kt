@@ -32,4 +32,7 @@ object AmazonStrings {
         "Failed to get user data. Call is not supported."
     const val ERROR_USER_DATA_STORE_PROBLEM =
         "Failed to get user data. There was an Amazon store problem."
+    const val ERROR_OBSERVER_MODE_NOT_SUPPORTED =
+        "Attempting to interact with Amazon App Store with an Amazon Purchases configuration in observer mode, " +
+            "but observer mode is not yet supported."
 }
