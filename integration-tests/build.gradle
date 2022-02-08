@@ -1,7 +1,4 @@
-plugins {
-    id 'com.android.application'
-    id 'kotlin-android'
-}
+apply from: "$rootProject.projectDir/base-application.gradle"
 
 android {
     compileSdkVersion 30
