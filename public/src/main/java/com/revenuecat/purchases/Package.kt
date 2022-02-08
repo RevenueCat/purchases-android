@@ -9,7 +9,7 @@ import kotlinx.android.parcel.Parcelize
  * Contains information about the product available for the user to purchase. For more info see https://docs.revenuecat.com/docs/entitlements
  * @property identifier Unique identifier for this package. Can be one a predefined package type or a custom one.
  * @property packageType Package type for the product. Will be one of [PackageType].
- * @property product [SkuDetails] assigned to this package.
+ * @property product [StoreProduct] assigned to this package.
  */
 @Parcelize
 data class Package(
