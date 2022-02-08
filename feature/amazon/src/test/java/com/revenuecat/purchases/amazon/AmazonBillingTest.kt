@@ -57,6 +57,7 @@ class AmazonBillingTest {
             applicationContext = mockContext,
             amazonBackend = mockAmazonBackend,
             cache = mockCache,
+            observerMode = false,
             purchasingServiceProvider = mockPurchasingServiceProvider,
             productDataHandler = mockProductDataHandler,
             purchaseHandler = mockPurchaseHandler,
@@ -595,6 +596,45 @@ class AmazonBillingTest {
             sku,
             dummyUserData,
             RevenueCatPurchaseState.PURCHASED
+        )
+    }
+
+    @Test
+    fun `if observerMode, registerListener not called`() {
+        observerModeSetup()
+        every {
+            mockPurchasingServiceProvider.registerListener(mockContext, any())
+        } just Runs
+
+        underTest.startConnection()
+        verify(exactly = 0) {
+            mockPurchasingServiceProvider.registerListener(any(), any())
+        }
+    }
+
+    @Test
+    fun `if not observerMode, registerListener called`() {
+        every {
+            mockPurchasingServiceProvider.registerListener(mockContext, any())
+        } just Runs
+
+        underTest.startConnection()
+        verify(exactly = 1) {
+            mockPurchasingServiceProvider.registerListener(any(), any())
+        }
+    }
+
+    private fun observerModeSetup() {
+        underTest = AmazonBilling(
+            applicationContext = mockContext,
+            amazonBackend = mockAmazonBackend,
+            cache = mockCache,
+            observerMode = true,
+            purchasingServiceProvider = mockPurchasingServiceProvider,
+            productDataHandler = mockProductDataHandler,
+            purchaseHandler = mockPurchaseHandler,
+            purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
+            userDataHandler = mockUserDataHandler
         )
     }
 
