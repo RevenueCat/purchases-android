@@ -85,11 +85,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     private fun handleSuccessfulPurchase(orderId: String?) {
-        Toast.makeText(
-            requireContext(),
-            "Successful purchase, order id: $orderId",
-            Toast.LENGTH_LONG
-        ).show()
+        context?.let {
+            Toast.makeText(
+                it,
+                "Successful purchase, order id: $orderId",
+                Toast.LENGTH_LONG
+            ).show()
+        }
         findNavController().navigateUp()
     }
 }
