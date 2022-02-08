@@ -57,6 +57,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     override fun onPurchasePackageClicked(cardView: View, currentPackage: Package) {
+        binding.purchaseProgress.visibility = View.VISIBLE
         Purchases.sharedInstance.purchasePackageWith(
             requireActivity(),
             currentPackage,
@@ -71,6 +72,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     override fun onPurchaseProductClicked(cardView: View, currentProduct: StoreProduct) {
+        binding.purchaseProgress.visibility = View.VISIBLE
         Purchases.sharedInstance.purchaseProductWith(
             requireActivity(),
             currentProduct,
@@ -85,6 +87,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     private fun handleSuccessfulPurchase(orderId: String?) {
+        binding.purchaseProgress.visibility = View.GONE
         context?.let {
             Toast.makeText(
                 it,

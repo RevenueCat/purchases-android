@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.models.StoreProduct
 import kotlinx.android.parcel.Parcelize
 

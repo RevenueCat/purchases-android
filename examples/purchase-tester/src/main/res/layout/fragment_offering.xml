@@ -72,6 +72,17 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/offering_details_packages_header" />
 
+                <ProgressBar
+                        android:id="@+id/purchase_progress"
+                        android:layout_width="@dimen/padding_large"
+                        android:layout_height="@dimen/padding_large"
+                        android:elevation="8dp"
+                        android:visibility="gone"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
             </androidx.constraintlayout.widget.ConstraintLayout>
 
         </com.google.android.material.card.MaterialCardView>
