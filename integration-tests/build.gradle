@@ -46,6 +46,7 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.3.0'
     androidTestImplementation 'androidx.test:rules:1.3.0'
     androidTestImplementation 'androidx.test.ext:junit-ktx:1.1.2'
+    androidTestImplementation 'org.assertj:assertj-core:3.13.2'
 }
 
 def obtainTestBuildType() {

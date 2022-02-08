@@ -4,6 +4,8 @@ import androidx.test.ext.junit.rules.activityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -35,7 +37,7 @@ class IntegrationTest {
     fun SDKCanBeConfigured() {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity {
-//            assertThat(Purchases.sharedInstance.appUserID).isNotNull()
+            assertThat(Purchases.sharedInstance.appUserID).isNotNull()
         }
     }
 
@@ -46,12 +48,12 @@ class IntegrationTest {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity {
             Purchases.sharedInstance.getCustomerInfoWith({
-//                fail("should be success. Error: ${it.message}")
+                fail("should be success. Error: ${it.message}")
             }) {
                 lock.countDown()
             }
         }
         lock.await(5, TimeUnit.SECONDS)
-//        assertThat(lock.count).isZero()
+        assertThat(lock.count).isZero()
     }
 }
