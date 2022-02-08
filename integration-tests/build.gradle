@@ -1,7 +1,11 @@
-apply from: "$rootProject.projectDir/base-application.gradle"
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+}
 
 android {
     compileSdkVersion 30
+    buildToolsVersion "30.0.3"
     defaultConfig {
         applicationId "com.revenuecat.purchases.integrationtests"
         minSdkVersion 16
@@ -28,6 +32,14 @@ android {
         }
     }
     testBuildType obtainTestBuildType()
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
 }
 
 dependencies {
