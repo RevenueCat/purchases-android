@@ -339,7 +339,8 @@ workflows:
 
   integration-test:
     jobs:
-      - integration-tests-build: *release-tags-and-branches
+#      - integration-tests-build: *release-tags-and-branches
+      - integration-tests-build
       - run-firebase-tests-latest-dependencies:
           requires:
             - integration-tests-build
