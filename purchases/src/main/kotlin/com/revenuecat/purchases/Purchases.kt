@@ -1462,6 +1462,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     @JvmSynthetic
     internal fun updatePendingPurchaseQueue() {
+        if (!appConfig.dangerousSettings.autoSyncPurchases) {
+            log(LogIntent.DEBUG, PurchaseStrings.SKIPPING_AUTOMATIC_SYNC)
+            return
+        }
         if (billing.isConnected()) {
             log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
             dispatcher.enqueue({
@@ -1986,7 +1990,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     observerMode,
                     platformInfo,
                     proxyURL,
-                    store
+                    store,
+                    dangerousSettings
                 )
 
                 val prefs = PreferenceManager.getDefaultSharedPreferences(application)
