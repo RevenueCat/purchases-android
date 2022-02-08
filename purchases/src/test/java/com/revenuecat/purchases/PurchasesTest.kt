@@ -26,12 +26,11 @@ import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.billingResponseToPurchasesError
 import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.google.sku
+import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toSKUType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
@@ -3520,9 +3519,6 @@ class PurchasesTest {
                 fail("should be error")
             })
 
-        val purchase = mockk<Purchase>(relaxed = true)
-        every { purchase.sku } returns sku
-
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
 
@@ -3643,9 +3639,6 @@ class PurchasesTest {
                 fail("should be error")
             }
         )
-
-        val purchase = mockk<Purchase>(relaxed = true)
-        every { purchase.sku } returns sku
 
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)

@@ -36,10 +36,10 @@ import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
@@ -2009,7 +2009,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                 val cache = DeviceCache(prefs, apiKey)
 
-                val billing: BillingAbstract = BillingFactory.createBilling(store, application, backend, cache)
+                val billing: BillingAbstract = BillingFactory.createBilling(
+                    store,
+                    application,
+                    backend,
+                    cache,
+                    observerMode
+                )
                 val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 
                 val subscriberAttributesCache = SubscriberAttributesCache(cache)

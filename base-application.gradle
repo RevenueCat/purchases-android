@@ -21,6 +21,15 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
+    flavorDimensions "dependencyVersions"
+    productFlavors {
+        unityIAP {
+            dimension "dependencyVersions"
+        }
+        latestDependencies {
+            dimension "dependencyVersions"
+        }
+    }
 }
 
 dependencies {
