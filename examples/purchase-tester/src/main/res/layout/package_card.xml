@@ -87,7 +87,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:barrierDirection="start"
-                    app:constraint_referenced_ids="package_buy_button" />
+                    app:constraint_referenced_ids="package_buy_button, product_buy_button" />
 
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/package_buy_button"
@@ -95,9 +95,19 @@
                     android:layout_height="wrap_content"
                     android:enabled="@{!isActive}"
                     android:text="@{currentPackage.product.price}"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintBottom_toTopOf="@+id/product_buy_button"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/product_buy_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:enabled="@{!isActive}"
+                    android:text="@{currentPackage.product.price}"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/package_buy_button" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

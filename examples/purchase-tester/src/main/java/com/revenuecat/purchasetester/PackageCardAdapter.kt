@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchasetester.databinding.PackageCardBinding
 
 class PackageCardAdapter(
@@ -34,7 +35,11 @@ class PackageCardAdapter(
             binding.isActive = activeSubscriptions.contains(currentPackage.product.sku)
 
             binding.packageBuyButton.setOnClickListener {
-                listener.onBuyPackageClicked(binding.root, currentPackage)
+                listener.onPurchasePackageClicked(binding.root, currentPackage)
+            }
+
+            binding.productBuyButton.setOnClickListener {
+                listener.onPurchaseProductClicked(binding.root, currentPackage.product)
             }
 
             binding.packageType.detail = if (currentPackage.packageType == PackageType.CUSTOM) {
@@ -46,6 +51,7 @@ class PackageCardAdapter(
     }
 
     interface PackageCardAdapterListener {
-        fun onBuyPackageClicked(cardView: View, currentPackage: Package)
+        fun onPurchasePackageClicked(cardView: View, currentPackage: Package)
+        fun onPurchaseProductClicked(cardView: View, currentProduct: StoreProduct)
     }
 }

@@ -15,7 +15,9 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.purchasePackageWith
+import com.revenuecat.purchases.purchaseProductWith
 import com.revenuecat.purchasetester.databinding.FragmentOfferingBinding
 
 class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
@@ -54,7 +56,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         return binding.root
     }
 
-    override fun onBuyPackageClicked(cardView: View, currentPackage: Package) {
+    override fun onPurchasePackageClicked(cardView: View, currentPackage: Package) {
         Purchases.sharedInstance.purchasePackageWith(
             requireActivity(),
             currentPackage,
@@ -64,13 +66,30 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 }
             },
             { storeTransaction, _ ->
-                Toast.makeText(
-                    requireContext(),
-                    "Successful purchase, order id: ${storeTransaction.orderId}",
-                    Toast.LENGTH_LONG
-                ).show()
-
-                findNavController().navigateUp()
+                handleSuccessfulPurchase(storeTransaction.orderId)
             })
+    }
+
+    override fun onPurchaseProductClicked(cardView: View, currentProduct: StoreProduct) {
+        Purchases.sharedInstance.purchaseProductWith(
+            requireActivity(),
+            currentProduct,
+            { error, userCancelled ->
+                if (!userCancelled) {
+                    showUserError(requireActivity(), error)
+                }
+            },
+            { storeTransaction, _ ->
+                handleSuccessfulPurchase(storeTransaction.orderId)
+            })
+    }
+
+    private fun handleSuccessfulPurchase(orderId: String?) {
+        Toast.makeText(
+            requireContext(),
+            "Successful purchase, order id: $orderId",
+            Toast.LENGTH_LONG
+        ).show()
+        findNavController().navigateUp()
     }
 }
