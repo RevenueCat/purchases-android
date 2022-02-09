@@ -2779,10 +2779,14 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            lambda<(String, String?) -> Unit>().captured.also {
-                it.invoke(skuTerm, amazonUserID)
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
             }
         }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
@@ -2827,10 +2831,14 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            lambda<(String, String?) -> Unit>().captured.also {
-                it.invoke(skuTerm, amazonUserID)
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
             }
         }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
@@ -2866,7 +2874,7 @@ class PurchasesTest {
         val amazonUserID = "amazon_user_id"
         purchases.allowSharingPlayStoreAccount = true
 
-        var capturedLambda: ((String, String?) -> Unit)? = null
+        var capturedLambda: ((String) -> Unit)? = null
         every {
             mockBillingAbstract.normalizePurchaseData(
                 productID = skuParent,
@@ -2876,10 +2884,14 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedLambda = lambda<(String, String?) -> Unit>().captured.also {
-                it.invoke(skuTerm, amazonUserID)
+            capturedLambda = lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
             }
         }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
@@ -2932,8 +2944,8 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            lambda<(String, String?) -> Unit>().captured.also {
-                it.invoke(skuTerm, amazonUserID)
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
             }
         }
 
@@ -3015,7 +3027,7 @@ class PurchasesTest {
             mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserId)
         } returns unsyncedSubscriberAttributes
 
-        var capturedLambda: ((String, String?) -> Unit)? = null
+        var capturedLambda: ((String) -> Unit)? = null
         every {
             mockBillingAbstract.normalizePurchaseData(
                 productID = skuParent,
@@ -3025,10 +3037,14 @@ class PurchasesTest {
                 any()
             )
         } answers {
-            capturedLambda = lambda<(String, String?) -> Unit>().captured.also {
-                it.invoke(skuTerm, amazonUserID)
+            capturedLambda = lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
             }
         }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
