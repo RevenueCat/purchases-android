@@ -34,7 +34,11 @@ import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
+import org.json.JSONException
+import org.json.JSONObject
 import com.revenuecat.purchases.ProductType as RevenueCatProductType
+
+private const val TERM_SKU_JSON_KEY = "termSku"
 
 @SuppressWarnings("LongParameterList")
 internal class AmazonBilling constructor(
@@ -87,6 +91,39 @@ internal class AmazonBilling constructor(
                 onReceivePurchaseHistory(it.values.toList())
             },
             onReceivePurchaseHistoryError
+        )
+    }
+
+    override fun normalizePurchaseData(
+        productID: String,
+        purchaseToken: String,
+        storeUserID: String,
+        onSuccess: (correctProductID: String) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        val currentlyCachedTokensToSkus = cache.getReceiptSkus()
+
+        currentlyCachedTokensToSkus[purchaseToken]?.let { sku ->
+            onSuccess(sku)
+            return
+        }
+
+        amazonBackend.getAmazonReceiptData(
+            purchaseToken,
+            storeUserID,
+            onSuccess = { response ->
+                log(LogIntent.DEBUG, AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()))
+
+                val termSku = getTermSkuFromJSON(response)
+                if (termSku == null) {
+                    onError(missingTermSkuError(response))
+                    return@getAmazonReceiptData
+                }
+                cache.cacheSkusByToken(mapOf(purchaseToken to termSku))
+                onSuccess(termSku)
+            }, onError = { error ->
+                onError(errorGettingReceiptInfo(error))
+            }
         )
     }
 
@@ -257,6 +294,15 @@ internal class AmazonBilling constructor(
         purchaseUpdatesHandler.onPurchaseUpdatesResponse(response)
     }
 
+    @SuppressWarnings("SwallowedException")
+    private fun getTermSkuFromJSON(response: JSONObject): String? {
+        return try {
+            response.getString(TERM_SKU_JSON_KEY)
+        } catch (exception: JSONException) {
+            null
+        }
+    }
+
     private fun logErrorsIfAny(errors: Map<String, PurchasesError>) {
         if (errors.isNotEmpty()) {
             val receiptsWithErrors = errors.keys.joinToString("\n")
@@ -301,11 +347,11 @@ internal class AmazonBilling constructor(
                 onSuccess = { response ->
                     log(LogIntent.DEBUG, AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()))
 
-                    successMap[receipt.receiptId] = response["termSku"] as String
+                    successMap[receipt.receiptId] = response[TERM_SKU_JSON_KEY] as String
 
                     receiptsLeft--
                     if (receiptsLeft == 0) {
-                        cache.setReceiptSkus(successMap)
+                        cache.cacheSkusByToken(successMap)
                         onCompletion(successMap, errorMap)
                     }
                 }, onError = { error ->
@@ -349,7 +395,7 @@ internal class AmazonBilling constructor(
             receipt.receiptId,
             userData.userId,
             onSuccess = { response ->
-                val termSku = response["termSku"] as String
+                val termSku = response[TERM_SKU_JSON_KEY] as String
                 val amazonPurchaseWrapper = receipt.toRevenueCatPurchaseDetails(
                     sku = termSku,
                     presentedOfferingIdentifier = presentedOfferingIdentifier,

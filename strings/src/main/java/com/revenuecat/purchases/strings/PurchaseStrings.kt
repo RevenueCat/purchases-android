@@ -16,11 +16,17 @@ object PurchaseStrings {
             "and a purchase has been started. Are you sure you want to do this? " +
             "More info here: https://errors.rev.cat/finishTransactions"
     const val PURCHASE_SYNCED = "Purchase %s synced"
+    const val PURCHASE_SYNCED_USER_ID = "Purchase %s synced %s"
     const val PURCHASING_PRODUCT = "Purchasing product: %s"
     const val PURCHASE_STARTED = "Purchase started - product: %s"
     const val SYNCING_PURCHASES = "Syncing purchases"
+    const val SYNCING_PURCHASE_STORE_USER_ID = "Syncing purchase with token %s, for store user ID %s"
     const val SYNCING_PURCHASES_ERROR = "Error syncing purchases %s"
     const val SYNCING_PURCHASES_ERROR_DETAILS = "Error syncing purchases %s. Error: %s"
+    const val SYNCING_PURCHASE_ERROR_DETAILS = "Error syncing purchase %s. Error: %s"
+    const val SYNCING_PURCHASE_ERROR_DETAILS_USER_ID = "Error syncing purchase %s for store user ID %s. Error: %s"
+    const val SYNCING_PURCHASE_SKIPPING = "Skipping syncing purchase %s for store user ID %s. " +
+        "It has already been posted"
     const val UPDATING_PENDING_PURCHASE_QUEUE = "Updating pending purchase queue"
     const val UPGRADING_SKU = "Moving from old SKU %s to sku %s"
     const val UPGRADING_SKU_ERROR = "There was an error trying to upgrade. BillingResponseCode: %s"
