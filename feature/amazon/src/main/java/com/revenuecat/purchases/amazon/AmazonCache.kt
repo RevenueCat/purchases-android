@@ -17,7 +17,7 @@ internal class AmazonCache(
     }
 
     @Synchronized
-    fun cacheReceiptSkus(receiptsToSkus: Map<String, String>) {
+    fun cacheSkusByToken(receiptsToSkus: Map<String, String>) {
         log(LogIntent.DEBUG, AmazonStrings.CACHING_RECEIPT_TERM_SKUS.format(receiptsToSkus))
 
         val currentlyCached = getReceiptSkus()

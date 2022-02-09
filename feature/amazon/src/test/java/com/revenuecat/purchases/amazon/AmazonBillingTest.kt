@@ -66,7 +66,7 @@ class AmazonBillingTest {
         )
 
         every {
-            mockCache.cacheReceiptSkus(capture(capturedCachedReceiptSkus))
+            mockCache.cacheSkusByToken(capture(capturedCachedReceiptSkus))
         } just Runs
     }
 

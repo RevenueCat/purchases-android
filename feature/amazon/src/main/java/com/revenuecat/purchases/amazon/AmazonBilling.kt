@@ -119,7 +119,7 @@ internal class AmazonBilling constructor(
                     onError(missingTermSkuError(response))
                     return@getAmazonReceiptData
                 }
-                cache.cacheReceiptSkus(mapOf(purchaseToken to termSku))
+                cache.cacheSkusByToken(mapOf(purchaseToken to termSku))
                 onSuccess(termSku)
             }, onError = { error ->
                 onError(errorGettingReceiptInfo(error))
@@ -351,7 +351,7 @@ internal class AmazonBilling constructor(
 
                     receiptsLeft--
                     if (receiptsLeft == 0) {
-                        cache.cacheReceiptSkus(successMap)
+                        cache.cacheSkusByToken(successMap)
                         onCompletion(successMap, errorMap)
                     }
                 }, onError = { error ->
