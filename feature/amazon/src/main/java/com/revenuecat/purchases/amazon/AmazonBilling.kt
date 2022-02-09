@@ -34,6 +34,8 @@ import com.revenuecat.purchases.models.PurchaseDetails
 import com.revenuecat.purchases.models.RevenueCatPurchaseState
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
+import org.json.JSONException
+import org.json.JSONObject
 import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 private const val TERM_SKU_JSON_KEY = "termSku"
@@ -112,13 +114,13 @@ internal class AmazonBilling constructor(
             onSuccess = { response ->
                 log(LogIntent.DEBUG, AmazonStrings.RECEIPT_DATA_RECEIVED.format(response.toString()))
 
-                if (response.has(TERM_SKU_JSON_KEY)) {
-                    val termSku = response[TERM_SKU_JSON_KEY] as String
-                    cache.cacheReceiptSkus(mapOf(purchaseToken to termSku))
-                    onSuccess(termSku)
-                } else {
+                val termSku = getTermSkuFromJSON(response)
+                if (termSku == null) {
                     onError(missingTermSkuError(response))
+                    return@getAmazonReceiptData
                 }
+                cache.cacheReceiptSkus(mapOf(purchaseToken to termSku))
+                onSuccess(termSku)
             }, onError = { error ->
                 onError(errorGettingReceiptInfo(error))
             }
@@ -290,6 +292,15 @@ internal class AmazonBilling constructor(
     override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
         if (checkObserverMode()) return
         purchaseUpdatesHandler.onPurchaseUpdatesResponse(response)
+    }
+
+    @SuppressWarnings("SwallowedException")
+    private fun getTermSkuFromJSON(response: JSONObject): String? {
+        return try {
+            response.getString(TERM_SKU_JSON_KEY)
+        } catch (exception: JSONException) {
+            null
+        }
     }
 
     private fun logErrorsIfAny(errors: Map<String, PurchasesError>) {
