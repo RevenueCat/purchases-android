@@ -47,6 +47,15 @@ class PackageCardAdapter(
             } else {
                 currentPackage.packageType.toString()
             }
+
+            binding.packageDetailsJsonObject.detail =
+                currentPackage.product.originalJson.toString(JSON_FORMATTER_INDENT_SPACES)
+
+            binding.root.setOnClickListener {
+                with(binding.packageDetailsContainer) {
+                    visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
+                }
+            }
         }
     }
 

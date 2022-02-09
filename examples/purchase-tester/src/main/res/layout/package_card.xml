@@ -56,43 +56,43 @@
                     tools:text="Product with an introductory price" />
 
             <include
-                    layout="@layout/row_view"
                     android:id="@+id/package_product_sku"
+                    layout="@layout/row_view"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/padding_tiny"
                     android:layout_marginEnd="@dimen/padding_tiny"
-                    bind:header="@{`Sku:`}"
-                    bind:detail="@{currentPackage.product.sku}"
                     app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_product_description"
+                    bind:detail="@{currentPackage.product.sku}"
+                    bind:header="@{`Sku:`}"
                     tools:text="$rc_monthly" />
 
             <include
-                    layout="@layout/row_view"
                     android:id="@+id/package_type"
+                    layout="@layout/row_view"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/padding_tiny"
                     android:layout_marginEnd="@dimen/padding_tiny"
-                    bind:header="@{`Package Type:`}"
                     app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_product_sku"
+                    bind:header="@{`Package Type:`}"
                     tools:text="$rc_monthly" />
 
             <include
-                    layout="@layout/row_view"
                     android:id="@+id/package_price"
+                    layout="@layout/row_view"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/padding_tiny"
                     android:layout_marginEnd="@dimen/padding_tiny"
-                    bind:header="@{`Price: ` + currentPackage.product.price}"
                     app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_type"
+                    bind:header="@{`Price: ` + currentPackage.product.price}"
                     tools:text="$1.99" />
 
             <androidx.constraintlayout.widget.Barrier
@@ -118,9 +118,33 @@
                     android:layout_height="wrap_content"
                     android:enabled="@{!isActive}"
                     android:text="Buy product"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintBottom_toTopOf="@+id/package_details_container"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_buy_button" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/package_details_container"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/padding_tiny"
+                    android:layout_marginEnd="@dimen/padding_tiny"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/package_price"
+                    app:layout_constraintVertical_bias="0">
+
+                <include
+                        android:id="@+id/package_details_json_object"
+                        layout="@layout/row_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        bind:header="@{`Product JSON`}"/>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
