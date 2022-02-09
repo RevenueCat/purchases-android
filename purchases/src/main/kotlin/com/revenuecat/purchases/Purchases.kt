@@ -236,39 +236,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isNotEmpty()) {
                     allPurchases.forEach { purchase ->
-                        val unsyncedSubscriberAttributesByKey =
-                            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
                         val productInfo = ReceiptInfo(productID = purchase.sku)
-                        backend.postReceiptData(
-                            purchaseToken = purchase.purchaseToken,
-                            appUserID = appUserID,
-                            isRestore = this.allowSharingPlayStoreAccount,
-                            observerMode = !this.finishTransactions,
-                            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                            receiptInfo = productInfo,
-                            storeAppUserID = purchase.storeUserID,
-                            onSuccess = { info, body ->
-                                subscriberAttributesManager.markAsSynced(
-                                    appUserID,
-                                    unsyncedSubscriberAttributesByKey,
-                                    body.getAttributeErrors()
-                                )
-                                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-                                cachePurchaserInfo(info)
-                                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                        syncPurchaseWithBackend(
+                            purchase.purchaseToken,
+                            purchase.storeUserID,
+                            appUserID,
+                            productInfo,
+                            {
                                 log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
                             },
-                            onError = { error, errorIsFinishable, body ->
-                                if (errorIsFinishable) {
-                                    subscriberAttributesManager.markAsSynced(
-                                        appUserID,
-                                        unsyncedSubscriberAttributesByKey,
-                                        body.getAttributeErrors()
-                                    )
-                                    deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-                                }
+                            { error ->
                                 log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                        .format(purchase, error))
+                                    .format(purchase, error))
                             }
                         )
                     }
@@ -276,6 +255,49 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             onReceivePurchaseHistoryError = {
                 log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it))
+            }
+        )
+    }
+
+    private fun syncPurchaseWithBackend(
+        purchaseToken: String,
+        storeUserID: String?,
+        appUserID: String,
+        productInfo: ReceiptInfo,
+        onSuccess: () -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val unsyncedSubscriberAttributesByKey =
+            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
+        backend.postReceiptData(
+            purchaseToken = purchaseToken,
+            appUserID = appUserID,
+            isRestore = this.allowSharingPlayStoreAccount,
+            observerMode = !this.finishTransactions,
+            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+            receiptInfo = productInfo,
+            storeAppUserID = storeUserID,
+            onSuccess = { info, body ->
+                subscriberAttributesManager.markAsSynced(
+                    appUserID,
+                    unsyncedSubscriberAttributesByKey,
+                    body.getAttributeErrors()
+                )
+                deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                cachePurchaserInfo(info)
+                sendUpdatedPurchaserInfoToDelegateIfChanged(info)
+                onSuccess()
+            },
+            onError = { error, errorIsFinishable, body ->
+                if (errorIsFinishable) {
+                    subscriberAttributesManager.markAsSynced(
+                        appUserID,
+                        unsyncedSubscriberAttributesByKey,
+                        body.getAttributeErrors()
+                    )
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                }
+                onError(error)
             }
         )
     }
@@ -303,42 +325,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
 
         val appUserID = identityManager.currentAppUserID
-        val unsyncedSubscriberAttributesByKey = subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
         billing.normalizePurchaseData(
             productID,
             receiptId,
             amazonUserID,
             { normalizedProductID ->
-                backend.postReceiptData(
-                    purchaseToken = receiptId,
-                    appUserID = appUserID,
-                    isRestore = this.allowSharingPlayStoreAccount,
-                    observerMode = !this.finishTransactions,
-                    subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                    receiptInfo = ReceiptInfo(normalizedProductID),
-                    storeAppUserID = amazonUserID,
-                    onSuccess = { info, body ->
-                        subscriberAttributesManager.markAsSynced(
-                            appUserID,
-                            unsyncedSubscriberAttributesByKey,
-                            body.getAttributeErrors()
-                        )
-                        deviceCache.addSuccessfullyPostedToken(receiptId)
-                        cachePurchaserInfo(info)
-                        sendUpdatedPurchaserInfoToDelegateIfChanged(info)
-                        val logMessage =
-                            PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptId, amazonUserID)
+                syncPurchaseWithBackend(
+                    receiptId,
+                    amazonUserID,
+                    appUserID,
+                    ReceiptInfo(normalizedProductID),
+                    {
+                        val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptId, amazonUserID)
                         log(LogIntent.PURCHASE, logMessage)
                     },
-                    onError = { error, errorIsFinishable, body ->
-                        if (errorIsFinishable) {
-                            subscriberAttributesManager.markAsSynced(
-                                appUserID,
-                                unsyncedSubscriberAttributesByKey,
-                                body.getAttributeErrors()
-                            )
-                            deviceCache.addSuccessfullyPostedToken(receiptId)
-                        }
+                    { error ->
                         val logMessage = PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(
                             receiptId,
                             amazonUserID,
