@@ -281,14 +281,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     /**
-     * This method will send a purchase to the RevenueCat backend. Call this when using your own implementation
-     * for Amazon subscriptions anytime a sync is needed, like after a successful purchase, or when migrating existing
-     * users to RevenueCat.
+     * This method will send a purchase to the RevenueCat backend. This function should only be called if you are
+     * in Amazon observer mode or performing a client side migration of your current users to RevenueCat.
      *
      * The receipt IDs are cached if successfully posted so they are not posted more than once.
-     *
-     * @warning This function should only be called if you are in Amazon observer mode or performing a client side
-     * migration of your current users to RevenueCat.
      *
      * @param [productID] Product ID associated to the purchase.
      * @param [receiptId] ReceiptId that represents the Amazon purchase.
