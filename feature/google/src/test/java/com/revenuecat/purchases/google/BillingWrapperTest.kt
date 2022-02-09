@@ -1481,15 +1481,13 @@ class BillingWrapperTest {
         val expectedProductID = "expectedProductID"
 
         var receivedProductID: String? = null
-        var receivedStoreUserID: String? = null
 
         wrapper.normalizePurchaseData(
             expectedProductID,
             "purchaseToken",
             "nothingshouldbepassedherebutjustincase",
-            { normalizedProductID, storeUserID ->
+            { normalizedProductID ->
                 receivedProductID = normalizedProductID
-                receivedStoreUserID = storeUserID
             },
             {
                 fail("shouldn't be an error")
@@ -1497,7 +1495,6 @@ class BillingWrapperTest {
         )
 
         assertThat(receivedProductID).isEqualTo(expectedProductID)
-        assertThat(receivedStoreUserID).isNull()
     }
 
     private fun mockNullSkuDetailsResponse() {
