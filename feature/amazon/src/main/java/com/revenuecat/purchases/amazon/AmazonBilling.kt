@@ -43,6 +43,7 @@ internal class AmazonBilling constructor(
     private val applicationContext: Context,
     private val amazonBackend: AmazonBackend,
     private val cache: AmazonCache,
+    private val observerMode: Boolean,
     private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
     private val productDataHandler: ProductDataResponseListener = ProductDataHandler(purchasingServiceProvider),
     private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(purchasingServiceProvider),
@@ -61,12 +62,15 @@ internal class AmazonBilling constructor(
     constructor(
         applicationContext: Context,
         backend: Backend,
-        cache: DeviceCache
-    ) : this(applicationContext, AmazonBackend(backend), AmazonCache(cache))
+        cache: DeviceCache,
+        observerMode: Boolean
+    ) : this(applicationContext, AmazonBackend(backend), AmazonCache(cache), observerMode)
 
     var connected = false
 
     override fun startConnection() {
+        if (checkObserverMode()) return
+
         purchasingServiceProvider.registerListener(applicationContext, this)
         connected = true
     }
@@ -134,6 +138,8 @@ internal class AmazonBilling constructor(
         onReceive: ProductDetailsListCallback,
         onError: PurchasesErrorCallback
     ) {
+        if (checkObserverMode()) return
+
         userDataHandler.getUserData(
             onSuccess = { userData ->
                 productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
@@ -148,7 +154,7 @@ internal class AmazonBilling constructor(
         shouldTryToConsume: Boolean,
         purchase: PurchaseDetails
     ) {
-        if (purchase.type == RevenueCatProductType.UNKNOWN) return
+        if (checkObserverMode() || purchase.type == RevenueCatProductType.UNKNOWN) return
 
         // PENDING purchases should not be fulfilled
         if (purchase.purchaseState == RevenueCatPurchaseState.PENDING) return
@@ -191,6 +197,8 @@ internal class AmazonBilling constructor(
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
+        if (checkObserverMode()) return
+
         if (replaceSkuInfo != null) {
             log(LogIntent.AMAZON_WARNING, AmazonStrings.PRODUCT_CHANGES_NOT_SUPPORTED)
             return
@@ -213,6 +221,8 @@ internal class AmazonBilling constructor(
         onSuccess: (Map<String, PurchaseDetails>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
+        if (checkObserverMode()) return
+
         purchaseUpdatesHandler.queryPurchases(
             onSuccess = onSuccess@{ receipts, userData ->
                 if (receipts.isEmpty()) {
@@ -268,18 +278,22 @@ internal class AmazonBilling constructor(
     // compile as long as all of the functions are implemented, otherwise it doesn't know which delegated
     // implementation to take
     override fun onUserDataResponse(response: UserDataResponse) {
+        if (checkObserverMode()) return
         userDataHandler.onUserDataResponse(response)
     }
 
     override fun onProductDataResponse(response: ProductDataResponse) {
+        if (checkObserverMode()) return
         productDataHandler.onProductDataResponse(response)
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
+        if (checkObserverMode()) return
         purchaseHandler.onPurchaseResponse(response)
     }
 
     override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
+        if (checkObserverMode()) return
         purchaseUpdatesHandler.onPurchaseUpdatesResponse(response)
     }
 
@@ -390,5 +404,12 @@ internal class AmazonBilling constructor(
 
     private fun onPurchaseError(error: PurchasesError) {
         purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+    }
+
+    private fun checkObserverMode(): Boolean {
+        return if (observerMode) {
+            log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_OBSERVER_MODE_NOT_SUPPORTED)
+            true
+        } else false
     }
 }

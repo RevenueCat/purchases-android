@@ -57,6 +57,7 @@ class AmazonBillingTest {
             applicationContext = mockContext,
             amazonBackend = mockAmazonBackend,
             cache = mockCache,
+            observerMode = false,
             purchasingServiceProvider = mockPurchasingServiceProvider,
             productDataHandler = mockProductDataHandler,
             purchaseHandler = mockPurchaseHandler,
@@ -599,6 +600,31 @@ class AmazonBillingTest {
     }
 
     @Test
+    fun `if observerMode, registerListener not called`() {
+        observerModeSetup()
+        every {
+            mockPurchasingServiceProvider.registerListener(mockContext, any())
+        } just Runs
+
+        underTest.startConnection()
+        verify(exactly = 0) {
+            mockPurchasingServiceProvider.registerListener(any(), any())
+        }
+    }
+
+    @Test
+    fun `if not observerMode, registerListener called`() {
+        every {
+            mockPurchasingServiceProvider.registerListener(mockContext, any())
+        } just Runs
+
+        underTest.startConnection()
+        verify(exactly = 1) {
+            mockPurchasingServiceProvider.registerListener(any(), any())
+        }
+    }
+
+    @Test
     fun `When normalizing purchase data, term sku is returned when passing parent sku as product ID`() {
         val parentSku = "sub_sku"
         val expectedTermSku = "sub_sku.monthly"
@@ -761,6 +787,20 @@ class AmazonBillingTest {
 
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.InvalidAppUserIdError)
+    }
+
+    private fun observerModeSetup() {
+        underTest = AmazonBilling(
+            applicationContext = mockContext,
+            amazonBackend = mockAmazonBackend,
+            cache = mockCache,
+            observerMode = true,
+            purchasingServiceProvider = mockPurchasingServiceProvider,
+            productDataHandler = mockProductDataHandler,
+            purchaseHandler = mockPurchaseHandler,
+            purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
+            userDataHandler = mockUserDataHandler
+        )
     }
 
     private fun verifyBackendCalled(
