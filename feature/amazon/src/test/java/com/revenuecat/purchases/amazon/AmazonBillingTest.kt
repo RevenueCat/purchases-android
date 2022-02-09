@@ -67,7 +67,7 @@ class AmazonBillingTest {
         )
 
         every {
-            mockCache.setReceiptSkus(capture(capturedCachedReceiptSkus))
+            mockCache.cacheSkusByToken(capture(capturedCachedReceiptSkus))
         } just Runs
     }
 
@@ -623,6 +623,133 @@ class AmazonBillingTest {
         verify(exactly = 1) {
             mockPurchasingServiceProvider.registerListener(any(), any())
         }
+    }
+
+    @Test
+    fun `When normalizing purchase data, term sku is returned when passing parent sku as product ID`() {
+        val parentSku = "sub_sku"
+        val expectedTermSku = "sub_sku.monthly"
+        val expectedToken = "token"
+        val expectedUserId = "store_user_id"
+        val dummyReceipt = dummyReceipt(sku = parentSku, receiptId = expectedToken)
+        val dummyUserData = dummyUserData(storeUserId = expectedUserId)
+
+        mockEmptyCache()
+
+        mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
+
+        var receivedCorrectProductID: String? = null
+        underTest.normalizePurchaseData(
+            productID = parentSku,
+            purchaseToken = expectedToken,
+            storeUserID = expectedUserId,
+            onSuccess = { correctProductID ->
+                receivedCorrectProductID = correctProductID
+            },
+            onError = {
+                fail("Should be a success")
+            }
+        )
+
+        assertThat(receivedCorrectProductID).isEqualTo(expectedTermSku)
+    }
+
+    @Test
+    fun `When normalizing purchase data, cached term sku is returned as product ID`() {
+        val parentSku = "sub_sku"
+        val expectedTermSku = "sub_sku.monthly"
+        val expectedToken = "token"
+        val expectedUserId = "store_user_id"
+        val dummyReceiptInCache = dummyReceipt(sku = parentSku, receiptId = expectedToken)
+
+        every {
+            mockCache.getReceiptSkus()
+        } returns mapOf(dummyReceiptInCache.receiptId to expectedTermSku)
+
+        var receivedCorrectProductID: String? = null
+        underTest.normalizePurchaseData(
+            productID = parentSku,
+            purchaseToken = expectedToken,
+            storeUserID = expectedUserId,
+            onSuccess = { correctProductID ->
+                receivedCorrectProductID = correctProductID
+            },
+            onError = {
+                fail("Should be a success")
+            }
+        )
+
+        assertThat(receivedCorrectProductID).isEqualTo(expectedTermSku)
+    }
+
+    @Test
+    fun `When normalizing purchase data, an error is returned if response from backend is not complete`() {
+        val parentSku = "sub_sku"
+        val expectedTermSku = "sub_sku.monthly"
+        val expectedToken = "token"
+        val expectedUserId = "store_user_id"
+        val dummyReceipt = dummyReceipt(sku = parentSku, receiptId = expectedToken)
+        val dummyUserData = dummyUserData(storeUserId = expectedUserId)
+
+        mockEmptyCache()
+
+        val jsonObject = JSONObject(successfulRVSResponse(expectedTermSku))
+        jsonObject.remove("termSku")
+        every {
+            mockAmazonBackend.getAmazonReceiptData(
+                receiptId = dummyReceipt.receiptId,
+                storeUserID = dummyUserData.userId,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(JSONObject) -> Unit>().captured.invoke(jsonObject)
+        }
+
+        var receivedError: PurchasesError? = null
+        underTest.normalizePurchaseData(
+            productID = parentSku,
+            purchaseToken = expectedToken,
+            storeUserID = expectedUserId,
+            onSuccess = {
+                fail("Should be a failure")
+            },
+            onError = { error ->
+                receivedError = error
+            }
+        )
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+    }
+
+    @Test
+    fun `When normalizing purchase data, term sku is returned when passing term sku as product ID`() {
+        val parentSku = "sub_sku"
+        val expectedTermSku = "sub_sku.monthly"
+        val expectedToken = "token"
+        val expectedUserId = "store_user_id"
+        val dummyReceipt = dummyReceipt(sku = parentSku, receiptId = expectedToken)
+        val dummyUserData = dummyUserData(storeUserId = expectedUserId)
+
+        mockEmptyCache()
+
+        mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
+
+        var receivedCorrectProductID: String? = null
+        underTest.normalizePurchaseData(
+            productID = expectedTermSku,
+            purchaseToken = expectedToken,
+            storeUserID = expectedUserId,
+            onSuccess = { correctProductID ->
+                receivedCorrectProductID = correctProductID
+            },
+            onError = {
+                fail("Should be a success")
+            }
+        )
+
+        assertThat(receivedCorrectProductID).isEqualTo(expectedTermSku)
     }
 
     private fun observerModeSetup() {
