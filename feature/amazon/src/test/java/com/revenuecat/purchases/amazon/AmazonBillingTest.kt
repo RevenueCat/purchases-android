@@ -638,14 +638,12 @@ class AmazonBillingTest {
         mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
 
         var receivedCorrectProductID: String? = null
-        var receivedStoreUserID: String? = null
         underTest.normalizePurchaseData(
             productID = parentSku,
             purchaseToken = expectedToken,
             storeUserID = expectedUserId,
-            onSuccess = { correctProductID, storeUserID ->
+            onSuccess = { correctProductID ->
                 receivedCorrectProductID = correctProductID
-                receivedStoreUserID = storeUserID
             },
             onError = {
                 fail("Should be a success")
@@ -653,7 +651,6 @@ class AmazonBillingTest {
         )
 
         assertThat(receivedCorrectProductID).isEqualTo(expectedTermSku)
-        assertThat(receivedStoreUserID).isEqualTo(expectedUserId)
     }
 
     @Test
@@ -669,14 +666,12 @@ class AmazonBillingTest {
         } returns mapOf(dummyReceiptInCache.receiptId to expectedTermSku)
 
         var receivedCorrectProductID: String? = null
-        var receivedStoreUserID: String? = null
         underTest.normalizePurchaseData(
             productID = parentSku,
             purchaseToken = expectedToken,
             storeUserID = expectedUserId,
-            onSuccess = { correctProductID, storeUserID ->
+            onSuccess = { correctProductID ->
                 receivedCorrectProductID = correctProductID
-                receivedStoreUserID = storeUserID
             },
             onError = {
                 fail("Should be a success")
@@ -684,7 +679,6 @@ class AmazonBillingTest {
         )
 
         assertThat(receivedCorrectProductID).isEqualTo(expectedTermSku)
-        assertThat(receivedStoreUserID).isEqualTo(expectedUserId)
     }
 
     @Test
@@ -716,7 +710,7 @@ class AmazonBillingTest {
             productID = parentSku,
             purchaseToken = expectedToken,
             storeUserID = expectedUserId,
-            onSuccess = { correctProductID, storeUserID ->
+            onSuccess = {
                 fail("Should be a failure")
             },
             onError = { error ->
@@ -742,14 +736,12 @@ class AmazonBillingTest {
         mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
 
         var receivedCorrectProductID: String? = null
-        var receivedStoreUserID: String? = null
         underTest.normalizePurchaseData(
             productID = expectedTermSku,
             purchaseToken = expectedToken,
             storeUserID = expectedUserId,
-            onSuccess = { correctProductID, storeUserID ->
+            onSuccess = { correctProductID ->
                 receivedCorrectProductID = correctProductID
-                receivedStoreUserID = storeUserID
             },
             onError = {
                 fail("Should be a success")
@@ -757,36 +749,6 @@ class AmazonBillingTest {
         )
 
         assertThat(receivedCorrectProductID).isEqualTo(expectedTermSku)
-        assertThat(receivedStoreUserID).isEqualTo(expectedUserId)
-    }
-
-    @Test
-    fun `When normalizing purchase data, an error is returned if storeUserID is missing`() {
-        val expectedTermSku = "sub_sku.monthly"
-        val expectedToken = "token"
-
-        val dummyReceipt = dummyReceipt(sku = expectedTermSku, receiptId = expectedToken)
-        val dummyUserData = dummyUserData(storeUserId = "store_user_id")
-
-        mockEmptyCache()
-
-        mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
-
-        var receivedError: PurchasesError? = null
-        underTest.normalizePurchaseData(
-            productID = expectedTermSku,
-            purchaseToken = expectedToken,
-            storeUserID = null,
-            onSuccess = { _, _ ->
-                fail("Should be a failure")
-            },
-            onError = { error ->
-                receivedError = error
-            }
-        )
-
-        assertThat(receivedError).isNotNull
-        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.InvalidAppUserIdError)
     }
 
     private fun observerModeSetup() {
