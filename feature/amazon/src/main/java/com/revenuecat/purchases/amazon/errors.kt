@@ -13,8 +13,3 @@ internal fun missingTermSkuError(response: JSONObject) = PurchasesError(
     PurchasesErrorCode.UnexpectedBackendResponseError,
     "Amazon receipt data response is missing termSku. Response:\n$response"
 )
-
-internal fun missingAmazonUserIdError(): PurchasesError = PurchasesError(
-    PurchasesErrorCode.InvalidAppUserIdError,
-    "Missing amazon user ID"
-)

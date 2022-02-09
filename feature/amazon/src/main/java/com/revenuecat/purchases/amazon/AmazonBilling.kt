@@ -95,19 +95,14 @@ internal class AmazonBilling constructor(
     override fun normalizePurchaseData(
         productID: String,
         purchaseToken: String,
-        storeUserID: String?,
-        onSuccess: (correctProductID: String, storeUserID: String?) -> Unit,
+        storeUserID: String,
+        onSuccess: (correctProductID: String) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        if (storeUserID == null) {
-            onError(missingAmazonUserIdError())
-            return
-        }
-
         val currentlyCachedTokensToSkus = cache.getReceiptSkus()
 
         currentlyCachedTokensToSkus[purchaseToken]?.let { sku ->
-            onSuccess(sku, storeUserID)
+            onSuccess(sku)
             return
         }
 
@@ -120,7 +115,7 @@ internal class AmazonBilling constructor(
                 if (response.has(TERM_SKU_JSON_KEY)) {
                     val termSku = response[TERM_SKU_JSON_KEY] as String
                     cache.cacheReceiptSkus(mapOf(purchaseToken to termSku))
-                    onSuccess(termSku, storeUserID)
+                    onSuccess(termSku)
                 } else {
                     onError(missingTermSkuError(response))
                 }

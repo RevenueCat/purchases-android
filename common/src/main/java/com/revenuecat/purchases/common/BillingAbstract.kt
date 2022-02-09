@@ -88,11 +88,11 @@ abstract class BillingAbstract {
     open fun normalizePurchaseData(
         productID: String,
         purchaseToken: String,
-        storeUserID: String?,
-        onSuccess: (normalizedProductID: String, storeUserID: String?) -> Unit,
+        storeUserID: String,
+        onSuccess: (normalizedProductID: String) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        onSuccess(productID, null)
+        onSuccess(productID)
     }
 
     interface PurchasesUpdatedListener {
