@@ -414,7 +414,7 @@ internal class AmazonBilling constructor(
 
     private fun checkObserverMode(): Boolean {
         return if (observerMode) {
-            log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_OBSERVER_MODE_NOT_SUPPORTED)
+            log(LogIntent.AMAZON_WARNING, AmazonStrings.WARNING_AMAZON_OBSERVER_MODE)
             true
         } else false
     }
