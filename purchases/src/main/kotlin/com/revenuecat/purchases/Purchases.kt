@@ -327,7 +327,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     receiptId,
                     amazonUserID,
                     appUserID,
-                    ReceiptInfo(normalizedProductID),
+                    ReceiptInfo(listOf(normalizedProductID)),
                     {
                         val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptId, amazonUserID)
                         log(LogIntent.PURCHASE, logMessage)

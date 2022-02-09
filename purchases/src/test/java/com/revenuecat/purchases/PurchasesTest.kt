@@ -2521,7 +2521,7 @@ class PurchasesTest {
         )
 
         val productInfo = ReceiptInfo(
-            productID = skuTerm
+            productIDs = listOf(skuTerm)
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -2573,7 +2573,7 @@ class PurchasesTest {
         )
 
         val productInfo = ReceiptInfo(
-            productID = skuTerm
+            productIDs = listOf(skuTerm)
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -2626,7 +2626,7 @@ class PurchasesTest {
         )
 
         val productInfo = ReceiptInfo(
-            productID = skuTerm
+            productIDs = listOf(skuTerm)
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -2682,7 +2682,7 @@ class PurchasesTest {
         )
 
         val productInfo = ReceiptInfo(
-            productID = skuTerm
+            productIDs = listOf(skuTerm)
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -2779,7 +2779,7 @@ class PurchasesTest {
         )
 
         val productInfo = ReceiptInfo(
-            productID = skuTerm
+            productIDs = listOf(skuTerm)
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
