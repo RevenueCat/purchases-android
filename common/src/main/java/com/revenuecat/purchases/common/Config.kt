@@ -4,5 +4,5 @@ object Config {
 
     var debugLogsEnabled = false
 
-    const val frameworkVersion = "5.0.0-rc2"
+    const val frameworkVersion = "5.1.0-SNAPSHOT"
 }
