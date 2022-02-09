@@ -83,7 +83,8 @@ abstract class BillingAbstract {
 
     /**
      * Amazon has the concept of term and parent product ID. This function will return
-     * the correct product ID the RevenueCat backend expects for a specific purchase
+     * the correct product ID the RevenueCat backend expects for a specific purchase.
+     * Google doesn't need normalization so we return the productID by default
      */
     open fun normalizePurchaseData(
         productID: String,
