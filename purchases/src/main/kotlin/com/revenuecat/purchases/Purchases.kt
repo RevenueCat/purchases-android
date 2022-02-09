@@ -40,6 +40,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.google.isSuccessful
+import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
@@ -213,9 +214,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
-     * for subscriptions anytime a sync is needed, like after a successful purchase.
+     * for subscriptions anytime a sync is needed, like after a successful purchase, or when migrating existing
+     * users to RevenueCat
      *
-     * @warning This function should only be called if you're not calling any purchase method.
+     * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
      */
     fun syncPurchases() {
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
@@ -227,39 +229,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isNotEmpty()) {
                     allPurchases.forEach { purchase ->
-                        val unsyncedSubscriberAttributesByKey =
-                            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
                         val productInfo = ReceiptInfo(productIDs = purchase.skus)
-                        backend.postReceiptData(
-                            purchaseToken = purchase.purchaseToken,
-                            appUserID = appUserID,
-                            isRestore = this.allowSharingPlayStoreAccount,
-                            observerMode = !this.finishTransactions,
-                            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                            receiptInfo = productInfo,
-                            storeAppUserID = purchase.storeUserID,
-                            onSuccess = { info, body ->
-                                subscriberAttributesManager.markAsSynced(
-                                    appUserID,
-                                    unsyncedSubscriberAttributesByKey,
-                                    body.getAttributeErrors()
-                                )
-                                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-                                cacheCustomerInfo(info)
-                                sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                        syncPurchaseWithBackend(
+                            purchase.purchaseToken,
+                            purchase.storeUserID,
+                            appUserID,
+                            productInfo,
+                            {
                                 log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
                             },
-                            onError = { error, errorIsFinishable, body ->
-                                if (errorIsFinishable) {
-                                    subscriberAttributesManager.markAsSynced(
-                                        appUserID,
-                                        unsyncedSubscriberAttributesByKey,
-                                        body.getAttributeErrors()
-                                    )
-                                    deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-                                }
+                            { error ->
                                 log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                        .format(purchase, error))
+                                    .format(purchase, error))
                             }
                         )
                     }
@@ -267,6 +248,104 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             onReceivePurchaseHistoryError = {
                 log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it))
+            }
+        )
+    }
+
+    private fun syncPurchaseWithBackend(
+        purchaseToken: String,
+        storeUserID: String?,
+        appUserID: String,
+        productInfo: ReceiptInfo,
+        onSuccess: () -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val unsyncedSubscriberAttributesByKey =
+            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
+        backend.postReceiptData(
+            purchaseToken = purchaseToken,
+            appUserID = appUserID,
+            isRestore = this.allowSharingPlayStoreAccount,
+            observerMode = !this.finishTransactions,
+            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+            receiptInfo = productInfo,
+            storeAppUserID = storeUserID,
+            onSuccess = { info, body ->
+                subscriberAttributesManager.markAsSynced(
+                    appUserID,
+                    unsyncedSubscriberAttributesByKey,
+                    body.getAttributeErrors()
+                )
+                deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                cacheCustomerInfo(info)
+                sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                onSuccess()
+            },
+            onError = { error, errorIsFinishable, body ->
+                if (errorIsFinishable) {
+                    subscriberAttributesManager.markAsSynced(
+                        appUserID,
+                        unsyncedSubscriberAttributesByKey,
+                        body.getAttributeErrors()
+                    )
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                }
+                onError(error)
+            }
+        )
+    }
+
+    /**
+     * This method will send a purchase to the RevenueCat backend. This function should only be called if you are
+     * in Amazon observer mode or performing a client side migration of your current users to RevenueCat.
+     *
+     * The receipt IDs are cached if successfully posted so they are not posted more than once.
+     *
+     * @param [productID] Product ID associated to the purchase.
+     * @param [receiptId] ReceiptId that represents the Amazon purchase.
+     * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
+     */
+    fun syncObserverModeAmazonPurchase(
+        productID: String,
+        receiptId: String,
+        amazonUserID: String
+    ) {
+        log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptId, amazonUserID))
+
+        deviceCache.getPreviouslySentHashedTokens().takeIf { it.contains(receiptId.sha1()) }?.apply {
+            log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_SKIPPING.format(receiptId, amazonUserID))
+            return
+        }
+
+        val appUserID = identityManager.currentAppUserID
+        billing.normalizePurchaseData(
+            productID,
+            receiptId,
+            amazonUserID,
+            { normalizedProductID ->
+                syncPurchaseWithBackend(
+                    receiptId,
+                    amazonUserID,
+                    appUserID,
+                    ReceiptInfo(normalizedProductID),
+                    {
+                        val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptId, amazonUserID)
+                        log(LogIntent.PURCHASE, logMessage)
+                    },
+                    { error ->
+                        val logMessage = PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(
+                            receiptId,
+                            amazonUserID,
+                            error
+                        )
+                        log(LogIntent.RC_ERROR, logMessage)
+                    }
+                )
+            },
+            { error ->
+                val logMessage =
+                    PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(receiptId, amazonUserID, error)
+                log(LogIntent.RC_ERROR, logMessage)
             }
         )
     }

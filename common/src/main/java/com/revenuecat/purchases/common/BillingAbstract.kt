@@ -75,12 +75,26 @@ abstract class BillingAbstract {
 
     abstract fun isConnected(): Boolean
 
-    @SuppressWarnings("ForbiddenComment")
     abstract fun queryPurchases(
         appUserID: String,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit
     )
+
+    /**
+     * Amazon has the concept of term and parent product ID. This function will return
+     * the correct product ID the RevenueCat backend expects for a specific purchase.
+     * Google doesn't need normalization so we return the productID by default
+     */
+    open fun normalizePurchaseData(
+        productID: String,
+        purchaseToken: String,
+        storeUserID: String,
+        onSuccess: (normalizedProductID: String) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        onSuccess(productID)
+    }
 
     interface PurchasesUpdatedListener {
         fun onPurchasesUpdated(purchases: List<StoreTransaction>)
