@@ -56,11 +56,6 @@ Upload a snapshot release
 fastlane android prepare_next_version
 ```
 Prepare next version
-### android deploy_amazon
-```
-fastlane android deploy_amazon
-```
-Deploy a release
 
 ----
 
