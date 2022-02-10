@@ -342,12 +342,12 @@ workflows:
           filters:
             branches:
               only:
-                - amazon-billing-client-3
+                - billing-client-3-amazon
       - deploy-amazon:
           requires:
             - hold
           filters:
             branches:
               only:
-                - amazon-billing-client-3
+                - billing-client-3-amazon
       - docs-deploy: *release-tags
