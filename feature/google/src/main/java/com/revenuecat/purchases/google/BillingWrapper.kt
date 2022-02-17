@@ -599,7 +599,7 @@ class BillingWrapper(
      */
     private fun retryBillingServiceConnectionWithExponentialBackoff() {
         mainHandler.postDelayed(
-            { billingClient?.startConnection(this@BillingWrapper) },
+            { startConnection() },
             reconnectMilliseconds
         )
         reconnectMilliseconds = min(
