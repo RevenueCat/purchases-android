@@ -588,7 +588,9 @@ class BillingWrapper(
         mainHandler.post {
             log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient.toString()))
         }
-        retryBillingServiceConnectionWithExponentialBackoff()
+        if (billingClient?.isReady == false) {
+            retryBillingServiceConnectionWithExponentialBackoff()
+        }
     }
 
     /**
@@ -598,6 +600,7 @@ class BillingWrapper(
      * This prevents ANRs, see https://github.com/android/play-billing-samples/issues/310
      */
     private fun retryBillingServiceConnectionWithExponentialBackoff() {
+        log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds))
         mainHandler.postDelayed(
             { startConnection() },
             reconnectMilliseconds
