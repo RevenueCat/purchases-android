@@ -51,6 +51,9 @@ import java.io.StringWriter
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.min
 
+private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
+private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
+
 class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
@@ -67,9 +70,6 @@ class BillingWrapper(
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
-
-    private val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
-    private val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
     // how long before the data source tries to reconnect to Google play
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
