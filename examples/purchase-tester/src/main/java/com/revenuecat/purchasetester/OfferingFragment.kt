@@ -94,7 +94,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 "Successful purchase, order id: $orderId",
                 Toast.LENGTH_LONG
             ).show()
+            findNavController().navigateUp()
         }
-        findNavController().navigateUp()
     }
 }

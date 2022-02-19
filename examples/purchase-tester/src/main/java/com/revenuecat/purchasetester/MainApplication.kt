@@ -8,15 +8,17 @@ import android.content.Context
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.util.Log
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.amazon.AmazonConfiguration
-import java.lang.IllegalArgumentException
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 
-class MainApplication : Application() {
+class MainApplication : Application(), UpdatedCustomerInfoListener {
 
     override fun onCreate() {
         super.onCreate()
@@ -41,6 +43,15 @@ class MainApplication : Application() {
         // set attributes to store additional, structured information for a user in RevenueCat.
         // More info: https://docs.revenuecat.com/docs/user-attributes
         Purchases.sharedInstance.setAttributes(mapOf("favorite_cat" to "garfield"))
+
+        Purchases.sharedInstance.updatedCustomerInfoListener = this
+    }
+
+    override fun onReceived(customerInfo: CustomerInfo) {
+        Toast.makeText(this,
+            "CustomerInfoListener received update: ${customerInfo.requestDate.toString()}",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 }
 
