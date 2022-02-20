@@ -32,7 +32,7 @@ import java.net.URL
 import java.util.ArrayList
 import java.util.concurrent.ExecutorService
 
-@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
+@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "RemoveExplicitTypeArguments", "RedundantLambdaArrow")
 private class PurchasesAPI {
     fun check(
         purchases: Purchases,
