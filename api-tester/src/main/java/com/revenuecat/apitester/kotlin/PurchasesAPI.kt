@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.BillingFeature
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
@@ -29,7 +30,6 @@ import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
 import com.revenuecat.purchases.restorePurchasesWith
 import java.net.URL
-import java.util.ArrayList
 import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
@@ -222,5 +222,15 @@ private class PurchasesAPI {
             Purchases.AttributionNetwork.MPARTICLE
             -> {}
         }.exhaustive
+    }
+
+    fun checkLogHandler() {
+        Purchases.logHandler = object : LogHandler {
+            override fun d(tag: String, msg: String) {}
+            override fun i(tag: String, msg: String) {}
+            override fun w(tag: String, msg: String) {}
+            override fun e(tag: String, msg: String, throwable: Throwable?) {}
+        }
+        val handler = Purchases.logHandler
     }
 }

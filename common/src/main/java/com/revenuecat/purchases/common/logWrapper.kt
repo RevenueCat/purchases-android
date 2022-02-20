@@ -1,6 +1,32 @@
 package com.revenuecat.purchases.common
 
+import android.util.Log
+import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.strings.Emojis
+
+var currentLogHandler: LogHandler = DefaultLogHandler()
+
+private class DefaultLogHandler : LogHandler {
+    override fun d(tag: String, msg: String) {
+        Log.d(tag, msg)
+    }
+
+    override fun i(tag: String, msg: String) {
+        Log.i(tag, msg)
+    }
+
+    override fun w(tag: String, msg: String) {
+        Log.w(tag, msg)
+    }
+
+    override fun e(tag: String, msg: String, throwable: Throwable?) {
+        if (throwable != null) {
+            Log.e(tag, msg, throwable)
+        } else {
+            Log.e(tag, msg)
+        }
+    }
+}
 
 fun log(intent: LogIntent, message: String) {
     val fullMessage = "${intent.emojiList.joinToString("")} $message"
