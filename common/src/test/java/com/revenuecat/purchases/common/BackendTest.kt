@@ -27,7 +27,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
 import java.lang.Thread.sleep
-import java.util.HashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadLocalRandom
@@ -469,6 +468,92 @@ class BackendTest {
             mockClient.performRequest(
                 "/receipts",
                 any(),
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `gets updated subscriber after post`() {
+        val initialInfo = JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo()
+        val updatedInfo = JSONObject(Responses.validEmptyPurchaserResponse).buildCustomerInfo()
+
+        assertThat(initialInfo).isEqualTo(initialInfo.rawData.buildCustomerInfo())
+
+        mockResponse(
+            "/subscribers/$appUserID",
+            null,
+            200,
+            null,
+            initialInfo.rawData.toString(),
+            true,
+            shouldMockCustomerInfo = false
+        )
+        val receiptInfo = ReceiptInfo(
+            productIDs,
+            offeringIdentifier = "offering_a"
+        )
+        val (fetchToken, _) = mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            observerMode = false,
+            receiptInfo = receiptInfo,
+            storeAppUserID = null
+        )
+        val lock = CountDownLatch(3)
+
+        // Given calls
+
+        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
+            assertThat(it).isEqualTo(initialInfo)
+            lock.countDown()
+        }, onError = onReceiveOfferingsErrorHandler)
+        asyncBackend.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            isRestore = false,
+            observerMode = false,
+            subscriberAttributes = emptyMap(),
+            receiptInfo = receiptInfo,
+            storeAppUserID = null,
+            onSuccess = { _, _ ->
+                mockResponse(
+                    "/subscribers/$appUserID",
+                    null,
+                    200,
+                    null,
+                    updatedInfo.rawData.toString(),
+                    true,
+                    shouldMockCustomerInfo = false
+                )
+
+                lock.countDown()
+            },
+            onError = postReceiptErrorCallback
+        )
+        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
+            assertThat(it).isEqualTo(updatedInfo)
+            lock.countDown()
+        }, onError = onReceiveOfferingsErrorHandler)
+
+        // Expect requests:
+
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/receipts",
+                any(),
+                any()
+            )
+        }
+        verify(exactly = 2) {
+            mockClient.performRequest(
+                "/subscribers/$appUserID",
+                null,
                 any()
             )
         }
@@ -921,7 +1006,7 @@ class BackendTest {
     }
 
     @Test
-    fun `purchaser info call is enqueued with delay if on background`() {
+    fun `customer info call is enqueued with delay if on background`() {
         dispatcher.calledWithRandomDelay = null
 
         getCustomerInfo(200, clientException = null, resultBody = null, appInBackground = true)
