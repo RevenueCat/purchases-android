@@ -48,10 +48,12 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
     }
 
     override fun onReceived(customerInfo: CustomerInfo) {
+        val message = "CustomerInfoListener received update at ${customerInfo.requestDate}"
         Toast.makeText(this,
-            "CustomerInfoListener received update: ${customerInfo.requestDate.toString()}",
-            Toast.LENGTH_SHORT
+            message,
+            Toast.LENGTH_LONG
         ).show()
+        Log.d("CustomerInfoListener", "$message: $customerInfo")
     }
 }
 
