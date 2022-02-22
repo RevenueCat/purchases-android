@@ -104,7 +104,17 @@ class Backend(
         onError: (PurchasesError) -> Unit
     ) {
         val path = "/subscribers/" + encode(appUserID)
-        val cacheKey = listOf(path)
+        val cacheKey = synchronized(this@Backend) {
+            // If there is any enqueued `postReceiptData` we don't want this new
+            // `getCustomerInfo` to share the same cache key.
+            // If it did, future `getCustomerInfo` would receive a cached value
+            // instead of an up-to-date `CustomerInfo` after those post receipt operations finish.
+            if (postReceiptCallbacks.isEmpty()) {
+                listOf(path)
+            } else {
+                listOf(path) + "${callbacks.count()}"
+            }
+        }
         val call = object : Dispatcher.AsyncCall() {
 
             override fun call(): HTTPResult {
