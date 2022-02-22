@@ -34,7 +34,7 @@ object BillingFactory {
                         Boolean::class.java
                     ).newInstance(application.applicationContext, backend, cache, observerMode) as BillingAbstract
             } catch (e: ClassNotFoundException) {
-                errorLog("Make sure purchases-amazon is added as dependency")
+                errorLog("Make sure purchases-amazon is added as dependency", e)
                 throw e
             }
         }

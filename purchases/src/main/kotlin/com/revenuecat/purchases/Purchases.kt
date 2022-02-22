@@ -35,6 +35,7 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
@@ -1885,6 +1886,20 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             get() = Config.debugLogsEnabled
             set(value) {
                 Config.debugLogsEnabled = value
+            }
+
+        /**
+         * Set a custom log handler for redirecting logs to your own logging system.
+         * Defaults to [android.util.Log].
+         *
+         * By default, this sends info, warning, and error messages.
+         * If you wish to receive Debug level messages, see [debugLogsEnabled].
+         */
+        @JvmStatic
+        var logHandler: LogHandler
+            @Synchronized get() = currentLogHandler
+            @Synchronized set(value) {
+                currentLogHandler = value
             }
 
         @JvmSynthetic

@@ -18,7 +18,7 @@ object AttributionFetcherFactory {
                     .getConstructor()
                     .newInstance() as DeviceIdentifiersFetcher
             } catch (e: ClassNotFoundException) {
-                errorLog("Make sure purchases-amazon is added as dependency")
+                errorLog("Make sure purchases-amazon is added as dependency", e)
                 throw e
             }
         }
