@@ -1097,7 +1097,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onError: (ErrorPurchaseCallback)? = null
     ) {
         purchases.forEach { purchase ->
-            if (purchase.purchaseState == PurchaseState.PURCHASED) {
+            if (purchase.purchaseState != PurchaseState.PENDING) {
                 billing.querySkuDetailsAsync(
                     productType = purchase.type,
                     skus = purchase.skus.toSet(),
