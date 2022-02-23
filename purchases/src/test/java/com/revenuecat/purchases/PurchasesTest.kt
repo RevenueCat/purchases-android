@@ -2827,6 +2827,83 @@ class PurchasesTest {
     }
 
     @Test
+    fun `all non-pending purchases returned from queryPurchases are posted to backend`() {
+        val purchasedPurchase = stubGooglePurchase(
+            purchaseToken = "purchasedToken",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED
+        )
+        val activePurchasedPurchase = purchasedPurchase.toStoreTransaction(ProductType.SUBS, null)
+
+        val pendingPurchase = stubGooglePurchase(
+            purchaseToken = "pendingToken",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PENDING
+        )
+        val activePendingPurchase = pendingPurchase.toStoreTransaction(ProductType.SUBS, null)
+
+        val unspecifiedPurchase = stubGooglePurchase(
+            purchaseToken = "unspecifiedToken",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.UNSPECIFIED_STATE
+        )
+        val activeUnspecifiedPurchase = unspecifiedPurchase.toStoreTransaction(ProductType.SUBS, null)
+
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = mapOf(purchasedPurchase.purchaseToken.sha1() to activePurchasedPurchase,
+                pendingPurchase.purchaseToken.sha1() to activePendingPurchase,
+                unspecifiedPurchase.purchaseToken.sha1() to activeUnspecifiedPurchase),
+            queriedINAPP = emptyMap(),
+            notInCache = listOf(activePurchasedPurchase, activePendingPurchase, activeUnspecifiedPurchase)
+        )
+        val productInfo = mockQueryingSkuDetails("product", ProductType.SUBS, null)
+
+        purchases.updatePendingPurchaseQueue()
+
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = "purchasedToken",
+                appUserID = appUserId,
+                isRestore = false,
+                observerMode = false,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = "unspecifiedToken",
+                appUserID = any(),
+                isRestore = false,
+                observerMode = false,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = any(),
+                storeAppUserID = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        verify(exactly = 0) {
+            mockBackend.postReceiptData(
+                purchaseToken = "pendingToken",
+                appUserID = any(),
+                isRestore = false,
+                observerMode = false,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = any(),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
     fun `when closing instance, activity lifecycle callbacks are unregistered`() {
         every {
             ProcessLifecycleOwner.get()
