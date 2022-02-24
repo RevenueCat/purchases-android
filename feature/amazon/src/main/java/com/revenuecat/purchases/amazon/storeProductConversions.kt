@@ -85,6 +85,7 @@ internal fun String.parsePriceUsingRegex(): Float? {
                 price.replace(",", ".")
             }
         }
+        price = price.trim()
         price.toFloat()
     } else null
 }

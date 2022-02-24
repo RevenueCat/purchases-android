@@ -16,13 +16,6 @@ class PriceExtractorTest {
     }
 
     @Test
-    fun `US marketplace 70 USD dot`() {
-        val (currencyCode, priceAmountMicros) = "$7,00".extractPrice("US")
-        assertThat(currencyCode).isEqualTo("USD")
-        assertThat(priceAmountMicros).isEqualTo(7_000_000)
-    }
-
-    @Test
     fun `US marketplace 7 USD comma`() {
         val (currencyCode, priceAmountMicros) = "$7,00".extractPrice("US")
         assertThat(currencyCode).isEqualTo("USD")
