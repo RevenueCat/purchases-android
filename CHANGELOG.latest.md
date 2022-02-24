@@ -1,20 +1,13 @@
-- Disabled Amazon observer mode since it's not supported yet
-    https://github.com/RevenueCat/purchases-android/pull/469
-- Updated `canMakePayments` to always return `true` if called on Amazon
-    https://github.com/RevenueCat/purchases-android/pull/431
-- Updated doc links to use rev.cat style links
-    https://github.com/RevenueCat/purchases-android/pull/460
-- Updated MagicWeather to reflect configuration changes and Amazon configuration
-    https://github.com/RevenueCat/purchases-android/pull/456
-    https://github.com/RevenueCat/purchases-android/pull/458
-    https://github.com/RevenueCat/purchases-android/pull/465
-    https://github.com/RevenueCat/purchases-android/pull/467
+- Added Purchases.LogHandler
+  https://github.com/RevenueCat/purchases-android/pull/492
+- Improved logic for caching getCustomerInfo responses
+  https://github.com/RevenueCat/purchases-android/pull/486
+- Fix queryPurchases for Amazon
+  https://github.com/RevenueCat/purchases-android/pull/494
+- Fix for price parsing for Amazon - use regex instead of Locale
+  https://github.com/RevenueCat/purchases-android/pull/495
+- Add DangerousSetting.AUTO_SYNC_OFF - please don't use this setting without talking to a member of the RevenueCat team
+  https://github.com/RevenueCat/purchases-android/pull/462
 - Multiple updates on purchase-tester
-    https://github.com/RevenueCat/purchases-android/pull/448
-    https://github.com/RevenueCat/purchases-android/pull/452
-    https://github.com/RevenueCat/purchases-android/pull/464
-    https://github.com/RevenueCat/purchases-android/pull/472
-- Remove purchase-tester-java since it didn't represent a real usage of our APIs
-    https://github.com/RevenueCat/purchases-android/pull/463
-- Created a publish variant to distribute a version of the SDK that uses BillingClient 3 instead of 4
-    https://github.com/RevenueCat/purchases-android/pull/444
+  https://github.com/RevenueCat/purchases-android/pull/481
+  https://github.com/RevenueCat/purchases-android/pull/493
