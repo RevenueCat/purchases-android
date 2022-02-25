@@ -1,4 +1,4 @@
-- Added Purchases.LogHandler
+- Added Purchases.logHandler
   https://github.com/RevenueCat/purchases-android/pull/492
 - Improved logic for caching getCustomerInfo responses
   https://github.com/RevenueCat/purchases-android/pull/486

@@ -1,6 +1,6 @@
 ## 5.0.0-rc3
 
-- Added Purchases.LogHandler
+- Added Purchases.logHandler
   https://github.com/RevenueCat/purchases-android/pull/492
 - Improved logic for caching getCustomerInfo responses
   https://github.com/RevenueCat/purchases-android/pull/486
@@ -13,6 +13,7 @@
 - Multiple updates on purchase-tester
   https://github.com/RevenueCat/purchases-android/pull/481
   https://github.com/RevenueCat/purchases-android/pull/493
+  
 ## 5.0.0-rc2
 
 - Disabled Amazon observer mode since it's not supported yet
