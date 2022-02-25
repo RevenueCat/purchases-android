@@ -6,8 +6,8 @@ Add a new dependency to the build.gradle apart from the regular `purchases` depe
 
 ```groovy
 dependencies {
-    implementation 'com.revenuecat.purchases:purchases:5.0.0-rc1'
-    implementation 'com.revenuecat.purchases:purchases-store-amazon:5.0.0-rc1'
+    implementation 'com.revenuecat.purchases:purchases:5.0.0-rc3'
+    implementation 'com.revenuecat.purchases:purchases-store-amazon:5.0.0-rc3'
 }
 ```
 

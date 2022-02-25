@@ -18,7 +18,7 @@ android {
         minSdkVersion minVersion
         targetSdkVersion compileVersion
         versionCode 1
-        versionName "5.1.0-SNAPSHOT"
+        versionName "5.0.0-rc3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
