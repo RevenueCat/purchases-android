@@ -12,6 +12,7 @@ import com.revenuecat.purchases.amazon.listener.ProductDataResponseListener
 import com.revenuecat.purchases.amazon.toStoreProduct
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.StoreProductsCallback
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.StoreProduct
 
@@ -54,26 +55,31 @@ class ProductDataHandler(
     }
 
     override fun onProductDataResponse(response: ProductDataResponse) {
-        log(LogIntent.DEBUG, AmazonStrings.PRODUCTS_REQUEST_FINISHED.format(response.requestStatus.name))
+        try {
+            log(LogIntent.DEBUG, AmazonStrings.PRODUCTS_REQUEST_FINISHED.format(response.requestStatus.name))
 
-        if (response.unavailableSkus.isNotEmpty()) {
-            log(LogIntent.DEBUG, AmazonStrings.PRODUCTS_REQUEST_UNAVAILABLE.format(response.unavailableSkus))
-        }
-
-        val requestId = response.requestId
-        val request = synchronized(this) { productDataRequests.remove(requestId) }
-
-        if (request != null) {
-            val responseIsSuccessful = response.requestStatus == ProductDataResponse.RequestStatus.SUCCESSFUL
-
-            if (responseIsSuccessful) {
-                synchronized(this) {
-                    productDataCache.putAll(response.productData)
-                }
-                handleSuccessfulProductDataResponse(response.productData, request.marketplace, request.onReceive)
-            } else {
-                handleUnsuccessfulProductDataResponse(response, request.onError)
+            if (response.unavailableSkus.isNotEmpty()) {
+                log(LogIntent.DEBUG, AmazonStrings.PRODUCTS_REQUEST_UNAVAILABLE.format(response.unavailableSkus))
             }
+
+            val requestId = response.requestId
+            val request = synchronized(this) { productDataRequests.remove(requestId) }
+
+            if (request != null) {
+                val responseIsSuccessful = response.requestStatus == ProductDataResponse.RequestStatus.SUCCESSFUL
+
+                if (responseIsSuccessful) {
+                    synchronized(this) {
+                        productDataCache.putAll(response.productData)
+                    }
+                    handleSuccessfulProductDataResponse(response.productData, request.marketplace, request.onReceive)
+                } else {
+                    handleUnsuccessfulProductDataResponse(response, request.onError)
+                }
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog("Error in onProductDataResponse", e)
+            throw e
         }
     }
 
