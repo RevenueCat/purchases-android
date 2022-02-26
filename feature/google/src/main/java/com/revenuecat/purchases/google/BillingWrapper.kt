@@ -97,8 +97,10 @@ class BillingWrapper(
                     billingClient = clientFactory.buildClient(this)
                 }
                 billingClient?.let {
-                    log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
-                    it.startConnection(this)
+                    if (!it.isReady && it.connectionState != BillingClient.ConnectionState.CONNECTING) {
+                        log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
+                        it.startConnection(this)
+                    }
                 }
             }
         }
@@ -589,9 +591,7 @@ class BillingWrapper(
         mainHandler.post {
             log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient.toString()))
         }
-        if (billingClient?.isReady == false) {
-            retryBillingServiceConnectionWithExponentialBackoff()
-        }
+        retryBillingServiceConnectionWithExponentialBackoff()
     }
 
     /**
