@@ -542,6 +542,7 @@ class BillingWrapper(
                     )
                     stateListener?.onConnected()
                     executePendingRequests()
+                    reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
                 }
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
