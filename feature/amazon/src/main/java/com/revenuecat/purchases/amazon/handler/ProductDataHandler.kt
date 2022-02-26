@@ -55,6 +55,7 @@ class ProductDataHandler(
     }
 
     override fun onProductDataResponse(response: ProductDataResponse) {
+        // Amazon is catching all exceptions and swallowing them so we have to catch ourselves and log
         try {
             log(LogIntent.DEBUG, AmazonStrings.PRODUCTS_REQUEST_FINISHED.format(response.requestStatus.name))
 
@@ -78,7 +79,7 @@ class ProductDataHandler(
                 }
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            errorLog("Error in onProductDataResponse", e)
+            errorLog("Exception in onProductDataResponse", e)
             throw e
         }
     }

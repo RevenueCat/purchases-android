@@ -10,6 +10,7 @@ import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.UserDataResponseListener
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 
 typealias UserDataCallbacks = Pair<(UserData) -> Unit, PurchasesErrorCallback>
@@ -21,19 +22,25 @@ class UserDataHandler(
     private val requests = mutableMapOf<RequestId, UserDataCallbacks>()
 
     override fun onUserDataResponse(response: UserDataResponse) {
-        log(LogIntent.DEBUG, AmazonStrings.USER_DATA_REQUEST_FINISHED.format(response.requestStatus.name))
+        // Amazon is catching all exceptions and swallowing them so we have to catch ourselves and log
+        try {
+            log(LogIntent.DEBUG, AmazonStrings.USER_DATA_REQUEST_FINISHED.format(response.requestStatus.name))
 
-        val callbacks = synchronized(this) { requests.remove(response.requestId) }
+            val callbacks = synchronized(this) { requests.remove(response.requestId) }
 
-        callbacks?.let { (onSuccess, onError) ->
-            when (response.requestStatus) {
-                UserDataResponse.RequestStatus.SUCCESSFUL -> onSuccess(response.userData)
-                UserDataResponse.RequestStatus.FAILED ->
-                    onError.invokeWithStoreProblem(AmazonStrings.ERROR_FAILED_USER_DATA)
-                UserDataResponse.RequestStatus.NOT_SUPPORTED ->
-                    onError.invokeWithStoreProblem(AmazonStrings.ERROR_UNSUPPORTED_USER_DATA)
-                else -> onError.invokeWithStoreProblem(AmazonStrings.ERROR_USER_DATA_STORE_PROBLEM)
+            callbacks?.let { (onSuccess, onError) ->
+                when (response.requestStatus) {
+                    UserDataResponse.RequestStatus.SUCCESSFUL -> onSuccess(response.userData)
+                    UserDataResponse.RequestStatus.FAILED ->
+                        onError.invokeWithStoreProblem(AmazonStrings.ERROR_FAILED_USER_DATA)
+                    UserDataResponse.RequestStatus.NOT_SUPPORTED ->
+                        onError.invokeWithStoreProblem(AmazonStrings.ERROR_UNSUPPORTED_USER_DATA)
+                    else -> onError.invokeWithStoreProblem(AmazonStrings.ERROR_USER_DATA_STORE_PROBLEM)
+                }
             }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog("Exception in onUserDataResponse", e)
+            throw e
         }
     }
 
