@@ -11,6 +11,7 @@ import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.PurchaseUpdatesResponseListener
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 
 private typealias QueryPurchasesSuccessCallback = (List<Receipt>, UserData) -> Unit
@@ -35,25 +36,31 @@ class PurchaseUpdatesHandler(
     }
 
     override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
-        log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA.format(response))
+        // Amazon is catching all exceptions and swallowing them so we have to catch ourselves and log
+        try {
+            log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA.format(response))
 
-        val requestId = response.requestId
+            val requestId = response.requestId
 
-        val callbacks = synchronized(this) {
-            requests.remove(requestId)
-        }
-
-        callbacks?.let { (onSuccess, onError) ->
-            when (response.requestStatus) {
-                PurchaseUpdatesResponse.RequestStatus.SUCCESSFUL ->
-                    onSuccess(response.receipts, response.userData)
-                PurchaseUpdatesResponse.RequestStatus.FAILED ->
-                    onError.invokeWithStoreProblem(AmazonStrings.ERROR_FAILED_PURCHASES_UPDATES)
-                PurchaseUpdatesResponse.RequestStatus.NOT_SUPPORTED ->
-                    onError.invokeWithStoreProblem(AmazonStrings.ERROR_UNSUPPORTED_PURCHASES_UPDATES)
-                null ->
-                    onError.invokeWithStoreProblem(AmazonStrings.ERROR_PURCHASES_UPDATES_STORE_PROBLEM)
+            val callbacks = synchronized(this) {
+                requests.remove(requestId)
             }
+
+            callbacks?.let { (onSuccess, onError) ->
+                when (response.requestStatus) {
+                    PurchaseUpdatesResponse.RequestStatus.SUCCESSFUL ->
+                        onSuccess(response.receipts, response.userData)
+                    PurchaseUpdatesResponse.RequestStatus.FAILED ->
+                        onError.invokeWithStoreProblem(AmazonStrings.ERROR_FAILED_PURCHASES_UPDATES)
+                    PurchaseUpdatesResponse.RequestStatus.NOT_SUPPORTED ->
+                        onError.invokeWithStoreProblem(AmazonStrings.ERROR_UNSUPPORTED_PURCHASES_UPDATES)
+                    null ->
+                        onError.invokeWithStoreProblem(AmazonStrings.ERROR_PURCHASES_UPDATES_STORE_PROBLEM)
+                }
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog("Exception in onPurchaseUpdatesResponse", e)
+            throw e
         }
     }
 
