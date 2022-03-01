@@ -8,6 +8,8 @@ import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
 import com.amazon.device.iap.model.UserData
+import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.helpers.MockDeviceCache
@@ -19,6 +21,8 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.lang.Exception
+import java.lang.RuntimeException
 import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
@@ -177,6 +181,48 @@ class PurchaseUpdatesHandlerTest {
         underTest.onPurchaseUpdatesResponse(response)
 
         assertThat(receivedCount).isOne
+    }
+
+    @Test
+    fun `Exceptions are logged so they are not swallowed by Amazon`() {
+        val expectedException = RuntimeException("")
+        var receivedException: Throwable? = null
+        var receivedLoggedException: Throwable? = null
+        Purchases.logHandler = object : LogHandler {
+            override fun d(tag: String, msg: String) {
+            }
+
+            override fun i(tag: String, msg: String) {
+            }
+
+            override fun w(tag: String, msg: String) {
+            }
+
+            override fun e(tag: String, msg: String, throwable: Throwable?) {
+                receivedLoggedException = throwable
+            }
+        }
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getPurchaseUpdatesRequestId = dummyRequestId
+        underTest.queryPurchases(
+            onSuccess = { _, _ -> throw expectedException },
+            unexpectedOnError
+        )
+
+        assertThat(purchasingServiceProvider.getPurchaseUpdatesCalled).isTrue
+
+        val response = getDummyPurchaseUpdatesResponse(dummyRequestId)
+
+        try {
+            underTest.onPurchaseUpdatesResponse(response)
+        } catch (e: Exception) {
+            receivedException = e
+        }
+
+        assertThat(receivedException).isNotNull()
+        assertThat(receivedLoggedException).isNotNull()
+        assertThat(expectedException).isEqualTo(receivedException)
+        assertThat(expectedException).isEqualTo(receivedLoggedException)
     }
 
     private fun assertStoreProblemError() {
