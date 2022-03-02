@@ -56,12 +56,17 @@ class LogHandlerTest {
 
     @Test
     fun debugWithDebugLogsDisabled() {
+        val enabled = debugLogsEnabled
+        debugLogsEnabled = false
+
         debugLog(message)
         assertThat(handler.debugMessage).isNull()
+
+        debugLogsEnabled = enabled
     }
 
     @Test
-    fun debug() {
+    fun debugWithLogsEnabled() {
         val enabled = debugLogsEnabled
         debugLogsEnabled = true
 
