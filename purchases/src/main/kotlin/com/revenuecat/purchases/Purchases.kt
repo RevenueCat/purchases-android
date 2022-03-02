@@ -2117,7 +2117,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             }
 
                             override fun onBillingServiceDisconnected() {
-                                val mainHandler = Handler(context.mainLooper)
                                 mainHandler.post {
                                     try {
                                         billingClient.endConnection()
