@@ -11,6 +11,7 @@ import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -42,21 +43,27 @@ class PurchaseHandler(
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
-        log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
+        // Amazon is catching all exceptions and swallowing them so we have to catch ourselves and log
+        try {
+            log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
 
-        val requestId = response.requestId
-        val callbacks = synchronized(this) { purchaseCallbacks.remove(requestId) }
+            val requestId = response.requestId
+            val callbacks = synchronized(this) { purchaseCallbacks.remove(requestId) }
 
-        callbacks?.let { (onSuccess, onError) ->
-            when (response.requestStatus) {
-                PurchaseResponse.RequestStatus.SUCCESSFUL ->
-                    onSuccessfulPurchase(response.receipt, response.userData, onSuccess)
-                PurchaseResponse.RequestStatus.FAILED -> onFailed(onError)
-                PurchaseResponse.RequestStatus.INVALID_SKU -> onInvalidSku(onError)
-                PurchaseResponse.RequestStatus.ALREADY_PURCHASED -> onAlreadyPurchased(onError)
-                PurchaseResponse.RequestStatus.NOT_SUPPORTED -> onNotSupported(onError)
-                else -> onUnknownError(onError)
+            callbacks?.let { (onSuccess, onError) ->
+                when (response.requestStatus) {
+                    PurchaseResponse.RequestStatus.SUCCESSFUL ->
+                        onSuccessfulPurchase(response.receipt, response.userData, onSuccess)
+                    PurchaseResponse.RequestStatus.FAILED -> onFailed(onError)
+                    PurchaseResponse.RequestStatus.INVALID_SKU -> onInvalidSku(onError)
+                    PurchaseResponse.RequestStatus.ALREADY_PURCHASED -> onAlreadyPurchased(onError)
+                    PurchaseResponse.RequestStatus.NOT_SUPPORTED -> onNotSupported(onError)
+                    else -> onUnknownError(onError)
+                }
             }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog("Exception in onPurchaseResponse", e)
+            throw e
         }
     }
 

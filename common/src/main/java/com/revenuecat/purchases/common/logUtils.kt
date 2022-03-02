@@ -30,6 +30,9 @@ fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.InvalidAppUserIdError,
         PurchasesErrorCode.OperationAlreadyInProgressError,
         PurchasesErrorCode.UnknownBackendError,
+        PurchasesErrorCode.LogOutWithAnonymousUserError,
+        PurchasesErrorCode.ConfigurationError,
+        PurchasesErrorCode.UnsupportedError,
         PurchasesErrorCode.InvalidSubscriberAttributesError -> log(LogIntent.RC_ERROR, error.message)
         PurchasesErrorCode.PurchaseCancelledError,
         PurchasesErrorCode.StoreProblemError,
