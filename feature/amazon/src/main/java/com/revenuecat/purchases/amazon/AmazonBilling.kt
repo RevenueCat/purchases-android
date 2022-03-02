@@ -73,6 +73,11 @@ internal class AmazonBilling constructor(
         connected = true
     }
 
+    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
+        // no special threading needed for Amazon IAP
+        startConnection()
+    }
+
     @SuppressWarnings("EmptyFunctionBlock")
     override fun endConnection() { }
 

@@ -90,17 +90,22 @@ class BillingWrapper(
         }
     }
 
+    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
+        mainHandler.postDelayed(
+            { startConnection() },
+            delayMilliseconds
+        )
+    }
+
     override fun startConnection() {
-        mainHandler.post {
-            synchronized(this@BillingWrapper) {
-                if (billingClient == null) {
-                    billingClient = clientFactory.buildClient(this)
-                }
-                billingClient?.let {
-                    if (!it.isReady && it.connectionState != BillingClient.ConnectionState.CONNECTING) {
-                        log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
-                        it.startConnection(this)
-                    }
+        synchronized(this@BillingWrapper) {
+            if (billingClient == null) {
+                billingClient = clientFactory.buildClient(this)
+            }
+            billingClient?.let {
+                if (!it.isReady && it.connectionState != BillingClient.ConnectionState.CONNECTING) {
+                    log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
+                    it.startConnection(this)
                 }
             }
         }
@@ -123,7 +128,7 @@ class BillingWrapper(
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
             if (billingClient?.isReady == false) {
-                startConnection()
+                startConnectionOnMainThread()
             } else {
                 executePendingRequests()
             }
@@ -602,10 +607,7 @@ class BillingWrapper(
      */
     private fun retryBillingServiceConnectionWithExponentialBackoff() {
         log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds))
-        mainHandler.postDelayed(
-            { startConnection() },
-            reconnectMilliseconds
-        )
+        startConnectionOnMainThread(reconnectMilliseconds)
         reconnectMilliseconds = min(
             reconnectMilliseconds * 2,
             RECONNECT_TIMER_MAX_TIME_MILLISECONDS

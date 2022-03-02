@@ -25,7 +25,7 @@ abstract class BillingAbstract {
                 field = value
             }
             if (value != null) {
-                startConnection()
+                startConnectionOnMainThread()
             } else {
                 endConnection()
             }
@@ -34,6 +34,8 @@ abstract class BillingAbstract {
     interface StateListener {
         fun onConnected()
     }
+
+    abstract fun startConnectionOnMainThread(delayMilliseconds: Long = 0)
 
     abstract fun startConnection()
 
