@@ -39,7 +39,12 @@ abstract class BillingAbstract {
 
     abstract fun startConnection()
 
-    abstract fun endConnection()
+    protected abstract fun endConnection()
+
+    fun close() {
+        purchasesUpdatedListener = null
+        endConnection()
+    }
 
     abstract fun queryAllPurchases(
         appUserID: String,
