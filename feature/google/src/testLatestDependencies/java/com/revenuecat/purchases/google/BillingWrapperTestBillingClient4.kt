@@ -94,6 +94,18 @@ class BillingWrapperTest {
             true
         }
 
+        val delayedSlot = slot<Runnable>()
+        every {
+            handler.postDelayed(capture(delayedSlot), any())
+        } answers {
+            delayedSlot.captured.run()
+            true
+        }
+
+        every {
+            mockClient.connectionState
+        } returns BillingClient.ConnectionState.CONNECTED
+
         val listenerSlot = slot<PurchasesUpdatedListener>()
         every {
             mockClientFactory.buildClient(capture(listenerSlot))
@@ -543,7 +555,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun removingListenerDisconnects() {
+    fun `calling billing close() sets purchasesUpdatedListener to null and disconnects from BillingClient`() {
         every {
             mockClient.endConnection()
         } just Runs
@@ -551,7 +563,7 @@ class BillingWrapperTest {
             mockClient.isReady
         } returns true
 
-        wrapper.purchasesUpdatedListener = null
+        wrapper.close()
         verify {
             mockClient.endConnection()
         }
@@ -1641,6 +1653,53 @@ class BillingWrapperTest {
 
         assertThat(numCallbacks).isEqualTo(1)
     }
+
+    @Test
+    fun `if BillingService disconnects, will try to reconnect with some backoff`() {
+        // ensure delay on first retry
+        val firstRetryMillisecondsSlot = slot<Long>()
+        every {
+            handler.postDelayed(any(), capture(firstRetryMillisecondsSlot))
+        } returns true
+
+        wrapper.onBillingServiceDisconnected()
+
+        assertThat(firstRetryMillisecondsSlot.isCaptured).isTrue
+        assertThat(firstRetryMillisecondsSlot.captured).isNotEqualTo(0)
+
+        // ensure 2nd retry has longer delay
+        val secondRetryMillisecondsSlot = slot<Long>()
+        every {
+            handler.postDelayed(any(), capture(secondRetryMillisecondsSlot))
+        } returns true
+        wrapper.onBillingServiceDisconnected()
+
+        assertThat(secondRetryMillisecondsSlot.isCaptured).isTrue
+        assertThat(secondRetryMillisecondsSlot.captured).isGreaterThan(firstRetryMillisecondsSlot.captured)
+
+        // ensure milliseconds backoff gets reset to default after successful connection
+        wrapper.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        val postSuccessfulConnectionRetryMillisecondsSlot = slot<Long>()
+        every {
+            handler.postDelayed(any(), capture(postSuccessfulConnectionRetryMillisecondsSlot))
+        } returns true
+        wrapper.onBillingServiceDisconnected()
+
+        assertThat(postSuccessfulConnectionRetryMillisecondsSlot.isCaptured).isTrue
+        assertThat(postSuccessfulConnectionRetryMillisecondsSlot.captured == firstRetryMillisecondsSlot.captured)
+    }
+
+    @Test
+    fun `setting purchasesUpdatedListener will connect to BillingService with no delay`() {
+        val retryMillisecondsSlot = slot<Long>()
+        every {
+            handler.postDelayed(any(), capture(retryMillisecondsSlot))
+        } returns true
+
+        wrapper.purchasesUpdatedListener = mockPurchasesListener
+        assertThat(retryMillisecondsSlot.captured == 0L)
+    }
+
 
     private fun mockNullSkuDetailsResponse() {
         val slot = slot<SkuDetailsResponseListener>()
