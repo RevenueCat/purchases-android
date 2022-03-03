@@ -3404,6 +3404,12 @@ class PurchasesTest {
             every {
                 isConnected()
             } returns true
+
+            every {
+                close()
+            } answers {
+                purchasesUpdatedListener = null
+            }
         }
     }
 
