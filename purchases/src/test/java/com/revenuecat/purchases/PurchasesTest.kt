@@ -3906,6 +3906,7 @@ class PurchasesTest {
     private fun verifyClose() {
         verify {
             mockBackend.close()
+            mockBillingAbstract.close()
         }
         assertThat(purchases.updatedCustomerInfoListener).isNull()
         verify(exactly = 1) {
