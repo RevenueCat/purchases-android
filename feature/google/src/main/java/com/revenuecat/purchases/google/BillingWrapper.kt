@@ -102,8 +102,9 @@ class BillingWrapper(
             if (billingClient == null) {
                 billingClient = clientFactory.buildClient(this)
             }
+
             billingClient?.let {
-                if (!it.isReady && it.connectionState != BillingClient.ConnectionState.CONNECTING) {
+                if (!it.isReady) {
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
                     it.startConnection(this)
                 }
