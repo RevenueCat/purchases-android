@@ -102,10 +102,6 @@ class BillingWrapperTest {
             true
         }
 
-        every {
-            mockClient.connectionState
-        } returns BillingClient.ConnectionState.CONNECTED
-
         val listenerSlot = slot<PurchasesUpdatedListener>()
         every {
             mockClientFactory.buildClient(capture(listenerSlot))
@@ -1655,7 +1651,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `if BillingService disconnects, will try to reconnect with some backoff`() {
+    fun `if BillingService disconnects, will try to reconnect with exponential backoff`() {
         // ensure delay on first retry
         val firstRetryMillisecondsSlot = slot<Long>()
         every {
@@ -1679,14 +1675,14 @@ class BillingWrapperTest {
 
         // ensure milliseconds backoff gets reset to default after successful connection
         wrapper.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
-        val postSuccessfulConnectionRetryMillisecondsSlot = slot<Long>()
+        val afterSuccessfulConnectionRetryMillisecondsSlot = slot<Long>()
         every {
-            handler.postDelayed(any(), capture(postSuccessfulConnectionRetryMillisecondsSlot))
+            handler.postDelayed(any(), capture(afterSuccessfulConnectionRetryMillisecondsSlot))
         } returns true
         wrapper.onBillingServiceDisconnected()
 
-        assertThat(postSuccessfulConnectionRetryMillisecondsSlot.isCaptured).isTrue
-        assertThat(postSuccessfulConnectionRetryMillisecondsSlot.captured == firstRetryMillisecondsSlot.captured)
+        assertThat(afterSuccessfulConnectionRetryMillisecondsSlot.isCaptured).isTrue
+        assertThat(afterSuccessfulConnectionRetryMillisecondsSlot.captured == firstRetryMillisecondsSlot.captured)
     }
 
     @Test
@@ -1699,7 +1695,6 @@ class BillingWrapperTest {
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         assertThat(retryMillisecondsSlot.captured == 0L)
     }
-
 
     private fun mockNullSkuDetailsResponse() {
         val slot = slot<SkuDetailsResponseListener>()
