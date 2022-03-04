@@ -12,8 +12,8 @@ import com.revenuecat.purchases.restorePurchasesWith
 
 class OverviewViewModel(private val interactionHandler: OverviewInteractionHandler) : ViewModel() {
 
-    val customerInfo: MutableLiveData<CustomerInfo> by lazy {
-        MutableLiveData<CustomerInfo>().apply {
+    val customerInfo: MutableLiveData<CustomerInfo?> by lazy {
+        MutableLiveData<CustomerInfo?>().apply {
             value = null
         }
     }
@@ -28,15 +28,19 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
 
     init {
         activeEntitlements.addSource(customerInfo) { info ->
-            activeEntitlements.value = formatEntitlements(info.entitlements.active.values)
+            info?.entitlements?.active?.values?.let {
+                activeEntitlements.value = formatEntitlements(it)
+            }
         }
 
         allEntitlements.addSource(customerInfo) { info ->
-            allEntitlements.value = formatEntitlements(info.entitlements.all.values)
+            info?.entitlements?.all?.values?.let {
+                allEntitlements.value = formatEntitlements(it)
+            }
         }
 
         customerInfoJson.addSource(customerInfo) { info ->
-            customerInfoJson.value = info.rawData.toString(JSON_FORMATTER_INDENT_SPACES)
+            customerInfoJson.value = info?.rawData?.toString(JSON_FORMATTER_INDENT_SPACES)
         }
     }
 
