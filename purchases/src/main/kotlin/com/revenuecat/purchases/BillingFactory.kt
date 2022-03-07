@@ -32,7 +32,8 @@ object BillingFactory {
                         Context::class.java,
                         Backend::class.java,
                         DeviceCache::class.java,
-                        Boolean::class.java
+                        Boolean::class.java,
+                        Handler::class.java
                     ).newInstance(
                         application.applicationContext,
                         backend,
