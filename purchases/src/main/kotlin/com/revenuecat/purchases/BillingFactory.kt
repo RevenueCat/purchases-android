@@ -28,11 +28,18 @@ object BillingFactory {
         Store.AMAZON -> {
             try {
                 Class.forName("com.revenuecat.purchases.amazon.AmazonBilling")
-                    .getConstructor(Context::class.java,
+                    .getConstructor(
+                        Context::class.java,
                         Backend::class.java,
                         DeviceCache::class.java,
                         Boolean::class.java
-                    ).newInstance(application.applicationContext, backend, cache, observerMode) as BillingAbstract
+                    ).newInstance(
+                        application.applicationContext,
+                        backend,
+                        cache,
+                        observerMode,
+                        Handler(application.mainLooper)
+                    ) as BillingAbstract
             } catch (e: ClassNotFoundException) {
                 errorLog("Make sure purchases-amazon is added as dependency", e)
                 throw e
