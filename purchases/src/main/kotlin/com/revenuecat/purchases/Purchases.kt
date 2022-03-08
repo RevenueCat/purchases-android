@@ -543,7 +543,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             state = state.copy(purchaseCallbacks = emptyMap())
         }
         this.backend.close()
-        billing.purchasesUpdatedListener = null
+
+        billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
 
         dispatch {
@@ -2117,7 +2118,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             }
 
                             override fun onBillingServiceDisconnected() {
-                                val mainHandler = Handler(context.mainLooper)
                                 mainHandler.post {
                                     try {
                                         billingClient.endConnection()

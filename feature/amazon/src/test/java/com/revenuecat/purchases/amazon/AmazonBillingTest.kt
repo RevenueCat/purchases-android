@@ -1,12 +1,12 @@
 package com.revenuecat.purchases.amazon
 
 import android.content.Context
+import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
@@ -18,9 +18,9 @@ import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.PurchaseState
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -45,6 +45,7 @@ class AmazonBillingTest {
     private val mockProductDataHandler = mockk<ProductDataHandler>()
     private val mockUserDataHandler = mockk<UserDataHandler>()
     private val mockPurchaseHandler = mockk<PurchaseHandler>()
+    private var handler: Handler = mockk()
 
     private val mockAmazonBackend = mockk<AmazonBackend>()
     private val mockCache = mockk<AmazonCache>()
@@ -63,12 +64,29 @@ class AmazonBillingTest {
             productDataHandler = mockProductDataHandler,
             purchaseHandler = mockPurchaseHandler,
             purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
-            userDataHandler = mockUserDataHandler
+            userDataHandler = mockUserDataHandler,
+            mainHandler = handler
         )
 
         every {
             mockCache.setReceiptSkus(capture(capturedCachedReceiptSkus))
         } just Runs
+
+        val slot = slot<Runnable>()
+        every {
+            handler.post(capture(slot))
+        } answers {
+            slot.captured.run()
+            true
+        }
+
+        val delayedSlot = slot<Runnable>()
+        every {
+            handler.postDelayed(capture(delayedSlot), any())
+        } answers {
+            delayedSlot.captured.run()
+            true
+        }
     }
 
     @Test
@@ -631,6 +649,7 @@ class AmazonBillingTest {
             amazonBackend = mockAmazonBackend,
             cache = mockCache,
             observerMode = true,
+            mainHandler = handler,
             purchasingServiceProvider = mockPurchasingServiceProvider,
             productDataHandler = mockProductDataHandler,
             purchaseHandler = mockPurchaseHandler,

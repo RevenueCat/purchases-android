@@ -25,7 +25,7 @@ abstract class BillingAbstract {
                 field = value
             }
             if (value != null) {
-                startConnection()
+                startConnectionOnMainThread()
             } else {
                 endConnection()
             }
@@ -35,9 +35,16 @@ abstract class BillingAbstract {
         fun onConnected()
     }
 
+    abstract fun startConnectionOnMainThread(delayMilliseconds: Long = 0)
+
     abstract fun startConnection()
 
-    abstract fun endConnection()
+    protected abstract fun endConnection()
+
+    fun close() {
+        purchasesUpdatedListener = null
+        endConnection()
+    }
 
     abstract fun queryAllPurchases(
         appUserID: String,
