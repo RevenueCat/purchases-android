@@ -5,6 +5,7 @@ import com.amazon.device.iap.model.Product
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
+import java.math.BigDecimal
 import java.util.regex.Pattern
 import com.amazon.device.iap.model.ProductType as AmazonProductType
 
@@ -46,12 +47,12 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct {
 
 internal fun String.extractPrice(marketplace: String): Price {
     val priceNumeric = this.parsePriceUsingRegex() ?: 0.0f
-
+    val priceAmountMicros = (priceNumeric.toBigDecimal() * BigDecimal(MICROS_MULTIPLIER)).toLong()
     val currencyCode = ISO3166Alpha2ToISO42170Converter.convertOrEmpty(marketplace)
 
     return Price(
         currencyCode,
-        priceAmountMicros = priceNumeric.times(MICROS_MULTIPLIER).toLong()
+        priceAmountMicros
     )
 }
 
@@ -71,18 +72,16 @@ internal fun String.parsePriceUsingRegex(): Float? {
     val matcher = pattern.matcher(this)
     return if (matcher.find()) {
         val dirtyPrice = matcher.group()
-        var price: String
-        // 2 355 825.837
-        price = dirtyPrice.replace(" ", "")
-        val hasCommas = price.contains(",")
-        if (hasCommas) {
-            val numberOfCommas = price.length - price.replace(",", "").length
-            price = if (price.contains(".") || numberOfCommas > 1) {
-                // 1,000,000.00
-                price.replace(",", "")
+        var price = dirtyPrice.replace(" ", "")
+        val split = price.split(".", ",")
+        if (split.size != 1) {
+            // Assuming all prices we get have 2 decimal points
+            // Most currencies but Dirhan use 2 decimals. Amazon doesn't support Dirhan at the moment
+            price = if (split.last().length == 3) {
+                price.replace(".", "").replace(",", "")
             } else {
-                // 1,00
-                price.replace(",", ".")
+                val intPart = split.dropLast(1).joinToString("")
+                "$intPart.${split.last()}"
             }
         }
         price = price.trim()
