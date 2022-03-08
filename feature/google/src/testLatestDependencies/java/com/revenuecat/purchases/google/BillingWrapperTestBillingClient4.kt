@@ -144,7 +144,7 @@ class BillingWrapperTest {
 
         every {
             mockClient.isReady
-        } returns true
+        } returns false andThen true
 
         mockDetailsList = listOf(stubSkuDetails())
 
@@ -433,15 +433,17 @@ class BillingWrapperTest {
             null
         )
 
+        // ensure calls to startConnection - 1 happens in setup, 1 more here
         verify(exactly = 2) {
-            handler.post(any())
+            handler.postDelayed(any(), any())
         }
 
         every { mockClient.isReady } returns true
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
-        verify(exactly = 4) {
+        // ensure calls to launchBillingFlow - 1 in setup, 1 here
+        verify(exactly = 2) {
             handler.post(any())
         }
     }
@@ -571,6 +573,7 @@ class BillingWrapperTest {
         verify {
             mockClient.startConnection(eq(wrapper))
         }
+
         assertThat(wrapper.purchasesUpdatedListener).isNotNull
     }
 
