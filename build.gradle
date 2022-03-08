@@ -75,6 +75,6 @@ task detektAllBaseline(type: io.gitlab.arturbosch.detekt.DetektCreateBaselineTas
 apply plugin: 'org.jetbrains.dokka'
 
 tasks.dokkaHtmlMultiModule.configure {
-    outputDirectory.set(file("docs"))
+    outputDirectory.set(file("docs/" + project.property("VERSION_NAME")))
     includes.from("README.md")
 }
