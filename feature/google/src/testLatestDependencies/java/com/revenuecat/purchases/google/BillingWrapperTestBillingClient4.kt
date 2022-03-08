@@ -86,21 +86,7 @@ class BillingWrapperTest {
 
     @Before
     fun setup() {
-        val slot = slot<Runnable>()
-        every {
-            handler.post(capture(slot))
-        } answers {
-            slot.captured.run()
-            true
-        }
-
-        val delayedSlot = slot<Runnable>()
-        every {
-            handler.postDelayed(capture(delayedSlot), any())
-        } answers {
-            delayedSlot.captured.run()
-            true
-        }
+        setupRunnables()
 
         val listenerSlot = slot<PurchasesUpdatedListener>()
         every {
@@ -1796,6 +1782,24 @@ class BillingWrapperTest {
             )
         } answers {
             slot.captured.onSkuDetailsResponse(billingClientOKResult, mockDetailsList)
+        }
+    }
+
+    private fun setupRunnables() {
+        val slot = slot<Runnable>()
+        every {
+            handler.post(capture(slot))
+        } answers {
+            slot.captured.run()
+            true
+        }
+
+        val delayedSlot = slot<Runnable>()
+        every {
+            handler.postDelayed(capture(delayedSlot), any())
+        } answers {
+            delayedSlot.captured.run()
+            true
         }
     }
 }
