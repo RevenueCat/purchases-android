@@ -46,8 +46,8 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct {
 }
 
 internal fun String.extractPrice(marketplace: String): Price {
-    val priceNumeric = this.parsePriceUsingRegex() ?: 0.0f
-    val priceAmountMicros = (priceNumeric.toBigDecimal() * BigDecimal(MICROS_MULTIPLIER)).toLong()
+    val priceNumeric = this.parsePriceUsingRegex() ?: BigDecimal.ZERO
+    val priceAmountMicros = (priceNumeric * BigDecimal(MICROS_MULTIPLIER)).toLong()
     val currencyCode = ISO3166Alpha2ToISO42170Converter.convertOrEmpty(marketplace)
 
     return Price(
@@ -68,9 +68,9 @@ internal data class Price(
 // The lasts two are englobed in []*, as they can be repeated 0 or n times.
 private val pattern: Pattern = Pattern.compile("(\\d+[[\\.,\\s]\\d+]*)")
 
-internal fun String.parsePriceUsingRegex(): Float? {
+internal fun String.parsePriceUsingRegex(): BigDecimal? {
     val matcher = pattern.matcher(this)
-    return if (matcher.find()) {
+    return matcher.takeIf { it.find() }?.let {
         val dirtyPrice = matcher.group()
         var price = dirtyPrice.replace(" ", "")
         val split = price.split(".", ",")
@@ -85,8 +85,8 @@ internal fun String.parsePriceUsingRegex(): Float? {
             }
         }
         price = price.trim()
-        price.toFloat()
-    } else null
+        BigDecimal(price)
+    }
 }
 
 private fun JSONObject.getProductType(productType: String) =
