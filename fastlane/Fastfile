@@ -178,9 +178,9 @@ platform :android do
 end
 
 def increment_version_in(previous_version, new_version, path)
-    sed_regex = 's/' + previous_version + '/' + new_version + '/g'
-    backup_extension = '.bck'
-    sh "sed -i'#{backup_extension}' #{sed_regex} #{path}"
+  sed_regex = 's/' + previous_version + '/' + new_version + '/g'
+  backup_extension = '.bck'
+  sh "sed -i'#{backup_extension}' #{sed_regex} #{path}"
 end
 
 def attach_changelog_to_main(options)
