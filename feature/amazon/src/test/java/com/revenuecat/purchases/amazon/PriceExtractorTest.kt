@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.math.BigDecimal
 import kotlin.text.Typography.nbsp
 
 @RunWith(AndroidJUnit4::class)
@@ -222,7 +223,7 @@ class PriceExtractorTest {
     @Test
     fun `Inconsistent case with IN marketplace but price in dollars, sets symbol as currency code`() {
         val (currencyCode, priceAmountMicros) = "US$ 7.00".extractPrice("IN")
-        assertThat(currencyCode).isEqualTo("USD")
+        assertThat(currencyCode).isEqualTo("INR")
         assertThat(priceAmountMicros).isEqualTo(7_000_000)
     }
 
