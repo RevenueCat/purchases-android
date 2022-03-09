@@ -118,3 +118,7 @@ integration-tests/keystore
 
 # share settings
 !/.idea/codeStyles/
+
+# index.html is used to redirect to the latest docs version
+# when navigating to root
+!/docs/index.html
