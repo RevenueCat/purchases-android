@@ -30,7 +30,6 @@ class SubscriberAttributesManagerTests {
     private val mockDeviceCache: SubscriberAttributesCache = mockk()
     private val mockBackend: SubscriberAttributesPoster = mockk()
     private val mockDeviceIdentifiersFetcher: DeviceIdentifiersFetcher = mockk()
-    private val mockAttributionDataMigrator: AttributionDataMigrator = mockk()
     private val appUserID: String = "appUserID"
     private lateinit var underTest: SubscriberAttributesManager
 
@@ -39,8 +38,7 @@ class SubscriberAttributesManagerTests {
         underTest = SubscriberAttributesManager(
             mockDeviceCache,
             mockBackend,
-            mockDeviceIdentifiersFetcher,
-            mockAttributionDataMigrator
+            mockDeviceIdentifiersFetcher
         )
     }
 
@@ -438,45 +436,6 @@ class SubscriberAttributesManagerTests {
             captured[SubscriberAttributeKey.AttributionIds.Facebook.backendKey]
         assertThat(facebookID).isNotNull
         assertThat(facebookID!!.value).isEqualTo("facebook_id")
-    }
-
-    @Test
-    fun `convertAttributionDataAndSetAsSubscriberAttributes converts and sets the attributes`() {
-        val capturingSlot = mockSettingAttributesOnEmptyCache()
-
-        val attributes = mapOf(
-            "tshirtsize" to "L",
-            "age" to "34",
-            "removeThis" to null
-        )
-        val attributesJSON = JSONObject().also { jsonObject ->
-            attributes.forEach { (t, u) ->
-                jsonObject.put(t, u ?: JSONObject.NULL)
-            }
-        }
-        val filteredNotNullValues = attributes.filterNotNullValues()
-        every {
-            mockAttributionDataMigrator.convertAttributionDataToSubscriberAttributes(
-                attributesJSON,
-                AttributionNetwork.FACEBOOK
-            )
-        } returns filteredNotNullValues
-
-        underTest.convertAttributionDataAndSetAsSubscriberAttributes(
-            attributesJSON,
-            AttributionNetwork.FACEBOOK,
-            appUserID
-        )
-
-        val captured = capturingSlot.captured
-        assertThat(captured).isNotNull
-
-        filteredNotNullValues.forEach { (key, value) ->
-            val subscriberAttribute = captured[key] ?: error("Should be there")
-            assertThat(subscriberAttribute).isNotNull
-            assertThat(subscriberAttribute.key.backendKey).isEqualTo(key)
-            assertThat(subscriberAttribute.value).isEqualTo(value)
-        }
     }
 
     private fun mockAdvertisingInfo(

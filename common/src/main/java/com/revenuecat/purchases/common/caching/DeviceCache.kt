@@ -35,7 +35,7 @@ open class DeviceCache(
 ) {
     val legacyAppUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
     val appUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.new" }
-    val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
+    private val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.tokens" }
 
     private val customerInfoCachesLastUpdatedCacheBaseKey: String by lazy {
@@ -161,21 +161,7 @@ open class DeviceCache(
     // region attribution data
 
     @Synchronized
-    fun getCachedAttributionData(network: AttributionNetwork, userId: String): String? =
-        preferences.getString(getAttributionDataCacheKey(userId, network), null)
-
-    @Synchronized
-    fun cacheAttributionData(
-        network: AttributionNetwork,
-        userId: String,
-        cacheValue: String
-    ) {
-        preferences.edit().putString(getAttributionDataCacheKey(userId, network), cacheValue)
-            .apply()
-    }
-
-    @Synchronized
-    fun clearLatestAttributionData(userId: String) {
+    fun cleanupOldAttributionData(userId: String) {
         val editor = preferences.edit()
         AttributionNetwork.values().forEach { network ->
             editor.remove(getAttributionDataCacheKey(userId, network))
