@@ -53,7 +53,6 @@ class DeviceCacheTest {
     private lateinit var mockEditor: SharedPreferences.Editor
     private val apiKey = "api_key"
     private val appUserID = "app_user_id"
-    private val legacyAppUserID = "app_user_id"
 
     private val slotForPutLong = slot<Long>()
 
@@ -448,6 +447,24 @@ class DeviceCacheTest {
 
         val returnedSetOfKeys = cache.findKeysThatStartWith("any_cache_key")
         assertThat(returnedSetOfKeys).isEmpty()
+    }
+
+    @Test
+    fun `cleanupOldAttributionData cleans all old caches`() {
+        val stubPreferences = mapOf(
+            "${cache.attributionCacheKey}.cesar.facebook" to "facebookid",
+            "${cache.attributionCacheKey}.cesar.tenjin" to "tenjinid",
+            "${cache.attributionCacheKey}.pedro.mixpanel" to "mixpanelid",
+        )
+        every {
+            mockPrefs.all
+        } returns stubPreferences
+
+        cache.cleanupOldAttributionData()
+
+        stubPreferences.keys.forEach { verify (exactly = 1) { mockEditor.remove(it) } }
+
+        verify (exactly = 1) { mockEditor.apply() }
     }
 
     private fun mockString(key: String, value: String?) {

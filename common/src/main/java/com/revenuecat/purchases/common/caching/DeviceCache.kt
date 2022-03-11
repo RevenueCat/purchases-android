@@ -33,7 +33,7 @@ open class DeviceCache(
 ) {
     val legacyAppUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
     val appUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.new" }
-    private val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
+    internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.tokens" }
 
     private val customerInfoCachesLastUpdatedCacheBaseKey: String by lazy {

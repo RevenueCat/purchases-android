@@ -1757,7 +1757,7 @@ class PurchasesTest {
     fun `logout called with identified user makes right calls`() {
         val appUserID = "fakeUserID"
         every {
-            mockCache.cleanupOldAttributionData(appUserID)
+            mockCache.cleanupOldAttributionData()
         } just Runs
         every {
             mockIdentityManager.logOut()
@@ -1782,7 +1782,7 @@ class PurchasesTest {
     @Test
     fun `when logging out, identity manager is called`() {
         every {
-            mockCache.cleanupOldAttributionData(appUserId)
+            mockCache.cleanupOldAttributionData()
         } just Runs
         every {
             mockIdentityManager.logOut()
@@ -1797,7 +1797,7 @@ class PurchasesTest {
     @Test
     fun `if there's an error on logOut, the error is passed`() {
         every {
-            mockCache.cleanupOldAttributionData(appUserId)
+            mockCache.cleanupOldAttributionData()
         } just Runs
         val mockError = mockk<PurchasesError>(relaxed = true)
         val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
@@ -1814,7 +1814,7 @@ class PurchasesTest {
     @Test
     fun `logOut calls completion with new customerInfo when successful`() {
         every {
-            mockCache.cleanupOldAttributionData(appUserId)
+            mockCache.cleanupOldAttributionData()
         } just Runs
 
         every {
@@ -1840,7 +1840,7 @@ class PurchasesTest {
         val mockInfo = mockk<CustomerInfo>()
 
         every {
-            mockCache.cleanupOldAttributionData(appUserId)
+            mockCache.cleanupOldAttributionData()
         } just Runs
 
         every {

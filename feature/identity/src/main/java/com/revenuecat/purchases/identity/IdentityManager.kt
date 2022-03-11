@@ -36,7 +36,7 @@ class IdentityManager(
         log(LogIntent.USER, IdentityStrings.IDENTIFYING_APP_USER_ID.format(appUserIDToUse))
         deviceCache.cacheAppUserID(appUserIDToUse)
         subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
-        deviceCache.cleanupOldAttributionData(currentAppUserID)
+        deviceCache.cleanupOldAttributionData()
     }
 
     fun logIn(

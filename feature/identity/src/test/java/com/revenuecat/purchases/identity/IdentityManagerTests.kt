@@ -40,7 +40,7 @@ class IdentityManagerTests {
             every { cacheAppUserID(capture(cachedAppUserIDSlot)) } answers {
                 every { mockDeviceCache.getCachedAppUserID() } returns cachedAppUserIDSlot.captured
             }
-            every { cleanupOldAttributionData(any()) } just Runs
+            every { cleanupOldAttributionData() } just Runs
         }
         mockSubscriberAttributesCache = mockk<SubscriberAttributesCache>().apply {
             every {
@@ -225,7 +225,7 @@ class IdentityManagerTests {
     @Test
     fun `logOut clears old caches`() {
         val identifiedUserID = "Waldo"
-        every { mockDeviceCache.cleanupOldAttributionData(identifiedUserID) } just Runs
+        every { mockDeviceCache.cleanupOldAttributionData() } just Runs
         mockIdentifiedUser(identifiedUserID)
 
         val error = identityManager.logOut()
@@ -243,7 +243,7 @@ class IdentityManagerTests {
     fun `logOut creates random ID and caches it`() {
         val identifiedUserID = "Waldo"
         mockIdentifiedUser(identifiedUserID)
-        every { mockDeviceCache.cleanupOldAttributionData(identifiedUserID) } just Runs
+        every { mockDeviceCache.cleanupOldAttributionData() } just Runs
 
         val error = identityManager.logOut()
 
@@ -320,14 +320,14 @@ class IdentityManagerTests {
     fun testConfigureCleansUpOldAttributionDataCacheForAnonymousUsers() {
         mockCleanCaches()
         identityManager.configure(null)
-        verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData(cachedAppUserIDSlot.captured) }
+        verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData() }
     }
 
     @Test
     fun testConfigureCleansUpOldAttributionDataCacheForNonAnonymousUsers() {
         mockCleanCaches()
         identityManager.configure("cesar")
-        verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData("cesar") }
+        verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData() }
     }
 
     private fun mockIdentifiedUser(identifiedUserID: String) {
