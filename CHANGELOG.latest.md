@@ -1,1 +1,1 @@
-- Removed deprecated addAttributionData function
+- Removed deprecated `addAttributionData` functions and `AttributionNetwork` enum.

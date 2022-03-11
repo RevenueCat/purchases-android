@@ -84,6 +84,7 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | `isFeatureSupported(BillingClient.FeatureType, Context, Callback<Boolean>)` |
 | `addAttributionData(JSONObject, AttributionNetwork, String?)` |
 | `addAttributionData(Map<String, Any?>, AttributionNetwork, String?)` |
+| `AttributionNetwork` |
 
 ### Other changes:
 

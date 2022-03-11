@@ -84,7 +84,6 @@ import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
 typealias SuccessfulPurchaseCallback = (StoreTransaction, CustomerInfo) -> Unit
 typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
@@ -2088,47 +2087,5 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    /**
-     * Different compatible attribution networks available
-     * @param serverValue Id of this attribution network in the RevenueCat server
-     */
-    @Suppress("unused", "MagicNumber")
-    enum class AttributionNetwork(val serverValue: Int) {
-        /**
-         * [https://www.adjust.com/]
-         */
-        ADJUST(1),
-
-        /**
-         * [https://www.appsflyer.com/]
-         */
-        APPSFLYER(2),
-
-        /**
-         * [http://branch.io/]
-         */
-        BRANCH(3),
-
-        /**
-         * [http://tenjin.io/]
-         */
-        TENJIN(4),
-
-        /**
-         * [https://developers.facebook.com/]
-         */
-        FACEBOOK(5),
-
-        /**
-         * [https://www.mparticle.com/]
-         */
-        MPARTICLE(6)
-    }
-
     // endregion
-}
-
-internal fun Purchases.AttributionNetwork.convert(): CommonAttributionNetwork {
-    return CommonAttributionNetwork.values()
-        .first { attributionNetwork -> attributionNetwork.serverValue == this.serverValue }
 }

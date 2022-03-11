@@ -6,12 +6,11 @@
 package com.revenuecat.purchases.common.caching
 
 import android.content.SharedPreferences
-import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
@@ -19,7 +18,6 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.ReceiptStrings
 import org.json.JSONException
 import org.json.JSONObject
-import java.lang.NullPointerException
 import java.util.Date
 
 private const val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 60000 * 5
@@ -161,10 +159,12 @@ open class DeviceCache(
     // region attribution data
 
     @Synchronized
-    fun cleanupOldAttributionData(userId: String) {
+    fun cleanupOldAttributionData() {
         val editor = preferences.edit()
-        AttributionNetwork.values().forEach { network ->
-            editor.remove(getAttributionDataCacheKey(userId, network))
+        for (key in preferences.all.keys) {
+            if (key.startsWith(attributionCacheKey)) {
+                editor.remove(key)
+            }
         }
         editor.apply()
     }
@@ -258,11 +258,6 @@ open class DeviceCache(
     private fun clearOfferingsCache() {
         offeringsCachedObject.clearCache()
     }
-
-    private fun getAttributionDataCacheKey(
-        userId: String,
-        network: AttributionNetwork
-    ) = "$attributionCacheKey.$userId.$network"
 
     private fun Date?.isStale(appInBackground: Boolean): Boolean {
         return this?.let { cachesLastUpdated ->
