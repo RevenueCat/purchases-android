@@ -146,17 +146,6 @@ final class PurchasesAPI {
         final Purchases instance = Purchases.getSharedInstance();
     }
 
-    static void check(final Purchases.AttributionNetwork network) {
-        switch (network) {
-            case ADJUST:
-            case APPSFLYER:
-            case BRANCH:
-            case TENJIN:
-            case FACEBOOK:
-            case MPARTICLE:
-        }
-    }
-
     static void checkLogHandler() {
         Purchases.setLogHandler(
                 new LogHandler() {
