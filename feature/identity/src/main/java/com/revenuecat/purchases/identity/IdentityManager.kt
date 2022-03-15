@@ -36,6 +36,7 @@ class IdentityManager(
         log(LogIntent.USER, IdentityStrings.IDENTIFYING_APP_USER_ID.format(appUserIDToUse))
         deviceCache.cacheAppUserID(appUserIDToUse)
         subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
+        deviceCache.cleanupOldAttributionData()
     }
 
     fun logIn(
@@ -87,7 +88,6 @@ class IdentityManager(
             log(LogIntent.RC_ERROR, IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER)
             return PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError)
         }
-        deviceCache.clearLatestAttributionData(currentAppUserID)
         reset()
         log(LogIntent.USER, IdentityStrings.LOG_OUT_SUCCESSFUL)
         return null
