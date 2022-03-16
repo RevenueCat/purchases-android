@@ -684,6 +684,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     /**
      * Automatically collect subscriber attributes associated with the device identifiers
      * $gpsAdId, $androidId, $ip
+     *
+     * @warning In accordance with [Google Play's data safety guidelines] (https://rev.cat/google-plays-data-safety),
+     * you should not be calling this function if your app targets children.
+     *
+     * @warning You must declare the [AD_ID Permission](https://rev.cat/google-advertising-id) when your app targets
+     * Android 13 or above. Apps that don’t declare the permission will get a string of zeros.
      */
     fun collectDeviceIdentifiers() {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("collectDeviceIdentifiers"))
