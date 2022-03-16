@@ -44,7 +44,6 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
-import com.revenuecat.purchases.util.AdvertisingIdClient
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.stubGooglePurchase
@@ -59,7 +58,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkConstructor
-import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
@@ -80,7 +78,6 @@ import java.util.ConcurrentModificationException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
-import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -106,7 +103,6 @@ class PurchasesTest {
 
     private val randomAppUserId = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
     private val appUserId = "fakeUserID"
-    private val adID = "123"
     private lateinit var purchases: Purchases
     private var receivedProducts: List<StoreProduct>? = null
     private var receivedOfferings: Offerings? = null
@@ -133,7 +129,6 @@ class PurchasesTest {
     @After
     fun tearDown() {
         Purchases.backingFieldSharedInstance = null
-        Purchases.postponedAttributionData = mutableListOf()
     }
 
     @Before
@@ -1134,76 +1129,6 @@ class PurchasesTest {
     }
 
     @Test
-    fun `attribution data gets converted`() {
-        val jsonObject = JSONObject()
-        jsonObject.put("key", "value")
-        val network = CommonAttributionNetwork.APPSFLYER
-
-        val jsonSlot = slot<JSONObject>()
-        every {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                capture(jsonSlot),
-                network,
-                appUserId
-            )
-        } just Runs
-
-        val networkUserID = "networkid"
-        mockAdInfo(false, networkUserID)
-
-        Purchases.addAttributionData(jsonObject, Purchases.AttributionNetwork.APPSFLYER, networkUserID)
-
-        verify {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject = any(),
-                network,
-                appUserId
-            )
-        }
-        assertThat(jsonSlot.captured["key"]).isEqualTo("value")
-    }
-
-    @Test
-    fun addAttributionConvertsStringStringMapToJsonObject() {
-        val network = CommonAttributionNetwork.APPSFLYER
-        val capturedJSONObject = slot<JSONObject>()
-        every {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                capture(capturedJSONObject),
-                network,
-                appUserId
-            )
-        } just Runs
-
-        val networkUserID = "networkUserID"
-        mockAdInfo(false, networkUserID)
-
-        Purchases.addAttributionData(
-            mapOf(
-                "adgroup" to null,
-                "campaign" to "awesome_campaign",
-                "campaign_id" to 1234,
-                "iscache" to true
-            ),
-            Purchases.AttributionNetwork.APPSFLYER,
-            networkUserID
-        )
-
-        verify {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject = any(),
-                network,
-                appUserId
-            )
-        }
-        assertThat(capturedJSONObject.isCaptured).isTrue()
-        assertThat(capturedJSONObject.captured.get("adgroup")).isEqualTo(null)
-        assertThat(capturedJSONObject.captured.get("campaign")).isEqualTo("awesome_campaign")
-        assertThat(capturedJSONObject.captured.get("campaign_id")).isEqualTo(1234)
-        assertThat(capturedJSONObject.captured.get("iscache")).isEqualTo(true)
-    }
-
-    @Test
     fun `tries to consume purchases on 4xx`() {
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
@@ -1832,7 +1757,7 @@ class PurchasesTest {
     fun `logout called with identified user makes right calls`() {
         val appUserID = "fakeUserID"
         every {
-            mockCache.clearLatestAttributionData(appUserID)
+            mockCache.cleanupOldAttributionData()
         } just Runs
         every {
             mockIdentityManager.logOut()
@@ -1857,7 +1782,7 @@ class PurchasesTest {
     @Test
     fun `when logging out, identity manager is called`() {
         every {
-            mockCache.clearLatestAttributionData(appUserId)
+            mockCache.cleanupOldAttributionData()
         } just Runs
         every {
             mockIdentityManager.logOut()
@@ -1872,7 +1797,7 @@ class PurchasesTest {
     @Test
     fun `if there's an error on logOut, the error is passed`() {
         every {
-            mockCache.clearLatestAttributionData(appUserId)
+            mockCache.cleanupOldAttributionData()
         } just Runs
         val mockError = mockk<PurchasesError>(relaxed = true)
         val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
@@ -1889,7 +1814,7 @@ class PurchasesTest {
     @Test
     fun `logOut calls completion with new customerInfo when successful`() {
         every {
-            mockCache.clearLatestAttributionData(appUserId)
+            mockCache.cleanupOldAttributionData()
         } just Runs
 
         every {
@@ -1915,7 +1840,7 @@ class PurchasesTest {
         val mockInfo = mockk<CustomerInfo>()
 
         every {
-            mockCache.clearLatestAttributionData(appUserId)
+            mockCache.cleanupOldAttributionData()
         } just Runs
 
         every {
@@ -2483,247 +2408,6 @@ class PurchasesTest {
             mockBillingAbstract.consumeAndSave(any(), any())
         }
         assertThat(capturedLambda).isNotNull
-    }
-
-    @Test
-    fun `Data is successfully postponed if no instance is set`() {
-        val jsonObject = JSONObject()
-        val network = CommonAttributionNetwork.APPSFLYER
-        val networkUserID = "networkUserID"
-
-        mockAdInfo(false, networkUserID)
-
-        every {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject,
-                network,
-                appUserId
-            )
-        } just Runs
-
-        Purchases.addAttributionData(jsonObject, Purchases.AttributionNetwork.APPSFLYER, networkUserID)
-
-        verify {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject = any(),
-                network,
-                appUserId
-            )
-        }
-    }
-
-    @Test
-    fun `Data is successfully postponed if no instance is set when sending map`() {
-        val network = CommonAttributionNetwork.APPSFLYER
-        val capturedJSONObject = slot<JSONObject>()
-
-        every {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                capture(capturedJSONObject),
-                network,
-                appUserId
-            )
-        } just Runs
-
-        val networkUserID = "networkUserID"
-        mockAdInfo(false, networkUserID)
-        Purchases.addAttributionData(mapOf("key" to "value"), Purchases.AttributionNetwork.APPSFLYER, networkUserID)
-
-        verify {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject = any(),
-                network,
-                appUserId
-            )
-        }
-        assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
-    }
-
-    @Test
-    fun `GPS ID is automatically added`() {
-        val network = CommonAttributionNetwork.APPSFLYER
-        val capturedJSONObject = slot<JSONObject>()
-
-        every {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                capture(capturedJSONObject),
-                network,
-                appUserId
-            )
-        } just Runs
-
-        val networkUserID = "networkUserID"
-        mockAdInfo(false, networkUserID)
-
-        Purchases.addAttributionData(mapOf("key" to "value"), Purchases.AttributionNetwork.APPSFLYER, networkUserID)
-
-        verify {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject = any(),
-                network,
-                appUserId
-            )
-        }
-        assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
-        assertThat(capturedJSONObject.captured.get("rc_gps_adid")).isEqualTo(adID)
-    }
-
-    @Test
-    fun `GPS ID is not added if limited`() {
-        val network = CommonAttributionNetwork.APPSFLYER
-        val capturedJSONObject = slot<JSONObject>()
-
-        every {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                capture(capturedJSONObject),
-                network,
-                appUserId
-            )
-        } just Runs
-
-        val networkUserID = "networkUserID"
-        mockAdInfo(true, networkUserID)
-
-        Purchases.addAttributionData(mapOf("key" to "value"), Purchases.AttributionNetwork.APPSFLYER, networkUserID)
-
-        verify {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject = any(),
-                network,
-                appUserId
-            )
-        }
-        assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
-        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isFalse()
-    }
-
-    @Test
-    fun `GPS ID is not added if not present`() {
-        val network = CommonAttributionNetwork.APPSFLYER
-        val capturedJSONObject = slot<JSONObject>()
-
-        every {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                capture(capturedJSONObject),
-                network,
-                appUserId
-            )
-        } just Runs
-
-        val networkUserID = "networkUserID"
-        mockAdInfo(true, networkUserID)
-
-        Purchases.addAttributionData(mapOf("key" to "value"), Purchases.AttributionNetwork.APPSFLYER, networkUserID)
-
-        verify {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject = any(),
-                network,
-                appUserId
-            )
-        }
-        assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
-        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isFalse()
-    }
-
-    @Test
-    fun `do not resend last attribution data to backend`() {
-
-        val network = CommonAttributionNetwork.APPSFLYER
-        val capturedJSONObject = slot<JSONObject>()
-
-        every {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                capture(capturedJSONObject),
-                network,
-                appUserId
-            )
-        } just Runs
-
-        val networkUserID = "networkUserID"
-        mockAdInfo(false, networkUserID)
-
-        every {
-            mockCache.getCachedAttributionData(network, appUserId)
-        } returns "${adID}_networkUserID"
-
-        Purchases.addAttributionData(mapOf("key" to "value"), Purchases.AttributionNetwork.APPSFLYER, networkUserID)
-
-        verify(exactly = 0) {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject = any(),
-                network,
-                appUserId
-            )
-        }
-    }
-
-    @Test
-    fun `cache last sent attribution data`() {
-
-        val network = CommonAttributionNetwork.APPSFLYER
-        val capturedJSONObject = slot<JSONObject>()
-
-        every {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                capture(capturedJSONObject),
-                network,
-                appUserId
-            )
-        } just Runs
-
-        val networkUserID = "networkid"
-        mockAdInfo(false, networkUserID)
-
-        every {
-            mockCache.getCachedAttributionData(CommonAttributionNetwork.APPSFLYER, appUserId)
-        } returns null
-
-        Purchases.addAttributionData(mapOf("key" to "value"), Purchases.AttributionNetwork.APPSFLYER, networkUserID)
-
-        verify(exactly = 1) {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject = any(),
-                network,
-                appUserId
-            )
-        }
-
-        verify(exactly = 1) {
-            mockCache.cacheAttributionData(network, appUserId, "${adID}_$networkUserID")
-        }
-    }
-
-    @Test
-    fun `network ID is set`() {
-        val network = CommonAttributionNetwork.APPSFLYER
-        val capturedJSONObject = slot<JSONObject>()
-
-        every {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                capture(capturedJSONObject),
-                network,
-                appUserId
-            )
-        } just Runs
-
-        val networkUserID = "networkUserID"
-        mockAdInfo(false, networkUserID)
-
-        Purchases.addAttributionData(mapOf("key" to "value"), Purchases.AttributionNetwork.APPSFLYER, networkUserID)
-
-
-
-        verify {
-            mockSubscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                jsonObject = any(),
-                network,
-                appUserId
-            )
-        }
-        assertThat(capturedJSONObject.captured.get("key")).isEqualTo("value")
-        assertThat(capturedJSONObject.captured.get("rc_attribution_network_id")).isEqualTo(networkUserID)
-        assertThat(capturedJSONObject.captured.has("rc_gps_adid")).isTrue()
     }
 
     @Test
@@ -3404,6 +3088,12 @@ class PurchasesTest {
             every {
                 isConnected()
             } returns true
+
+            every {
+                close()
+            } answers {
+                purchasesUpdatedListener = null
+            }
         }
     }
 
@@ -3794,9 +3484,6 @@ class PurchasesTest {
                 cacheAppUserID(any())
             } just Runs
             every {
-                getCachedAttributionData(CommonAttributionNetwork.APPSFLYER, appUserId)
-            } returns null
-            every {
                 setCustomerInfoCacheTimestampToNow(appUserId)
             } just Runs
             every {
@@ -3874,32 +3561,10 @@ class PurchasesTest {
         } just Runs
     }
 
-    private fun mockAdInfo(limitAdTrackingEnabled: Boolean, networkUserID: String) {
-        val adInfo = mockk<AdvertisingIdClient.AdInfo>()
-        every { adInfo.isLimitAdTrackingEnabled } returns limitAdTrackingEnabled
-        every { adInfo.id } returns if (!limitAdTrackingEnabled) adID else ""
-
-        mockkObject(AdvertisingIdClient)
-
-        val lst = slot<(AdvertisingIdClient.AdInfo?) -> Unit>()
-        every {
-            AdvertisingIdClient.getAdvertisingIdInfo(any(), capture(lst))
-        } answers {
-            lst.captured.invoke(adInfo)
-        }
-
-        every {
-            mockCache.cacheAttributionData(
-                CommonAttributionNetwork.APPSFLYER,
-                appUserId,
-                listOfNotNull(adID.takeUnless { limitAdTrackingEnabled }, networkUserID).joinToString("_")
-            )
-        } just Runs
-    }
-
     private fun verifyClose() {
         verify {
             mockBackend.close()
+            mockBillingAbstract.close()
         }
         assertThat(purchases.updatedCustomerInfoListener).isNull()
         verify(exactly = 1) {

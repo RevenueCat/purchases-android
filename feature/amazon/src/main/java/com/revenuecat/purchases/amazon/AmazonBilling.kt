@@ -2,6 +2,7 @@ package com.revenuecat.purchases.amazon
 
 import android.app.Activity
 import android.content.Context
+import android.os.Handler
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.ProductType
@@ -42,6 +43,7 @@ internal class AmazonBilling constructor(
     private val amazonBackend: AmazonBackend,
     private val cache: AmazonCache,
     private val observerMode: Boolean,
+    private val mainHandler: Handler,
     private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
     private val productDataHandler: ProductDataResponseListener = ProductDataHandler(purchasingServiceProvider),
     private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(purchasingServiceProvider),
@@ -61,8 +63,9 @@ internal class AmazonBilling constructor(
         applicationContext: Context,
         backend: Backend,
         cache: DeviceCache,
-        observerMode: Boolean
-    ) : this(applicationContext, AmazonBackend(backend), AmazonCache(cache), observerMode)
+        observerMode: Boolean,
+        mainHandler: Handler
+    ) : this(applicationContext, AmazonBackend(backend), AmazonCache(cache), observerMode, mainHandler)
 
     var connected = false
 
@@ -71,6 +74,12 @@ internal class AmazonBilling constructor(
 
         purchasingServiceProvider.registerListener(applicationContext, this)
         connected = true
+    }
+
+    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
+        mainHandler.post {
+            startConnection()
+        }
     }
 
     @SuppressWarnings("EmptyFunctionBlock")

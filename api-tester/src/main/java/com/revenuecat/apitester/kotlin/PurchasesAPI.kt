@@ -212,18 +212,6 @@ private class PurchasesAPI {
         val instance: Purchases = Purchases.sharedInstance
     }
 
-    fun check(network: Purchases.AttributionNetwork) {
-        when (network) {
-            Purchases.AttributionNetwork.ADJUST,
-            Purchases.AttributionNetwork.APPSFLYER,
-            Purchases.AttributionNetwork.BRANCH,
-            Purchases.AttributionNetwork.TENJIN,
-            Purchases.AttributionNetwork.FACEBOOK,
-            Purchases.AttributionNetwork.MPARTICLE
-            -> {}
-        }.exhaustive
-    }
-
     fun checkLogHandler() {
         Purchases.logHandler = object : LogHandler {
             override fun d(tag: String, msg: String) {}

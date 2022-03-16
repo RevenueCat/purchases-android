@@ -4,19 +4,16 @@ import android.app.Application
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
-import com.revenuecat.purchases.common.attribution.AttributionNetwork
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
-import org.json.JSONObject
 
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
-    private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher,
-    private val attributionDataMigrator: AttributionDataMigrator
+    private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher
 ) {
 
     @Synchronized
@@ -142,16 +139,6 @@ class SubscriberAttributesManager(
             val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
             setAttributes(attributesToSet, appUserID)
         }
-    }
-
-    fun convertAttributionDataAndSetAsSubscriberAttributes(
-        jsonObject: JSONObject,
-        network: AttributionNetwork,
-        appUserID: String
-    ) {
-        val convertedAttribution =
-            attributionDataMigrator.convertAttributionDataToSubscriberAttributes(jsonObject, network)
-        setAttributes(convertedAttribution, appUserID)
     }
 
     private fun getDeviceIdentifiers(

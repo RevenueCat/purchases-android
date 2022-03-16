@@ -19,4 +19,5 @@ object BillingStrings {
         "any checks and returning true."
     const val NULL_ACTIVITY_INTENT = "Activity passed into launchBillingFlow has a null intent, which may cause " +
         "a crash. See https://github.com/RevenueCat/purchases-android/issues/381 for more information."
+    const val BILLING_CLIENT_RETRY = "Retrying BillingClient connection after backoff of %s milliseconds."
 }

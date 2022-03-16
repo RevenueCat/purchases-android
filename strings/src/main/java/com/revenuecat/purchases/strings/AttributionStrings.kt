@@ -14,7 +14,6 @@ object AttributionStrings {
     const val MARKING_ATTRIBUTES_SYNCED = "Marking the following attributes as synced for App User ID: %s"
     const val METHOD_CALLED = "%s called"
     const val NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE = "No subscriber attributes to synchronize."
-    const val SKIP_SAME_ATTRIBUTES = "Attribution data is the same as latest. Skipping."
     const val SUBSCRIBER_ATTRIBUTES_ERROR = "There were some subscriber attributes errors: %s"
     const val TIMEOUT_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER = "TimeoutException when getting advertising " +
             "identifier. Message: %s"
