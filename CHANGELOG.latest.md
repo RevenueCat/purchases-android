@@ -5,7 +5,11 @@
 - See our [RevenueCat V5 API update doc]([migrations/v5-MIGRATION.md]) for API updates.
 
 ### Amazon Store Support
-Introduced support for using Amazon Store. We have extensively tested the Amazon Store, and there are some application already in production using it, but being 5.0.0 the first official release that supports it, there could still be some issues, please report any issue you find. [New RevenueCat Issue](https://github.com/RevenueCat/purchases-android/issues/new/).
+We have introduced support for using the Amazon Store. We have extensively tested this, and there are some apps using our pre-release Amazon versions in production.
+
+However, we have found some inconsistencies in the way Amazon Store prices are reported. We are actively working on patching these inconsistencies.
+
+Please help us help you by reporting any issues you find. [New RevenueCat Issue](https://github.com/RevenueCat/purchases-android/issues/new/).
 
 You can enable Amazon Store support by configuring the SDK using the new configure function:
 
