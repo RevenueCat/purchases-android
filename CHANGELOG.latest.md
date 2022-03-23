@@ -1,5 +1,5 @@
 ### Migration Guide
-- A number of renames, removal of some deprecated functions, and a change to configuration. Amazon Store support is also included Checkout the full list of changes in [migrations/v5-MIGRATION.md]
+- A number of renames, removal of some deprecated functions, and a change to configuration. Amazon Store support is also included. Check out the full list of changes in [migrations/v5-MIGRATION.md]
 
 ### API changes:
 - See our [RevenueCat V5 API update doc]([migrations/v5-MIGRATION.md]) for API updates.
