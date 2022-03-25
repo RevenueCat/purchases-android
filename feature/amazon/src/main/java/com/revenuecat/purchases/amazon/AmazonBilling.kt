@@ -81,7 +81,10 @@ internal class AmazonBilling constructor(
     }
 
     override fun startConnectionOnMainThread(delayMilliseconds: Long) {
-        // If startConnection is posted from the main thread, Amazon fails to open the purchase dialog
+        // Start connection has to be called on onCreate, otherwise Amazon fails to detect the foregrounded Activity
+        // Be careful with doing mainHandler.post since that will not guarantee that it's called in onCreate
+        // runOnUIThread checks if the function is called in the UI thread and doesn't do post, so we are good since
+        // startConnectionOnMainThread is called on the main thread
         runOnUIThread {
             startConnection()
         }
