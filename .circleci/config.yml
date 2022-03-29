@@ -335,28 +335,29 @@ jobs:
 
 workflows:
   version: 2
-  build-test:
-    jobs:
-      - test
-      - assemble-sample-app
+  # build-test:
+  #   jobs:
+  #     - test
+  #     - assemble-sample-app
 
-  integration-test:
-    jobs:
-      - integration-tests-build: *release-tags-and-branches
-      - run-firebase-tests-latest-dependencies:
-          requires:
-            - integration-tests-build
-      - run-firebase-tests-unityIAP:
-          requires:
-            - integration-tests-build
+  # integration-test:
+  #   jobs:
+  #     - integration-tests-build: *release-tags-and-branches
+  #     - run-firebase-tests-latest-dependencies:
+  #         requires:
+  #           - integration-tests-build
+  #     - run-firebase-tests-unityIAP:
+  #         requires:
+  #           - integration-tests-build
 
   deploy:
     jobs:
-      - deploy: *release-tags
-      - prepare-next-version: *release-tags
-      - deploy-snapshot:
-          filters:
-            branches:
-              only:
-                - main
-      - docs-deploy: *release-tags
+      # - deploy: *release-tags
+      # - prepare-next-version: *release-tags
+      # - deploy-snapshot:
+          # filters:
+            # branches:
+              # only:
+                # - main
+      # - docs-deploy: *release-tags
+      - docs-deploy
