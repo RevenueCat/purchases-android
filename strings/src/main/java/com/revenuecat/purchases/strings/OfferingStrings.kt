@@ -19,9 +19,9 @@ object OfferingStrings {
     const val RETRIEVED_PRODUCTS = "Retrieved skuDetailsList: %s"
     const val VENDING_OFFERINGS_CACHE = "Vending Offerings from cache"
     const val EMPTY_SKU_LIST = "SKU list is empty, skipping querySkuDetailsAsync call"
-    const val CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS = "There's a problem with your configuration. " +
-        "There are no products registered in the RevenueCat dashboard for your offerings. " +
-        "To configure products, follow the instructions in " +
+    const val CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS = "There are no products registered in the RevenueCat " +
+        "dashboard for your offerings. If you don't want to use the offerings system, you can safely ignore this " +
+        "message. To configure offerings and their products, follow the instructions in " +
         "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
     const val CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND = "There's a problem with your configuration. " +
         "None of the products registered in the RevenueCat dashboard could be fetched from the Play Store.\n" +
