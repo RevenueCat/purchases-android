@@ -177,6 +177,7 @@ private class PurchasesAPI {
             setMparticleID("")
             setOnesignalID("")
             setAirshipChannelID("")
+            setMixpanelDistinctID("")
             setMediaSource("")
             setCampaign("")
             setAdGroup("")
