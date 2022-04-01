@@ -2771,6 +2771,8 @@ class PurchasesTest {
         val skuTerm = "sub.monthly"
         val purchaseToken = "crazy_purchase_token"
         val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
 
         every {
             mockBillingAbstract.normalizePurchaseData(
@@ -2793,11 +2795,15 @@ class PurchasesTest {
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
             receiptId = purchaseToken,
-            amazonUserID = amazonUserID
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
         )
 
         val productInfo = ReceiptInfo(
-            productID = skuTerm
+            productID = skuTerm,
+            price = price,
+            currency = currencyCode
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -2822,6 +2828,8 @@ class PurchasesTest {
         val skuTerm = "sub.monthly"
         val purchaseToken = "crazy_purchase_token"
         val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
         purchases.allowSharingPlayStoreAccount = true
 
         every {
@@ -2845,11 +2853,15 @@ class PurchasesTest {
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
             receiptId = purchaseToken,
-            amazonUserID = amazonUserID
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
         )
 
         val productInfo = ReceiptInfo(
-            productID = skuTerm
+            productID = skuTerm,
+            price = price,
+            currency = currencyCode
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -2874,6 +2886,8 @@ class PurchasesTest {
         val skuTerm = "sub.monthly"
         val purchaseToken = "crazy_purchase_token"
         val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
         purchases.allowSharingPlayStoreAccount = true
 
         var capturedLambda: ((String) -> Unit)? = null
@@ -2898,11 +2912,15 @@ class PurchasesTest {
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
             receiptId = purchaseToken,
-            amazonUserID = amazonUserID
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
         )
 
         val productInfo = ReceiptInfo(
-            productID = skuTerm
+            productID = skuTerm,
+            price = price,
+            currency = currencyCode
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -2932,6 +2950,8 @@ class PurchasesTest {
         val skuTerm = "sub.monthly"
         val purchaseToken = "crazy_purchase_token"
         val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
 
         every {
             mockCache.getPreviouslySentHashedTokens()
@@ -2954,11 +2974,15 @@ class PurchasesTest {
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
             receiptId = purchaseToken,
-            amazonUserID = amazonUserID
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
         )
 
         val productInfo = ReceiptInfo(
-            productID = skuTerm
+            productID = skuTerm,
+            price = price,
+            currency = currencyCode
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -2985,7 +3009,9 @@ class PurchasesTest {
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
             receiptId = purchaseToken,
-            amazonUserID = amazonUserID
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
         )
 
         verify(exactly = 1) {
@@ -3019,6 +3045,8 @@ class PurchasesTest {
         val skuTerm = "sub.monthly"
         val purchaseToken = "crazy_purchase_token"
         val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
         val subscriberAttributeKey = "favorite_cat"
         val subscriberAttributeValue = "gardfield"
         val subscriberAttribute = SubscriberAttribute(subscriberAttributeKey, subscriberAttributeValue)
@@ -3051,11 +3079,15 @@ class PurchasesTest {
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
             receiptId = purchaseToken,
-            amazonUserID = amazonUserID
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
         )
 
         val productInfo = ReceiptInfo(
-            productID = skuTerm
+            productID = skuTerm,
+            price = price,
+            currency = currencyCode
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
