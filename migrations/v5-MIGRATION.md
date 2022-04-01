@@ -1,6 +1,6 @@
 ## v5 API changes
 
-There were various updates to our API in this release, in order to best support the Amazon Store and to maintain parity 
+There were various updates to our API in this release, in order to best support the Amazon Appstore and to maintain parity 
 with our iOS SDK, which recently [migrated from ObjC to Swift](https://github.com/RevenueCat/purchases-ios/blob/main/docs/V4_API_Updates.md).
 
 ### Type Changes
@@ -62,8 +62,8 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | Old signature | New signature |
 |---------------|---------------|
 | `getPurchaserInfoWith((PurchasesError) -> Unit, (PurchaserInfo) -> Unit)` | `getCustomerInfoWith((PurchasesError) -> Unit, (CustomerInfo) -> Unit)` |
-| `purchasePackageWith(Activity, Package, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchasePackage(Activity, Package, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
-| `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchasePackage(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+| `purchasePackageWith(Activity, Package, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchasePackageWith(Activity, Package, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+| `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 | `purchaseProductWith(Activity, SkuDetails, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchaseProductWith(Activity, StoreProduct, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 | `purchaseProductWith(Activity, SkuDetails, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchaseProductWith(Activity, StoreProduct, UpgradeInfo, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 
