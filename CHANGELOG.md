@@ -1,3 +1,7 @@
+## 5.0.0-amazon.alpha.6.billing3.iap2
+
+- Fix product price and currency not being reported in Amazon Appstore observer mode
+
 ## 5.0.0-amazon.alpha.5.billing3.iap2
 
 - Skip registering listener in Amazon observer mode
