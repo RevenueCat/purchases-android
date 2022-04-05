@@ -695,6 +695,23 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     // endregion
+    // region Integration IDs
+
+    /**
+     * Subscriber attribute associated with the Mixpanel Distinct ID for the user
+     *
+     * @param mixpanelDistinctID null or an empty string will delete the subscriber attribute.
+     */
+    fun setMixpanelDistinctID(mixpanelDistinctID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMixpanelDistinctID"))
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.MixpanelDistinctId,
+            mixpanelDistinctID,
+            appUserID
+        )
+    }
+
+    // endregion
     // region Attribution IDs
 
     /**
