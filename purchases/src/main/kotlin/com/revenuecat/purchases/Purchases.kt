@@ -695,6 +695,36 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the OneSignal Player Id for the user
+     * Required for the RevenueCat OneSignal integration
+     *
+     * @param onesignalID null or an empty string will delete the subscriber attribute
+     */
+    fun setOnesignalID(onesignalID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setOnesignalID"))
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.OneSignal,
+            onesignalID,
+            appUserID
+        )
+    }
+
+    /**
+     * Subscriber attribute associated with the Airship Channel ID
+     * Required for the RevenueCat Airship integration
+     *
+     * @param airshipChannelID null or an empty string will delete the subscriber attribute
+     */
+    fun setAirshipChannelID(airshipChannelID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAirshipChannelID"))
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.Airship,
+            airshipChannelID,
+            appUserID
+        )
+    }
+
     // endregion
     // region Attribution IDs
 
@@ -772,38 +802,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Mparticle,
             mparticleID,
-            appUserID,
-            application
-        )
-    }
-
-    /**
-     * Subscriber attribute associated with the OneSignal Player Id for the user
-     * Required for the RevenueCat OneSignal integration
-     *
-     * @param onesignalID null or an empty string will delete the subscriber attribute
-     */
-    fun setOnesignalID(onesignalID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setOnesignalID"))
-        subscriberAttributesManager.setAttributionID(
-            SubscriberAttributeKey.AttributionIds.OneSignal,
-            onesignalID,
-            appUserID,
-            application
-        )
-    }
-
-    /**
-     * Subscriber attribute associated with the Airship Channel ID
-     * Required for the RevenueCat Airship integration
-     *
-     * @param airshipChannelID null or an empty string will delete the subscriber attribute
-     */
-    fun setAirshipChannelID(airshipChannelID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAirshipChannelID"))
-        subscriberAttributesManager.setAttributionID(
-            SubscriberAttributeKey.AttributionIds.Airship,
-            airshipChannelID,
             appUserID,
             application
         )
