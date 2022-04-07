@@ -316,8 +316,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         productID: String,
         receiptId: String,
         amazonUserID: String,
-        isoCurrencyCode: String,
-        price: Double
+        isoCurrencyCode: String?,
+        price: Double?
     ) {
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptId, amazonUserID))
 
@@ -334,8 +334,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             { normalizedProductID ->
                 val receiptInfo = ReceiptInfo(
                         productID = normalizedProductID,
-                        price = price,
-                        currency = isoCurrencyCode
+                        price = price?.takeUnless { it == 0.0 },
+                        currency = isoCurrencyCode?.takeUnless { it.isBlank() }
                 )
                 syncPurchaseWithBackend(
                         receiptId,
