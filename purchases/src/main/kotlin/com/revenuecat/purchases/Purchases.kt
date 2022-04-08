@@ -328,6 +328,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         getSkus(skus.toSet(), ProductType.INAPP, callback)
     }
 
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     */
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
@@ -357,6 +365,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         startPurchase(activity, storeProduct, null, callback)
     }
 
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [callback] The listener that will be called when purchase completes.
+     */
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
