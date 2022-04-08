@@ -3195,7 +3195,11 @@ class PurchasesTest {
             isoCurrencyCode = null
         )
 
-        val productInfo = ReceiptInfo(productID = skuTerm)
+        val productInfo = ReceiptInfo(
+            productID = skuTerm,
+            currency = null,
+            price = null
+        )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
                 purchaseToken = purchaseToken,

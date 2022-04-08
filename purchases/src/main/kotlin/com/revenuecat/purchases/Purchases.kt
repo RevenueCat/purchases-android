@@ -311,6 +311,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [productID] Product ID associated to the purchase.
      * @param [receiptId] ReceiptId that represents the Amazon purchase.
      * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
+     * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
+     * @param [price] Product's price.
      */
     fun syncObserverModeAmazonPurchase(
         productID: String,
