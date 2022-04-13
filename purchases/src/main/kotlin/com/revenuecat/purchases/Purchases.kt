@@ -256,29 +256,29 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * The receipt IDs are cached if successfully posted so they are not posted more than once.
      *
      * @param [productID] Product ID associated to the purchase.
-     * @param [receiptId] ReceiptId that represents the Amazon purchase.
+     * @param [receiptID] ReceiptId that represents the Amazon purchase.
      * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
      * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
      * @param [price] Product's price.
      */
     fun syncObserverModeAmazonPurchase(
         productID: String,
-        receiptId: String,
+        receiptID: String,
         amazonUserID: String,
         isoCurrencyCode: String?,
         price: Double?
     ) {
-        log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptId, amazonUserID))
+        log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID))
 
-        deviceCache.getPreviouslySentHashedTokens().takeIf { it.contains(receiptId.sha1()) }?.apply {
-            log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_SKIPPING.format(receiptId, amazonUserID))
+        deviceCache.getPreviouslySentHashedTokens().takeIf { it.contains(receiptID.sha1()) }?.apply {
+            log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_SKIPPING.format(receiptID, amazonUserID))
             return
         }
 
         val appUserID = identityManager.currentAppUserID
         billing.normalizePurchaseData(
             productID,
-            receiptId,
+            receiptID,
             amazonUserID,
             { normalizedProductID ->
                 val receiptInfo = ReceiptInfo(
@@ -287,17 +287,17 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                         currency = isoCurrencyCode?.takeUnless { it.isBlank() }
                 )
                 syncPurchaseWithBackend(
-                    receiptId,
+                    receiptID,
                     amazonUserID,
                     appUserID,
                     receiptInfo,
                     {
-                        val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptId, amazonUserID)
+                        val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
                         log(LogIntent.PURCHASE, logMessage)
                     },
                     { error ->
                         val logMessage = PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(
-                            receiptId,
+                            receiptID,
                             amazonUserID,
                             error
                         )
@@ -307,7 +307,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             { error ->
                 val logMessage =
-                    PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(receiptId, amazonUserID, error)
+                    PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(receiptID, amazonUserID, error)
                 log(LogIntent.RC_ERROR, logMessage)
             }
         )

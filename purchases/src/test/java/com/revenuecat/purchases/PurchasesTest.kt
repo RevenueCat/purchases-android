@@ -2443,7 +2443,7 @@ class PurchasesTest {
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
-            receiptId = purchaseToken,
+            receiptID = purchaseToken,
             amazonUserID = amazonUserID,
             price = price,
             isoCurrencyCode = currencyCode
@@ -2501,7 +2501,7 @@ class PurchasesTest {
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
-            receiptId = purchaseToken,
+            receiptID = purchaseToken,
             amazonUserID = amazonUserID,
             price = price,
             isoCurrencyCode = currencyCode
@@ -2560,7 +2560,7 @@ class PurchasesTest {
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
-            receiptId = purchaseToken,
+            receiptID = purchaseToken,
             amazonUserID = amazonUserID,
             price = price,
             isoCurrencyCode = currencyCode
@@ -2622,7 +2622,7 @@ class PurchasesTest {
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
-            receiptId = purchaseToken,
+            receiptID = purchaseToken,
             amazonUserID = amazonUserID,
             price = price,
             isoCurrencyCode = currencyCode
@@ -2657,7 +2657,7 @@ class PurchasesTest {
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
-            receiptId = purchaseToken,
+            receiptID = purchaseToken,
             amazonUserID = amazonUserID,
             price = price,
             isoCurrencyCode = currencyCode
@@ -2727,7 +2727,7 @@ class PurchasesTest {
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
-            receiptId = purchaseToken,
+            receiptID = purchaseToken,
             amazonUserID = amazonUserID,
             price = price,
             isoCurrencyCode = currencyCode
@@ -2787,7 +2787,7 @@ class PurchasesTest {
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
-            receiptId = purchaseToken,
+            receiptID = purchaseToken,
             amazonUserID = amazonUserID,
             price = null,
             isoCurrencyCode = null
@@ -2838,7 +2838,7 @@ class PurchasesTest {
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
-            receiptId = purchaseToken,
+            receiptID = purchaseToken,
             amazonUserID = amazonUserID,
             price = 0.0,
             isoCurrencyCode = null
