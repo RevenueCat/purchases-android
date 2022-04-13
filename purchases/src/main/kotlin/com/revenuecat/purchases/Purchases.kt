@@ -249,49 +249,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
-    private fun syncPurchaseWithBackend(
-        purchaseToken: String,
-        storeUserID: String?,
-        appUserID: String,
-        productInfo: ReceiptInfo,
-        onSuccess: () -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        val unsyncedSubscriberAttributesByKey =
-            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-        backend.postReceiptData(
-            purchaseToken = purchaseToken,
-            appUserID = appUserID,
-            isRestore = this.allowSharingPlayStoreAccount,
-            observerMode = !this.finishTransactions,
-            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-            receiptInfo = productInfo,
-            storeAppUserID = storeUserID,
-            onSuccess = { info, body ->
-                subscriberAttributesManager.markAsSynced(
-                    appUserID,
-                    unsyncedSubscriberAttributesByKey,
-                    body.getAttributeErrors()
-                )
-                deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                cacheCustomerInfo(info)
-                sendUpdatedCustomerInfoToDelegateIfChanged(info)
-                onSuccess()
-            },
-            onError = { error, errorIsFinishable, body ->
-                if (errorIsFinishable) {
-                    subscriberAttributesManager.markAsSynced(
-                        appUserID,
-                        unsyncedSubscriberAttributesByKey,
-                        body.getAttributeErrors()
-                    )
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                }
-                onError(error)
-            }
-        )
-    }
-
     /**
      * This method will send a purchase to the RevenueCat backend. This function should only be called if you are
      * in Amazon observer mode or performing a client side migration of your current users to RevenueCat.
@@ -1582,6 +1539,49 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun synchronizeSubscriberAttributesIfNeeded() {
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
+    }
+
+    private fun syncPurchaseWithBackend(
+        purchaseToken: String,
+        storeUserID: String?,
+        appUserID: String,
+        productInfo: ReceiptInfo,
+        onSuccess: () -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val unsyncedSubscriberAttributesByKey =
+            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
+        backend.postReceiptData(
+            purchaseToken = purchaseToken,
+            appUserID = appUserID,
+            isRestore = this.allowSharingPlayStoreAccount,
+            observerMode = !this.finishTransactions,
+            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+            receiptInfo = productInfo,
+            storeAppUserID = storeUserID,
+            onSuccess = { info, body ->
+                subscriberAttributesManager.markAsSynced(
+                    appUserID,
+                    unsyncedSubscriberAttributesByKey,
+                    body.getAttributeErrors()
+                )
+                deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                cacheCustomerInfo(info)
+                sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                onSuccess()
+            },
+            onError = { error, errorIsFinishable, body ->
+                if (errorIsFinishable) {
+                    subscriberAttributesManager.markAsSynced(
+                        appUserID,
+                        unsyncedSubscriberAttributesByKey,
+                        body.getAttributeErrors()
+                    )
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                }
+                onError(error)
+            }
+        )
     }
 
     // endregion
