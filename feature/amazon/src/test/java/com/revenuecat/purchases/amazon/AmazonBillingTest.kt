@@ -70,10 +70,6 @@ class AmazonBillingTest {
         setupRunnables()
 
         underTest.purchasesUpdatedListener = mockk()
-
-        every {
-            mockCache.cacheSkusByToken(capture(capturedCachedReceiptSkus))
-        } just Runs
     }
 
     fun setupObserverMode() {
@@ -670,6 +666,7 @@ class AmazonBillingTest {
 
     @Test
     fun `When normalizing purchase data, term sku is returned when passing parent sku as product ID`() {
+        setup()
         val parentSku = "sub_sku"
         val expectedTermSku = "sub_sku.monthly"
         val expectedToken = "token"
@@ -699,6 +696,7 @@ class AmazonBillingTest {
 
     @Test
     fun `When normalizing purchase data, cached term sku is returned as product ID`() {
+        setup()
         val parentSku = "sub_sku"
         val expectedTermSku = "sub_sku.monthly"
         val expectedToken = "token"
@@ -727,6 +725,7 @@ class AmazonBillingTest {
 
     @Test
     fun `When normalizing purchase data, an error is returned if response from backend is not complete`() {
+        setup()
         val parentSku = "sub_sku"
         val expectedTermSku = "sub_sku.monthly"
         val expectedToken = "token"
@@ -768,6 +767,7 @@ class AmazonBillingTest {
 
     @Test
     fun `When normalizing purchase data, term sku is returned when passing term sku as product ID`() {
+        setup()
         val parentSku = "sub_sku"
         val expectedTermSku = "sub_sku.monthly"
         val expectedToken = "token"
@@ -860,7 +860,7 @@ class AmazonBillingTest {
 
     private fun mockSetupFunctions() {
         every {
-            mockCache.setReceiptSkus(capture(capturedCachedReceiptSkus))
+            mockCache.cacheSkusByToken(capture(capturedCachedReceiptSkus))
         } just Runs
 
         every {
