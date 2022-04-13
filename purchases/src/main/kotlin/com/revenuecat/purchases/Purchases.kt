@@ -301,11 +301,15 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * @param [productID] Product ID associated to the purchase.
      * @param [receiptId] ReceiptId that represents the Amazon purchase.
      * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
+     * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
+     * @param [price] Product's price.
      */
     fun syncObserverModeAmazonPurchase(
         productID: String,
         receiptId: String,
-        amazonUserID: String
+        amazonUserID: String,
+        isoCurrencyCode: String?,
+        price: Double?
     ) {
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptId, amazonUserID))
 
@@ -320,11 +324,16 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             receiptId,
             amazonUserID,
             { normalizedProductID ->
+                val receiptInfo = ReceiptInfo(
+                        productIDs = listOf(normalizedProductID),
+                        price = price?.takeUnless { it == 0.0 },
+                        currency = isoCurrencyCode?.takeUnless { it.isBlank() }
+                )
                 syncPurchaseWithBackend(
                     receiptId,
                     amazonUserID,
                     appUserID,
-                    ReceiptInfo(listOf(normalizedProductID)),
+                    receiptInfo,
                     {
                         val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptId, amazonUserID)
                         log(LogIntent.PURCHASE, logMessage)
