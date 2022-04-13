@@ -32,9 +32,9 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.attribution.AttributionData
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
@@ -74,20 +74,17 @@ import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
-import com.revenuecat.purchases.subscriberattributes.AttributionDataMigrator
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
-import com.revenuecat.purchases.util.AdvertisingIdClient
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import com.revenuecat.purchases.common.attribution.AttributionNetwork as CommonAttributionNetwork
 
 typealias SuccessfulPurchaseCallback = (StoreTransaction, CustomerInfo) -> Unit
 typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
@@ -410,6 +407,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         getSkus(skus.toSet(), ProductType.INAPP, callback)
     }
 
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     */
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
@@ -439,6 +444,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         startPurchase(activity, storeProduct, null, callback)
     }
 
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [callback] The listener that will be called when purchase completes.
+     */
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
@@ -621,7 +634,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             state = state.copy(purchaseCallbacks = emptyMap())
         }
         this.backend.close()
-        billing.purchasesUpdatedListener = null
+
+        billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
 
         dispatch {
@@ -760,11 +774,34 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     }
 
     // endregion
+    // region Integration IDs
+
+    /**
+     * Subscriber attribute associated with the Mixpanel Distinct ID for the user
+     *
+     * @param mixpanelDistinctID null or an empty string will delete the subscriber attribute.
+     */
+    fun setMixpanelDistinctID(mixpanelDistinctID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setMixpanelDistinctID"))
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.MixpanelDistinctId,
+            mixpanelDistinctID,
+            appUserID
+        )
+    }
+
+    // endregion
     // region Attribution IDs
 
     /**
      * Automatically collect subscriber attributes associated with the device identifiers
      * $gpsAdId, $androidId, $ip
+     *
+     * @warning In accordance with [Google Play's data safety guidelines] (https://rev.cat/google-plays-data-safety),
+     * you should not be calling this function if your app targets children.
+     *
+     * @warning You must declare the [AD_ID Permission](https://rev.cat/google-advertising-id) when your app targets
+     * Android 13 or above. Apps that don’t declare the permission will get a string of zeros.
      */
     fun collectDeviceIdentifiers() {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("collectDeviceIdentifiers"))
@@ -957,48 +994,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     //endregion
     //endregion
     //endregion
-    // region Internal Methods
-
-    @JvmSynthetic
-    internal fun postAttributionData(
-        jsonObject: JSONObject,
-        network: CommonAttributionNetwork,
-        networkUserId: String?
-    ) {
-        AdvertisingIdClient.getAdvertisingIdInfo(application) { adInfo ->
-            identityManager.currentAppUserID.let { appUserID ->
-                val latestAttributionDataId =
-                    deviceCache.getCachedAttributionData(network, appUserID)
-                val newCacheValue = adInfo.generateAttributionDataCacheValue(networkUserId)
-
-                if (latestAttributionDataId != null && latestAttributionDataId == newCacheValue) {
-                    log(LogIntent.DEBUG, AttributionStrings.SKIP_SAME_ATTRIBUTES)
-                } else {
-                    if (adInfo?.isLimitAdTrackingEnabled == false) {
-                        jsonObject.put("rc_gps_adid", adInfo.id)
-                    }
-
-                    jsonObject.put("rc_attribution_network_id", networkUserId)
-
-                    subscriberAttributesManager.convertAttributionDataAndSetAsSubscriberAttributes(
-                        jsonObject,
-                        network,
-                        appUserID
-                    )
-                    deviceCache.cacheAttributionData(network, appUserID, newCacheValue)
-                }
-            }
-        }
-    }
-    // endregion
 
     // region Private Methods
-
-    private fun AdvertisingIdClient.AdInfo?.generateAttributionDataCacheValue(networkUserId: String?) =
-        listOfNotNull(
-            this?.takeIf { !it.isLimitAdTrackingEnabled }?.id,
-            networkUserId
-        ).joinToString("_")
 
     private fun fetchAndCacheOfferings(
         appUserID: String,
@@ -1175,7 +1172,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         onError: (ErrorPurchaseCallback)? = null
     ) {
         purchases.forEach { purchase ->
-            if (purchase.purchaseState == PurchaseState.PURCHASED) {
+            if (purchase.purchaseState != PurchaseState.PENDING) {
                 billing.querySkuDetailsAsync(
                     productType = purchase.type,
                     skus = purchase.skus.toSet(),
@@ -1953,9 +1950,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             version = null
         )
 
-        @JvmSynthetic
-        internal var postponedAttributionData = mutableListOf<AttributionData>()
-
         /**
          * Enable debug logging. Useful for debugging issues with the lovely team @RevenueCat
          */
@@ -1964,6 +1958,20 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             get() = Config.debugLogsEnabled
             set(value) {
                 Config.debugLogsEnabled = value
+            }
+
+        /**
+         * Set a custom log handler for redirecting logs to your own logging system.
+         * Defaults to [android.util.Log].
+         *
+         * By default, this sends info, warning, and error messages.
+         * If you wish to receive Debug level messages, see [debugLogsEnabled].
+         */
+        @JvmStatic
+        var logHandler: LogHandler
+            @Synchronized get() = currentLogHandler
+            @Synchronized set(value) {
+                currentLogHandler = value
             }
 
         @JvmSynthetic
@@ -1983,12 +1991,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             internal set(value) {
                 backingFieldSharedInstance?.close()
                 backingFieldSharedInstance = value
-                val iterator = postponedAttributionData.iterator()
-                while (iterator.hasNext()) {
-                    val next = iterator.next()
-                    value.postAttributionData(next.data, next.network, next.networkUserId)
-                    iterator.remove()
-                }
             }
 
         /**
@@ -2098,7 +2100,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 
                 val subscriberAttributesCache = SubscriberAttributesCache(cache)
-                val attributionDataMigrator = AttributionDataMigrator()
                 return Purchases(
                     application,
                     appUserID,
@@ -2110,8 +2111,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     SubscriberAttributesManager(
                         subscriberAttributesCache,
                         subscriberAttributesPoster,
-                        attributionFetcher,
-                        attributionDataMigrator
+                        attributionFetcher
                     ),
                     appConfig
                 ).also {
@@ -2181,7 +2181,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             }
 
                             override fun onBillingServiceDisconnected() {
-                                val mainHandler = Handler(context.mainLooper)
                                 mainHandler.post {
                                     try {
                                         billingClient.endConnection()
@@ -2195,62 +2194,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 }
         }
 
-        /**
-         * Add attribution data from a supported network
-         * @param [data] JSONObject containing the data to post to the attribution network
-         * @param [network] [AttributionNetwork] to post the data to
-         * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
-         */
-        @Deprecated(
-            "Use the .set<NetworkId> functions instead",
-            ReplaceWith(".set<NetworkId>")
-        )
-        @JvmStatic
-        fun addAttributionData(
-            data: JSONObject,
-            network: AttributionNetwork,
-            networkUserId: String? = null
-        ) {
-            backingFieldSharedInstance?.postAttributionData(data, network.convert(), networkUserId) ?: {
-                postponedAttributionData.add(
-                    AttributionData(
-                        data,
-                        network.convert(),
-                        networkUserId
-                    )
-                )
-            }.invoke()
-        }
-
-        /**
-         * Add attribution data from a supported network
-         * @param [data] Map containing the data to post to the attribution network
-         * @param [network] [AttributionNetwork] to post the data to
-         * @param [networkUserId] User Id that should be sent to the network. Default is the current App User Id
-         */
-        @Deprecated(
-            "Use the .set<NetworkId> functions instead",
-            ReplaceWith(".set<NetworkId>")
-        )
-        @JvmStatic
-        fun addAttributionData(
-            data: Map<String, Any?>,
-            network: AttributionNetwork,
-            networkUserId: String? = null
-        ) {
-            val jsonObject = JSONObject()
-            for (key in data.keys) {
-                try {
-                    data[key]?.let {
-                        jsonObject.put(key, it)
-                    } ?: jsonObject.put(key, JSONObject.NULL)
-                } catch (e: JSONException) {
-                    Log.e("Purchases", "Failed to add key $key to attribution map")
-                }
-            }
-            this.addAttributionData(jsonObject, network, networkUserId)
-        }
-
         private fun Context.getApplication() = applicationContext as Application
 
         private fun Context.hasPermission(permission: String): Boolean {
@@ -2262,47 +2205,5 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         }
     }
 
-    /**
-     * Different compatible attribution networks available
-     * @param serverValue Id of this attribution network in the RevenueCat server
-     */
-    @Suppress("unused", "MagicNumber")
-    enum class AttributionNetwork(val serverValue: Int) {
-        /**
-         * [https://www.adjust.com/]
-         */
-        ADJUST(1),
-
-        /**
-         * [https://www.appsflyer.com/]
-         */
-        APPSFLYER(2),
-
-        /**
-         * [http://branch.io/]
-         */
-        BRANCH(3),
-
-        /**
-         * [http://tenjin.io/]
-         */
-        TENJIN(4),
-
-        /**
-         * [https://developers.facebook.com/]
-         */
-        FACEBOOK(5),
-
-        /**
-         * [https://www.mparticle.com/]
-         */
-        MPARTICLE(6)
-    }
-
     // endregion
-}
-
-internal fun Purchases.AttributionNetwork.convert(): CommonAttributionNetwork {
-    return CommonAttributionNetwork.values()
-        .first { attributionNetwork -> attributionNetwork.serverValue == this.serverValue }
 }

@@ -30,6 +30,11 @@ enum class ReservedSubscriberAttribute(val value: String) {
     AIRSHIP_CHANNEL_ID("\$airshipChannelId"),
 
     /**
+     * Integration IDs
+     */
+    MIXPANEL_DISTINCT_ID("\$mixpanelDistinctId"),
+
+    /**
      * Optional campaign parameters
      */
     MEDIA_SOURCE("\$mediaSource"),
@@ -62,6 +67,10 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
         object Mparticle : AttributionIds(ReservedSubscriberAttribute.MPARTICLE_ID)
         object OneSignal : AttributionIds(ReservedSubscriberAttribute.ONESIGNAL_ID)
         object Airship : AttributionIds(ReservedSubscriberAttribute.AIRSHIP_CHANNEL_ID)
+    }
+
+    sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
+        object MixpanelDistinctId : IntegrationIds(ReservedSubscriberAttribute.MIXPANEL_DISTINCT_ID)
     }
 
     sealed class CampaignParameters(

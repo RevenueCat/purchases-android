@@ -1,17 +1,11 @@
 package com.revenuecat.purchases.amazon
 
-import android.os.Build
 import com.amazon.device.iap.internal.model.ProductBuilder
 import com.amazon.device.iap.model.Product
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
-import com.revenuecat.purchases.common.debugLog
-import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
-import java.text.NumberFormat
-import java.text.ParseException
-import java.util.Currency
-import java.util.Locale
+import java.math.BigDecimal
 import java.util.regex.Pattern
 import com.amazon.device.iap.model.ProductType as AmazonProductType
 
@@ -28,11 +22,7 @@ val StoreProduct.amazonProduct: Product
 fun Product.toStoreProduct(marketplace: String): StoreProduct {
     // By default, Amazon automatically converts the base list price of your IAP items into
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
-    val (currencyCode, priceAmountMicros) =
-        price.extractPrice(
-            currency = Currency.getInstance(Locale("EN", marketplace)),
-            numberFormat = NumberFormat.getInstance()
-        )
+    val (currencyCode, priceAmountMicros) = price.extractPrice(marketplace)
 
     return StoreProduct(
         sku,
@@ -55,34 +45,14 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct {
     )
 }
 
-internal fun String.extractPrice(
-    currency: Currency,
-    numberFormat: NumberFormat
-): Price {
-    val (priceNumeric, currencySymbol) =
-        this.parsePriceAndCurrencySymbolUsingRegex(numberFormat) ?: 0.0f to currency.symbol
-
-    var foundCurrencyCode: String? = null
-    if (currencySymbol == currency.symbol) {
-        foundCurrencyCode = currency.currencyCode
-    } else {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            // We've seen cases the price being as "US$", but the marketplace currency code being "INR"
-            debugLog(AmazonStrings.PRICE_EXTRACTION_ITERATING_OVER_AVAILABLE_CURRENCIES)
-            foundCurrencyCode =
-                Currency.getAvailableCurrencies()
-                    .firstOrNull { it.symbol == currencySymbol }?.currencyCode
-        }
-    }
-
-    val currencyCode = foundCurrencyCode ?: run {
-        debugLog(AmazonStrings.PRICE_EXTRACTION_USING_CURRENCY_SYMBOL)
-        currencySymbol
-    }
+internal fun String.extractPrice(marketplace: String): Price {
+    val priceNumeric = this.parsePriceUsingRegex() ?: BigDecimal.ZERO
+    val priceAmountMicros = (priceNumeric * BigDecimal(MICROS_MULTIPLIER)).toLong()
+    val currencyCode = ISO3166Alpha2ToISO42170Converter.convertOrEmpty(marketplace)
 
     return Price(
         currencyCode,
-        priceAmountMicros = priceNumeric.times(MICROS_MULTIPLIER).toLong()
+        priceAmountMicros
     )
 }
 
@@ -98,28 +68,24 @@ internal data class Price(
 // The lasts two are englobed in []*, as they can be repeated 0 or n times.
 private val pattern: Pattern = Pattern.compile("(\\d+[[\\.,\\s]\\d+]*)")
 
-internal fun String.parsePriceAndCurrencySymbolUsingRegex(numberFormat: NumberFormat): Pair<Float, String>? {
+internal fun String.parsePriceUsingRegex(): BigDecimal? {
     val matcher = pattern.matcher(this)
-    return if (matcher.find()) {
-        val price: String = matcher.group()
-        val currencySymbol = this.replace(price, "").trim()
-        val priceNumeric = extractPriceNumber(price, numberFormat)
-
-        priceNumeric to currencySymbol
-    } else null
-}
-
-private fun extractPriceNumber(
-    price: String,
-    numberFormat: NumberFormat
-): Float {
-    return price.trim().let { formattedPriceWithoutSymbol ->
-        try {
-            numberFormat.parse(formattedPriceWithoutSymbol).toFloat()
-        } catch (e: ParseException) {
-            warnLog(AmazonStrings.PRICE_EXTRACTION_PARSE_EXCEPTION.format(price))
-            0.0f
+    return matcher.takeIf { it.find() }?.let {
+        val dirtyPrice = matcher.group()
+        var price = dirtyPrice.replace(" ", "")
+        val split = price.split(".", ",")
+        if (split.size != 1) {
+            // Assuming all prices we get have 2 decimal points
+            // Most currencies but Dirhan use 2 decimals. Amazon doesn't support Dirhan at the moment
+            price = if (split.last().length == 3) {
+                price.replace(".", "").replace(",", "")
+            } else {
+                val intPart = split.dropLast(1).joinToString("")
+                "$intPart.${split.last()}"
+            }
         }
+        price = price.trim()
+        BigDecimal(price)
     }
 }
 

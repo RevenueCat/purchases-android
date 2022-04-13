@@ -6,26 +6,21 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.android.billingclient.api.Purchase;
-import com.android.billingclient.api.SkuDetails;
 import com.revenuecat.purchases.BillingFeature;
 import com.revenuecat.purchases.CustomerInfo;
+import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.UpgradeInfo;
-import com.revenuecat.purchases.interfaces.GetSkusResponseListener;
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
-import com.revenuecat.purchases.interfaces.MakePurchaseListener;
 import com.revenuecat.purchases.interfaces.ProductChangeCallback;
-import com.revenuecat.purchases.interfaces.ProductChangeListener;
 import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
-import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
@@ -151,14 +146,15 @@ final class PurchasesAPI {
         final Purchases instance = Purchases.getSharedInstance();
     }
 
-    static void check(final Purchases.AttributionNetwork network) {
-        switch (network) {
-            case ADJUST:
-            case APPSFLYER:
-            case BRANCH:
-            case TENJIN:
-            case FACEBOOK:
-            case MPARTICLE:
-        }
+    static void checkLogHandler() {
+        Purchases.setLogHandler(
+                new LogHandler() {
+                    @Override public void d(@NonNull String tag, @NonNull String msg) {}
+                    @Override public void i(@NonNull String tag, @NonNull String msg) {}
+                    @Override public void w(@NonNull String tag, @NonNull String msg) {}
+                    @Override public void e(@NonNull String tag, @NonNull String msg, @Nullable Throwable throwable) {}
+                }
+        );
+        final LogHandler handler = Purchases.getLogHandler();
     }
 }

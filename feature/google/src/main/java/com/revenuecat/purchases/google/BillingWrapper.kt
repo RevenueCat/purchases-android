@@ -49,6 +49,10 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.math.min
+
+private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
+private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
 class BillingWrapper(
     private val clientFactory: ClientFactory,
@@ -67,6 +71,9 @@ class BillingWrapper(
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
 
+    // how long before the data source tries to reconnect to Google play
+    private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
+
     class ClientFactory(private val context: Context) {
         @UiThread
         fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
@@ -83,13 +90,21 @@ class BillingWrapper(
         }
     }
 
+    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
+        mainHandler.postDelayed(
+            { startConnection() },
+            delayMilliseconds
+        )
+    }
+
     override fun startConnection() {
-        mainHandler.post {
-            synchronized(this@BillingWrapper) {
-                if (billingClient == null) {
-                    billingClient = clientFactory.buildClient(this)
-                }
-                billingClient?.let {
+        synchronized(this@BillingWrapper) {
+            if (billingClient == null) {
+                billingClient = clientFactory.buildClient(this)
+            }
+
+            billingClient?.let {
+                if (!it.isReady) {
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
                     it.startConnection(this)
                 }
@@ -114,7 +129,7 @@ class BillingWrapper(
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
             if (billingClient?.isReady == false) {
-                startConnection()
+                startConnectionOnMainThread()
             } else {
                 executePendingRequests()
             }
@@ -535,6 +550,7 @@ class BillingWrapper(
                     )
                     stateListener?.onConnected()
                     executePendingRequests()
+                    reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
                 }
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
@@ -581,6 +597,22 @@ class BillingWrapper(
         mainHandler.post {
             log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient.toString()))
         }
+        retryBillingServiceConnectionWithExponentialBackoff()
+    }
+
+    /**
+     * Retries the billing service connection with exponential backoff, maxing out at the time
+     * specified by RECONNECT_TIMER_MAX_TIME_MILLISECONDS.
+     *
+     * This prevents ANRs, see https://github.com/android/play-billing-samples/issues/310
+     */
+    private fun retryBillingServiceConnectionWithExponentialBackoff() {
+        log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds))
+        startConnectionOnMainThread(reconnectMilliseconds)
+        reconnectMilliseconds = min(
+            reconnectMilliseconds * 2,
+            RECONNECT_TIMER_MAX_TIME_MILLISECONDS
+        )
     }
 
     override fun isConnected(): Boolean = billingClient?.isReady ?: false

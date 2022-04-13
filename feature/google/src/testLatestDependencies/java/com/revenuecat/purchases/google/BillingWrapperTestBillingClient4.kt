@@ -86,13 +86,7 @@ class BillingWrapperTest {
 
     @Before
     fun setup() {
-        val slot = slot<Runnable>()
-        every {
-            handler.post(capture(slot))
-        } answers {
-            slot.captured.run()
-            true
-        }
+        setupRunnables()
 
         val listenerSlot = slot<PurchasesUpdatedListener>()
         every {
@@ -136,7 +130,7 @@ class BillingWrapperTest {
 
         every {
             mockClient.isReady
-        } returns true
+        } returns false andThen true
 
         mockDetailsList = listOf(stubSkuDetails())
 
@@ -425,15 +419,17 @@ class BillingWrapperTest {
             null
         )
 
+        // ensure calls to startConnection - 1 happens in setup, 1 more here
         verify(exactly = 2) {
-            handler.post(any())
+            handler.postDelayed(any(), any())
         }
 
         every { mockClient.isReady } returns true
 
         billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
-        verify(exactly = 4) {
+        // ensure calls to launchBillingFlow - 1 in setup, 1 here
+        verify(exactly = 2) {
             handler.post(any())
         }
     }
@@ -543,7 +539,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun removingListenerDisconnects() {
+    fun `calling billing close() sets purchasesUpdatedListener to null and disconnects from BillingClient`() {
         every {
             mockClient.endConnection()
         } just Runs
@@ -551,7 +547,7 @@ class BillingWrapperTest {
             mockClient.isReady
         } returns true
 
-        wrapper.purchasesUpdatedListener = null
+        wrapper.close()
         verify {
             mockClient.endConnection()
         }
@@ -563,6 +559,7 @@ class BillingWrapperTest {
         verify {
             mockClient.startConnection(eq(wrapper))
         }
+
         assertThat(wrapper.purchasesUpdatedListener).isNotNull
     }
 
@@ -1643,6 +1640,52 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `if BillingService disconnects, will try to reconnect with exponential backoff`() {
+        // ensure delay on first retry
+        val firstRetryMillisecondsSlot = slot<Long>()
+        every {
+            handler.postDelayed(any(), capture(firstRetryMillisecondsSlot))
+        } returns true
+
+        wrapper.onBillingServiceDisconnected()
+
+        assertThat(firstRetryMillisecondsSlot.isCaptured).isTrue
+        assertThat(firstRetryMillisecondsSlot.captured).isNotEqualTo(0)
+
+        // ensure 2nd retry has longer delay
+        val secondRetryMillisecondsSlot = slot<Long>()
+        every {
+            handler.postDelayed(any(), capture(secondRetryMillisecondsSlot))
+        } returns true
+        wrapper.onBillingServiceDisconnected()
+
+        assertThat(secondRetryMillisecondsSlot.isCaptured).isTrue
+        assertThat(secondRetryMillisecondsSlot.captured).isGreaterThan(firstRetryMillisecondsSlot.captured)
+
+        // ensure milliseconds backoff gets reset to default after successful connection
+        wrapper.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        val afterSuccessfulConnectionRetryMillisecondsSlot = slot<Long>()
+        every {
+            handler.postDelayed(any(), capture(afterSuccessfulConnectionRetryMillisecondsSlot))
+        } returns true
+        wrapper.onBillingServiceDisconnected()
+
+        assertThat(afterSuccessfulConnectionRetryMillisecondsSlot.isCaptured).isTrue
+        assertThat(afterSuccessfulConnectionRetryMillisecondsSlot.captured == firstRetryMillisecondsSlot.captured)
+    }
+
+    @Test
+    fun `setting purchasesUpdatedListener will connect to BillingService with no delay`() {
+        val retryMillisecondsSlot = slot<Long>()
+        every {
+            handler.postDelayed(any(), capture(retryMillisecondsSlot))
+        } returns true
+
+        wrapper.purchasesUpdatedListener = mockPurchasesListener
+        assertThat(retryMillisecondsSlot.captured == 0L)
+    }
+
+    @Test
     fun `normalizing Google purchase returns correct product ID and null store user ID`() {
         val expectedProductID = "expectedProductID"
 
@@ -1760,6 +1803,24 @@ class BillingWrapperTest {
             )
         } answers {
             slot.captured.onSkuDetailsResponse(billingClientOKResult, mockDetailsList)
+        }
+    }
+
+    private fun setupRunnables() {
+        val slot = slot<Runnable>()
+        every {
+            handler.post(capture(slot))
+        } answers {
+            slot.captured.run()
+            true
+        }
+
+        val delayedSlot = slot<Runnable>()
+        every {
+            handler.postDelayed(capture(delayedSlot), any())
+        } answers {
+            delayedSlot.captured.run()
+            true
         }
     }
 }

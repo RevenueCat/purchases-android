@@ -1,25 +1,24 @@
 package com.revenuecat.purchases.common
 
-import android.util.Log
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 
 fun debugLog(message: String) {
     if (Config.debugLogsEnabled) {
-        Log.d("[Purchases] - DEBUG", message)
+        currentLogHandler.d("[Purchases] - DEBUG", message)
     }
 }
 
 fun infoLog(message: String) {
-    Log.i("[Purchases] - INFO", message)
+    currentLogHandler.i("[Purchases] - INFO", message)
 }
 
 fun warnLog(message: String) {
-    Log.w("[Purchases] - WARN", message)
+    currentLogHandler.w("[Purchases] - WARN", message)
 }
 
-fun errorLog(message: String) {
-    Log.e("[Purchases] - ERROR", message)
+fun errorLog(message: String, throwable: Throwable? = null) {
+    currentLogHandler.e("[Purchases] - ERROR", message, throwable)
 }
 
 fun errorLog(error: PurchasesError) {
@@ -31,6 +30,9 @@ fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.InvalidAppUserIdError,
         PurchasesErrorCode.OperationAlreadyInProgressError,
         PurchasesErrorCode.UnknownBackendError,
+        PurchasesErrorCode.LogOutWithAnonymousUserError,
+        PurchasesErrorCode.ConfigurationError,
+        PurchasesErrorCode.UnsupportedError,
         PurchasesErrorCode.InvalidSubscriberAttributesError -> log(LogIntent.RC_ERROR, error.message)
         PurchasesErrorCode.PurchaseCancelledError,
         PurchasesErrorCode.StoreProblemError,

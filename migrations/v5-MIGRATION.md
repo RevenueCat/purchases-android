@@ -1,6 +1,6 @@
 ## v5 API changes
 
-There were various updates to our API in this release, in order to best support the Amazon Store and to maintain parity 
+There were various updates to our API in this release, in order to best support the Amazon Appstore and to maintain parity 
 with our iOS SDK, which recently [migrated from ObjC to Swift](https://github.com/RevenueCat/purchases-ios/blob/main/docs/V4_API_Updates.md).
 
 ### Type Changes
@@ -62,13 +62,13 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | Old signature | New signature |
 |---------------|---------------|
 | `getPurchaserInfoWith((PurchasesError) -> Unit, (PurchaserInfo) -> Unit)` | `getCustomerInfoWith((PurchasesError) -> Unit, (CustomerInfo) -> Unit)` |
-| `purchasePackageWith(Activity, Package, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchasePackage(Activity, Package, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
-| `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchasePackage(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+| `purchasePackageWith(Activity, Package, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchasePackageWith(Activity, Package, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+| `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 | `purchaseProductWith(Activity, SkuDetails, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchaseProductWith(Activity, StoreProduct, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 | `purchaseProductWith(Activity, SkuDetails, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchaseProductWith(Activity, StoreProduct, UpgradeInfo, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 
 ### Removed APIs
-- Some deprecated functions have been removed: `identify`, `reset`, `createAlias`, `isBillingSupported`, `isFeatureSupported`, and the versions of `purchaseProduct`/`purchasePackage` accepting `UpgradeInfo` and `MakePurchaseListener`
+- Some deprecated functions have been removed: `identify`, `reset`, `createAlias`, `isBillingSupported`, `isFeatureSupported`, `addAttributionData` and the versions of `purchaseProduct`/`purchasePackage` accepting `UpgradeInfo` and `MakePurchaseListener`
 
 | Removed APIs |  
 |---------------------------------------------------------------------------|
@@ -82,11 +82,14 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | `resetWith((PurchasesError) -> Unit, (PurchaserInfo) -> Unit)` |
 | `isBillingSupported(Context, Callback<Boolean>)` |
 | `isFeatureSupported(BillingClient.FeatureType, Context, Callback<Boolean>)` |
+| `addAttributionData(JSONObject, AttributionNetwork, String?)` |
+| `addAttributionData(Map<String, Any?>, AttributionNetwork, String?)` |
+| `AttributionNetwork` |
 
 ### Other changes:
 
 - Our library now requires Java 8
-- Amazon support (see [instructions doc](https://github.com/RevenueCat/purchases-android/blob/main/AMAZON-INSTRUCTIONS.md))
+- Amazon support (see [the section in our docs for more information](https://docs.revenuecat.com/docs/amazon-platform-resources))
 
 ### Reporting undocumented issues:
 

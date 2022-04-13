@@ -2,6 +2,8 @@ package com.revenuecat.purchases.amazon
 
 import android.app.Activity
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.ProductType
@@ -24,18 +26,20 @@ import com.revenuecat.purchases.amazon.listener.UserDataResponseListener
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.concurrent.ConcurrentLinkedQueue
 import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 private const val TERM_SKU_JSON_KEY = "termSku"
@@ -46,6 +50,7 @@ internal class AmazonBilling constructor(
     private val amazonBackend: AmazonBackend,
     private val cache: AmazonCache,
     private val observerMode: Boolean,
+    private val mainHandler: Handler,
     private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
     private val productDataHandler: ProductDataResponseListener = ProductDataHandler(purchasingServiceProvider),
     private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(purchasingServiceProvider),
@@ -65,8 +70,9 @@ internal class AmazonBilling constructor(
         applicationContext: Context,
         backend: Backend,
         cache: DeviceCache,
-        observerMode: Boolean
-    ) : this(applicationContext, AmazonBackend(backend), AmazonCache(cache), observerMode)
+        observerMode: Boolean,
+        mainHandler: Handler
+    ) : this(applicationContext, AmazonBackend(backend), AmazonCache(cache), observerMode, mainHandler)
 
     var connected = false
 
@@ -75,6 +81,17 @@ internal class AmazonBilling constructor(
 
         purchasingServiceProvider.registerListener(applicationContext, this)
         connected = true
+        executePendingRequests()
+    }
+
+    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
+        // Start connection has to be called on onCreate, otherwise Amazon fails to detect the foregrounded Activity
+        // Be careful with doing mainHandler.post since that will not guarantee that it's called in onCreate
+        // runOnUIThread checks if the function is called in the UI thread and doesn't do post, so we are good since
+        // startConnectionOnMainThread is called on the main thread
+        runOnUIThread {
+            startConnection()
+        }
     }
 
     @SuppressWarnings("EmptyFunctionBlock")
@@ -136,12 +153,18 @@ internal class AmazonBilling constructor(
         onError: PurchasesErrorCallback
     ) {
         if (checkObserverMode()) return
-        userDataHandler.getUserData(
-            onSuccess = { userData ->
-                productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
-            },
-            onError
-        )
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                userDataHandler.getUserData(
+                    onSuccess = { userData ->
+                        productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
+                    },
+                    onError
+                )
+            } else {
+                onError(connectionError)
+            }
+        }
     }
 
     // endregion
@@ -156,7 +179,13 @@ internal class AmazonBilling constructor(
         if (purchase.purchaseState == PurchaseState.PENDING) return
 
         if (shouldTryToConsume) {
-            purchasingServiceProvider.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
+            executeRequestOnUIThread { connectionError ->
+                if (connectionError == null) {
+                    purchasingServiceProvider.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)
+                } else {
+                    errorLog(connectionError)
+                }
+            }
         }
 
         cache.addSuccessfullyPostedToken(purchase.purchaseToken)
@@ -200,15 +229,21 @@ internal class AmazonBilling constructor(
             log(LogIntent.AMAZON_WARNING, AmazonStrings.PRODUCT_CHANGES_NOT_SUPPORTED)
             return
         }
-        purchaseHandler.purchase(
-            appUserID,
-            storeProduct,
-            presentedOfferingIdentifier,
-            onSuccess = { receipt, userData ->
-                handleReceipt(receipt, userData, storeProduct, presentedOfferingIdentifier)
-            },
-            onError = ::onPurchaseError
-        )
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                purchaseHandler.purchase(
+                    appUserID,
+                    storeProduct,
+                    presentedOfferingIdentifier,
+                    onSuccess = { receipt, userData ->
+                        handleReceipt(receipt, userData, storeProduct, presentedOfferingIdentifier)
+                    },
+                    onError = ::onPurchaseError
+                )
+            } else {
+                onPurchaseError(connectionError)
+            }
+        }
     }
 
     override fun isConnected(): Boolean = connected
@@ -219,36 +254,42 @@ internal class AmazonBilling constructor(
         onError: (PurchasesError) -> Unit
     ) {
         if (checkObserverMode()) return
-        purchaseUpdatesHandler.queryPurchases(
-            onSuccess = onSuccess@{ receipts, userData ->
-                if (receipts.isEmpty()) {
-                    onSuccess(emptyMap())
-                    return@onSuccess
-                }
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                purchaseUpdatesHandler.queryPurchases(
+                    onSuccess = onSuccess@{ receipts, userData ->
+                        if (receipts.isEmpty()) {
+                            onSuccess(emptyMap())
+                            return@onSuccess
+                        }
 
-                getMissingSkusForReceipts(
-                    userData.userId,
-                    receipts
-                ) { tokensToSkusMap, errors ->
-                    logErrorsIfAny(errors)
+                        getMissingSkusForReceipts(
+                            userData.userId,
+                            receipts
+                        ) { tokensToSkusMap, errors ->
+                            logErrorsIfAny(errors)
 
-                    if (tokensToSkusMap.isEmpty()) {
-                        val error = PurchasesError(
-                            PurchasesErrorCode.InvalidReceiptError,
-                            AmazonStrings.ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID
-                        )
-                        onError(error)
-                        return@getMissingSkusForReceipts
-                    }
+                            if (tokensToSkusMap.isEmpty()) {
+                                val error = PurchasesError(
+                                    PurchasesErrorCode.InvalidReceiptError,
+                                    AmazonStrings.ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID
+                                )
+                                onError(error)
+                                return@getMissingSkusForReceipts
+                            }
 
-                    val purchasesByHashedToken =
-                        receipts.toMapOfReceiptHashesToRestoredPurchases(tokensToSkusMap, userData)
+                            val purchasesByHashedToken =
+                                receipts.toMapOfReceiptHashesToRestoredPurchases(tokensToSkusMap, userData)
 
-                    onSuccess(purchasesByHashedToken)
-                }
-            },
-            onError
-        )
+                            onSuccess(purchasesByHashedToken)
+                        }
+                    },
+                    onError
+                )
+            } else {
+                onError(connectionError)
+            }
+        }
     }
 
     private fun List<Receipt>.toMapOfReceiptHashesToRestoredPurchases(
@@ -416,5 +457,36 @@ internal class AmazonBilling constructor(
             log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_OBSERVER_MODE_NOT_SUPPORTED)
             true
         } else false
+    }
+
+    private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
+
+    @Synchronized
+    private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
+        if (purchasesUpdatedListener != null) {
+            serviceRequests.add(request)
+            if (!isConnected()) {
+                startConnectionOnMainThread()
+            } else {
+                executePendingRequests()
+            }
+        }
+    }
+
+    private fun executePendingRequests() {
+        synchronized(this@AmazonBilling) {
+            while (isConnected() && !serviceRequests.isEmpty()) {
+                val serviceRequest = serviceRequests.remove()
+                runOnUIThread { serviceRequest(null) }
+            }
+        }
+    }
+
+    private fun runOnUIThread(runnable: Runnable) {
+        if (Looper.getMainLooper().thread == Thread.currentThread()) {
+            runnable.run()
+        } else {
+            mainHandler.post(runnable)
+        }
     }
 }

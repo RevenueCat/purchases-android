@@ -558,6 +558,17 @@ class SubscriberAttributesPurchasesTests {
 
     // endregion
 
+    // region Integration IDs
+
+    @Test
+    fun `setMixpanelDistinctID`() {
+        integrationIDTest(SubscriberAttributeKey.IntegrationIds.MixpanelDistinctId) { parameter ->
+            underTest.setMixpanelDistinctID(parameter)
+        }
+    }
+
+    // endregion
+
     // region Campaign parameters
 
     @Test
@@ -635,6 +646,27 @@ class SubscriberAttributesPurchasesTests {
                 id,
                 appUserId,
                 applicationMock
+            )
+        }
+    }
+
+    private fun integrationIDTest(
+        parameter: SubscriberAttributeKey.IntegrationIds,
+        functionToTest: (String) -> Unit
+    ) {
+        val parameterValue = "parametervalue"
+
+        every {
+            subscriberAttributesManagerMock.setAttribute(any(), parameterValue, appUserId)
+        } just Runs
+
+        functionToTest(parameterValue)
+
+        verify {
+            subscriberAttributesManagerMock.setAttribute(
+                parameter,
+                parameterValue,
+                appUserId
             )
         }
     }

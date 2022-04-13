@@ -1,12 +1,12 @@
 package com.revenuecat.purchases.amazon
 
 import android.content.Context
+import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
@@ -18,9 +18,9 @@ import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.PurchaseState
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -30,7 +30,6 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -45,6 +44,7 @@ class AmazonBillingTest {
     private val mockProductDataHandler = mockk<ProductDataHandler>()
     private val mockUserDataHandler = mockk<UserDataHandler>()
     private val mockPurchaseHandler = mockk<PurchaseHandler>()
+    private var handler = mockk<Handler>()
 
     private val mockAmazonBackend = mockk<AmazonBackend>()
     private val mockCache = mockk<AmazonCache>()
@@ -52,7 +52,6 @@ class AmazonBillingTest {
 
     private val capturedCachedReceiptSkus = slot<Map<String, String>>()
 
-    @Before
     fun setup() {
         underTest = AmazonBilling(
             applicationContext = mockContext,
@@ -63,16 +62,43 @@ class AmazonBillingTest {
             productDataHandler = mockProductDataHandler,
             purchaseHandler = mockPurchaseHandler,
             purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
-            userDataHandler = mockUserDataHandler
+            userDataHandler = mockUserDataHandler,
+            mainHandler = handler
         )
+
+        mockSetupFunctions()
+        setupRunnables()
+
+        underTest.purchasesUpdatedListener = mockk()
 
         every {
             mockCache.cacheSkusByToken(capture(capturedCachedReceiptSkus))
         } just Runs
     }
 
+    fun setupObserverMode() {
+        underTest = AmazonBilling(
+            applicationContext = mockContext,
+            amazonBackend = mockAmazonBackend,
+            cache = mockCache,
+            observerMode = true,
+            mainHandler = handler,
+            purchasingServiceProvider = mockPurchasingServiceProvider,
+            productDataHandler = mockProductDataHandler,
+            purchaseHandler = mockPurchaseHandler,
+            purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
+            userDataHandler = mockUserDataHandler
+        )
+
+        mockSetupFunctions()
+        setupRunnables()
+
+        underTest.purchasesUpdatedListener = mockk()
+    }
+
     @Test
     fun `If there are no receipts, querying purchases returns an empty list`() {
+        setup()
         every {
             mockPurchaseUpdatesHandler.queryPurchases(captureLambda(), any())
         } answers {
@@ -96,6 +122,7 @@ class AmazonBillingTest {
 
     @Test
     fun `If there are subscription receipts, received purchases have term skus, not skus`() {
+        setup()
         val expectedTermSku = "sub_sku.monthly"
         val dummyReceipt = dummyReceipt(sku = "sub_sku")
         val dummyUserData = dummyUserData()
@@ -129,6 +156,7 @@ class AmazonBillingTest {
 
     @Test
     fun `When querying purchases, receipt data is fetched for all subscriptions`() {
+        setup()
         val dummyReceiptA = dummyReceipt(sku = "sub_sku_a", receiptId = "receipt_a")
         val dummyReceiptB = dummyReceipt(sku = "sub_sku_b", receiptId = "receipt_b")
 
@@ -178,6 +206,7 @@ class AmazonBillingTest {
 
     @Test
     fun `When querying purchases, consumables don't need to fetch receipt data`() {
+        setup()
         val expectedSku = "sub_sku"
         val dummyReceipt = dummyReceipt(sku = expectedSku, productType = ProductType.CONSUMABLE)
         val dummyUserData = dummyUserData()
@@ -211,6 +240,7 @@ class AmazonBillingTest {
 
     @Test
     fun `When querying purchases, cached tokens don't need to fetch receipt data`() {
+        setup()
         val dummyReceiptA = dummyReceipt(sku = "sub_sku_a", receiptId = "receipt_a")
         val dummyReceiptB = dummyReceipt(sku = "sub_sku_b", receiptId = "receipt_b")
 
@@ -262,6 +292,7 @@ class AmazonBillingTest {
 
     @Test
     fun `If there are errors getting receipt data for all receipts, an InvalidReceiptError is passed`() {
+        setup()
         mockEmptyCache()
         val expectedSkuA = "sub_sku_a"
         val expectedSkuB = "sub_sku_b"
@@ -303,6 +334,7 @@ class AmazonBillingTest {
 
     @Test
     fun `Success is called when there are errors getting receipt data for just one of the receipts`() {
+        setup()
         val dummyReceiptInCache = dummyReceipt(sku = "sub_sku_a", receiptId = "receipt_a")
         val dummyReceiptThatErrors = dummyReceipt(sku = "sub_sku_b", receiptId = "receipt_b")
         val dummySuccessfulReceipt = dummyReceipt(sku = "sub_sku_c", receiptId = "receipt_c")
@@ -352,6 +384,9 @@ class AmazonBillingTest {
 
     @Test
     fun `Correct marketplace is used when getting product data`() {
+        setup()
+        underTest.startConnection()
+
         val skus = setOf("sku", "sku_2")
         val marketplace = "ES"
         val dummyUserData = dummyUserData(marketplace = marketplace)
@@ -388,6 +423,7 @@ class AmazonBillingTest {
 
     @Test
     fun `If purchase state is pending, purchase is not fulfilled`() {
+        setup()
         underTest.consumeAndSave(
             shouldTryToConsume = true,
             purchase = dummyReceipt().toStoreTransaction(
@@ -405,6 +441,7 @@ class AmazonBillingTest {
 
     @Test
     fun `If purchase state is "purchased", purchase is fulfilled and cached`() {
+        setup()
         val dummyReceipt = dummyReceipt()
 
         every {
@@ -436,6 +473,7 @@ class AmazonBillingTest {
 
     @Test
     fun `If purchase shouldn't be consumed, purchase is not fulfilled, but it is cached`() {
+        setup()
         val dummyReceipt = dummyReceipt()
 
         every {
@@ -467,6 +505,7 @@ class AmazonBillingTest {
 
     @Test
     fun `If there are receipts, querying all purchases returns a list of purchases`() {
+        setup()
         val expectedTermSku = "sub_sku.monthly"
         val dummyReceipt = dummyReceipt(sku = "sub_sku")
         val dummyUserData = dummyUserData()
@@ -500,6 +539,7 @@ class AmazonBillingTest {
 
     @Test
     fun `Term sku is used when purchasing subscriptions`() {
+        setup()
         val appUserID = "appUserID"
         val storeProduct = dummyAmazonProduct().toStoreProduct("US")
         val dummyReceipt = dummyReceipt()
@@ -549,6 +589,7 @@ class AmazonBillingTest {
 
     @Test
     fun `Sku is used when purchasing consumables`() {
+        setup()
         val appUserID = "appUserID"
         val sku = "sku"
         val storeProduct = dummyAmazonProduct(
@@ -602,7 +643,7 @@ class AmazonBillingTest {
 
     @Test
     fun `if observerMode, registerListener not called`() {
-        observerModeSetup()
+        setupObserverMode()
         every {
             mockPurchasingServiceProvider.registerListener(mockContext, any())
         } just Runs
@@ -615,12 +656,14 @@ class AmazonBillingTest {
 
     @Test
     fun `if not observerMode, registerListener called`() {
+        setup()
         every {
             mockPurchasingServiceProvider.registerListener(mockContext, any())
         } just Runs
 
         underTest.startConnection()
-        verify(exactly = 1) {
+        // First call is when setting purchasesUpdatedListener
+        verify(exactly = 2) {
             mockPurchasingServiceProvider.registerListener(any(), any())
         }
     }
@@ -752,20 +795,6 @@ class AmazonBillingTest {
         assertThat(receivedCorrectProductID).isEqualTo(expectedTermSku)
     }
 
-    private fun observerModeSetup() {
-        underTest = AmazonBilling(
-            applicationContext = mockContext,
-            amazonBackend = mockAmazonBackend,
-            cache = mockCache,
-            observerMode = true,
-            purchasingServiceProvider = mockPurchasingServiceProvider,
-            productDataHandler = mockProductDataHandler,
-            purchaseHandler = mockPurchaseHandler,
-            purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
-            userDataHandler = mockUserDataHandler
-        )
-    }
-
     private fun verifyBackendCalled(
         receipt: Receipt,
         dummyUserData: UserData,
@@ -828,4 +857,33 @@ class AmazonBillingTest {
             lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(successfulRVSResponse(expectedTermSku)))
         }
     }
+
+    private fun mockSetupFunctions() {
+        every {
+            mockCache.setReceiptSkus(capture(capturedCachedReceiptSkus))
+        } just Runs
+
+        every {
+            mockPurchasingServiceProvider.registerListener(mockContext, any())
+        } just Runs
+    }
+
+    private fun setupRunnables() {
+        val slot = slot<Runnable>()
+        every {
+            handler.post(capture(slot))
+        } answers {
+            slot.captured.run()
+            true
+        }
+
+        val delayedSlot = slot<Runnable>()
+        every {
+            handler.postDelayed(capture(delayedSlot), any())
+        } answers {
+            delayedSlot.captured.run()
+            true
+        }
+    }
+
 }

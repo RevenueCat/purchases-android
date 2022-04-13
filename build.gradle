@@ -3,7 +3,7 @@ buildscript {
     ext.compileVersion = 28
     ext.buildToolsVersion = "30.0.3"
     ext.minVersion = 14
-    ext.billingVersion = "4.0.0"
+    ext.billingVersion = "4.1.0"
     ext.billingClient3Version = "3.0.2"
     ext.lifecycleVersion = "2.3.0-rc01"
     repositories {
@@ -14,7 +14,7 @@ buildscript {
         classpath "com.vanniktech:gradle-maven-publish-plugin:0.15.1"
         classpath 'com.android.tools.build:gradle:7.0.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:1.4.32"
+        classpath "org.jetbrains.dokka:dokka-gradle-plugin:1.6.10"
     }
 }
 
@@ -75,6 +75,6 @@ task detektAllBaseline(type: io.gitlab.arturbosch.detekt.DetektCreateBaselineTas
 apply plugin: 'org.jetbrains.dokka'
 
 tasks.dokkaHtmlMultiModule.configure {
-    outputDirectory.set(file("docs"))
+    outputDirectory.set(file("docs/" + project.property("VERSION_NAME")))
     includes.from("README.md")
 }

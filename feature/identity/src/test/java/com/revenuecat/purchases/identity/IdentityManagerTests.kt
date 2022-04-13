@@ -12,6 +12,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -39,6 +40,7 @@ class IdentityManagerTests {
             every { cacheAppUserID(capture(cachedAppUserIDSlot)) } answers {
                 every { mockDeviceCache.getCachedAppUserID() } returns cachedAppUserIDSlot.captured
             }
+            every { cleanupOldAttributionData() } just Runs
         }
         mockSubscriberAttributesCache = mockk<SubscriberAttributesCache>().apply {
             every {
@@ -223,7 +225,7 @@ class IdentityManagerTests {
     @Test
     fun `logOut clears old caches`() {
         val identifiedUserID = "Waldo"
-        every { mockDeviceCache.clearLatestAttributionData(identifiedUserID) } just Runs
+        every { mockDeviceCache.cleanupOldAttributionData() } just Runs
         mockIdentifiedUser(identifiedUserID)
 
         val error = identityManager.logOut()
@@ -241,7 +243,7 @@ class IdentityManagerTests {
     fun `logOut creates random ID and caches it`() {
         val identifiedUserID = "Waldo"
         mockIdentifiedUser(identifiedUserID)
-        every { mockDeviceCache.clearLatestAttributionData(identifiedUserID) } just Runs
+        every { mockDeviceCache.cleanupOldAttributionData() } just Runs
 
         val error = identityManager.logOut()
 
@@ -312,6 +314,20 @@ class IdentityManagerTests {
         verify {
             mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(cachedAppUserIDSlot.captured)
         }
+    }
+
+    @Test
+    fun testConfigureCleansUpOldAttributionDataCacheForAnonymousUsers() {
+        mockCleanCaches()
+        identityManager.configure(null)
+        verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData() }
+    }
+
+    @Test
+    fun testConfigureCleansUpOldAttributionDataCacheForNonAnonymousUsers() {
+        mockCleanCaches()
+        identityManager.configure("cesar")
+        verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData() }
     }
 
     private fun mockIdentifiedUser(identifiedUserID: String) {

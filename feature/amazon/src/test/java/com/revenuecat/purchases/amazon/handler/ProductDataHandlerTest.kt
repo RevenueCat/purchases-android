@@ -4,18 +4,25 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.amazon.device.iap.internal.model.ProductDataResponseBuilder
 import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductDataResponse
+import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
+import com.amazon.device.iap.model.UserData
+import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.amazon.helpers.MockDeviceCache
 import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.models.StoreProduct
 import io.mockk.mockk
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.lang.Exception
+import java.lang.RuntimeException
 
 @RunWith(AndroidJUnit4::class)
 class ProductDataHandlerTest {
@@ -24,6 +31,14 @@ class ProductDataHandlerTest {
     private val apiKey = "api_key"
     private lateinit var cache: MockDeviceCache
     private lateinit var purchasingServiceProvider: PurchasingServiceProviderForTest
+
+    private var unexpectedOnSuccess: (List<StoreProduct>) -> Unit = {
+        fail("should be error")
+    }
+
+    private var unexpectedOnError: (PurchasesError) -> Unit = {
+        fail("should be success")
+    }
 
     @Before
     fun setup() {
@@ -50,9 +65,7 @@ class ProductDataHandlerTest {
             onReceive = {
                 receivedStoreProducts = it
             },
-            onError = {
-                fail("should be success")
-            }
+            unexpectedOnError
         )
 
         assertThat(receivedStoreProducts).isNotNull
@@ -84,9 +97,7 @@ class ProductDataHandlerTest {
             onReceive = {
                 receivedStoreProducts = it
             },
-            onError = {
-                fail("should be success")
-            }
+            unexpectedOnError
         )
 
         underTest.onProductDataResponse(
@@ -125,9 +136,7 @@ class ProductDataHandlerTest {
             onReceive = {
                 receivedStoreProducts = it
             },
-            onError = {
-                fail("should be success")
-            }
+            unexpectedOnError
         )
 
         underTest.onProductDataResponse(
@@ -165,9 +174,7 @@ class ProductDataHandlerTest {
             onReceive = {
                 receivedStoreProducts = it
             },
-            onError = {
-                fail("should be success")
-            }
+            unexpectedOnError
         )
 
         underTest.onProductDataResponse(
@@ -186,9 +193,7 @@ class ProductDataHandlerTest {
             onReceive = {
                 secondReceivedStoreProducts = it
             },
-            onError = {
-                fail("should be success")
-            }
+            unexpectedOnError
         )
 
         underTest.onProductDataResponse(
@@ -224,9 +229,7 @@ class ProductDataHandlerTest {
             onReceive = {
                 receivedStoreProducts = it
             },
-            onError = {
-                fail("should be success")
-            }
+            unexpectedOnError
         )
 
         underTest.onProductDataResponse(
@@ -257,9 +260,7 @@ class ProductDataHandlerTest {
         underTest.getProductData(
             expectedProductData.keys,
             "US",
-            onReceive = {
-                fail("should be error")
-            },
+            unexpectedOnSuccess,
             onError = {
                 receivedError = it
             }
@@ -298,9 +299,7 @@ class ProductDataHandlerTest {
             onReceive = {
                 receivedCount++
             },
-            onError = {
-                fail("should be success")
-            }
+            unexpectedOnError
         )
 
         val response = getDummyProductDataResponse(
@@ -312,6 +311,59 @@ class ProductDataHandlerTest {
         underTest.onProductDataResponse(response)
 
         assertThat(receivedCount).isOne
+    }
+
+    @Test
+    fun `Exceptions are logged so they are not swallowed by Amazon`() {
+        assertThat(underTest.productDataCache).isEmpty()
+
+        val marketPlace = "ES"
+
+        val expectedProductData = mapOf(
+            "sku_a" to dummyAmazonProduct(sku = "sku_a", price = "€3.00")
+        )
+        val expectedException = RuntimeException("")
+        var receivedException: Throwable? = null
+        var receivedLoggedException: Throwable? = null
+        Purchases.logHandler = object : LogHandler {
+            override fun d(tag: String, msg: String) {
+            }
+
+            override fun i(tag: String, msg: String) {
+            }
+
+            override fun w(tag: String, msg: String) {
+            }
+
+            override fun e(tag: String, msg: String, throwable: Throwable?) {
+                receivedLoggedException = throwable
+            }
+        }
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getProductDataRequestId = dummyRequestId
+
+        underTest.getProductData(
+            expectedProductData.keys,
+            marketPlace,
+            onReceive = { throw expectedException },
+            unexpectedOnError
+        )
+
+        val response = getDummyProductDataResponse(
+            requestId = dummyRequestId,
+            productData = expectedProductData
+        )
+
+        try {
+            underTest.onProductDataResponse(response)
+        } catch (e: Exception) {
+            receivedException = e
+        }
+
+        assertThat(receivedException).isNotNull()
+        assertThat(receivedLoggedException).isNotNull()
+        assertThat(expectedException).isEqualTo(receivedException)
+        assertThat(expectedException).isEqualTo(receivedLoggedException)
     }
 }
 
