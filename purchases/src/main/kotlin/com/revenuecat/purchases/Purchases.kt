@@ -510,8 +510,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                             dispatch { callback.onReceived(info) }
                                         }
                                     },
-                                    onError = { error, errorIsFinishable, body ->
-                                        if (errorIsFinishable) {
+                                    onError = { error, shouldConsumePurchase, body ->
+                                        if (shouldConsumePurchase) {
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
                                                 unsyncedSubscriberAttributesByKey,
@@ -1210,8 +1210,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
             },
-            onError = { error, errorIsFinishable, body ->
-                if (errorIsFinishable) {
+            onError = { error, shouldConsumePurchase, body ->
+                if (shouldConsumePurchase) {
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
                         unsyncedSubscriberAttributesByKey,
@@ -1570,8 +1570,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 onSuccess()
             },
-            onError = { error, errorIsFinishable, body ->
-                if (errorIsFinishable) {
+            onError = { error, shouldConsumePurchase, body ->
+                if (shouldConsumePurchase) {
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
                         unsyncedSubscriberAttributesByKey,
