@@ -62,7 +62,6 @@ def publishVariant = project.property("PUBLISH_VARIANT")
 if (publishVariant == "unityIAPRelease") {
     project.ext.POM_ARTIFACT_ID = artifactId + "-unityiap"
 }
-println "$project.ext.POM_ARTIFACT_ID"
 
 apply plugin: 'com.vanniktech.maven.publish'
 
