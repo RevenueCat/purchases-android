@@ -33,6 +33,7 @@ enum class ReservedSubscriberAttribute(val value: String) {
      * Integration IDs
      */
     MIXPANEL_DISTINCT_ID("\$mixpanelDistinctId"),
+    FIREBASE_APP_INSTANCE_ID("\$firebaseAppInstanceId"),
 
     /**
      * Optional campaign parameters
@@ -71,6 +72,7 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
 
     sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
         object MixpanelDistinctId : IntegrationIds(ReservedSubscriberAttribute.MIXPANEL_DISTINCT_ID)
+        object FirebaseAppInstanceId : IntegrationIds(ReservedSubscriberAttribute.FIREBASE_APP_INSTANCE_ID)
     }
 
     sealed class CampaignParameters(

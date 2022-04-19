@@ -178,6 +178,7 @@ private class PurchasesAPI {
             setOnesignalID("")
             setAirshipChannelID("")
             setMixpanelDistinctID("")
+            setFirebaseAppInstanceID("")
             setMediaSource("")
             setCampaign("")
             setAdGroup("")
