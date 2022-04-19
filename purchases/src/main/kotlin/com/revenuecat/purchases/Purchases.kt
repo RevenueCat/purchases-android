@@ -741,6 +741,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 		)
 	}
 
+    /**
      * Subscriber attribute associated with the Firebase App Instance ID for the user
      * Required for the RevenueCat Firebase integration
      *
