@@ -567,6 +567,13 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setFirebaseAppInstanceID`() {
+        integrationIDTest(SubscriberAttributeKey.IntegrationIds.FirebaseAppInstanceId) { parameter ->
+            underTest.setFirebaseAppInstanceID(parameter)
+        }
+    }
+
     // endregion
 
     // region Campaign parameters

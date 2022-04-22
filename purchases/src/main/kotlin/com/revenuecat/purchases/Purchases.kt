@@ -737,6 +737,21 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.Airship,
             airshipChannelID,
+			appUserID
+		)
+	}
+
+    /**
+     * Subscriber attribute associated with the Firebase App Instance ID for the user
+     * Required for the RevenueCat Firebase integration
+     *
+     * @param firebaseAppInstanceID null or an empty string will delete the subscriber attribute.
+     */
+    fun setFirebaseAppInstanceID(firebaseAppInstanceID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setFirebaseAppInstanceID"))
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.FirebaseAppInstanceId,
+            firebaseAppInstanceID,
             appUserID
         )
     }
