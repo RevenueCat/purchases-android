@@ -542,20 +542,6 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
-    @Test
-    fun `setOnesignalID`() {
-        attributionIDTest(SubscriberAttributeKey.AttributionIds.OneSignal) { id ->
-            underTest.setOnesignalID(id)
-        }
-    }
-
-    @Test
-    fun `setAirshipChannelID`() {
-        attributionIDTest(SubscriberAttributeKey.AttributionIds.Airship) { id ->
-            underTest.setAirshipChannelID(id)
-        }
-    }
-
     // endregion
 
     // region Integration IDs
@@ -564,6 +550,27 @@ class SubscriberAttributesPurchasesTests {
     fun `setMixpanelDistinctID`() {
         integrationIDTest(SubscriberAttributeKey.IntegrationIds.MixpanelDistinctId) { parameter ->
             underTest.setMixpanelDistinctID(parameter)
+        }
+    }
+
+    @Test
+    fun `setOnesignalID`() {
+        integrationIDTest(SubscriberAttributeKey.IntegrationIds.OneSignal) { id ->
+            underTest.setOnesignalID(id)
+        }
+    }
+
+    @Test
+    fun `setAirshipChannelID`() {
+        integrationIDTest(SubscriberAttributeKey.IntegrationIds.Airship) { id ->
+            underTest.setAirshipChannelID(id)
+        }
+    }
+
+    @Test
+    fun `setFirebaseAppInstanceID`() {
+        integrationIDTest(SubscriberAttributeKey.IntegrationIds.FirebaseAppInstanceId) { parameter ->
+            underTest.setFirebaseAppInstanceID(parameter)
         }
     }
 
