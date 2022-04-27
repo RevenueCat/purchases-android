@@ -1685,6 +1685,27 @@ class BillingWrapperTest {
         assertThat(retryMillisecondsSlot.captured == 0L)
     }
 
+    @Test
+    fun `normalizing Google purchase returns correct product ID and null store user ID`() {
+        val expectedProductID = "expectedProductID"
+
+        var receivedProductID: String? = null
+
+        wrapper.normalizePurchaseData(
+            expectedProductID,
+            "purchaseToken",
+            "nothingshouldbepassedherebutjustincase",
+            { normalizedProductID ->
+                receivedProductID = normalizedProductID
+            },
+            {
+                fail("shouldn't be an error")
+            }
+        )
+
+        assertThat(receivedProductID).isEqualTo(expectedProductID)
+    }
+
     private fun mockNullSkuDetailsResponse() {
         val slot = slot<SkuDetailsResponseListener>()
         every {
