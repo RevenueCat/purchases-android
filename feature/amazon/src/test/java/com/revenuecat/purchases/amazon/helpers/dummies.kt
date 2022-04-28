@@ -46,8 +46,9 @@ fun dummyReceipt(
 }
 
 fun dummyUserData(
-    marketplace: String = "US"
+    marketplace: String = "US",
+    storeUserId: String = "user_id"
 ): UserData = UserDataBuilder()
-    .setUserId("user_id")
+    .setUserId(storeUserId)
     .setMarketplace(marketplace)
     .build()
