@@ -79,6 +79,14 @@ Upload a snapshot release
 
 Prepare next version
 
+### android build_magic_weather
+
+```sh
+[bundle exec] fastlane android build_magic_weather
+```
+
+
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
