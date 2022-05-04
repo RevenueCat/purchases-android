@@ -1,8 +1,11 @@
 package com.revenuecat.purchases.amazon
 
+import android.util.Log
 import com.amazon.device.iap.internal.model.ProductBuilder
 import com.amazon.device.iap.model.Product
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 import java.math.BigDecimal
@@ -19,7 +22,11 @@ val StoreProduct.amazonProduct: Product
         .setTitle(originalJson.getString("title"))
         .setCoinsRewardAmount(originalJson.getInt("coinsRewardAmount")).build()
 
-fun Product.toStoreProduct(marketplace: String): StoreProduct {
+fun Product.toStoreProduct(marketplace: String): StoreProduct? {
+    if (price == null) {
+        log(LogIntent.AMAZON_ERROR, AmazonStrings.PRODUCT_PRICE_MISSING.format(sku))
+        return null
+    }
     // By default, Amazon automatically converts the base list price of your IAP items into
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
     val (currencyCode, priceAmountMicros) = price.extractPrice(marketplace)

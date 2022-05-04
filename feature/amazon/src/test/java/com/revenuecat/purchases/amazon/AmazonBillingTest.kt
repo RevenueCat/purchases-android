@@ -394,11 +394,12 @@ class AmazonBillingTest {
         }
 
         val marketplaceSlot = slot<String>()
-        val storeProduct = listOf(dummyAmazonProduct().toStoreProduct(marketplace))
+        val storeProducts = listOfNotNull(dummyAmazonProduct().toStoreProduct(marketplace))
+
         every {
             mockProductDataHandler.getProductData(skus, capture(marketplaceSlot), captureLambda(), any())
         } answers {
-            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProduct)
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)
         }
 
         var onReceiveCalled = false
@@ -557,8 +558,10 @@ class AmazonBillingTest {
             }
         }
 
+        assertThat(storeProduct).isNotNull
+
         every {
-            mockPurchaseHandler.purchase(appUserID, storeProduct, null, captureLambda(), any())
+            mockPurchaseHandler.purchase(appUserID, storeProduct!!, null, captureLambda(), any())
         } answers {
             lambda<(Receipt, UserData) -> Unit>().captured.invoke(dummyReceipt, dummyUserData)
         }
@@ -568,7 +571,7 @@ class AmazonBillingTest {
         underTest.makePurchaseAsync(
             mockk(),
             appUserID,
-            storeProduct = storeProduct,
+            storeProduct = storeProduct!!,
             replaceSkuInfo = null,
             presentedOfferingIdentifier = null
         )
@@ -613,8 +616,10 @@ class AmazonBillingTest {
             }
         }
 
+        assertThat(storeProduct).isNotNull
+
         every {
-            mockPurchaseHandler.purchase(appUserID, storeProduct, null, captureLambda(), any())
+            mockPurchaseHandler.purchase(appUserID, storeProduct!!, null, captureLambda(), any())
         } answers {
             lambda<(Receipt, UserData) -> Unit>().captured.invoke(dummyReceipt, dummyUserData)
         }
@@ -622,7 +627,7 @@ class AmazonBillingTest {
         underTest.makePurchaseAsync(
             mockk(),
             appUserID,
-            storeProduct = storeProduct,
+            storeProduct = storeProduct!!,
             replaceSkuInfo = null,
             presentedOfferingIdentifier = null
         )
