@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.amazon
 
-import android.util.Log
 import com.amazon.device.iap.internal.model.ProductBuilder
 import com.amazon.device.iap.model.Product
 import com.revenuecat.purchases.common.LogIntent

@@ -32,10 +32,10 @@ object AmazonStrings {
         "Failed to get user data. Call is not supported."
     const val ERROR_USER_DATA_STORE_PROBLEM =
         "Failed to get user data. There was an Amazon store problem."
-    const val ERROR_OBSERVER_MODE_NOT_SUPPORTED =
-        "Attempting to interact with Amazon App Store with an Amazon Purchases configuration in observer mode, " +
-            "but observer mode is not yet supported."
     const val PRODUCT_PRICE_MISSING = "Product %s is missing a price. This is common if you're trying to load a " +
         "product SKU instead of a subscription term SKU. Make sure you configure the subscription term SKUs " +
         "in the RevenueCat dashboard"
+    const val WARNING_AMAZON_OBSERVER_MODE =
+        "Attempting to interact with Amazon App Store with an Amazon Purchases configuration in observer mode " +
+            "won't do anything. Please use syncObserverModeAmazonPurchase to send purchases to RevenueCat instead."
 }
