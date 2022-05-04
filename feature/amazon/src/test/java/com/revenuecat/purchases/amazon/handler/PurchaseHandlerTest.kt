@@ -240,7 +240,7 @@ class PurchaseHandlerTest {
     }
 
     private fun dummyStoreProduct(): StoreProduct {
-        return dummyAmazonProduct().toStoreProduct("US")
+        return dummyAmazonProduct().toStoreProduct("US")!!
     }
 
     private fun getDummyPurchaseResponse(

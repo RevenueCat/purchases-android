@@ -15,7 +15,7 @@ fun dummyAmazonProduct(
     productType: ProductType = ProductType.SUBSCRIPTION,
     description: String = "A product description",
     title: String = "A product title",
-    price: String = "$3.00",
+    price: String? = "$3.00",
     smallIconUrl: String = "https://icon.url",
     coinsRewardAmount: Int = 100
 ): Product {
