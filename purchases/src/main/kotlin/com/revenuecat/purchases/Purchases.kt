@@ -40,6 +40,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.google.isSuccessful
+import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
@@ -210,9 +211,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
-     * for subscriptions anytime a sync is needed, like after a successful purchase.
+     * for subscriptions anytime a sync is needed, like after a successful purchase, or when migrating existing
+     * users to RevenueCat
      *
-     * @warning This function should only be called if you're not calling any purchase method.
+     * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
      */
     fun syncPurchases() {
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
@@ -224,39 +226,18 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isNotEmpty()) {
                     allPurchases.forEach { purchase ->
-                        val unsyncedSubscriberAttributesByKey =
-                            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
                         val productInfo = ReceiptInfo(productIDs = purchase.skus)
-                        backend.postReceiptData(
-                            purchaseToken = purchase.purchaseToken,
-                            appUserID = appUserID,
-                            isRestore = this.allowSharingPlayStoreAccount,
-                            observerMode = !this.finishTransactions,
-                            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                            receiptInfo = productInfo,
-                            storeAppUserID = purchase.storeUserID,
-                            onSuccess = { info, body ->
-                                subscriberAttributesManager.markAsSynced(
-                                    appUserID,
-                                    unsyncedSubscriberAttributesByKey,
-                                    body.getAttributeErrors()
-                                )
-                                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-                                cacheCustomerInfo(info)
-                                sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                        syncPurchaseWithBackend(
+                            purchase.purchaseToken,
+                            purchase.storeUserID,
+                            appUserID,
+                            productInfo,
+                            {
                                 log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
                             },
-                            onError = { error, errorIsFinishable, body ->
-                                if (errorIsFinishable) {
-                                    subscriberAttributesManager.markAsSynced(
-                                        appUserID,
-                                        unsyncedSubscriberAttributesByKey,
-                                        body.getAttributeErrors()
-                                    )
-                                    deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
-                                }
+                            { error ->
                                 log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                        .format(purchase, error))
+                                    .format(purchase, error))
                             }
                         )
                     }
@@ -264,6 +245,70 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             },
             onReceivePurchaseHistoryError = {
                 log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it))
+            }
+        )
+    }
+
+    /**
+     * This method will send a purchase to the RevenueCat backend. This function should only be called if you are
+     * in Amazon observer mode or performing a client side migration of your current users to RevenueCat.
+     *
+     * The receipt IDs are cached if successfully posted so they are not posted more than once.
+     *
+     * @param [productID] Product ID associated to the purchase.
+     * @param [receiptID] ReceiptId that represents the Amazon purchase.
+     * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
+     * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
+     * @param [price] Product's price.
+     */
+    fun syncObserverModeAmazonPurchase(
+        productID: String,
+        receiptID: String,
+        amazonUserID: String,
+        isoCurrencyCode: String?,
+        price: Double?
+    ) {
+        log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID))
+
+        deviceCache.getPreviouslySentHashedTokens().takeIf { it.contains(receiptID.sha1()) }?.apply {
+            log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_SKIPPING.format(receiptID, amazonUserID))
+            return
+        }
+
+        val appUserID = identityManager.currentAppUserID
+        billing.normalizePurchaseData(
+            productID,
+            receiptID,
+            amazonUserID,
+            { normalizedProductID ->
+                val receiptInfo = ReceiptInfo(
+                        productIDs = listOf(normalizedProductID),
+                        price = price?.takeUnless { it == 0.0 },
+                        currency = isoCurrencyCode?.takeUnless { it.isBlank() }
+                )
+                syncPurchaseWithBackend(
+                    receiptID,
+                    amazonUserID,
+                    appUserID,
+                    receiptInfo,
+                    {
+                        val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
+                        log(LogIntent.PURCHASE, logMessage)
+                    },
+                    { error ->
+                        val logMessage = PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(
+                            receiptID,
+                            amazonUserID,
+                            error
+                        )
+                        log(LogIntent.RC_ERROR, logMessage)
+                    }
+                )
+            },
+            { error ->
+                val logMessage =
+                    PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(receiptID, amazonUserID, error)
+                log(LogIntent.RC_ERROR, logMessage)
             }
         )
     }
@@ -465,8 +510,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                             dispatch { callback.onReceived(info) }
                                         }
                                     },
-                                    onError = { error, errorIsFinishable, body ->
-                                        if (errorIsFinishable) {
+                                    onError = { error, shouldConsumePurchase, body ->
+                                        if (shouldConsumePurchase) {
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
                                                 unsyncedSubscriberAttributesByKey,
@@ -711,6 +756,51 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         )
     }
 
+    /**
+     * Subscriber attribute associated with the OneSignal Player Id for the user
+     * Required for the RevenueCat OneSignal integration
+     *
+     * @param onesignalID null or an empty string will delete the subscriber attribute
+     */
+    fun setOnesignalID(onesignalID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setOnesignalID"))
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.OneSignal,
+            onesignalID,
+            appUserID
+        )
+    }
+
+    /**
+     * Subscriber attribute associated with the Airship Channel ID
+     * Required for the RevenueCat Airship integration
+     *
+     * @param airshipChannelID null or an empty string will delete the subscriber attribute
+     */
+    fun setAirshipChannelID(airshipChannelID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAirshipChannelID"))
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.Airship,
+            airshipChannelID,
+			appUserID
+		)
+	}
+
+    /**
+     * Subscriber attribute associated with the Firebase App Instance ID for the user
+     * Required for the RevenueCat Firebase integration
+     *
+     * @param firebaseAppInstanceID null or an empty string will delete the subscriber attribute.
+     */
+    fun setFirebaseAppInstanceID(firebaseAppInstanceID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setFirebaseAppInstanceID"))
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.FirebaseAppInstanceId,
+            firebaseAppInstanceID,
+            appUserID
+        )
+    }
+
     // endregion
     // region Attribution IDs
 
@@ -788,38 +878,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Mparticle,
             mparticleID,
-            appUserID,
-            application
-        )
-    }
-
-    /**
-     * Subscriber attribute associated with the OneSignal Player Id for the user
-     * Required for the RevenueCat OneSignal integration
-     *
-     * @param onesignalID null or an empty string will delete the subscriber attribute
-     */
-    fun setOnesignalID(onesignalID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setOnesignalID"))
-        subscriberAttributesManager.setAttributionID(
-            SubscriberAttributeKey.AttributionIds.OneSignal,
-            onesignalID,
-            appUserID,
-            application
-        )
-    }
-
-    /**
-     * Subscriber attribute associated with the Airship Channel ID
-     * Required for the RevenueCat Airship integration
-     *
-     * @param airshipChannelID null or an empty string will delete the subscriber attribute
-     */
-    fun setAirshipChannelID(airshipChannelID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAirshipChannelID"))
-        subscriberAttributesManager.setAttributionID(
-            SubscriberAttributeKey.AttributionIds.Airship,
-            airshipChannelID,
             appUserID,
             application
         )
@@ -1165,8 +1223,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
             },
-            onError = { error, errorIsFinishable, body ->
-                if (errorIsFinishable) {
+            onError = { error, shouldConsumePurchase, body ->
+                if (shouldConsumePurchase) {
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
                         unsyncedSubscriberAttributesByKey,
@@ -1494,6 +1552,49 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
     private fun synchronizeSubscriberAttributesIfNeeded() {
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
+    }
+
+    private fun syncPurchaseWithBackend(
+        purchaseToken: String,
+        storeUserID: String?,
+        appUserID: String,
+        productInfo: ReceiptInfo,
+        onSuccess: () -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val unsyncedSubscriberAttributesByKey =
+            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
+        backend.postReceiptData(
+            purchaseToken = purchaseToken,
+            appUserID = appUserID,
+            isRestore = this.allowSharingPlayStoreAccount,
+            observerMode = !this.finishTransactions,
+            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+            receiptInfo = productInfo,
+            storeAppUserID = storeUserID,
+            onSuccess = { info, body ->
+                subscriberAttributesManager.markAsSynced(
+                    appUserID,
+                    unsyncedSubscriberAttributesByKey,
+                    body.getAttributeErrors()
+                )
+                deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                cacheCustomerInfo(info)
+                sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                onSuccess()
+            },
+            onError = { error, shouldConsumePurchase, body ->
+                if (shouldConsumePurchase) {
+                    subscriberAttributesManager.markAsSynced(
+                        appUserID,
+                        unsyncedSubscriberAttributesByKey,
+                        body.getAttributeErrors()
+                    )
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                }
+                onError(error)
+            }
+        )
     }
 
     // endregion
