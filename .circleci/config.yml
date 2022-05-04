@@ -338,10 +338,10 @@ workflows:
   build-test:
     jobs:
       - test
+      - assemble-sample-app: *release-tags-and-branches
 
   integration-test:
     jobs:
-      - assemble-sample-app
       - integration-tests-build: *release-tags-and-branches
       - run-firebase-tests-latest-dependencies:
           requires:
