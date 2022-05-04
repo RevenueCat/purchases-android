@@ -27,7 +27,8 @@ object AmazonStrings {
         "Failed to get purchase updates. Call is not supported."
     const val ERROR_PURCHASES_UPDATES_STORE_PROBLEM =
         "Failed to get purchase updates. There was an Amazon store problem."
-    const val ERROR_FAILED_USER_DATA = "Failed to get user data."
+    const val ERROR_FAILED_USER_DATA = "Failed to get user data. Make sure sandbox mode is enabled " +
+        "if using App Tester. https://rev.cat/enter-amazon-sandbox"
     const val ERROR_UNSUPPORTED_USER_DATA =
         "Failed to get user data. Call is not supported."
     const val ERROR_USER_DATA_STORE_PROBLEM =
