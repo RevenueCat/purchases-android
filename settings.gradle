@@ -1,6 +1,5 @@
 include ':feature:google'
 include ':feature:amazon'
-include ':integration-tests'
 include ':strings'
 include ':feature:identity'
 include ':feature:subscriber-attributes'
