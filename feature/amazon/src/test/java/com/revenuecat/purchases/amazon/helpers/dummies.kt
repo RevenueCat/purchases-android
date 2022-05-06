@@ -15,7 +15,7 @@ fun dummyAmazonProduct(
     productType: ProductType = ProductType.SUBSCRIPTION,
     description: String = "A product description",
     title: String = "A product title",
-    price: String = "$3.00",
+    price: String? = "$3.00",
     smallIconUrl: String = "https://icon.url",
     coinsRewardAmount: Int = 100
 ): Product {
@@ -46,8 +46,9 @@ fun dummyReceipt(
 }
 
 fun dummyUserData(
-    marketplace: String = "US"
+    marketplace: String = "US",
+    storeUserId: String = "user_id"
 ): UserData = UserDataBuilder()
-    .setUserId("user_id")
+    .setUserId(storeUserId)
     .setMarketplace(marketplace)
     .build()

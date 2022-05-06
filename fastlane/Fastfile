@@ -193,7 +193,7 @@ platform :android do
         "assembleAmazonDebug", 
         "assembleAmazonRelease", 
         "assembleGoogleDebug", 
-        "assembleGoolgeRelease", 
+        "assembleGoogleRelease", 
       ]
       task = options[:task] || UI.select("Which task?", tasks)
 

@@ -5,11 +5,11 @@ import com.revenuecat.purchases.models.StoreProduct
 class ReceiptInfo(
     val productIDs: List<String>,
     val offeringIdentifier: String? = null,
-    val storeProduct: StoreProduct? = null
+    val storeProduct: StoreProduct? = null,
+    val price: Double? = storeProduct?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble()),
+    val currency: String? = storeProduct?.priceCurrencyCode
 ) {
 
-    val price: Double? = storeProduct?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble())
-    val currency: String? = storeProduct?.priceCurrencyCode
     val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }
     val introDuration: String? = storeProduct?.introductoryPricePeriod?.takeUnless { it.isEmpty() }
     val trialDuration: String? = storeProduct?.freeTrialPeriod?.takeUnless { it.isEmpty() }

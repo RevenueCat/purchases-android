@@ -43,7 +43,9 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.stubGooglePurchase
@@ -2408,6 +2410,458 @@ class PurchasesTest {
             mockBillingAbstract.consumeAndSave(any(), any())
         }
         assertThat(capturedLambda).isNotNull
+    }
+
+    @Test
+    fun `syncing an Amazon transaction posts normalized purchase data to backend`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
+
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
+        )
+
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            price = price,
+            currency = currencyCode
+        )
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                isRestore = false,
+                observerMode = true,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = amazonUserID,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncing an Amazon transaction respects allow sharing account settings`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
+        purchases.allowSharingPlayStoreAccount = true
+
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
+        )
+
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            price = price,
+            currency = currencyCode
+        )
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                isRestore = true,
+                observerMode = true,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = amazonUserID,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncing an Amazon transaction never consumes it`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
+        purchases.allowSharingPlayStoreAccount = true
+
+        var capturedLambda: ((String) -> Unit)? = null
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            capturedLambda = lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
+        )
+
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            price = price,
+            currency = currencyCode
+        )
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                isRestore = true,
+                observerMode = true,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = amazonUserID,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        verify(exactly = 0) {
+            mockBillingAbstract.consumeAndSave(any(), any())
+        }
+        assertThat(capturedLambda).isNotNull
+    }
+
+    @Test
+    fun `Amazon transaction is not synced again if it was already synced`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns emptySet()
+
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
+        )
+
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            price = price,
+            currency = currencyCode
+        )
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                isRestore = false,
+                observerMode = true,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = amazonUserID,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        verify(exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(purchaseToken)
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf(purchaseToken.sha1())
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
+        )
+
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                observerMode = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                storeAppUserID = any(),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        verify(exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(any())
+        }
+
+        verify(exactly = 0) {
+            mockBillingAbstract.consumeAndSave(any(), any())
+        }
+    }
+
+    @Test
+    fun `syncing an Amazon transaction sends subscriber attributes`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
+        val subscriberAttributeKey = "favorite_cat"
+        val subscriberAttributeValue = "gardfield"
+        val subscriberAttribute = SubscriberAttribute(subscriberAttributeKey, subscriberAttributeValue)
+        val unsyncedSubscriberAttributes = mapOf(subscriberAttributeKey to subscriberAttribute)
+        purchases.allowSharingPlayStoreAccount = true
+
+        every {
+            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserId)
+        } returns unsyncedSubscriberAttributes
+
+        var capturedLambda: ((String) -> Unit)? = null
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            capturedLambda = lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
+        )
+
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            price = price,
+            currency = currencyCode
+        )
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                isRestore = true,
+                observerMode = true,
+                subscriberAttributes = unsyncedSubscriberAttributes.toBackendMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = amazonUserID,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        verify(exactly = 0) {
+            mockBillingAbstract.consumeAndSave(any(), any())
+        }
+        assertThat(capturedLambda).isNotNull
+    }
+
+    @Test
+    fun `syncing an Amazon transaction without price nor currency code posts purchase data to backend`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = null,
+            isoCurrencyCode = null
+        )
+
+        val productInfo = ReceiptInfo(productIDs = listOf(skuTerm))
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                isRestore = false,
+                observerMode = true,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = amazonUserID,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncing an Amazon transaction with zero price posts correct purchase data to backend`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = 0.0,
+            isoCurrencyCode = null
+        )
+
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            currency = null,
+            price = null
+        )
+        verify(exactly = 1) {
+            mockBackend.postReceiptData(
+                purchaseToken = purchaseToken,
+                appUserID = appUserId,
+                isRestore = false,
+                observerMode = true,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = amazonUserID,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
     }
 
     @Test
