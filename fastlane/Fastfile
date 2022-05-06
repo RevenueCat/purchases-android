@@ -175,6 +175,88 @@ platform :android do
       head: branch_name
     )
   end
+
+  desc "Builds a Magic Weather APK and prompts for:"
+  desc "* Gralde task"
+  desc "* Amazon or Google API Key for RevenueCat"
+  desc "* Version code"
+  desc "* Version name"
+  desc "* Amazon pem path (optional)"
+  desc "* New application id (optional)"
+  lane :build_magic_weather do |options|
+    ensure_git_status_clean
+
+    begin
+      project_dir = "examples/MagicWeather"
+
+      tasks = [
+        "assembleAmazonDebug", 
+        "assembleAmazonRelease", 
+        "assembleGoogleDebug", 
+        "assembleGoogleRelease", 
+      ]
+      task = options[:task] || UI.select("Which task?", tasks)
+
+      amazon_api_key = options[:amazon_api_key] || UI.input("Amazon API Key?") if task.include?("Amazon")
+      google_api_key = options[:google_api_key] || UI.input("Google API Key?") if task.include?("Google")
+
+      version_code = options[:version_code] || UI.input("Version code?")
+      version_name = options[:version_name] || UI.input("Version name?")
+
+      amazon_pem_path = options[:amazon_pem_path] || UI.input("Amazon .pem path?")
+
+      new_application_id = options[:application_id] || UI.input("New application id? (blank for no)")
+
+      # API keys
+      constants_path = "../examples/MagicWeather/app/src/main/java/com/revenuecat/sample/data/Constants.kt"
+      constants_text = File.read(constants_path)
+
+      constants_text = constants_text.gsub("amzn_api_key", amazon_api_key) if amazon_api_key.to_s.size > 0
+      constants_text = constants_text.gsub("googl_api_key", google_api_key) if google_api_key.to_s.size > 0
+
+      File.write(constants_path, constants_text)
+
+      # Application Id
+      if new_application_id.to_s.size > 0
+        application_id = "com.revenuecat.purchases_sample"
+        sh("find ../#{project_dir}/app -name 'build.gradle' -type f -exec sed -i '' 's/#{application_id}/#{new_application_id}/' {} \\;")
+      end
+
+      # Amazon pem
+      if amazon_pem_path.to_s.size > 0
+        pem_dir = "../examples/MagicWeather/app/src/main/assets"
+        pem_file = "AppstoreAuthenticationKey.pem"
+        FileUtils.mkdir_p(pem_dir)
+        FileUtils.cp(amazon_pem_path, File.join(pem_dir, pem_file))
+      end
+
+      # Build APK
+      gradle(
+        project_dir: project_dir,
+        task: task,
+        properties: {
+          "android.injected.version.code" => version_code,
+          "android.injected.version.name" => version_name,
+        }
+      )
+
+      # View APK info for sanity checking
+      path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+      if UI.confirm("Do you want to see APK info from 'aapt dump bading'?")
+        sh("aapt dump badging #{path}")
+      end
+
+      # Final result
+      UI.important("APK at #{path}")
+      if UI.confirm("Open directory of APK?")
+        dir = File.dirname(path)
+        sh("open #{dir}")
+      end
+    ensure
+      sh("git reset --hard")
+      sh("git clean -fd")
+    end
+  end
 end
 
 def increment_version_in(previous_version, new_version, path)
