@@ -95,7 +95,7 @@ class ProductDataHandler(
             log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA_EMPTY)
         }
 
-        val storeProducts = productData.values.map { it.toStoreProduct(marketplace) }
+        val storeProducts = productData.values.mapNotNull { it.toStoreProduct(marketplace) }
         onReceive(storeProducts)
     }
 
