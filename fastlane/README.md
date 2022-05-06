@@ -85,7 +85,19 @@ Prepare next version
 [bundle exec] fastlane android build_magic_weather
 ```
 
+Builds a Magic Weather APK and prompts for:
 
+* Gralde task
+
+* Amazon or Google API Key for RevenueCat
+
+* Version code
+
+* Version name
+
+* Amazon pem path (optional)
+
+* New application id (optional)
 
 ----
 
