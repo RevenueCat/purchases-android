@@ -192,13 +192,17 @@ class Backend(
             "store_user_id" to storeAppUserID
         ).filterValues { value -> value != null }
 
+        val extraHeaders = receiptInfo.storeProduct?.price?.let { priceString ->
+            mapOf("price_string" to priceString)
+        } ?: mapOf()
+
         val call = object : Dispatcher.AsyncCall() {
 
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     "/receipts",
                     body,
-                    authenticationHeaders
+                    authenticationHeaders + extraHeaders
                 )
             }
 
