@@ -16,22 +16,22 @@ class ProductConverterTest {
         val expectedSku = "sku"
         val product = dummyAmazonProduct(expectedSku)
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.sku).isEqualTo(expectedSku)
+        assertThat(storeProduct?.sku).isEqualTo(expectedSku)
     }
 
     @Test
     fun `product types are correctly assigned`() {
         var product = dummyAmazonProduct(productType = AmazonProductType.CONSUMABLE)
         var storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.type).isEqualTo(RevenueCatProductType.INAPP)
+        assertThat(storeProduct?.type).isEqualTo(RevenueCatProductType.INAPP)
 
         product = dummyAmazonProduct(productType = AmazonProductType.ENTITLED)
         storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.type).isEqualTo(RevenueCatProductType.INAPP)
+        assertThat(storeProduct?.type).isEqualTo(RevenueCatProductType.INAPP)
 
         product = dummyAmazonProduct(productType = AmazonProductType.SUBSCRIPTION)
         storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.type).isEqualTo(RevenueCatProductType.SUBS)
+        assertThat(storeProduct?.type).isEqualTo(RevenueCatProductType.SUBS)
     }
 
     @Test
@@ -39,29 +39,29 @@ class ProductConverterTest {
         val expectedPrice = "$39.99"
         val product = dummyAmazonProduct(price = expectedPrice)
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.price).isEqualTo(expectedPrice)
+        assertThat(storeProduct?.price).isEqualTo(expectedPrice)
     }
 
     @Test
     fun `priceAmountMicros is correctly calculated`() {
         val product = dummyAmazonProduct(price = "$39.99")
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.priceAmountMicros).isEqualTo(39_990_000)
+        assertThat(storeProduct?.priceAmountMicros).isEqualTo(39_990_000)
     }
 
     @Test
     fun `priceCurrencyCode is correctly assigned`() {
         val product = dummyAmazonProduct(price = "$39.99")
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.priceCurrencyCode).isEqualTo("USD")
+        assertThat(storeProduct?.priceCurrencyCode).isEqualTo("USD")
     }
 
     @Test
     fun `originalPrice is null`() {
         val product = dummyAmazonProduct()
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.originalPrice).isNull()
-        assertThat(storeProduct.originalPriceAmountMicros).isZero()
+        assertThat(storeProduct?.originalPrice).isNull()
+        assertThat(storeProduct?.originalPriceAmountMicros).isZero()
     }
 
     @Test
@@ -69,7 +69,7 @@ class ProductConverterTest {
         val expectedTitle = "title"
         val product = dummyAmazonProduct(title = expectedTitle)
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.title).isEqualTo(expectedTitle)
+        assertThat(storeProduct?.title).isEqualTo(expectedTitle)
     }
 
     @Test
@@ -77,25 +77,25 @@ class ProductConverterTest {
         val expectedDescription = "description"
         val product = dummyAmazonProduct(description = expectedDescription)
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.description).isEqualTo(expectedDescription)
+        assertThat(storeProduct?.description).isEqualTo(expectedDescription)
     }
 
     @Test
     fun `subscription period is null`() {
         val product = dummyAmazonProduct()
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.subscriptionPeriod).isNull()
+        assertThat(storeProduct?.subscriptionPeriod).isNull()
     }
 
     @Test
     fun `introductory price and trial periods are not available for Amazon`() {
         val product = dummyAmazonProduct()
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.freeTrialPeriod).isNull()
-        assertThat(storeProduct.introductoryPrice).isNull()
-        assertThat(storeProduct.introductoryPriceAmountMicros).isZero
-        assertThat(storeProduct.introductoryPricePeriod).isNull()
-        assertThat(storeProduct.introductoryPriceCycles).isZero
+        assertThat(storeProduct?.freeTrialPeriod).isNull()
+        assertThat(storeProduct?.introductoryPrice).isNull()
+        assertThat(storeProduct?.introductoryPriceAmountMicros).isZero
+        assertThat(storeProduct?.introductoryPricePeriod).isNull()
+        assertThat(storeProduct?.introductoryPriceCycles).isZero
     }
 
     @Test
@@ -103,7 +103,7 @@ class ProductConverterTest {
         val expectedSmallIconUrl = "https://icon.url"
         val product = dummyAmazonProduct(smallIconUrl = expectedSmallIconUrl)
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct.iconUrl).isEqualTo(expectedSmallIconUrl)
+        assertThat(storeProduct?.iconUrl).isEqualTo(expectedSmallIconUrl)
     }
 
     @Test
@@ -111,12 +111,21 @@ class ProductConverterTest {
         val product = dummyAmazonProduct()
         val storeProduct = product.toStoreProduct("US")
 
-        val receivedJSON = storeProduct.originalJson
+        val receivedJSON = storeProduct?.originalJson
         val expectedJSON = product.toJSON()
 
-        assertThat(receivedJSON.length()).isEqualTo(expectedJSON.length())
+        assertThat(receivedJSON).isNotNull
+        assertThat(receivedJSON!!.length()).isEqualTo(expectedJSON.length())
         receivedJSON.keys().forEach {
             assertThat(receivedJSON[it]).isEqualTo(expectedJSON[it])
         }
+    }
+
+    @Test
+    fun `if price is missing, product is not converted`() {
+        val product = dummyAmazonProduct(price = null)
+        val storeProduct = product.toStoreProduct("US")
+
+        assertThat(storeProduct).isNull()
     }
 }
