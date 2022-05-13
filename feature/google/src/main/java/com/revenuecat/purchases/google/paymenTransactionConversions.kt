@@ -24,7 +24,8 @@ fun Purchase.toStoreTransaction(
     originalJson = JSONObject(this.originalJson),
     presentedOfferingIdentifier = presentedOfferingIdentifier,
     storeUserID = null,
-    purchaseType = PurchaseType.GOOGLE_PURCHASE
+    purchaseType = PurchaseType.GOOGLE_PURCHASE,
+    marketplace = null
 )
 
 val StoreTransaction.originalGooglePurchase: Purchase?
@@ -48,6 +49,7 @@ fun PurchaseHistoryRecord.toStoreTransaction(
         originalJson = JSONObject(this.originalJson),
         presentedOfferingIdentifier = null,
         storeUserID = null,
-        purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE
+        purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE,
+        marketplace = null
     )
 }

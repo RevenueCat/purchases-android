@@ -71,7 +71,7 @@ class AmazonBackendTest {
             mockClient.performRequest(
                 path = "/receipts/amazon/store_user_id/receipt_id",
                 body = null,
-                authenticationHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
             )
         } returns successfulResult
 
@@ -91,7 +91,7 @@ class AmazonBackendTest {
             mockClient.performRequest(
                 path = "/receipts/amazon/store_user_id/receipt_id",
                 body = null,
-                authenticationHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
             )
         } returns unsuccessfulResult
 
@@ -112,7 +112,7 @@ class AmazonBackendTest {
             mockClient.performRequest(
                 path = "/receipts/amazon/store_user_id/receipt_id",
                 body = null,
-                authenticationHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
             )
         } throws IOException()
 

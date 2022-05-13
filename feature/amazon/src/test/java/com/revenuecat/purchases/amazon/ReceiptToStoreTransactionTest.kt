@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.amazon
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
+import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
@@ -23,7 +25,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.orderId).isNull()
@@ -40,7 +45,10 @@ class ReceiptToStoreTransactionTest {
             sku = expectedTermSku,
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.skus[0]).isEqualTo(expectedTermSku)
@@ -55,7 +63,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.type).isEqualTo(ProductType.SUBS)
@@ -66,7 +77,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.type).isEqualTo(ProductType.INAPP)
@@ -77,7 +91,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.type).isEqualTo(ProductType.INAPP)
@@ -92,7 +109,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.purchaseTime).isEqualTo(expectedPurchaseDate.time)
@@ -106,7 +126,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.purchaseToken).isEqualTo(receipt.receiptId)
@@ -121,7 +144,10 @@ class ReceiptToStoreTransactionTest {
                 sku = "sku",
                 presentedOfferingIdentifier = "offering",
                 purchaseState = expectedPurchaseState,
-                storeUserID = "store_user_id"
+                userData = dummyUserData(
+                    storeUserId = "store_user_id",
+                    marketplace = "US"
+                ),
             )
 
             assertThat(storeTransaction.purchaseState).isEqualTo(expectedPurchaseState)
@@ -136,7 +162,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.isAutoRenewing).isFalse
@@ -150,7 +179,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.isAutoRenewing).isTrue
@@ -164,7 +196,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.isAutoRenewing).isFalse
@@ -175,7 +210,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.isAutoRenewing).isFalse
@@ -189,7 +227,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.signature).isNull()
@@ -203,7 +244,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         val receivedJSON = storeTransaction.originalJson
@@ -224,7 +268,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = expectedPresentedOfferingIdentifier,
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.presentedOfferingIdentifier).isEqualTo(expectedPresentedOfferingIdentifier)
@@ -239,7 +286,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = expectedPresentedOfferingIdentifier,
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.presentedOfferingIdentifier).isEqualTo(expectedPresentedOfferingIdentifier)
@@ -255,10 +305,32 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = expectedStoreUserID
+            userData = dummyUserData(
+                storeUserId = expectedStoreUserID,
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.storeUserID).isEqualTo(expectedStoreUserID)
+    }
+
+    @Test
+    fun `marketplace is correct`() {
+        val receipt = dummyReceipt()
+
+        val expectedMarketplace = "US"
+
+        val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
+            sku = "sku",
+            presentedOfferingIdentifier = "offering",
+            purchaseState = PurchaseState.PURCHASED,
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = expectedMarketplace
+            )
+        )
+
+        assertThat(storeTransaction.marketplace).isEqualTo(expectedMarketplace)
     }
 
     @Test
@@ -268,7 +340,10 @@ class ReceiptToStoreTransactionTest {
             sku = "sku",
             presentedOfferingIdentifier = null,
             purchaseState = PurchaseState.PURCHASED,
-            storeUserID = "store_user_id"
+            userData = dummyUserData(
+                storeUserId = "store_user_id",
+                marketplace = "US"
+            )
         )
 
         assertThat(storeTransaction.purchaseType).isEqualTo(PurchaseType.AMAZON_PURCHASE)

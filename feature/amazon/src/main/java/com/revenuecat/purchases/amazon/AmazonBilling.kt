@@ -305,7 +305,7 @@ internal class AmazonBilling constructor(
             sku = sku,
             presentedOfferingIdentifier = null,
             purchaseState = PurchaseState.UNSPECIFIED_STATE,
-            storeUserID = userData.userId
+            userData
         )
         val hash = receipt.receiptId.sha1()
         hash to amazonPurchaseWrapper
@@ -425,7 +425,7 @@ internal class AmazonBilling constructor(
                 sku = storeProduct.sku,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
                 purchaseState = PurchaseState.PURCHASED,
-                storeUserID = userData.userId
+                userData
             )
             purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
             return
@@ -440,7 +440,7 @@ internal class AmazonBilling constructor(
                     sku = termSku,
                     presentedOfferingIdentifier = presentedOfferingIdentifier,
                     purchaseState = PurchaseState.PURCHASED,
-                    storeUserID = userData.userId
+                    userData
                 )
                 purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
             },
