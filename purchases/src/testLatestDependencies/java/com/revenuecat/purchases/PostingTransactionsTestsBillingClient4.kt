@@ -84,6 +84,7 @@ class PostingTransactionsTests {
                 subscriberAttributes = any(),
                 receiptInfo = capture(postedProductInfoSlot),
                 storeAppUserID = any(),
+                marketplace = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
             )
@@ -169,6 +170,7 @@ class PostingTransactionsTests {
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 storeAppUserID = any(),
                 receiptInfo = any(),
+                marketplace = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -209,6 +211,7 @@ class PostingTransactionsTests {
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
                 storeAppUserID = any(),
+                marketplace = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -255,6 +258,7 @@ class PostingTransactionsTests {
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
                 storeAppUserID = expectedStoreUserID,
+                marketplace = any(),
                 onSuccess = any(),
                 onError = any()
             )

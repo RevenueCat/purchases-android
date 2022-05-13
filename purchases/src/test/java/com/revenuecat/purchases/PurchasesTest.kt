@@ -3905,6 +3905,7 @@ class PurchasesTest {
                     subscriberAttributes = any(),
                     receiptInfo = any(),
                     storeAppUserID = any(),
+                    marketplace = any(),
                     onSuccess = captureLambda(),
                     onError = any()
                 )
