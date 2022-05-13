@@ -69,14 +69,19 @@ data class StoreTransaction(
     val presentedOfferingIdentifier: String?,
 
     /**
-     * Null for Google
+     * Amazon's store user id. Null for Google
      */
     val storeUserID: String?,
 
     /**
      * One of [PurchaseType] indicating the type of purchase.
      */
-    val purchaseType: PurchaseType
+    val purchaseType: PurchaseType,
+
+    /**
+     * Amazon's marketplace. Null for Google
+     */
+    val marketplace: String?
 ) : Parcelable {
 
     /**

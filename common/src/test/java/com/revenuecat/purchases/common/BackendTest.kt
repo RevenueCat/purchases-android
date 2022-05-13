@@ -159,7 +159,8 @@ class BackendTest {
         resultBody: String?,
         observerMode: Boolean,
         receiptInfo: ReceiptInfo,
-        storeAppUserID: String?
+        storeAppUserID: String?,
+        marketplace: String? = null
     ): CustomerInfo {
         val (fetchToken, info) = mockPostReceiptResponse(
             isRestore,
@@ -179,6 +180,7 @@ class BackendTest {
             subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
+            marketplace = marketplace,
             onSuccess = onReceivePostReceiptSuccessHandler,
             onError = postReceiptErrorCallback
         )
@@ -1423,6 +1425,30 @@ class BackendTest {
         assertThat(headersSlot.isCaptured).isTrue
         assertThat(headersSlot.captured.keys).contains("price_string")
         assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
+    }
+
+    @Test
+    fun `postReceipt passes marketplace as header`() {
+        val storeProduct = mockStoreProduct()
+
+        postReceipt(
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null,
+            marketplace = "DE"
+        )
+
+        assertThat(headersSlot.isCaptured).isTrue
+        assertThat(headersSlot.captured.keys).contains("price_string")
+        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
+        assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
     }
 
     private fun mockStoreProduct(

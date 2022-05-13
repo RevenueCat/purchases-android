@@ -3079,7 +3079,7 @@ class PurchasesTest {
             mockBillingAbstract.queryPurchases(appUserId, any(), any())
         }
         verify(exactly = 0) {
-            mockBackend.postReceiptData(any(), any(), any(), any(), any(), any(), any(), any(), any())
+            mockBackend.postReceiptData(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
     }
 

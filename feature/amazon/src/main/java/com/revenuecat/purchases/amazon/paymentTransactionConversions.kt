@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.amazon
 
 import com.amazon.device.iap.model.Receipt
+import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseType
@@ -10,7 +11,7 @@ fun Receipt.toStoreTransaction(
     sku: String,
     presentedOfferingIdentifier: String?,
     purchaseState: PurchaseState,
-    storeUserID: String?
+    userData: UserData
 ): StoreTransaction {
     val type = this.productType.toRevenueCatProductType()
     return StoreTransaction(
@@ -24,7 +25,8 @@ fun Receipt.toStoreTransaction(
         signature = null,
         originalJson = this.toJSON(),
         presentedOfferingIdentifier = presentedOfferingIdentifier,
-        storeUserID = storeUserID,
-        purchaseType = PurchaseType.AMAZON_PURCHASE
+        storeUserID = userData.userId,
+        purchaseType = PurchaseType.AMAZON_PURCHASE,
+        marketplace = userData.marketplace
     )
 }
