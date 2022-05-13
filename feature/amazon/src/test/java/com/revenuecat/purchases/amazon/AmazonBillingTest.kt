@@ -427,7 +427,10 @@ class AmazonBillingTest {
                 sku = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PENDING,
-                storeUserID = "store_user_id"
+                userData = dummyUserData(
+                    storeUserId = "store_user_id",
+                    marketplace = "US"
+                ),
             )
         )
 
@@ -455,7 +458,10 @@ class AmazonBillingTest {
                 sku = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PURCHASED,
-                storeUserID = "store_user_id"
+                userData = dummyUserData(
+                    storeUserId = "store_user_id",
+                    marketplace = "US"
+                )
             )
         )
 
@@ -487,7 +493,10 @@ class AmazonBillingTest {
                 sku = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PURCHASED,
-                storeUserID = "store_user_id"
+                userData = dummyUserData(
+                    storeUserId = "store_user_id",
+                    marketplace = "US"
+                )
             )
         )
 
