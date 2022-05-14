@@ -1064,7 +1064,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             PurchasesErrorCode.ConfigurationError,
             PurchasesErrorCode.UnexpectedBackendResponseError
         )
-            .contains(error)
+            .contains(error.code)
 
         log(
             if (errorCausedByPurchases) LogIntent.RC_ERROR else LogIntent.GOOGLE_ERROR,
