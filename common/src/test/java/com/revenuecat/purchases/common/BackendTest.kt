@@ -17,6 +17,7 @@ import com.revenuecat.purchases.utils.getNullableString
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
@@ -69,6 +70,8 @@ class BackendTest {
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
     private var receivedShouldConsumePurchase: Boolean? = null
+
+    private val headersSlot = slot<Map<String, String>>()
 
     private val onReceiveCustomerInfoSuccessHandler: (CustomerInfo) -> Unit = { info ->
             this@BackendTest.receivedCustomerInfo = info
@@ -124,9 +127,6 @@ class BackendTest {
 
         val result = HTTPResult(responseCode, resultBody ?: "{}")
 
-        val headers = HashMap<String, String>()
-        headers["Authorization"] = "Bearer $API_KEY"
-
         if (shouldMockCustomerInfo) {
             every {
                 result.body.buildCustomerInfo()
@@ -136,7 +136,7 @@ class BackendTest {
             mockClient.performRequest(
                 eq(path),
                 (if (body == null) any() else eq(body)),
-                eq<Map<String, String>>(headers)
+                capture(headersSlot)
             )
         }
 
@@ -159,7 +159,8 @@ class BackendTest {
         resultBody: String?,
         observerMode: Boolean,
         receiptInfo: ReceiptInfo,
-        storeAppUserID: String?
+        storeAppUserID: String?,
+        marketplace: String? = null
     ): CustomerInfo {
         val (fetchToken, info) = mockPostReceiptResponse(
             isRestore,
@@ -179,6 +180,7 @@ class BackendTest {
             subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
+            marketplace = marketplace,
             onSuccess = onReceivePostReceiptSuccessHandler,
             onError = postReceiptErrorCallback
         )
@@ -1403,8 +1405,54 @@ class BackendTest {
         assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse()
     }
 
+    @Test
+    fun `postReceipt passes formatted price as header`() {
+        val storeProduct = mockStoreProduct()
+
+        postReceipt(
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null,
+        )
+
+        assertThat(headersSlot.isCaptured).isTrue
+        assertThat(headersSlot.captured.keys).contains("price_string")
+        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
+    }
+
+    @Test
+    fun `postReceipt passes marketplace as header`() {
+        val storeProduct = mockStoreProduct()
+
+        postReceipt(
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null,
+            marketplace = "DE"
+        )
+
+        assertThat(headersSlot.isCaptured).isTrue
+        assertThat(headersSlot.captured.keys).contains("price_string")
+        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
+        assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
+    }
+
     private fun mockStoreProduct(
-        price: Long = 25000000,
+        price: Long = 25_000_000,
         duration: String = "P1M",
         introDuration: String = "P1M",
         trialDuration: String = "P1M"
@@ -1415,6 +1463,7 @@ class BackendTest {
         every { storeProduct.subscriptionPeriod } returns duration
         every { storeProduct.introductoryPricePeriod } returns introDuration
         every { storeProduct.freeTrialPeriod } returns trialDuration
+        every { storeProduct.price } returns "$25"
         return storeProduct
     }
 

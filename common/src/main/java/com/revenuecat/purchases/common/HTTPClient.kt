@@ -79,7 +79,7 @@ class HTTPClient(
     /** Performs a synchronous web request to the RevenueCat API
      * @param path The resource being requested
      * @param body The body of the request, for GET must be null
-     * @param authenticationHeaders Map of headers, basic headers are added automatically
+     * @param requestHeaders Map of headers, basic headers are added automatically
      * @return Result containing the HTTP response code and the parsed JSON body
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
@@ -88,7 +88,7 @@ class HTTPClient(
     fun performRequest(
         path: String,
         body: Map<String, Any?>?,
-        authenticationHeaders: Map<String, String>,
+        requestHeaders: Map<String, String>,
         refreshETag: Boolean = false
     ): HTTPResult {
         val jsonBody = body?.convert()
@@ -100,7 +100,7 @@ class HTTPClient(
         try {
             fullURL = URL(appConfig.baseURL, urlPathWithVersion)
 
-            val headers = getHeaders(authenticationHeaders, urlPathWithVersion, refreshETag)
+            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag)
             httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
             connection = getConnection(httpRequest)
@@ -135,7 +135,7 @@ class HTTPClient(
         )
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-            return performRequest(path, body, authenticationHeaders, refreshETag = true)
+            return performRequest(path, body, requestHeaders, refreshETag = true)
         }
         return callResult
     }

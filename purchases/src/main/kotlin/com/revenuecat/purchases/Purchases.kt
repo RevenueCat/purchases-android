@@ -232,6 +232,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             purchase.storeUserID,
                             appUserID,
                             productInfo,
+                            purchase.marketplace,
                             {
                                 log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
                             },
@@ -291,6 +292,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     amazonUserID,
                     appUserID,
                     receiptInfo,
+                    marketplace = null,
                     {
                         val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
                         log(LogIntent.PURCHASE, logMessage)
@@ -496,6 +498,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                     subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
                                     receiptInfo = receiptInfo,
                                     storeAppUserID = purchase.storeUserID,
+                                    marketplace = purchase.marketplace,
                                     onSuccess = { info, body ->
                                         subscriberAttributesManager.markAsSynced(
                                             appUserID,
@@ -1212,6 +1215,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
             receiptInfo = receiptInfo,
             storeAppUserID = purchase.storeUserID,
+            marketplace = purchase.marketplace,
             onSuccess = { info, body ->
                 subscriberAttributesManager.markAsSynced(
                     appUserID,
@@ -1559,6 +1563,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         storeUserID: String?,
         appUserID: String,
         productInfo: ReceiptInfo,
+        marketplace: String?,
         onSuccess: () -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -1572,6 +1577,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
             receiptInfo = productInfo,
             storeAppUserID = storeUserID,
+            marketplace = marketplace,
             onSuccess = { info, body ->
                 subscriberAttributesManager.markAsSynced(
                     appUserID,
