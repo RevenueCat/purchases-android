@@ -1,5 +1,3 @@
-## 5.1.0
-
 - Updated error log message for cases when there are no products configured in the dashboard 
   - https://github.com/RevenueCat/purchases-android/pull/517
 - Added new method `setMixpanelDistinctID` as a convenience method for setting the required attribute for the Mixpanel integration
