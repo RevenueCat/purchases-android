@@ -8,7 +8,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'androidx.navigation:navigation-safe-args-gradle-plugin:2.4.1'
+        classpath 'androidx.navigation:navigation-safe-args-gradle-plugin:2.4.2'
     }
 }
 
@@ -45,7 +45,7 @@ android {
 }
 
 def obtainTestBuildType() {
-    def result = "debug";
+    def result = "debug"
 
     if (project.hasProperty("testBuildType")) {
         result = project.getProperties().get("testBuildType")
@@ -62,11 +62,11 @@ dependencies {
     implementation project(path: ':purchases')
     implementation project(path: ':feature:amazon')
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
-    implementation 'androidx.recyclerview:recyclerview:1.1.0'
-    implementation 'com.google.android.material:material:1.3.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
+    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    implementation 'com.google.android.material:material:1.6.0'
 
-    implementation "androidx.navigation:navigation-fragment-ktx:2.3.4"
-    implementation "androidx.navigation:navigation-ui-ktx:2.3.4"
+    implementation "androidx.navigation:navigation-fragment-ktx:2.4.2"
+    implementation "androidx.navigation:navigation-ui-ktx:2.4.2"
 }
