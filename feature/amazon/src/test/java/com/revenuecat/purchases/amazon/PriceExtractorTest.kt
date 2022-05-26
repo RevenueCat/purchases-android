@@ -729,6 +729,10 @@ class PriceExtractorTest {
         val (currencyCode, priceAmountMicros) = "7.00${nbsp}US$".extractPrice("US")
         assertThat(currencyCode).isEqualTo("USD")
         assertThat(priceAmountMicros).isEqualTo(7_000_000)
+        val anotherPriceWithNBSP = "5,80 €"
+        val (anotherCurrencyCode, anotherPriceAmountMicros) = anotherPriceWithNBSP.extractPrice("DE")
+        assertThat(anotherCurrencyCode).isEqualTo("EUR")
+        assertThat(anotherPriceAmountMicros).isEqualTo(5_800_000)
     }
 
 }
