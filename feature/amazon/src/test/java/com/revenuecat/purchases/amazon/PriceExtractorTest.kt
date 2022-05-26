@@ -726,6 +726,8 @@ class PriceExtractorTest {
 
     @Test
     fun `US marketplace 7 USD US$ space symbol after and nbsp`() {
+        // This test was passing in unit test but failing when executed instrumented before the following bugfix
+        // https://github.com/RevenueCat/purchases-android/pull/538
         val (currencyCode, priceAmountMicros) = "7.00${nbsp}US$".extractPrice("US")
         assertThat(currencyCode).isEqualTo("USD")
         assertThat(priceAmountMicros).isEqualTo(7_000_000)

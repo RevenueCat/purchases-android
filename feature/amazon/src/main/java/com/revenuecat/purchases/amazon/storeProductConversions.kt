@@ -78,11 +78,14 @@ internal fun String.parsePriceUsingRegex(): BigDecimal? {
     val matcher = pattern.matcher(this)
     return matcher.takeIf { it.find() }?.let {
         val dirtyPrice = matcher.group()
+        // Amazon sends a nbsp character in countries with euros "5,80 €"
+        // Android devices will match the nbsp, JVM (when running on unit tests will not match the nbsp)
+        // So we remove them and trim just in case
         var price =
             dirtyPrice.replace(" ", "")
-            .replace(" ", "")
-            .replace("${Typography.nbsp}", "")
-        price = price.trim()
+                .replace(" ", "") // This is a NBSP, some editors might render it as a space or a tab
+                .replace("${Typography.nbsp}", "")
+                .trim()
         val split = price.split(".", ",")
         if (split.size != 1) {
             // Assuming all prices we get have 2 decimal points
