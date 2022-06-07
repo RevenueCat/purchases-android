@@ -5,7 +5,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.strings.ConfigureStrings
 
 private const val GOOGLE_API_KEY_PREFIX = "goog_"
-private const val AMAZON_API_KEY_PREFIX = "amazon_"
+private const val AMAZON_API_KEY_PREFIX = "amzn_"
 
 class APIKeyValidator {
 
