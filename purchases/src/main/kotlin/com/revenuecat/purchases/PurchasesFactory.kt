@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.common.APIKeyValidator
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -22,7 +23,9 @@ import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-internal class PurchasesFactory {
+internal class PurchasesFactory (
+    private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
+) {
 
     fun createPurchases(
         configuration: PurchasesConfiguration,
@@ -95,6 +98,8 @@ internal class PurchasesFactory {
             require(apiKey.isNotBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
             require(context.applicationContext is Application) { "Needs an application context." }
+
+            apiKeyValidator.validateAndLog(apiKey, store)
         }
     }
 
