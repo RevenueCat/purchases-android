@@ -5,9 +5,13 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.APIKeyValidator
 import io.mockk.clearAllMocks
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.Before
 import org.junit.Test
@@ -17,15 +21,17 @@ import org.junit.runner.RunWith
 class PurchasesFactoryTest {
 
     private val contextMock = mockk<Context>()
-
+    private val apiKeyValidatorMock = mockk<APIKeyValidator>()
 
     private lateinit var purchasesFactory: PurchasesFactory
 
     @Before
     fun setup() {
-        purchasesFactory = PurchasesFactory()
-
         clearAllMocks()
+
+        purchasesFactory = PurchasesFactory(apiKeyValidatorMock)
+
+        every { apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE) } just runs
     }
 
     @Test
@@ -66,7 +72,7 @@ class PurchasesFactoryTest {
     }
 
     @Test
-    fun `creating purchase passes all validations`() {
+    fun `creating purchase validates api key is valid`() {
         val configuration = createConfiguration()
         val applicationContextMock = mockk<Application>()
         every {
@@ -76,6 +82,7 @@ class PurchasesFactoryTest {
             contextMock.applicationContext
         } returns applicationContextMock
         purchasesFactory.validateConfiguration(configuration)
+        verify(exactly = 1) { apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE) }
     }
 
     private fun createConfiguration(apiKey: String = "fakeApiKey"): PurchasesConfiguration {
