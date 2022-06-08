@@ -23,6 +23,6 @@ object ConfigureStrings {
         "configure the SDK to use Google.\nSee https://rev.cat/auth for more details."
     const val INVALID_API_KEY = "The specified API Key is not recognized.\n" +
         "Ensure that you are using the public app-specific API key, " +
-        " which should look like 'goog_1a2b3c4d5e6f7h' or 'amzn_1a2b3c4d5e6f7h'.\n" +
+        "which should look like 'goog_1a2b3c4d5e6f7h' or 'amzn_1a2b3c4d5e6f7h'.\n" +
         "See https://rev.cat/auth for more details."
 }
