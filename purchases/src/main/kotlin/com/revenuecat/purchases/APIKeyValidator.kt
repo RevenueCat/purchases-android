@@ -1,13 +1,14 @@
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases
 
 import androidx.annotation.VisibleForTesting
-import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.strings.ConfigureStrings
 
 private const val GOOGLE_API_KEY_PREFIX = "goog_"
 private const val AMAZON_API_KEY_PREFIX = "amzn_"
 
-class APIKeyValidator {
+internal class APIKeyValidator {
 
     private enum class APIKeyPlatform {
         GOOGLE,

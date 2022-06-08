@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Store

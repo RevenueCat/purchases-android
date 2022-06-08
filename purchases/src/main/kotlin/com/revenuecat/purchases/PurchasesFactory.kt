@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
-import com.revenuecat.purchases.common.APIKeyValidator
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -23,7 +22,7 @@ import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-internal class PurchasesFactory (
+internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 

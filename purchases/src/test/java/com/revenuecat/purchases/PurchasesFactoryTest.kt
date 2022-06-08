@@ -5,7 +5,6 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.APIKeyValidator
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.just
