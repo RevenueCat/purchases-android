@@ -1,6 +1,5 @@
 apply from: "$rootProject.projectDir/library.gradle"
 apply plugin: 'org.jetbrains.dokka'
-apply plugin: 'kotlin-parcelize'
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
