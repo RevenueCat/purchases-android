@@ -7,7 +7,7 @@ package com.revenuecat.purchases
 
 import android.os.Parcelable
 import kotlinx.android.parcel.IgnoredOnParcel
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
 
 /**
  * An offering is a collection of [Package] available for the user to purchase.

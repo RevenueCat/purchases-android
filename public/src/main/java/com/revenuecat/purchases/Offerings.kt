@@ -1,7 +1,7 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
 
 /**
  * This class contains all the offerings configured in RevenueCat dashboard.
