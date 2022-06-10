@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.common.networking
 
 import android.content.SharedPreferences
-import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.utils.LogMockExtension
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.filterNotNullValues
 import io.mockk.Runs
@@ -11,15 +11,13 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import java.net.HttpURLConnection
 import java.net.URL
 
-@RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
+@ExtendWith(LogMockExtension::class)
 class ETagManagerTest {
 
     private val mockedPrefs = mockk<SharedPreferences>()
@@ -28,7 +26,7 @@ class ETagManagerTest {
     private val slotPutSharedPreferencesValue = slot<String>()
     private val mockEditor = mockk<SharedPreferences.Editor>()
 
-    @Before
+    @BeforeEach
     fun setup() {
         every {
             mockedPrefs.edit()

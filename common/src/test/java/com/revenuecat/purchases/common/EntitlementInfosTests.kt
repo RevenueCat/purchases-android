@@ -1,21 +1,19 @@
 package com.revenuecat.purchases.common
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.UriParseMockExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONArray
 import org.json.JSONObject
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import java.util.Date
 
-@RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
+@ExtendWith(UriParseMockExtension::class)
 class EntitlementInfosTests {
 
     private var response = JSONObject()

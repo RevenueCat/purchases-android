@@ -6,28 +6,29 @@
 package com.revenuecat.purchases.common
 
 import android.net.Uri
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.UriParseMockExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.json.JSONException
 import org.json.JSONObject
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 
-@RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
+@ExtendWith(UriParseMockExtension::class)
 class CustomerInfoTest {
 
     private val fullCustomerInfo: CustomerInfo by lazy {
         JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo()
     }
 
-    @Test(expected = JSONException::class)
+    @Test
     fun failsToBeCreatedWithEmptyJSONObject() {
         val empty = JSONObject("{}")
-        empty.buildCustomerInfo()
+        assertThatExceptionOfType(JSONException::class.java).isThrownBy {
+            empty.buildCustomerInfo()
+        }
     }
 
     @Test

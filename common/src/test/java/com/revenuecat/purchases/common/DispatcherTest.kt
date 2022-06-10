@@ -5,29 +5,26 @@
 
 package com.revenuecat.purchases.common
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.utils.LogMockExtension
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONException
-import org.json.JSONObject
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
-@RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
+@ExtendWith(LogMockExtension::class)
 class DispatcherTest {
 
     private val mockExecutorService: ExecutorService = mockk()
@@ -42,7 +39,7 @@ class DispatcherTest {
     private var result: HTTPResult? = null
 
 
-    @Before
+    @BeforeEach
     fun `setup`() {
         currentThreadExecutorService = CurrentThreadExecutorService()
         dispatcher = Dispatcher(currentThreadExecutorService)

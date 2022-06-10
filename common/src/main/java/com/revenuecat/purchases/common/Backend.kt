@@ -5,7 +5,6 @@
 
 package com.revenuecat.purchases.common
 
-import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -38,7 +37,8 @@ typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesErr
 class Backend(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
-    private val httpClient: HTTPClient
+    private val httpClient: HTTPClient,
+    private val uriEncoder: UriEncoder = UriEncoder()
 ) {
 
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
@@ -104,7 +104,7 @@ class Backend(
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        val path = "/subscribers/" + encode(appUserID)
+        val path = "/subscribers/" + uriEncoder.encode(appUserID)
         val cacheKey = synchronized(this@Backend) {
             // If there is any enqueued `postReceiptData` we don't want this new
             // `getCustomerInfo` to share the same cache key.
@@ -253,7 +253,7 @@ class Backend(
         onSuccess: (JSONObject) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        val path = "/subscribers/" + encode(appUserID) + "/offerings"
+        val path = "/subscribers/" + uriEncoder.encode(appUserID) + "/offerings"
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
@@ -290,10 +290,6 @@ class Backend(
         synchronized(this@Backend) {
             offeringsCallbacks.addCallback(call, path, onSuccess to onError, randomDelay = appInBackground)
         }
-    }
-
-    private fun encode(string: String): String {
-        return Uri.encode(string)
     }
 
     fun logIn(

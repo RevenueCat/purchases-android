@@ -5,27 +5,29 @@
 
 package com.revenuecat.purchases.common
 
-import android.net.Uri
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.utils.LogMockExtension
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.UriParseMockExtension
 import com.revenuecat.purchases.utils.getNullableString
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
 import org.json.JSONObject
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import java.io.IOException
 import java.lang.Thread.sleep
 import java.util.concurrent.CountDownLatch
@@ -36,19 +38,30 @@ import java.util.concurrent.TimeUnit
 
 private const val API_KEY = "TEST_API_KEY"
 
-@RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
+@ExtendWith(LogMockExtension::class, UriParseMockExtension::class)
 class BackendTest {
 
-    @Before
-    fun setup() = mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
+    @BeforeEach
+    fun setup() {
+        mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
+        every { mockUriEncoder.encode(any()) } returnsArgument 0
+    }
+
+    @AfterEach
+    fun tearDown() {
+        unmockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
+        clearMocks(mockClient, mockUriEncoder)
+
+    }
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
+    private val mockUriEncoder = mockk<UriEncoder>(relaxed = true)
     private val dispatcher = SyncDispatcher()
     private var backend: Backend = Backend(
         API_KEY,
         dispatcher,
-        mockClient
+        mockClient,
+        mockUriEncoder
     )
     private var asyncBackend: Backend = Backend(
         API_KEY,
@@ -61,7 +74,8 @@ class BackendTest {
                 LinkedBlockingQueue()
             )
         ),
-        mockClient
+        mockClient,
+        mockUriEncoder
     )
     private val appUserID = "jerry"
 
@@ -71,7 +85,7 @@ class BackendTest {
     private var receivedError: PurchasesError? = null
     private var receivedShouldConsumePurchase: Boolean? = null
 
-    private val headersSlot = slot<Map<String, String>>()
+    private var headersSlot = slot<Map<String, String>>()
 
     private val onReceiveCustomerInfoSuccessHandler: (CustomerInfo) -> Unit = { info ->
             this@BackendTest.receivedCustomerInfo = info
@@ -343,12 +357,13 @@ class BackendTest {
     @Test
     fun encodesAppUserId() {
         val encodeableUserID = "userid with spaces"
-
         val encodedUserID = "userid%20with%20spaces"
+
+        every { mockUriEncoder.encode(encodeableUserID) } returns encodedUserID
+
         val path = "/subscribers/$encodedUserID/offerings"
 
-        val `object` = JSONObject()
-        `object`.put("string", "value")
+        mockResponse(path, null, 200, null, noOfferingsResponse)
 
         backend.getOfferings(
             encodeableUserID,
@@ -368,6 +383,8 @@ class BackendTest {
 
     @Test
     fun doesntDispatchIfClosed() {
+        mockResponse("/subscribers/id/offerings", null, 200, null, noOfferingsResponse)
+
         backend.getOfferings(
             appUserID = "id",
             appInBackground = false,
@@ -387,8 +404,9 @@ class BackendTest {
 
     @Test
     fun `given multiple get calls for same subscriber, only one is triggered`() {
+        val path = "/subscribers/$appUserID"
         mockResponse(
-            "/subscribers/$appUserID",
+            path,
             null,
             200,
             null,
@@ -406,7 +424,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
-                "/subscribers/" + Uri.encode(appUserID),
+                path,
                 null,
                 any()
             )
@@ -593,6 +611,14 @@ class BackendTest {
     fun `given multiple offerings get calls for different user, both are triggered`() {
         mockResponse(
             "/subscribers/$appUserID/offerings",
+            null,
+            200,
+            null,
+            noOfferingsResponse,
+            true
+        )
+        mockResponse(
+            "/subscribers/anotherUser/offerings",
             null,
             200,
             null,
@@ -1085,11 +1111,12 @@ class BackendTest {
     fun `logIn calls OnError if customerInfo can't be parsed`() {
         val newAppUserID = "newId"
         val requestBody = mapOf(
-            "new_app_user_id" to newAppUserID
+            "new_app_user_id" to newAppUserID,
+            "app_user_id" to appUserID
         )
         val resultBody = "{}"
         mockResponse(
-            "/subscribers/$appUserID/identify",
+            "/subscribers/identify",
             requestBody,
             responseCode = 201,
             clientException = null,

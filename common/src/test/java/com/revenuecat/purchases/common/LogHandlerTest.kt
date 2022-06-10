@@ -1,17 +1,12 @@
 package com.revenuecat.purchases.common
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.Config.debugLogsEnabled
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 
-@RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
 class LogHandlerTest {
     private class Handler : LogHandler {
         var debugMessage: String? = null
@@ -43,13 +38,13 @@ class LogHandlerTest {
     private val handler = Handler()
     private lateinit var previousHandler: LogHandler
 
-    @Before
+    @BeforeEach
     fun setUp() {
         previousHandler = currentLogHandler
         currentLogHandler = handler
     }
 
-    @After
+    @AfterEach
     fun tearDown() {
         currentLogHandler = previousHandler
     }

@@ -6,7 +6,7 @@
 package com.revenuecat.purchases.common
 
 import android.content.SharedPreferences
-import androidx.test.ext.junit.runners.AndroidJUnit4
+import android.util.Base64
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -17,26 +17,27 @@ import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.PURCHASER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.LogMockExtension
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.UriParseMockExtension
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
-import org.junit.Before
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
-import java.lang.ClassCastException
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import java.util.Calendar
 import java.util.Date
 
-@RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
+@ExtendWith(LogMockExtension::class, UriParseMockExtension::class)
 class DeviceCacheTest {
 
     private val validCachedCustomerInfo by lazy {
@@ -56,7 +57,7 @@ class DeviceCacheTest {
 
     private val slotForPutLong = slot<Long>()
 
-    @Before
+    @BeforeEach
     fun setup() {
         mockPrefs = mockk()
         mockEditor = mockk()
@@ -203,6 +204,8 @@ class DeviceCacheTest {
 
     @Test
     fun `token is hashed then added`() {
+        mockkStatic(Base64::class)
+        every { Base64.encode(any(), Base64.NO_WRAP) } returns "encodedToken3".toByteArray()
         every {
             mockPrefs.getStringSet(cache.tokensCacheKey, any())
         } returns setOf("token1", "token2")
@@ -218,6 +221,7 @@ class DeviceCacheTest {
         verify {
             mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2", sha1))
         }
+        unmockkStatic(Base64::class)
     }
 
     @Test

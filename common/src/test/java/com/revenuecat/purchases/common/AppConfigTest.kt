@@ -1,18 +1,18 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.utils.LogMockExtension
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import java.net.URL
 
-@RunWith(AndroidJUnit4::class)
+@ExtendWith(LogMockExtension::class)
 class AppConfigTest {
 
     @Test

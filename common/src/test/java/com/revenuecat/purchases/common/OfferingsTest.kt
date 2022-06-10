@@ -5,7 +5,6 @@
 
 package com.revenuecat.purchases.common
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.StoreProduct
@@ -13,12 +12,8 @@ import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
+import org.junit.jupiter.api.Test
 
-@RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
 class OfferingsTest {
 
     private val monthlyProductIdentifier = "com.myproduct.monthly"
@@ -129,7 +124,7 @@ class OfferingsTest {
     @Test
     fun `No offerings`() {
         val offerings =
-            JSONObject("{'offerings': [], 'current_offering_id': null}").createOfferings(emptyMap())
+            JSONObject("{'offerings': [], 'current_offering_id': ''}").createOfferings(emptyMap())
 
         assertThat(offerings).isNotNull
         assertThat(offerings.current).isNull()
