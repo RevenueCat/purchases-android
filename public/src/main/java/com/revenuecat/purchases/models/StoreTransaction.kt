@@ -3,8 +3,8 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.parceler.JSONObjectParceler
-import kotlinx.android.parcel.Parcelize
-import kotlinx.android.parcel.TypeParceler
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 
 /**

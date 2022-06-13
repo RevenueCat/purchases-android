@@ -52,7 +52,3 @@ tasks.dokkaHtmlPartial.configure {
         }
     }
 }
-
-androidExtensions {
-    features = ["parcelize"]
-}

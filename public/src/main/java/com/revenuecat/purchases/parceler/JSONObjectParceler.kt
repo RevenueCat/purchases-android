@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.parceler
 
 import android.os.Parcel
-import kotlinx.android.parcel.Parceler
+import kotlinx.parcelize.Parceler
 import org.json.JSONObject
 
 /** @suppress */

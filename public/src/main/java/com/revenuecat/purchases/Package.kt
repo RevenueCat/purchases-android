@@ -2,7 +2,7 @@ package com.revenuecat.purchases
 
 import android.os.Parcelable
 import com.revenuecat.purchases.models.StoreProduct
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
 
 /**
  * Contains information about the product available for the user to purchase. For more info see https://docs.revenuecat.com/docs/entitlements

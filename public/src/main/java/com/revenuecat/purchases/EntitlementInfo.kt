@@ -3,9 +3,9 @@ package com.revenuecat.purchases
 import android.os.Parcelable
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.parceler.JSONObjectParceler
-import kotlinx.android.parcel.IgnoredOnParcel
-import kotlinx.android.parcel.Parcelize
-import kotlinx.android.parcel.TypeParceler
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 import java.util.Date
 
