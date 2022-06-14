@@ -19,6 +19,7 @@ import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.stubGooglePurchase
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -39,6 +40,7 @@ class PostingTransactionsTests {
     private val subscriberAttributesManagerMock = mockk<SubscriberAttributesManager>()
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingWrapper>(relaxed = true)
+    private val customerInfoRetrieverMock = mockk<CustomerInfoRetriever>()
     private var postReceiptError: PostReceiptErrorContainer? = null
     private var postReceiptSuccess: PostReceiptCompletionContainer? = null
     private var subscriberAttribute = SubscriberAttribute("key", "value")
@@ -65,6 +67,7 @@ class PostingTransactionsTests {
     fun setup() {
         postReceiptError = null
         postReceiptSuccess = null
+        clearMocks(customerInfoRetrieverMock)
 
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
@@ -129,7 +132,8 @@ class PostingTransactionsTests {
                 ),
                 proxyURL = null,
                 store = Store.PLAY_STORE
-            )
+            ),
+            customerInfoRetriever = customerInfoRetrieverMock
         )
     }
 

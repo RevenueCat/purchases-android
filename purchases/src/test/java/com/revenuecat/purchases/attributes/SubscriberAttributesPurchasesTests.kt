@@ -2,7 +2,9 @@ package com.revenuecat.purchases.attributes
 
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoRetriever
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -26,6 +28,7 @@ import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.Runs
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -46,6 +49,7 @@ class SubscriberAttributesPurchasesTests {
     private val subscriberAttributesManagerMock = mockk<SubscriberAttributesManager>()
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingAbstract>(relaxed = true)
+    private val customerInfoRetrieverMock = mockk<CustomerInfoRetriever>()
     private lateinit var applicationMock: Application
 
     private var postReceiptError: PostReceiptErrorContainer? = null
@@ -74,6 +78,7 @@ class SubscriberAttributesPurchasesTests {
     fun setup() {
         postReceiptError = null
         postReceiptCompletion = null
+        clearMocks(customerInfoRetrieverMock)
 
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
@@ -135,7 +140,8 @@ class SubscriberAttributesPurchasesTests {
                 platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
                 proxyURL = null,
                 store = Store.PLAY_STORE
-            )
+            ),
+            customerInfoRetriever = customerInfoRetrieverMock
         )
     }
 
@@ -217,7 +223,9 @@ class SubscriberAttributesPurchasesTests {
         every {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
-        setup()
+        every {
+            customerInfoRetrieverMock.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT,false, any())
+        } just Runs
         underTest.onAppForegrounded()
         verify(exactly = 1) {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
@@ -229,7 +237,6 @@ class SubscriberAttributesPurchasesTests {
         every {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
-        setup()
         underTest.onAppBackgrounded()
         verify(exactly = 1) {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)

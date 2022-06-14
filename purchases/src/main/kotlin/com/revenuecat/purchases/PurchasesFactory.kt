@@ -69,6 +69,9 @@ internal class PurchasesFactory(
             val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 
             val subscriberAttributesCache = SubscriberAttributesCache(cache)
+
+            val customerInfoRetriever = CustomerInfoRetriever(cache, backend)
+
             return Purchases(
                 application,
                 appUserID,
@@ -82,7 +85,8 @@ internal class PurchasesFactory(
                     subscriberAttributesPoster,
                     attributionFetcher
                 ),
-                appConfig
+                appConfig,
+                customerInfoRetriever
             )
         }
     }

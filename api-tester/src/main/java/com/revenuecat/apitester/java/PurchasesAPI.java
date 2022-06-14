@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.revenuecat.purchases.BillingFeature;
+import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.Offerings;
@@ -83,6 +84,10 @@ final class PurchasesAPI {
         purchases.logOut(receiveCustomerInfoListener);
         final String appUserID = purchases.getAppUserID();
         purchases.getCustomerInfo(receiveCustomerInfoListener);
+        purchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, receiveCustomerInfoListener);
+        purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, receiveCustomerInfoListener);
+        purchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, receiveCustomerInfoListener);
+        purchases.getCustomerInfo(CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT, receiveCustomerInfoListener);
         purchases.removeUpdatedCustomerInfoListener();
         purchases.invalidateCustomerInfoCache();
         purchases.close();
