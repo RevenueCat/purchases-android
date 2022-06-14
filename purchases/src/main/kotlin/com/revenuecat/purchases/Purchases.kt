@@ -5,15 +5,12 @@
 
 package com.revenuecat.purchases
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.content.Context
-import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Handler
 import android.os.Looper
-import android.preference.PreferenceManager
 import android.util.Log
 import android.util.Pair
 import androidx.annotation.VisibleForTesting
@@ -27,7 +24,6 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Dispatcher
-import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -37,10 +33,9 @@ import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.google.isSuccessful
-import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
@@ -75,8 +70,6 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
-import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
-import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import org.json.JSONException
@@ -98,7 +91,7 @@ typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
 @Suppress("LongParameterList")
-class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
+class Purchases internal constructor(
     private val application: Application,
     backingFieldAppUserID: String?,
     private val backend: Backend,
@@ -2085,67 +2078,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         fun configure(
             configuration: PurchasesConfiguration
         ): Purchases {
-            with(configuration) {
-                require(context.hasPermission(Manifest.permission.INTERNET)) {
-                    "Purchases requires INTERNET permission."
-                }
-
-                require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
-
-                require(context.applicationContext is Application) { "Needs an application context." }
-                val application = context.getApplication()
-                val appConfig = AppConfig(
-                    context,
-                    observerMode,
-                    platformInfo,
-                    proxyURL,
-                    store,
-                    dangerousSettings
-                )
-
-                val prefs = PreferenceManager.getDefaultSharedPreferences(application)
-
-                val sharedPreferencesForETags = ETagManager.initializeSharedPreferences(context)
-                val eTagManager = ETagManager(sharedPreferencesForETags)
-
-                val dispatcher = Dispatcher(service ?: createDefaultExecutor())
-                val backend = Backend(
-                    apiKey,
-                    dispatcher,
-                    HTTPClient(appConfig, eTagManager)
-                )
-                val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
-
-                val cache = DeviceCache(prefs, apiKey)
-
-                val billing: BillingAbstract = BillingFactory.createBilling(
-                    store,
-                    application,
-                    backend,
-                    cache,
-                    observerMode
-                )
-                val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
-
-                val subscriberAttributesCache = SubscriberAttributesCache(cache)
-                return Purchases(
-                    application,
-                    appUserID,
-                    backend,
-                    billing,
-                    cache,
-                    dispatcher,
-                    IdentityManager(cache, subscriberAttributesCache, backend),
-                    SubscriberAttributesManager(
-                        subscriberAttributesCache,
-                        subscriberAttributesPoster,
-                        attributionFetcher
-                    ),
-                    appConfig
-                ).also {
-                    @SuppressLint("RestrictedApi")
-                    sharedInstance = it
-                }
+            return PurchasesFactory().createPurchases(
+                configuration,
+                platformInfo,
+                proxyURL
+            ).also {
+                @SuppressLint("RestrictedApi")
+                sharedInstance = it
             }
         }
 
@@ -2220,12 +2159,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             }
                         })
                 }
-        }
-
-        private fun Context.getApplication() = applicationContext as Application
-
-        private fun Context.hasPermission(permission: String): Boolean {
-            return checkCallingOrSelfPermission(permission) == PERMISSION_GRANTED
         }
 
         private fun createDefaultExecutor(): ExecutorService {
