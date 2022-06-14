@@ -52,13 +52,13 @@ class CustomerInfoRetrieverTest {
     // region CACHE_ONLY fetch policy
 
     @Test
-    fun `retrieving customer info from cache only does nothing if callback is null`() {
+    fun `retrieving customer info from CACHE_ONLY does nothing if callback is null`() {
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.CACHE_ONLY, false, {})
         verify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
     }
 
     @Test
-    fun `retrieving customer info from cache only gets info from cache`() {
+    fun `retrieving customer info from CACHE_ONLY gets info from cache`() {
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.CACHE_ONLY, false, {}, callbackMock)
         verify(exactly = 1) { mockCache.getCachedCustomerInfo(any()) }
@@ -67,7 +67,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving customer info from cache only fails if cant be found in cache`() {
+    fun `retrieving customer info from CACHE_ONLY fails if cant be found in cache`() {
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.CACHE_ONLY, false, {}, callbackMock)
@@ -76,7 +76,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving customer info from cache only does not call cache mock after fetch callback`() {
+    fun `retrieving customer info from CACHE_ONLY does not call cache after fetch callback mock`() {
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         var returnedInfo: CustomerInfo? = null
         retriever.retrieveCustomerInfo(
@@ -94,7 +94,7 @@ class CustomerInfoRetrieverTest {
     // region FETCH_CURRENT fetch policy
 
     @Test
-    fun `retrieving customer info with fetch current policy sets cache timestamp to now`() {
+    fun `retrieving customer info with FETCH_CURRENT sets cache timestamp to now`() {
         setupBackendMock()
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, {})
         verify(exactly = 1) {
@@ -103,7 +103,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving customer info with fetch current policy executes cache customer info callback if successful`() {
+    fun `retrieving customer info with FETCH_CURRENT executes cache customer info callback if successful`() {
         setupBackendMock()
         var receivedInfo: CustomerInfo? = null
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, { receivedInfo = it })
@@ -111,7 +111,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving customer info with fetch current policy does not execute cache customer info callback if error`() {
+    fun `retrieving customer info with FETCH_CURRENT does not execute cache customer info callback if error`() {
         setupBackendMock(PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"))
         var receivedInfo: CustomerInfo? = null
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, { receivedInfo = it })
@@ -119,7 +119,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving customer info with fetch current policy calls success callback if successful`() {
+    fun `retrieving customer info with FETCH_CURRENT calls success callback if successful`() {
         setupBackendMock()
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, {}, callbackMock)
@@ -128,7 +128,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving customer info with fetch current policy calls error callback if error`() {
+    fun `retrieving customer info with FETCH_CURRENT calls error callback if error`() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error)
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
@@ -138,7 +138,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving customer info with fetch current policy error clears cache timestamp`() {
+    fun `retrieving customer info with FETCH_CURRENT error clears cache timestamp`() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error)
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, {})
@@ -146,7 +146,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving customer info with fetch current policy success does not clear cache timestamp`() {
+    fun `retrieving customer info with FETCH_CURRENT success does not clear cache timestamp`() {
         setupBackendMock()
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, {})
         verify(exactly = 0) { mockCache.clearCustomerInfoCacheTimestamp(any()) }
@@ -157,7 +157,7 @@ class CustomerInfoRetrieverTest {
     // region CACHED_OR_FETCHED fetch policy
 
     @Test
-    fun `retrieving customer info with cached or fetch policy gets cache from cache if exists`() {
+    fun `retrieving customer info with CACHED_OR_FETCHED gets info from cache if exists`() {
         every { mockCache.isCustomerInfoCacheStale(appUserId, false) } returns false
         var returnedInfo: CustomerInfo? = null
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
@@ -174,7 +174,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving customer info with cached or fetch policy initiates fetch of info if cache stale`() {
+    fun `retrieving customer info with CACHED_OR_FETCHED initiates fetch of info if cache stale`() {
         every { mockCache.isCustomerInfoCacheStale(appUserId, false) } returns true
         val newMockInfo = mockk<CustomerInfo>()
         setupBackendMock(null, newMockInfo)
@@ -194,7 +194,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving info with cache or fetch policy and no cache sets cache timestamp to now`() {
+    fun `retrieving info with CACHED_OR_FETCHED and no cache sets cache timestamp to now`() {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
         setupBackendMock()
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.CACHED_OR_FETCHED, false, {})
@@ -204,7 +204,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving info with cache or fetch policy and no cache executes cache info callback if successful`() {
+    fun `retrieving info with CACHED_OR_FETCHED and no cache executes cache info callback if successful`() {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
         setupBackendMock()
         var receivedInfo: CustomerInfo? = null
@@ -213,7 +213,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving info with cache or fetch policy and no cache does not execute cache info callback if error`() {
+    fun `retrieving info with CACHED_OR_FETCHED and no cache does not execute cache info callback if error`() {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
         setupBackendMock(PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"))
         var receivedInfo: CustomerInfo? = null
@@ -222,7 +222,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving info with cache or fetch policy and no cache calls success callback if successful`() {
+    fun `retrieving info with CACHED_OR_FETCHED and no cache calls success callback if successful`() {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
         setupBackendMock()
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
@@ -232,7 +232,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving info with cache or fetch policy and no cache calls error callback if error`() {
+    fun `retrieving info with CACHED_OR_FETCHED and no cache calls error callback if error`() {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error)
@@ -243,7 +243,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving info with cache or fetch policy and no cache error clears cache`() {
+    fun `retrieving info with CACHED_OR_FETCHED and no cache error clears cache`() {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error)
@@ -252,7 +252,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving info with cache or fetch policy and no data success does not clear cache`() {
+    fun `retrieving info with CACHED_OR_FETCHED and no data success does not clear cache`() {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
         setupBackendMock()
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.CACHED_OR_FETCHED, false, {})
@@ -264,7 +264,7 @@ class CustomerInfoRetrieverTest {
     // region NOT_STALE_CACHED_OR_CURRENT fetch policy
 
     @Test
-    fun `retrieving info with not staled cached or fetch policy does not use cache if stale`() {
+    fun `retrieving info with NOT_STALE_CACHED_OR_CURRENT does not use cache if stale`() {
         every { mockCache.isCustomerInfoCacheStale(appUserId, false) } returns true
         setupBackendMock()
         retriever.retrieveCustomerInfo(appUserId, CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT, false, {})
@@ -272,7 +272,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving info with not staled cached or fetch policy does not use cache if stale even if error fetching`() {
+    fun `retrieving info with NOT_STALE_CACHED_OR_CURRENT does not use cache if stale even if error fetching`() {
         every { mockCache.isCustomerInfoCacheStale(appUserId, false) } returns true
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error)
@@ -290,7 +290,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving info with not staled cached or fetch policy fetches from backend if stale`() {
+    fun `retrieving info with NOT_STALE_CACHED_OR_CURRENT fetches from backend if stale`() {
         every { mockCache.isCustomerInfoCacheStale(appUserId, false) } returns true
         setupBackendMock()
         var returnedInfo: CustomerInfo? = null
@@ -308,7 +308,7 @@ class CustomerInfoRetrieverTest {
     }
 
     @Test
-    fun `retrieving info with not staled cached or fetch policy uses cache if not stale`() {
+    fun `retrieving info with NOT_STALE_CACHED_OR_CURRENT uses cache if not stale`() {
         every { mockCache.isCustomerInfoCacheStale(appUserId, false) } returns false
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         var returnedInfo: CustomerInfo? = null
