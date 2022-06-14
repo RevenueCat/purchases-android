@@ -22,7 +22,9 @@ import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-internal class PurchasesFactory {
+internal class PurchasesFactory(
+    private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
+) {
 
     fun createPurchases(
         configuration: PurchasesConfiguration,
@@ -95,6 +97,8 @@ internal class PurchasesFactory {
             require(apiKey.isNotBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
             require(context.applicationContext is Application) { "Needs an application context." }
+
+            apiKeyValidator.validateAndLog(apiKey, store)
         }
     }
 
