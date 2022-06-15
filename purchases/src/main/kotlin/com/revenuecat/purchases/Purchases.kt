@@ -193,7 +193,7 @@ class Purchases internal constructor(
                 identityManager.currentAppUserID,
                 fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground = false,
-                cacheCustomerInfoAfterFetchCallback = this::cacheCustomerInfoAndSendToDelegateIfChanges
+                cacheCustomerInfoAfterFetchCallback = this::cacheCustomerInfoAndSendToDelegateIfChanged
             )
         }
         if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
@@ -568,7 +568,7 @@ class Purchases internal constructor(
                 identityManager.currentAppUserID,
                 CacheFetchPolicy.default(),
                 state.appInBackground,
-                this::cacheCustomerInfoAndSendToDelegateIfChanges,
+                this::cacheCustomerInfoAndSendToDelegateIfChanged,
                 receiveCustomerInfoCallback(
                     onSuccess = { customerInfo ->
                         dispatch { callback?.onReceived(customerInfo, false) }
@@ -641,7 +641,7 @@ class Purchases internal constructor(
             identityManager.currentAppUserID,
             fetchPolicy,
             state.appInBackground,
-            this::cacheCustomerInfoAndSendToDelegateIfChanges,
+            this::cacheCustomerInfoAndSendToDelegateIfChanged,
             callback
         )
     }
@@ -1117,7 +1117,7 @@ class Purchases internal constructor(
                 appUserID,
                 CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground,
-                this::cacheCustomerInfoAndSendToDelegateIfChanges,
+                this::cacheCustomerInfoAndSendToDelegateIfChanged,
                 completion
             )
             fetchAndCacheOfferings(appUserID, appInBackground)
@@ -1269,7 +1269,7 @@ class Purchases internal constructor(
         }
     }
 
-    private fun cacheCustomerInfoAndSendToDelegateIfChanges(info: CustomerInfo) {
+    private fun cacheCustomerInfoAndSendToDelegateIfChanged(info: CustomerInfo) {
         cacheCustomerInfo(info)
         sendUpdatedCustomerInfoToDelegateIfChanged(info)
     }
