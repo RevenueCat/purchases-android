@@ -267,26 +267,6 @@ class PurchasesTest {
             )
         }
     }
-//
-//    @Test
-//    fun `making purchase updates customer info cache`() {
-//        val sku = "onemonth_freetrial"
-//        val storeProduct = mockk<StoreProduct>().also {
-//            every { it.sku } returns sku
-//        }
-//
-//        purchases.purchaseProductWith(
-//            mockActivity,
-//            storeProduct
-//        ) { _, _ -> }
-//
-//        verify(exactly = 1) {
-//            mockCustomerInfoHelper.cacheCustomerInfo(any())
-//        }
-//        verify(exactly = 1) {
-//            mockCustomerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(any())
-//        }
-//    }
 
     @Test
     fun canMakePurchaseWithDeprecatedFunction() {
