@@ -82,10 +82,7 @@ private class PurchasesAPI {
         val appUserID: String = purchases.appUserID
 
         purchases.getCustomerInfo(receiveCustomerInfoCallback)
-        purchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, receiveCustomerInfoCallback)
-        purchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, receiveCustomerInfoCallback)
         purchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, receiveCustomerInfoCallback)
-        purchases.getCustomerInfo(CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT, receiveCustomerInfoCallback)
         purchases.removeUpdatedCustomerInfoListener()
         purchases.invalidateCustomerInfoCache()
         purchases.close()
