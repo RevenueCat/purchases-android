@@ -98,7 +98,7 @@ private class PurchasesAPI {
         purchases.onAppForegrounded()
     }
 
-    @Suppress("RedundantLambdaArrow")
+    @Suppress("RedundantLambdaArrow", "LongMethod")
     fun checkListenerConversions(
         purchases: Purchases,
         activity: Activity,
