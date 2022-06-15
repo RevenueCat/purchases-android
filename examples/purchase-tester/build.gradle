@@ -41,7 +41,7 @@ android {
         }
     }
     testBuildType obtainTestBuildType()
-    namespace 'com.revenuecat.purchasetester'
+    namespace 'com.revenuecat.purchase_tester'
 }
 
 def obtainTestBuildType() {
