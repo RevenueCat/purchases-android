@@ -2,7 +2,6 @@ package com.revenuecat.purchases
 
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 
 internal data class PurchasesState(
     val allowSharingPlayStoreAccount: Boolean? = null,

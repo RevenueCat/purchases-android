@@ -132,12 +132,11 @@ class PurchasesTest {
     @After
     fun tearDown() {
         Purchases.backingFieldSharedInstance = null
+        clearMocks(mockCustomerInfoHelper)
     }
 
     @Before
     fun setup() {
-        clearMocks(mockCustomerInfoHelper)
-
         mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
         mockkStatic(ProcessLifecycleOwner::class)
 

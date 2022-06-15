@@ -14,6 +14,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
+import org.junit.After
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -37,8 +38,6 @@ class CustomerInfoHelperTest {
 
     @Before
     fun setup() {
-        clearMocks(mockCache, mockBackend, mockIdentityManager, mockHandler, mockLooper, mockThread, mockInfo)
-
         setupCacheMock()
         setupHandlerMock()
         setupIdentityManagerMock()
@@ -49,6 +48,11 @@ class CustomerInfoHelperTest {
             mockIdentityManager,
             mockHandler
         )
+    }
+
+    @After
+    fun tearDown() {
+        clearMocks(mockCache, mockBackend, mockIdentityManager, mockHandler, mockLooper, mockThread, mockInfo)
     }
 
     // region updatedCustomerInfoListener
