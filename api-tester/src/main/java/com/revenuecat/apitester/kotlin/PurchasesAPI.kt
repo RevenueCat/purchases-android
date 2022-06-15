@@ -153,6 +153,11 @@ private class PurchasesAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: CustomerInfo -> }
         )
+        purchases.getCustomerInfoWith(
+            fetchPolicy = CacheFetchPolicy.CACHED_OR_FETCHED,
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: CustomerInfo -> }
+        )
         purchases.getSubscriptionSkusWith(
             ArrayList<String>(),
             onError = { _: PurchasesError -> },

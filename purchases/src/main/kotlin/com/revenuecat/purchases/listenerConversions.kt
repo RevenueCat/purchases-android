@@ -253,6 +253,22 @@ fun Purchases.getCustomerInfoWith(
 }
 
 /**
+ * Get purchaser info from cache or network depending on fetch policy.
+ * @param fetchPolicy Specifies cache behavior for customer info retrieval
+ * @param onSuccess Called when purchaser info is available and not stale. Called immediately if
+ * purchaser info is cached.
+ * @param onError Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+fun Purchases.getCustomerInfoWith(
+    fetchPolicy: CacheFetchPolicy,
+    onError: ErrorFunction = ON_ERROR_STUB,
+    onSuccess: ReceiveCustomerInfoSuccessFunction
+) {
+    getCustomerInfo(fetchPolicy, receiveCustomerInfoCallback(onSuccess, onError))
+}
+
+/**
  * Gets the SKUDetails for the given list of subscription skus.
  * @param [skus] List of skus
  * @param [onReceiveSkus] Will be called after fetching subscriptions
