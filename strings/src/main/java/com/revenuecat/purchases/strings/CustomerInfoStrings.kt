@@ -12,4 +12,5 @@ object CustomerInfoStrings {
     const val SENDING_LATEST_CUSTOMERINFO_TO_LISTENER = "Sending latest CustomerInfo to listener."
     const val VENDING_CACHE = "Vending CustomerInfo from cache."
     const val RETRIEVING_CUSTOMER_INFO = "Retrieving customer info with policy: %s"
+    const val MISSING_CACHED_CUSTOMER_INFO = "Requested a cached CustomerInfo but it's not available."
 }

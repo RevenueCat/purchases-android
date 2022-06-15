@@ -37,7 +37,8 @@ final class PurchasesErrorAPI {
             case LogOutWithAnonymousUserError:
             case ConfigurationError:
             case UnsupportedError:
-            case CustomerInfoNotFoundInCache:
+            case EmptySubscriberAttributesError:
+            case CustomerInfoError:
         }
     }
 }

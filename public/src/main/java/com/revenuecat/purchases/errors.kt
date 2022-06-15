@@ -51,5 +51,6 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     ConfigurationError(23, "There is an issue with your configuration. Check the underlying error for more details."),
     UnsupportedError(24, "There was a problem with the operation. Looks like we doesn't support " +
         "that yet. Check the underlying error for more details."),
-    CustomerInfoNotFoundInCache(25, "Requested a cached CustomerInfo but it's not available.")
+    EmptySubscriberAttributesError(25, "A request for subscriber attributes returned none."),
+    CustomerInfoError(28, "There was a problem related to the customer info.")
 }

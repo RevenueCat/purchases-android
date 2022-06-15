@@ -33,7 +33,8 @@ fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.LogOutWithAnonymousUserError,
         PurchasesErrorCode.ConfigurationError,
         PurchasesErrorCode.UnsupportedError,
-        PurchasesErrorCode.CustomerInfoNotFoundInCache,
+        PurchasesErrorCode.EmptySubscriberAttributesError,
+        PurchasesErrorCode.CustomerInfoError,
         PurchasesErrorCode.InvalidSubscriberAttributesError -> log(LogIntent.RC_ERROR, error.message)
         PurchasesErrorCode.PurchaseCancelledError,
         PurchasesErrorCode.StoreProblemError,

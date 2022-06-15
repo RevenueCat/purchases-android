@@ -37,7 +37,8 @@ private class PurchasesErrorAPI {
             PurchasesErrorCode.LogOutWithAnonymousUserError,
             PurchasesErrorCode.ConfigurationError,
             PurchasesErrorCode.UnsupportedError,
-            PurchasesErrorCode.CustomerInfoNotFoundInCache
+            PurchasesErrorCode.EmptySubscriberAttributesError,
+            PurchasesErrorCode.CustomerInfoError
             -> {}
         }.exhaustive
     }

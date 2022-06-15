@@ -59,7 +59,10 @@ internal class CustomerInfoRetriever(
             log(LogIntent.DEBUG, CustomerInfoStrings.VENDING_CACHE)
             dispatch { callback.onReceived(cachedCustomerInfo) }
         } else {
-            val error = PurchasesError(PurchasesErrorCode.CustomerInfoNotFoundInCache)
+            val error = PurchasesError(
+                PurchasesErrorCode.CustomerInfoError,
+                CustomerInfoStrings.MISSING_CACHED_CUSTOMER_INFO
+            )
             errorLog(error)
             dispatch { callback.onError(error) }
         }
