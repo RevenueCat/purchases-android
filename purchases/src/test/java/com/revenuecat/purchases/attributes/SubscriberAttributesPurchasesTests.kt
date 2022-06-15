@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.CustomerInfoRetriever
+import com.revenuecat.purchases.CustomerInfoHelper
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -49,7 +49,7 @@ class SubscriberAttributesPurchasesTests {
     private val subscriberAttributesManagerMock = mockk<SubscriberAttributesManager>()
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingAbstract>(relaxed = true)
-    private val customerInfoRetrieverMock = mockk<CustomerInfoRetriever>()
+    private val customerInfoHelperMock = mockk<CustomerInfoHelper>()
     private lateinit var applicationMock: Application
 
     private var postReceiptError: PostReceiptErrorContainer? = null
@@ -78,7 +78,7 @@ class SubscriberAttributesPurchasesTests {
     fun setup() {
         postReceiptError = null
         postReceiptCompletion = null
-        clearMocks(customerInfoRetrieverMock)
+        clearMocks(customerInfoHelperMock)
 
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
@@ -123,6 +123,13 @@ class SubscriberAttributesPurchasesTests {
             )
         } just runs
 
+        every {
+            customerInfoHelperMock.cacheCustomerInfo(any())
+        } just runs
+        every {
+            customerInfoHelperMock.sendUpdatedCustomerInfoToDelegateIfChanged(any())
+        } just runs
+
         underTest = Purchases(
             application = mockk<Application>(relaxed = true).also { applicationMock = it },
             backingFieldAppUserID = appUserId,
@@ -141,7 +148,7 @@ class SubscriberAttributesPurchasesTests {
                 proxyURL = null,
                 store = Store.PLAY_STORE
             ),
-            customerInfoRetriever = customerInfoRetrieverMock
+            customerInfoHelper = customerInfoHelperMock
         )
     }
 
@@ -224,7 +231,7 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
         every {
-            customerInfoRetrieverMock.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT,false, any())
+            customerInfoHelperMock.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT,false, any())
         } just Runs
         underTest.onAppForegrounded()
         verify(exactly = 1) {

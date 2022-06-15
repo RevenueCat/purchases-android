@@ -40,7 +40,7 @@ class PostingTransactionsTests {
     private val subscriberAttributesManagerMock = mockk<SubscriberAttributesManager>()
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingWrapper>(relaxed = true)
-    private val customerInfoRetrieverMock = mockk<CustomerInfoRetriever>()
+    private val customerInfoHelperMock = mockk<CustomerInfoHelper>()
     private var postReceiptError: PostReceiptErrorContainer? = null
     private var postReceiptSuccess: PostReceiptCompletionContainer? = null
     private var subscriberAttribute = SubscriberAttribute("key", "value")
@@ -67,7 +67,7 @@ class PostingTransactionsTests {
     fun setup() {
         postReceiptError = null
         postReceiptSuccess = null
-        clearMocks(customerInfoRetrieverMock)
+        clearMocks(customerInfoHelperMock)
 
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
@@ -112,6 +112,13 @@ class PostingTransactionsTests {
             )
         } just runs
 
+        every {
+            customerInfoHelperMock.cacheCustomerInfo(any())
+        } just runs
+        every {
+            customerInfoHelperMock.sendUpdatedCustomerInfoToDelegateIfChanged(any())
+        } just runs
+
         underTest = Purchases(
             application = mockk(relaxed = true),
             backingFieldAppUserID = appUserId,
@@ -133,7 +140,7 @@ class PostingTransactionsTests {
                 proxyURL = null,
                 store = Store.PLAY_STORE
             ),
-            customerInfoRetriever = customerInfoRetrieverMock
+            customerInfoHelper = customerInfoHelperMock
         )
     }
 
@@ -307,6 +314,39 @@ class PostingTransactionsTests {
                 onSuccess = any(),
                 onError = any()
             )
+        }
+    }
+
+    @Test
+    fun `customer info cache is updated when purchasing`() {
+        postReceiptSuccess = PostReceiptCompletionContainer()
+        val productIds = listOf("uno", "dos")
+        val purchase =
+            stubGooglePurchase(productIds = productIds).toStoreTransaction(ProductType.SUBS, null)
+        val mockStoreProduct = mockk<StoreProduct>().also {
+            every { it.sku } returns "uno"
+            every { it.priceAmountMicros } returns 2000000
+            every { it.priceCurrencyCode } returns "USD"
+            every { it.subscriptionPeriod } returns ""
+            every { it.introductoryPricePeriod } returns ""
+            every { it.freeTrialPeriod } returns ""
+        }
+
+        underTest.postToBackend(
+            purchase = purchase,
+            storeProduct = mockStoreProduct,
+            allowSharingPlayStoreAccount = true,
+            consumeAllTransactions = true,
+            appUserID = appUserId,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
+        )
+
+        verify(exactly = 1) {
+            customerInfoHelperMock.cacheCustomerInfo(any())
+        }
+        verify(exactly = 1) {
+            customerInfoHelperMock.sendUpdatedCustomerInfoToDelegateIfChanged(any())
         }
     }
 }
