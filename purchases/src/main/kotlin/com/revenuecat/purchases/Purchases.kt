@@ -135,10 +135,8 @@ class Purchases internal constructor(
      */
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
         @Synchronized get() = customerInfoHelper.updatedCustomerInfoListener
-        set(value) {
-            synchronized(this@Purchases) {
-                customerInfoHelper.updatedCustomerInfoListener = value
-            }
+        @Synchronized set(value) {
+            customerInfoHelper.updatedCustomerInfoListener = value
         }
 
     /**
