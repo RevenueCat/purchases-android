@@ -277,6 +277,18 @@ class CustomerInfoHelperTest {
         verify(exactly = 0) { mockCache.clearCustomerInfoCacheTimestamp(any()) }
     }
 
+    @Test
+    fun `make sure caches are not cleared if retrieve customer info fails`() {
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
+        setupBackendMock(error)
+
+        val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+        customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, callbackMock)
+        verify(exactly = 1) { callbackMock.onError(error) }
+        // This is not currently used, but we want to make sure we don't call it by mistake
+        verify(exactly = 0) { mockCache.clearCachesForAppUserID(any()) }
+    }
+
     // endregion
 
     // region CACHED_OR_FETCHED fetch policy

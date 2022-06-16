@@ -2872,6 +2872,22 @@ class PurchasesTest {
     }
 
     @Test
+    fun `make sure caches are not cleared if getting customer info fails`() {
+        mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"))
+
+        val lock = CountDownLatch(1)
+        purchases.getCustomerInfoWith(onSuccess = {
+            lock.countDown()
+        }, onError = {
+            fail("supposed to be successful")
+        })
+        lock.await(200, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isZero()
+        // This is not currently used, but we want to make sure we don't call it by mistake
+        verify(exactly = 0) { mockCache.clearCachesForAppUserID(any()) }
+    }
+
+    @Test
     fun `when error posting receipts tokens are not saved in cache if error is not finishable`() {
         val sku = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
