@@ -37,6 +37,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.json.JSONException
 import org.json.JSONObject
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -76,10 +77,6 @@ class SubscriberAttributesPurchasesTests {
 
     @Before
     fun setup() {
-        postReceiptError = null
-        postReceiptCompletion = null
-        clearMocks(customerInfoHelperMock)
-
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
@@ -150,6 +147,13 @@ class SubscriberAttributesPurchasesTests {
             ),
             customerInfoHelper = customerInfoHelperMock
         )
+    }
+
+    @After
+    fun tearDown() {
+        postReceiptError = null
+        postReceiptCompletion = null
+        clearMocks(customerInfoHelperMock)
     }
 
     @Test
