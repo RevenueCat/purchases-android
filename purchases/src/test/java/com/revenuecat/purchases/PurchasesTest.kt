@@ -2877,9 +2877,9 @@ class PurchasesTest {
 
         val lock = CountDownLatch(1)
         purchases.getCustomerInfoWith(onSuccess = {
-            lock.countDown()
-        }, onError = {
             fail("supposed to be successful")
+        }, onError = {
+            lock.countDown()
         })
         lock.await(200, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isZero()
