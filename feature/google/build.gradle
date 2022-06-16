@@ -15,5 +15,14 @@ dependencies {
     unityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
 
     testImplementation project(":test-utils")
+    testImplementation "androidx.test:core:$testLibrariesVersion"
+    testImplementation "androidx.test:runner:$testLibrariesVersion"
+    testImplementation "androidx.test:rules:$testLibrariesVersion"
+    testImplementation "androidx.test.ext:junit:$testJUnitVersion"
+    testImplementation "org.robolectric:robolectric:$robolectricVersion"
+    testImplementation "io.mockk:mockk:$mockkVersion"
+    testImplementation "org.assertj:assertj-core:$assertJVersion"
     testImplementation 'com.google.android.gms:play-services-ads-identifier:17.0.1'
+    testLatestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
+    testUnityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
 }
