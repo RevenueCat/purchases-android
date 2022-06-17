@@ -19,6 +19,13 @@ dependencies {
 
     testImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
     testImplementation project(":test-utils")
+    testImplementation "androidx.test:core:$testLibrariesVersion"
+    testImplementation "androidx.test:runner:$testLibrariesVersion"
+    testImplementation "androidx.test:rules:$testLibrariesVersion"
+    testImplementation "androidx.test.ext:junit:$testJUnitVersion"
+    testImplementation "org.robolectric:robolectric:$robolectricVersion"
+    testImplementation "io.mockk:mockk:$mockkVersion"
+    testImplementation "org.assertj:assertj-core:$assertJVersion"
 }
 
 // Not running with this flag causes verification issues due to the way the Amazon jar is compiled
