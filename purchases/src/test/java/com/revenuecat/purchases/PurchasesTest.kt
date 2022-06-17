@@ -2877,7 +2877,7 @@ class PurchasesTest {
 
         val lock = CountDownLatch(1)
         purchases.getCustomerInfoWith(onSuccess = {
-            fail("supposed to be successful")
+            fail("supposed to be a failure")
         }, onError = {
             lock.countDown()
         })
