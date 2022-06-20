@@ -19,6 +19,7 @@ import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.stubGooglePurchase
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -27,6 +28,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,6 +41,7 @@ class PostingTransactionsTests {
     private val subscriberAttributesManagerMock = mockk<SubscriberAttributesManager>()
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingWrapper>(relaxed = true)
+    private val customerInfoHelperMock = mockk<CustomerInfoHelper>()
     private var postReceiptError: PostReceiptErrorContainer? = null
     private var postReceiptSuccess: PostReceiptCompletionContainer? = null
     private var subscriberAttribute = SubscriberAttribute("key", "value")
@@ -63,9 +66,6 @@ class PostingTransactionsTests {
 
     @Before
     fun setup() {
-        postReceiptError = null
-        postReceiptSuccess = null
-
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
@@ -109,6 +109,13 @@ class PostingTransactionsTests {
             )
         } just runs
 
+        every {
+            customerInfoHelperMock.cacheCustomerInfo(any())
+        } just runs
+        every {
+            customerInfoHelperMock.sendUpdatedCustomerInfoToDelegateIfChanged(any())
+        } just runs
+
         underTest = Purchases(
             application = mockk(relaxed = true),
             backingFieldAppUserID = appUserId,
@@ -129,8 +136,16 @@ class PostingTransactionsTests {
                 ),
                 proxyURL = null,
                 store = Store.PLAY_STORE
-            )
+            ),
+            customerInfoHelper = customerInfoHelperMock
         )
+    }
+
+    @After
+    fun tearDown() {
+        postReceiptError = null
+        postReceiptSuccess = null
+        clearMocks(customerInfoHelperMock)
     }
 
     @Test
@@ -303,6 +318,39 @@ class PostingTransactionsTests {
                 onSuccess = any(),
                 onError = any()
             )
+        }
+    }
+
+    @Test
+    fun `customer info cache is updated when purchasing`() {
+        postReceiptSuccess = PostReceiptCompletionContainer()
+        val productIds = listOf("uno", "dos")
+        val purchase =
+            stubGooglePurchase(productIds = productIds).toStoreTransaction(ProductType.SUBS, null)
+        val mockStoreProduct = mockk<StoreProduct>().also {
+            every { it.sku } returns "uno"
+            every { it.priceAmountMicros } returns 2000000
+            every { it.priceCurrencyCode } returns "USD"
+            every { it.subscriptionPeriod } returns ""
+            every { it.introductoryPricePeriod } returns ""
+            every { it.freeTrialPeriod } returns ""
+        }
+
+        underTest.postToBackend(
+            purchase = purchase,
+            storeProduct = mockStoreProduct,
+            allowSharingPlayStoreAccount = true,
+            consumeAllTransactions = true,
+            appUserID = appUserId,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> }
+        )
+
+        verify(exactly = 1) {
+            customerInfoHelperMock.cacheCustomerInfo(any())
+        }
+        verify(exactly = 1) {
+            customerInfoHelperMock.sendUpdatedCustomerInfoToDelegateIfChanged(any())
         }
     }
 }

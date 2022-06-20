@@ -50,5 +50,7 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     LogOutWithAnonymousUserError(22, "Called logOut but the current user is anonymous."),
     ConfigurationError(23, "There is an issue with your configuration. Check the underlying error for more details."),
     UnsupportedError(24, "There was a problem with the operation. Looks like we doesn't support " +
-        "that yet. Check the underlying error for more details.")
+        "that yet. Check the underlying error for more details."),
+    EmptySubscriberAttributesError(25, "A request for subscriber attributes returned none."),
+    CustomerInfoError(28, "There was a problem related to the customer info.")
 }

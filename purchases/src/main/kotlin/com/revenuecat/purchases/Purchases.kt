@@ -11,7 +11,6 @@ import android.app.Application
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -100,7 +99,8 @@ class Purchases internal constructor(
     private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig
+    @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
+    private val customerInfoHelper: CustomerInfoHelper
 ) : LifecycleDelegate {
 
     /** @suppress */
@@ -134,12 +134,9 @@ class Purchases internal constructor(
      * Make sure [removeUpdatedCustomerInfoListener] is called when the listener needs to be destroyed.
      */
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
-        @Synchronized get() = state.updatedCustomerInfoListener
-        set(value) {
-            synchronized(this@Purchases) {
-                state = state.copy(updatedCustomerInfoListener = value)
-            }
-            afterSetListener(value)
+        @Synchronized get() = customerInfoHelper.updatedCustomerInfoListener
+        @Synchronized set(value) {
+            customerInfoHelper.updatedCustomerInfoListener = value
         }
 
     /**
@@ -189,7 +186,11 @@ class Purchases internal constructor(
         log(LogIntent.DEBUG, ConfigureStrings.APP_FOREGROUNDED)
         if (firstTimeInForeground || deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground = false)) {
             log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
-            fetchAndCacheCustomerInfo(identityManager.currentAppUserID, appInBackground = false)
+            customerInfoHelper.retrieveCustomerInfo(
+                identityManager.currentAppUserID,
+                fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+                appInBackground = false
+            )
         }
         if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
             log(LogIntent.DEBUG, OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
@@ -499,8 +500,8 @@ class Purchases internal constructor(
                                             body.getAttributeErrors()
                                         )
                                         billing.consumeAndSave(finishTransactions, purchase)
-                                        cacheCustomerInfo(info)
-                                        sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                                        customerInfoHelper.cacheCustomerInfo(info)
+                                        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
                                         log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                         if (sortedByTime.last() == purchase) {
                                             dispatch { callback.onReceived(info) }
@@ -551,7 +552,7 @@ class Purchases internal constructor(
                 onSuccess = { customerInfo, created ->
                     dispatch {
                         callback?.onReceived(customerInfo, created)
-                        sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
+                        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
                     }
                     fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                 },
@@ -559,14 +560,19 @@ class Purchases internal constructor(
                     dispatch { callback?.onError(error) }
                 })
         }
-            ?: retrieveCustomerInfo(identityManager.currentAppUserID, receiveCustomerInfoCallback(
-                onSuccess = { customerInfo ->
-                    dispatch { callback?.onReceived(customerInfo, false) }
-                },
-                onError = { error ->
-                    dispatch { callback?.onError(error) }
-                }
-            ))
+            ?: customerInfoHelper.retrieveCustomerInfo(
+                identityManager.currentAppUserID,
+                CacheFetchPolicy.default(),
+                state.appInBackground,
+                receiveCustomerInfoCallback(
+                    onSuccess = { customerInfo ->
+                        dispatch { callback?.onReceived(customerInfo, false) }
+                    },
+                    onError = { error ->
+                        dispatch { callback?.onError(error) }
+                    }
+                )
+            )
     }
 
     /**
@@ -613,31 +619,25 @@ class Purchases internal constructor(
     fun getCustomerInfo(
         callback: ReceiveCustomerInfoCallback
     ) {
-        retrieveCustomerInfo(identityManager.currentAppUserID, callback)
+        getCustomerInfo(CacheFetchPolicy.default(), callback)
     }
 
-    private fun retrieveCustomerInfo(
-        appUserID: String,
-        callback: ReceiveCustomerInfoCallback? = null
+    /**
+     * Get latest available purchaser info.
+     * @param fetchPolicy Specifies cache behavior for customer info retrieval
+     * @param callback A listener called when purchaser info is available and not stale.
+     * Purchaser info can be null if an error occurred.
+     */
+    fun getCustomerInfo(
+        fetchPolicy: CacheFetchPolicy,
+        callback: ReceiveCustomerInfoCallback
     ) {
-        val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
-        if (cachedCustomerInfo != null) {
-            log(LogIntent.DEBUG, CustomerInfoStrings.VENDING_CACHE)
-            dispatch { callback?.onReceived(cachedCustomerInfo) }
-            state.appInBackground.let { appInBackground ->
-                if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
-                    log(LogIntent.DEBUG,
-                            if (appInBackground) CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_BACKGROUND
-                            else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
-                    fetchAndCacheCustomerInfo(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK)
-                }
-            }
-        } else {
-            log(LogIntent.DEBUG, CustomerInfoStrings.NO_CACHED_CUSTOMERINFO)
-            fetchAndCacheCustomerInfo(appUserID, state.appInBackground, callback)
-            log(LogIntent.RC_SUCCESS, CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK)
-        }
+        customerInfoHelper.retrieveCustomerInfo(
+            identityManager.currentAppUserID,
+            fetchPolicy,
+            state.appInBackground,
+            callback
+        )
     }
 
     /**
@@ -1107,35 +1107,14 @@ class Purchases internal constructor(
         completion: ReceiveCustomerInfoCallback? = null
     ) {
         state.appInBackground.let { appInBackground ->
-            fetchAndCacheCustomerInfo(appUserID, appInBackground, completion)
+            customerInfoHelper.retrieveCustomerInfo(
+                appUserID,
+                CacheFetchPolicy.FETCH_CURRENT,
+                appInBackground,
+                completion
+            )
             fetchAndCacheOfferings(appUserID, appInBackground)
         }
-    }
-
-    private fun fetchAndCacheCustomerInfo(
-        appUserID: String,
-        appInBackground: Boolean,
-        completion: ReceiveCustomerInfoCallback? = null
-    ) {
-        deviceCache.setCustomerInfoCacheTimestampToNow(appUserID)
-        backend.getCustomerInfo(
-            appUserID,
-            appInBackground,
-            { info ->
-                cacheCustomerInfo(info)
-                sendUpdatedCustomerInfoToDelegateIfChanged(info)
-                dispatch { completion?.onReceived(info) }
-            },
-            { error ->
-                Log.e("Purchases", "Error fetching customer data: ${error.message}")
-                deviceCache.clearCustomerInfoCacheTimestamp(appUserID)
-                dispatch { completion?.onError(error) }
-            })
-    }
-
-    @Synchronized
-    private fun cacheCustomerInfo(info: CustomerInfo) {
-        deviceCache.cacheCustomerInfo(identityManager.currentAppUserID, info)
     }
 
     private fun postPurchases(
@@ -1216,8 +1195,8 @@ class Purchases internal constructor(
                     body.getAttributeErrors()
                 )
                 billing.consumeAndSave(consumeAllTransactions, purchase)
-                cacheCustomerInfo(info)
-                sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                customerInfoHelper.cacheCustomerInfo(info)
+                customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
             },
             onError = { error, shouldConsumePurchase, body ->
@@ -1269,36 +1248,10 @@ class Purchases internal constructor(
             })
     }
 
-    private fun afterSetListener(listener: UpdatedCustomerInfoListener?) {
-        if (listener != null) {
-            log(LogIntent.DEBUG, ConfigureStrings.LISTENER_SET)
-            deviceCache.getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
-                this.sendUpdatedCustomerInfoToDelegateIfChanged(it)
-            }
-        }
-    }
-
-    private fun sendUpdatedCustomerInfoToDelegateIfChanged(info: CustomerInfo) {
-        synchronized(this@Purchases) { state.updatedCustomerInfoListener to state.lastSentCustomerInfo }
-            .let { (listener, lastSentCustomerInfo) ->
-                if (listener != null && lastSentCustomerInfo != info) {
-                    if (lastSentCustomerInfo != null) {
-                        log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER)
-                    } else {
-                        log(LogIntent.DEBUG, CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER)
-                    }
-                    synchronized(this@Purchases) {
-                        state = state.copy(lastSentCustomerInfo = info)
-                    }
-                    dispatch { listener.onReceived(info) }
-                }
-            }
-    }
-
-    private val handler: Handler? = Handler(Looper.getMainLooper())
+    private val handler = Handler(Looper.getMainLooper())
     private fun dispatch(action: () -> Unit) {
         if (Thread.currentThread() != Looper.getMainLooper().thread) {
-            handler?.post(action) ?: Handler(Looper.getMainLooper()).post(action)
+            handler.post(action)
         } else {
             action()
         }
@@ -1578,8 +1531,8 @@ class Purchases internal constructor(
                     body.getAttributeErrors()
                 )
                 deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                cacheCustomerInfo(info)
-                sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                customerInfoHelper.cacheCustomerInfo(info)
+                customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 onSuccess()
             },
             onError = { error, shouldConsumePurchase, body ->
@@ -1622,9 +1575,8 @@ class Purchases internal constructor(
                 }
             }
             synchronized(this@Purchases) {
-                state = state.copy(updatedCustomerInfoListener = converted)
+                customerInfoHelper.updatedCustomerInfoListener = converted
             }
-            afterSetListener(converted)
         }
 
     /**
