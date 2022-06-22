@@ -13,6 +13,57 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 # Available Actions
 
+### bump
+
+```sh
+[bundle exec] fastlane bump
+```
+
+Bump version, edit changelog, and create pull request
+
+### prepare_next_version
+
+```sh
+[bundle exec] fastlane prepare_next_version
+```
+
+Prepare next version
+
+### github_release
+
+```sh
+[bundle exec] fastlane github_release
+```
+
+Make github release
+
+### github_changelog
+
+```sh
+[bundle exec] fastlane github_changelog
+```
+
+Generate changelog from GitHub compare and PR data for mentioning GitHub usernames in release notes
+
+### bump_and_update_changelog
+
+```sh
+[bundle exec] fastlane bump_and_update_changelog
+```
+
+Increment build number and update changelog
+
+### replace_version_number
+
+```sh
+[bundle exec] fastlane replace_version_number
+```
+
+Replace version number in project
+
+----
+
+
 ## Android
 
 ### android test
@@ -22,38 +73,6 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 ```
 
 Runs all the tests
-
-### android bump
-
-```sh
-[bundle exec] fastlane android bump
-```
-
-Increment build number
-
-### android bump_and_update_changelog
-
-```sh
-[bundle exec] fastlane android bump_and_update_changelog
-```
-
-Increment build number and update changelog
-
-### android tag_release_with_latest_if_needed
-
-```sh
-[bundle exec] fastlane android tag_release_with_latest_if_needed
-```
-
-Tag release version with latest if necessary
-
-### android github_release
-
-```sh
-[bundle exec] fastlane android github_release
-```
-
-Make github release
 
 ### android deploy
 
@@ -70,14 +89,6 @@ Upload and close a release
 ```
 
 Upload a snapshot release
-
-### android prepare_next_version
-
-```sh
-[bundle exec] fastlane android prepare_next_version
-```
-
-Prepare next version
 
 ### android build_magic_weather
 

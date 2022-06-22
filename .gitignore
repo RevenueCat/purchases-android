@@ -113,6 +113,8 @@ purchase-tester/.classpath
 
 *.bck
 fastlane/report.xml
+fastlane/.cache
+fastlane/.env
 /docs/*
 integration-tests/keystore
 
