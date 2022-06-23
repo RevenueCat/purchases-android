@@ -1,7 +1,7 @@
 ### API Updates
 
 * New API to get customer info with a given `CacheFetchPolicy`
-** https://github.com/RevenueCat/purchases-android/pull/546
+  * https://github.com/RevenueCat/purchases-android/pull/546
 
 
 ### Other
