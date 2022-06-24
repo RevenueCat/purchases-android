@@ -17,7 +17,5 @@ class ProxyAmazonBillingActivity : Activity() {
             putParcelable("request_id", requestId)
         }
         resultReceiver?.send(0, bundle)
-
-        finish()
     }
 }
