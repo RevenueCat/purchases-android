@@ -232,13 +232,19 @@ internal class AmazonBilling constructor(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 purchaseHandler.purchase(
+                    activity,
                     appUserID,
                     storeProduct,
                     presentedOfferingIdentifier,
+                    onPurchaseCompleted = {
+                        purchaseHandler.onPurchaseCompleted(activity)
+                    },
                     onSuccess = { receipt, userData ->
                         handleReceipt(receipt, userData, storeProduct, presentedOfferingIdentifier)
                     },
-                    onError = ::onPurchaseError
+                    onError = {
+                        onPurchaseError(it)
+                    }
                 )
             } else {
                 onPurchaseError(connectionError)
