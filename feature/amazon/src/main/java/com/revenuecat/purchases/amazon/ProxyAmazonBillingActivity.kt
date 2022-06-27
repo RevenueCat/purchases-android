@@ -15,6 +15,11 @@ class ProxyAmazonBillingActivity : Activity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Applying theme programmatically because when applying via AndroidManifest, theme is not being
+        // applied correctly.
+        // What happens is that applying @android:style/Theme.Translucent.NoTitleBar in the manifest works
+        // but applying a theme that has that theme as parent, the Activity is not translucent
+        setTheme(R.style.ProxyAmazonBillingActivityTheme)
         super.onCreate(savedInstanceState)
         broadcastReceiver = ProxyAmazonBillingActivityBroadcastReceiver(this)
         applicationContext.registerReceiver(broadcastReceiver, filter)
