@@ -53,7 +53,8 @@ internal class AmazonBilling constructor(
     private val mainHandler: Handler,
     private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
     private val productDataHandler: ProductDataResponseListener = ProductDataHandler(purchasingServiceProvider),
-    private val purchaseHandler: PurchaseResponseListener = PurchaseHandler(purchasingServiceProvider),
+    private val purchaseHandler: PurchaseResponseListener =
+        PurchaseHandler(purchasingServiceProvider, applicationContext),
     private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(
         purchasingServiceProvider
     ),
@@ -236,9 +237,6 @@ internal class AmazonBilling constructor(
                     appUserID,
                     storeProduct,
                     presentedOfferingIdentifier,
-                    onPurchaseCompleted = {
-                        purchaseHandler.onPurchaseCompleted(activity)
-                    },
                     onSuccess = { receipt, userData ->
                         handleReceipt(receipt, userData, storeProduct, presentedOfferingIdentifier)
                     },

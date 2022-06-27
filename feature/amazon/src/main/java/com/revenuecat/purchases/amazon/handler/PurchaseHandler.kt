@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.amazon.handler
 
 import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -22,21 +24,20 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 class PurchaseHandler(
-    private val purchasingServiceProvider: PurchasingServiceProvider
+    private val purchasingServiceProvider: PurchasingServiceProvider,
+    private val applicationContext: Context
 ) : PurchaseResponseListener {
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
     private val purchaseCallbacks =
         mutableMapOf<RequestId, Pair<(Receipt, UserData) -> Unit, (PurchasesError) -> Unit>>()
-    private val purchaseCompletedCallbacks = mutableMapOf<RequestId, () -> Unit>()
 
     override fun purchase(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,
-        onPurchaseCompleted: () -> Unit,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
@@ -47,7 +48,6 @@ class PurchaseHandler(
                 synchronized(this@PurchaseHandler) {
                     val requestId = resultData?.get("request_id") as? RequestId
                     if (requestId != null) {
-                        purchaseCompletedCallbacks[requestId] = onPurchaseCompleted
                         purchaseCallbacks[requestId] = onSuccess to onError
                         productTypes[storeProduct.sku] = storeProduct.type
                         presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
@@ -60,18 +60,17 @@ class PurchaseHandler(
         purchasingServiceProvider.purchase(activity, storeProduct.sku, resultReceiver)
     }
 
-    override fun onPurchaseCompleted(activity: Activity) {
-        purchasingServiceProvider.onPurchaseCompleted(activity)
-    }
-
     override fun onPurchaseResponse(response: PurchaseResponse) {
-        val requestId = response.requestId
-        val purchaseCompletedCallback = synchronized(this) { purchaseCompletedCallbacks.remove(requestId) }
-        purchaseCompletedCallback?.invoke()
-
         // Amazon is catching all exceptions and swallowing them so we have to catch ourselves and log
         try {
             log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
+
+            val requestId = response.requestId
+            Intent().also { intent ->
+                intent.action = "purchase_finished"
+                intent.setPackage(applicationContext.packageName)
+                applicationContext.sendBroadcast(intent)
+            }
 
             val callbacks = synchronized(this) { purchaseCallbacks.remove(requestId) }
 

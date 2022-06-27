@@ -15,5 +15,4 @@ interface PurchasingServiceProvider {
     fun purchase(activity: Activity, sku: String, resultReceiver: ResultReceiver)
     fun getPurchaseUpdates(reset: Boolean): RequestId
     fun notifyFulfillment(receiptId: String, fulfillmentResult: FulfillmentResult)
-    fun onPurchaseCompleted(activity: Activity)
 }

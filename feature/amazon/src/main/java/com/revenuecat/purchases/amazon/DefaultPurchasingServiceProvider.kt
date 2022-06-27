@@ -9,7 +9,6 @@ import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.RequestId
 
-const val PROXY_AMAZON_BILLING_ACTIVITY_REQUEST_CODE = 192342
 class DefaultPurchasingServiceProvider : PurchasingServiceProvider {
 
     override fun registerListener(
@@ -31,11 +30,7 @@ class DefaultPurchasingServiceProvider : PurchasingServiceProvider {
         val intent = Intent(activity, ProxyAmazonBillingActivity::class.java)
         intent.putExtra("result_receiver", resultReceiver)
         intent.putExtra("sku", sku)
-        activity.startActivityForResult(intent, PROXY_AMAZON_BILLING_ACTIVITY_REQUEST_CODE)
-    }
-
-    override fun onPurchaseCompleted(activity: Activity) {
-        activity.finishActivity(PROXY_AMAZON_BILLING_ACTIVITY_REQUEST_CODE)
+        activity.startActivity(intent)
     }
 
     override fun getProductData(

@@ -30,10 +30,7 @@ interface PurchaseResponseListener : PurchasingListener {
         appUserID: String,
         storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,
-        onPurchaseCompleted: () -> Unit,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit
     )
-
-    fun onPurchaseCompleted(activity: Activity)
 }
