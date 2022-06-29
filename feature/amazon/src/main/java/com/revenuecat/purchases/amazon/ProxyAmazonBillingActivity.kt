@@ -9,7 +9,7 @@ import com.amazon.device.iap.PurchasingService
 
 class ProxyAmazonBillingActivity : Activity() {
 
-    private lateinit var broadcastReceiver: BroadcastReceiver
+    private var broadcastReceiver: BroadcastReceiver? = null
     private val filter = IntentFilter("com.revenuecat.purchases").apply {
         addAction("purchase_finished")
     }
@@ -24,19 +24,20 @@ class ProxyAmazonBillingActivity : Activity() {
         broadcastReceiver = ProxyAmazonBillingActivityBroadcastReceiver(this)
         applicationContext.registerReceiver(broadcastReceiver, filter)
 
-        val sku = intent.getStringExtra("sku")
-        val resultReceiver = intent.getParcelableExtra("result_receiver") as? ResultReceiver
-
-        val requestId = PurchasingService.purchase(sku)
-
-        val bundle = Bundle().apply {
-            putParcelable("request_id", requestId)
+        if (savedInstanceState == null) {
+            val sku = intent.getStringExtra("sku")
+            val resultReceiver = intent.getParcelableExtra("result_receiver") as? ResultReceiver
+            val requestId = PurchasingService.purchase(sku)
+            val bundle = Bundle().apply {
+                putParcelable("request_id", requestId)
+            }
+            resultReceiver?.send(0, bundle)
         }
-        resultReceiver?.send(0, bundle)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         applicationContext.unregisterReceiver(broadcastReceiver)
+        broadcastReceiver = null
     }
 }
