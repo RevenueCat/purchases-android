@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.amazon.helpers
 
+import android.app.Activity
 import android.content.Context
+import android.os.Bundle
+import android.os.ResultReceiver
 import com.amazon.device.iap.PurchasingListener
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.RequestId
@@ -40,9 +43,12 @@ class PurchasingServiceProviderForTest : PurchasingServiceProvider {
         return RequestId.fromString(getUserDataRequestId ?: "${System.currentTimeMillis()}")
     }
 
-    override fun purchase(sku: String): RequestId {
+    override fun purchase(activity: Activity, sku: String, resultReceiver: ResultReceiver) {
         purchaseCalled = true
-        return RequestId.fromString(getPurchaseRequestId ?: "${System.currentTimeMillis()}")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(getPurchaseRequestId ?: "${System.currentTimeMillis()}"))
+        }
+        resultReceiver.send(0, bundle)
     }
 
     override fun getPurchaseUpdates(reset: Boolean): RequestId {

@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.amazon.handler
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.amazon.device.iap.internal.model.PurchaseResponseBuilder
 import com.amazon.device.iap.model.PurchaseResponse
@@ -16,14 +19,23 @@ import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.toStoreProduct
 import com.revenuecat.purchases.models.StoreProduct
+import io.mockk.clearAllMocks
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.lang.Exception
 import java.lang.RuntimeException
 import java.util.Date
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class PurchaseHandlerTest {
@@ -51,10 +63,26 @@ class PurchaseHandlerTest {
         Assertions.fail("should be success")
     }
 
+    private var mockApplicationContext = mockk<Context>()
+    private var mockActivity = mockk<Activity>()
+    private var intentSlot = slot<Intent>()
+    private val packageName = UUID.randomUUID().toString()
+
     @Before
     fun setup() {
         purchasingServiceProvider = PurchasingServiceProviderForTest()
-        underTest = PurchaseHandler(purchasingServiceProvider)
+        underTest = PurchaseHandler(purchasingServiceProvider, mockApplicationContext)
+        every {
+            mockApplicationContext.packageName
+        } returns packageName
+        every {
+            mockApplicationContext.sendBroadcast(capture(intentSlot))
+        } just runs
+    }
+
+    @After
+    fun tearDown() {
+        clearAllMocks()
     }
 
     @Test
@@ -63,6 +91,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
@@ -86,6 +115,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
@@ -108,6 +138,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
@@ -130,6 +161,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
@@ -152,6 +184,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
@@ -176,6 +209,7 @@ class PurchaseHandlerTest {
         var receivedCount = 0
 
         underTest.purchase(
+            mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
@@ -217,6 +251,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
             presentedOfferingIdentifier = null,
@@ -237,6 +272,58 @@ class PurchaseHandlerTest {
         assertThat(receivedLoggedException).isNotNull()
         assertThat(expectedException).isEqualTo(receivedException)
         assertThat(expectedException).isEqualTo(receivedLoggedException)
+    }
+
+    @Test
+    fun `broadcast is sent after finishing a successful purchase`() {
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
+
+        underTest.purchase(
+            mockActivity,
+            appUserID = "app_user_id",
+            storeProduct = dummyStoreProduct(),
+            presentedOfferingIdentifier = null,
+            expectedOnSuccess,
+            unexpectedOnError
+        )
+
+        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+
+        val response = getDummyPurchaseResponse(dummyRequestId)
+        underTest.onPurchaseResponse(response)
+
+        assertThat(receivedReceipt).isNotNull
+        assertThat(intentSlot.isCaptured).isTrue
+        val captured = intentSlot.captured
+        assertThat(captured.`package`).isEqualTo(packageName)
+        assertThat(captured.action).isEqualTo("purchase_finished")
+    }
+
+    @Test
+    fun `broadcast is sent after finishing a failed purchase`() {
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
+
+        underTest.purchase(
+            mockActivity,
+            appUserID = "app_user_id",
+            storeProduct = dummyStoreProduct(),
+            presentedOfferingIdentifier = null,
+            unexpectedOnSuccess,
+            expectedOnError
+        )
+
+        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+
+        val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.FAILED)
+        underTest.onPurchaseResponse(response)
+
+        assertThat(receivedError).isNotNull
+        assertThat(intentSlot.isCaptured).isTrue
+        val captured = intentSlot.captured
+        assertThat(captured.`package`).isEqualTo(packageName)
+        assertThat(captured.action).isEqualTo("purchase_finished")
     }
 
     private fun dummyStoreProduct(): StoreProduct {
