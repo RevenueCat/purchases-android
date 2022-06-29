@@ -15,6 +15,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
+import com.revenuecat.purchases.amazon.ProxyAmazonBillingActivity
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
 import com.revenuecat.purchases.common.LogIntent
@@ -57,7 +58,11 @@ class PurchaseHandler(
                 }
             }
         }
-        purchasingServiceProvider.purchase(activity, storeProduct.sku, resultReceiver)
+        val intent = Intent(activity, ProxyAmazonBillingActivity::class.java)
+        intent.putExtra("result_receiver", resultReceiver)
+        intent.putExtra("sku", storeProduct.sku)
+        intent.putExtra("service_provider", purchasingServiceProvider)
+        activity.startActivity(intent)
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {

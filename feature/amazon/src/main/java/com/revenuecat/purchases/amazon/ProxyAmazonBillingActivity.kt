@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.os.Bundle
 import android.os.ResultReceiver
-import com.amazon.device.iap.PurchasingService
 
 class ProxyAmazonBillingActivity : Activity() {
 
@@ -26,8 +25,9 @@ class ProxyAmazonBillingActivity : Activity() {
 
         if (savedInstanceState == null) {
             val sku = intent.getStringExtra("sku")
-            val resultReceiver = intent.getParcelableExtra("result_receiver") as? ResultReceiver
-            val requestId = PurchasingService.purchase(sku)
+            val resultReceiver = intent.getParcelableExtra<ResultReceiver>("result_receiver")
+            val purchasingServiceProvider = intent.getParcelableExtra<PurchasingServiceProvider>("service_provider")
+            val requestId = purchasingServiceProvider.purchase(sku)
             val bundle = Bundle().apply {
                 putParcelable("request_id", requestId)
             }
