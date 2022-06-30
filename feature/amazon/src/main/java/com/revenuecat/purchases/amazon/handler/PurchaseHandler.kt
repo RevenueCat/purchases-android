@@ -15,6 +15,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.amazon.ProxyAmazonBillingActivity
+import com.revenuecat.purchases.amazon.ProxyAmazonBillingActivityBroadcastReceiver
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
 import com.revenuecat.purchases.common.LogIntent
@@ -95,7 +96,7 @@ class PurchaseHandler(
             log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
 
             Intent().also { intent ->
-                intent.action = "purchase_finished"
+                intent.action = ProxyAmazonBillingActivityBroadcastReceiver.INTENT_FILTER_ACTION
                 intent.setPackage(applicationContext.packageName)
                 applicationContext.sendBroadcast(intent)
             }

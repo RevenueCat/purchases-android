@@ -17,6 +17,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.ProxyAmazonBillingActivity
+import com.revenuecat.purchases.amazon.ProxyAmazonBillingActivityBroadcastReceiver
 import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
@@ -318,7 +319,7 @@ class PurchaseHandlerTest {
         assertThat(broadcastIntentSlot.isCaptured).isTrue
         val captured = broadcastIntentSlot.captured
         assertThat(captured.`package`).isEqualTo(packageName)
-        assertThat(captured.action).isEqualTo("purchase_finished")
+        assertThat(captured.action).isEqualTo(ProxyAmazonBillingActivity.EXTRAS_REQUEST_ID)
     }
 
     @Test
@@ -345,7 +346,7 @@ class PurchaseHandlerTest {
         assertThat(broadcastIntentSlot.isCaptured).isTrue
         val captured = broadcastIntentSlot.captured
         assertThat(captured.`package`).isEqualTo(packageName)
-        assertThat(captured.action).isEqualTo("purchase_finished")
+        assertThat(captured.action).isEqualTo(ProxyAmazonBillingActivityBroadcastReceiver.INTENT_FILTER_ACTION)
     }
 
     private fun dummyStoreProduct(): StoreProduct {

@@ -68,7 +68,7 @@ class ProxyAmazonBillingActivityTest {
         )
 
         val broadcastIntent = Intent().also {
-            it.action = "purchase_finished"
+            it.action = ProxyAmazonBillingActivityBroadcastReceiver.INTENT_FILTER_ACTION
             it.setPackage(applicationContext.packageName)
         }
 

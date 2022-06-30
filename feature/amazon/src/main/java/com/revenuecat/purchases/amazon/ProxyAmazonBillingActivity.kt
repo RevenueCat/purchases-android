@@ -3,7 +3,6 @@ package com.revenuecat.purchases.amazon
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
 import android.os.ResultReceiver
 import androidx.annotation.VisibleForTesting
@@ -35,9 +34,7 @@ internal class ProxyAmazonBillingActivity : Activity() {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var broadcastReceiver: ProxyAmazonBillingActivityBroadcastReceiver? = null
 
-    private val filter = IntentFilter("com.revenuecat.purchases").apply {
-        addAction("purchase_finished")
-    }
+    private val filter = ProxyAmazonBillingActivityBroadcastReceiver.newIntentFilter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Applying theme programmatically because when applying via AndroidManifest, theme is not being
