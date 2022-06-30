@@ -5,16 +5,12 @@
 
 package com.revenuecat.purchases
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.content.Context
-import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.os.Handler
 import android.os.Looper
-import android.preference.PreferenceManager
-import android.util.Log
 import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -27,7 +23,6 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Dispatcher
-import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -37,10 +32,9 @@ import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.google.isSuccessful
-import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
@@ -75,8 +69,6 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
-import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
-import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import org.json.JSONException
@@ -98,7 +90,7 @@ typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
 @Suppress("LongParameterList")
-class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal constructor(
+class Purchases internal constructor(
     private val application: Application,
     backingFieldAppUserID: String?,
     private val backend: Backend,
@@ -107,7 +99,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig
+    @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
+    private val customerInfoHelper: CustomerInfoHelper
 ) : LifecycleDelegate {
 
     /** @suppress */
@@ -141,12 +134,9 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
      * Make sure [removeUpdatedCustomerInfoListener] is called when the listener needs to be destroyed.
      */
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
-        @Synchronized get() = state.updatedCustomerInfoListener
-        set(value) {
-            synchronized(this@Purchases) {
-                state = state.copy(updatedCustomerInfoListener = value)
-            }
-            afterSetListener(value)
+        @Synchronized get() = customerInfoHelper.updatedCustomerInfoListener
+        @Synchronized set(value) {
+            customerInfoHelper.updatedCustomerInfoListener = value
         }
 
     /**
@@ -196,7 +186,11 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         log(LogIntent.DEBUG, ConfigureStrings.APP_FOREGROUNDED)
         if (firstTimeInForeground || deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground = false)) {
             log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
-            fetchAndCacheCustomerInfo(identityManager.currentAppUserID, appInBackground = false)
+            customerInfoHelper.retrieveCustomerInfo(
+                identityManager.currentAppUserID,
+                fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+                appInBackground = false
+            )
         }
         if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
             log(LogIntent.DEBUG, OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
@@ -506,8 +500,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                                             body.getAttributeErrors()
                                         )
                                         billing.consumeAndSave(finishTransactions, purchase)
-                                        cacheCustomerInfo(info)
-                                        sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                                        customerInfoHelper.cacheCustomerInfo(info)
+                                        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
                                         log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                         if (sortedByTime.last() == purchase) {
                                             dispatch { callback.onReceived(info) }
@@ -558,7 +552,7 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 onSuccess = { customerInfo, created ->
                     dispatch {
                         callback?.onReceived(customerInfo, created)
-                        sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
+                        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
                     }
                     fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                 },
@@ -566,14 +560,19 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     dispatch { callback?.onError(error) }
                 })
         }
-            ?: retrieveCustomerInfo(identityManager.currentAppUserID, receiveCustomerInfoCallback(
-                onSuccess = { customerInfo ->
-                    dispatch { callback?.onReceived(customerInfo, false) }
-                },
-                onError = { error ->
-                    dispatch { callback?.onError(error) }
-                }
-            ))
+            ?: customerInfoHelper.retrieveCustomerInfo(
+                identityManager.currentAppUserID,
+                CacheFetchPolicy.default(),
+                state.appInBackground,
+                receiveCustomerInfoCallback(
+                    onSuccess = { customerInfo ->
+                        dispatch { callback?.onReceived(customerInfo, false) }
+                    },
+                    onError = { error ->
+                        dispatch { callback?.onError(error) }
+                    }
+                )
+            )
     }
 
     /**
@@ -620,31 +619,25 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
     fun getCustomerInfo(
         callback: ReceiveCustomerInfoCallback
     ) {
-        retrieveCustomerInfo(identityManager.currentAppUserID, callback)
+        getCustomerInfo(CacheFetchPolicy.default(), callback)
     }
 
-    private fun retrieveCustomerInfo(
-        appUserID: String,
-        callback: ReceiveCustomerInfoCallback? = null
+    /**
+     * Get latest available purchaser info.
+     * @param fetchPolicy Specifies cache behavior for customer info retrieval
+     * @param callback A listener called when purchaser info is available and not stale.
+     * Purchaser info can be null if an error occurred.
+     */
+    fun getCustomerInfo(
+        fetchPolicy: CacheFetchPolicy,
+        callback: ReceiveCustomerInfoCallback
     ) {
-        val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
-        if (cachedCustomerInfo != null) {
-            log(LogIntent.DEBUG, CustomerInfoStrings.VENDING_CACHE)
-            dispatch { callback?.onReceived(cachedCustomerInfo) }
-            state.appInBackground.let { appInBackground ->
-                if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
-                    log(LogIntent.DEBUG,
-                            if (appInBackground) CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_BACKGROUND
-                            else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
-                    fetchAndCacheCustomerInfo(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK)
-                }
-            }
-        } else {
-            log(LogIntent.DEBUG, CustomerInfoStrings.NO_CACHED_CUSTOMERINFO)
-            fetchAndCacheCustomerInfo(appUserID, state.appInBackground, callback)
-            log(LogIntent.RC_SUCCESS, CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK)
-        }
+        customerInfoHelper.retrieveCustomerInfo(
+            identityManager.currentAppUserID,
+            fetchPolicy,
+            state.appInBackground,
+            callback
+        )
     }
 
     /**
@@ -1114,35 +1107,14 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         completion: ReceiveCustomerInfoCallback? = null
     ) {
         state.appInBackground.let { appInBackground ->
-            fetchAndCacheCustomerInfo(appUserID, appInBackground, completion)
+            customerInfoHelper.retrieveCustomerInfo(
+                appUserID,
+                CacheFetchPolicy.FETCH_CURRENT,
+                appInBackground,
+                completion
+            )
             fetchAndCacheOfferings(appUserID, appInBackground)
         }
-    }
-
-    private fun fetchAndCacheCustomerInfo(
-        appUserID: String,
-        appInBackground: Boolean,
-        completion: ReceiveCustomerInfoCallback? = null
-    ) {
-        deviceCache.setCustomerInfoCacheTimestampToNow(appUserID)
-        backend.getCustomerInfo(
-            appUserID,
-            appInBackground,
-            { info ->
-                cacheCustomerInfo(info)
-                sendUpdatedCustomerInfoToDelegateIfChanged(info)
-                dispatch { completion?.onReceived(info) }
-            },
-            { error ->
-                Log.e("Purchases", "Error fetching customer data: ${error.message}")
-                deviceCache.clearCustomerInfoCacheTimestamp(appUserID)
-                dispatch { completion?.onError(error) }
-            })
-    }
-
-    @Synchronized
-    private fun cacheCustomerInfo(info: CustomerInfo) {
-        deviceCache.cacheCustomerInfo(identityManager.currentAppUserID, info)
     }
 
     private fun postPurchases(
@@ -1223,8 +1195,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     body.getAttributeErrors()
                 )
                 billing.consumeAndSave(consumeAllTransactions, purchase)
-                cacheCustomerInfo(info)
-                sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                customerInfoHelper.cacheCustomerInfo(info)
+                customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 onSuccess?.let { it(purchase, info) }
             },
             onError = { error, shouldConsumePurchase, body ->
@@ -1276,36 +1248,10 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
             })
     }
 
-    private fun afterSetListener(listener: UpdatedCustomerInfoListener?) {
-        if (listener != null) {
-            log(LogIntent.DEBUG, ConfigureStrings.LISTENER_SET)
-            deviceCache.getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
-                this.sendUpdatedCustomerInfoToDelegateIfChanged(it)
-            }
-        }
-    }
-
-    private fun sendUpdatedCustomerInfoToDelegateIfChanged(info: CustomerInfo) {
-        synchronized(this@Purchases) { state.updatedCustomerInfoListener to state.lastSentCustomerInfo }
-            .let { (listener, lastSentCustomerInfo) ->
-                if (listener != null && lastSentCustomerInfo != info) {
-                    if (lastSentCustomerInfo != null) {
-                        log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER)
-                    } else {
-                        log(LogIntent.DEBUG, CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER)
-                    }
-                    synchronized(this@Purchases) {
-                        state = state.copy(lastSentCustomerInfo = info)
-                    }
-                    dispatch { listener.onReceived(info) }
-                }
-            }
-    }
-
-    private val handler: Handler? = Handler(Looper.getMainLooper())
+    private val handler = Handler(Looper.getMainLooper())
     private fun dispatch(action: () -> Unit) {
         if (Thread.currentThread() != Looper.getMainLooper().thread) {
-            handler?.post(action) ?: Handler(Looper.getMainLooper()).post(action)
+            handler.post(action)
         } else {
             action()
         }
@@ -1585,8 +1531,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                     body.getAttributeErrors()
                 )
                 deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                cacheCustomerInfo(info)
-                sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                customerInfoHelper.cacheCustomerInfo(info)
+                customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 onSuccess()
             },
             onError = { error, shouldConsumePurchase, body ->
@@ -1629,9 +1575,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                 }
             }
             synchronized(this@Purchases) {
-                state = state.copy(updatedCustomerInfoListener = converted)
+                customerInfoHelper.updatedCustomerInfoListener = converted
             }
-            afterSetListener(converted)
         }
 
     /**
@@ -2085,67 +2030,13 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         fun configure(
             configuration: PurchasesConfiguration
         ): Purchases {
-            with(configuration) {
-                require(context.hasPermission(Manifest.permission.INTERNET)) {
-                    "Purchases requires INTERNET permission."
-                }
-
-                require(!apiKey.isBlank()) { "API key must be set. Get this from the RevenueCat web app" }
-
-                require(context.applicationContext is Application) { "Needs an application context." }
-                val application = context.getApplication()
-                val appConfig = AppConfig(
-                    context,
-                    observerMode,
-                    platformInfo,
-                    proxyURL,
-                    store,
-                    dangerousSettings
-                )
-
-                val prefs = PreferenceManager.getDefaultSharedPreferences(application)
-
-                val sharedPreferencesForETags = ETagManager.initializeSharedPreferences(context)
-                val eTagManager = ETagManager(sharedPreferencesForETags)
-
-                val dispatcher = Dispatcher(service ?: createDefaultExecutor())
-                val backend = Backend(
-                    apiKey,
-                    dispatcher,
-                    HTTPClient(appConfig, eTagManager)
-                )
-                val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
-
-                val cache = DeviceCache(prefs, apiKey)
-
-                val billing: BillingAbstract = BillingFactory.createBilling(
-                    store,
-                    application,
-                    backend,
-                    cache,
-                    observerMode
-                )
-                val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
-
-                val subscriberAttributesCache = SubscriberAttributesCache(cache)
-                return Purchases(
-                    application,
-                    appUserID,
-                    backend,
-                    billing,
-                    cache,
-                    dispatcher,
-                    IdentityManager(cache, subscriberAttributesCache, backend),
-                    SubscriberAttributesManager(
-                        subscriberAttributesCache,
-                        subscriberAttributesPoster,
-                        attributionFetcher
-                    ),
-                    appConfig
-                ).also {
-                    @SuppressLint("RestrictedApi")
-                    sharedInstance = it
-                }
+            return PurchasesFactory().createPurchases(
+                configuration,
+                platformInfo,
+                proxyURL
+            ).also {
+                @SuppressLint("RestrictedApi")
+                sharedInstance = it
             }
         }
 
@@ -2220,12 +2111,6 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
                             }
                         })
                 }
-        }
-
-        private fun Context.getApplication() = applicationContext as Application
-
-        private fun Context.hasPermission(permission: String): Boolean {
-            return checkCallingOrSelfPermission(permission) == PERMISSION_GRANTED
         }
 
         private fun createDefaultExecutor(): ExecutorService {

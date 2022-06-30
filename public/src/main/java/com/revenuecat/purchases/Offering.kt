@@ -6,7 +6,7 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
-import kotlinx.android.parcel.IgnoredOnParcel
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 
 /**

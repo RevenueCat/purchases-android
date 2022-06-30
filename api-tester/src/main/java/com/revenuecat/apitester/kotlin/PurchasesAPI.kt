@@ -3,6 +3,7 @@ package com.revenuecat.apitester.kotlin
 import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.BillingFeature
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.Offerings
@@ -81,6 +82,7 @@ private class PurchasesAPI {
         val appUserID: String = purchases.appUserID
 
         purchases.getCustomerInfo(receiveCustomerInfoCallback)
+        purchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, receiveCustomerInfoCallback)
         purchases.removeUpdatedCustomerInfoListener()
         purchases.invalidateCustomerInfoCache()
         purchases.close()
@@ -96,7 +98,7 @@ private class PurchasesAPI {
         purchases.onAppForegrounded()
     }
 
-    @Suppress("RedundantLambdaArrow")
+    @Suppress("RedundantLambdaArrow", "LongMethod")
     fun checkListenerConversions(
         purchases: Purchases,
         activity: Activity,
@@ -148,6 +150,11 @@ private class PurchasesAPI {
             onSuccess = { _: CustomerInfo -> }
         )
         purchases.getCustomerInfoWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: CustomerInfo -> }
+        )
+        purchases.getCustomerInfoWith(
+            fetchPolicy = CacheFetchPolicy.CACHED_OR_FETCHED,
             onError = { _: PurchasesError -> },
             onSuccess = { _: CustomerInfo -> }
         )

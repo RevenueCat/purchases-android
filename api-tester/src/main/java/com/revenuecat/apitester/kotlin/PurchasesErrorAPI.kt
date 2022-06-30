@@ -36,7 +36,9 @@ private class PurchasesErrorAPI {
             PurchasesErrorCode.InvalidSubscriberAttributesError,
             PurchasesErrorCode.LogOutWithAnonymousUserError,
             PurchasesErrorCode.ConfigurationError,
-            PurchasesErrorCode.UnsupportedError
+            PurchasesErrorCode.UnsupportedError,
+            PurchasesErrorCode.EmptySubscriberAttributesError,
+            PurchasesErrorCode.CustomerInfoError
             -> {}
         }.exhaustive
     }

@@ -239,9 +239,9 @@ fun Purchases.logOutWith(
 }
 
 /**
- * Get latest available purchaser info.
- * @param onSuccess Called when purchaser info is available and not stale. Called immediately if
- * purchaser info is cached.
+ * Get latest available customer info.
+ * @param onSuccess Called when customer info is available and not stale. Called immediately if
+ * customer info is cached.
  * @param onError Will be called after the call has completed with an error.
  */
 @Suppress("unused")
@@ -250,6 +250,22 @@ fun Purchases.getCustomerInfoWith(
     onSuccess: ReceiveCustomerInfoSuccessFunction
 ) {
     getCustomerInfo(receiveCustomerInfoCallback(onSuccess, onError))
+}
+
+/**
+ * Get customer info from cache or network depending on fetch policy.
+ * @param fetchPolicy Specifies cache behavior for customer info retrieval
+ * @param onSuccess Called when customer info is available depending on the fetchPolicy parameter, this can be called
+ * immediately or after a fetch has happened.
+ * @param onError Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+fun Purchases.getCustomerInfoWith(
+    fetchPolicy: CacheFetchPolicy,
+    onError: ErrorFunction = ON_ERROR_STUB,
+    onSuccess: ReceiveCustomerInfoSuccessFunction
+) {
+    getCustomerInfo(fetchPolicy, receiveCustomerInfoCallback(onSuccess, onError))
 }
 
 /**
