@@ -11,7 +11,7 @@ internal class ProxyAmazonBillingActivityBroadcastReceiver(private val activity:
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     var onReceiveCalled = false
 
-    override fun onReceive(context: Context?, intent: Intent?) {
+    override fun onReceive(context: Context, intent: Intent) {
         onReceiveCalled = true
         activity.finish()
     }
