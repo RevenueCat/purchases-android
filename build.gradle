@@ -11,7 +11,7 @@ buildscript {
     ext.robolectricVersion = "4.6.1"
     ext.mockkVersion = "1.10.0"
     ext.assertJVersion = "3.13.2"
-    ext.annotationVersion = "1.4.0"
+    ext.annotationVersion = "1.3.0"
 
     repositories {
         mavenCentral()
