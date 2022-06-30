@@ -1,8 +1,9 @@
 package com.revenuecat.purchases.amazon;
 
 import android.app.Activity
+import android.content.Intent
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import io.mockk.called
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.just
@@ -37,7 +38,7 @@ class ProxyAmazonBillingActivityBroadcastReceiverTest {
 
     @Test
     fun `ProxyAmazonBillingActivityBroadcastReceiver finishes Activity onReceive`() {
-        underTest.onReceive(null, null)
+        underTest.onReceive(ApplicationProvider.getApplicationContext(), Intent())
         verify {
             mockActivity.finish()
         }
@@ -46,7 +47,7 @@ class ProxyAmazonBillingActivityBroadcastReceiverTest {
     @Test
     fun `ProxyAmazonBillingActivityBroadcastReceiver sets onReceiveCalled`() {
         assertThat(underTest.onReceiveCalled).isFalse
-        underTest.onReceive(null, null)
+        underTest.onReceive(ApplicationProvider.getApplicationContext(), Intent())
         assertThat(underTest.onReceiveCalled).isTrue
     }
 
