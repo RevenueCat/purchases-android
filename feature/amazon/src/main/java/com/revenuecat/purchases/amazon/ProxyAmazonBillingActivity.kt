@@ -6,11 +6,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.ResultReceiver
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingHelper
 
 internal class ProxyAmazonBillingActivity : Activity() {
 
     companion object {
-
         const val EXTRAS_RESULT_RECEIVER = "result_receiver"
         const val EXTRAS_SKU = "sku"
         const val EXTRAS_SERVICE_PROVIDER = "service_provider"
@@ -43,19 +43,13 @@ internal class ProxyAmazonBillingActivity : Activity() {
         // but applying a theme that has that theme as parent, the Activity is not translucent
         setTheme(R.style.ProxyAmazonBillingActivityTheme)
         super.onCreate(savedInstanceState)
+
         broadcastReceiver = ProxyAmazonBillingActivityBroadcastReceiver(this)
         applicationContext.registerReceiver(broadcastReceiver, filter)
 
         if (savedInstanceState == null) {
-            val sku = intent.getStringExtra(EXTRAS_SKU)
-            val resultReceiver = intent.getParcelableExtra<ResultReceiver>(EXTRAS_RESULT_RECEIVER)
-            val purchasingServiceProvider =
-                intent.getParcelableExtra<PurchasingServiceProvider>(EXTRAS_SERVICE_PROVIDER)
-            val requestId = purchasingServiceProvider.purchase(sku)
-            val bundle = Bundle().apply {
-                putParcelable(EXTRAS_REQUEST_ID, requestId)
-            }
-            resultReceiver?.send(0, bundle)
+            val proxyAmazonBillingHelper = ProxyAmazonBillingHelper()
+            proxyAmazonBillingHelper.startAmazonPurchase(intent)
         }
     }
 
