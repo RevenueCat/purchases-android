@@ -20,6 +20,7 @@ dependencies {
     testImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
     testImplementation project(":test-utils")
     testImplementation "androidx.test:core:$testLibrariesVersion"
+    testImplementation "androidx.test:core-ktx:$testLibrariesVersion"
     testImplementation "androidx.test:runner:$testLibrariesVersion"
     testImplementation "androidx.test:rules:$testLibrariesVersion"
     testImplementation "androidx.test.ext:junit:$testJUnitVersion"
