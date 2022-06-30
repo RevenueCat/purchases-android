@@ -3,7 +3,9 @@ package com.revenuecat.purchases.amazon.handler
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.os.Handler
+import android.os.ResultReceiver
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.amazon.device.iap.internal.model.PurchaseResponseBuilder
 import com.amazon.device.iap.model.PurchaseResponse
@@ -26,7 +28,6 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
-import io.mockk.verify
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -67,19 +68,28 @@ class PurchaseHandlerTest {
     private var mockApplicationContext = mockk<Context>()
     private var mockHandler = mockk<Handler>()
     private var mockActivity = mockk<Activity>()
-    private var intentSlot = slot<Intent>()
+    private var broadcastIntentSlot = slot<Intent>()
+    private var activityIntentSlot = slot<Intent>()
     private val packageName = UUID.randomUUID().toString()
 
     @Before
     fun setup() {
         purchasingServiceProvider = PurchasingServiceProviderForTest()
         underTest = PurchaseHandler(purchasingServiceProvider, mockApplicationContext)
+
         every {
             mockApplicationContext.packageName
         } returns packageName
         every {
-            mockApplicationContext.sendBroadcast(capture(intentSlot))
+            mockApplicationContext.sendBroadcast(capture(broadcastIntentSlot))
         } just runs
+
+        every {
+            mockActivity.startActivity(capture(activityIntentSlot))
+        } just runs
+        every {
+            mockActivity.packageName
+        } returns packageName
     }
 
     @After
@@ -102,7 +112,12 @@ class PurchaseHandlerTest {
             unexpectedOnError
         )
 
-        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+        assertThat(activityIntentSlot.isCaptured).isTrue
+        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+        }
+        resultReceiver.send(0, bundle)
 
         val response = getDummyPurchaseResponse(dummyRequestId)
         underTest.onPurchaseResponse(response)
@@ -127,7 +142,12 @@ class PurchaseHandlerTest {
             expectedOnError
         )
 
-        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+        assertThat(activityIntentSlot.isCaptured).isTrue
+        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+        }
+        resultReceiver.send(0, bundle)
 
         val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.FAILED)
         underTest.onPurchaseResponse(response)
@@ -151,7 +171,12 @@ class PurchaseHandlerTest {
             expectedOnError
         )
 
-        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+        assertThat(activityIntentSlot.isCaptured).isTrue
+        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+        }
+        resultReceiver.send(0, bundle)
 
         val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.INVALID_SKU)
         underTest.onPurchaseResponse(response)
@@ -175,7 +200,12 @@ class PurchaseHandlerTest {
             expectedOnError
         )
 
-        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+        assertThat(activityIntentSlot.isCaptured).isTrue
+        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+        }
+        resultReceiver.send(0, bundle)
 
         val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.ALREADY_PURCHASED)
         underTest.onPurchaseResponse(response)
@@ -199,7 +229,12 @@ class PurchaseHandlerTest {
             expectedOnError
         )
 
-        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+        assertThat(activityIntentSlot.isCaptured).isTrue
+        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+        }
+        resultReceiver.send(0, bundle)
 
         val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.NOT_SUPPORTED)
         underTest.onPurchaseResponse(response)
@@ -227,13 +262,22 @@ class PurchaseHandlerTest {
             unexpectedOnError
         )
 
-        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
 
         val response = getDummyPurchaseResponse(dummyRequestId)
         underTest.onPurchaseResponse(response)
         underTest.onPurchaseResponse(response)
 
         assertThat(receivedCount).isOne
+    }
+
+    private fun verifyActivityIsStartedAndFakeRequestId(dummyRequestId: String) {
+        assertThat(activityIntentSlot.isCaptured).isTrue
+        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+        }
+        resultReceiver.send(0, bundle)
     }
 
     @Test
@@ -268,7 +312,12 @@ class PurchaseHandlerTest {
             unexpectedOnError
         )
 
-        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+        assertThat(activityIntentSlot.isCaptured).isTrue
+        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+        }
+        resultReceiver.send(0, bundle)
 
         val response = getDummyPurchaseResponse(dummyRequestId)
         try {
@@ -298,14 +347,19 @@ class PurchaseHandlerTest {
             unexpectedOnError
         )
 
-        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+        assertThat(activityIntentSlot.isCaptured).isTrue
+        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+        }
+        resultReceiver.send(0, bundle)
 
         val response = getDummyPurchaseResponse(dummyRequestId)
         underTest.onPurchaseResponse(response)
 
         assertThat(receivedReceipt).isNotNull
-        assertThat(intentSlot.isCaptured).isTrue
-        val captured = intentSlot.captured
+        assertThat(broadcastIntentSlot.isCaptured).isTrue
+        val captured = broadcastIntentSlot.captured
         assertThat(captured.`package`).isEqualTo(packageName)
         assertThat(captured.action).isEqualTo("purchase_finished")
     }
@@ -325,14 +379,19 @@ class PurchaseHandlerTest {
             expectedOnError
         )
 
-        assertThat(purchasingServiceProvider.purchaseCalled).isTrue
+        assertThat(activityIntentSlot.isCaptured).isTrue
+        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+        }
+        resultReceiver.send(0, bundle)
 
         val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.FAILED)
         underTest.onPurchaseResponse(response)
 
         assertThat(receivedError).isNotNull
-        assertThat(intentSlot.isCaptured).isTrue
-        val captured = intentSlot.captured
+        assertThat(broadcastIntentSlot.isCaptured).isTrue
+        val captured = broadcastIntentSlot.captured
         assertThat(captured.`package`).isEqualTo(packageName)
         assertThat(captured.action).isEqualTo("purchase_finished")
     }
