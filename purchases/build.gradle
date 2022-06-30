@@ -13,7 +13,7 @@ dependencies {
     api project(":public")
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
-    implementation 'androidx.annotation:annotation:1.1.0'
+    implementation "androidx.annotation:annotation:$annotationVersion"
     latestDependenciesApi "com.android.billingclient:billing:$billingVersion"
     unityIAPApi "com.android.billingclient:billing:$billingClient3Version"
     implementation "androidx.lifecycle:lifecycle-runtime:$lifecycleVersion"
