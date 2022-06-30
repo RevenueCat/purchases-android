@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
-import android.os.Looper
 import android.os.ResultReceiver
 import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.Receipt
@@ -35,6 +34,7 @@ class PurchaseHandler(
         mutableMapOf<RequestId, Pair<(Receipt, UserData) -> Unit, (PurchasesError) -> Unit>>()
 
     override fun purchase(
+        mainHandler: Handler,
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
@@ -44,25 +44,43 @@ class PurchaseHandler(
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
 
-        val resultReceiver = object : ResultReceiver(Handler(Looper.getMainLooper())) {
-            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-                synchronized(this@PurchaseHandler) {
-                    val requestId = resultData?.get("request_id") as? RequestId
-                    if (requestId != null) {
-                        purchaseCallbacks[requestId] = onSuccess to onError
-                        productTypes[storeProduct.sku] = storeProduct.type
-                        presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
-                    } else {
-                        errorLog("No RequestId coming from ProxyAmazonBillingActivity")
-                    }
-                }
-            }
-        }
+        val resultReceiver =
+            createRequestIdResultReceiver(mainHandler, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
+        startProxyActivity(activity, resultReceiver, storeProduct)
+    }
+
+    private fun startProxyActivity(
+        activity: Activity,
+        resultReceiver: ResultReceiver,
+        storeProduct: StoreProduct
+    ) {
         val intent = Intent(activity, ProxyAmazonBillingActivity::class.java)
         intent.putExtra("result_receiver", resultReceiver)
         intent.putExtra("sku", storeProduct.sku)
         intent.putExtra("service_provider", purchasingServiceProvider)
+        // ProxyAmazonBillingActivity will initiate the purchase
         activity.startActivity(intent)
+    }
+
+    private fun createRequestIdResultReceiver(
+        mainHandler: Handler,
+        storeProduct: StoreProduct,
+        presentedOfferingIdentifier: String?,
+        onSuccess: (Receipt, UserData) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) = object : ResultReceiver(mainHandler) {
+        override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+            synchronized(this@PurchaseHandler) {
+                val requestId = resultData?.get("request_id") as? RequestId
+                if (requestId != null) {
+                    purchaseCallbacks[requestId] = onSuccess to onError
+                    productTypes[storeProduct.sku] = storeProduct.type
+                    presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
+                } else {
+                    errorLog("No RequestId coming from ProxyAmazonBillingActivity")
+                }
+            }
+        }
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {

@@ -233,6 +233,7 @@ internal class AmazonBilling constructor(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 purchaseHandler.purchase(
+                    mainHandler,
                     activity,
                     appUserID,
                     storeProduct,

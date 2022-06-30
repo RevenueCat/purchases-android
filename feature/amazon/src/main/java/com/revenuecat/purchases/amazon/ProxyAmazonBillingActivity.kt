@@ -26,7 +26,8 @@ class ProxyAmazonBillingActivity : Activity() {
         if (savedInstanceState == null) {
             val sku = intent.getStringExtra("sku")
             val resultReceiver = intent.getParcelableExtra<ResultReceiver>("result_receiver")
-            val purchasingServiceProvider = intent.getParcelableExtra<PurchasingServiceProvider>("service_provider")
+            val purchasingServiceProvider =
+                intent.getParcelableExtra<PurchasingServiceProvider>("service_provider")
             val requestId = purchasingServiceProvider.purchase(sku)
             val bundle = Bundle().apply {
                 putParcelable("request_id", requestId)
