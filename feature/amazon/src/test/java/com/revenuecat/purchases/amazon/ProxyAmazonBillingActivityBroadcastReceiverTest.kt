@@ -44,11 +44,4 @@ class ProxyAmazonBillingActivityBroadcastReceiverTest {
         }
     }
 
-    @Test
-    fun `ProxyAmazonBillingActivityBroadcastReceiver sets onReceiveCalled`() {
-        assertThat(underTest.onReceiveCalled).isFalse
-        underTest.onReceive(ApplicationProvider.getApplicationContext(), Intent())
-        assertThat(underTest.onReceiveCalled).isTrue
-    }
-
 }
