@@ -88,12 +88,12 @@ class PurchaseHandler(
         try {
             log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
 
-            val requestId = response.requestId
             Intent().also { intent ->
                 intent.action = "purchase_finished"
                 intent.setPackage(applicationContext.packageName)
                 applicationContext.sendBroadcast(intent)
             }
+            val requestId = response.requestId
 
             val callbacks = synchronized(this) { purchaseCallbacks.remove(requestId) }
 

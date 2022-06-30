@@ -3,6 +3,7 @@ package com.revenuecat.purchases.amazon.handler
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.amazon.device.iap.internal.model.PurchaseResponseBuilder
 import com.amazon.device.iap.model.PurchaseResponse
@@ -64,6 +65,7 @@ class PurchaseHandlerTest {
     }
 
     private var mockApplicationContext = mockk<Context>()
+    private var mockHandler = mockk<Handler>()
     private var mockActivity = mockk<Activity>()
     private var intentSlot = slot<Intent>()
     private val packageName = UUID.randomUUID().toString()
@@ -91,6 +93,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockHandler,
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
@@ -115,6 +118,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockHandler,
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
@@ -138,6 +142,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockHandler,
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
@@ -161,6 +166,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockHandler,
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
@@ -184,6 +190,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockHandler,
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
@@ -209,6 +216,7 @@ class PurchaseHandlerTest {
         var receivedCount = 0
 
         underTest.purchase(
+            mockHandler,
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
@@ -251,6 +259,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockHandler,
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
@@ -280,6 +289,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockHandler,
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
@@ -306,6 +316,7 @@ class PurchaseHandlerTest {
         purchasingServiceProvider.getPurchaseRequestId = dummyRequestId
 
         underTest.purchase(
+            mockHandler,
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),

@@ -1,14 +1,13 @@
 package com.revenuecat.purchases.amazon
 
 import android.app.Activity
-import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.os.Bundle
 import android.os.ResultReceiver
 
 class ProxyAmazonBillingActivity : Activity() {
 
-    private var broadcastReceiver: BroadcastReceiver? = null
+    internal var broadcastReceiver: ProxyAmazonBillingActivityBroadcastReceiver? = null
     private val filter = IntentFilter("com.revenuecat.purchases").apply {
         addAction("purchase_finished")
     }

@@ -6,7 +6,11 @@ import android.content.Context
 import android.content.Intent
 
 internal class ProxyAmazonBillingActivityBroadcastReceiver(private val activity: Activity) : BroadcastReceiver() {
+
+    var onReceiveCalled = false
+
     override fun onReceive(context: Context?, intent: Intent?) {
+        onReceiveCalled = true
         activity.finish()
     }
 }

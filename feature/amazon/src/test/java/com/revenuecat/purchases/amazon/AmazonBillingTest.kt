@@ -573,6 +573,7 @@ class AmazonBillingTest {
         val activity = mockk<Activity>()
         every {
             mockPurchaseHandler.purchase(
+                handler,
                 activity,
                 appUserID,
                 storeProduct!!,
@@ -639,6 +640,7 @@ class AmazonBillingTest {
         val activity = mockk<Activity>()
         every {
             mockPurchaseHandler.purchase(
+                handler,
                 activity,
                 appUserID,
                 storeProduct!!,
