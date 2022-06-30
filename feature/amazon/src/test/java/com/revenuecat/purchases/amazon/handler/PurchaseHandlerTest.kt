@@ -112,12 +112,7 @@ class PurchaseHandlerTest {
             unexpectedOnError
         )
 
-        assertThat(activityIntentSlot.isCaptured).isTrue
-        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
-        val bundle = Bundle().apply {
-            putParcelable("request_id", RequestId.fromString(dummyRequestId))
-        }
-        resultReceiver.send(0, bundle)
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
 
         val response = getDummyPurchaseResponse(dummyRequestId)
         underTest.onPurchaseResponse(response)
@@ -142,12 +137,7 @@ class PurchaseHandlerTest {
             expectedOnError
         )
 
-        assertThat(activityIntentSlot.isCaptured).isTrue
-        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
-        val bundle = Bundle().apply {
-            putParcelable("request_id", RequestId.fromString(dummyRequestId))
-        }
-        resultReceiver.send(0, bundle)
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
 
         val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.FAILED)
         underTest.onPurchaseResponse(response)
@@ -171,12 +161,7 @@ class PurchaseHandlerTest {
             expectedOnError
         )
 
-        assertThat(activityIntentSlot.isCaptured).isTrue
-        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
-        val bundle = Bundle().apply {
-            putParcelable("request_id", RequestId.fromString(dummyRequestId))
-        }
-        resultReceiver.send(0, bundle)
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
 
         val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.INVALID_SKU)
         underTest.onPurchaseResponse(response)
@@ -200,12 +185,7 @@ class PurchaseHandlerTest {
             expectedOnError
         )
 
-        assertThat(activityIntentSlot.isCaptured).isTrue
-        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
-        val bundle = Bundle().apply {
-            putParcelable("request_id", RequestId.fromString(dummyRequestId))
-        }
-        resultReceiver.send(0, bundle)
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
 
         val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.ALREADY_PURCHASED)
         underTest.onPurchaseResponse(response)
@@ -229,12 +209,7 @@ class PurchaseHandlerTest {
             expectedOnError
         )
 
-        assertThat(activityIntentSlot.isCaptured).isTrue
-        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
-        val bundle = Bundle().apply {
-            putParcelable("request_id", RequestId.fromString(dummyRequestId))
-        }
-        resultReceiver.send(0, bundle)
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
 
         val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.NOT_SUPPORTED)
         underTest.onPurchaseResponse(response)
@@ -271,15 +246,6 @@ class PurchaseHandlerTest {
         assertThat(receivedCount).isOne
     }
 
-    private fun verifyActivityIsStartedAndFakeRequestId(dummyRequestId: String) {
-        assertThat(activityIntentSlot.isCaptured).isTrue
-        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
-        val bundle = Bundle().apply {
-            putParcelable("request_id", RequestId.fromString(dummyRequestId))
-        }
-        resultReceiver.send(0, bundle)
-    }
-
     @Test
     fun `Exceptions are logged so they are not swallowed by Amazon`() {
         val expectedException = RuntimeException("")
@@ -312,12 +278,7 @@ class PurchaseHandlerTest {
             unexpectedOnError
         )
 
-        assertThat(activityIntentSlot.isCaptured).isTrue
-        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
-        val bundle = Bundle().apply {
-            putParcelable("request_id", RequestId.fromString(dummyRequestId))
-        }
-        resultReceiver.send(0, bundle)
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
 
         val response = getDummyPurchaseResponse(dummyRequestId)
         try {
@@ -347,12 +308,7 @@ class PurchaseHandlerTest {
             unexpectedOnError
         )
 
-        assertThat(activityIntentSlot.isCaptured).isTrue
-        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
-        val bundle = Bundle().apply {
-            putParcelable("request_id", RequestId.fromString(dummyRequestId))
-        }
-        resultReceiver.send(0, bundle)
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
 
         val response = getDummyPurchaseResponse(dummyRequestId)
         underTest.onPurchaseResponse(response)
@@ -379,12 +335,7 @@ class PurchaseHandlerTest {
             expectedOnError
         )
 
-        assertThat(activityIntentSlot.isCaptured).isTrue
-        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
-        val bundle = Bundle().apply {
-            putParcelable("request_id", RequestId.fromString(dummyRequestId))
-        }
-        resultReceiver.send(0, bundle)
+        verifyActivityIsStartedAndFakeRequestId(dummyRequestId)
 
         val response = getDummyPurchaseResponse(dummyRequestId, PurchaseResponse.RequestStatus.FAILED)
         underTest.onPurchaseResponse(response)
@@ -415,5 +366,14 @@ class PurchaseHandlerTest {
             .setReceipt(receipt)
 
         return PurchaseResponse(builder)
+    }
+
+    private fun verifyActivityIsStartedAndFakeRequestId(dummyRequestId: String) {
+        assertThat(activityIntentSlot.isCaptured).isTrue
+        val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
+        val bundle = Bundle().apply {
+            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+        }
+        resultReceiver.send(0, bundle)
     }
 }
