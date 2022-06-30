@@ -2,7 +2,6 @@ package com.revenuecat.purchases.amazon.handler
 
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.ResultReceiver
@@ -95,11 +94,9 @@ class PurchaseHandler(
         try {
             log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
 
-            Intent().also { intent ->
-                intent.action = ProxyAmazonBillingActivityBroadcastReceiver.INTENT_FILTER_ACTION
-                intent.setPackage(applicationContext.packageName)
-                applicationContext.sendBroadcast(intent)
-            }
+            val intent = ProxyAmazonBillingActivityBroadcastReceiver.newPurchaseFinishedIntent(applicationContext)
+            applicationContext.sendBroadcast(intent)
+
             val requestId = response.requestId
 
             val callbacks = synchronized(this) { purchaseCallbacks.remove(requestId) }

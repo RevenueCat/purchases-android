@@ -10,9 +10,15 @@ import androidx.annotation.VisibleForTesting
 internal class ProxyAmazonBillingActivityBroadcastReceiver(private val activity: Activity) : BroadcastReceiver() {
 
     companion object {
-        const val INTENT_FILTER_ACTION = "com.revenuecat.purchases.purchase_finished"
+        const val PURCHASE_FINISHED_ACTION = "com.revenuecat.purchases.purchase_finished"
 
-        fun newIntentFilter(): IntentFilter = IntentFilter(INTENT_FILTER_ACTION)
+        fun newPurchaseFinishedIntentFilter(): IntentFilter = IntentFilter(PURCHASE_FINISHED_ACTION)
+
+        fun newPurchaseFinishedIntent(applicationContext: Context): Intent {
+            return Intent(PURCHASE_FINISHED_ACTION).also { intent ->
+                intent.setPackage(applicationContext.packageName)
+            }
+        }
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)

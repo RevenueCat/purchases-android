@@ -346,7 +346,7 @@ class PurchaseHandlerTest {
         assertThat(broadcastIntentSlot.isCaptured).isTrue
         val captured = broadcastIntentSlot.captured
         assertThat(captured.`package`).isEqualTo(packageName)
-        assertThat(captured.action).isEqualTo(ProxyAmazonBillingActivityBroadcastReceiver.INTENT_FILTER_ACTION)
+        assertThat(captured.action).isEqualTo(ProxyAmazonBillingActivityBroadcastReceiver.PURCHASE_FINISHED_ACTION)
     }
 
     private fun dummyStoreProduct(): StoreProduct {

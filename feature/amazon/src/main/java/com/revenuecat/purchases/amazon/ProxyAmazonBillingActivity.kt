@@ -34,7 +34,7 @@ internal class ProxyAmazonBillingActivity : Activity() {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var broadcastReceiver: ProxyAmazonBillingActivityBroadcastReceiver? = null
 
-    private val filter = ProxyAmazonBillingActivityBroadcastReceiver.newIntentFilter()
+    private val filter = ProxyAmazonBillingActivityBroadcastReceiver.newPurchaseFinishedIntentFilter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Applying theme programmatically because when applying via AndroidManifest, theme is not being
