@@ -5,8 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.ResultReceiver
-import androidx.annotation.VisibleForTesting
-import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingHelper
+import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingDelegate
 
 internal class ProxyAmazonBillingActivity : Activity() {
 
@@ -30,11 +29,7 @@ internal class ProxyAmazonBillingActivity : Activity() {
         }
     }
 
-    @JvmSynthetic
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal var broadcastReceiver: ProxyAmazonBillingActivityBroadcastReceiver? = null
-
-    private val filter = ProxyAmazonBillingActivityBroadcastReceiver.newPurchaseFinishedIntentFilter()
+    private var proxyAmazonBillingDelegate: ProxyAmazonBillingDelegate? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Applying theme programmatically because when applying via AndroidManifest, theme is not being
@@ -44,18 +39,13 @@ internal class ProxyAmazonBillingActivity : Activity() {
         setTheme(R.style.ProxyAmazonBillingActivityTheme)
         super.onCreate(savedInstanceState)
 
-        broadcastReceiver = ProxyAmazonBillingActivityBroadcastReceiver(this)
-        applicationContext.registerReceiver(broadcastReceiver, filter)
-
-        if (savedInstanceState == null) {
-            val proxyAmazonBillingHelper = ProxyAmazonBillingHelper()
-            proxyAmazonBillingHelper.startAmazonPurchase(intent)
-        }
+        proxyAmazonBillingDelegate = ProxyAmazonBillingDelegate()
+        proxyAmazonBillingDelegate?.onCreate(this, savedInstanceState)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        applicationContext.unregisterReceiver(broadcastReceiver)
-        broadcastReceiver = null
+        proxyAmazonBillingDelegate?.onDestroy(this)
+        proxyAmazonBillingDelegate = null
     }
 }
