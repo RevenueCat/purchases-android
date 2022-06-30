@@ -29,15 +29,17 @@ class ProxyAmazonBillingActivityTest {
         val purchasingServiceProviderForTest = PurchasingServiceProviderForTest().also {
             it.getPurchaseRequestId = expectedRequestIdString
         }
-        val intent = Intent(ApplicationProvider.getApplicationContext(), ProxyAmazonBillingActivity::class.java).also {
-            it.putExtra("result_receiver", object : ResultReceiver(mockHandler) {
-                override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-                    receivedRequestId = resultData?.get("request_id") as? RequestId
-                }
-            })
-            it.putExtra("sku", "product_sku")
-            it.putExtra("service_provider", purchasingServiceProviderForTest)
+        val resultReceiver = object : ResultReceiver(mockHandler) {
+            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+                receivedRequestId = resultData?.get(ProxyAmazonBillingActivity.EXTRAS_REQUEST_ID) as? RequestId
+            }
         }
+        val intent = ProxyAmazonBillingActivity.newStartIntent(
+            ApplicationProvider.getApplicationContext(),
+            resultReceiver,
+            "product_sku",
+            purchasingServiceProviderForTest
+        )
 
         launchActivity<ProxyAmazonBillingActivity>(intent).use { scenario ->
             scenario.moveToState(Lifecycle.State.CREATED)
@@ -54,14 +56,16 @@ class ProxyAmazonBillingActivityTest {
             it.getPurchaseRequestId = expectedRequestIdString
         }
 
-        val intent = Intent(applicationContext, ProxyAmazonBillingActivity::class.java).also {
-            it.putExtra("result_receiver", object : ResultReceiver(mockHandler) {
-                override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-                }
-            })
-            it.putExtra("sku", "product_sku")
-            it.putExtra("service_provider", purchasingServiceProviderForTest)
+        val resultReceiver = object : ResultReceiver(mockHandler) {
+            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+            }
         }
+        val intent = ProxyAmazonBillingActivity.newStartIntent(
+            ApplicationProvider.getApplicationContext(),
+            resultReceiver,
+            "product_sku",
+            purchasingServiceProviderForTest
+        )
 
         val broadcastIntent = Intent().also {
             it.action = "purchase_finished"

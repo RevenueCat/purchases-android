@@ -8,13 +8,14 @@ import android.os.Bundle
 import android.os.ResultReceiver
 import androidx.annotation.VisibleForTesting
 
-const val EXTRAS_RESULT_RECEIVER = "result_receiver"
-const val EXTRAS_SKU = "sku"
-const val EXTRAS_SERVICE_PROVIDER = "service_provider"
-
 internal class ProxyAmazonBillingActivity : Activity() {
 
     companion object {
+
+        const val EXTRAS_RESULT_RECEIVER = "result_receiver"
+        const val EXTRAS_SKU = "sku"
+        const val EXTRAS_SERVICE_PROVIDER = "service_provider"
+        const val EXTRAS_REQUEST_ID = "request_id"
 
         fun newStartIntent(
             context: Context,
@@ -55,7 +56,7 @@ internal class ProxyAmazonBillingActivity : Activity() {
                 intent.getParcelableExtra<PurchasingServiceProvider>(EXTRAS_SERVICE_PROVIDER)
             val requestId = purchasingServiceProvider.purchase(sku)
             val bundle = Bundle().apply {
-                putParcelable("request_id", requestId)
+                putParcelable(EXTRAS_REQUEST_ID, requestId)
             }
             resultReceiver?.send(0, bundle)
         }

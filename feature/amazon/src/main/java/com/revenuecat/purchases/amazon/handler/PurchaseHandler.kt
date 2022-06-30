@@ -77,7 +77,7 @@ class PurchaseHandler(
     ) = object : ResultReceiver(mainHandler) {
         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
             synchronized(this@PurchaseHandler) {
-                val requestId = resultData?.get("request_id") as? RequestId
+                val requestId = resultData?.get(ProxyAmazonBillingActivity.EXTRAS_REQUEST_ID) as? RequestId
                 if (requestId != null) {
                     purchaseCallbacks[requestId] = onSuccess to onError
                     productTypes[storeProduct.sku] = storeProduct.type

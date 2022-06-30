@@ -16,6 +16,7 @@ import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.amazon.ProxyAmazonBillingActivity
 import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
@@ -372,7 +373,7 @@ class PurchaseHandlerTest {
         assertThat(activityIntentSlot.isCaptured).isTrue
         val resultReceiver = activityIntentSlot.captured.getParcelableExtra<ResultReceiver>("result_receiver")
         val bundle = Bundle().apply {
-            putParcelable("request_id", RequestId.fromString(dummyRequestId))
+            putParcelable(ProxyAmazonBillingActivity.EXTRAS_REQUEST_ID, RequestId.fromString(dummyRequestId))
         }
         resultReceiver.send(0, bundle)
     }
