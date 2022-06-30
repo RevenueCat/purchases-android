@@ -13,9 +13,7 @@
         </receiver>
         <activity
                 android:name=".ProxyAmazonBillingActivity"
-                android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
-                android:exported="false"
-                android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+                android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation" />
     </application>
 
 </manifest>
