@@ -6,8 +6,23 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.annotation.VisibleForTesting
+import java.lang.ref.WeakReference
 
-internal class ProxyAmazonBillingActivityBroadcastReceiver(private val activity: Activity) : BroadcastReceiver() {
+internal class ProxyAmazonBillingActivityBroadcastReceiver(activity: Activity) : BroadcastReceiver() {
+
+    private val activity: WeakReference<Activity>
+
+    init {
+        this.activity = WeakReference(activity)
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    var onReceiveCalled = false
+
+    override fun onReceive(context: Context, intent: Intent) {
+        onReceiveCalled = true
+        activity.get()?.finish()
+    }
 
     companion object {
         const val PURCHASE_FINISHED_ACTION = "com.revenuecat.purchases.purchase_finished"
@@ -19,13 +34,5 @@ internal class ProxyAmazonBillingActivityBroadcastReceiver(private val activity:
                 intent.setPackage(applicationContext.packageName)
             }
         }
-    }
-
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    var onReceiveCalled = false
-
-    override fun onReceive(context: Context, intent: Intent) {
-        onReceiveCalled = true
-        activity.finish()
     }
 }
