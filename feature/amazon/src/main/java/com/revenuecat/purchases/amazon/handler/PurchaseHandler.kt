@@ -44,16 +44,20 @@ class PurchaseHandler(
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
 
-        val resultReceiver =
-            createRequestIdResultReceiver(mainHandler, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
-        startProxyActivity(activity, resultReceiver, storeProduct)
+        startProxyActivity(mainHandler, activity, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
     }
 
+    @SuppressWarnings("LongParameterList")
     private fun startProxyActivity(
+        mainHandler: Handler,
         activity: Activity,
-        resultReceiver: ResultReceiver,
-        storeProduct: StoreProduct
+        storeProduct: StoreProduct,
+        presentedOfferingIdentifier: String?,
+        onSuccess: (Receipt, UserData) -> Unit,
+        onError: (PurchasesError) -> Unit
     ) {
+        val resultReceiver =
+            createRequestIdResultReceiver(mainHandler, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
         val intent = Intent(activity, ProxyAmazonBillingActivity::class.java)
         intent.putExtra("result_receiver", resultReceiver)
         intent.putExtra("sku", storeProduct.sku)
