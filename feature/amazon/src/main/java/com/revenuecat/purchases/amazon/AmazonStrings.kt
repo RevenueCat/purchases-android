@@ -13,6 +13,8 @@ object AmazonStrings {
     const val ERROR_PURCHASE_NOT_SUPPORTED = "Failed to make purchase. Call is not supported"
     const val ERROR_PURCHASE_ALREADY_OWNED = "Failed to make purchase. User already owns SKU."
     const val ERROR_PURCHASE_INVALID_SKU = "Failed to make purchase. SKU is invalid"
+    const val ERROR_PURCHASE_INVALID_PROXY_ACTIVITY_ARGUMENTS = "Failed to make purchase. Arguments are invalid. \n " +
+        "Intent: %s"
     const val ERROR_PURCHASE_FAILED = "Failed to make purchase. " +
         "This error normally means that the purchase was cancelled"
     const val ERROR_FETCHING_RECEIPT_INFO = "There was an error fetching receipt information: %s"
