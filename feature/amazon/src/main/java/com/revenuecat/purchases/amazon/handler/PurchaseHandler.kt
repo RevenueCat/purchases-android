@@ -58,10 +58,12 @@ class PurchaseHandler(
     ) {
         val resultReceiver =
             createRequestIdResultReceiver(mainHandler, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
-        val intent = Intent(activity, ProxyAmazonBillingActivity::class.java)
-        intent.putExtra("result_receiver", resultReceiver)
-        intent.putExtra("sku", storeProduct.sku)
-        intent.putExtra("service_provider", purchasingServiceProvider)
+        val intent = ProxyAmazonBillingActivity.newStartIntent(
+            activity,
+            resultReceiver,
+            storeProduct.sku,
+            purchasingServiceProvider
+        )
         // ProxyAmazonBillingActivity will initiate the purchase
         activity.startActivity(intent)
     }

@@ -1,13 +1,36 @@
 package com.revenuecat.purchases.amazon
 
 import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import android.os.ResultReceiver
 import androidx.annotation.VisibleForTesting
 
-class ProxyAmazonBillingActivity : Activity() {
+const val EXTRAS_RESULT_RECEIVER = "result_receiver"
+const val EXTRAS_SKU = "sku"
+const val EXTRAS_SERVICE_PROVIDER = "service_provider"
 
+internal class ProxyAmazonBillingActivity : Activity() {
+
+    companion object {
+
+        fun newStartIntent(
+            context: Context,
+            resultReceiver: ResultReceiver,
+            sku: String,
+            purchasingServiceProvider: PurchasingServiceProvider
+        ): Intent {
+            val intent = Intent(context, ProxyAmazonBillingActivity::class.java)
+            intent.putExtra(EXTRAS_RESULT_RECEIVER, resultReceiver)
+            intent.putExtra(EXTRAS_SKU, sku)
+            intent.putExtra(EXTRAS_SERVICE_PROVIDER, purchasingServiceProvider)
+            return intent
+        }
+    }
+
+    @JvmSynthetic
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var broadcastReceiver: ProxyAmazonBillingActivityBroadcastReceiver? = null
 
@@ -26,10 +49,10 @@ class ProxyAmazonBillingActivity : Activity() {
         applicationContext.registerReceiver(broadcastReceiver, filter)
 
         if (savedInstanceState == null) {
-            val sku = intent.getStringExtra("sku")
-            val resultReceiver = intent.getParcelableExtra<ResultReceiver>("result_receiver")
+            val sku = intent.getStringExtra(EXTRAS_SKU)
+            val resultReceiver = intent.getParcelableExtra<ResultReceiver>(EXTRAS_RESULT_RECEIVER)
             val purchasingServiceProvider =
-                intent.getParcelableExtra<PurchasingServiceProvider>("service_provider")
+                intent.getParcelableExtra<PurchasingServiceProvider>(EXTRAS_SERVICE_PROVIDER)
             val requestId = purchasingServiceProvider.purchase(sku)
             val bundle = Bundle().apply {
                 putParcelable("request_id", requestId)
