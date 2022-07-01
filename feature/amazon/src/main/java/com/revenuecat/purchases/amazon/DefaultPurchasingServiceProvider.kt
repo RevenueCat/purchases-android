@@ -5,7 +5,9 @@ import com.amazon.device.iap.PurchasingListener
 import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.RequestId
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 class DefaultPurchasingServiceProvider : PurchasingServiceProvider {
 
     override fun registerListener(
@@ -19,9 +21,7 @@ class DefaultPurchasingServiceProvider : PurchasingServiceProvider {
         return PurchasingService.getUserData()
     }
 
-    override fun purchase(
-        sku: String
-    ): RequestId {
+    override fun purchase(sku: String): RequestId {
         return PurchasingService.purchase(sku)
     }
 

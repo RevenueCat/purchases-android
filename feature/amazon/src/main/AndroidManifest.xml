@@ -3,13 +3,18 @@
         package="com.revenuecat.purchases.amazon">
 
     <application>
-        <receiver android:name = "com.amazon.device.iap.ResponseReceiver"
-                android:permission = "com.amazon.inapp.purchasing.Permission.NOTIFY"
-                android:exported = "true">
+        <receiver
+                android:name="com.amazon.device.iap.ResponseReceiver"
+                android:exported="true"
+                android:permission="com.amazon.inapp.purchasing.Permission.NOTIFY">
             <intent-filter>
-                <action android:name = "com.amazon.inapp.purchasing.NOTIFY" />
+                <action android:name="com.amazon.inapp.purchasing.NOTIFY" />
             </intent-filter>
         </receiver>
+        <activity
+                android:name=".purchasing.ProxyAmazonBillingActivity"
+                android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+                android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
     </application>
 
 </manifest>

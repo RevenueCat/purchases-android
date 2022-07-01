@@ -1,5 +1,10 @@
 package com.revenuecat.purchases.amazon.handler
 
+import android.app.Activity
+import android.content.Context
+import android.os.Bundle
+import android.os.Handler
+import android.os.ResultReceiver
 import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
@@ -8,6 +13,8 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
+import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivity
+import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivityBroadcastReceiver
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
 import com.revenuecat.purchases.common.LogIntent
@@ -17,7 +24,8 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 class PurchaseHandler(
-    private val purchasingServiceProvider: PurchasingServiceProvider
+    private val purchasingServiceProvider: PurchasingServiceProvider,
+    private val applicationContext: Context
 ) : PurchaseResponseListener {
 
     private val productTypes = mutableMapOf<String, ProductType>()
@@ -26,6 +34,8 @@ class PurchaseHandler(
         mutableMapOf<RequestId, Pair<(Receipt, UserData) -> Unit, (PurchasesError) -> Unit>>()
 
     override fun purchase(
+        mainHandler: Handler,
+        activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,
@@ -34,11 +44,48 @@ class PurchaseHandler(
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
 
-        val requestId = purchasingServiceProvider.purchase(storeProduct.sku)
-        synchronized(this@PurchaseHandler) {
-            purchaseCallbacks[requestId] = onSuccess to onError
-            productTypes[storeProduct.sku] = storeProduct.type
-            presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
+        startProxyActivity(mainHandler, activity, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
+    }
+
+    @SuppressWarnings("LongParameterList")
+    private fun startProxyActivity(
+        mainHandler: Handler,
+        activity: Activity,
+        storeProduct: StoreProduct,
+        presentedOfferingIdentifier: String?,
+        onSuccess: (Receipt, UserData) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        val resultReceiver =
+            createRequestIdResultReceiver(mainHandler, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
+        val intent = ProxyAmazonBillingActivity.newStartIntent(
+            activity,
+            resultReceiver,
+            storeProduct.sku,
+            purchasingServiceProvider
+        )
+        // ProxyAmazonBillingActivity will initiate the purchase
+        activity.startActivity(intent)
+    }
+
+    private fun createRequestIdResultReceiver(
+        mainHandler: Handler,
+        storeProduct: StoreProduct,
+        presentedOfferingIdentifier: String?,
+        onSuccess: (Receipt, UserData) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) = object : ResultReceiver(mainHandler) {
+        override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
+            synchronized(this@PurchaseHandler) {
+                val requestId = resultData?.get(ProxyAmazonBillingActivity.EXTRAS_REQUEST_ID) as? RequestId
+                if (requestId != null) {
+                    purchaseCallbacks[requestId] = onSuccess to onError
+                    productTypes[storeProduct.sku] = storeProduct.type
+                    presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
+                } else {
+                    errorLog("No RequestId coming from ProxyAmazonBillingActivity")
+                }
+            }
         }
     }
 
@@ -47,7 +94,12 @@ class PurchaseHandler(
         try {
             log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
 
+            val intent =
+                ProxyAmazonBillingActivityBroadcastReceiver.newPurchaseFinishedIntent(applicationContext.packageName)
+            applicationContext.sendBroadcast(intent)
+
             val requestId = response.requestId
+
             val callbacks = synchronized(this) { purchaseCallbacks.remove(requestId) }
 
             callbacks?.let { (onSuccess, onError) ->

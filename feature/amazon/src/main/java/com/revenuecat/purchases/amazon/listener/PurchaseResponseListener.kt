@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.amazon.listener
 
+import android.app.Activity
+import android.os.Handler
 import com.amazon.device.iap.PurchasingListener
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.PurchaseUpdatesResponse
@@ -23,7 +25,10 @@ interface PurchaseResponseListener : PurchasingListener {
         /* intentionally ignored. Use PurchaseUpdatesResponseListener instead */
     }
 
+    @SuppressWarnings("LongParameterList")
     fun purchase(
+        mainHandler: Handler,
+        activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,

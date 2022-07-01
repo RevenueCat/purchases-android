@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="ProxyAmazonBillingActivityTheme" parent="@android:style/Theme.Translucent.NoTitleBar">
+        <!--Added to remove status bar animation-->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+</resources>

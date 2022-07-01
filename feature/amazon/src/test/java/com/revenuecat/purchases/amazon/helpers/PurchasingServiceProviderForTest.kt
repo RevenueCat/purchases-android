@@ -5,7 +5,9 @@ import com.amazon.device.iap.PurchasingListener
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.RequestId
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 class PurchasingServiceProviderForTest : PurchasingServiceProvider {
 
     internal val listeners = mutableListOf<PurchasingListener>()

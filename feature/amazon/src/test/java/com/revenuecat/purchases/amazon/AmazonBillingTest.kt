@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.amazon
 
+import android.app.Activity
 import android.content.Context
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -569,8 +570,17 @@ class AmazonBillingTest {
 
         assertThat(storeProduct).isNotNull
 
+        val activity = mockk<Activity>()
         every {
-            mockPurchaseHandler.purchase(appUserID, storeProduct!!, null, captureLambda(), any())
+            mockPurchaseHandler.purchase(
+                handler,
+                activity,
+                appUserID,
+                storeProduct!!,
+                presentedOfferingIdentifier = null,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
         } answers {
             lambda<(Receipt, UserData) -> Unit>().captured.invoke(dummyReceipt, dummyUserData)
         }
@@ -578,7 +588,7 @@ class AmazonBillingTest {
         mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
 
         underTest.makePurchaseAsync(
-            mockk(),
+            activity,
             appUserID,
             storeProduct = storeProduct!!,
             replaceSkuInfo = null,
@@ -627,14 +637,23 @@ class AmazonBillingTest {
 
         assertThat(storeProduct).isNotNull
 
+        val activity = mockk<Activity>()
         every {
-            mockPurchaseHandler.purchase(appUserID, storeProduct!!, null, captureLambda(), any())
+            mockPurchaseHandler.purchase(
+                handler,
+                activity,
+                appUserID,
+                storeProduct!!,
+                presentedOfferingIdentifier = null,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
         } answers {
             lambda<(Receipt, UserData) -> Unit>().captured.invoke(dummyReceipt, dummyUserData)
         }
 
         underTest.makePurchaseAsync(
-            mockk(),
+            activity,
             appUserID,
             storeProduct = storeProduct!!,
             replaceSkuInfo = null,

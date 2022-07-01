@@ -13,6 +13,7 @@ dependencies {
     implementation project(":utils")
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    implementation "androidx.annotation:annotation:$annotationVersion"
 
     latestDependenciesImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
     unityIAPCompileOnly files("libs/in-app-purchasing-${amazon2Version}.jar")
@@ -20,9 +21,11 @@ dependencies {
     testImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
     testImplementation project(":test-utils")
     testImplementation "androidx.test:core:$testLibrariesVersion"
+    testImplementation "androidx.test:core-ktx:$testLibrariesVersion"
     testImplementation "androidx.test:runner:$testLibrariesVersion"
     testImplementation "androidx.test:rules:$testLibrariesVersion"
     testImplementation "androidx.test.ext:junit:$testJUnitVersion"
+    testImplementation "androidx.test.ext:junit-ktx:$testJUnitVersion"
     testImplementation "org.robolectric:robolectric:$robolectricVersion"
     testImplementation "io.mockk:mockk:$mockkVersion"
     testImplementation "org.assertj:assertj-core:$assertJVersion"
