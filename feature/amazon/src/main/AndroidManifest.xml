@@ -12,8 +12,9 @@
             </intent-filter>
         </receiver>
         <activity
-                android:name=".ProxyAmazonBillingActivity"
-                android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation" />
+                android:name=".purchasing.ProxyAmazonBillingActivity"
+                android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+                android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
     </application>
 
 </manifest>

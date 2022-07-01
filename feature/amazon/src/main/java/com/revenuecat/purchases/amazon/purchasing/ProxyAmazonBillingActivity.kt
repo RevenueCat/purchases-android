@@ -39,6 +39,7 @@ internal class ProxyAmazonBillingActivity : Activity() {
         // applied correctly.
         // What happens is that applying @android:style/Theme.Translucent.NoTitleBar in the manifest works
         // but applying a theme that has that theme as parent, the Activity is not translucent
+        // Parent theme also has to be set in the AndroidManifest.xml otherwise it won't be translucent
         setTheme(R.style.ProxyAmazonBillingActivityTheme)
         super.onCreate(savedInstanceState)
 
