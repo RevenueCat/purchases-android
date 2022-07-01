@@ -31,11 +31,6 @@ class ProxyAmazonBillingActivityBroadcastReceiverTest {
         underTest = ProxyAmazonBillingActivityBroadcastReceiver(mockActivity)
     }
 
-    @After
-    fun tearDown() {
-        clearAllMocks()
-    }
-
     @Test
     fun `ProxyAmazonBillingActivityBroadcastReceiver finishes Activity onReceive`() {
         underTest.onReceive(ApplicationProvider.getApplicationContext(), Intent())
