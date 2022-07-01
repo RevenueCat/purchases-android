@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.ResultReceiver
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingDelegate
 
 internal class ProxyAmazonBillingActivity : Activity() {
@@ -29,7 +30,8 @@ internal class ProxyAmazonBillingActivity : Activity() {
         }
     }
 
-    private var proxyAmazonBillingDelegate: ProxyAmazonBillingDelegate? = null
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var proxyAmazonBillingDelegate: ProxyAmazonBillingDelegate? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Applying theme programmatically because when applying via AndroidManifest, theme is not being
