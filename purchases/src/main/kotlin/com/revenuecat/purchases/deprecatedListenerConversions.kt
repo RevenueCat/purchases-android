@@ -10,6 +10,8 @@ import com.revenuecat.purchases.interfaces.ProductChangeListener
 private typealias DeprecatedPurchaseCompletedFunction = (purchase: Purchase, purchaserInfo: PurchaserInfo) -> Unit
 @Deprecated("Purchase replaced with StoreTransaction and PurchaserInfo with CustomerInfo")
 private typealias DeprecatedProductChangeCompletedFunction = (purchase: Purchase?, purchaserInfo: PurchaserInfo) -> Unit
+private typealias ErrorFunction = (error: PurchasesError) -> Unit
+private typealias PurchaseErrorFunction = (error: PurchasesError, userCancelled: Boolean) -> Unit
 
 @Deprecated("onCompleted Purchase changed with StoreTransaction")
 internal fun deprecatedPurchaseCompletedListener(
