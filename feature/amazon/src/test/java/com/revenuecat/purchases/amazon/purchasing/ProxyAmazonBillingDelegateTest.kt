@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.amazon;
+package com.revenuecat.purchases.amazon.purchasing;
 
 import android.app.Activity
 import android.content.Context
@@ -8,7 +8,7 @@ import android.os.Bundle
 import android.os.ResultReceiver
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.amazon.device.iap.model.RequestId
-import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingDelegate
+import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import io.mockk.CapturingSlot
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -65,11 +65,6 @@ class ProxyAmazonBillingDelegateTest {
         } just runs
 
         underTest = ProxyAmazonBillingDelegate()
-    }
-
-    @After
-    fun tearDown() {
-        clearAllMocks()
     }
 
     @Test

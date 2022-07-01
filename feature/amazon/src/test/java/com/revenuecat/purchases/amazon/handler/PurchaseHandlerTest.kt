@@ -16,8 +16,8 @@ import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.amazon.ProxyAmazonBillingActivity
-import com.revenuecat.purchases.amazon.ProxyAmazonBillingActivityBroadcastReceiver
+import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivity
+import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivityBroadcastReceiver
 import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt

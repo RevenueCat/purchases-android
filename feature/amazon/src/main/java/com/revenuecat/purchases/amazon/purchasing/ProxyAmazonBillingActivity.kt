@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.amazon
+package com.revenuecat.purchases.amazon.purchasing
 
 import android.app.Activity
 import android.content.Context
@@ -6,7 +6,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.ResultReceiver
 import androidx.annotation.VisibleForTesting
-import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingDelegate
+import com.revenuecat.purchases.amazon.PurchasingServiceProvider
+import com.revenuecat.purchases.amazon.R
 
 internal class ProxyAmazonBillingActivity : Activity() {
 

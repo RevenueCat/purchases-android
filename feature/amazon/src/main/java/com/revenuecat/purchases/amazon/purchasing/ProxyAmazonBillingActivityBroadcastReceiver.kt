@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.amazon
+package com.revenuecat.purchases.amazon.purchasing
 
 import android.app.Activity
 import android.content.BroadcastReceiver

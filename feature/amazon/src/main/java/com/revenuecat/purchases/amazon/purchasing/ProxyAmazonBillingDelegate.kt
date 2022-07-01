@@ -9,8 +9,6 @@ import com.amazon.device.iap.model.RequestId
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
-import com.revenuecat.purchases.amazon.ProxyAmazonBillingActivity
-import com.revenuecat.purchases.amazon.ProxyAmazonBillingActivityBroadcastReceiver
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.common.errorLog
 

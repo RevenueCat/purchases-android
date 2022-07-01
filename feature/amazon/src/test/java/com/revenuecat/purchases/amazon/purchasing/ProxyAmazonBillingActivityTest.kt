@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.amazon;
+package com.revenuecat.purchases.amazon.purchasing;
 
 import android.os.Bundle
 import android.os.Handler
