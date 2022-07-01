@@ -29,9 +29,9 @@ internal class ProxyAmazonBillingActivityBroadcastReceiver(activity: Activity) :
 
         fun newPurchaseFinishedIntentFilter(): IntentFilter = IntentFilter(PURCHASE_FINISHED_ACTION)
 
-        fun newPurchaseFinishedIntent(applicationContext: Context): Intent {
+        fun newPurchaseFinishedIntent(packageName: String): Intent {
             return Intent(PURCHASE_FINISHED_ACTION).also { intent ->
-                intent.setPackage(applicationContext.packageName)
+                intent.setPackage(packageName)
             }
         }
     }

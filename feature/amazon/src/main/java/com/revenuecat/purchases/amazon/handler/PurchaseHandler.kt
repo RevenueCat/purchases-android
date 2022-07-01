@@ -94,7 +94,8 @@ class PurchaseHandler(
         try {
             log(LogIntent.DEBUG, AmazonStrings.PURCHASE_REQUEST_FINISHED.format(response.toJSON().toString(1)))
 
-            val intent = ProxyAmazonBillingActivityBroadcastReceiver.newPurchaseFinishedIntent(applicationContext)
+            val intent =
+                ProxyAmazonBillingActivityBroadcastReceiver.newPurchaseFinishedIntent(applicationContext.packageName)
             applicationContext.sendBroadcast(intent)
 
             val requestId = response.requestId
