@@ -370,7 +370,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase.
+     * Make a purchase upgrading from a previous sku.
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
@@ -407,7 +407,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase.
+     * Make a purchase upgrading from a previous sku.
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
