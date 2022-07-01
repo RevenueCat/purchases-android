@@ -55,7 +55,6 @@ class ProxyAmazonBillingDelegateTest {
         sentBundleSlot = slot()
 
         mockActivity()
-        mockApplicationContext()
 
         every {
             mockPurchasingServiceProvider.purchase(expectedSku)
@@ -199,15 +198,6 @@ class ProxyAmazonBillingDelegateTest {
         }
     }
 
-    private fun mockApplicationContext() {
-        every {
-            mockApplicationContext.registerReceiver(capture(registeredBroadcastReceiverSlot), capture(intentFilterSlot))
-        } returns Intent()
-        every {
-            mockApplicationContext.unregisterReceiver(capture(unregisteredBroadcastReceiverSlot))
-        } just runs
-    }
-
     private fun mockActivity() {
         every {
             mockActivity.finish()
@@ -226,5 +216,11 @@ class ProxyAmazonBillingDelegateTest {
             expectedSku,
             mockPurchasingServiceProvider
         )
+        every {
+            mockActivity.registerReceiver(capture(registeredBroadcastReceiverSlot), capture(intentFilterSlot))
+        } returns Intent()
+        every {
+            mockActivity.unregisterReceiver(capture(unregisteredBroadcastReceiverSlot))
+        } just runs
     }
 }

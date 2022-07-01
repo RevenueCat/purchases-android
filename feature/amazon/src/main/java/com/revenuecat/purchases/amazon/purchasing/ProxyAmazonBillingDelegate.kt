@@ -23,7 +23,7 @@ internal class ProxyAmazonBillingDelegate {
 
     fun onCreate(activity: Activity, savedInstanceState: Bundle?) {
         broadcastReceiver = ProxyAmazonBillingActivityBroadcastReceiver(activity)
-        activity.applicationContext.registerReceiver(broadcastReceiver, filter)
+        activity.registerReceiver(broadcastReceiver, filter)
         if (savedInstanceState == null) {
             val requestId = startAmazonPurchase(activity.intent)
             if (requestId == null) {
@@ -33,7 +33,7 @@ internal class ProxyAmazonBillingDelegate {
     }
 
     fun onDestroy(activity: Activity) {
-        activity.applicationContext.unregisterReceiver(broadcastReceiver)
+        activity.unregisterReceiver(broadcastReceiver)
         broadcastReceiver = null
     }
 
