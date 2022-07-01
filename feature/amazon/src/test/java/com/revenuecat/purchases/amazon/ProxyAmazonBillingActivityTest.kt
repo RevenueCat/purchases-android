@@ -22,8 +22,7 @@ class ProxyAmazonBillingActivityTest {
     val mockHandler = mockk<Handler>()
 
     @Test
-    fun `Activity onCreate sends request id to result receiver`() {
-        var receivedRequestId: RequestId? = null
+    fun `Activity onCreate creates delegate`() {
         val expectedRequestIdString = "purchase_request_id"
 
         val purchasingServiceProviderForTest = PurchasingServiceProviderForTest().also {
@@ -31,7 +30,6 @@ class ProxyAmazonBillingActivityTest {
         }
         val resultReceiver = object : ResultReceiver(mockHandler) {
             override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-                receivedRequestId = resultData?.get(ProxyAmazonBillingActivity.EXTRAS_REQUEST_ID) as? RequestId
             }
         }
         val intent = ProxyAmazonBillingActivity.newStartIntent(
@@ -43,42 +41,10 @@ class ProxyAmazonBillingActivityTest {
 
         launchActivity<ProxyAmazonBillingActivity>(intent).use { scenario ->
             scenario.moveToState(Lifecycle.State.CREATED)
-        }
-        assertThat(receivedRequestId).isNotNull
-        assertThat(receivedRequestId).isEqualTo(RequestId.fromString(expectedRequestIdString))
-    }
-
-    @Test
-    fun `Activity registers BroadcastReceiver`() {
-        val applicationContext = ApplicationProvider.getApplicationContext<Context>()
-        val expectedRequestIdString = "purchase_request_id"
-        val purchasingServiceProviderForTest = PurchasingServiceProviderForTest().also {
-            it.getPurchaseRequestId = expectedRequestIdString
-        }
-
-        val resultReceiver = object : ResultReceiver(mockHandler) {
-            override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
-            }
-        }
-        val intent = ProxyAmazonBillingActivity.newStartIntent(
-            ApplicationProvider.getApplicationContext(),
-            resultReceiver,
-            "product_sku",
-            purchasingServiceProviderForTest
-        )
-
-        val broadcastIntent = Intent().also {
-            it.action = ProxyAmazonBillingActivityBroadcastReceiver.PURCHASE_FINISHED_ACTION
-            it.setPackage(applicationContext.packageName)
-        }
-
-        launchActivity<ProxyAmazonBillingActivity>(intent).use { scenario ->
-            scenario.moveToState(Lifecycle.State.CREATED)
-            applicationContext.sendBroadcast(broadcastIntent)
             scenario.onActivity { activity ->
-                assertThat(activity.broadcastReceiver).isNotNull
-                assertThat(activity.broadcastReceiver!!.onReceiveCalled).isTrue
+                assertThat(activity.proxyAmazonBillingDelegate).isNotNull
             }
         }
     }
+
 }
