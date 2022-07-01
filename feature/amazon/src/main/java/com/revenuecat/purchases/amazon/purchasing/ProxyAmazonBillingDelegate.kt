@@ -43,7 +43,9 @@ internal class ProxyAmazonBillingDelegate {
         val resultReceiver =
             intent.getParcelableExtra<ResultReceiver>(ProxyAmazonBillingActivity.EXTRAS_RESULT_RECEIVER)
         val purchasingServiceProvider =
-            intent.getParcelableExtra<PurchasingServiceProvider>(ProxyAmazonBillingActivity.EXTRAS_SERVICE_PROVIDER)
+            intent.getParcelableExtra<PurchasingServiceProvider>(
+                ProxyAmazonBillingActivity.EXTRAS_PURCHASING_SERVICE_PROVIDER
+            )
         if (sku == null || resultReceiver == null || purchasingServiceProvider == null) {
             val purchaseInvalidError = PurchasesError(
                 PurchasesErrorCode.PurchaseInvalidError,

@@ -13,7 +13,7 @@ internal class ProxyAmazonBillingActivity : Activity() {
     companion object {
         const val EXTRAS_RESULT_RECEIVER = "result_receiver"
         const val EXTRAS_SKU = "sku"
-        const val EXTRAS_SERVICE_PROVIDER = "service_provider"
+        const val EXTRAS_PURCHASING_SERVICE_PROVIDER = "purchasing_service_provider"
         const val EXTRAS_REQUEST_ID = "request_id"
 
         fun newStartIntent(
@@ -25,7 +25,7 @@ internal class ProxyAmazonBillingActivity : Activity() {
             val intent = Intent(context, ProxyAmazonBillingActivity::class.java)
             intent.putExtra(EXTRAS_RESULT_RECEIVER, resultReceiver)
             intent.putExtra(EXTRAS_SKU, sku)
-            intent.putExtra(EXTRAS_SERVICE_PROVIDER, purchasingServiceProvider)
+            intent.putExtra(EXTRAS_PURCHASING_SERVICE_PROVIDER, purchasingServiceProvider)
             return intent
         }
     }
