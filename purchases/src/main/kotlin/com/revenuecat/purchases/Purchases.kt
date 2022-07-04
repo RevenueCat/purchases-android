@@ -64,6 +64,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.strings.ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED
 import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -165,6 +166,9 @@ class Purchases internal constructor(
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
+        if (!appConfig.dangerousSettings.autoSyncPurchases) {
+            log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
+        }
     }
 
     /** @suppress */
