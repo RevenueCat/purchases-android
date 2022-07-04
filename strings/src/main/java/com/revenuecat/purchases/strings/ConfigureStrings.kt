@@ -8,8 +8,8 @@ object ConfigureStrings {
     const val INITIAL_APP_USER_ID = "Initial App User ID - %s"
     const val LISTENER_SET = "Listener set"
     const val NO_SINGLETON_INSTANCE = "There is no singleton instance. " +
-            "Make sure you configure Purchases before trying to get the default instance. " +
-            "More info here: https://errors.rev.cat/configuring-sdk"
+        "Make sure you configure Purchases before trying to get the default instance. " +
+        "More info here: https://errors.rev.cat/configuring-sdk"
     const val SDK_VERSION = "SDK Version - %s"
     const val LEGACY_API_KEY = "Looks like you're using a legacy API key.\n" +
         "This is still supported, but it's recommended to migrate to using platform-specific API key, " +
@@ -25,4 +25,11 @@ object ConfigureStrings {
         "Ensure that you are using the public app-specific API key, " +
         "which should look like 'goog_1a2b3c4d5e6f7h' or 'amzn_1a2b3c4d5e6f7h'.\n" +
         "See https://rev.cat/auth for more details."
+    const val AUTO_SYNC_PURCHASES_DISABLED = "Automatic syncing of purchases has been disabled. \n" +
+        "RevenueCat won’t observe the StoreKit queue, and it will not sync any purchase \n" +
+        "automatically. Call syncPurchases whenever a new transaction is completed so the \n" +
+        "receipt is sent to RevenueCat’s backend. Consumables disappear from the receipt \n" +
+        "after the transaction is finished, so make sure purchases are synced before \n" +
+        "finishing any consumable transaction, otherwise RevenueCat won’t register the \n" +
+        "purchase."
 }
