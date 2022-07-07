@@ -29,7 +29,7 @@ Runs all the tests
 [bundle exec] fastlane android bump
 ```
 
-Increment build number
+Replaces version numbers, updates changelog and creates PR
 
 ### android bump_and_update_changelog
 
@@ -38,6 +38,14 @@ Increment build number
 ```
 
 Increment build number and update changelog
+
+### android replace_version
+
+```sh
+[bundle exec] fastlane android replace_version
+```
+
+
 
 ### android tag_release_with_latest_if_needed
 
