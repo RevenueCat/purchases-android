@@ -14,6 +14,14 @@
 # update_fastlane
 
 gradle_file_path = "library.gradle"
+files_with_version_number = [
+  gradle_file_path,
+  './common/src/main/java/com/revenuecat/purchases/common/Config.kt',
+  './.circleci/config.yml',
+  './docs/index.html',
+  './gradle.properties',
+  './.version'
+]
 
 default_platform(:android)
 
@@ -23,22 +31,28 @@ platform :android do
     gradle(task: "test")
   end
 
-  desc "Increment build number"
+  desc "Replaces version numbers, updates changelog and creates PR"
   lane :bump do |options|
-    new_version = options[:version]
-    fail ArgumentError, "missing version" unless new_version
-    previous_version = android_get_version_name(gradle_file: gradle_file_path)
-    android_set_version_name(version_name: new_version, gradle_file: gradle_file_path)
-    increment_version_in(previous_version, new_version, '../common/src/main/java/com/revenuecat/purchases/common/Config.kt')
-    increment_version_in(previous_version, new_version, '../.circleci/config.yml')
-    increment_version_in(previous_version, new_version, '../docs/index.html')
-    increment_version_in(previous_version, new_version, '../gradle.properties')
+    bump_version_update_changelog_create_pr(
+      current_version: current_version_number,
+      changelog_latest_path: './CHANGELOG.latest.md',
+      changelog_path: './CHANGELOG.md',
+      files_to_update: files_with_version_number,
+      repo_name: 'purchases-android'
+    )
   end
 
   desc "Increment build number and update changelog"
   lane :bump_and_update_changelog do |options|
     bump(options)
     attach_changelog_to_main(options)
+  end
+
+  lane :replace_version do |options|
+    new_number = UI.input("New version number: ")
+    replace_version_number(current_version: current_version_number,
+                           new_version_number: new_number,
+                           files_to_update: files_with_version_number)
   end
 
   desc "Tag release version with latest if necessary"
@@ -259,12 +273,6 @@ platform :android do
   end
 end
 
-def increment_version_in(previous_version, new_version, path)
-  sed_regex = 's/' + previous_version + '/' + new_version + '/g'
-  backup_extension = '.bck'
-  sh "sed -i'#{backup_extension}' #{sed_regex} #{path}"
-end
-
 def attach_changelog_to_main(options)
   version_number = options[:version]
   current_changelog = File.open("../CHANGELOG.latest.md", 'r')
@@ -286,4 +294,8 @@ end
 
 def is_snapshot_version?(version_name)
   version_name.end_with?("-SNAPSHOT")
+end
+
+def current_version_number
+  File.read("../.version").strip
 end
