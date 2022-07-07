@@ -1,4 +1,10 @@
-- Fix for Amazon prices that contain non breaking spaces. Transactions were being saved with the wrong price.
-  - https://github.com/RevenueCat/purchases-android/pull/538
-
-[Full Changelog](https://github.com/revenuecat/purchases-android/compare/5.1.0...5.1.1)
+* added a log when `autoSyncPurchases` is disabled (#555) via aboedo (@aboedo)
+* Fix for Amazon purchase dialog not showing up (#552) via Cesar de la Vega (@vegaro)
+* Remove private typealiases to fix generated documentation (#554) via Toni Rico (@tonidero)
+* New API to get customer info with a given `CacheFetchPolicy` (#546) via Toni Rico (@tonidero)
+* Remove some of the unused dependencies for tests in each module (#548) via Toni Rico (@tonidero)
+* Validate API key (#542) via Toni Rico (@tonidero)
+* Update deprecated import, following up on #545 (#547) via Toni Rico (@tonidero)
+* Extract Purchases creation logic to factory to improve testability (#543) via Toni Rico (@tonidero)
+* Migrate from kotlin-android-extensions to kotlin-parcelize (#545) via Toni Rico (@tonidero)
+* Prepare next version: 5.2.0-SNAPSHOT (#540) via RevenueCat Releases (@revenuecat-ops)
