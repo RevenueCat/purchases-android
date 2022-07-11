@@ -573,13 +573,19 @@ class BillingWrapper(
                         }
                     }
                 }
-                BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
-                BillingClient.BillingResponseCode.USER_CANCELED,
-                BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
-                BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
-                BillingClient.BillingResponseCode.ERROR,
-                BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
+                BillingClient.BillingResponseCode.ERROR,
+                BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+                BillingClient.BillingResponseCode.USER_CANCELED,
+                BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> {
+                    log(
+                        LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_ERROR
+                            .format(billingResult.toHumanReadableDescription())
+                    )
+                    retryBillingServiceConnectionWithExponentialBackoff()
+                }
+                BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
+                BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> {
                     log(
                         LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_ERROR
