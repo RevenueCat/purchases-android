@@ -467,22 +467,26 @@ class BillingWrapper(
         }
     }
 
-    internal fun getPurchaseType(purchaseToken: String): ProductType {
+    internal fun getPurchaseType(purchaseToken: String, listener: GetProductTypeListener) {
         billingClient?.let { client ->
-            val querySubsResult = client.queryPurchases(SkuType.SUBS)
-            val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
-            val subFound = querySubsResult.purchasesList?.any { it.purchaseToken == purchaseToken } ?: false
-            if (subsResponseOK && subFound) {
-                return@getPurchaseType ProductType.SUBS
+            client.queryPurchasesAsync(SkuType.SUBS) { querySubsResult, subsPurchasesList ->
+                val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
+                val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
+                if (subsResponseOK && subFound) {
+                    listener.onReceived(ProductType.SUBS)
+                } else {
+                    client.queryPurchasesAsync(SkuType.INAPP) { queryInAppsResult, inAppPurchasesList ->
+                        val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
+                        val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
+                        if (inAppsResponseIsOK && inAppFound) {
+                            listener.onReceived(ProductType.INAPP)
+                        } else {
+                            listener.onReceived(ProductType.UNKNOWN)
+                        }
+                    }
+                }
             }
-            val queryInAppsResult = client.queryPurchases(SkuType.INAPP)
-            val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
-            val inAppFound = queryInAppsResult.purchasesList?.any { it.purchaseToken == purchaseToken } ?: false
-            if (inAppsResponseIsOK && inAppFound) {
-                return@getPurchaseType ProductType.INAPP
-            }
-        }
-        return ProductType.UNKNOWN
+        } ?: listener.onReceived(ProductType.UNKNOWN)
     }
 
     override fun onPurchasesUpdated(
@@ -491,23 +495,17 @@ class BillingWrapper(
     ) {
         val notNullPurchasesList = purchases ?: emptyList()
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
-            notNullPurchasesList.map { purchase ->
-                log(
-                    LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
-                        .format(purchase.toHumanReadableDescription())
-                )
-                var type: ProductType?
-                var presentedOffering: String?
-                synchronized(this@BillingWrapper) {
-                    type = productTypes[purchase.firstSku]
-                    presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
-                }
-                purchase.toStoreTransaction(
-                    type ?: getPurchaseType(purchase.purchaseToken),
-                    presentedOffering
-                )
-            }.let { mappedPurchases ->
-                purchasesUpdatedListener?.onPurchasesUpdated(mappedPurchases)
+            val mappedPurchases = mutableListOf<StoreTransaction>()
+
+            notNullPurchasesList.forEach { purchase ->
+                getMappedPurchase(purchase, object: MapPurchaseToStoreTransactionListener {
+                    override fun onMapped(storeTxn: StoreTransaction) {
+                        mappedPurchases.add(storeTxn)
+                        if (mappedPurchases.size == notNullPurchasesList.size) {
+                            purchasesUpdatedListener?.onPurchasesUpdated(mappedPurchases)
+                        }
+                    }
+                })
             }
         } else if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
             // When doing a DEFERRED downgrade, the result is OK, but the list of purchases is null
@@ -539,6 +537,31 @@ class BillingWrapper(
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(purchasesError)
         }
     }
+
+    private fun getMappedPurchase(
+        purchase: Purchase,
+        getMappedPurchaseListener: MapPurchaseToStoreTransactionListener
+    ) {
+        log(
+            LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
+                .format(purchase.toHumanReadableDescription())
+        )
+        synchronized(this@BillingWrapper) {
+            val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
+
+            getPurchaseType(purchase.purchaseToken, object : GetProductTypeListener {
+                override fun onReceived(productType: ProductType) {
+                    getMappedPurchaseListener.onMapped(
+                        purchase.toStoreTransaction(
+                            productTypes[purchase.firstSku] ?: productType,
+                            presentedOffering
+                        )
+                    )
+                }
+            })
+        }
+    }
+
 
     override fun onBillingSetupFinished(billingResult: BillingResult) {
         mainHandler.post {
@@ -675,4 +698,14 @@ class BillingWrapper(
             listener.onPurchaseHistoryResponse(billingResult, purchaseHistory)
         }
     }
+
 }
+
+interface GetProductTypeListener {
+    fun onReceived(productType: ProductType)
+}
+
+interface MapPurchaseToStoreTransactionListener {
+    fun onMapped(storeTxn: StoreTransaction)
+}
+
