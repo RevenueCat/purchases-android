@@ -544,14 +544,24 @@ class BillingWrapper(
             LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
                 .format(purchase.toHumanReadableDescription())
         )
-        synchronized(this@BillingWrapper) {
-            val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
 
+        val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
+        productTypes[purchase.firstSku]?.let { productType ->
+            getMappedPurchaseListener.onMapped(
+                purchase.toStoreTransaction(
+                    productType,
+                    presentedOffering
+                )
+            )
+            return
+        }
+        
+        synchronized(this@BillingWrapper) {
             getPurchaseType(purchase.purchaseToken, object : GetProductTypeListener {
                 override fun onReceived(productType: ProductType) {
                     getMappedPurchaseListener.onMapped(
                         purchase.toStoreTransaction(
-                            productTypes[purchase.firstSku] ?: productType,
+                            productType,
                             presentedOffering
                         )
                     )
