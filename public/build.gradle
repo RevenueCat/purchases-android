@@ -8,7 +8,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation 'androidx.core:core-ktx:1.3.1'
     latestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
-    unityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
+    unityIAPCompileOnly "com.android.billingclient:billing:$billingVersion"
     testImplementation project(":test-utils")
     testImplementation "androidx.test:core:$testLibrariesVersion"
     testImplementation "androidx.test:runner:$testLibrariesVersion"
@@ -18,7 +18,7 @@ dependencies {
     testImplementation "io.mockk:mockk:$mockkVersion"
     testImplementation "org.assertj:assertj-core:$assertJVersion"
     testLatestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
-    testUnityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
+    testUnityIAPCompileOnly "com.android.billingclient:billing:$billingVersion"
 }
 
 tasks.dokkaHtmlPartial.configure {
