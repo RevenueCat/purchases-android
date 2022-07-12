@@ -382,8 +382,6 @@ class BillingWrapper(
         }
     }
 
-    private fun Purchase.PurchasesResult.isSuccessful() = responseCode == BillingClient.BillingResponseCode.OK
-
     override fun queryPurchases(
         appUserID: String,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
@@ -392,33 +390,32 @@ class BillingWrapper(
         withConnectedClient {
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
 
-            val queryActiveSubscriptionsResult = this.queryPurchases(SkuType.SUBS)
-            if (!queryActiveSubscriptionsResult.isSuccessful()) {
-                val billingResult = queryActiveSubscriptionsResult.billingResult
-                val purchasesError = billingResult.responseCode.billingResponseToPurchasesError(
-                    RestoreStrings.QUERYING_SUBS_ERROR.format(billingResult.toHumanReadableDescription())
-                )
-                onError(purchasesError)
-                return@withConnectedClient
+            this.queryPurchasesAsync(SkuType.SUBS) { activeSubsResult, activeSubsPurchases ->
+                if (!activeSubsResult.isSuccessful()) {
+                    val purchasesError = activeSubsResult.responseCode.billingResponseToPurchasesError(
+                        RestoreStrings.QUERYING_SUBS_ERROR.format(activeSubsResult.toHumanReadableDescription())
+                    )
+                    onError(purchasesError)
+                    return@queryPurchasesAsync
+                } else {
+                    val mapOfActiveSubscriptions = activeSubsPurchases.toMapOfGooglePurchaseWrapper(SkuType.SUBS)
+
+                    this.queryPurchasesAsync(SkuType.INAPP) { unconsumedInAppsResult, unconsumedInAppsPurchases ->
+                        if (!unconsumedInAppsResult.isSuccessful()) {
+                            val purchasesError = unconsumedInAppsResult.responseCode.billingResponseToPurchasesError(
+                                RestoreStrings.QUERYING_INAPP_ERROR.format(
+                                    unconsumedInAppsResult.toHumanReadableDescription()
+                                )
+                            )
+                            onError(purchasesError)
+                        } else {
+                            val mapOfUnconsumedInApps =
+                                unconsumedInAppsPurchases.toMapOfGooglePurchaseWrapper(SkuType.INAPP)
+                            onSuccess(mapOfActiveSubscriptions + mapOfUnconsumedInApps)
+                        }
+                    }
+                }
             }
-
-            val queryUnconsumedInAppsResult = this.queryPurchases(SkuType.INAPP)
-            if (!queryUnconsumedInAppsResult.isSuccessful()) {
-                val billingResult = queryUnconsumedInAppsResult.billingResult
-                val purchasesError = billingResult.responseCode.billingResponseToPurchasesError(
-                    RestoreStrings.QUERYING_INAPP_ERROR.format(billingResult.toHumanReadableDescription())
-                )
-                onError(purchasesError)
-                return@withConnectedClient
-            }
-
-            val activeSubscriptionsList = queryActiveSubscriptionsResult.purchasesList ?: emptyList<Purchase>()
-            val mapOfActiveSubscriptions = activeSubscriptionsList.toMapOfGooglePurchaseWrapper(SkuType.SUBS)
-
-            val unconsumedInAppsList = queryUnconsumedInAppsResult.purchasesList ?: emptyList<Purchase>()
-            val mapOfUnconsumedInApps = unconsumedInAppsList.toMapOfGooglePurchaseWrapper(SkuType.INAPP)
-
-            onSuccess(mapOfActiveSubscriptions + mapOfUnconsumedInApps)
         }
     }
 
@@ -467,6 +464,7 @@ class BillingWrapper(
         }
     }
 
+    // TODO add tests
     internal fun getPurchaseType(purchaseToken: String, listener: GetProductTypeListener) {
         billingClient?.let { client ->
             client.queryPurchasesAsync(SkuType.SUBS) { querySubsResult, subsPurchasesList ->
@@ -498,7 +496,7 @@ class BillingWrapper(
             val mappedPurchases = mutableListOf<StoreTransaction>()
 
             notNullPurchasesList.forEach { purchase ->
-                getMappedPurchase(purchase, object: MapPurchaseToStoreTransactionListener {
+                getMappedPurchase(purchase, object : MapPurchaseToStoreTransactionListener {
                     override fun onMapped(storeTxn: StoreTransaction) {
                         mappedPurchases.add(storeTxn)
                         if (mappedPurchases.size == notNullPurchasesList.size) {
@@ -561,7 +559,6 @@ class BillingWrapper(
             })
         }
     }
-
 
     override fun onBillingSetupFinished(billingResult: BillingResult) {
         mainHandler.post {
@@ -698,7 +695,6 @@ class BillingWrapper(
             listener.onPurchaseHistoryResponse(billingResult, purchaseHistory)
         }
     }
-
 }
 
 interface GetProductTypeListener {
