@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.firstSku
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
@@ -27,6 +26,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.StoreProduct
@@ -50,7 +50,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.lang.Thread.sleep
-import java.util.ArrayList
 import java.util.concurrent.CountDownLatch
 
 @RunWith(AndroidJUnit4::class)
@@ -1672,6 +1671,48 @@ class BillingWrapperTest {
 
         assertThat(afterSuccessfulConnectionRetryMillisecondsSlot.isCaptured).isTrue
         assertThat(afterSuccessfulConnectionRetryMillisecondsSlot.captured == firstRetryMillisecondsSlot.captured)
+    }
+
+    @Test
+    fun `if billing setup returns recoverable error code, will try to reconnect with exponential backoff`() {
+        every {
+            handler.postDelayed(any(), any())
+        } returns true
+
+        val errorCodes = listOf(
+            BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
+            BillingClient.BillingResponseCode.ERROR,
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+            BillingClient.BillingResponseCode.USER_CANCELED,
+            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED
+        )
+        var currentCallback = 1 // we get one call before triggering it manually
+        for (errorCode in errorCodes) {
+            currentCallback += 1
+            wrapper.onBillingSetupFinished(errorCode.buildResult())
+            verify(exactly = currentCallback) { handler.postDelayed(any(), any()) }
+        }
+    }
+
+    @Test
+    fun `if billing setup returns code that doesnt merit retry, will not try to reconnect`() {
+        every {
+            handler.postDelayed(any(), any())
+        } returns true
+
+        val errorCodes = listOf(
+            BillingClient.BillingResponseCode.OK,
+            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
+            BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
+            BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
+            BillingClient.BillingResponseCode.DEVELOPER_ERROR
+        )
+        for (errorCode in errorCodes) {
+            wrapper.onBillingSetupFinished(errorCode.buildResult())
+        }
+        verify(exactly = 1) { handler.postDelayed(any(), any()) }
     }
 
     @Test
