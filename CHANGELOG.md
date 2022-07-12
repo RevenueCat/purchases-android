@@ -11,6 +11,14 @@
   * https://github.com/RevenueCat/purchases-android/pull/542
 * Migrate from kotlin-android-extensions to kotlin-parcelize
   * https://github.com/RevenueCat/purchases-android/pull/545
+* Removed private typealiases to fix generated documentation
+  * https://github.com/RevenueCat/purchases-android/pull/554
+* Fix for Amazon purchase dialog not showing up
+  * https://github.com/RevenueCat/purchases-android/pull/552
+* Added a log when `autoSyncPurchases` is disabled
+  * https://github.com/RevenueCat/purchases-android/pull/555
+* Attempt to reconnect to BillingClient when Billing response is error 
+  * https://github.com/RevenueCat/purchases-android/pull/558
 
 
 [Full Changelog](https://github.com/revenuecat/purchases-android/compare/5.1.1...5.2.0)
