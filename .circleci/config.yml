@@ -359,5 +359,4 @@ workflows:
             branches:
               only:
                 - main
-#      - docs-deploy: *release-tags
-      - docs-deploy
+      - docs-deploy: *release-tags
