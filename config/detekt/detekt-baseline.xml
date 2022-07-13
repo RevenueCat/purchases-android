@@ -6,20 +6,20 @@
     <ID>EmptyCatchBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${ }</ID>
     <ID>EmptyCatchBlock:Purchases.kt$Purchases.Companion.&lt;no name provided>${ }</ID>
     <ID>EmptyFunctionBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${}</ID>
-    <ID>Filename:com.revenuecat.purchases.PostingTransactionsTestsBillingClient4.kt:1</ID>
-    <ID>Filename:com.revenuecat.purchases.google.BillingResponseCodeTestBillingClient4.kt:1</ID>
-    <ID>Filename:com.revenuecat.purchases.google.BillingWrapperTestBillingClient4.kt:1</ID>
-    <ID>Filename:com.revenuecat.purchases.google.ParcelableTestsBillingClient4.kt:1</ID>
-    <ID>LargeClass:BillingWrapperTestBillingClient4.kt$BillingWrapperTest</ID>
+    <ID>Filename:com.revenuecat.purchases.PostingTransactionsTests.kt:1</ID>
+    <ID>Filename:com.revenuecat.purchases.google.BillingResponseCodeTest.kt:1</ID>
+    <ID>Filename:com.revenuecat.purchases.google.BillingWrapperTest.kt:1</ID>
+    <ID>Filename:com.revenuecat.purchases.google.ParcelableTests.kt:1</ID>
+    <ID>LargeClass:BillingWrapperTest.kt$BillingWrapperTest</ID>
     <ID>LargeClass:Purchases.kt$Purchases : LifecycleDelegate</ID>
-    <ID>LongMethod:PostingTransactionsTestsBillingClient4.kt$PostingTransactionsTests$@Before fun setup()</ID>
+    <ID>LongMethod:PostingTransactionsTests.kt$PostingTransactionsTests$@Before fun setup()</ID>
     <ID>LongMethod:Purchases.kt$Purchases$ fun restorePurchases( callback: ReceiveCustomerInfoCallback )</ID>
-    <ID>LongParameterList:BillingWrapperTestBillingClient4.kt$BillingWrapperTest$( sku: String, purchaseToken: String, productType: ProductType, offeringIdentifier: String? = null, purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = false )</ID>
+    <ID>LongParameterList:BillingWrapperTest.kt$BillingWrapperTest$( sku: String, purchaseToken: String, productType: ProductType, offeringIdentifier: String? = null, purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = false )</ID>
     <ID>LongParameterList:stubsBillingClient3.kt$( productIds: List&lt;String> = listOf("com.revenuecat.lifetime"), purchaseTime: Long = System.currentTimeMillis(), purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" + "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg", signature: String = "signature${System.currentTimeMillis()}", purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = true, orderId: String = "GPA.3372-4150-8203-17209" )</ID>
-    <ID>LongParameterList:stubsBillingClient4.kt$( productIds: List&lt;String> = listOf("com.revenuecat.lifetime"), purchaseTime: Long = System.currentTimeMillis(), purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" + "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg", signature: String = "signature${System.currentTimeMillis()}", purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = true, orderId: String = "GPA.3372-4150-8203-17209" )</ID>
-    <ID>MagicNumber:BillingResponseCodeTestBillingClient4.kt$BillingResponseCodeTest$12</ID>
-    <ID>MagicNumber:BillingWrapperTestBillingClient4.kt$BillingWrapperTest$200</ID>
-    <ID>MagicNumber:PostingTransactionsTestsBillingClient4.kt$PostingTransactionsTests$2000000</ID>
+    <ID>LongParameterList:stubs.kt$( productIds: List&lt;String> = listOf("com.revenuecat.lifetime"), purchaseTime: Long = System.currentTimeMillis(), purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" + "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg", signature: String = "signature${System.currentTimeMillis()}", purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = true, orderId: String = "GPA.3372-4150-8203-17209" )</ID>
+    <ID>MagicNumber:BillingResponseCodeTest.kt$BillingResponseCodeTest$12</ID>
+    <ID>MagicNumber:BillingWrapperTest.kt$BillingWrapperTest$200</ID>
+    <ID>MagicNumber:PostingTransactionsTests.kt$PostingTransactionsTests$2000000</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$32</ID>
@@ -30,11 +30,11 @@
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$91</ID>
     <ID>MagicNumber:storeProductConversions.kt$3</ID>
     <ID>MagicNumber:stubsBillingClient3.kt$4</ID>
-    <ID>MagicNumber:stubsBillingClient4.kt$4</ID>
-    <ID>MatchingDeclarationName:BillingResponseCodeTestBillingClient4.kt$BillingResponseCodeTest</ID>
-    <ID>MatchingDeclarationName:BillingWrapperTestBillingClient4.kt$BillingWrapperTest</ID>
-    <ID>MatchingDeclarationName:ParcelableTestsBillingClient4.kt$ParcelableTests</ID>
-    <ID>MatchingDeclarationName:PostingTransactionsTestsBillingClient4.kt$PostingTransactionsTests</ID>
+    <ID>MagicNumber:stubs.kt$4</ID>
+    <ID>MatchingDeclarationName:BillingResponseCodeTest.kt$BillingResponseCodeTest</ID>
+    <ID>MatchingDeclarationName:BillingWrapperTest.kt$BillingWrapperTest</ID>
+    <ID>MatchingDeclarationName:ParcelableTests.kt$ParcelableTests</ID>
+    <ID>MatchingDeclarationName:PostingTransactionsTests.kt$PostingTransactionsTests</ID>
     <ID>MaxLineLength:Constants.kt$Constants$/* The entitlement ID from the RevenueCat dashboard that is activated upon successful in-app purchase for the duration of the purchase. Modify this property to reflect your app's entitlement identifier. */</ID>
     <ID>NoWildcardImports:com.revenuecat.sample.ui.paywall.PaywallFragment.kt:10</ID>
     <ID>NoWildcardImports:com.revenuecat.sample.ui.user.UserFragment.kt:14</ID>
@@ -51,7 +51,7 @@
     <ID>TooManyFunctions:AmazonBilling.kt$AmazonBilling : BillingAbstractProductDataResponseListenerPurchaseResponseListenerPurchaseUpdatesResponseListenerUserDataResponseListener</ID>
     <ID>TooManyFunctions:Backend.kt$Backend</ID>
     <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper : BillingAbstractPurchasesUpdatedListenerBillingClientStateListener</ID>
-    <ID>TooManyFunctions:BillingWrapperTestBillingClient4.kt$BillingWrapperTest</ID>
+    <ID>TooManyFunctions:BillingWrapperTest.kt$BillingWrapperTest</ID>
     <ID>TooManyFunctions:DeviceCache.kt$DeviceCache</ID>
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
