@@ -4,5 +4,5 @@ object Config {
 
     var debugLogsEnabled = BuildConfig.DEBUG
 
-    const val frameworkVersion = "5.2.0"
+    const val frameworkVersion = "5.3.0-SNAPSHOT"
 }
