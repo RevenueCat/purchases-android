@@ -1,4 +1,9 @@
+## 5.2.1
+
+* Updates the `unityIAP` build flavor for compatibility with Unity IAP >= v3.1.0 for observer mode.
+
 ## 5.2.0
+
 ### API Updates
 
 * New API to get customer info with a given `CacheFetchPolicy`
