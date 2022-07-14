@@ -12,6 +12,8 @@ buildscript {
     ext.mockkVersion = "1.12.4"
     ext.assertJVersion = "3.22.0"
     ext.annotationVersion = "1.3.0"
+    ext.androidxCoreVersion = "1.8.0"
+    ext.mockwebserverVersion = "4.2.0"
 
     repositories {
         mavenCentral()
