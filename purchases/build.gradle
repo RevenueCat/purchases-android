@@ -29,7 +29,7 @@ dependencies {
     testImplementation "io.mockk:mockk:$mockkVersion"
     testImplementation "org.assertj:assertj-core:$assertJVersion"
     testLatestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
-    testUnityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
+    testUnityIAPImplementation "com.android.billingclient:billing:$billingClient3Version"
 }
 
 tasks.dokkaHtmlPartial.configure {
