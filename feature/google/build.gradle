@@ -23,4 +23,6 @@ dependencies {
     testImplementation "io.mockk:mockk:$mockkVersion"
     testImplementation "org.assertj:assertj-core:$assertJVersion"
     testImplementation 'com.google.android.gms:play-services-ads-identifier:17.0.1'
+    testUnityIAPImplementation "com.android.billingclient:billing:$billingVersion"
+
 }
