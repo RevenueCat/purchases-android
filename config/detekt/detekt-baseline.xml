@@ -15,7 +15,7 @@
     <ID>LongMethod:PostingTransactionsTests.kt$PostingTransactionsTests$@Before fun setup()</ID>
     <ID>LongMethod:Purchases.kt$Purchases$ fun restorePurchases( callback: ReceiveCustomerInfoCallback )</ID>
     <ID>LongParameterList:BillingWrapperTest.kt$BillingWrapperTest$( sku: String, purchaseToken: String, productType: ProductType, offeringIdentifier: String? = null, purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = false )</ID>
-    <ID>LongParameterList:stubs.kt$( productIds: List&lt;String> = listOf("com.revenuecat.lifetime"), purchaseTime: Long = System.currentTimeMillis(), purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" + "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg", signature: String = "signature${System.currentTimeMillis()}", purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = true, orderId: String = "GPA.3372-4150-8203-17209" )</ID>
+    <ID>LongParameterList:stubsBillingClient4.kt$( productIds: List&lt;String> = listOf("com.revenuecat.lifetime"), purchaseTime: Long = System.currentTimeMillis(), purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" + "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg", signature: String = "signature${System.currentTimeMillis()}", purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = true, orderId: String = "GPA.3372-4150-8203-17209" )</ID>
     <ID>MagicNumber:BillingResponseCodeTest.kt$BillingResponseCodeTest$12</ID>
     <ID>MagicNumber:BillingWrapperTest.kt$BillingWrapperTest$200</ID>
     <ID>MagicNumber:PostingTransactionsTests.kt$PostingTransactionsTests$2000000</ID>
@@ -28,7 +28,7 @@
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$90</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$91</ID>
     <ID>MagicNumber:storeProductConversions.kt$3</ID>
-    <ID>MagicNumber:stubs.kt$4</ID>
+    <ID>MagicNumber:stubsBillingClient4.kt$4</ID>
     <ID>MatchingDeclarationName:BillingResponseCodeTest.kt$BillingResponseCodeTest</ID>
     <ID>MatchingDeclarationName:BillingWrapperTest.kt$BillingWrapperTest</ID>
     <ID>MatchingDeclarationName:ParcelableTests.kt$ParcelableTests</ID>
