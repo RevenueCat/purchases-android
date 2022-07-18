@@ -17,8 +17,6 @@ dependencies {
     testImplementation "org.robolectric:robolectric:$robolectricVersion"
     testImplementation "io.mockk:mockk:$mockkVersion"
     testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testLatestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
-    testUnityIAPCompileOnly "com.android.billingclient:billing:$billingVersion"
 }
 
 tasks.dokkaHtmlPartial.configure {
