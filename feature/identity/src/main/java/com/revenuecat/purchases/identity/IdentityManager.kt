@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.IdentityStrings
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import java.util.Locale
 import java.util.UUID
@@ -16,6 +17,7 @@ import java.util.UUID
 class IdentityManager(
     private val deviceCache: DeviceCache,
     private val subscriberAttributesCache: SubscriberAttributesCache,
+    private val subscriberAttributesManager: SubscriberAttributesManager,
     private val backend: Backend
 ) {
 
@@ -54,25 +56,27 @@ class IdentityManager(
 
         log(LogIntent.USER, IdentityStrings.LOGGING_IN.format(currentAppUserID, newAppUserID))
         val oldAppUserID = currentAppUserID
-        backend.logIn(
-            oldAppUserID,
-            newAppUserID,
-            { customerInfo, created ->
-                synchronized(this@IdentityManager) {
-                    log(
-                        LogIntent.USER,
-                        IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
-                    )
-                    deviceCache.clearCachesForAppUserID(oldAppUserID)
-                    subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(newAppUserID) {
+            backend.logIn(
+                oldAppUserID,
+                newAppUserID,
+                { customerInfo, created ->
+                    synchronized(this@IdentityManager) {
+                        log(
+                            LogIntent.USER,
+                            IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
+                        )
+                        deviceCache.clearCachesForAppUserID(oldAppUserID)
+                        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
-                    deviceCache.cacheAppUserID(newAppUserID)
-                    deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
-                }
-                onSuccess(customerInfo, created)
-            },
-            onError
-        )
+                        deviceCache.cacheAppUserID(newAppUserID)
+                        deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
+                    }
+                    onSuccess(customerInfo, created)
+                },
+                onError
+            )
+        }
     }
 
     @Synchronized
@@ -83,14 +87,17 @@ class IdentityManager(
     }
 
     @Synchronized
-    fun logOut(): PurchasesError? {
+    fun logOut(completion: ((PurchasesError?) -> Unit)) {
         if (currentUserIsAnonymous()) {
             log(LogIntent.RC_ERROR, IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER)
-            return PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError)
+            completion(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
+            return
         }
-        reset()
-        log(LogIntent.USER, IdentityStrings.LOG_OUT_SUCCESSFUL)
-        return null
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(currentAppUserID) {
+            reset()
+            log(LogIntent.USER, IdentityStrings.LOG_OUT_SUCCESSFUL)
+            completion(null)
+        }
     }
 
     @Synchronized

@@ -1733,9 +1733,7 @@ class PurchasesTest {
         every {
             mockCache.cleanupOldAttributionData()
         } just Runs
-        every {
-            mockIdentityManager.logOut()
-        } returns null
+        mockIdentityManagerLogout()
         val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         purchases.logOut(mockCompletion)
 
@@ -1760,13 +1758,11 @@ class PurchasesTest {
         every {
             mockCache.cleanupOldAttributionData()
         } just Runs
-        every {
-            mockIdentityManager.logOut()
-        } returns null
+        mockIdentityManagerLogout()
 
         purchases.logOut()
         verify(exactly = 1) {
-            mockIdentityManager.logOut()
+            mockIdentityManager.logOut(any())
         }
     }
 
@@ -1775,9 +1771,7 @@ class PurchasesTest {
         every {
             mockCache.cleanupOldAttributionData()
         } just Runs
-        every {
-            mockIdentityManager.logOut()
-        } returns null
+        mockIdentityManagerLogout()
 
         purchases.logOut()
         verify(exactly = 1) {
@@ -1796,9 +1790,7 @@ class PurchasesTest {
         } just Runs
         val mockError = mockk<PurchasesError>(relaxed = true)
         val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
-        every {
-            mockIdentityManager.logOut()
-        } returns mockError
+        mockIdentityManagerLogout(mockError)
 
         purchases.logOut(mockCompletion)
         verify(exactly = 1) {
@@ -1813,9 +1805,7 @@ class PurchasesTest {
         } just Runs
 
         val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
-        every {
-            mockIdentityManager.logOut()
-        } returns null
+        mockIdentityManagerLogout()
 
         purchases.logOut(mockCompletion)
         verify(exactly = 1) {
@@ -1836,9 +1826,7 @@ class PurchasesTest {
         } just Runs
 
         val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
-        every {
-            mockIdentityManager.logOut()
-        } returns null
+        mockIdentityManagerLogout()
 
         purchases.logOut(mockCompletion)
         verify(exactly = 1) {
@@ -4332,6 +4320,14 @@ class PurchasesTest {
         } answers {
             lst.captured.run()
             true
+        }
+    }
+
+    private fun mockIdentityManagerLogout(error: PurchasesError? = null) {
+        every {
+            mockIdentityManager.logOut(captureLambda())
+        } answers {
+            lambda<(PurchasesError?) -> Unit>().captured.invoke(error)
         }
     }
 

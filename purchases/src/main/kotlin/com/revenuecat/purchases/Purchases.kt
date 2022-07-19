@@ -587,15 +587,16 @@ class Purchases internal constructor(
      */
     @JvmOverloads
     fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
-        val error: PurchasesError? = identityManager.logOut()
-        if (error != null) {
-            callback?.onError(error)
-        } else {
-            backend.clearCaches()
-            synchronized(this@Purchases) {
-                state = state.copy(purchaseCallbacks = emptyMap())
+        identityManager.logOut { error ->
+            if (error != null) {
+                callback?.onError(error)
+            } else {
+                backend.clearCaches()
+                synchronized(this@Purchases) {
+                    state = state.copy(purchaseCallbacks = emptyMap())
+                }
+                updateAllCaches(identityManager.currentAppUserID, callback)
             }
-            updateAllCaches(identityManager.currentAppUserID, callback)
         }
     }
 
