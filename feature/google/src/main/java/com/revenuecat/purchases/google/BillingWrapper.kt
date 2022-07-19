@@ -555,7 +555,7 @@ class BillingWrapper(
             )
             return
         }
-        
+
         synchronized(this@BillingWrapper) {
             getPurchaseType(purchase.purchaseToken, object : GetProductTypeListener {
                 override fun onReceived(productType: ProductType) {
@@ -714,4 +714,3 @@ interface GetProductTypeListener {
 interface MapPurchaseToStoreTransactionListener {
     fun onMapped(storeTxn: StoreTransaction)
 }
-
