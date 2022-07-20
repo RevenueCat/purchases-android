@@ -21,7 +21,7 @@ dependencies {
     latestDependenciesApi "com.android.billingclient:billing:$billingVersion"
     unityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
     implementation "androidx.lifecycle:lifecycle-runtime:$lifecycleVersion"
-    implementation "androidx.lifecycle:lifecycle-common-java8:$lifecycleVersion"
+    implementation "androidx.lifecycle:lifecycle-common:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-process:$lifecycleVersion"
 
     testImplementation project(":test-utils")
