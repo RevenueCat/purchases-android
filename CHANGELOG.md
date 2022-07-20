@@ -1,3 +1,8 @@
+## 5.4.0
+
+* Upgrade compile sdk and target sdk versions and Android Gradle Plugin, Kotlin and a few other versions
+  * https://github.com/RevenueCat/purchases-android/pull/474
+
 ## 5.3.0
 
 * Updates the `unityIAP` build flavor so we don't include the billing client directly
