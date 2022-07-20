@@ -926,11 +926,10 @@ class BillingWrapperTest {
                 }))
         }
 
-        wrapper.getPurchaseType("sub", object : GetProductTypeListener {
-            override fun onReceived(productType: ProductType) {
-                assertThat(productType).isEqualTo(ProductType.SUBS)
-            }
-        })
+        wrapper.getPurchaseType("sub") { productType ->
+            assertThat(productType).isEqualTo(ProductType.SUBS)
+        }
+
     }
 
     @Test
@@ -967,11 +966,9 @@ class BillingWrapperTest {
             )
         }
 
-        wrapper.getPurchaseType("inapp", object : GetProductTypeListener {
-            override fun onReceived(productType: ProductType) {
-                assertThat(productType).isEqualTo(ProductType.INAPP)
-            }
-        })
+        wrapper.getPurchaseType("inapp") { productType ->
+            assertThat(productType).isEqualTo(ProductType.INAPP)
+        }
     }
 
     @Test

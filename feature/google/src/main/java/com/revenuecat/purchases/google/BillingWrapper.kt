@@ -465,26 +465,26 @@ class BillingWrapper(
     }
 
     // TODO add tests
-    internal fun getPurchaseType(purchaseToken: String, listener: GetProductTypeListener) {
+    internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
         billingClient?.let { client ->
             client.queryPurchasesAsync(SkuType.SUBS) { querySubsResult, subsPurchasesList ->
                 val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
                 val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
                 if (subsResponseOK && subFound) {
-                    listener.onReceived(ProductType.SUBS)
+                    listener(ProductType.SUBS)
                 } else {
                     client.queryPurchasesAsync(SkuType.INAPP) { queryInAppsResult, inAppPurchasesList ->
                         val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
                         val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
                         if (inAppsResponseIsOK && inAppFound) {
-                            listener.onReceived(ProductType.INAPP)
+                            listener(ProductType.INAPP)
                         } else {
-                            listener.onReceived(ProductType.UNKNOWN)
+                            listener(ProductType.UNKNOWN)
                         }
                     }
                 }
             }
-        } ?: listener.onReceived(ProductType.UNKNOWN)
+        } ?: listener(ProductType.UNKNOWN)
     }
 
     override fun onPurchasesUpdated(
@@ -496,14 +496,12 @@ class BillingWrapper(
             val mappedPurchases = mutableListOf<StoreTransaction>()
 
             notNullPurchasesList.forEach { purchase ->
-                getMappedPurchase(purchase, object : MapPurchaseToStoreTransactionListener {
-                    override fun onMapped(storeTxn: StoreTransaction) {
-                        mappedPurchases.add(storeTxn)
-                        if (mappedPurchases.size == notNullPurchasesList.size) {
-                            purchasesUpdatedListener?.onPurchasesUpdated(mappedPurchases)
-                        }
+                getMappedPurchase(purchase) { storeTxn ->
+                    mappedPurchases.add(storeTxn)
+                    if (mappedPurchases.size == notNullPurchasesList.size) {
+                        purchasesUpdatedListener?.onPurchasesUpdated(mappedPurchases)
                     }
-                })
+                }
             }
         } else if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
             // When doing a DEFERRED downgrade, the result is OK, but the list of purchases is null
@@ -538,7 +536,7 @@ class BillingWrapper(
 
     private fun getMappedPurchase(
         purchase: Purchase,
-        getMappedPurchaseListener: MapPurchaseToStoreTransactionListener
+        mapPurchaseListener: (storeTxn: StoreTransaction) -> Unit
     ) {
         log(
             LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
@@ -547,7 +545,7 @@ class BillingWrapper(
 
         val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
         productTypes[purchase.firstSku]?.let { productType ->
-            getMappedPurchaseListener.onMapped(
+            mapPurchaseListener(
                 purchase.toStoreTransaction(
                     productType,
                     presentedOffering
@@ -557,16 +555,14 @@ class BillingWrapper(
         }
 
         synchronized(this@BillingWrapper) {
-            getPurchaseType(purchase.purchaseToken, object : GetProductTypeListener {
-                override fun onReceived(productType: ProductType) {
-                    getMappedPurchaseListener.onMapped(
+            getPurchaseType(purchase.purchaseToken) { type ->
+                    mapPurchaseListener(
                         purchase.toStoreTransaction(
-                            productType,
+                            type,
                             presentedOffering
                         )
                     )
-                }
-            })
+            }
         }
     }
 
@@ -705,12 +701,4 @@ class BillingWrapper(
             listener.onPurchaseHistoryResponse(billingResult, purchaseHistory)
         }
     }
-}
-
-interface GetProductTypeListener {
-    fun onReceived(productType: ProductType)
-}
-
-interface MapPurchaseToStoreTransactionListener {
-    fun onMapped(storeTxn: StoreTransaction)
 }
