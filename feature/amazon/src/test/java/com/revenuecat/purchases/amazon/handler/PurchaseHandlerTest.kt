@@ -376,6 +376,7 @@ class PurchaseHandlerTest {
         val bundle = Bundle().apply {
             putParcelable(ProxyAmazonBillingActivity.EXTRAS_REQUEST_ID, RequestId.fromString(dummyRequestId))
         }
-        resultReceiver.send(0, bundle)
+        assertThat(resultReceiver).isNotNull
+        resultReceiver!!.send(0, bundle)
     }
 }

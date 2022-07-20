@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchasetester.databinding.PackageCardBinding
+import com.revenuecat.purchase_tester.databinding.PackageCardBinding
 
 class PackageCardAdapter(
     private val packages: List<Package>,
