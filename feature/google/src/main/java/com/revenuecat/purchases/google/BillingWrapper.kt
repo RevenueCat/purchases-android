@@ -464,7 +464,6 @@ class BillingWrapper(
         }
     }
 
-    // TODO add tests
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
         billingClient?.let { client ->
             client.queryPurchasesAsync(SkuType.SUBS) { querySubsResult, subsPurchasesList ->
@@ -531,38 +530,6 @@ class BillingWrapper(
             val purchasesError = responseCode.billingResponseToPurchasesError(message).also { errorLog(it) }
 
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(purchasesError)
-        }
-    }
-
-    private fun getMappedPurchase(
-        purchase: Purchase,
-        mapPurchaseListener: (storeTxn: StoreTransaction) -> Unit
-    ) {
-        log(
-            LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
-                .format(purchase.toHumanReadableDescription())
-        )
-
-        val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
-        productTypes[purchase.firstSku]?.let { productType ->
-            mapPurchaseListener(
-                purchase.toStoreTransaction(
-                    productType,
-                    presentedOffering
-                )
-            )
-            return
-        }
-
-        synchronized(this@BillingWrapper) {
-            getPurchaseType(purchase.purchaseToken) { type ->
-                    mapPurchaseListener(
-                        purchase.toStoreTransaction(
-                            type,
-                            presentedOffering
-                        )
-                    )
-            }
         }
     }
 
@@ -660,6 +627,38 @@ class BillingWrapper(
         val printWriter = PrintWriter(stringWriter)
         Throwable().printStackTrace(printWriter)
         return stringWriter.toString()
+    }
+
+    private fun getMappedPurchase(
+        purchase: Purchase,
+        mapPurchaseListener: (storeTxn: StoreTransaction) -> Unit
+    ) {
+        log(
+            LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
+                .format(purchase.toHumanReadableDescription())
+        )
+
+        val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
+        productTypes[purchase.firstSku]?.let { productType ->
+            mapPurchaseListener(
+                purchase.toStoreTransaction(
+                    productType,
+                    presentedOffering
+                )
+            )
+            return
+        }
+
+        synchronized(this@BillingWrapper) {
+            getPurchaseType(purchase.purchaseToken) { type ->
+                mapPurchaseListener(
+                    purchase.toStoreTransaction(
+                        type,
+                        presentedOffering
+                    )
+                )
+            }
+        }
     }
 
     private fun BillingClient.querySkuDetailsAsyncEnsuringOneResponse(
