@@ -187,7 +187,7 @@ class BillingWrapperTest {
 
         every { mockClient.isReady } returns true
 
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
         assertThat(storeProducts).`as`("SKUDetailsList is not null").isNotNull
     }
@@ -221,7 +221,7 @@ class BillingWrapperTest {
 
         every { mockClient.isReady } returns true
 
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
         assertThat(skuDetailsResponseCalled).isEqualTo(2)
     }
@@ -253,7 +253,7 @@ class BillingWrapperTest {
 
         val skuDetails = stubSkuDetails(productId = "product_a")
 
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
@@ -321,7 +321,7 @@ class BillingWrapperTest {
             billingClientOKResult
         }
 
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
@@ -394,7 +394,7 @@ class BillingWrapperTest {
 
         every { mockClient.isReady } returns true
 
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
         verify(exactly = 1) {
             mockClient.launchBillingFlow(eq(mockActivity), any())
@@ -426,7 +426,7 @@ class BillingWrapperTest {
 
         every { mockClient.isReady } returns true
 
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
         // ensure calls to launchBillingFlow - 1 in setup, 1 here
         verify(exactly = 2) {
@@ -489,7 +489,7 @@ class BillingWrapperTest {
 
     @Test
     fun queryHistoryCallsListenerIfOk() {
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         var successCalled = false
         wrapper.queryPurchaseHistoryAsync(
             BillingClient.SkuType.SUBS,
@@ -509,7 +509,7 @@ class BillingWrapperTest {
 
     @Test
     fun queryHistoryNotCalledIfNotOK() {
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         var errorCalled = false
         wrapper.queryPurchaseHistoryAsync(
             BillingClient.SkuType.SUBS,
@@ -537,7 +537,7 @@ class BillingWrapperTest {
             mockClient.consumeAsync(capture(capturingSlot), any())
         } just Runs
 
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         wrapper.consumePurchase(token) { _, _ -> }
 
         assertThat(capturingSlot.isCaptured).isTrue()
@@ -596,7 +596,7 @@ class BillingWrapperTest {
             }, {
                 fail("shouldn't be an error")
             })
-        wrapper.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        wrapper.onBillingSetupFinished(billingClientOKResult)
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isZero()
     }
@@ -636,7 +636,7 @@ class BillingWrapperTest {
             })
 
         wrapper.purchasesUpdatedListener = null
-        wrapper.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        wrapper.onBillingSetupFinished(billingClientOKResult)
     }
 
     @Test
@@ -694,7 +694,7 @@ class BillingWrapperTest {
 
     @Test
     fun `on successfully connected billing client, listener is called`() {
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         assertThat(onConnectedCalled).isTrue()
     }
 
@@ -847,7 +847,7 @@ class BillingWrapperTest {
 
         val skuDetails = stubSkuDetails(productId = "product_a")
 
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
@@ -886,7 +886,7 @@ class BillingWrapperTest {
     fun `Acknowledge works`() {
         val token = "token"
 
-        billingClientStateListener!!.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         wrapper.acknowledge(token) { _, _ -> }
 
         assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue()
@@ -1730,7 +1730,7 @@ class BillingWrapperTest {
         assertThat(secondRetryMillisecondsSlot.captured).isGreaterThan(firstRetryMillisecondsSlot.captured)
 
         // ensure milliseconds backoff gets reset to default after successful connection
-        wrapper.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        wrapper.onBillingSetupFinished(billingClientOKResult)
         val afterSuccessfulConnectionRetryMillisecondsSlot = slot<Long>()
         every {
             handler.postDelayed(any(), capture(afterSuccessfulConnectionRetryMillisecondsSlot))
