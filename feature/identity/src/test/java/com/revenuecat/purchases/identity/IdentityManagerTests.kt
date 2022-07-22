@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import io.mockk.CapturingSlot
 import io.mockk.Runs
@@ -29,6 +30,7 @@ class IdentityManagerTests {
     private lateinit var cachedAppUserIDSlot: CapturingSlot<String>
     private lateinit var mockDeviceCache: DeviceCache
     private lateinit var mockSubscriberAttributesCache: SubscriberAttributesCache
+    private lateinit var mockSubscriberAttributesManager: SubscriberAttributesManager
     private lateinit var mockBackend: Backend
     private lateinit var identityManager: IdentityManager
     private val stubAnonymousID = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
@@ -47,11 +49,13 @@ class IdentityManagerTests {
                 cleanUpSubscriberAttributeCache(capture(cachedAppUserIDSlot))
             } just Runs
         }
+        mockSubscriberAttributesManager = mockk()
 
         mockBackend = mockk()
         identityManager = IdentityManager(
             mockDeviceCache,
             mockSubscriberAttributesCache,
+            mockSubscriberAttributesManager,
             mockBackend
         )
     }
@@ -94,6 +98,18 @@ class IdentityManagerTests {
     }
 
     @Test
+    fun `login synchronizes subscriber attributes`() {
+        mockCachedAnonymousUser()
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers("test", any())
+        } just Runs
+        identityManager.logIn("test", { _, _ -> }, { })
+        verify(exactly = 1) {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers("test", any())
+        }
+    }
+
+    @Test
     fun `login fails with error if the appUserID is empty`() {
         every {
             mockBackend.logIn(stubAnonymousID, "", any(), captureLambda())
@@ -125,8 +141,9 @@ class IdentityManagerTests {
 
     @Test
     fun `login passes backend errors`() {
+        val newAppUserID = "new"
         every {
-            mockBackend.logIn(stubAnonymousID, "new", any(), captureLambda())
+            mockBackend.logIn(stubAnonymousID, newAppUserID, any(), captureLambda())
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(
                     PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
@@ -134,7 +151,8 @@ class IdentityManagerTests {
         }
         var receivedError: PurchasesError? = null
         mockCachedAnonymousUser()
-        identityManager.logIn("new", { _, _ -> }, { error -> receivedError = error })
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+        identityManager.logIn(newAppUserID, { _, _ -> }, { error -> receivedError = error })
         assertThat(receivedError).isNotNull
         assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidCredentialsError)
     }
@@ -143,8 +161,9 @@ class IdentityManagerTests {
     fun `login passes received created and customerInfo from backend`() {
         val randomCreated: Boolean = Random.nextBoolean()
         val mockCustomerInfo: CustomerInfo = mockk()
+        val newAppUserID = "new"
         every {
-            mockBackend.logIn(stubAnonymousID, "new", captureLambda(), any())
+            mockBackend.logIn(stubAnonymousID, newAppUserID, captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(
                     mockCustomerInfo, randomCreated
@@ -155,8 +174,9 @@ class IdentityManagerTests {
         var receivedCustomerInfo: CustomerInfo? = null
         var receivedCreated: Boolean? = null
         mockCachedAnonymousUser()
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
 
-        identityManager.logIn("new", { customerInfo, created ->
+        identityManager.logIn(newAppUserID, { customerInfo, created ->
             receivedCustomerInfo = customerInfo
             receivedCreated = created
         }, { error -> receivedError = error })
@@ -173,16 +193,18 @@ class IdentityManagerTests {
         val mockCustomerInfo: CustomerInfo = mockk()
         mockCachedAnonymousUser()
         val oldAppUserID = stubAnonymousID
+        val newAppUserID = "new"
         every {
-            mockBackend.logIn(oldAppUserID, "new", captureLambda(), any())
+            mockBackend.logIn(oldAppUserID, newAppUserID, captureLambda(), any())
         } answers {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(
                     mockCustomerInfo, randomCreated
             )
         }
         every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
 
-        identityManager.logIn("new", { _, _ -> }, { _ -> })
+        identityManager.logIn(newAppUserID, { _, _ -> }, { _ -> })
 
         verify(exactly = 1) { mockDeviceCache.clearCachesForAppUserID(oldAppUserID) }
         verify(exactly = 1) {
@@ -205,6 +227,7 @@ class IdentityManagerTests {
             )
         }
         every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
 
         identityManager.logIn(newAppUserID, { _, _ -> }, { _ -> })
 
@@ -213,10 +236,25 @@ class IdentityManagerTests {
     }
 
     @Test
+    fun `logout synchronizes subscriber attributes`() {
+        val identifiedUserID = "Waldo"
+        mockIdentifiedUser(identifiedUserID)
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(identifiedUserID, any())
+        } just Runs
+        identityManager.logOut { }
+        verify(exactly = 1) {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(identifiedUserID, any())
+        }
+    }
+
+    @Test
     fun `logOut returns an error if the current user is anonymous`() {
         mockCachedAnonymousUser()
+        mockSubscriberAttributesManagerSynchronize("")
 
-        val error = identityManager.logOut()
+        var error: PurchasesError? = null
+        identityManager.logOut { error = it }
 
         assertThat(error).isNotNull
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.LogOutWithAnonymousUserError)
@@ -227,8 +265,10 @@ class IdentityManagerTests {
         val identifiedUserID = "Waldo"
         every { mockDeviceCache.cleanupOldAttributionData() } just Runs
         mockIdentifiedUser(identifiedUserID)
+        mockSubscriberAttributesManagerSynchronize(identifiedUserID)
 
-        val error = identityManager.logOut()
+        var error: PurchasesError? = null
+        identityManager.logOut { error = it }
 
         assertThat(error).isNull()
         verify(exactly = 1) { mockDeviceCache.clearCachesForAppUserID(identifiedUserID) }
@@ -243,9 +283,11 @@ class IdentityManagerTests {
     fun `logOut creates random ID and caches it`() {
         val identifiedUserID = "Waldo"
         mockIdentifiedUser(identifiedUserID)
+        mockSubscriberAttributesManagerSynchronize(identifiedUserID)
         every { mockDeviceCache.cleanupOldAttributionData() } just Runs
 
-        val error = identityManager.logOut()
+        var error: PurchasesError? = null
+        identityManager.logOut { error = it }
 
         assertThat(error).isNull()
         assertCorrectlyIdentifiedWithAnonymous()
@@ -366,5 +408,15 @@ class IdentityManagerTests {
     private fun mockCleanCaches() {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
+    }
+
+    private fun mockSubscriberAttributesManagerSynchronize(
+        appUserId: String
+    ) {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
     }
 }

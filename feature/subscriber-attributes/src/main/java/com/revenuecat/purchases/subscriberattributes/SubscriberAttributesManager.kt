@@ -49,14 +49,21 @@ class SubscriberAttributesManager(
     }
 
     fun synchronizeSubscriberAttributesForAllUsers(
-        currentAppUserID: AppUserID
+        currentAppUserID: AppUserID,
+        completion: (() -> Unit)? = null
     ) {
         val unsyncedStoredAttributesForAllUsers =
             deviceCache.getUnsyncedSubscriberAttributes()
         if (unsyncedStoredAttributesForAllUsers.isEmpty()) {
             log(LogIntent.DEBUG, AttributionStrings.NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE)
+            if (completion != null) {
+                completion()
+            }
             return
         }
+
+        val unsyncedStoredAttributesCount = unsyncedStoredAttributesForAllUsers.size
+        var currentSyncedAttributeCount = 0
 
         unsyncedStoredAttributesForAllUsers.forEach { (syncingAppUserID, unsyncedAttributesForUser) ->
             backend.postSubscriberAttributes(
@@ -68,12 +75,20 @@ class SubscriberAttributesManager(
                     if (currentAppUserID != syncingAppUserID) {
                         deviceCache.clearSubscriberAttributesIfSyncedForSubscriber(syncingAppUserID)
                     }
+                    currentSyncedAttributeCount++
+                    if (completion != null && currentSyncedAttributeCount == unsyncedStoredAttributesCount) {
+                        completion()
+                    }
                 },
                 { error, didBackendGetAttributes, attributeErrors ->
                     if (didBackendGetAttributes) {
                         markAsSynced(syncingAppUserID, unsyncedAttributesForUser, attributeErrors)
                     }
                     log(LogIntent.RC_ERROR, AttributionStrings.ATTRIBUTES_SYNC_ERROR.format(syncingAppUserID, error))
+                    currentSyncedAttributeCount++
+                    if (completion != null && currentSyncedAttributeCount == unsyncedStoredAttributesCount) {
+                        completion()
+                    }
                 }
             )
         }
