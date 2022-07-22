@@ -40,7 +40,7 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentLinkedQueue
-import com.revenuecat.purchases.ProductType as RevenueCatProductType
+import com.revenuecat.purchases.RCProductType as RevenueCatProductType
 
 private const val TERM_SKU_JSON_KEY = "termSku"
 

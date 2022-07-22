@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
-import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.RCProductType
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -19,9 +19,9 @@ data class StoreProduct(
     val sku: String,
 
     /**
-     * Type of product. One of [ProductType].
+     * Type of product. One of [RCProductType].
      */
-    val type: ProductType,
+    val type: RCProductType,
 
     /**
      * Formatted price of the item, including its currency sign. For example $3.00.
@@ -146,7 +146,7 @@ data class StoreProduct(
 
 private data class ComparableData(
     val sku: String,
-    val type: ProductType,
+    val type: RCProductType,
     val price: String,
     val priceAmountMicros: Long,
     val priceCurrencyCode: String,

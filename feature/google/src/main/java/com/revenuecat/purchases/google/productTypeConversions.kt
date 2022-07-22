@@ -1,20 +1,20 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.BillingClient
-import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.RCProductType
 
-fun String?.toProductType(): ProductType {
+fun String?.toProductType(): RCProductType {
     return when (this) {
-        BillingClient.SkuType.INAPP -> ProductType.INAPP
-        BillingClient.SkuType.SUBS -> ProductType.SUBS
-        else -> ProductType.UNKNOWN
+        BillingClient.ProductType.INAPP -> RCProductType.INAPP
+        BillingClient.ProductType.SUBS -> RCProductType.SUBS
+        else -> RCProductType.UNKNOWN
     }
 }
 
-fun ProductType.toSKUType(): String? {
+fun RCProductType.toGoogleProductType(): String? {
     return when (this) {
-        ProductType.INAPP -> BillingClient.SkuType.INAPP
-        ProductType.SUBS -> BillingClient.SkuType.SUBS
+        RCProductType.INAPP -> BillingClient.ProductType.INAPP
+        RCProductType.SUBS -> BillingClient.ProductType.SUBS
         else -> null
     }
 }

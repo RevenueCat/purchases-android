@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.java;
 
-import com.revenuecat.purchases.ProductType;
+import com.revenuecat.purchases.RCProductType;
 import com.revenuecat.purchases.models.PurchaseState;
 import com.revenuecat.purchases.models.PurchaseType;
 import com.revenuecat.purchases.models.StoreTransaction;
@@ -14,7 +14,7 @@ final class PaymentTransactionAPI {
     static void check(final StoreTransaction transaction) {
         final String orderId = transaction.getOrderId();
         final List<String> skus = transaction.getSkus();
-        final ProductType type = transaction.getType();
+        final RCProductType type = transaction.getType();
         final long purchaseTime = transaction.getPurchaseTime();
         final String purchaseToken = transaction.getPurchaseToken();
         final PurchaseState purchaseState = transaction.getPurchaseState();

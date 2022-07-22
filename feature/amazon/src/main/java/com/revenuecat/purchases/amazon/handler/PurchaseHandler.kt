@@ -9,7 +9,7 @@ import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
 import com.amazon.device.iap.model.UserData
-import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.RCProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
@@ -28,7 +28,7 @@ class PurchaseHandler(
     private val applicationContext: Context
 ) : PurchaseResponseListener {
 
-    private val productTypes = mutableMapOf<String, ProductType>()
+    private val productTypes = mutableMapOf<String, RCProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
     private val purchaseCallbacks =
         mutableMapOf<RequestId, Pair<(Receipt, UserData) -> Unit, (PurchasesError) -> Unit>>()

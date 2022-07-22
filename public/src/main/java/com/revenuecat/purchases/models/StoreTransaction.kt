@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
-import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.RCProductType
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -28,7 +28,7 @@ data class StoreTransaction(
     /**
      * Type of the product associated with the purchase.
      */
-    val type: ProductType,
+    val type: RCProductType,
 
     /**
      * Time the product was purchased, in milliseconds since the epoch.

@@ -1,5 +1,5 @@
 package com.revenuecat.purchases
 
-enum class ProductType {
+enum class RCProductType {
     SUBS, INAPP, UNKNOWN;
 }

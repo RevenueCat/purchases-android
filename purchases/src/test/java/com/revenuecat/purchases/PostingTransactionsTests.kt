@@ -285,7 +285,7 @@ class PostingTransactionsTests {
         postReceiptSuccess = PostReceiptCompletionContainer()
         val productIds = listOf("uno", "dos")
         val purchase =
-            stubGooglePurchase(productIds = productIds).toStoreTransaction(ProductType.SUBS, null)
+            stubGooglePurchase(productIds = productIds).toStoreTransaction(RCProductType.SUBS, null)
         val mockStoreProduct = mockk<StoreProduct>().also {
             every { it.sku } returns "uno"
             every { it.priceAmountMicros } returns 2000000
@@ -326,7 +326,7 @@ class PostingTransactionsTests {
         postReceiptSuccess = PostReceiptCompletionContainer()
         val productIds = listOf("uno", "dos")
         val purchase =
-            stubGooglePurchase(productIds = productIds).toStoreTransaction(ProductType.SUBS, null)
+            stubGooglePurchase(productIds = productIds).toStoreTransaction(RCProductType.SUBS, null)
         val mockStoreProduct = mockk<StoreProduct>().also {
             every { it.sku } returns "uno"
             every { it.priceAmountMicros } returns 2000000

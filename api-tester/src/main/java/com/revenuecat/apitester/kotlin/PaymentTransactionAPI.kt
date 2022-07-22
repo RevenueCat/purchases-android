@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.kotlin
 
-import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.RCProductType
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
@@ -12,7 +12,7 @@ private class PaymentTransactionAPI {
         with(transaction) {
             val orderId: String? = orderId
             val skus: List<String> = skus
-            val type: ProductType = type
+            val type: RCProductType = type
             val purchaseTime: Long = purchaseTime
             val purchaseToken: String = purchaseToken
             val purchaseState: PurchaseState = purchaseState

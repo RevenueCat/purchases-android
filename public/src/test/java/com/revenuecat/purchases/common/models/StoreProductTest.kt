@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.common.models
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.RCProductType
 import com.revenuecat.purchases.models.StoreProduct
 import org.assertj.core.api.Assertions
 import org.json.JSONObject
@@ -15,7 +15,7 @@ class StoreProductTest {
     fun `Two StoreProducts with the same properties are equal`() {
         val storeProduct1 = StoreProduct(
             sku = "sku",
-            type = ProductType.INAPP,
+            type = RCProductType.INAPP,
             price = "$2",
             priceAmountMicros = 2 * 1_000_000,
             priceCurrencyCode = "USD",
@@ -34,7 +34,7 @@ class StoreProductTest {
         )
         val storeProduct2 = StoreProduct(
             sku = "sku",
-            type = ProductType.INAPP,
+            type = RCProductType.INAPP,
             price = "$2",
             priceAmountMicros = 2 * 1_000_000,
             priceCurrencyCode = "USD",
@@ -58,7 +58,7 @@ class StoreProductTest {
     fun `Two StoreProducts with the same properties have the same hashcode`() {
         val storeProduct1 = StoreProduct(
             sku = "sku",
-            type = ProductType.INAPP,
+            type = RCProductType.INAPP,
             price = "$2",
             priceAmountMicros = 2 * 1_000_000,
             priceCurrencyCode = "USD",
@@ -77,7 +77,7 @@ class StoreProductTest {
         )
         val storeProduct2 = StoreProduct(
             sku = "sku",
-            type = ProductType.INAPP,
+            type = RCProductType.INAPP,
             price = "$2",
             priceAmountMicros = 2 * 1_000_000,
             priceCurrencyCode = "USD",

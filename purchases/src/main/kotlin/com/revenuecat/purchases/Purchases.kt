@@ -359,7 +359,7 @@ class Purchases internal constructor(
         skus: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getSkus(skus.toSet(), ProductType.SUBS, callback)
+        getSkus(skus.toSet(), RCProductType.SUBS, callback)
     }
 
     /**
@@ -371,7 +371,7 @@ class Purchases internal constructor(
         skus: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getSkus(skus.toSet(), ProductType.INAPP, callback)
+        getSkus(skus.toSet(), RCProductType.INAPP, callback)
     }
 
     /**
@@ -1090,7 +1090,7 @@ class Purchases internal constructor(
 
     private fun getSkus(
         skus: Set<String>,
-        productType: ProductType,
+        productType: RCProductType,
         callback: GetStoreProductsCallback
     ) {
         billing.querySkuDetailsAsync(
@@ -1224,7 +1224,7 @@ class Purchases internal constructor(
         onError: (PurchasesError) -> Unit
     ) {
         billing.querySkuDetailsAsync(
-            ProductType.SUBS,
+            RCProductType.SUBS,
             skus,
             { subscriptionsSKUDetails ->
                 val detailsByID = HashMap<String, StoreProduct>()
@@ -1236,7 +1236,7 @@ class Purchases internal constructor(
 
                 if (inAPPSkus.isNotEmpty()) {
                     billing.querySkuDetailsAsync(
-                        ProductType.INAPP,
+                        RCProductType.INAPP,
                         inAPPSkus,
                         { skuDetails ->
                             detailsByID.putAll(skuDetails.map { it.sku to it })

@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.kotlin
 
-import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.RCProductType
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
@@ -9,7 +9,7 @@ private class StoreProductAPI {
     fun check(product: StoreProduct) {
         with(product) {
             val sku: String = sku
-            val type: ProductType = type
+            val type: RCProductType = type
             val price: String = price
             val priceAmountMicros: Long = priceAmountMicros
             val priceCurrencyCode: String = priceCurrencyCode
@@ -28,11 +28,11 @@ private class StoreProductAPI {
         }
     }
 
-    fun check(type: ProductType) {
+    fun check(type: RCProductType) {
         when (type) {
-            ProductType.SUBS,
-            ProductType.INAPP,
-            ProductType.UNKNOWN
+            RCProductType.SUBS,
+            RCProductType.INAPP,
+            RCProductType.UNKNOWN
             -> {}
         }.exhaustive
     }

@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.java;
 
-import com.revenuecat.purchases.ProductType;
+import com.revenuecat.purchases.RCProductType;
 import com.revenuecat.purchases.models.StoreProduct;
 
 import org.json.JSONObject;
@@ -9,7 +9,7 @@ import org.json.JSONObject;
 final class StoreProductAPI {
     static void check(final StoreProduct product) {
         final String sku = product.getSku();
-        final ProductType type = product.getType();
+        final RCProductType type = product.getType();
         final String price = product.getPrice();
         final long priceAmountMicros = product.getPriceAmountMicros();
         final String priceCurrencyCode = product.getPriceCurrencyCode();
@@ -27,7 +27,7 @@ final class StoreProductAPI {
         final JSONObject originalJson = product.getOriginalJson();
     }
 
-    static void check(final ProductType type) {
+    static void check(final RCProductType type) {
         switch (type) {
             case SUBS:
             case INAPP:
