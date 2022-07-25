@@ -442,15 +442,7 @@ class BillingWrapperTest {
             mockPurchasesListener.onPurchasesUpdated(capture(slot))
         } just Runs
 
-        val queryPurchasesListenerSlot = slot<PurchasesResponseListener>()
-        every {
-            mockClient.queryPurchasesAsync(
-                BillingClient.SkuType.SUBS,
-                capture(queryPurchasesListenerSlot)
-            )
-        } answers {
-            queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(billingClientOKResult, purchases)
-        }
+        mockQueryPurchasesAsyncResult(BillingClient.SkuType.SUBS, BillingClient.BillingResponseCode.OK, purchases)
 
         purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
 
@@ -700,16 +692,7 @@ class BillingWrapperTest {
 
     @Test
     fun `when querying anything and billing client returns an empty list, returns an empty list`() {
-        val queryPurchasesListenerSlot = slot<PurchasesResponseListener>()
-        every {
-            mockClient.queryPurchasesAsync(
-                any(),
-                capture(queryPurchasesListenerSlot)
-            )
-        } answers {
-            queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(billingClientOKResult, listOf())
-        }
-
+        mockQueryPurchasesAsyncResult(null, BillingClient.BillingResponseCode.OK, listOf())
 
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
@@ -739,25 +722,15 @@ class BillingWrapperTest {
             productIds = listOf(sku)
         )
 
-        val queryInAppsPurchaseListenerSlot = slot<PurchasesResponseListener>()
-        every {
-            mockClient.queryPurchasesAsync(
-                BillingClient.SkuType.INAPP,
-                capture(queryInAppsPurchaseListenerSlot)
-            )
-        } answers {
-            queryInAppsPurchaseListenerSlot.captured.onQueryPurchasesResponse(billingClientOKResult, listOf(purchase))
-        }
-
-        val querySubPurchasesListenerSlot = slot<PurchasesResponseListener>()
-        every {
-            mockClient.queryPurchasesAsync(
-                BillingClient.SkuType.SUBS,
-                capture(querySubPurchasesListenerSlot)
-            )
-        } answers {
-            querySubPurchasesListenerSlot.captured.onQueryPurchasesResponse(billingClientOKResult, listOf())
-        }
+        mockQueryPurchasesAsyncResult(
+            BillingClient.SkuType.INAPP,
+            BillingClient.BillingResponseCode.OK,
+            listOf(purchase)
+        )
+        mockQueryPurchasesAsyncResult(BillingClient.SkuType.SUBS,
+            BillingClient.BillingResponseCode.OK,
+            listOf()
+        )
 
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
@@ -795,27 +768,8 @@ class BillingWrapperTest {
             productIds = listOf(sku)
         )
 
-        val querySubPurchasesListenerSlot = slot<PurchasesResponseListener>()
-        every {
-            mockClient.queryPurchasesAsync(
-                BillingClient.SkuType.SUBS,
-                capture(querySubPurchasesListenerSlot)
-            )
-        } answers {
-            querySubPurchasesListenerSlot.captured.onQueryPurchasesResponse(
-                BillingResult.newBuilder().setResponseCode(resultCode).build(), listOf(purchase))
-        }
-
-        val queryInAppPurchasesListenerSlot = slot<PurchasesResponseListener>()
-        every {
-            mockClient.queryPurchasesAsync(
-                BillingClient.SkuType.INAPP,
-                capture(queryInAppPurchasesListenerSlot)
-            )
-        } answers {
-            queryInAppPurchasesListenerSlot.captured.onQueryPurchasesResponse(
-                BillingResult.newBuilder().setResponseCode(resultCode).build(), emptyList())
-        }
+        mockQueryPurchasesAsyncResult(BillingClient.SkuType.SUBS, resultCode, listOf(purchase))
+        mockQueryPurchasesAsyncResult(BillingClient.SkuType.INAPP, resultCode, emptyList())
 
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
@@ -1891,6 +1845,25 @@ class BillingWrapperTest {
         )
 
         assertThat(receivedProductID).isEqualTo(expectedProductID)
+    }
+
+    private fun mockQueryPurchasesAsyncResult(
+        @BillingClient.SkuType skuType: String?,
+        @BillingClient.BillingResponseCode resultCode: Int,
+        purchases: List<Purchase>
+    ) {
+        val queryPurchasesListenerSlot = slot<PurchasesResponseListener>()
+        every {
+            mockClient.queryPurchasesAsync(
+                skuType ?: any(),
+                capture(queryPurchasesListenerSlot)
+            )
+        } answers {
+            queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                BillingResult.newBuilder().setResponseCode(resultCode).build(),
+                purchases
+            )
+        }
     }
 
     private fun mockNullSkuDetailsResponse() {

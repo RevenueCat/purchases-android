@@ -638,18 +638,18 @@ class BillingWrapper(
                 .format(purchase.toHumanReadableDescription())
         )
 
-        val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
-        productTypes[purchase.firstSku]?.let { productType ->
-            mapPurchaseListener(
-                purchase.toStoreTransaction(
-                    productType,
-                    presentedOffering
-                )
-            )
-            return
-        }
-
         synchronized(this@BillingWrapper) {
+            val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
+            productTypes[purchase.firstSku]?.let { productType ->
+                mapPurchaseListener(
+                    purchase.toStoreTransaction(
+                        productType,
+                        presentedOffering
+                    )
+                )
+                return
+            }
+
             getPurchaseType(purchase.purchaseToken) { type ->
                 mapPurchaseListener(
                     purchase.toStoreTransaction(
