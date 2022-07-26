@@ -9,6 +9,8 @@ import android.app.Activity
 import android.content.Context
 import android.os.Handler
 import androidx.annotation.UiThread
+import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.PRIVATE
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.SkuType
@@ -464,6 +466,7 @@ class BillingWrapper(
         }
     }
 
+    @VisibleForTesting(otherwise = PRIVATE)
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
         billingClient?.let { client ->
             client.queryPurchasesAsync(SkuType.SUBS) { querySubsResult, subsPurchasesList ->
