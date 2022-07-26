@@ -9,6 +9,8 @@ import android.app.Activity
 import android.content.Context
 import android.os.Handler
 import androidx.annotation.UiThread
+import androidx.annotation.VisibleForTesting
+import androidx.annotation.VisibleForTesting.PRIVATE
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
@@ -406,9 +408,12 @@ class BillingWrapper(
                     onError(purchasesError)
                     return@queryPurchasesAsync
                 } else {
-                    val mapOfActiveSubscriptions = activeSubsPurchases.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.SUBS)
+                    val mapOfActiveSubscriptions =
+                        activeSubsPurchases.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.SUBS)
 
-                    this.queryPurchasesAsync(BillingClient.ProductType.INAPP) { unconsumedInAppsResult, unconsumedInAppsPurchases ->
+                    this.queryPurchasesAsync(BillingClient.ProductType.INAPP) {
+                            unconsumedInAppsResult, unconsumedInAppsPurchases ->
+
                         if (!unconsumedInAppsResult.isSuccessful()) {
                             val purchasesError = unconsumedInAppsResult.responseCode.billingResponseToPurchasesError(
                                 RestoreStrings.QUERYING_INAPP_ERROR.format(
@@ -472,6 +477,7 @@ class BillingWrapper(
         }
     }
 
+    @VisibleForTesting(otherwise = PRIVATE)
     internal fun getPurchaseType(purchaseToken: String, listener: (RCProductType) -> Unit) {
         billingClient?.let { client ->
             client.queryPurchasesAsync(BillingClient.ProductType.SUBS) { querySubsResult, subsPurchasesList ->
@@ -480,7 +486,8 @@ class BillingWrapper(
                 if (subsResponseOK && subFound) {
                     listener(RCProductType.SUBS)
                 } else {
-                    client.queryPurchasesAsync(BillingClient.ProductType.INAPP) { queryInAppsResult, inAppPurchasesList ->
+                    client.queryPurchasesAsync(BillingClient.ProductType.INAPP) {
+                            queryInAppsResult, inAppPurchasesList ->
                         val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
                         val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
                         if (inAppsResponseIsOK && inAppFound) {
@@ -646,18 +653,18 @@ class BillingWrapper(
                 .format(purchase.toHumanReadableDescription())
         )
 
-        val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
-        productTypes[purchase.firstSku]?.let { productType ->
-            mapPurchaseListener(
-                purchase.toStoreTransaction(
-                    productType,
-                    presentedOffering
-                )
-            )
-            return
-        }
-
         synchronized(this@BillingWrapper) {
+            val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
+            productTypes[purchase.firstSku]?.let { productType ->
+                mapPurchaseListener(
+                    purchase.toStoreTransaction(
+                        productType,
+                        presentedOffering
+                    )
+                )
+                return
+            }
+
             getPurchaseType(purchase.purchaseToken) { type ->
                 mapPurchaseListener(
                     purchase.toStoreTransaction(
@@ -671,10 +678,10 @@ class BillingWrapper(
 
     private fun BillingClient.queryProductDetailsAsyncEnsuringOneResponse(
         params: QueryProductDetailsParams,
-        listener: ProductDetailsResponseListener
-    ) {
+        listener: ProductDetailsResponseListener)
+    {
         var hasResponded = false
-        queryProductDetailsAsync(params) { billingResult, skuDetailsList ->
+        queryProductDetailsAsync(params) { billingResult, productDetailsList ->
             synchronized(this@BillingWrapper) {
                 if (hasResponded) {
                     log(
@@ -685,7 +692,7 @@ class BillingWrapper(
                 }
                 hasResponded = true
             }
-            listener.onProductDetailsResponse(billingResult, skuDetailsList)
+            listener.onProductDetailsResponse(billingResult, productDetailsList)
         }
     }
 
