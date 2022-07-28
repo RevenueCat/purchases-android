@@ -42,7 +42,9 @@ platform :android do
       changelog_path: changelog_path,
       files_to_update: files_with_version_number,
       repo_name: repo_name,
-      branch: options[:branch] || 'main'
+      github_rate_limit: options[:github_rate_limit],
+      branch: options[:branch],
+      editor: options[:editor]
     )
   end
 
