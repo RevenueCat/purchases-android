@@ -31,22 +31,6 @@ Runs all the tests
 
 Replaces version numbers, updates changelog and creates PR
 
-### android bump_and_update_changelog
-
-```sh
-[bundle exec] fastlane android bump_and_update_changelog
-```
-
-Increment build number and update changelog
-
-### android replace_version
-
-```sh
-[bundle exec] fastlane android replace_version
-```
-
-
-
 ### android tag_release_with_latest_if_needed
 
 ```sh
@@ -61,7 +45,7 @@ Tag release version with latest if necessary
 [bundle exec] fastlane android github_release
 ```
 
-Make github release
+Creates github release and updates the latest tag
 
 ### android deploy
 
@@ -85,7 +69,7 @@ Upload a snapshot release
 [bundle exec] fastlane android prepare_next_version
 ```
 
-Prepare next version
+Creates PR changing version to next minor adding a -SNAPSHOT suffix
 
 ### android build_magic_weather
 
