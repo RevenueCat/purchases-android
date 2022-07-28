@@ -41,7 +41,8 @@ platform :android do
       changelog_latest_path: changelog_latest_path,
       changelog_path: changelog_path,
       files_to_update: files_with_version_number,
-      repo_name: repo_name
+      repo_name: repo_name,
+      branch: options[:branch] || 'main'
     )
   end
 
@@ -82,8 +83,7 @@ platform :android do
       version: options[:version],
       repo_name: repo_name,
       github_api_token: ENV["GITHUB_TOKEN"],
-      changelog_latest_path: changelog_latest_path,
-      upload_assets: []
+      changelog_latest_path: changelog_latest_path
     )
     tag_release_with_latest_if_needed(release_version: release_version)
   end
@@ -144,8 +144,7 @@ platform :android do
       repo_name: repo_name,
       github_pr_token: ENV["GITHUB_PULL_REQUEST_API_TOKEN"],
       files_to_update: files_with_version_number,
-      files_to_update_without_prerelease_modifiers: [],
-      branch: 'main'
+      branch: options[:branch] || 'main'
     )
   end
 
