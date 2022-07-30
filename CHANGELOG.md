@@ -1,3 +1,6 @@
+## 5.5.0
+* Prepare next version: 5.5.0-SNAPSHOT (#574) via RevenueCat Releases (@revenuecat-ops)
+
 ## 5.4.0
 
 * Upgrade compile sdk and target sdk versions and Android Gradle Plugin, Kotlin and a few other versions

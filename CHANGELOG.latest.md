@@ -1,2 +1,1 @@
-* Upgrade compile sdk and target sdk versions and Android Gradle Plugin, Kotlin and a few other versions
-  * https://github.com/RevenueCat/purchases-android/pull/474
+* Prepare next version: 5.5.0-SNAPSHOT (#574) via RevenueCat Releases (@revenuecat-ops)
