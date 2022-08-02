@@ -102,7 +102,7 @@ class Purchases internal constructor(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
-    private val mainHandler: Handler = Handler(Looper.getMainLooper())
+    private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
 
     /** @suppress */
@@ -1256,7 +1256,8 @@ class Purchases internal constructor(
 
     private fun dispatch(action: () -> Unit) {
         if (Thread.currentThread() != Looper.getMainLooper().thread) {
-            mainHandler.post(action)
+            val handler = mainHandler ?: Handler(Looper.getMainLooper())
+            handler.post(action)
         } else {
             action()
         }
