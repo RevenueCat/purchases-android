@@ -102,6 +102,7 @@ class Purchases internal constructor(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
+    // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
 
