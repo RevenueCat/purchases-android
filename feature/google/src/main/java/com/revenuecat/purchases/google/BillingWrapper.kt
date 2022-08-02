@@ -17,6 +17,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
@@ -24,6 +25,7 @@ import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchaseHistoryParams
+import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.RCProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -139,7 +141,7 @@ class BillingWrapper(
     }
 
     override fun querySkuDetailsAsync(
-        productType: com.revenuecat.purchases.RCProductType,
+        productType: RCProductType,
         skus: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
@@ -158,8 +160,10 @@ class BillingWrapper(
                 val productList = mutableListOf<QueryProductDetailsParams.Product>()
                 skus.forEach {
                     productType.toGoogleProductType()?.let { type ->
-                        productList.add(QueryProductDetailsParams.Product.newBuilder().setProductId(it)
-                            .setProductType(type).build())
+                        productList.add(
+                            QueryProductDetailsParams.Product.newBuilder().setProductId(it)
+                                .setProductType(type).build()
+                        )
                     }
                 }
 
@@ -399,8 +403,9 @@ class BillingWrapper(
     ) {
         withConnectedClient {
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
-
-            this.queryPurchasesAsync(BillingClient.ProductType.SUBS) { activeSubsResult, activeSubsPurchases ->
+            val querySubsPurchasesParams =
+                QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
+            this.queryPurchasesAsync(querySubsPurchasesParams) { activeSubsResult, activeSubsPurchases ->
                 if (!activeSubsResult.isSuccessful()) {
                     val purchasesError = activeSubsResult.responseCode.billingResponseToPurchasesError(
                         RestoreStrings.QUERYING_SUBS_ERROR.format(activeSubsResult.toHumanReadableDescription())
@@ -411,8 +416,9 @@ class BillingWrapper(
                     val mapOfActiveSubscriptions =
                         activeSubsPurchases.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.SUBS)
 
-                    this.queryPurchasesAsync(BillingClient.ProductType.INAPP) {
-                            unconsumedInAppsResult, unconsumedInAppsPurchases ->
+                    val queryInAppsPurchasesParams =
+                        QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
+                    this.queryPurchasesAsync(queryInAppsPurchasesParams) { unconsumedInAppsResult, unconsumedInAppsPurchases ->
 
                         if (!unconsumedInAppsResult.isSuccessful()) {
                             val purchasesError = unconsumedInAppsResult.responseCode.billingResponseToPurchasesError(
@@ -480,14 +486,17 @@ class BillingWrapper(
     @VisibleForTesting(otherwise = PRIVATE)
     internal fun getPurchaseType(purchaseToken: String, listener: (RCProductType) -> Unit) {
         billingClient?.let { client ->
-            client.queryPurchasesAsync(BillingClient.ProductType.SUBS) { querySubsResult, subsPurchasesList ->
+            val querySubsPurchasesParams =
+                QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
+            client.queryPurchasesAsync(querySubsPurchasesParams) { querySubsResult, subsPurchasesList ->
                 val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
                 val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
                 if (subsResponseOK && subFound) {
                     listener(RCProductType.SUBS)
                 } else {
-                    client.queryPurchasesAsync(BillingClient.ProductType.INAPP) {
-                            queryInAppsResult, inAppPurchasesList ->
+                    val queryInAppsPurchasesParams =
+                        QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
+                    client.queryPurchasesAsync(queryInAppsPurchasesParams) { queryInAppsResult, inAppPurchasesList ->
                         val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
                         val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
                         if (inAppsResponseIsOK && inAppFound) {
@@ -678,8 +687,8 @@ class BillingWrapper(
 
     private fun BillingClient.queryProductDetailsAsyncEnsuringOneResponse(
         params: QueryProductDetailsParams,
-        listener: ProductDetailsResponseListener)
-    {
+        listener: ProductDetailsResponseListener
+    ) {
         var hasResponded = false
         queryProductDetailsAsync(params) { billingResult, productDetailsList ->
             synchronized(this@BillingWrapper) {
