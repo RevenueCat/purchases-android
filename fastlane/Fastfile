@@ -14,6 +14,17 @@
 # update_fastlane
 
 gradle_file_path = "library.gradle"
+files_with_version_number = [
+  gradle_file_path,
+  './common/src/main/java/com/revenuecat/purchases/common/Config.kt',
+  './.circleci/config.yml',
+  './docs/index.html',
+  './gradle.properties',
+  './.version'
+]
+repo_name = 'purchases-android'
+changelog_latest_path = './CHANGELOG.latest.md'
+changelog_path = './CHANGELOG.md'
 
 default_platform(:android)
 
@@ -23,22 +34,18 @@ platform :android do
     gradle(task: "test")
   end
 
-  desc "Increment build number"
+  desc "Replaces version numbers, updates changelog and creates PR"
   lane :bump do |options|
-    new_version = options[:version]
-    fail ArgumentError, "missing version" unless new_version
-    previous_version = android_get_version_name(gradle_file: gradle_file_path)
-    android_set_version_name(version_name: new_version, gradle_file: gradle_file_path)
-    increment_version_in(previous_version, new_version, '../common/src/main/java/com/revenuecat/purchases/common/Config.kt')
-    increment_version_in(previous_version, new_version, '../.circleci/config.yml')
-    increment_version_in(previous_version, new_version, '../docs/index.html')
-    increment_version_in(previous_version, new_version, '../gradle.properties')
-  end
-
-  desc "Increment build number and update changelog"
-  lane :bump_and_update_changelog do |options|
-    bump(options)
-    attach_changelog_to_main(options)
+    bump_version_update_changelog_create_pr(
+      current_version: current_version_number,
+      changelog_latest_path: changelog_latest_path,
+      changelog_path: changelog_path,
+      files_to_update: files_with_version_number,
+      repo_name: repo_name,
+      github_rate_limit: options[:github_rate_limit],
+      branch: options[:branch],
+      editor: options[:editor]
+    )
   end
 
   desc "Tag release version with latest if necessary"
@@ -47,7 +54,7 @@ platform :android do
     puts "Release version is #{release_version}"
 
     sh("git", "checkout", "tags/latest")
-    latest_version = android_get_version_name(gradle_file: gradle_file_path)
+    latest_version = current_version_number
     puts "Latest version is #{latest_version}"
 
     # We assume there's already a tag for the version we are tagging as latest
@@ -72,36 +79,20 @@ platform :android do
     )
   end
 
-  desc "Make github release"
+  desc "Creates github release and updates the latest tag"
   lane :github_release do |options|
-    release_version = options[:version]
-    fail ArgumentError, "missing version" unless release_version
-
-    begin
-      changelog = File.read("../CHANGELOG.latest.md")
-    rescue
-      fail "please add a CHANGELOG.latest.md file before calling this lane"
-    end
-
-    is_prerelease = release_version.include?("-")
-
-    set_github_release(
-      repository_name: "revenuecat/purchases-android",
-      api_token: ENV["GITHUB_TOKEN"],
-      name: release_version,
-      tag_name: "#{release_version}",
-      description: changelog,
-      commitish: "main",
-      upload_assets: [],
-      is_prerelease: is_prerelease
+    create_github_release(
+      version: options[:version],
+      repo_name: repo_name,
+      github_api_token: ENV["GITHUB_TOKEN"],
+      changelog_latest_path: changelog_latest_path
     )
-
     tag_release_with_latest_if_needed(release_version: release_version)
   end
 
   desc "Upload and close a release"
   lane :deploy do |options|
-    version = android_get_version_name(gradle_file: gradle_file_path)
+    version = current_version_number
     gradleProperties = {
       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
       "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
@@ -144,35 +135,18 @@ platform :android do
 
   desc "Upload a snapshot release"
   lane :deploy_snapshot do |options|
-    version = android_get_version_name(gradle_file: gradle_file_path)
+    version = current_version_number
     deploy if is_snapshot_version?(version)
   end
 
-  desc "Prepare next version"
+  desc "Creates PR changing version to next minor adding a -SNAPSHOT suffix"
   lane :prepare_next_version do |options|
-    current_version_number = android_get_version_name(gradle_file: gradle_file_path)
-    major, minor, _ = current_version_number.split('.')
-    next_version = "#{major}.#{minor.to_i + 1}.0"
-    next_version_snapshot = "#{next_version}-SNAPSHOT"
-
-    branch_name = "bump/#{next_version_snapshot}"
-    sh("git", "checkout", "-b", branch_name)
-
-    bump(version: next_version_snapshot)
-
-    sh("git", "commit", "-am", "Preparing for next version")
-    push_to_git_remote(
-      remote: "origin",
-      local_branch: branch_name,
-      remote_branch: branch_name,
-    )
-
-    create_pull_request(
-      repo: "revenuecat/purchases-android",
-      title: "Prepare next version: #{next_version_snapshot}",
-      base: "main",
-      api_token: ENV["GITHUB_TOKEN"],
-      head: branch_name
+    create_next_snapshot_version(
+      current_version: current_version_number,
+      repo_name: repo_name,
+      github_pr_token: ENV["GITHUB_PULL_REQUEST_API_TOKEN"],
+      files_to_update: files_with_version_number,
+      branch: options[:branch] || 'main'
     )
   end
 
@@ -259,31 +233,10 @@ platform :android do
   end
 end
 
-def increment_version_in(previous_version, new_version, path)
-  sed_regex = 's/' + previous_version + '/' + new_version + '/g'
-  backup_extension = '.bck'
-  sh "sed -i'#{backup_extension}' #{sed_regex} #{path}"
-end
-
-def attach_changelog_to_main(options)
-  version_number = options[:version]
-  current_changelog = File.open("../CHANGELOG.latest.md", 'r')
-  master_changelog = File.open("../CHANGELOG.md", 'r')
-
-  current_changelog_data = current_changelog.read
-  master_changelog_data = master_changelog.read
-
-  current_changelog.close
-  master_changelog.close
-
-  File.open("../CHANGELOG.md", 'w') { |master_changelog_write_mode|
-    version_header = "## #{version_number}"
-    whole_file_data = "#{version_header}\n\n#{current_changelog_data}\n#{master_changelog_data}"
-    puts "going to save. Contents - #{whole_file_data}"
-    master_changelog_write_mode.write(whole_file_data)
-  }
-end
-
 def is_snapshot_version?(version_name)
   version_name.end_with?("-SNAPSHOT")
+end
+
+def current_version_number
+  File.read("../.version").strip
 end
