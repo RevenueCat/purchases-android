@@ -4,7 +4,7 @@ android {
 }
 
 ext {
-    amazonVersion = "3.0.2"
+    amazonVersion = "3.0.3"
     amazon2Version = "2.0.76"
     amazon2FileName = "in-app-purchasing-${amazon2Version}.jar"
 }
