@@ -81,8 +81,9 @@ platform :android do
 
   desc "Creates github release and updates the latest tag"
   lane :github_release do |options|
+    release_version = options[:version]
     create_github_release(
-      version: options[:version],
+      version: release_version,
       repo_name: repo_name,
       github_api_token: ENV["GITHUB_TOKEN"],
       changelog_latest_path: changelog_latest_path
