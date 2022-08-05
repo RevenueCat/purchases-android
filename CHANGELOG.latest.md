@@ -1,2 +1,5 @@
-* Upgrade compile sdk and target sdk versions and Android Gradle Plugin, Kotlin and a few other versions
-  * https://github.com/RevenueCat/purchases-android/pull/474
+* Update build.gradle (#579) via Joshua Liebowitz (@taquitos)
+* Support for fastlane-plugin-revenuecat_internal (#557) via Toni Rico (@tonidero)
+* Revert handler nullability change (#578) via Toni Rico (@tonidero)
+* Sync subscriber attributes before login and logout (#572) via Toni Rico (@tonidero)
+* Prepare next version: 5.5.0-SNAPSHOT (#574) via RevenueCat Releases (@revenuecat-ops)
