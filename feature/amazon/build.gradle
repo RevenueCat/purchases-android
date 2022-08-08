@@ -30,3 +30,7 @@ dependencies {
     testImplementation "io.mockk:mockk:$mockkVersion"
     testImplementation "org.assertj:assertj-core:$assertJVersion"
 }
+
+// Not running with this flag causes verification issues due to the way the Amazon jar is compiled
+// https://github.com/robolectric/robolectric-gradle-plugin/issues/144#issuecomment-265899560
+tasks.withType(Test) { jvmArgs += "-noverify" }
