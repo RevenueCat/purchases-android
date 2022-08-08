@@ -18,6 +18,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -101,6 +102,153 @@ class SubscriberAttributesManagerTests {
         verify(exactly = 0) {
             mockBackend.postSubscriberAttributes(any(), any(), any(), any())
         }
+    }
+
+    @Test
+    fun `calls completion if cache does not have unsynchronized attributes`() {
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes()
+        } returns emptyMap()
+
+        var completionCalled = false
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+            completionCalled = true
+        }
+
+        assertTrue(completionCalled)
+    }
+
+    @Test
+    fun `calls completion if cache has unsynchronized attributes for single user that succeed synchronizing`() {
+        val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
+        every {
+            mockDeviceCache.getAllStoredSubscriberAttributes(appUserID)
+        } returns mapOf(
+            "key" to subscriberAttribute
+        )
+
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes()
+        } returns mapOf(
+            appUserID to mapOf("key" to subscriberAttribute)
+        )
+
+        every {
+            mockDeviceCache.setAttributes(appUserID, any())
+        } just Runs
+
+        every {
+            mockBackend.postSubscriberAttributes(
+                any(),
+                appUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        var completionCalled = false
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+            completionCalled = true
+        }
+
+        assertTrue(completionCalled)
+    }
+
+    @Test
+    fun `calls completion if cache has unsynchronized attributes for single user that fail synchronizing`() {
+        val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes()
+        } returns mapOf(
+            appUserID to mapOf("key" to subscriberAttribute)
+        )
+
+        every {
+            mockBackend.postSubscriberAttributes(
+                any(),
+                appUserID,
+                any(),
+                captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.CustomerInfoError),
+                false,
+                emptyList()
+            )
+        }
+
+        var completionCalled = false
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+            completionCalled = true
+        }
+
+        assertTrue(completionCalled)
+    }
+
+    @Test
+    fun `calls completion if cache has unsynchronized attributes for multiple users some failing and some syncing`() {
+        val userId2 = "appUserId2"
+        val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
+        val subscriberAttribute2 = SubscriberAttribute("key2", "value2", isSynced = false)
+        val subscriberAttribute3 = SubscriberAttribute("key3", "value3", isSynced = false)
+        val subscriberAttribute4 = SubscriberAttribute("key4", "value4", isSynced = false)
+
+        every {
+            mockDeviceCache.getAllStoredSubscriberAttributes(userId2)
+        } returns mapOf(
+            "key3" to subscriberAttribute3,
+            "key4" to subscriberAttribute4
+        )
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes()
+        } returns mapOf(
+            appUserID to mapOf(
+                "key" to subscriberAttribute,
+                "key2" to subscriberAttribute2
+            ),
+            userId2 to mapOf(
+                "key3" to subscriberAttribute3,
+                "key4" to subscriberAttribute4
+            )
+        )
+        every {
+            mockDeviceCache.setAttributes(userId2, any())
+        } just Runs
+        every {
+            mockBackend.postSubscriberAttributes(
+                any(),
+                appUserID,
+                any(),
+                captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.CustomerInfoError), false, emptyList()
+            )
+        }
+        every {
+            mockBackend.postSubscriberAttributes(
+                any(),
+                userId2,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+        every {
+            mockDeviceCache.clearSubscriberAttributesIfSyncedForSubscriber(userId2)
+        } just Runs
+
+        var completionCalled = false
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+            completionCalled = true
+        }
+
+        assertTrue(completionCalled)
     }
 
     @Test

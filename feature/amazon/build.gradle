@@ -1,7 +1,10 @@
 apply from: "$rootProject.projectDir/library.gradle"
+android {
+    namespace 'com.revenuecat.purchases.amazon'
+}
 
 ext {
-    amazonVersion = "3.0.2"
+    amazonVersion = "3.0.3"
 }
 
 dependencies {

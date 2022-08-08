@@ -12,6 +12,7 @@ android {
             maxHeapSize = "1024m"
         }
     }
+    namespace 'com.revenuecat.api_tester_kotlin'
 }
 
 dependencies {

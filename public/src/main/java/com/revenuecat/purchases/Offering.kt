@@ -31,7 +31,8 @@ data class Offering constructor(
     /**
      * Annual package type configured in the RevenueCat dashboard, if available.
      */
-    @IgnoredOnParcel val annual by lazy { findPackage(PackageType.ANNUAL) }
+    @IgnoredOnParcel
+    val annual by lazy { findPackage(PackageType.ANNUAL) }
 
     /**
      * Six month package type configured in the RevenueCat dashboard, if available.
