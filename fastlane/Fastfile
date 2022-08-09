@@ -146,8 +146,7 @@ platform :android do
       current_version: current_version_number,
       repo_name: repo_name,
       github_pr_token: ENV["GITHUB_PULL_REQUEST_API_TOKEN"],
-      files_to_update: files_with_version_number,
-      branch: options[:branch] || 'main'
+      files_to_update: files_with_version_number
     )
   end
 
