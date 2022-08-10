@@ -15,6 +15,5 @@
     <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper : PurchasesUpdatedListenerBillingClientStateListener</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
-    <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): ProductType</ID>
   </Whitelist>
 </SmellBaseline>

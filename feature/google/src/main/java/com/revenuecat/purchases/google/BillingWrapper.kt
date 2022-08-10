@@ -468,6 +468,7 @@ class BillingWrapper(
     }
 
     @VisibleForTesting(otherwise = PRIVATE)
+    @Suppress("ReturnCount")
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
         billingClient?.let { client ->
             client.queryPurchasesAsync(SkuType.SUBS) querySubPurchasesAsync@{ querySubsResult, subsPurchasesList ->
