@@ -403,7 +403,8 @@ class BillingWrapper(
 
                 val mapOfActiveSubscriptions = activeSubsPurchases.toMapOfGooglePurchaseWrapper(SkuType.SUBS)
 
-                this.queryPurchasesAsync(SkuType.INAPP) queryInAppsPurchasesAsync@{ unconsumedInAppsResult, unconsumedInAppsPurchases ->
+                this.queryPurchasesAsync(SkuType.INAPP) queryInAppsPurchasesAsync@{
+                        unconsumedInAppsResult, unconsumedInAppsPurchases ->
                     if (!unconsumedInAppsResult.isSuccessful()) {
                         val purchasesError = unconsumedInAppsResult.responseCode.billingResponseToPurchasesError(
                             RestoreStrings.QUERYING_INAPP_ERROR.format(
@@ -477,7 +478,8 @@ class BillingWrapper(
                     return@querySubPurchasesAsync
                 }
 
-                client.queryPurchasesAsync(SkuType.INAPP) queryInAppPurchasesAsync@{ queryInAppsResult, inAppPurchasesList ->
+                client.queryPurchasesAsync(SkuType.INAPP) queryInAppPurchasesAsync@{
+                        queryInAppsResult, inAppPurchasesList ->
                     val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
                     val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
                     if (inAppsResponseIsOK && inAppFound) {
