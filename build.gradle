@@ -4,7 +4,6 @@ buildscript {
     ext.buildToolsVersion = "30.0.3"
     ext.minVersion = 14
     ext.billingVersion = "4.1.0"
-    ext.billingClient3Version = "3.0.3"
     ext.lifecycleVersion = "2.5.0"
     ext.testLibrariesVersion = "1.4.0"
     ext.testJUnitVersion  = "1.1.3"

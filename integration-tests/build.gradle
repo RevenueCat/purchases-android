@@ -46,7 +46,7 @@ dependencies {
     androidTestImplementation 'androidx.test:rules:1.4.0'
     androidTestImplementation 'androidx.test.ext:junit-ktx:1.1.3'
     androidTestImplementation 'org.assertj:assertj-core:3.22.0'
-    androidTestUnityIAPImplementation "com.android.billingclient:billing:$billingClient3Version"
+    androidTestUnityIAPImplementation "com.android.billingclient:billing:$billingVersion"
 }
 
 def obtainTestBuildType() {
