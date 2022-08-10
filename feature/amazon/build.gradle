@@ -18,7 +18,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.annotation:annotation:$annotationVersion"
 
-    implementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
+    latestDependenciesImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
     unityIAPCompileOnly files("libs/in-app-purchasing-${amazon2Version}.jar")
 
     testImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
