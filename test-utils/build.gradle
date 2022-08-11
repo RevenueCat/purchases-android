@@ -1,4 +1,7 @@
 apply from: "$rootProject.projectDir/library.gradle"
+android {
+    namespace 'com.revenuecat.purchases.test_utils'
+}
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
@@ -6,7 +9,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     latestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
     unityIAPCompileOnly "com.android.billingclient:billing:$billingVersion"
-    implementation 'org.assertj:assertj-core:3.13.2'
-    implementation 'io.mockk:mockk:1.10.0'
-    implementation 'androidx.test.ext:junit:1.1.2'
+    implementation "org.assertj:assertj-core:$assertJVersion"
+    implementation "io.mockk:mockk:$mockkVersion"
+    implementation "androidx.test.ext:junit:$testJUnitVersion"
 }

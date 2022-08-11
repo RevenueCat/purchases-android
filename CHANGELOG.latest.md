@@ -1,1 +1,5 @@
-* Updates the `unityIAP` build flavor for compatibility with Unity IAP >= v3.1.0 for observer mode.
+* Update build.gradle (#579) via Joshua Liebowitz (@taquitos)
+* Support for fastlane-plugin-revenuecat_internal (#557) via Toni Rico (@tonidero)
+* Revert handler nullability change (#578) via Toni Rico (@tonidero)
+* Sync subscriber attributes before login and logout (#572) via Toni Rico (@tonidero)
+* Prepare next version: 5.5.0-SNAPSHOT (#574) via RevenueCat Releases (@revenuecat-ops)

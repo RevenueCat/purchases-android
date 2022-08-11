@@ -58,5 +58,6 @@
     <ID>VarCouldBeVal:Purchases.kt$Purchases.Companion.&lt;no name provided>$var featureSupportedResultOk = features.all { billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful() }</ID>
     <ID>WildcardImport:PaywallFragment.kt$import com.revenuecat.purchases.*</ID>
     <ID>WildcardImport:UserFragment.kt$import com.revenuecat.purchases.*</ID>
+    <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): ProductType</ID>
   </CurrentIssues>
 </SmellBaseline>

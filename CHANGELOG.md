@@ -1,3 +1,22 @@
+## 5.4.1
+* Update build.gradle (#579) via Joshua Liebowitz (@taquitos)
+* Support for fastlane-plugin-revenuecat_internal (#557) via Toni Rico (@tonidero)
+* Revert handler nullability change (#578) via Toni Rico (@tonidero)
+* Sync subscriber attributes before login and logout (#572) via Toni Rico (@tonidero)
+* Prepare next version: 5.5.0-SNAPSHOT (#574) via RevenueCat Releases (@revenuecat-ops)
+
+## 5.4.0
+
+* Upgrade compile sdk and target sdk versions and Android Gradle Plugin, Kotlin and a few other versions
+  * https://github.com/RevenueCat/purchases-android/pull/474
+
+## 5.3.0
+
+* Updates the `unityIAP` build flavor so we don't include the billing client directly
+  * https://github.com/RevenueCat/purchases-android/pull/566
+* Fixes issue where SDK could not be initialized on a thread other than the main thread
+  * https://github.com/RevenueCat/purchases-android/pull/568
+
 ## 5.2.1
 
 * Updates the `unityIAP` build flavor for compatibility with Unity IAP >= v3.1.0 for observer mode.

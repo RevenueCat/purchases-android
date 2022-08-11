@@ -75,5 +75,5 @@ fun showUserError(activity: Activity, error: PurchasesError) {
 fun copyToClipboard(context: Context, label: String, text: String) {
     val clipboard = ContextCompat.getSystemService(context, ClipboardManager::class.java)
     val clip = ClipData.newPlainText(label, text)
-    clipboard?.primaryClip = clip
+    clipboard?.setPrimaryClip(clip)
 }

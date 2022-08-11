@@ -70,7 +70,18 @@ internal class PurchasesFactory(
 
             val subscriberAttributesCache = SubscriberAttributesCache(cache)
 
-            val identityManager = IdentityManager(cache, subscriberAttributesCache, backend)
+            val subscriberAttributesManager = SubscriberAttributesManager(
+                subscriberAttributesCache,
+                subscriberAttributesPoster,
+                attributionFetcher
+            )
+
+            val identityManager = IdentityManager(
+                cache,
+                subscriberAttributesCache,
+                subscriberAttributesManager,
+                backend
+            )
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
 
@@ -82,11 +93,7 @@ internal class PurchasesFactory(
                 cache,
                 dispatcher,
                 identityManager,
-                SubscriberAttributesManager(
-                    subscriberAttributesCache,
-                    subscriberAttributesPoster,
-                    attributionFetcher
-                ),
+                subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper
             )
