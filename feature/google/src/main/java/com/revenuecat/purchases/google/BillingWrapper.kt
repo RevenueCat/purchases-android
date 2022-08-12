@@ -639,7 +639,7 @@ class BillingWrapper(
 
     private fun getStoreTransaction(
         purchase: Purchase,
-        mapPurchaseToStoreTransactionListener: (storeTxn: StoreTransaction) -> Unit
+        completion: (storeTxn: StoreTransaction) -> Unit
     ) {
         log(
             LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
@@ -649,7 +649,7 @@ class BillingWrapper(
         synchronized(this@BillingWrapper) {
             val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
             productTypes[purchase.firstSku]?.let { productType ->
-                mapPurchaseToStoreTransactionListener(
+                completion(
                     purchase.toStoreTransaction(
                         productType,
                         presentedOffering
@@ -659,7 +659,7 @@ class BillingWrapper(
             }
 
             getPurchaseType(purchase.purchaseToken) { type ->
-                mapPurchaseToStoreTransactionListener(
+                completion(
                     purchase.toStoreTransaction(
                         type,
                         presentedOffering
