@@ -19,5 +19,5 @@ dependencies {
     implementation project(path: ':public')
     implementation project(path: ':purchases')
     implementation "androidx.annotation:annotation:$annotationVersion"
-    unityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
+    unityIAPCompileOnly "com.android.billingclient:billing:$billingVersion"
 }
