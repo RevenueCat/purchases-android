@@ -518,13 +518,13 @@ class BillingWrapper(
     ) {
         val notNullPurchasesList = purchases ?: emptyList()
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
-            val mappedPurchases = mutableListOf<StoreTransaction>()
+            val storeTransactions = mutableListOf<StoreTransaction>()
 
             notNullPurchasesList.forEach { purchase ->
-                getMappedPurchase(purchase) { storeTxn ->
-                    mappedPurchases.add(storeTxn)
-                    if (mappedPurchases.size == notNullPurchasesList.size) {
-                        purchasesUpdatedListener?.onPurchasesUpdated(mappedPurchases)
+                getStoreTransaction(purchase) { storeTxn ->
+                    storeTransactions.add(storeTxn)
+                    if (storeTransactions.size == notNullPurchasesList.size) {
+                        purchasesUpdatedListener?.onPurchasesUpdated(storeTransactions)
                     }
                 }
             }
@@ -655,9 +655,9 @@ class BillingWrapper(
         return stringWriter.toString()
     }
 
-    private fun getMappedPurchase(
+    private fun getStoreTransaction(
         purchase: Purchase,
-        mapPurchaseListener: (storeTxn: StoreTransaction) -> Unit
+        completion: (storeTxn: StoreTransaction) -> Unit
     ) {
         log(
             LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
@@ -667,7 +667,7 @@ class BillingWrapper(
         synchronized(this@BillingWrapper) {
             val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
             productTypes[purchase.firstSku]?.let { productType ->
-                mapPurchaseListener(
+                completion(
                     purchase.toStoreTransaction(
                         productType,
                         presentedOffering
@@ -677,7 +677,7 @@ class BillingWrapper(
             }
 
             getPurchaseType(purchase.purchaseToken) { type ->
-                mapPurchaseListener(
+                completion(
                     purchase.toStoreTransaction(
                         type,
                         presentedOffering
