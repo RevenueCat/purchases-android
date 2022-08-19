@@ -18,12 +18,12 @@ See minimum platform version requirements for RevenueCat's *Purchases* SDK [here
 
 | Feature                          | Sample Project Location                   |
 | -------------------------------- | ----------------------------------------- |
-| 🕹 Configuring the *Purchases* SDK  | [MainActivity.kt](MagicWeather/app/src/main/java/com/revenuecat/sample/MainActivity.kt) |
-| 💰 Building a basic paywall         | [paywall/PaywallFragment.kt](MagicWeather/app/src/main/java/com/revenuecat/sample/ui/paywall/PaywallFragment.kt) |
-| 🔐 Checking subscription status     | [weather/WeatherFragment.kt](MagicWeather/app/src/main/java/com/revenuecat/sample/ui/weather/WeatherFragment.kt#L69) |
-| 🤑 Restoring transactions           | [user/UserFragment.kt](MagicWeather/app/src/main/java/com/revenuecat/sample/ui/user/UserFragment.kt#L81) |
-| 👥 Identifying the user             | [user/UserFragment.kt](MagicWeather/app/src/main/java/com/revenuecat/sample/ui/user/UserFragment.kt#L97) |
-| 🚪 Logging out the user             | [user/UserFragment.kt](MagicWeather/app/src/main/java/com/revenuecat/sample/ui/user/UserFragment.kt#L97) |
+| 🕹 Configuring the *Purchases* SDK  | [MainActivity.kt](app/src/main/java/com/revenuecat/sample/MainActivity.kt) |
+| 💰 Building a basic paywall         | [paywall/PaywallFragment.kt](app/src/main/java/com/revenuecat/sample/ui/paywall/PaywallFragment.kt) |
+| 🔐 Checking subscription status     | [weather/WeatherFragment.kt](app/src/main/java/com/revenuecat/sample/ui/weather/WeatherFragment.kt#L69) |
+| 🤑 Restoring transactions           | [user/UserFragment.kt](app/src/main/java/com/revenuecat/sample/ui/user/UserFragment.kt#L81) |
+| 👥 Identifying the user             | [user/UserFragment.kt](app/src/main/java/com/revenuecat/sample/ui/user/UserFragment.kt#L97) |
+| 🚪 Logging out the user             | [user/UserFragment.kt](app/src/main/java/com/revenuecat/sample/ui/user/UserFragment.kt#L97) |
 
 ## Setup & Run
 
