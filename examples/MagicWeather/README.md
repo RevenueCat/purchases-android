@@ -9,7 +9,7 @@ Sign up for a free RevenueCat account [here](https://www.revenuecat.com).
 This sample uses:
 
 - Android Studio
-- Android (API 8.0+)
+- Android 8.0+ (API level 26+)
 - Kotlin 1.6.21
 
 See minimum platform version requirements for RevenueCat's *Purchases* SDK [here](https://github.com/RevenueCat/purchases-android/blob/main/examples/MagicWeather/build.gradle).
