@@ -30,9 +30,7 @@ Sign up to [get started for free](https://app.revenuecat.com/signup).
 📝 | [Online documentation](https://docs.revenuecat.com/docs) up to date  
 🔀 | [Integrations](https://www.revenuecat.com/integrations) - over a dozen integrations to easily send purchase data where you need it  
 💯 | Well maintained - [frequent releases](https://github.com/RevenueCat/purchases-android/releases)  
-📮 | Great support - [Help Center](https://revenuecat.zendesk.com)
-🤩 | Awesome [new features](https://trello.com/b/RZRnWRbI/revenuecat-product-roadmap)  
-
+📮 | Great support - [Help Center](https://revenuecat.zendesk.com) 
 
 ## Getting Started
 For more detailed information, you can view our complete documentation at [docs.revenuecat.com](https://docs.revenuecat.com/docs).
