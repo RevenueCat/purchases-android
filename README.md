@@ -47,7 +47,7 @@ Or view our Android sample app:
 - Minimum target: Android 4.0+ (API level 14+)
 
 ## SDK Reference
-Our full SDK reference [can be found here](https://sdk.revenuecat.com/android/5.4.1/index.html).
+Our full SDK reference [can be found here](https://sdk.revenuecat.com/android/index.html).
 
 ## Contributing
 Contributions are always welcome! To learn how you can contribute, please see the [Contributing Guide](./Contributing/CONTRIBUTING.md).
