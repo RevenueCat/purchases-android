@@ -1,3 +1,10 @@
+## 5.4.2
+### API Updates
+* `Transaction` class properties `revenuecatId` and `productId` have been deprecated. Use `transactionIdentifier` and `productIdentifier` respectively (#587)
+ 
+### Other Changes
+* Remove billing client 3 support (#567) via beylmk (@beylmk)
+
 ## 5.4.1
 * Update build.gradle (#579) via Joshua Liebowitz (@taquitos)
 * Support for fastlane-plugin-revenuecat_internal (#557) via Toni Rico (@tonidero)

@@ -1,5 +1,5 @@
-* Update build.gradle (#579) via Joshua Liebowitz (@taquitos)
-* Support for fastlane-plugin-revenuecat_internal (#557) via Toni Rico (@tonidero)
-* Revert handler nullability change (#578) via Toni Rico (@tonidero)
-* Sync subscriber attributes before login and logout (#572) via Toni Rico (@tonidero)
-* Prepare next version: 5.5.0-SNAPSHOT (#574) via RevenueCat Releases (@revenuecat-ops)
+### API Updates
+* `Transaction` class properties `revenuecatId` and `productId` have been deprecated. Use `transactionIdentifier` and `productIdentifier` respectively (#587)
+ 
+### Other Changes
+* Remove billing client 3 support (#567) via beylmk (@beylmk)
