@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.amazon
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.RCProductType
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.models.StoreTransaction
@@ -68,7 +68,7 @@ class ReceiptToStoreTransactionTest {
             )
         )
 
-        assertThat(storeTransaction.type).isEqualTo(RCProductType.SUBS)
+        assertThat(storeTransaction.type).isEqualTo(ProductType.SUBS)
 
         receipt = dummyReceipt(productType = AmazonProductType.CONSUMABLE)
 
@@ -82,7 +82,7 @@ class ReceiptToStoreTransactionTest {
             )
         )
 
-        assertThat(storeTransaction.type).isEqualTo(RCProductType.INAPP)
+        assertThat(storeTransaction.type).isEqualTo(ProductType.INAPP)
 
         receipt = dummyReceipt(productType = AmazonProductType.ENTITLED)
 
@@ -96,7 +96,7 @@ class ReceiptToStoreTransactionTest {
             )
         )
 
-        assertThat(storeTransaction.type).isEqualTo(RCProductType.INAPP)
+        assertThat(storeTransaction.type).isEqualTo(ProductType.INAPP)
     }
 
     @Test

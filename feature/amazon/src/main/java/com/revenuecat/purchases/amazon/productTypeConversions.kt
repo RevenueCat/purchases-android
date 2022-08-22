@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.amazon
 
 import com.amazon.device.iap.model.ProductType as AmazonProductType
-import com.revenuecat.purchases.RCProductType as RevenueCatProductType
+import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 fun AmazonProductType.toRevenueCatProductType(): RevenueCatProductType {
     return when (this) {

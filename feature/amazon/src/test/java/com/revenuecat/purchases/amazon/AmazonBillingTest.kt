@@ -405,7 +405,7 @@ class AmazonBillingTest {
 
         var onReceiveCalled = false
         underTest.querySkuDetailsAsync(
-            productType = com.revenuecat.purchases.RCProductType.SUBS,
+            productType = com.revenuecat.purchases.ProductType.SUBS,
             skus = skus,
             onReceive = {
                 onReceiveCalled = true

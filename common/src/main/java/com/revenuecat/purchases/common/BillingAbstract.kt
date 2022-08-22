@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.common
 
 import android.app.Activity
-import com.revenuecat.purchases.RCProductType
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.models.StoreProduct
@@ -53,7 +53,7 @@ abstract class BillingAbstract {
     )
 
     abstract fun querySkuDetailsAsync(
-        productType: RCProductType,
+        productType: ProductType,
         skus: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
@@ -66,7 +66,7 @@ abstract class BillingAbstract {
 
     abstract fun findPurchaseInPurchaseHistory(
         appUserID: String,
-        productType: RCProductType,
+        productType: ProductType,
         sku: String,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit

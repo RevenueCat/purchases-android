@@ -6,7 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import com.amazon.device.iap.model.ProductType as AmazonProductType
-import com.revenuecat.purchases.RCProductType as RevenueCatProductType
+import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 @RunWith(AndroidJUnit4::class)
 class ProductConverterTest {

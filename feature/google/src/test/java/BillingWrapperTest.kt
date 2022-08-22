@@ -21,7 +21,7 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
-import com.revenuecat.purchases.RCProductType
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
@@ -175,7 +175,7 @@ class BillingWrapperTest {
         val productIDs = setOf("product_a")
 
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             productIDs,
             {
                 this@BillingWrapperTest.storeProducts = it
@@ -200,7 +200,7 @@ class BillingWrapperTest {
         val productIDs = setOf("product_a")
 
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             productIDs,
             {
                 this@BillingWrapperTest.skuDetailsResponseCalled += 1
@@ -209,7 +209,7 @@ class BillingWrapperTest {
                 fail("shouldn't be an error")
             })
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             productIDs,
             {
                 this@BillingWrapperTest.skuDetailsResponseCalled += 1
@@ -232,7 +232,7 @@ class BillingWrapperTest {
         every { mockClient.isReady } returns false
 
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             setOf("product_a"),
             {
                 // DO NOTHING
@@ -582,7 +582,7 @@ class BillingWrapperTest {
 
         var receivedList: List<StoreProduct>? = null
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             productIDs, {
                 receivedList = it
             }, {
@@ -620,7 +620,7 @@ class BillingWrapperTest {
         } returns false
 
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             setOf("product_a"),
             {},
             {
@@ -941,7 +941,7 @@ class BillingWrapperTest {
         var recordFound: StoreTransaction? = null
         wrapper.findPurchaseInPurchaseHistory(
             appUserId,
-            RCProductType.SUBS,
+            ProductType.SUBS,
             sku,
             onCompletion = {
                 recordFound = it
@@ -971,7 +971,7 @@ class BillingWrapperTest {
 
         wrapper.findPurchaseInPurchaseHistory(
             appUserId,
-            RCProductType.SUBS,
+            ProductType.SUBS,
             sku,
             onCompletion = {
                 fail("should be error")
@@ -996,7 +996,7 @@ class BillingWrapperTest {
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
             sku,
             token,
-            RCProductType.SUBS,
+            ProductType.SUBS,
             "offering_a"
         )
 
@@ -1023,7 +1023,7 @@ class BillingWrapperTest {
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
             sku,
             token,
-            RCProductType.SUBS
+            ProductType.SUBS
         )
 
         every {
@@ -1049,7 +1049,7 @@ class BillingWrapperTest {
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
             sku,
             token,
-            RCProductType.INAPP,
+            ProductType.INAPP,
             "offering_a"
         )
 
@@ -1077,7 +1077,7 @@ class BillingWrapperTest {
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
             sku,
             token,
-            RCProductType.INAPP
+            ProductType.INAPP
         )
 
         every {
@@ -1104,7 +1104,7 @@ class BillingWrapperTest {
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
             sku,
             token,
-            RCProductType.SUBS,
+            ProductType.SUBS,
             "offering_a"
         )
 
@@ -1127,7 +1127,7 @@ class BillingWrapperTest {
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
             sku,
             token,
-            RCProductType.SUBS
+            ProductType.SUBS
         )
 
         wrapper.consumeAndSave(true, historyRecordWrapper)
@@ -1149,7 +1149,7 @@ class BillingWrapperTest {
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
             sku,
             token,
-            RCProductType.INAPP,
+            ProductType.INAPP,
             "offering_a"
         )
 
@@ -1173,7 +1173,7 @@ class BillingWrapperTest {
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
             sku,
             token,
-            RCProductType.INAPP
+            ProductType.INAPP
         )
 
         wrapper.consumeAndSave(true, historyRecordWrapper)
@@ -1196,7 +1196,7 @@ class BillingWrapperTest {
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
             sku,
             token,
-            RCProductType.SUBS,
+            ProductType.SUBS,
             "offering_a"
         )
 
@@ -1223,7 +1223,7 @@ class BillingWrapperTest {
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
             sku,
             token,
-            RCProductType.SUBS
+            ProductType.SUBS
         )
 
         every {
@@ -1249,7 +1249,7 @@ class BillingWrapperTest {
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
             sku,
             token,
-            RCProductType.INAPP,
+            ProductType.INAPP,
             "offering_a"
         )
 
@@ -1277,7 +1277,7 @@ class BillingWrapperTest {
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
             sku,
             token,
-            RCProductType.INAPP
+            ProductType.INAPP
         )
 
         every {
@@ -1310,7 +1310,7 @@ class BillingWrapperTest {
         val productIDs = setOf("product_a")
 
         wrapper.querySkuDetailsAsync(
-            RCProductType.UNKNOWN,
+            ProductType.UNKNOWN,
             productIDs,
             {
                 this@BillingWrapperTest.storeProducts = it
@@ -1329,7 +1329,7 @@ class BillingWrapperTest {
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
             sku,
             token,
-            RCProductType.INAPP,
+            ProductType.INAPP,
             "offering_a"
         )
 
@@ -1355,7 +1355,7 @@ class BillingWrapperTest {
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
             sku,
             token,
-            RCProductType.INAPP
+            ProductType.INAPP
         )
 
         every {
@@ -1380,7 +1380,7 @@ class BillingWrapperTest {
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
             sku,
             token,
-            RCProductType.SUBS,
+            ProductType.SUBS,
             "offering_a"
         )
 
@@ -1406,7 +1406,7 @@ class BillingWrapperTest {
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
             sku,
             token,
-            RCProductType.SUBS
+            ProductType.SUBS
         )
 
         every {
@@ -1431,7 +1431,7 @@ class BillingWrapperTest {
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
             sku,
             token,
-            RCProductType.SUBS,
+            ProductType.SUBS,
             "offering_a",
             acknowledged = true
         )
@@ -1458,7 +1458,7 @@ class BillingWrapperTest {
         val googlePurchaseWrapper = getMockedPurchaseWrapper(
             sku,
             token,
-            RCProductType.SUBS,
+            ProductType.SUBS,
             "offering_a",
             purchaseState = Purchase.PurchaseState.PENDING
         )
@@ -1492,7 +1492,7 @@ class BillingWrapperTest {
         } just Runs
 
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             skuSet,
             {}, {
                 fail("shouldn't be an error")
@@ -1504,7 +1504,7 @@ class BillingWrapperTest {
     @Test
     fun `querySkuDetails with empty list returns empty list and does not query BillingClient`() {
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             emptySet(),
             {
                 assertThat(it.isEmpty())
@@ -1520,7 +1520,7 @@ class BillingWrapperTest {
     @Test
     fun `querySkuDetails with only empty skus returns empty list and does not query BillingClient`() {
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             setOf("", ""),
             {
                 assertThat(it.isEmpty())
@@ -1549,7 +1549,7 @@ class BillingWrapperTest {
         }
 
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             setOf("asdf", "asdf"),
             {
                 sleep(200)
@@ -1585,7 +1585,7 @@ class BillingWrapperTest {
         }
 
         wrapper.querySkuDetailsAsync(
-            RCProductType.SUBS,
+            ProductType.SUBS,
             setOf("asdf"),
             {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
@@ -1826,7 +1826,7 @@ class BillingWrapperTest {
             purchaseToken = "atoken"
         )
 
-        return oldPurchase.toStoreTransaction(type = RCProductType.SUBS)
+        return oldPurchase.toStoreTransaction(type = ProductType.SUBS)
     }
 
     private fun mockReplaceSkuInfo(): ReplaceSkuInfo {
@@ -1837,7 +1837,7 @@ class BillingWrapperTest {
     private fun getMockedPurchaseWrapper(
         sku: String,
         purchaseToken: String,
-        productType: RCProductType,
+        productType: ProductType,
         offeringIdentifier: String? = null,
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
         acknowledged: Boolean = false
@@ -1855,7 +1855,7 @@ class BillingWrapperTest {
     private fun getMockedPurchaseHistoryRecordWrapper(
         sku: String,
         purchaseToken: String,
-        productType: RCProductType
+        productType: ProductType
     ): StoreTransaction {
         val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
             productIds = listOf(sku),

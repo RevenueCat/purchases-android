@@ -2,7 +2,7 @@ package com.revenuecat.purchases.amazon
 
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
-import com.revenuecat.purchases.RCProductType
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
@@ -21,7 +21,7 @@ fun Receipt.toStoreTransaction(
         purchaseTime = this.purchaseDate.time,
         purchaseToken = this.receiptId,
         purchaseState = purchaseState,
-        isAutoRenewing = if (type == RCProductType.SUBS) !this.isCanceled else false,
+        isAutoRenewing = if (type == ProductType.SUBS) !this.isCanceled else false,
         signature = null,
         originalJson = this.toJSON(),
         presentedOfferingIdentifier = presentedOfferingIdentifier,

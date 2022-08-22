@@ -2,7 +2,7 @@ package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.revenuecat.purchases.RCProductType
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseType
@@ -10,7 +10,7 @@ import com.revenuecat.purchases.models.PurchaseState
 import org.json.JSONObject
 
 fun Purchase.toStoreTransaction(
-    productType: RCProductType,
+    productType: ProductType,
     presentedOfferingIdentifier: String?
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
@@ -35,7 +35,7 @@ val StoreTransaction.originalGooglePurchase: Purchase?
             ?.let { signature -> Purchase(this.originalJson.toString(), signature) }
 
 fun PurchaseHistoryRecord.toStoreTransaction(
-    type: RCProductType
+    type: ProductType
 ): StoreTransaction {
     return StoreTransaction(
         orderId = null,
