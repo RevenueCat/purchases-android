@@ -30,9 +30,9 @@ class TransactionTest {
     fun `Can be created`() {
         val jsonObject = nonSubscriptionsJSONObject()
         val transaction = Transaction(productId, jsonObject)
-        assertThat(transaction.revenuecatId).isEqualTo(id)
+        assertThat(transaction.transactionIdentifier).isEqualTo(id)
         assertThat(transaction.purchaseDate).isEqualTo(Iso8601Utils.parse(dateString))
-        assertThat(transaction.productId).isEqualTo(productId)
+        assertThat(transaction.productIdentifier).isEqualTo(productId)
     }
 
 }
