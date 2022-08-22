@@ -41,7 +41,7 @@ data class PurchaserInfo constructor(
     val entitlements: EntitlementInfos,
     @Deprecated(
         "Use nonSubscriptionTransactions instead",
-        ReplaceWith("nonSubscriptionTransactions.map{ it.productId }.toSet()")
+        ReplaceWith("nonSubscriptionTransactions.map{ it.productIdentifier }.toSet()")
     ) val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
@@ -67,7 +67,7 @@ data class PurchaserInfo constructor(
      */
     @IgnoredOnParcel
     val allPurchasedSkus: Set<String> by lazy {
-        this.nonSubscriptionTransactions.map { it.productId }.toSet() + allExpirationDatesByProduct.keys
+        this.nonSubscriptionTransactions.map { it.productIdentifier }.toSet() + allExpirationDatesByProduct.keys
     }
 
     /**

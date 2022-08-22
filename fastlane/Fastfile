@@ -43,7 +43,6 @@ platform :android do
       files_to_update: files_with_version_number,
       repo_name: repo_name,
       github_rate_limit: options[:github_rate_limit],
-      branch: options[:branch],
       editor: options[:editor]
     )
   end
