@@ -56,9 +56,15 @@ class CustomerInfoTest {
         assertThat(info.purchasedNonSubscriptionSkus).contains("lifetime_access")
 
         assertThat(info.nonSubscriptionTransactions.size).isEqualTo(5)
-        assertThat(info.nonSubscriptionTransactions.filter { it.productId == "100_coins_pack" }.size).isEqualTo(2)
-        assertThat(info.nonSubscriptionTransactions.filter { it.productId == "7_extra_lives" }.size).isEqualTo(2)
-        assertThat(info.nonSubscriptionTransactions.filter { it.productId == "lifetime_access" }.size).isEqualTo(1)
+        assertThat(
+            info.nonSubscriptionTransactions.filter { it.productIdentifier == "100_coins_pack" }.size
+        ).isEqualTo(2)
+        assertThat(
+            info.nonSubscriptionTransactions.filter { it.productIdentifier == "7_extra_lives" }.size
+        ).isEqualTo(2)
+        assertThat(
+            info.nonSubscriptionTransactions.filter { it.productIdentifier == "lifetime_access" }.size
+        ).isEqualTo(1)
     }
 
     @Test
@@ -260,23 +266,25 @@ class CustomerInfoTest {
         assertThat(fullCustomerInfo.nonSubscriptionTransactions.size).isEqualTo(5)
 
         val oneTimePurchaseTransactions = fullCustomerInfo.nonSubscriptionTransactions.filter {
-            it.productId == "100_coins_pack"
+            it.productIdentifier == "100_coins_pack"
         }
         assertThat(oneTimePurchaseTransactions.size).isEqualTo(2)
 
         val consumableTransactions = fullCustomerInfo.nonSubscriptionTransactions.filter {
-            it.productId == "7_extra_lives"
+            it.productIdentifier == "7_extra_lives"
         }
         assertThat(consumableTransactions.size).isEqualTo(2)
 
         assertThat((oneTimePurchaseTransactions + consumableTransactions)
-            .distinctBy { it.revenuecatId }.size).isEqualTo(4)
+            .distinctBy { it.transactionIdentifier }.size).isEqualTo(4)
     }
 
     @Test
     fun `Non subscription transactions list is correctly created`() {
         assertThat(fullCustomerInfo.nonSubscriptionTransactions).isNotEmpty
         assertThat(fullCustomerInfo.nonSubscriptionTransactions.size).isEqualTo(5)
-        assertThat((fullCustomerInfo.nonSubscriptionTransactions).distinctBy { it.revenuecatId }.size).isEqualTo(5)
+        assertThat(
+            (fullCustomerInfo.nonSubscriptionTransactions).distinctBy { it.transactionIdentifier }.size
+        ).isEqualTo(5)
     }
 }
