@@ -8,7 +8,7 @@ dependencies {
     implementation project(":common")
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     latestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
-    unityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
+    unityIAPCompileOnly "com.android.billingclient:billing:$billingVersion"
     implementation "org.assertj:assertj-core:$assertJVersion"
     implementation "io.mockk:mockk:$mockkVersion"
     implementation "androidx.test.ext:junit:$testJUnitVersion"

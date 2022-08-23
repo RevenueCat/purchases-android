@@ -12,7 +12,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.core:core-ktx:$androidxCoreVersion"
     latestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
-    unityIAPCompileOnly "com.android.billingclient:billing:$billingClient3Version"
+    unityIAPCompileOnly "com.android.billingclient:billing:$billingVersion"
     testImplementation project(":test-utils")
     testImplementation "androidx.test:core:$testLibrariesVersion"
     testImplementation "androidx.test:runner:$testLibrariesVersion"
