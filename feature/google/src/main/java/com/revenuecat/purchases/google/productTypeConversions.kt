@@ -5,16 +5,16 @@ import com.revenuecat.purchases.ProductType
 
 fun String?.toProductType(): ProductType {
     return when (this) {
-        BillingClient.SkuType.INAPP -> ProductType.INAPP
-        BillingClient.SkuType.SUBS -> ProductType.SUBS
+        BillingClient.ProductType.INAPP -> ProductType.INAPP
+        BillingClient.ProductType.SUBS -> ProductType.SUBS
         else -> ProductType.UNKNOWN
     }
 }
 
-fun ProductType.toSKUType(): String? {
+fun ProductType.toGoogleProductType(): String? {
     return when (this) {
-        ProductType.INAPP -> BillingClient.SkuType.INAPP
-        ProductType.SUBS -> BillingClient.SkuType.SUBS
+        ProductType.INAPP -> BillingClient.ProductType.INAPP
+        ProductType.SUBS -> BillingClient.ProductType.SUBS
         else -> null
     }
 }
