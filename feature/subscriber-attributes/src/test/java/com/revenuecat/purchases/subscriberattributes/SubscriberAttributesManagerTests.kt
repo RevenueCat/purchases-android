@@ -542,15 +542,14 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAttributionID`() {
+    fun `setAttributionID sets the attribution property immediately`() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
         val mockContext = mockk<Application>(relaxed = true)
-        mockAdvertisingInfo(
-            mockContext = mockContext,
-            expectedAdID = "12345",
-            expectedAndroidID = "androidid"
-        )
+
+        every {
+            mockDeviceIdentifiersFetcher.getDeviceIdentifiers(mockContext, any())
+        } just Runs
 
         underTest.setAttributionID(
             SubscriberAttributeKey.AttributionIds.Facebook,
@@ -559,9 +558,62 @@ class SubscriberAttributesManagerTests {
             mockContext
         )
 
+        verify(exactly = 1) { mockDeviceCache.setAttributes(appUserID, any()) }
+
         val captured = capturingSlot.captured
         assertThat(captured).isNotNull
-        assertThat(captured.size).isEqualTo(4)
+        assertThat(captured.size).isEqualTo(1)
+
+        val facebookID =
+            captured[SubscriberAttributeKey.AttributionIds.Facebook.backendKey]
+        assertThat(facebookID).isNotNull
+        assertThat(facebookID!!.value).isEqualTo("facebook_id")
+    }
+
+    @Test
+    fun `setAttributionID sets GPS ID, ANDROID ID and IP to true`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        val mockContext = mockk<Application>(relaxed = true)
+
+        var deviceIdentifiersLamda: ((Map<String, String>) -> Unit)? = null
+
+        every {
+            mockDeviceIdentifiersFetcher.getDeviceIdentifiers(mockContext, captureLambda())
+        } answers {
+            deviceIdentifiersLamda = lambda<(Map<String, String>) -> Unit>().captured
+        }
+
+        underTest.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Facebook,
+            "facebook_id",
+            appUserID,
+            mockContext
+        )
+
+        verify(exactly = 1) { mockDeviceCache.setAttributes(appUserID, any()) }
+
+        var captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+
+        val facebookID =
+            captured[SubscriberAttributeKey.AttributionIds.Facebook.backendKey]
+        assertThat(facebookID).isNotNull
+        assertThat(facebookID!!.value).isEqualTo("facebook_id")
+
+        val deviceIdentifiers = mapOf(
+            SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to "12345",
+            SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to "androidid",
+            SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
+        ).filterNotNullValues()
+        deviceIdentifiersLamda?.invoke(deviceIdentifiers)
+
+        verify(exactly = 2) { mockDeviceCache.setAttributes(appUserID, any()) }
+
+        captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(3)
 
         val gpsAdIdSubscriberAttribute =
             captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
@@ -577,11 +629,6 @@ class SubscriberAttributesManagerTests {
             captured[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
         assertThat(ipSubscriberAttribute).isNotNull
         assertThat(ipSubscriberAttribute!!.value).isEqualTo("true")
-
-        val facebookID =
-            captured[SubscriberAttributeKey.AttributionIds.Facebook.backendKey]
-        assertThat(facebookID).isNotNull
-        assertThat(facebookID!!.value).isEqualTo("facebook_id")
     }
 
     private fun mockAdvertisingInfo(

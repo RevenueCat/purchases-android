@@ -150,10 +150,8 @@ class SubscriberAttributesManager(
         appUserID: String,
         applicationContext: Application
     ) {
-        getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
-            val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
-            setAttributes(attributesToSet, appUserID)
-        }
+        setAttribute(attributionKey, value, appUserID)
+        collectDeviceIdentifiers(appUserID, applicationContext)
     }
 
     private fun getDeviceIdentifiers(
