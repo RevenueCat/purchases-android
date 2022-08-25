@@ -1,3 +1,1 @@
-import_dangerfile_from_url({
-    :github => "RevenueCat/Dangerfile"
-})
+import_dangerfile_from_github("RevenueCat/Dangerfile")
