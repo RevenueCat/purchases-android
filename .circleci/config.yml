@@ -345,7 +345,6 @@ jobs:
   tag-release-branch:
     docker:
       - image: cimg/ruby:3.1.2
-    working_directory: ~/purchases-ios
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
@@ -359,7 +358,6 @@ jobs:
   release-train:
     docker:
       - image: cimg/ruby:3.1.2
-    working_directory: ~/purchases-ios
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
