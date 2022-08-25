@@ -337,15 +337,24 @@ jobs:
 workflows:
   version: 2
   danger:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - revenuecat/danger
 
   build-test:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - test
       - assemble-sample-app
 
   integration-test:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - integration-tests-build: *release-tags-and-branches
       - run-firebase-tests-latest-dependencies:
@@ -356,6 +365,9 @@ workflows:
             - integration-tests-build
 
   deploy:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - deploy: *release-tags
       - prepare-next-version: *release-tags
@@ -365,3 +377,10 @@ workflows:
               only:
                 - main
       - docs-deploy: *release-tags
+  weekly-run-workflow:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "release-train", << pipeline.schedule.name >> ]
+    jobs:
+      - release-train
