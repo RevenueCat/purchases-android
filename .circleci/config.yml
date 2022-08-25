@@ -22,6 +22,7 @@ orbs:
   android: circleci/android@0.2.1
   android-wordpress-orb: wordpress-mobile/android@1.0.15
   gcp-cli: circleci/gcp-cli@2.1.0
+  revenuecat: revenuecat/sdks-common-config@1.1.0
 
 executors:
   android-executor:
