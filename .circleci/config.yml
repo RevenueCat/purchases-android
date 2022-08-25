@@ -335,6 +335,10 @@ jobs:
 
 workflows:
   version: 2
+  danger:
+    jobs:
+      - revenuecat/danger
+
   build-test:
     jobs:
       - test
