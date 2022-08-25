@@ -30,7 +30,7 @@ orbs:
   android: circleci/android@0.2.1
   android-wordpress-orb: wordpress-mobile/android@1.0.15
   gcp-cli: circleci/gcp-cli@2.1.0
-  revenuecat: revenuecat/sdks-common-config@1.1.0
+  revenuecat: revenuecat/sdks-common-config@dev:01a27fcc557ae1c84721b437e6a7720a9b2e126d
 
 executors:
   android-executor:
@@ -83,24 +83,6 @@ commands:
           command: |
             echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
             --export-secret-keys > /home/circleci/.gnupg/secring.gpg
-
-  setup-git-credentials:
-    steps:
-      - run:
-          name: Setup Git config
-          command: |
-            git config user.email $GIT_EMAIL
-            git config user.name $GIT_USERNAME
-
-  trust-github-key:
-    steps:
-      - run:
-          name: Trust GitHub key
-          command: |
-            for ip in $(dig @8.8.8.8 github.com +short); \
-            do ssh-keyscan github.com,$ip; \
-            ssh-keyscan $ip; \
-            done 2>/dev/null >> ~/.ssh/known_hosts
 
   install-gems:
     steps:
@@ -170,8 +152,8 @@ jobs:
     steps:
       - checkout
       - install-sdkman
-      - setup-git-credentials
-      - trust-github-key
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - install-gems
       - prepare-signing-key
       - android-wordpress-orb/restore-gradle-cache
@@ -189,8 +171,8 @@ jobs:
       - checkout
       - install-sdkman
       - install-gems
-      - setup-git-credentials
-      - trust-github-key
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - run:
           name: Prepare next version
           command: bundle exec fastlane prepare_next_version
@@ -342,32 +324,6 @@ jobs:
       - store_test_results:
           path: ~/gsutil/
 
-  tag-release-branch:
-    docker:
-      - image: cimg/ruby:3.1.2
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - setup-git-credentials
-      - trust-github-key
-      - revenuecat/install-rubydocker-dependencies
-      - run: 
-          name: Tag branch
-          command: bundle exec fastlane tag_current_branch
-  
-  release-train:
-    docker:
-      - image: cimg/ruby:3.1.2
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - setup-git-credentials
-      - trust-github-key
-      - revenuecat/install-rubydocker-dependencies
-      - run: 
-          name: Create automatic PR
-          command: bundle exec fastlane automatic_bump github_rate_limit:10
-
 workflows:
   version: 2
   danger:
@@ -406,7 +362,7 @@ workflows:
       - hold:
           type: approval
           <<: *release-branches
-      - tag-release-branch:
+      - revenuecat/tag-current-branch:
           requires:
             - hold
           <<: *release-branches
@@ -424,4 +380,4 @@ workflows:
         - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
-      - release-train
+      - revenuecat/automatic-bump
