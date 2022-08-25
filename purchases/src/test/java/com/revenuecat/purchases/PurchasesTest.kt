@@ -1964,13 +1964,13 @@ class PurchasesTest {
         } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
 
         every {
-            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.IN_APP_ITEMS_ON_VR)
+            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS_UPDATE)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
         Purchases.canMakePayments(
             mockContext,
             listOf(BillingFeature.SUBSCRIPTIONS,
-                BillingFeature.IN_APP_ITEMS_ON_VR)
+                BillingFeature.SUBSCRIPTIONS_UPDATE)
         ) {
             receivedCanMakePayments = it
         }

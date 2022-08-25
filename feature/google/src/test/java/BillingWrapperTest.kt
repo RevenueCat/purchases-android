@@ -110,7 +110,7 @@ class BillingWrapperTest {
         val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
         every {
             mockClient.queryPurchaseHistoryAsync(
-                any(),
+                any<String>(),
                 capture(billingClientPurchaseHistoryListenerSlot)
             )
         } answers {
@@ -658,7 +658,7 @@ class BillingWrapperTest {
         val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
         every {
             mockClient.queryPurchaseHistoryAsync(
-                any(),
+                any<String>(),
                 capture(billingClientPurchaseHistoryListenerSlot)
             )
         } answers {
@@ -1609,7 +1609,7 @@ class BillingWrapperTest {
         val slot = slot<PurchaseHistoryResponseListener>()
         every {
             mockClient.queryPurchaseHistoryAsync(
-                any(),
+                any<String>(),
                 capture(slot)
             )
         } answers {
@@ -1636,7 +1636,7 @@ class BillingWrapperTest {
         val lock = CountDownLatch(2)
         every {
             mockClient.queryPurchaseHistoryAsync(
-                any(),
+                any<String>(),
                 capture(slot)
             )
         } answers {

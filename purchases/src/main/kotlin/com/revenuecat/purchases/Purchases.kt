@@ -2092,7 +2092,7 @@ class Purchases internal constructor(
                                             return@post
                                         }
                                         // If billing is supported, IN-APP purchases are supported.
-                                        var featureSupportedResultOk = features.all {
+                                        val featureSupportedResultOk = features.all {
                                             billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful()
                                         }
 

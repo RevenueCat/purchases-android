@@ -159,4 +159,12 @@ final class PurchasesAPI {
         );
         final LogHandler handler = Purchases.getLogHandler();
     }
+
+    static void check(final BillingFeature feature) {
+        switch (feature) {
+            case SUBSCRIPTIONS:
+            case SUBSCRIPTIONS_UPDATE:
+            case PRICE_CHANGE_CONFIRMATION:
+        }
+    }
 }
