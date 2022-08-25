@@ -407,11 +407,11 @@ workflows:
     jobs:
       - hold:
           type: approval
-          <<: *release-branches
+          # <<: *release-branches
       - tag-release-branch:
           requires:
             - hold
-          <<: *release-branches
+          # <<: *release-branches
       - deploy: *release-tags
       - prepare-next-version: *release-tags
       - deploy-snapshot:
