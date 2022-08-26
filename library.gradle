@@ -13,6 +13,9 @@ android {
         latestDependencies {
             dimension "dependencyVersions"
         }
+        bc5SupportDev {
+            dimension "dependencyVersions"
+        }
     }
     defaultConfig {
         minSdkVersion minVersion
