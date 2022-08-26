@@ -658,18 +658,10 @@ class BillingWrapperTest {
 
     @Test
     fun `getting all purchases gets both subs and inapps`() {
-        val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
-        every {
-            mockClient.queryPurchaseHistoryAsync(
-                any<String>(),
-                capture(billingClientPurchaseHistoryListenerSlot)
-            )
-        } answers {
-            billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
-                billingClientOKResult,
-                listOf(stubPurchaseHistoryRecord())
-            )
-        }
+        mockQueryPurchaseHistory(
+            billingClientOKResult,
+            listOf(stubPurchaseHistoryRecord())
+        )
 
         var receivedPurchases = listOf<StoreTransaction>()
         wrapper.queryAllPurchases("appUserID", {
@@ -1813,6 +1805,42 @@ class BillingWrapperTest {
         }
 
         return mockBuilder
+    }
+
+    private fun mockQueryPurchaseHistory(
+        result: BillingResult,
+        history: List<PurchaseHistoryRecord>
+    ) {
+        mockkStatic(QueryPurchaseHistoryParams::class)
+
+        val mockBuilder = mockk<QueryPurchaseHistoryParams.Builder>(relaxed = true)
+        every {
+            QueryPurchaseHistoryParams.newBuilder()
+        } returns mockBuilder
+
+        val typeSlot = slot<String>()
+        every {
+            mockBuilder.setProductType(capture(typeSlot))
+        } returns mockBuilder
+
+        val params = mockk<QueryPurchaseHistoryParams>(relaxed = true)
+        every {
+            mockBuilder.build()
+        } returns params
+
+        val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
+
+        every {
+            mockClient.queryPurchaseHistoryAsync(
+                params,
+                capture(billingClientPurchaseHistoryListenerSlot)
+            )
+        } answers {
+            billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
+                result,
+                history
+            )
+        }
     }
 
     private fun getMockedPurchaseList(purchaseToken: String): List<Purchase> {
