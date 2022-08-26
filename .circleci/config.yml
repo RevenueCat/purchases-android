@@ -84,16 +84,6 @@ commands:
             echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
             --export-secret-keys > /home/circleci/.gnupg/secring.gpg
 
-  install-gems:
-    steps:
-      - restore_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-      - run: bundle check || bundle install --path vendor/bundle
-      - save_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-          paths:
-            - vendor/bundle
-
 jobs:
 
   test:
@@ -154,7 +144,7 @@ jobs:
       - install-sdkman
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
-      - install-gems
+      - revenuecat/install-gem-unix-dependencies
       - prepare-signing-key
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
@@ -170,7 +160,7 @@ jobs:
     steps:
       - checkout
       - install-sdkman
-      - install-gems
+      - revenuecat/install-gem-unix-dependencies
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - run:
