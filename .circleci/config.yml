@@ -144,7 +144,8 @@ jobs:
       - install-sdkman
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
-      - revenuecat/install-gem-unix-dependencies
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
       - prepare-signing-key
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
@@ -160,7 +161,8 @@ jobs:
     steps:
       - checkout
       - install-sdkman
-      - revenuecat/install-gem-unix-dependencies
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - run:
