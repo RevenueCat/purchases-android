@@ -7,7 +7,7 @@ Automatic Releasing
  3. Update CHANGELOG.latest.md to include the latest changes. Call out API changes (if any). You can use the existing CHANGELOG.md as a base for formatting. To compile the changelog, you can compare the changes between the base branch for the release (usually main) against the latest release, by checking https://github.com/revenuecat/purchases-android/compare/<latest_release>...<base_branch>. For example, https://github.com/revenuecat/purchases-android/compare/5.1.1...main.
  4. A new branch and PR will automatically be created
 3. Wait until PR is approved (don't merge yet) and pull branch from origin (to make sure you've got all the changes locally)
-4. Create a tag for the new release in the last commit of the branch and push the tag. The rest will be performed automatically by CircleCI. If the automation fails, you can revert to manually calling bundle exec fastlane release.
+4. Create a tag for the new release in the last commit of the branch and push the tag. The rest will be performed automatically by CircleCI. If the automation fails, you can revert to manually calling bundle exec fastlane android deploy.
 5. After that, you can merge the release PR to main and merge the bump to the next snapshot version PR right after.
 
 Hotfix Releases
