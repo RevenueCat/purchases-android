@@ -702,7 +702,7 @@ class BillingWrapper(
     }
 
     private fun BillingClient.queryPurchaseHistoryAsyncEnsuringOneResponse(
-        productType: String,
+        @BillingClient.ProductType productType: String,
         listener: PurchaseHistoryResponseListener
     ) {
         var hasResponded = false
