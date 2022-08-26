@@ -31,7 +31,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
-import com.revenuecat.purchases.google.toSKUType
+import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
@@ -3229,10 +3229,10 @@ class PurchasesTest {
         } returns false
         purchases.updatePendingPurchaseQueue()
         verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!, any(), any())
+            mockBillingAbstract.queryPurchases(ProductType.SUBS.toGoogleProductType()!!, any(), any())
         }
         verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!, any(), any())
+            mockBillingAbstract.queryPurchases(ProductType.INAPP.toGoogleProductType()!!, any(), any())
         }
     }
 
@@ -4002,7 +4002,7 @@ class PurchasesTest {
         type: ProductType
     ): List<StoreProduct> {
         val storeProducts = skusSuccessfullyFetched.map { sku ->
-            stubSkuDetails(sku, type.toSKUType()!!).toStoreProduct()
+            stubSkuDetails(sku, type.toGoogleProductType()!!).toStoreProduct()
         }
 
         every {

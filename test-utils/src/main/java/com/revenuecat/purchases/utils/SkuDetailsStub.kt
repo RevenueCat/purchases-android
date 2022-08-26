@@ -6,7 +6,7 @@ import com.android.billingclient.api.SkuDetails
 @SuppressWarnings("LongParameterList", "MagicNumber")
 fun stubSkuDetails(
     productId: String = "monthly_intro_pricing_one_week",
-    @BillingClient.SkuType type: String = BillingClient.SkuType.SUBS,
+    @BillingClient.ProductType type: String = BillingClient.ProductType.SUBS,
     price: Double = 4.99,
     subscriptionPeriod: String = "P1M",
     freeTrialPeriod: String? = null,
