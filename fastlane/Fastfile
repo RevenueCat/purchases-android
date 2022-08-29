@@ -109,7 +109,7 @@ platform :android do
       properties: gradleProperties
     )
 
-    UI.verbose("Creating special version for Unity IAP with BillingClient 3 and Amazon 2 for version: #{version}")
+    UI.verbose("Creating special version for Unity IAP with BillingClient 4 and Amazon 2 for version: #{version}")
     gradleProperties["PUBLISH_VARIANT"] = "unityIAPRelease"
     
     UI.verbose("Adding -unityiap to artifact ids")

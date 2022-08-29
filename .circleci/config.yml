@@ -335,6 +335,36 @@ jobs:
       - store_test_results:
           path: ~/gsutil/
 
+  run-firebase-tests-bc5SupportDev:
+    description: "Run integration tests for Android in Firebase. Variant bc5SupportDev"
+    executor: gcp-cli/google
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - gcp-cli/initialize:
+          gcloud-service-key: GCLOUD_SERVICE_KEY
+          google-compute-zone: GOOGLE_COMPUTE_ZONE
+          google-project-id: GOOGLE_PROJECT_ID
+      - run:
+          name: Test with Firebase Test Lab
+          command: >
+            gcloud firebase test android run --type instrumentation \
+              --app integration-tests/build/outputs/apk/bc5SupportDev/release/integration-tests-bc5SupportDev-release.apk \
+              --test integration-tests/build/outputs/apk/androidTest/bc5SupportDev/release/integration-tests-bc5SupportDev-release-androidTest.apk \
+              --timeout 2m \
+              --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
+      - run:
+          name: Copy test results data
+          command: |
+            mkdir -p ~/gsutil/
+            gsutil -m cp -r -U `gsutil ls gs://cloud-test-$GOOGLE_PROJECT_ID | tail -1` ~/gsutil/ | true
+          when: always
+      - store_artifacts:
+          path: ~/gsutil/
+      - store_test_results:
+          path: ~/gsutil/
+
 workflows:
   version: 2
   build-test:
@@ -349,6 +379,9 @@ workflows:
           requires:
             - integration-tests-build
       - run-firebase-tests-unityIAP:
+          requires:
+            - integration-tests-build
+      - run-firebase-tests-bc5SupportDev:
           requires:
             - integration-tests-build
 
