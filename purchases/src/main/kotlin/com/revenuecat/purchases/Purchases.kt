@@ -35,6 +35,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.google.isSuccessful
+import com.revenuecat.purchases.google.toProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -73,7 +74,6 @@ import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import org.json.JSONException
 import org.json.JSONObject
-import toProductType
 import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.concurrent.ExecutorService

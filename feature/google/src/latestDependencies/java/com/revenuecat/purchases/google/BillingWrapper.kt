@@ -161,7 +161,7 @@ class BillingWrapper(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 val params = SkuDetailsParams.newBuilder()
-                    .setType(productType.toSKUType() ?: SkuType.INAPP)
+                    .setType(productType.toGoogleProductType() ?: SkuType.INAPP)
                     .setSkusList(nonEmptySkus).build()
 
                 withConnectedClient {
@@ -445,7 +445,7 @@ class BillingWrapper(
     ) {
         withConnectedClient {
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
-            productType.toSKUType()?.let { skuType ->
+            productType.toGoogleProductType()?.let { skuType ->
                 queryPurchaseHistoryAsync(skuType) { result, purchasesList ->
                     if (result.isSuccessful()) {
                         val purchaseHistoryRecordWrapper =

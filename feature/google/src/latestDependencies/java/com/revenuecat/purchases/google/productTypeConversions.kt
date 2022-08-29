@@ -1,3 +1,5 @@
+package com.revenuecat.purchases.google
+
 import com.android.billingclient.api.BillingClient
 import com.revenuecat.purchases.ProductType
 
@@ -9,7 +11,7 @@ fun String?.toProductType(): ProductType {
     }
 }
 
-fun ProductType.toSKUType(): String? {
+fun ProductType.toGoogleProductType(): String? {
     return when (this) {
         ProductType.INAPP -> BillingClient.SkuType.INAPP
         ProductType.SUBS -> BillingClient.SkuType.SUBS

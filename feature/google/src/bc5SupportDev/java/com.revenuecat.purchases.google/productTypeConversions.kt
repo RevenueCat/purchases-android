@@ -1,3 +1,5 @@
+package com.revenuecat.purchases.google
+
 import com.android.billingclient.api.BillingClient
 import com.revenuecat.purchases.ProductType
 
