@@ -39,6 +39,14 @@ Replaces version numbers, updates changelog and creates PR
 
 Tag release version with latest if necessary
 
+### android automatic_bump
+
+```sh
+[bundle exec] fastlane android automatic_bump
+```
+
+Automatically bumps version, update swift header, edit changelog, and create pull request
+
 ### android github_release
 
 ```sh
@@ -71,6 +79,14 @@ Upload a snapshot release
 
 Creates PR changing version to next minor adding a -SNAPSHOT suffix
 
+### android tag_current_branch
+
+```sh
+[bundle exec] fastlane android tag_current_branch
+```
+
+Tag current branch with current version number
+
 ### android build_magic_weather
 
 ```sh
@@ -79,7 +95,7 @@ Creates PR changing version to next minor adding a -SNAPSHOT suffix
 
 Builds a Magic Weather APK and prompts for:
 
-* Gralde task
+* Gradle task
 
 * Amazon or Google API Key for RevenueCat
 
