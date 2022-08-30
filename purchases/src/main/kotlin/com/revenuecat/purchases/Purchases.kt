@@ -1194,7 +1194,6 @@ class Purchases internal constructor(
         onSuccess: (SuccessfulPurchaseCallback)? = null,
         onError: (ErrorPurchaseCallback)? = null
     ) {
-        setAdjustID("test-adjust-id")
         subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
             val receiptInfo = ReceiptInfo(
                 productIDs = purchase.skus,
