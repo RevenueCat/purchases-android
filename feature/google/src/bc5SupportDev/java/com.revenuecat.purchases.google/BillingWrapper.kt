@@ -259,7 +259,9 @@ class BillingWrapper(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
-                    queryPurchaseHistoryAsyncEnsuringOneResponse(productType) { billingResult, purchaseHistoryRecordList ->
+                    queryPurchaseHistoryAsyncEnsuringOneResponse(productType) {
+                            billingResult, purchaseHistoryRecordList ->
+
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
                                 log(
@@ -482,7 +484,9 @@ class BillingWrapper(
         billingClient?.let { client ->
             val querySubsPurchasesParams =
                 QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
-            client.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{ querySubsResult, subsPurchasesList ->
+            client.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{
+                    querySubsResult, subsPurchasesList ->
+
                 val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
                 val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
                 if (subsResponseOK && subFound) {
@@ -492,7 +496,9 @@ class BillingWrapper(
 
                 val queryInAppsPurchasesParams =
                     QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
-                client.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppPurchasesAsync@{ queryInAppsResult, inAppPurchasesList ->
+                client.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppPurchasesAsync@{
+                        queryInAppsResult, inAppPurchasesList ->
+
                     val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
                     val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
                     if (inAppsResponseIsOK && inAppFound) {

@@ -71,4 +71,3 @@ fun stubSkuDetails(
               "description":"Monthly Product Intro Pricing One Week"
             }    
         """.trimIndent())
-

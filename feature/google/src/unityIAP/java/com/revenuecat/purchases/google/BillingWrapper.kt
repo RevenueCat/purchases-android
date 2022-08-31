@@ -1,4 +1,5 @@
-package com.revenuecat.purchases.google//  Purchases
+package com.revenuecat.purchases.google
+//  Purchases
 //
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.
 //
@@ -38,13 +39,6 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
-import com.revenuecat.purchases.google.billingResponseToPurchasesError
-import com.revenuecat.purchases.google.isSuccessful
-import com.revenuecat.purchases.google.originalGooglePurchase
-import com.revenuecat.purchases.google.setUpgradeInfo
-import com.revenuecat.purchases.google.toHumanReadableDescription
-import com.revenuecat.purchases.google.toStoreProduct
-import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseState

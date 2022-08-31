@@ -50,7 +50,6 @@ import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes.fail
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -1840,7 +1839,7 @@ class BillingWrapperTest {
                     )
                 }
                 else -> {
-                    fail("queryPurchasesAsync typeSlot not captured or captured unexpected type" )
+                    fail("queryPurchasesAsync typeSlot not captured or captured unexpected type")
                 }
             }
         }
@@ -2010,5 +2009,4 @@ class BillingWrapperTest {
             true
         }
     }
-
 }
