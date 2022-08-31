@@ -115,6 +115,7 @@ final class PurchasesAPI {
         purchases.setAirshipChannelID("");
         purchases.setMediaSource("");
         purchases.setCampaign("");
+        purchases.setCleverTapID("");
         purchases.setAdGroup("");
         purchases.setAd("");
         purchases.setKeyword("");

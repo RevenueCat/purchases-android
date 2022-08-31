@@ -564,6 +564,13 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setCleverTapID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.CleverTap) { parameter ->
+            underTest.setCleverTapID(parameter)
+        }
+    }
+
     // endregion
 
     // region Integration IDs

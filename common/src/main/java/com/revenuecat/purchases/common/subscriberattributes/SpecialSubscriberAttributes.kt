@@ -28,6 +28,7 @@ enum class ReservedSubscriberAttribute(val value: String) {
     MPARTICLE_ID("\$mparticleId"),
     ONESIGNAL_ID("\$onesignalId"),
     AIRSHIP_CHANNEL_ID("\$airshipChannelId"),
+    CLEVER_TAP_ID("\$clevertapId"),
 
     /**
      * Integration IDs
@@ -66,6 +67,7 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
         object AppsFlyer : AttributionIds(ReservedSubscriberAttribute.APPSFLYER_ID)
         object Facebook : AttributionIds(ReservedSubscriberAttribute.FB_ANON_ID)
         object Mparticle : AttributionIds(ReservedSubscriberAttribute.MPARTICLE_ID)
+        object CleverTap : AttributionIds(ReservedSubscriberAttribute.CLEVER_TAP_ID)
     }
 
     sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
