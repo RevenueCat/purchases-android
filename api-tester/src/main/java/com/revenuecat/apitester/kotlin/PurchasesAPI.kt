@@ -2,7 +2,6 @@ package com.revenuecat.apitester.kotlin
 
 import android.app.Activity
 import android.content.Context
-import com.revenuecat.purchases.BillingFeature
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.LogHandler
