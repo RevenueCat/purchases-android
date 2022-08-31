@@ -27,6 +27,12 @@ android {
         consumerProguardFiles "consumer-rules.pro"
     }
 
+    sourceSets {
+        unityIAP {
+            java.srcDirs = ['src/latestDependencies/java']
+        }
+    }
+
     testOptions {
         unitTests.includeAndroidResources = true
         unitTests.all {
