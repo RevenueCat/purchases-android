@@ -230,5 +230,4 @@ private class PurchasesAPI {
         }
         val handler = Purchases.logHandler
     }
-
 }
