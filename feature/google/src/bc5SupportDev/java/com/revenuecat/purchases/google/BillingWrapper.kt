@@ -22,8 +22,6 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.QueryPurchaseHistoryParams
-import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
 import com.revenuecat.purchases.ProductType
@@ -396,8 +394,7 @@ class BillingWrapper(
         withConnectedClient {
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
 
-            val querySubsPurchasesParams =
-                QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
+            val querySubsPurchasesParams = BillingClient.ProductType.SUBS.buildQueryPurchasesParams()
             this.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{
                     activeSubsResult, activeSubsPurchases ->
 
@@ -413,7 +410,7 @@ class BillingWrapper(
                     activeSubsPurchases.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.SUBS)
 
                 val queryInAppsPurchasesParams =
-                    QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
+                    BillingClient.ProductType.INAPP.buildQueryPurchasesParams()
                 this.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppsPurchasesAsync@{
                         unconsumedInAppsResult, unconsumedInAppsPurchases ->
                     if (!unconsumedInAppsResult.isSuccessful()) {
@@ -483,7 +480,7 @@ class BillingWrapper(
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
         billingClient?.let { client ->
             val querySubsPurchasesParams =
-                QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build()
+                BillingClient.ProductType.SUBS.buildQueryPurchasesParams()
             client.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{
                     querySubsResult, subsPurchasesList ->
 
@@ -495,7 +492,7 @@ class BillingWrapper(
                 }
 
                 val queryInAppsPurchasesParams =
-                    QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
+                    BillingClient.ProductType.INAPP.buildQueryPurchasesParams()
                 client.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppPurchasesAsync@{
                         queryInAppsResult, inAppPurchasesList ->
 
@@ -713,7 +710,7 @@ class BillingWrapper(
     ) {
         var hasResponded = false
 
-        val params = QueryPurchaseHistoryParams.newBuilder().setProductType(productType).build()
+        val params = productType.buildQueryPurchaseHistoryParams()
         queryPurchaseHistoryAsync(params) { billingResult, purchaseHistory ->
             synchronized(this@BillingWrapper) {
                 if (hasResponded) {
