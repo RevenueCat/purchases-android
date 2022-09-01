@@ -25,11 +25,14 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
     }
+
+    // TODO remove after BC5 is merged
     sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-        main.java.srcDirs += 'src/main/java'
-        test.java.srcDirs += 'src/test/java'
+        unityIAP {
+            java.srcDirs = ['src/latestDependencies/java']
+        }
     }
+
     testOptions {
         unitTests.includeAndroidResources = true
         unitTests.all {
