@@ -27,6 +27,7 @@ android {
         consumerProguardFiles "consumer-rules.pro"
     }
 
+    // TODO remove after BC5 is merged
     sourceSets {
         unityIAP {
             java.srcDirs = ['src/latestDependencies/java']
