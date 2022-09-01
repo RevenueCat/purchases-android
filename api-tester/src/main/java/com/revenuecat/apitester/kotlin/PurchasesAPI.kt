@@ -188,6 +188,7 @@ private class PurchasesAPI {
             setFirebaseAppInstanceID("")
             setMediaSource("")
             setCampaign("")
+            setCleverTapID("")
             setAdGroup("")
             setAd("")
             setKeyword("")

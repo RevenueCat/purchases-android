@@ -43,7 +43,9 @@ platform :android do
       files_to_update: files_with_version_number,
       repo_name: repo_name,
       github_rate_limit: options[:github_rate_limit],
-      editor: options[:editor]
+      editor: options[:editor],
+      next_version: options[:next_version],
+      automatic_release: options[:automatic_release]
     )
   end
 
@@ -76,6 +78,18 @@ platform :android do
       tag: "latest",
       force: true
     )
+  end
+
+  desc "Automatically bumps version, replaces version numbers, updates changelog and creates PR"
+  lane :automatic_bump do |options|
+    next_version, type_of_bump = determine_next_version_using_labels(
+      repo_name: repo_name,
+      github_rate_limit: options[:github_rate_limit]
+    )
+    options[:next_version] = next_version
+    options[:automatic_release] = true
+    UI.user_error!('Skipping automatic bump since the next version is a major release') if type_of_bump == :major
+    bump(options)
   end
 
   desc "Creates github release and updates the latest tag"
@@ -149,8 +163,17 @@ platform :android do
     )
   end
 
+  desc "Tag current branch with current version number"
+  lane :tag_current_branch do |options|
+    version_number = current_version_number
+    check_no_git_tag_exists(version_number)
+
+    add_git_tag(tag: version_number)
+    push_git_tags(tag: version_number)
+  end
+
   desc "Builds a Magic Weather APK and prompts for:"
-  desc "* Gralde task"
+  desc "* Gradle task"
   desc "* Amazon or Google API Key for RevenueCat"
   desc "* Version code"
   desc "* Version name"
@@ -238,4 +261,10 @@ end
 
 def current_version_number
   File.read("../.version").strip
+end
+
+def check_no_git_tag_exists(version_number)
+  if git_tag_exists(tag: version_number, remote: true, remote_name: 'origin')
+    raise "git tag with version #{version_number} already exists!"
+  end
 end

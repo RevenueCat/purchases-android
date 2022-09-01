@@ -886,6 +886,22 @@ class Purchases internal constructor(
         )
     }
 
+    /**
+     * Subscriber attribute associated with the CleverTap ID for the user
+     * Required for the RevenueCat CleverTap integration
+     *
+     * @param cleverTapID null or an empty string will delete the subscriber attribute.
+     */
+    fun setCleverTapID(cleverTapID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setCleverTapID"))
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.CleverTap,
+            cleverTapID,
+            appUserID,
+            application
+        )
+    }
+
     // endregion
     // region Campaign parameters
 
