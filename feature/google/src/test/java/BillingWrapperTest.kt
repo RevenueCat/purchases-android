@@ -32,6 +32,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.mockQueryPurchaseHistory
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubSkuDetails
@@ -61,7 +62,6 @@ class BillingWrapperTest {
     private var mockClient: BillingClient = mockk()
     private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
     private var billingClientStateListener: BillingClientStateListener? = null
-    private var billingClientPurchaseHistoryListener: PurchaseHistoryResponseListener? = null
     private var handler: Handler = mockk()
     private var mockDeviceCache: DeviceCache = mockk()
 
@@ -104,16 +104,6 @@ class BillingWrapperTest {
         every {
             mockClient.endConnection()
         } just runs
-
-        val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
-        every {
-            mockClient.queryPurchaseHistoryAsync(
-                any(),
-                capture(billingClientPurchaseHistoryListenerSlot)
-            )
-        } answers {
-            billingClientPurchaseHistoryListener = billingClientPurchaseHistoryListenerSlot.captured
-        }
 
         every {
             mockClient.acknowledgePurchase(
@@ -417,7 +407,7 @@ class BillingWrapperTest {
 
         purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
 
-        assertThat(slot.captured.size).isOne()
+        assertThat(slot.captured.size).isOne
     }
 
     @Test
@@ -429,8 +419,8 @@ class BillingWrapperTest {
 
         purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, null)
 
-        assertThat(slot.isCaptured).isTrue()
-        assertThat(slot.captured.isEmpty()).isTrue()
+        assertThat(slot.isCaptured).isTrue
+        assertThat(slot.captured.isEmpty()).isTrue
     }
 
     @Test
@@ -448,47 +438,6 @@ class BillingWrapperTest {
         verify {
             mockPurchasesListener.onPurchasesFailedToUpdate(any())
         }
-    }
-
-    @Test
-    fun queryHistoryCallsListenerIfOk() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-        var successCalled = false
-        wrapper.queryPurchaseHistoryAsync(
-            BillingClient.SkuType.SUBS,
-            {
-                successCalled = true
-            },
-            {
-                fail("shouldn't go to on error")
-            }
-        )
-        billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            billingClientOKResult,
-            ArrayList()
-        )
-        assertThat(successCalled).isTrue()
-    }
-
-    @Test
-    fun queryHistoryNotCalledIfNotOK() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-        var errorCalled = false
-        wrapper.queryPurchaseHistoryAsync(
-            BillingClient.SkuType.SUBS,
-            {
-                fail("should go to on error")
-            },
-            {
-                assertThat(it.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
-                errorCalled = true
-            }
-        )
-        billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(),
-            ArrayList()
-        )
-        assertThat(errorCalled).isTrue()
     }
 
     @Test
@@ -556,7 +505,7 @@ class BillingWrapperTest {
             })
         wrapper.onBillingSetupFinished(billingClientOKResult)
         assertThat(receivedList).isNotNull
-        assertThat(receivedList!!.size).isZero()
+        assertThat(receivedList!!.size).isZero
     }
 
     @Test
@@ -620,37 +569,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `getting all purchases gets both subs and inapps`() {
-        val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
-        every {
-            mockClient.queryPurchaseHistoryAsync(
-                any(),
-                capture(billingClientPurchaseHistoryListenerSlot)
-            )
-        } answers {
-            billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
-                billingClientOKResult,
-                listOf(stubPurchaseHistoryRecord())
-            )
-        }
-
-        var receivedPurchases = listOf<StoreTransaction>()
-        wrapper.queryAllPurchases("appUserID", {
-            receivedPurchases = it
-        }, { fail("Shouldn't be error") })
-
-        assertThat(receivedPurchases.size).isNotZero()
-
-        verify(exactly = 1) {
-            mockClient.queryPurchaseHistoryAsync(BillingClient.SkuType.SUBS, any())
-        }
-
-        verify(exactly = 1) {
-            mockClient.queryPurchaseHistoryAsync(BillingClient.SkuType.INAPP, any())
-        }
-    }
-
-    @Test
     fun `on successfully connected billing client, listener is called`() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         assertThat(onConnectedCalled).isTrue()
@@ -696,7 +614,8 @@ class BillingWrapperTest {
         mockQueryPurchasesAsyncResult(
             BillingClient.SkuType.SUBS,
             billingClientOKResult,
-            listOf())
+            listOf()
+        )
 
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
@@ -900,9 +819,62 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun queryHistoryCallsListenerIfOk() {
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        mockClient.mockQueryPurchaseHistory(
+            billingClientOKResult,
+            emptyList()
+        )
+
+        var successCalled = false
+        val type = ProductType.SUBS.toGoogleProductType()
+        wrapper.queryPurchaseHistoryAsync(
+            type!!,
+            {
+                successCalled = true
+            },
+            {
+                fail("shouldn't go to on error")
+            }
+        )
+        assertThat(successCalled).isTrue
+    }
+
+    @Test
+    fun queryHistoryErrorCalledIfNotOK() {
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        mockClient.mockQueryPurchaseHistory(
+            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(),
+            emptyList()
+        )
+
+        var errorCalled = false
+        val type = ProductType.SUBS.toGoogleProductType()
+        wrapper.queryPurchaseHistoryAsync(
+            type!!,
+            {
+                fail("should go to on error")
+            },
+            {
+                assertThat(it.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
+                errorCalled = true
+            }
+        )
+
+        assertThat(errorCalled).isTrue
+    }
+
+    @Test
     fun `findPurchaseInPurchaseHistory works`() {
         val sku = "aPurchase"
         val purchaseHistoryRecord = stubPurchaseHistoryRecord(productIds = listOf(sku))
+
+        mockClient.mockQueryPurchaseHistory(
+            billingClientOKResult,
+            listOf(purchaseHistoryRecord)
+        )
 
         var recordFound: StoreTransaction? = null
         wrapper.findPurchaseInPurchaseHistory(
@@ -916,10 +888,7 @@ class BillingWrapperTest {
                 fail("should be success")
             }
         )
-        billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            billingClientOKResult,
-            listOf(purchaseHistoryRecord)
-        )
+
         assertThat(recordFound).isNotNull
         assertThat(recordFound!!.skus[0]).isEqualTo(purchaseHistoryRecord.firstSku)
         assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
@@ -933,8 +902,11 @@ class BillingWrapperTest {
             every { it.firstSku } returns sku + "somethingrandom"
         }
 
+        mockClient.mockQueryPurchaseHistory(
+            billingClientOKResult,
+            listOf(purchaseHistoryRecord)
+        )
         var errorReturned: PurchasesError? = null
-
         wrapper.findPurchaseInPurchaseHistory(
             appUserId,
             ProductType.SUBS,
@@ -947,10 +919,6 @@ class BillingWrapperTest {
             }
         )
 
-        billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            billingClientOKResult,
-            listOf(purchaseHistoryRecord)
-        )
         assertThat(errorReturned).isNotNull
         assertThat(errorReturned!!.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
     }
@@ -1542,72 +1510,6 @@ class BillingWrapperTest {
         wrapper.querySkuDetailsAsync(
             ProductType.SUBS,
             setOf("asdf"),
-            {
-                // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
-                handler.post {
-                    numCallbacks++
-                }
-            }, {
-                fail("shouldn't be an error")
-            })
-
-        lock.await()
-        assertThat(lock.count).isEqualTo(0)
-
-        assertThat(numCallbacks).isEqualTo(1)
-    }
-
-    @Test
-    fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice`() {
-        var numCallbacks = 0
-
-        val slot = slot<PurchaseHistoryResponseListener>()
-        every {
-            mockClient.queryPurchaseHistoryAsync(
-                any(),
-                capture(slot)
-            )
-        } answers {
-            slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
-            slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
-        }
-
-        wrapper.queryPurchaseHistoryAsync(
-            BillingClient.SkuType.SUBS,
-            {
-                numCallbacks++
-            }, {
-                fail("shouldn't be an error")
-            })
-
-        assertThat(numCallbacks == 1)
-    }
-
-    @Test
-    fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice from different threads`() {
-        var numCallbacks = 0
-
-        val slot = slot<PurchaseHistoryResponseListener>()
-        val lock = CountDownLatch(2)
-        every {
-            mockClient.queryPurchaseHistoryAsync(
-                any(),
-                capture(slot)
-            )
-        } answers {
-            Thread {
-                slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
-                lock.countDown()
-            }.start()
-
-            Thread {
-                slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
-                lock.countDown()
-            }.start()
-        }
-
-        wrapper.queryPurchaseHistoryAsync(
-            BillingClient.SkuType.SUBS,
             {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
                 handler.post {

@@ -274,47 +274,6 @@ class BillingWrapperBC4Test {
     }
 
     @Test
-    fun queryHistoryCallsListenerIfOk() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-        var successCalled = false
-        wrapper.queryPurchaseHistoryAsync(
-            BillingClient.SkuType.SUBS,
-            {
-                successCalled = true
-            },
-            {
-                fail("shouldn't go to on error")
-            }
-        )
-        billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            billingClientOKResult,
-            ArrayList()
-        )
-        assertThat(successCalled).isTrue()
-    }
-
-    @Test
-    fun queryHistoryNotCalledIfNotOK() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-        var errorCalled = false
-        wrapper.queryPurchaseHistoryAsync(
-            BillingClient.SkuType.SUBS,
-            {
-                fail("should go to on error")
-            },
-            {
-                assertThat(it.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
-                errorCalled = true
-            }
-        )
-        billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(),
-            ArrayList()
-        )
-        assertThat(errorCalled).isTrue()
-    }
-
-    @Test
     fun whenSkuDetailsIsNullPassAnEmptyListToTheListener() {
         mockNullSkuDetailsResponse()
 
@@ -580,62 +539,6 @@ class BillingWrapperBC4Test {
         wrapper.getPurchaseType(inAppPurchaseToken) { productType ->
             assertThat(productType).isEqualTo(ProductType.UNKNOWN)
         }
-    }
-
-    @Test
-    fun `findPurchaseInPurchaseHistory works`() {
-        val sku = "aPurchase"
-        val purchaseHistoryRecord = stubPurchaseHistoryRecord(productIds = listOf(sku))
-
-        var recordFound: StoreTransaction? = null
-        wrapper.findPurchaseInPurchaseHistory(
-            appUserId,
-            ProductType.SUBS,
-            sku,
-            onCompletion = {
-                recordFound = it
-            },
-            onError = {
-                fail("should be success")
-            }
-        )
-        billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            billingClientOKResult,
-            listOf(purchaseHistoryRecord)
-        )
-        assertThat(recordFound).isNotNull
-        assertThat(recordFound!!.skus[0]).isEqualTo(purchaseHistoryRecord.firstSku)
-        assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
-        assertThat(recordFound!!.purchaseToken).isEqualTo(purchaseHistoryRecord.purchaseToken)
-    }
-
-    @Test
-    fun `findPurchaseInPurchaseHistory returns error if not found`() {
-        val sku = "aPurchase"
-        val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
-            every { it.firstSku } returns sku + "somethingrandom"
-        }
-
-        var errorReturned: PurchasesError? = null
-
-        wrapper.findPurchaseInPurchaseHistory(
-            appUserId,
-            ProductType.SUBS,
-            sku,
-            onCompletion = {
-                fail("should be error")
-            },
-            onError = {
-                errorReturned = it
-            }
-        )
-
-        billingClientPurchaseHistoryListener!!.onPurchaseHistoryResponse(
-            billingClientOKResult,
-            listOf(purchaseHistoryRecord)
-        )
-        assertThat(errorReturned).isNotNull
-        assertThat(errorReturned!!.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
     }
 
     @Test

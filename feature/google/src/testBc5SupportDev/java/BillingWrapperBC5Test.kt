@@ -1,5 +1,4 @@
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -22,20 +21,20 @@ import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toRevenueCatProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.mockQueryPurchaseHistory
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubSkuDetails
@@ -263,57 +262,6 @@ class BillingWrapperBC5Test {
 
         clearStaticMockk(BillingFlowParams::class)
     }
-
-    @Test
-    fun queryHistoryCallsListenerIfOk() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-
-        val builder = mockQueryPurchaseHistory(
-            billingClientOKResult,
-            emptyList()
-        )
-
-        var successCalled = false
-        val type = BillingClient.ProductType.SUBS
-        wrapper.queryPurchaseHistoryAsync(
-            type,
-            {
-                successCalled = true
-            },
-            {
-                fail("shouldn't go to on error")
-            }
-        )
-        assertThat(successCalled).isTrue
-        verify {
-            builder.setProductType(type)
-        }
-    }
-
-    @Test
-    fun queryHistoryErrorCalledIfNotOK() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-
-        mockQueryPurchaseHistory(
-            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(),
-            emptyList()
-        )
-
-        var errorCalled = false
-        val type = BillingClient.ProductType.SUBS
-        wrapper.queryPurchaseHistoryAsync(
-            type,
-            {
-                fail("should go to on error")
-            },
-            {
-                assertThat(it.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
-                errorCalled = true
-            }
-        )
-
-        assertThat(errorCalled).isTrue
-    }
     @Test
     fun `queryPurchaseHistoryAsync fails if sent invalid type`() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
@@ -339,7 +287,7 @@ class BillingWrapperBC5Test {
     fun `queryPurchaseHistoryAsync sets correct type to QueryPurchaseHistoryParams`() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
-        val builder = mockQueryPurchaseHistory(
+        val builder = mockClient.mockQueryPurchaseHistory(
             billingClientOKResult,
             emptyList()
         )
@@ -355,7 +303,7 @@ class BillingWrapperBC5Test {
             builder.setProductType(subsType)
         }
 
-        val builder2 = mockQueryPurchaseHistory(
+        val builder2 = mockClient.mockQueryPurchaseHistory(
             billingClientOKResult,
             emptyList()
         )
@@ -388,12 +336,12 @@ class BillingWrapperBC5Test {
             })
         wrapper.onBillingSetupFinished(billingClientOKResult)
         assertThat(receivedList).isNotNull
-        assertThat(receivedList!!.size).isZero()
+        assertThat(receivedList!!.size).isZero
     }
 
     @Test
     fun `getting all purchases gets both subs and inapps`() {
-        mockQueryPurchaseHistory(
+        mockClient.mockQueryPurchaseHistory(
             billingClientOKResult,
             listOf(stubPurchaseHistoryRecord())
         )
@@ -403,7 +351,7 @@ class BillingWrapperBC5Test {
             receivedPurchases = it
         }, { fail("Shouldn't be error") })
 
-        assertThat(receivedPurchases.size).isNotZero()
+        assertThat(receivedPurchases.size).isNotZero
 
         verify(exactly = 2) {
             mockClient.queryPurchaseHistoryAsync(any<QueryPurchaseHistoryParams>(), any())
@@ -613,65 +561,6 @@ class BillingWrapperBC5Test {
         wrapper.getPurchaseType(inAppPurchaseToken) { productType ->
             assertThat(productType).isEqualTo(ProductType.UNKNOWN)
         }
-    }
-
-    @Test
-    fun `findPurchaseInPurchaseHistory works`() {
-        val sku = "aPurchase"
-        val purchaseHistoryRecord = stubPurchaseHistoryRecord(productIds = listOf(sku))
-
-        mockQueryPurchaseHistory(
-            billingClientOKResult,
-            listOf(purchaseHistoryRecord)
-        )
-
-        var recordFound: StoreTransaction? = null
-        wrapper.findPurchaseInPurchaseHistory(
-            appUserId,
-            ProductType.SUBS,
-            sku,
-            onCompletion = {
-                recordFound = it
-            },
-            onError = {
-                fail("should be success")
-            }
-        )
-
-        assertThat(recordFound).isNotNull
-        assertThat(recordFound!!.skus[0]).isEqualTo(purchaseHistoryRecord.firstSku)
-        assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
-        assertThat(recordFound!!.purchaseToken).isEqualTo(purchaseHistoryRecord.purchaseToken)
-    }
-
-    @Test
-    fun `findPurchaseInPurchaseHistory returns error if not found`() {
-        val sku = "aPurchase"
-        val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
-            every { it.firstSku } returns sku + "somethingrandom"
-        }
-
-        mockQueryPurchaseHistory(
-            billingClientOKResult,
-            listOf(purchaseHistoryRecord)
-        )
-
-        var errorReturned: PurchasesError? = null
-
-        wrapper.findPurchaseInPurchaseHistory(
-            appUserId,
-            ProductType.SUBS,
-            sku,
-            onCompletion = {
-                fail("should be error")
-            },
-            onError = {
-                errorReturned = it
-            }
-        )
-
-        assertThat(errorReturned).isNotNull
-        assertThat(errorReturned!!.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
     }
 
     @Test
@@ -1158,42 +1047,7 @@ class BillingWrapperBC5Test {
         return mockBuilder
     }
 
-    private fun mockQueryPurchaseHistory(
-        result: BillingResult,
-        history: List<PurchaseHistoryRecord>
-    ): QueryPurchaseHistoryParams.Builder {
-        mockkStatic(QueryPurchaseHistoryParams::class)
 
-        val mockBuilder = mockk<QueryPurchaseHistoryParams.Builder>(relaxed = true)
-        every {
-            QueryPurchaseHistoryParams.newBuilder()
-        } returns mockBuilder
-
-        every {
-            mockBuilder.setProductType(any())
-        } returns mockBuilder
-
-        val params = mockk<QueryPurchaseHistoryParams>(relaxed = true)
-        every {
-            mockBuilder.build()
-        } returns params
-
-        val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
-
-        every {
-            mockClient.queryPurchaseHistoryAsync(
-                params,
-                capture(billingClientPurchaseHistoryListenerSlot)
-            )
-        } answers {
-            billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
-                result,
-                history
-            )
-        }
-
-        return mockBuilder
-    }
 
     private fun getMockedPurchaseList(purchaseToken: String): List<Purchase> {
         return listOf(mockk(

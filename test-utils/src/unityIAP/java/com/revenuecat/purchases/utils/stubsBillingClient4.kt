@@ -1,9 +1,13 @@
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
+import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.SkuDetails
+import io.mockk.every
+import io.mockk.slot
 import org.json.JSONArray
 
 fun stubGooglePurchase(
@@ -71,3 +75,21 @@ fun stubSkuDetails(
               "description":"Monthly Product Intro Pricing One Week"
             }    
         """.trimIndent())
+
+fun BillingClient.mockQueryPurchaseHistory(
+    result: BillingResult,
+    history: List<PurchaseHistoryRecord>
+) {
+    val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
+    every {
+        queryPurchaseHistoryAsync(
+            any(),
+            capture(billingClientPurchaseHistoryListenerSlot)
+        )
+    } answers {
+        billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
+            result,
+            history
+        )
+    }
+}
