@@ -80,8 +80,6 @@ class BillingWrapperBC4Test {
 
     private var storeProducts: List<StoreProduct>? = null
 
-    private var skuDetailsResponseCalled = 0
-
     private val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
     private val appUserId = "jerry"
     private var mockActivity = mockk<Activity>()

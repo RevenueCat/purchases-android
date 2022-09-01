@@ -78,8 +78,6 @@ class BillingWrapperTest {
 
     private var storeProducts: List<StoreProduct>? = null
 
-    private var skuDetailsResponseCalled = 0
-
     private val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
     private val appUserId = "jerry"
     private var mockActivity = mockk<Activity>()
@@ -124,9 +122,7 @@ class BillingWrapperTest {
             )
         } just Runs
 
-        every {
-            mockClient.consumeAsync(capture(capturedConsumeParams), capture(capturedConsumeResponseListener))
-        } just Runs
+        setUpMockConsumeAsync(billingClientOKResult)
 
         every {
             mockClient.isReady
@@ -168,77 +164,52 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun defersCallingSkuQueryUntilConnected() {
-        mockStandardSkuDetailsResponse()
+    fun defersCallUntilConnected() {
         every { mockClient.isReady } returns false
 
-        val productIDs = setOf("product_a")
+        val token = "token"
+        var consumePurchaseCompleted = false
+        wrapper.consumePurchase(token) { _, _ ->
+            consumePurchaseCompleted = true
+        }
 
-        wrapper.querySkuDetailsAsync(
-            ProductType.SUBS,
-            productIDs,
-            {
-                this@BillingWrapperTest.storeProducts = it
-            }, {
-                fail("shouldn't be an error")
-            })
-
-        assertThat(storeProducts).`as`("SKUDetailsList is null").isNull()
+        assertThat(consumePurchaseCompleted).isFalse
 
         every { mockClient.isReady } returns true
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
-        assertThat(storeProducts).`as`("SKUDetailsList is not null").isNotNull
+        assertThat(consumePurchaseCompleted).isTrue
     }
 
     @Test
     fun canDeferMultipleCalls() {
-        mockStandardSkuDetailsResponse()
         every { mockClient.isReady } returns false
 
-        val productIDs = setOf("product_a")
+        val token = "token"
 
-        wrapper.querySkuDetailsAsync(
-            ProductType.SUBS,
-            productIDs,
-            {
-                this@BillingWrapperTest.skuDetailsResponseCalled += 1
-            },
-            {
-                fail("shouldn't be an error")
-            })
-        wrapper.querySkuDetailsAsync(
-            ProductType.SUBS,
-            productIDs,
-            {
-                this@BillingWrapperTest.skuDetailsResponseCalled += 1
-            },
-            {
-                fail("shouldn't be an error")
-            })
-        assertThat(skuDetailsResponseCalled).isZero()
+        var consumePurchaseResponseCalled = 0
+        wrapper.consumePurchase(token) { _, _ ->
+            consumePurchaseResponseCalled += 1
+        }
+        wrapper.consumePurchase(token) { _, _ ->
+            consumePurchaseResponseCalled += 1
+        }
+        assertThat(consumePurchaseResponseCalled).isZero
 
         every { mockClient.isReady } returns true
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
-        assertThat(skuDetailsResponseCalled).isEqualTo(2)
+        assertThat(consumePurchaseResponseCalled).isEqualTo(2)
     }
 
     @Test
     fun makingARequestTriggersAConnectionAttempt() {
-        mockStandardSkuDetailsResponse()
         every { mockClient.isReady } returns false
 
-        wrapper.querySkuDetailsAsync(
-            ProductType.SUBS,
-            setOf("product_a"),
-            {
-                // DO NOTHING
-            }, {
-                // DO NOTHING
-            })
+        val token = "token"
+        wrapper.consumePurchase(token) { _, _ -> }
 
         verify(exactly = 2) {
             mockClient.startConnection(billingClientStateListener!!)
@@ -524,16 +495,11 @@ class BillingWrapperTest {
     fun canConsumeAToken() {
         val token = "mockToken"
 
-        val capturingSlot = slot<ConsumeParams>()
-        every {
-            mockClient.consumeAsync(capture(capturingSlot), any())
-        } just Runs
-
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         wrapper.consumePurchase(token) { _, _ -> }
 
-        assertThat(capturingSlot.isCaptured).isTrue()
-        assertThat(capturingSlot.captured.purchaseToken).isEqualTo(token)
+        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
+        assertThat(capturedConsumeParams.captured.purchaseToken).isEqualTo(token)
     }
 
     @Test
@@ -1059,11 +1025,7 @@ class BillingWrapperTest {
 
         wrapper.consumeAndSave(true, googlePurchaseWrapper)
 
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue()
-        capturedConsumeResponseListener.captured.onConsumeResponse(
-            billingClientOKResult,
-            token
-        )
+        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
         verify(exactly = 1) {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1086,11 +1048,7 @@ class BillingWrapperTest {
 
         wrapper.consumeAndSave(true, historyRecordWrapper)
 
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue()
-        capturedConsumeResponseListener.captured.onConsumeResponse(
-            billingClientOKResult,
-            token
-        )
+        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
         verify(exactly = 1) {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1153,13 +1111,11 @@ class BillingWrapperTest {
             "offering_a"
         )
 
+        setUpMockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
+
         wrapper.consumeAndSave(true, googlePurchaseWrapper)
 
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue()
-        capturedConsumeResponseListener.captured.onConsumeResponse(
-            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-            token
-        )
+        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
         verify(exactly = 0) {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1170,19 +1126,18 @@ class BillingWrapperTest {
     fun `restored tokens are not save in cache if consuming fails`() {
         val sku = "consumable"
         val token = "token_consumable"
+
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
             sku,
             token,
             ProductType.INAPP
         )
 
+        setUpMockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
+
         wrapper.consumeAndSave(true, historyRecordWrapper)
 
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue()
-        capturedConsumeResponseListener.captured.onConsumeResponse(
-            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-            token
-        )
+        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
         verify(exactly = 0) {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1206,12 +1161,12 @@ class BillingWrapperTest {
 
         wrapper.consumeAndSave(true, googlePurchaseWrapper)
 
-        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue()
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
             billingClientOKResult
         )
 
-        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue()
+        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
         val capturedAcknowledgeParams = capturedAcknowledgePurchaseParams.captured
         assertThat(capturedAcknowledgeParams.purchaseToken).isEqualTo(token)
     }
@@ -1919,6 +1874,17 @@ class BillingWrapperTest {
         } answers {
             delayedSlot.captured.run()
             true
+        }
+    }
+
+    private fun setUpMockConsumeAsync(billingResult: BillingResult) {
+        every {
+            mockClient.consumeAsync(capture(capturedConsumeParams), capture(capturedConsumeResponseListener))
+        } answers {
+            capturedConsumeResponseListener.captured.onConsumeResponse(
+                billingResult,
+                capturedConsumeParams.captured.purchaseToken
+            )
         }
     }
 }
