@@ -478,7 +478,7 @@ class BillingWrapperTest {
             mockPurchasesListener.onPurchasesFailedToUpdate(any())
         }
     }
-
+    
     @Test
     fun queryHistoryCallsListenerIfOk() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)

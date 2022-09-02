@@ -522,6 +522,26 @@ class BillingWrapperTest {
 
         assertThat(errorCalled).isTrue
     }
+    @Test
+    fun `queryPurchaseHistoryAsync fails if sent invalid type`() {
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        mockQueryPurchaseHistory(
+            billingClientOKResult,
+            emptyList()
+        )
+        var errorCalled = false
+        wrapper.queryPurchaseHistoryAsync(
+            "notValid",
+            {
+                fail("call should not succeed")
+            },
+            {
+                errorCalled = true
+            }
+        )
+        assertThat(errorCalled).isTrue
+    }
 
     @Test
     fun `queryPurchaseHistoryAsync sets correct type to QueryPurchaseHistoryParams`() {

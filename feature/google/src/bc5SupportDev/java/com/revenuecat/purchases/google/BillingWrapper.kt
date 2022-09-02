@@ -403,7 +403,8 @@ class BillingWrapper(
                 )
                 return@withConnectedClient
             }
-            this.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{ activeSubsResult, activeSubsPurchases ->
+            this.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{
+                    activeSubsResult, activeSubsPurchases ->
 
                 if (!activeSubsResult.isSuccessful()) {
                     val purchasesError = activeSubsResult.responseCode.billingResponseToPurchasesError(
@@ -427,7 +428,9 @@ class BillingWrapper(
                     return@querySubPurchasesAsync
                 }
 
-                this.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppsPurchasesAsync@{ unconsumedInAppsResult, unconsumedInAppsPurchases ->
+                this.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppsPurchasesAsync@{
+                        unconsumedInAppsResult, unconsumedInAppsPurchases ->
+
                     if (!unconsumedInAppsResult.isSuccessful()) {
                         val purchasesError =
                             unconsumedInAppsResult.responseCode.billingResponseToPurchasesError(
@@ -451,7 +454,10 @@ class BillingWrapper(
     ): Map<String, StoreTransaction> {
         return this.associate { purchase ->
             val hash = purchase.purchaseToken.sha1()
-            hash to purchase.toStoreTransaction(productType.toRevenueCatProductType(), presentedOfferingIdentifier = null)
+            hash to purchase.toStoreTransaction(
+                productType.toRevenueCatProductType(),
+                presentedOfferingIdentifier = null
+            )
         }
     }
 
@@ -503,7 +509,8 @@ class BillingWrapper(
                 return
             }
 
-            client.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{ querySubsResult, subsPurchasesList ->
+            client.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{
+                    querySubsResult, subsPurchasesList ->
 
                 val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
                 val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
@@ -518,7 +525,8 @@ class BillingWrapper(
                     listener(ProductType.UNKNOWN)
                     return@querySubPurchasesAsync
                 }
-                client.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppPurchasesAsync@{ queryInAppsResult, inAppPurchasesList ->
+                client.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppPurchasesAsync@{
+                        queryInAppsResult, inAppPurchasesList ->
 
                     val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
                     val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
