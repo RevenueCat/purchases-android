@@ -1,0 +1,17 @@
+appId: com.android.vending
+---
+- launchApp
+- tapOn:
+    # profile button
+    point: 900,100
+- tapOn: "Manage your Google Account"
+- tapOn:
+    text: <test_account>
+- tapOn:
+    text: Manage accounts on this device
+- tapOn:
+    text: <test_account>
+- tapOn:
+    text: Remove account
+
+
