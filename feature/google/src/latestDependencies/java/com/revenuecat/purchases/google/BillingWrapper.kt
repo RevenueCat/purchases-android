@@ -426,7 +426,7 @@ class BillingWrapper(
     ): Map<String, StoreTransaction> {
         return this.associate { purchase ->
             val hash = purchase.purchaseToken.sha1()
-            hash to purchase.toStoreTransaction(skuType.toProductType(), presentedOfferingIdentifier = null)
+            hash to purchase.toStoreTransaction(skuType.toRevenueCatProductType(), presentedOfferingIdentifier = null)
         }
     }
 

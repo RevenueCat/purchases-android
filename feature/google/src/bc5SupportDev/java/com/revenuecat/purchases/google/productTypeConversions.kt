@@ -3,7 +3,7 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.BillingClient
 import com.revenuecat.purchases.ProductType
 
-fun String?.toProductType(): ProductType {
+fun String?.toRevenueCatProductType(): ProductType {
     return when (this) {
         BillingClient.ProductType.INAPP -> ProductType.INAPP
         BillingClient.ProductType.SUBS -> ProductType.SUBS

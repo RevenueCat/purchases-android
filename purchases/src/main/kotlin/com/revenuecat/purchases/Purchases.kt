@@ -35,7 +35,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.google.isSuccessful
-import com.revenuecat.purchases.google.toProductType
+import com.revenuecat.purchases.google.toRevenueCatProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -1735,7 +1735,7 @@ class Purchases internal constructor(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), listener.toGetStoreProductsCallback())
+        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toRevenueCatProductType(), listener.toGetStoreProductsCallback())
     }
 
     /**
@@ -1749,7 +1749,7 @@ class Purchases internal constructor(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), listener.toGetStoreProductsCallback())
+        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toRevenueCatProductType(), listener.toGetStoreProductsCallback())
     }
 
     @Suppress("DeprecatedCallableAddReplaceWith")
