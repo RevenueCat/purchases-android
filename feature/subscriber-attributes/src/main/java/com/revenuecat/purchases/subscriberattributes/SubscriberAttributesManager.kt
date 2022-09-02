@@ -197,17 +197,22 @@ class SubscriberAttributesManager(
             }
 
         private val listeners: ArrayList<() -> Unit> = arrayListOf()
+            @Synchronized
+            get
 
         init {
             addObserver { observable, _ ->
                 val numberOfProcesses = (observable as ObtainDeviceIdentifiersObservable).numberOfProcesses
                 if (numberOfProcesses == 0) {
-                    listeners.forEach { it() }
-                    listeners.clear()
+                    synchronized(this) {
+                        listeners.forEach { it() }
+                        listeners.clear()
+                    }
                 }
             }
         }
 
+        @Synchronized
         fun waitUntilIdle(completion: () -> Unit) {
             if (numberOfProcesses == 0) completion()
             listeners.add { completion() }
