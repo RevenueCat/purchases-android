@@ -108,10 +108,13 @@ class SubscriberAttributesPurchasesTests {
         }
 
         every {
-            subscriberAttributesManagerMock.getUnsyncedSubscriberAttributes(appUserId)
+            subscriberAttributesManagerMock.getUnsyncedSubscriberAttributes(appUserId, captureLambda())
         } answers {
-            expectedAttributes
+            lambda<(Map<String, SubscriberAttribute>) -> Unit>().captured.also {
+                it.invoke(expectedAttributes)
+            }
         }
+
         every {
             subscriberAttributesManagerMock.markAsSynced(
                 appUserId,
