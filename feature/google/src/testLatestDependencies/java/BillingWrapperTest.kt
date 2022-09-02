@@ -1,3 +1,5 @@
+package com.revenuecat.purchases.google
+
 import android.app.Activity
 import android.content.Context
 import android.content.Intent

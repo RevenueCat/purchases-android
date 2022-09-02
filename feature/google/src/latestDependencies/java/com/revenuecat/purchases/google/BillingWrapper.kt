@@ -424,10 +424,10 @@ class BillingWrapper(
     private fun List<Purchase>.toMapOfGooglePurchaseWrapper(
         @SkuType skuType: String
     ): Map<String, StoreTransaction> {
-        return this.map { purchase ->
+        return this.associate { purchase ->
             val hash = purchase.purchaseToken.sha1()
             hash to purchase.toStoreTransaction(skuType.toProductType(), presentedOfferingIdentifier = null)
-        }.toMap()
+        }
     }
 
     override fun findPurchaseInPurchaseHistory(
