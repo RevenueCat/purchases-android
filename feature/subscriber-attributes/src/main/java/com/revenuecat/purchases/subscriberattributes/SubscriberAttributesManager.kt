@@ -196,9 +196,8 @@ class SubscriberAttributesManager(
                 notifyObservers()
             }
 
+        @get:Synchronized
         private val listeners: ArrayList<() -> Unit> = arrayListOf()
-            @Synchronized
-            get
 
         init {
             addObserver { observable, _ ->
