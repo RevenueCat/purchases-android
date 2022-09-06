@@ -7,20 +7,20 @@ def fail_if_no_supported_label_found
   if no_supported_label
     fail("Label the PR using one of the change type labels: #{supported_types}")
     markdown <<-MARKDOWN
-    | Label | Description |
-    |-------|-------------|
-    | breaking | Changes that are breaking |
-    | build | Changes that affect the build system |
-    | ci | Changes to our CI configuration files and scripts |
-    | docs | Documentation only changes |
-    | feat | A new feature |
-    | fix | A bug fix |
-    | perf | A code change that improves performance |
-    | refactor | A code change that neither fixes a bug nor adds a feature |
-    | style | Changes that don't affect the meaning of the code (white-space, formatting, missing semi-colons, etc |
-    | test | Adding missing tests or correcting existing tests |
-    | next_release | Preparing a new release |
-    MARKDOWN
+  | Label | Description |
+  |-------|-------------|
+  | breaking | Changes that are breaking |
+  | build | Changes that affect the build system |
+  | ci | Changes to our CI configuration files and scripts |
+  | docs | Documentation only changes |
+  | feat | A new feature |
+  | fix | A bug fix |
+  | perf | A code change that improves performance |
+  | refactor | A code change that neither fixes a bug nor adds a feature |
+  | style | Changes that don't affect the meaning of the code (white-space, formatting, missing semi-colons, etc |
+  | test | Adding missing tests or correcting existing tests |
+  | next_release | Preparing a new release |
+  MARKDOWN
   end
 end
 
