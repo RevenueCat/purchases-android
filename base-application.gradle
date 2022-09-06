@@ -33,6 +33,13 @@ android {
             dimension "dependencyVersions"
         }
     }
+
+    // TODO remove after BC5 is merged
+    sourceSets {
+        unityIAP {
+            java.srcDirs = ['src/latestDependencies/java']
+        }
+    }
 }
 
 dependencies {

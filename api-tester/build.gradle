@@ -1,11 +1,6 @@
 apply from: "$rootProject.projectDir/base-application.gradle"
 
 android {
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-        main.java.srcDirs += 'src/main/java'
-        test.java.srcDirs += 'src/test/java'
-    }
     testOptions {
         unitTests.includeAndroidResources = true
         unitTests.all {
