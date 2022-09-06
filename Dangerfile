@@ -7,7 +7,6 @@ def fail_if_no_supported_label_found
   if no_supported_label
     fail("Label the PR using one of the change type labels: #{supported_types}")
     markdown <<-MARKDOWN
-      ```markdown
       | Label | Description |
       |-------|-------------|
       | breaking | Changes that are breaking |
@@ -21,7 +20,6 @@ def fail_if_no_supported_label_found
       | style | Changes that don't affect the meaning of the code (white-space, formatting, missing semi-colons, etc |
       | test | Adding missing tests or correcting existing tests |
       | next_release | Preparing a new release |
-      ```
     MARKDOWN
   end
 end
