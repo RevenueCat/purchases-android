@@ -4,7 +4,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.QueryPurchasesParams
 
-fun String.buildQueryPurchaseHistoryParams(): QueryPurchaseHistoryParams? {
+fun @receiver:BillingClient.ProductType String.buildQueryPurchaseHistoryParams(): QueryPurchaseHistoryParams? {
     return when (this) {
         BillingClient.ProductType.INAPP,
         BillingClient.ProductType.SUBS -> QueryPurchaseHistoryParams.newBuilder().setProductType(this).build()
@@ -12,7 +12,7 @@ fun String.buildQueryPurchaseHistoryParams(): QueryPurchaseHistoryParams? {
     }
 }
 
-fun String.buildQueryPurchasesParams(): QueryPurchasesParams? {
+fun @receiver:BillingClient.ProductType String.buildQueryPurchasesParams(): QueryPurchasesParams? {
     return when (this) {
         BillingClient.ProductType.INAPP,
         BillingClient.ProductType.SUBS -> QueryPurchasesParams.newBuilder().setProductType(this).build()

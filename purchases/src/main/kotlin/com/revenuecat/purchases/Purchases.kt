@@ -1735,7 +1735,11 @@ class Purchases internal constructor(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toRevenueCatProductType(), listener.toGetStoreProductsCallback())
+        getSkus(
+            skus.toSet(),
+            BillingClient.SkuType.SUBS.toRevenueCatProductType(),
+            listener.toGetStoreProductsCallback()
+        )
     }
 
     /**
@@ -1749,7 +1753,11 @@ class Purchases internal constructor(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toRevenueCatProductType(), listener.toGetStoreProductsCallback())
+        getSkus(
+            skus.toSet(),
+            BillingClient.SkuType.INAPP.toRevenueCatProductType(),
+            listener.toGetStoreProductsCallback()
+        )
     }
 
     @Suppress("DeprecatedCallableAddReplaceWith")
