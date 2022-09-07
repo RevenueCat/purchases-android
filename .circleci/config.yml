@@ -25,6 +25,13 @@ aliases:
       branches:
         only: /^release\/.*/
 
+  only-main-branch: &only-main-branch
+    filters:
+      tags:
+        ignore: /.*/
+      branches:
+        only: main
+
 version: 2.1
 orbs:
   android: circleci/android@0.2.1
@@ -359,13 +366,21 @@ workflows:
             - hold
           <<: *release-branches
       - deploy: *release-tags
-      - prepare-next-version: *release-tags
       - deploy-snapshot:
           filters:
             branches:
               only:
                 - main
       - docs-deploy: *release-tags
+
+  snapshot-bump:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+    jobs:
+      - prepare-next-version:
+          <<: *only-main-branch
+
   weekly-run-workflow:
     when:
       and:
