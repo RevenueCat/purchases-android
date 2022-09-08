@@ -1,28 +1,43 @@
-release-tags-and-branches: &release-tags-and-branches
-  filters:
-    tags:
-      ignore:
-        - /^.*-SNAPSHOT/
-        - latest
-    branches:
-      only: /^release\/.*/
+aliases:
+  release-tags-and-branches: &release-tags-and-branches
+    filters:
+      tags:
+        ignore:
+          - /^.*-SNAPSHOT/
+          - latest
+      branches:
+        only: /^release\/.*/
 
-release-tags: &release-tags
-  filters:
-    tags:
-      ignore:
-        - /^.*-SNAPSHOT/
-        - latest
-        - /^.*-amazon*/
-    branches:
-      ignore: /.*/
+  release-tags: &release-tags
+    filters:
+      tags:
+        ignore:
+          - /^.*-SNAPSHOT/
+          - latest
+          - /^.*-amazon*/
+      branches:
+        ignore: /.*/
+  
+  release-branches: &release-branches
+    filters:
+      tags:
+        ignore: /.*/
+      branches:
+        only: /^release\/.*/
+
+  only-main-branch: &only-main-branch
+    filters:
+      tags:
+        ignore: /.*/
+      branches:
+        only: main
 
 version: 2.1
 orbs:
   android: circleci/android@0.2.1
   android-wordpress-orb: wordpress-mobile/android@1.0.15
   gcp-cli: circleci/gcp-cli@2.1.0
-  revenuecat: revenuecat/sdks-common-config@1.1.0
+  revenuecat: revenuecat/sdks-common-config@2.0.0
 
 executors:
   android-executor:
@@ -76,34 +91,6 @@ commands:
             echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
             --export-secret-keys > /home/circleci/.gnupg/secring.gpg
 
-  setup-git-credentials:
-    steps:
-      - run:
-          name: Setup Git config
-          command: |
-            git config user.email $GIT_EMAIL
-            git config user.name $GIT_USERNAME
-
-  trust-github-key:
-    steps:
-      - run:
-          name: Trust GitHub key
-          command: |
-            for ip in $(dig @8.8.8.8 github.com +short); \
-            do ssh-keyscan github.com,$ip; \
-            ssh-keyscan $ip; \
-            done 2>/dev/null >> ~/.ssh/known_hosts
-
-  install-gems:
-    steps:
-      - restore_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-      - run: bundle check || bundle install --path vendor/bundle
-      - save_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-          paths:
-            - vendor/bundle
-
 jobs:
 
   test:
@@ -149,7 +136,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/purchases-android/docs/5.6.0-SNAPSHOT s3://purchases-docs/android/5.6.0-SNAPSHOT --delete
+          command: aws s3 sync ~/purchases-android/docs/5.7.0-SNAPSHOT s3://purchases-docs/android/5.7.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/purchases-android/docs/index.html s3://purchases-docs/android/index.html
@@ -162,9 +149,10 @@ jobs:
     steps:
       - checkout
       - install-sdkman
-      - setup-git-credentials
-      - trust-github-key
-      - install-gems
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
       - prepare-signing-key
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
@@ -180,9 +168,10 @@ jobs:
     steps:
       - checkout
       - install-sdkman
-      - install-gems
-      - setup-git-credentials
-      - trust-github-key
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - run:
           name: Prepare next version
           command: bundle exec fastlane prepare_next_version
@@ -337,15 +326,24 @@ jobs:
 workflows:
   version: 2
   danger:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - revenuecat/danger
 
   build-test:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - test
       - assemble-sample-app
 
   integration-test:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - integration-tests-build: *release-tags-and-branches
       - run-firebase-tests-latest-dependencies:
@@ -356,12 +354,37 @@ workflows:
             - integration-tests-build
 
   deploy:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
+      - hold:
+          type: approval
+          <<: *release-branches
+      - revenuecat/tag-current-branch:
+          requires:
+            - hold
+          <<: *release-branches
       - deploy: *release-tags
-      - prepare-next-version: *release-tags
       - deploy-snapshot:
           filters:
             branches:
               only:
                 - main
       - docs-deploy: *release-tags
+
+  snapshot-bump:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+    jobs:
+      - prepare-next-version:
+          <<: *only-main-branch
+
+  weekly-run-workflow:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "release-train", << pipeline.schedule.name >> ]
+    jobs:
+      - revenuecat/automatic-bump
