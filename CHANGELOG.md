@@ -1,3 +1,8 @@
+## 5.6.2
+### Other Changes
+* Update releasing instructions (#602) via Cesar de la Vega (@vegaro)
+* Move to SNAPSHOT version on every commit to main if needed (#611) via Toni Rico (@tonidero)
+
 ## 5.6.1
 ### Bugfixes
 * Wait to obtain unsubscribed attributes until finishing getting device identifiers (#604) via Toni Rico (@tonidero)
