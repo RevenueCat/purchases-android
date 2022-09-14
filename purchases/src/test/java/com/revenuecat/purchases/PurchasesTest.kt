@@ -2698,8 +2698,12 @@ class PurchasesTest {
         purchases.allowSharingPlayStoreAccount = true
 
         every {
-            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserId)
-        } returns unsyncedSubscriberAttributes
+            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserId, captureLambda())
+        } answers {
+            lambda<(Map<String, SubscriberAttribute>) -> Unit>().captured.also {
+                it.invoke(unsyncedSubscriberAttributes)
+            }
+        }
 
         var capturedLambda: ((String) -> Unit)? = null
         every {
@@ -4250,8 +4254,12 @@ class PurchasesTest {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
         every {
-            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(userIdToUse)
-        } returns emptyMap()
+            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(userIdToUse, captureLambda())
+        } answers {
+            lambda<(Map<String, SubscriberAttribute>) -> Unit>().captured.also {
+                it.invoke(emptyMap())
+            }
+        }
         every {
             mockSubscriberAttributesManager.markAsSynced(userIdToUse, any(), any())
         } just runs
