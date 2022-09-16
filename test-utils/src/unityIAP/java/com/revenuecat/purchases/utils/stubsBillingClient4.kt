@@ -79,7 +79,7 @@ fun stubSkuDetails(
 fun BillingClient.mockQueryPurchaseHistory(
     result: BillingResult,
     history: List<PurchaseHistoryRecord>
-) {
+): Any {
     val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
     every {
         queryPurchaseHistoryAsync(
@@ -92,4 +92,5 @@ fun BillingClient.mockQueryPurchaseHistory(
             history
         )
     }
+    return billingClientPurchaseHistoryListenerSlot
 }

@@ -82,7 +82,7 @@ fun stubPurchaseHistoryRecord(
 fun BillingClient.mockQueryPurchaseHistory(
     result: BillingResult,
     history: List<PurchaseHistoryRecord>
-): QueryPurchaseHistoryParams.Builder {
+): Any {
     mockkStatic(QueryPurchaseHistoryParams::class)
 
     val mockBuilder = mockk<QueryPurchaseHistoryParams.Builder>(relaxed = true)
@@ -112,5 +112,6 @@ fun BillingClient.mockQueryPurchaseHistory(
             history
         )
     }
+
     return mockBuilder
 }

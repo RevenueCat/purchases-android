@@ -381,7 +381,7 @@ class BillingWrapperBC4Test {
 
         val purchaseWrapper = purchasesByHashedToken?.get(token.sha1())
         assertThat(purchaseWrapper).isNotNull
-        assertThat(purchaseWrapper!!.type).isEqualTo(type.toProductType())
+        assertThat(purchaseWrapper!!.type).isEqualTo(type.toRevenueCatProductType())
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
         assertThat(purchaseWrapper.skus[0]).isEqualTo(sku)
@@ -419,7 +419,7 @@ class BillingWrapperBC4Test {
 
         val purchaseWrapper = purchasesByHashedToken?.get(token.sha1())
         assertThat(purchaseWrapper).isNotNull
-        assertThat(purchaseWrapper!!.type).isEqualTo(type.toProductType())
+        assertThat(purchaseWrapper!!.type).isEqualTo(type.toRevenueCatProductType())
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
         assertThat(purchaseWrapper.skus[0]).isEqualTo(sku)

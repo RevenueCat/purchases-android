@@ -266,7 +266,7 @@ class BillingWrapperBC5Test {
     fun `queryPurchaseHistoryAsync fails if sent invalid type`() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
-        mockQueryPurchaseHistory(
+        mockClient.mockQueryPurchaseHistory(
             billingClientOKResult,
             emptyList()
         )
@@ -290,7 +290,7 @@ class BillingWrapperBC5Test {
         val builder = mockClient.mockQueryPurchaseHistory(
             billingClientOKResult,
             emptyList()
-        )
+        ) as QueryPurchaseHistoryParams.Builder
 
         val subsType = BillingClient.ProductType.SUBS
         wrapper.queryPurchaseHistoryAsync(
@@ -306,7 +306,7 @@ class BillingWrapperBC5Test {
         val builder2 = mockClient.mockQueryPurchaseHistory(
             billingClientOKResult,
             emptyList()
-        )
+        ) as QueryPurchaseHistoryParams.Builder
 
         val inAppType = BillingClient.ProductType.INAPP
         wrapper.queryPurchaseHistoryAsync(
