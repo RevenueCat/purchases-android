@@ -15,7 +15,6 @@ import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ConsumeResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
@@ -441,6 +440,54 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun queryHistoryCallsListenerIfOk() {
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        mockClient.mockQueryPurchaseHistory(
+            billingClientOKResult,
+            emptyList()
+        )
+
+        var successCalled = false
+        val type = ProductType.SUBS.toGoogleProductType()
+        wrapper.queryPurchaseHistoryAsync(
+            type!!,
+            {
+                successCalled = true
+            },
+            {
+                fail("shouldn't go to on error")
+            }
+        )
+        assertThat(successCalled).isTrue
+    }
+
+    @Test
+    fun queryHistoryErrorCalledIfNotOK() {
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        mockClient.mockQueryPurchaseHistory(
+            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(),
+            emptyList()
+        )
+
+        var errorCalled = false
+        val type = ProductType.SUBS.toGoogleProductType()
+        wrapper.queryPurchaseHistoryAsync(
+            type!!,
+            {
+                fail("should go to on error")
+            },
+            {
+                assertThat(it.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
+                errorCalled = true
+            }
+        )
+
+        assertThat(errorCalled).isTrue
+    }
+
+    @Test
     fun canConsumeAToken() {
         val token = "mockToken"
 
@@ -816,54 +863,6 @@ class BillingWrapperTest {
         wrapper.getPurchaseType(inAppPurchaseToken) { productType ->
             assertThat(productType).isEqualTo(ProductType.UNKNOWN)
         }
-    }
-
-    @Test
-    fun queryHistoryCallsListenerIfOk() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-
-        mockClient.mockQueryPurchaseHistory(
-            billingClientOKResult,
-            emptyList()
-        )
-
-        var successCalled = false
-        val type = ProductType.SUBS.toGoogleProductType()
-        wrapper.queryPurchaseHistoryAsync(
-            type!!,
-            {
-                successCalled = true
-            },
-            {
-                fail("shouldn't go to on error")
-            }
-        )
-        assertThat(successCalled).isTrue
-    }
-
-    @Test
-    fun queryHistoryErrorCalledIfNotOK() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-
-        mockClient.mockQueryPurchaseHistory(
-            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(),
-            emptyList()
-        )
-
-        var errorCalled = false
-        val type = ProductType.SUBS.toGoogleProductType()
-        wrapper.queryPurchaseHistoryAsync(
-            type!!,
-            {
-                fail("should go to on error")
-            },
-            {
-                assertThat(it.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
-                errorCalled = true
-            }
-        )
-
-        assertThat(errorCalled).isTrue
     }
 
     @Test

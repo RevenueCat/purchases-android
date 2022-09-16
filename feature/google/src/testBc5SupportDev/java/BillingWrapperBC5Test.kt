@@ -1,3 +1,5 @@
+package com.revenuecat.purchases.google
+
 import android.app.Activity
 import android.content.Intent
 import android.os.Handler
@@ -21,17 +23,11 @@ import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
-import com.revenuecat.purchases.google.BillingWrapper
-import com.revenuecat.purchases.google.toGoogleProductType
-import com.revenuecat.purchases.google.toRevenueCatProductType
-import com.revenuecat.purchases.google.toStoreProduct
-import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.mockQueryPurchaseHistory

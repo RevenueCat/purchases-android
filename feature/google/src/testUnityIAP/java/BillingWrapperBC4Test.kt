@@ -1,3 +1,5 @@
+package com.revenuecat.purchases.google
+
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -29,7 +31,7 @@ import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.google.BillingWrapper
-import com.revenuecat.purchases.google.toProductType
+import com.revenuecat.purchases.google.toRevenueCatProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
