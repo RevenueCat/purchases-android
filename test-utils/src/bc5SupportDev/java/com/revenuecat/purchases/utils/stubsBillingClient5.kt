@@ -11,6 +11,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.verify
+import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.google.toGoogleProductType
 import org.json.JSONArray
 
 @SuppressWarnings("LongParameterList", "MagicNumber")
@@ -114,4 +117,14 @@ fun BillingClient.mockQueryPurchaseHistory(
     }
 
     return mockBuilder
+}
+
+fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(type: ProductType, builder: Any) {
+    verify(exactly = 1) {
+        (builder as QueryPurchaseHistoryParams.Builder).setProductType(type.toGoogleProductType()!!)
+    }
+
+    verify {
+        queryPurchaseHistoryAsync(any<QueryPurchaseHistoryParams>(), any())
+    }
 }

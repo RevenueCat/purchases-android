@@ -6,8 +6,11 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.google.toGoogleProductType
 import io.mockk.every
 import io.mockk.slot
+import io.mockk.verify
 import org.json.JSONArray
 
 fun stubGooglePurchase(
@@ -93,4 +96,10 @@ fun BillingClient.mockQueryPurchaseHistory(
         )
     }
     return billingClientPurchaseHistoryListenerSlot
+}
+
+fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(type: ProductType, builder: Any) {
+    verify(exactly = 1) {
+        queryPurchaseHistoryAsync(type.toGoogleProductType()!!, any())
+    }
 }
