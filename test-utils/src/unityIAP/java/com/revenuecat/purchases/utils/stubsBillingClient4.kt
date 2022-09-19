@@ -5,6 +5,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
+import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.google.toGoogleProductType
@@ -102,4 +103,28 @@ fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(type: ProductType, bu
     verify(exactly = 1) {
         queryPurchaseHistoryAsync(type.toGoogleProductType()!!, any())
     }
+}
+
+fun BillingClient.mockQueryPurchasesAsync(
+    result: BillingResult,
+    subPurchases: List<Purchase>,
+    inAppPurchases: List<Purchase> = listOf(),
+): Any {
+    val queryPurchasesListenerSlot = slot<PurchasesResponseListener>()
+    val typeSlot = slot<String>()
+    every {
+        queryPurchasesAsync(
+            capture(typeSlot),
+            capture(queryPurchasesListenerSlot)
+        )
+    } answers {
+        val purchasesToReturn =
+            if (typeSlot.captured == BillingClient.SkuType.SUBS) subPurchases else inAppPurchases
+        queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+            result,
+            purchasesToReturn
+        )
+    }
+
+    return queryPurchasesListenerSlot
 }
