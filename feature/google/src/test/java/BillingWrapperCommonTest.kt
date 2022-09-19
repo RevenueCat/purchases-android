@@ -1034,7 +1034,7 @@ open class BillingWrapperCommonTest : BillingWrapperTestBase() {
             "offering_a"
         )
 
-        setUpMockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
+        mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
 
         wrapper.consumeAndSave(true, googlePurchaseWrapper)
 
@@ -1056,7 +1056,7 @@ open class BillingWrapperCommonTest : BillingWrapperTestBase() {
             ProductType.INAPP
         )
 
-        setUpMockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
+        mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
 
         wrapper.consumeAndSave(true, historyRecordWrapper)
 

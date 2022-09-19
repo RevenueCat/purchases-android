@@ -52,7 +52,7 @@ abstract class BillingWrapperTestBase {
 
     @Before
     fun setup() {
-        setupRunnables()
+        mockRunnables()
 
         val listenerSlot = slot<PurchasesUpdatedListener>()
         every {
@@ -80,7 +80,7 @@ abstract class BillingWrapperTestBase {
             )
         } just Runs
 
-        setUpMockConsumeAsync(billingClientOKResult)
+        mockConsumeAsync(billingClientOKResult)
 
         every {
             mockClient.isReady
@@ -102,7 +102,7 @@ abstract class BillingWrapperTestBase {
         } returns Intent()
     }
 
-    private fun setupRunnables() {
+    private fun mockRunnables() {
         val slot = slot<Runnable>()
         every {
             handler.post(capture(slot))
@@ -124,7 +124,7 @@ abstract class BillingWrapperTestBase {
         return BillingResult.newBuilder().setResponseCode(this).build()
     }
 
-    internal fun setUpMockConsumeAsync(billingResult: BillingResult) {
+    internal fun mockConsumeAsync(billingResult: BillingResult) {
         every {
             mockClient.consumeAsync(capture(capturedConsumeParams), capture(capturedConsumeResponseListener))
         } answers {
