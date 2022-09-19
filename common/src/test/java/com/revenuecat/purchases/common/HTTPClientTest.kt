@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases.common
 
+import android.content.Context
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Store
@@ -69,8 +70,11 @@ class HTTPClientTest {
 
     @Before
     fun setupBefore() {
+        val context = mockk<Context>(relaxed = true).apply {
+            every { packageName } answers { "mock-package-name" }
+        }
         appConfig = AppConfig(
-            context = mockk(relaxed = true),
+            context = context,
             observerMode = false,
             platformInfo = expectedPlatformInfo,
             proxyURL = baseURL,
@@ -78,7 +82,6 @@ class HTTPClientTest {
         )
         client = HTTPClient(appConfig, mockETagManager)
     }
-
 
     @Test
     fun canPerformASimpleGet() {
@@ -180,6 +183,7 @@ class HTTPClientTest {
         assertThat(request.getHeader("X-Platform-Version")).isEqualTo("${Build.VERSION.SDK_INT}")
         assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo(expectedPlatformInfo.flavor)
         assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo(expectedPlatformInfo.version)
+        assertThat(request.getHeader("X-Platform-Package-Name")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Version")).isEqualTo(Config.frameworkVersion)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
