@@ -186,7 +186,7 @@ class HTTPClientTest {
         assertThat(request.getHeader("X-Version")).isEqualTo(Config.frameworkVersion)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
-        assertThat(request.getHeader("X-Client-Package-Name")).isEqualTo("mock-package-name")
+        assertThat(request.getHeader("X-Client-Bundle-ID")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
     }
 

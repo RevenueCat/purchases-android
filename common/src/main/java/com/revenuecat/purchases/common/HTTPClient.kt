@@ -158,7 +158,7 @@ class HTTPClient(
             "X-Version" to Config.frameworkVersion,
             "X-Client-Locale" to appConfig.languageTag,
             "X-Client-Version" to appConfig.versionName,
-            "X-Client-Package-Name" to appConfig.packageName,
+            "X-Client-Bundle-ID" to appConfig.packageName,
             "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true"
         )
             .plus(authenticationHeaders)
