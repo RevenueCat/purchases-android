@@ -105,10 +105,14 @@ fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(type: ProductType, bu
     }
 }
 
+/*
+ * Mocks the queryPurchasesAsync result to be returned from BillingClient.
+ * Keep in mind that this method will return the same BillingResult for any type
+ */
 fun BillingClient.mockQueryPurchasesAsync(
     result: BillingResult,
     subPurchases: List<Purchase>,
-    inAppPurchases: List<Purchase> = listOf(),
+    inAppPurchases: List<Purchase> = listOf()
 ): Any {
     val queryPurchasesListenerSlot = slot<PurchasesResponseListener>()
     val typeSlot = slot<String>()

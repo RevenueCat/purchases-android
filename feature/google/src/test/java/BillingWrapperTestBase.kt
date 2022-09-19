@@ -10,6 +10,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ConsumeResponseListener
+import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.BillingAbstract
@@ -102,6 +103,29 @@ abstract class BillingWrapperTestBase {
         } returns Intent()
     }
 
+    internal fun Int.buildResult(): BillingResult {
+        return BillingResult.newBuilder().setResponseCode(this).build()
+    }
+
+    internal fun mockConsumeAsync(billingResult: BillingResult) {
+        every {
+            mockClient.consumeAsync(capture(capturedConsumeParams), capture(capturedConsumeResponseListener))
+        } answers {
+            capturedConsumeResponseListener.captured.onConsumeResponse(
+                billingResult,
+                capturedConsumeParams.captured.purchaseToken
+            )
+        }
+    }
+
+    internal fun getMockedPurchaseList(purchaseToken: String): List<Purchase> {
+        return listOf(mockk(
+            relaxed = true
+        ) {
+            every { this@mockk.purchaseToken } returns purchaseToken
+        })
+    }
+
     private fun mockRunnables() {
         val slot = slot<Runnable>()
         every {
@@ -117,21 +141,6 @@ abstract class BillingWrapperTestBase {
         } answers {
             delayedSlot.captured.run()
             true
-        }
-    }
-
-    private fun Int.buildResult(): BillingResult {
-        return BillingResult.newBuilder().setResponseCode(this).build()
-    }
-
-    internal fun mockConsumeAsync(billingResult: BillingResult) {
-        every {
-            mockClient.consumeAsync(capture(capturedConsumeParams), capture(capturedConsumeResponseListener))
-        } answers {
-            capturedConsumeResponseListener.captured.onConsumeResponse(
-                billingResult,
-                capturedConsumeParams.captured.purchaseToken
-            )
         }
     }
 }

@@ -799,29 +799,6 @@ open class BillingWrapperCommonTest : BillingWrapperTestBase() {
     }
 
     @Test
-    fun `getPurchaseType returns UNKNOWN if sub not found and inapp responses not OK`() {
-        // todo figure out how to mock different results
-//        val errorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
-//        val inAppPurchaseToken = "inAppToken"
-//        mockQueryPurchasesAsync(
-//            BillingClient.SkuType.INAPP,
-//            errorResult,
-//            getMockedPurchaseList(inAppPurchaseToken)
-//        )
-//
-//        val subPurchaseToken = "subToken"
-//        mockQueryPurchasesAsync(
-//            BillingClient.SkuType.SUBS,
-//            billingClientOKResult,
-//            getMockedPurchaseList(subPurchaseToken)
-//        )
-//
-//        wrapper.getPurchaseType(inAppPurchaseToken) { productType ->
-//            assertThat(productType).isEqualTo(ProductType.UNKNOWN)
-//        }
-    }
-
-    @Test
     fun `findPurchaseInPurchaseHistory works`() {
         val sku = "aPurchase"
         val purchaseHistoryRecord = stubPurchaseHistoryRecord(productIds = listOf(sku))
@@ -1589,14 +1566,6 @@ open class BillingWrapperCommonTest : BillingWrapperTestBase() {
         assertThat(receivedProductID).isEqualTo(expectedProductID)
     }
 
-    private fun getMockedPurchaseList(purchaseToken: String): List<Purchase> {
-        return listOf(mockk(
-            relaxed = true
-        ) {
-            every { this@mockk.purchaseToken } returns purchaseToken
-        })
-    }
-
     private fun mockNullSkuDetailsResponse() {
         val slot = slot<SkuDetailsResponseListener>()
         every {
@@ -1607,10 +1576,6 @@ open class BillingWrapperCommonTest : BillingWrapperTestBase() {
         } answers {
             slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
         }
-    }
-
-    private fun Int.buildResult(): BillingResult {
-        return BillingResult.newBuilder().setResponseCode(this).build()
     }
 
     private fun mockPurchaseHistoryRecordWrapper(): StoreTransaction {

@@ -3,6 +3,9 @@ package com.revenuecat.purchases.google
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.PurchaseHistoryResponseListener
+import com.android.billingclient.api.PurchasesResponseListener
+import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.utils.mockQueryPurchasesAsync
 import io.mockk.every
 import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
@@ -82,6 +85,43 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
         assertThat(lock.count).isEqualTo(0)
 
         assertThat(numCallbacks).isEqualTo(1)
+    }
+
+    @Test
+    fun `getPurchaseType returns UNKNOWN if sub not found and inapp responses not OK`() {
+        val subPurchaseToken = "subToken"
+
+        val querySubPurchasesListenerSlot = slot<PurchasesResponseListener>()
+        every {
+            mockClient.queryPurchasesAsync(
+                BillingClient.SkuType.SUBS,
+                capture(querySubPurchasesListenerSlot)
+            )
+        } answers {
+            querySubPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                billingClientOKResult,
+                getMockedPurchaseList(subPurchaseToken)
+            )
+        }
+
+        val errorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
+        val inAppPurchaseToken = "inAppToken"
+        val queryInAppPurchasesListenerSlot = slot<PurchasesResponseListener>()
+        every {
+            mockClient.queryPurchasesAsync(
+                BillingClient.SkuType.INAPP,
+                capture(queryInAppPurchasesListenerSlot)
+            )
+        } answers {
+            queryInAppPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                errorResult,
+                getMockedPurchaseList(inAppPurchaseToken)
+            )
+        }
+
+        wrapper.getPurchaseType(inAppPurchaseToken) { productType ->
+            assertThat(productType).isEqualTo(ProductType.UNKNOWN)
+        }
     }
 
 }
