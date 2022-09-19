@@ -183,10 +183,10 @@ class HTTPClientTest {
         assertThat(request.getHeader("X-Platform-Version")).isEqualTo("${Build.VERSION.SDK_INT}")
         assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo(expectedPlatformInfo.flavor)
         assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo(expectedPlatformInfo.version)
-        assertThat(request.getHeader("X-Platform-Package-Name")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Version")).isEqualTo(Config.frameworkVersion)
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
+        assertThat(request.getHeader("X-Client-Package-Name")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
     }
 
