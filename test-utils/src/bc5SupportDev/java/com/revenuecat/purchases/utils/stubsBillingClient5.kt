@@ -16,6 +16,7 @@ import io.mockk.slot
 import io.mockk.verify
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.google.toGoogleProductType
+import io.mockk.clearStaticMockk
 import org.assertj.core.api.AssertionsForClassTypes.fail
 import org.json.JSONArray
 

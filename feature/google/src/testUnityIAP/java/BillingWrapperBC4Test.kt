@@ -21,7 +21,6 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
 
     @Test
     fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice`() {
-        // TODO pull to common once refactoring queryPurchaseHistoryAsync to take RCProductType
         var numCallbacks = 0
 
         val slot = slot<PurchaseHistoryResponseListener>()
@@ -48,7 +47,6 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
 
     @Test
     fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice from different threads`() {
-        // TODO pull to common once refactoring queryPurchaseHistoryAsync to take RCProductType
         var numCallbacks = 0
 
         val slot = slot<PurchaseHistoryResponseListener>()

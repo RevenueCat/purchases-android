@@ -532,12 +532,6 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
     }
 
     @Test
-    fun `on successfully connected billing client, listener is called`() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-        assertThat(onConnectedCalled).isTrue
-    }
-
-    @Test
     fun `getting all purchases gets both subs and inapps`() {
         val builder = mockClient.mockQueryPurchaseHistory(
             billingClientOKResult,
@@ -552,6 +546,12 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
         assertThat(receivedPurchases.size).isNotZero
         mockClient.verifyQueryPurchaseHistoryCalledWithType(ProductType.SUBS, builder)
         mockClient.verifyQueryPurchaseHistoryCalledWithType(ProductType.INAPP, builder)
+    }
+
+    @Test
+    fun `on successfully connected billing client, listener is called`() {
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        assertThat(onConnectedCalled).isTrue
     }
 
     @Test
