@@ -25,7 +25,7 @@ import io.mockk.runs
 import io.mockk.slot
 import org.junit.Before
 
-abstract class BillingWrapperTestBase {
+open class BillingWrapperTestBase {
     internal var onConnectedCalled: Boolean = false
     internal var mockClientFactory: BillingWrapper.ClientFactory = mockk()
     internal var mockClient: BillingClient = mockk()

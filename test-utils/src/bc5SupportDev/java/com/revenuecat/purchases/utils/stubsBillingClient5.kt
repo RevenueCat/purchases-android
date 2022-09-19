@@ -130,6 +130,8 @@ fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(type: ProductType, bu
     verify {
         queryPurchaseHistoryAsync(any<QueryPurchaseHistoryParams>(), any())
     }
+
+    clearStaticMockk(QueryPurchasesParams::class)
 }
 
 fun BillingClient.mockQueryPurchasesAsync(

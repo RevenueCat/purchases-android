@@ -43,7 +43,7 @@ import java.util.concurrent.CountDownLatch
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-open class BillingWrapperCommonTest : BillingWrapperTestBase() {
+class BillingWrapperCommonTest : BillingWrapperTestBase() {
 
     @Test
     fun canBeCreated() {
