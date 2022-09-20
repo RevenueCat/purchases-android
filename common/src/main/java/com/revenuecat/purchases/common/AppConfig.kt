@@ -17,6 +17,7 @@ class AppConfig(
 
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""
     val versionName: String = context.versionName ?: ""
+    val packageName: String = context.packageName
     var finishTransactions: Boolean = !observerMode
     val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO, ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET)
