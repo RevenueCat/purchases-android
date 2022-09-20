@@ -99,6 +99,7 @@ fun BillingClient.mockQueryPurchaseHistory(
     return billingClientPurchaseHistoryListenerSlot
 }
 
+@Suppress("UNUSED_VARIABLE")
 fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(type: ProductType, builder: Any) {
     verify(exactly = 1) {
         queryPurchaseHistoryAsync(type.toGoogleProductType()!!, any())

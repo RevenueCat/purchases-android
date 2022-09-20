@@ -5,7 +5,6 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.utils.mockQueryPurchasesAsync
 import io.mockk.every
 import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
@@ -121,5 +120,4 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
             assertThat(productType).isEqualTo(ProductType.UNKNOWN)
         }
     }
-
 }

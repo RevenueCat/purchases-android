@@ -105,5 +105,4 @@ class BillingWrapperBC5Test : BillingWrapperTestBase() {
 
         assertThat(numCallbacks).isEqualTo(1)
     }
-
 }
