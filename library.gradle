@@ -9,12 +9,15 @@ android {
     productFlavors {
         unityIAP {
             dimension "dependencyVersions"
+            buildConfigField "String", "BILLING_VERSION", "\"${billing4Version}\""
         }
         latestDependencies {
             dimension "dependencyVersions"
+            buildConfigField "String", "BILLING_VERSION", "\"${billing4Version}\""
         }
         bc5SupportDev {
             dimension "dependencyVersions"
+            buildConfigField "String", "BILLING_VERSION", "\"${billing5Version}\""
         }
     }
     defaultConfig {

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
+import com.revenuecat.purchases.BuildConfig
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
 import java.net.URL
@@ -18,6 +19,7 @@ class AppConfig(
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""
     val versionName: String = context.versionName ?: ""
     val packageName: String = context.packageName
+    val billingVersion: String = BuildConfig.BILLING_VERSION
     var finishTransactions: Boolean = !observerMode
     val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO, ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET)
@@ -34,6 +36,7 @@ class AppConfig(
         if (dangerousSettings != other.dangerousSettings) return false
         if (languageTag != other.languageTag) return false
         if (versionName != other.versionName) return false
+        if (billingVersion != other.billingVersion) return false
         if (finishTransactions != other.finishTransactions) return false
         if (baseURL != other.baseURL) return false
 
@@ -46,6 +49,7 @@ class AppConfig(
         result = 31 * result + dangerousSettings.hashCode()
         result = 31 * result + languageTag.hashCode()
         result = 31 * result + versionName.hashCode()
+        result = 31 * result + billingVersion.hashCode()
         result = 31 * result + finishTransactions.hashCode()
         result = 31 * result + baseURL.hashCode()
         return result
@@ -58,6 +62,7 @@ class AppConfig(
             "dangerousSettings=$dangerousSettings, " +
             "languageTag='$languageTag', " +
             "versionName='$versionName', " +
+            "billingVersion='$billingVersion', " +
             "finishTransactions=$finishTransactions, " +
             "baseURL=$baseURL)"
     }

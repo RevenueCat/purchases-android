@@ -24,15 +24,11 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
-import org.json.JSONObject
 import org.junit.After
-import org.junit.AfterClass
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
-import java.util.HashMap
 import org.robolectric.annotation.Config as AnnotationConfig
 
 @RunWith(AndroidJUnit4::class)
@@ -187,6 +183,7 @@ class HTTPClientTest {
         assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
         assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
         assertThat(request.getHeader("X-Client-Bundle-ID")).isEqualTo("mock-package-name")
+        assertThat(request.getHeader("X-Client-Billing-Version")).isEqualTo(BuildConfig.BILLING_VERSION)
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
     }
 
