@@ -156,6 +156,7 @@ class Purchases internal constructor(
         log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
         log(LogIntent.DEBUG, ConfigureStrings.SDK_VERSION.format(frameworkVersion))
         log(LogIntent.DEBUG, ConfigureStrings.PACKAGE_NAME.format(appConfig.packageName))
+        log(LogIntent.DEBUG, ConfigureStrings.BILLING_VERSION.format(appConfig.billingVersion))
         log(LogIntent.USER, ConfigureStrings.INITIAL_APP_USER_ID.format(backingFieldAppUserID))
         identityManager.configure(backingFieldAppUserID)
 

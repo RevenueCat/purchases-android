@@ -12,6 +12,7 @@ object ConfigureStrings {
         "More info here: https://errors.rev.cat/configuring-sdk"
     const val SDK_VERSION = "SDK Version - %s"
     const val PACKAGE_NAME = "Package name - %s"
+    const val BILLING_VERSION = "BillingClient version - %s"
     const val LEGACY_API_KEY = "Looks like you're using a legacy API key.\n" +
         "This is still supported, but it's recommended to migrate to using platform-specific API key, " +
         "which should look like 'goog_1a2b3c4d5e6f7h' or 'amzn_1a2b3c4d5e6f7h'.\n" +

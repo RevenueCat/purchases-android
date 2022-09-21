@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.BuildConfig
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
 import io.mockk.every
@@ -108,6 +109,18 @@ class AppConfigTest {
             store = Store.PLAY_STORE
         )
         assertThat(appConfig.packageName).isEqualTo(expected)
+    }
+
+    @Test
+    fun `billingVersion is created successfully`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE
+        )
+        assertThat(appConfig.billingVersion).isEqualTo(BuildConfig.BILLING_VERSION)
     }
 
     @Test
