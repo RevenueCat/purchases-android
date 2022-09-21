@@ -100,9 +100,9 @@ fun BillingClient.mockQueryPurchaseHistory(
 }
 
 @Suppress("UNUSED_VARIABLE")
-fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(type: ProductType, builder: Any) {
+fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(@BillingClient.SkuType googleType: String, builder: Any) {
     verify(exactly = 1) {
-        queryPurchaseHistoryAsync(type.toGoogleProductType()!!, any())
+        queryPurchaseHistoryAsync(googleType, any())
     }
 }
 

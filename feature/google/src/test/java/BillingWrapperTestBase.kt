@@ -13,6 +13,7 @@ import com.android.billingclient.api.ConsumeResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.models.StoreProduct
@@ -50,6 +51,9 @@ open class BillingWrapperTestBase {
     internal val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
     internal val appUserId = "jerry"
     internal var mockActivity = mockk<Activity>()
+
+    internal val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!
+    internal val inAppGoogleProductType = ProductType.INAPP.toGoogleProductType()!!
 
     @Before
     fun setup() {

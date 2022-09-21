@@ -123,9 +123,12 @@ fun BillingClient.mockQueryPurchaseHistory(
     return mockBuilder
 }
 
-fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(type: ProductType, builder: Any) {
+fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(
+    @BillingClient.ProductType googleType:
+    String, builder: Any)
+{
     verify(exactly = 1) {
-        (builder as QueryPurchaseHistoryParams.Builder).setProductType(type.toGoogleProductType()!!)
+        (builder as QueryPurchaseHistoryParams.Builder).setProductType(googleType)
     }
 
     verify {

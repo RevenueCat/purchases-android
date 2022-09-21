@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingFlowParams
-import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.SkuDetails
@@ -84,25 +83,29 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
     }
 
     @Test
-    fun canDeferMultipleCalls() {
+    fun canDeferMultipleCallsUntilConnected() {
         every { mockClient.isReady } returns false
 
         val token = "token"
 
-        var consumePurchaseResponseCalled = 0
+        var consumePurchaseResponse1Called = false
         wrapper.consumePurchase(token) { _, _ ->
-            consumePurchaseResponseCalled += 1
+            consumePurchaseResponse1Called = true
         }
+
+        var consumePurchaseResponse2Called = false
         wrapper.consumePurchase(token) { _, _ ->
-            consumePurchaseResponseCalled += 1
+            consumePurchaseResponse2Called = true
         }
-        assertThat(consumePurchaseResponseCalled).isZero
+        assertThat(consumePurchaseResponse1Called).isFalse
+        assertThat(consumePurchaseResponse2Called).isFalse
 
         every { mockClient.isReady } returns true
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
-        assertThat(consumePurchaseResponseCalled).isEqualTo(2)
+        assertThat(consumePurchaseResponse1Called).isTrue
+        assertThat(consumePurchaseResponse2Called).isTrue
     }
 
     @Test
@@ -174,10 +177,9 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
         } returns mockSubscriptionUpdateParamsBuilder
 
         val sku = "product_a"
-        val rcProductType = ProductType.SUBS
 
         val upgradeInfo = mockReplaceSkuInfo()
-        val skuDetails = stubSkuDetails(productId = sku, type = rcProductType.toGoogleProductType()!!)
+        val skuDetails = stubSkuDetails(productId = sku, type = subsGoogleProductType)
 
         val slot = slot<BillingFlowParams>()
         every {
@@ -186,7 +188,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
             val capturedSkuDetails = skuDetailsSlot.captured
 
             assertThat(sku).isEqualTo(capturedSkuDetails.sku)
-            assertThat(rcProductType.toGoogleProductType()).isEqualTo(capturedSkuDetails.type)
+            assertThat(subsGoogleProductType).isEqualTo(capturedSkuDetails.type)
 
             assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldSkuPurchaseTokenSlot.captured)
             assertThat(upgradeInfo.prorationMode).isEqualTo(prorationModeSlot.captured)
@@ -365,9 +367,8 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
         )
 
         var successCalled = false
-        val type = ProductType.SUBS.toGoogleProductType()
         wrapper.queryPurchaseHistoryAsync(
-            type!!,
+            subsGoogleProductType,
             {
                 successCalled = true
             },
@@ -388,9 +389,8 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
         )
 
         var errorCalled = false
-        val type = ProductType.SUBS.toGoogleProductType()
         wrapper.queryPurchaseHistoryAsync(
-            type!!,
+            subsGoogleProductType,
             {
                 fail("should go to on error")
             },
@@ -544,8 +544,8 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
         }, { fail("Shouldn't be error") })
 
         assertThat(receivedPurchases.size).isNotZero
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(ProductType.SUBS, builder)
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(ProductType.INAPP, builder)
+        mockClient.verifyQueryPurchaseHistoryCalledWithType(subsGoogleProductType, builder)
+        mockClient.verifyQueryPurchaseHistoryCalledWithType(inAppGoogleProductType, builder)
     }
 
     @Test
@@ -563,28 +563,26 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
             emptyList()
         )
 
-        val subsType = ProductType.SUBS
         wrapper.queryPurchaseHistoryAsync(
-            subsType.toGoogleProductType()!!,
+            subsGoogleProductType,
             {},
             {}
         )
 
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(subsType, subsBuilder)
+        mockClient.verifyQueryPurchaseHistoryCalledWithType(subsGoogleProductType, subsBuilder)
 
         val inAppBuilder = mockClient.mockQueryPurchaseHistory(
             billingClientOKResult,
             emptyList()
         )
 
-        val inAppType = ProductType.INAPP
         wrapper.queryPurchaseHistoryAsync(
-            inAppType.toGoogleProductType()!!,
+            inAppGoogleProductType,
             {},
             {}
         )
 
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(inAppType, inAppBuilder)
+        mockClient.verifyQueryPurchaseHistoryCalledWithType(inAppGoogleProductType, inAppBuilder)
     }
 
     @Test
@@ -656,7 +654,6 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
     @Test
     fun `when querying SUBS result is created properly`() {
         val token = "token"
-        val type = BillingClient.SkuType.SUBS
         val time = System.currentTimeMillis()
         val sku = "sku"
 
@@ -688,7 +685,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
 
         val purchaseWrapper = purchasesByHashedToken?.get(token.sha1())
         assertThat(purchaseWrapper).isNotNull
-        assertThat(purchaseWrapper!!.type).isEqualTo(type.toRevenueCatProductType())
+        assertThat(purchaseWrapper!!.type).isEqualTo(ProductType.SUBS)
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
         assertThat(purchaseWrapper.skus[0]).isEqualTo(sku)
@@ -872,7 +869,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
 
         wrapper.consumeAndSave(true, googlePurchaseWrapper)
 
-        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue()
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
             billingClientOKResult
         )
@@ -1173,7 +1170,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
                 fail("shouldn't be an error")
             })
 
-        assertThat(slot.isCaptured).isTrue()
+        assertThat(slot.isCaptured).isTrue
         assertThat(slot.captured.skuType).isEqualTo(BillingClient.SkuType.INAPP)
     }
 
