@@ -7,8 +7,6 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.google.toGoogleProductType
 import io.mockk.every
 import io.mockk.slot
 import io.mockk.verify

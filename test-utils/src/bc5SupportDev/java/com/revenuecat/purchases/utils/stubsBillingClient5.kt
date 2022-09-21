@@ -9,14 +9,12 @@ import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.SkuDetails
+import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
-import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.google.toGoogleProductType
-import io.mockk.clearStaticMockk
 import org.assertj.core.api.AssertionsForClassTypes.fail
 import org.json.JSONArray
 
@@ -124,9 +122,9 @@ fun BillingClient.mockQueryPurchaseHistory(
 }
 
 fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(
-    @BillingClient.ProductType googleType:
-    String, builder: Any)
-{
+    @BillingClient.ProductType googleType: String,
+    builder: Any
+) {
     verify(exactly = 1) {
         (builder as QueryPurchaseHistoryParams.Builder).setProductType(googleType)
     }
