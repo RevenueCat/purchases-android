@@ -259,6 +259,15 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE
         )
-        assertThat(x.toString()).isNotNull()
+        assertThat(x.toString()).isEqualTo(
+            "AppConfig(" +
+                "platformInfo=PlatformInfo(flavor=native, version=3.2.0), " +
+                "store=PLAY_STORE, " +
+                "dangerousSettings=DangerousSettings(autoSyncPurchases=true), " +
+                "languageTag='', " +
+                "versionName='', " +
+                "packageName='', " +
+                "finishTransactions=true, " +
+                "baseURL=https://api.revenuecat.com/)")
     }
 }
