@@ -1,6 +1,5 @@
-### Bugfixes
-* Wait to obtain unsubscribed attributes until finishing getting device identifiers (#604) via Toni Rico (@tonidero)
 ### Other Changes
-* Release train (#599) via Cesar de la Vega (@vegaro)
-* Adds Danger (#597) via Cesar de la Vega (@vegaro)
-* Update releasing documentation (#600) via Toni Rico (@tonidero)
+* Add missing packageName to helper methods in AppConfig (#620) via Toni Rico (@tonidero)
+* Add package name to all requests headers (#618) via Toni Rico (@tonidero)
+* Update releasing instructions (#602) via Cesar de la Vega (@vegaro)
+* Move to SNAPSHOT version on every commit to main if needed (#611) via Toni Rico (@tonidero)
