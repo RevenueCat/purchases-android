@@ -1016,10 +1016,10 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getSkuDetails(skus, { detailsByID ->
-                            val offerings = offeringsJSON.createOfferings(detailsByID)
+                        getSkuDetails(skus, { productsBySku ->
+                            val offerings = offeringsJSON.createOfferings(productsBySku)
 
-                            logMissingProducts(offerings, detailsByID)
+                            logMissingProducts(offerings, productsBySku)
 
                             if (offerings.all.isEmpty()) {
                                 handleErrorFetchingOfferings(
