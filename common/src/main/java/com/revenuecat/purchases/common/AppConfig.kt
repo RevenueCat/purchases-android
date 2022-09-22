@@ -34,6 +34,7 @@ class AppConfig(
         if (dangerousSettings != other.dangerousSettings) return false
         if (languageTag != other.languageTag) return false
         if (versionName != other.versionName) return false
+        if (packageName != other.packageName) return false
         if (finishTransactions != other.finishTransactions) return false
         if (baseURL != other.baseURL) return false
 
@@ -46,6 +47,7 @@ class AppConfig(
         result = 31 * result + dangerousSettings.hashCode()
         result = 31 * result + languageTag.hashCode()
         result = 31 * result + versionName.hashCode()
+        result = 31 * result + packageName.hashCode()
         result = 31 * result + finishTransactions.hashCode()
         result = 31 * result + baseURL.hashCode()
         return result
@@ -58,6 +60,7 @@ class AppConfig(
             "dangerousSettings=$dangerousSettings, " +
             "languageTag='$languageTag', " +
             "versionName='$versionName', " +
+            "packageName='$packageName', " +
             "finishTransactions=$finishTransactions, " +
             "baseURL=$baseURL)"
     }
