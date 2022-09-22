@@ -9,6 +9,7 @@ import kotlinx.parcelize.Parcelize
  * @property identifier Unique identifier for this package. Can be one a predefined package type or a custom one.
  * @property packageType Package type for the product. Will be one of [PackageType].
  * @property product [StoreProduct] assigned to this package.
+ * @property offering offeringID this package was returned from.
  */
 @Parcelize
 data class Package(
