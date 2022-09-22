@@ -1,9 +1,15 @@
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
+import com.android.billingclient.api.PurchaseHistoryResponseListener
+import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.SkuDetails
+import io.mockk.every
+import io.mockk.slot
+import io.mockk.verify
 import org.json.JSONArray
 
 fun stubGooglePurchase(
@@ -71,3 +77,57 @@ fun stubSkuDetails(
               "description":"Monthly Product Intro Pricing One Week"
             }    
         """.trimIndent())
+
+fun BillingClient.mockQueryPurchaseHistory(
+    result: BillingResult,
+    history: List<PurchaseHistoryRecord>
+): Any {
+    val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
+    every {
+        queryPurchaseHistoryAsync(
+            any(),
+            capture(billingClientPurchaseHistoryListenerSlot)
+        )
+    } answers {
+        billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
+            result,
+            history
+        )
+    }
+    return billingClientPurchaseHistoryListenerSlot
+}
+
+@Suppress("UNUSED_VARIABLE")
+fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(@BillingClient.SkuType googleType: String, builder: Any) {
+    verify(exactly = 1) {
+        queryPurchaseHistoryAsync(googleType, any())
+    }
+}
+
+/*
+ * Mocks the queryPurchasesAsync result to be returned from BillingClient.
+ * Keep in mind that this method will return the same BillingResult for any type
+ */
+fun BillingClient.mockQueryPurchasesAsync(
+    result: BillingResult,
+    subPurchases: List<Purchase>,
+    inAppPurchases: List<Purchase> = listOf()
+): Any {
+    val queryPurchasesListenerSlot = slot<PurchasesResponseListener>()
+    val typeSlot = slot<String>()
+    every {
+        queryPurchasesAsync(
+            capture(typeSlot),
+            capture(queryPurchasesListenerSlot)
+        )
+    } answers {
+        val purchasesToReturn =
+            if (typeSlot.captured == BillingClient.SkuType.SUBS) subPurchases else inAppPurchases
+        queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+            result,
+            purchasesToReturn
+        )
+    }
+
+    return queryPurchasesListenerSlot
+}

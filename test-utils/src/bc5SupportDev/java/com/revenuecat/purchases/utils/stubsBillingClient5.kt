@@ -1,9 +1,21 @@
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
+import com.android.billingclient.api.PurchaseHistoryResponseListener
+import com.android.billingclient.api.PurchasesResponseListener
+import com.android.billingclient.api.QueryPurchaseHistoryParams
+import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.SkuDetails
+import io.mockk.clearStaticMockk
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.slot
+import io.mockk.verify
+import org.assertj.core.api.AssertionsForClassTypes.fail
 import org.json.JSONArray
 
 @SuppressWarnings("LongParameterList", "MagicNumber")
@@ -71,3 +83,103 @@ fun stubPurchaseHistoryRecord(
                 "purchaseToken": "$purchaseToken"
             }
         """.trimIndent(), signature)
+
+fun BillingClient.mockQueryPurchaseHistory(
+    result: BillingResult,
+    history: List<PurchaseHistoryRecord>
+): Any {
+    mockkStatic(QueryPurchaseHistoryParams::class)
+
+    val mockBuilder = mockk<QueryPurchaseHistoryParams.Builder>(relaxed = true)
+    every {
+        QueryPurchaseHistoryParams.newBuilder()
+    } returns mockBuilder
+
+    every {
+        mockBuilder.setProductType(any())
+    } returns mockBuilder
+
+    val params = mockk<QueryPurchaseHistoryParams>(relaxed = true)
+    every {
+        mockBuilder.build()
+    } returns params
+
+    val billingClientPurchaseHistoryListenerSlot = slot<PurchaseHistoryResponseListener>()
+
+    every {
+        queryPurchaseHistoryAsync(
+            params,
+            capture(billingClientPurchaseHistoryListenerSlot)
+        )
+    } answers {
+        billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
+            result,
+            history
+        )
+    }
+
+    return mockBuilder
+}
+
+fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(
+    @BillingClient.ProductType googleType: String,
+    builder: Any
+) {
+    verify(exactly = 1) {
+        (builder as QueryPurchaseHistoryParams.Builder).setProductType(googleType)
+    }
+
+    verify {
+        queryPurchaseHistoryAsync(any<QueryPurchaseHistoryParams>(), any())
+    }
+
+    clearStaticMockk(QueryPurchasesParams::class)
+}
+
+fun BillingClient.mockQueryPurchasesAsync(
+    result: BillingResult,
+    subPurchases: List<Purchase>,
+    inAppPurchases: List<Purchase> = listOf()
+): Any {
+    mockkStatic(QueryPurchasesParams::class)
+
+    val mockBuilder = mockk<QueryPurchasesParams.Builder>(relaxed = true)
+    every {
+        QueryPurchasesParams.newBuilder()
+    } returns mockBuilder
+
+    val typeSlot = slot<String>()
+    every {
+        mockBuilder.setProductType(capture(typeSlot))
+    } returns mockBuilder
+
+    val params = mockk<QueryPurchasesParams>(relaxed = true)
+    every {
+        mockBuilder.build()
+    } returns params
+
+    val queryPurchasesListenerSlot = slot<PurchasesResponseListener>()
+
+    every {
+        queryPurchasesAsync(
+            params,
+            capture(queryPurchasesListenerSlot)
+        )
+    } answers {
+        val purchasesToReturn = when (typeSlot.captured) {
+            BillingClient.ProductType.SUBS -> subPurchases
+            BillingClient.ProductType.INAPP -> inAppPurchases
+            else -> {
+                fail("queryPurchasesAsync typeSlot not captured or captured unexpected type")
+                null
+            }
+        }
+
+        queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+            result,
+            purchasesToReturn ?: emptyList()
+        )
+    }
+
+    return mockBuilder
+}
