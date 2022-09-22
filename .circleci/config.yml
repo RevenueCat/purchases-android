@@ -39,6 +39,12 @@ orbs:
   gcp-cli: circleci/gcp-cli@2.1.0
   revenuecat: revenuecat/sdks-common-config@2.0.0
 
+parameters:
+  action:
+    type: enum
+    enum: [default, bump]
+    default: default
+
 executors:
   android-executor:
     docker:
@@ -386,5 +392,11 @@ workflows:
       and:
         - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "release-train", << pipeline.schedule.name >> ]
+    jobs:
+      - revenuecat/automatic-bump
+  
+  manual-trigger-bump:
+    when:
+      equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump
