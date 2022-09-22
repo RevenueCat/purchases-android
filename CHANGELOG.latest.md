@@ -1,5 +1,5 @@
-### New Features
-* CleverTapID integration (#593) via Joshua Liebowitz (@taquitos)
-
 ### Other Changes
-* Rename package name of purchase tester app to com.revenuecat.purchases_sample (#592) via Toni Rico (@tonidero)
+* Add missing packageName to helper methods in AppConfig (#620) via Toni Rico (@tonidero)
+* Add package name to all requests headers (#618) via Toni Rico (@tonidero)
+* Update releasing instructions (#602) via Cesar de la Vega (@vegaro)
+* Move to SNAPSHOT version on every commit to main if needed (#611) via Toni Rico (@tonidero)
