@@ -125,9 +125,9 @@ platform :android do
 
     UI.verbose("Creating special version for Unity IAP with BillingClient 3 and Amazon 2 for version: #{version}")
     gradleProperties["PUBLISH_VARIANT"] = "unityIAPRelease"
-    
+
     UI.verbose("Adding -unityiap to artifact ids")
-    
+
 
     gradle(
       tasks: [
@@ -135,7 +135,7 @@ platform :android do
       ],
       properties: gradleProperties
     )
-    
+
     unless is_snapshot_version?(version)
       gradle(
         tasks: [
@@ -186,10 +186,10 @@ platform :android do
       project_dir = "examples/MagicWeather"
 
       tasks = [
-        "assembleAmazonDebug", 
-        "assembleAmazonRelease", 
-        "assembleGoogleDebug", 
-        "assembleGoogleRelease", 
+        "assembleAmazonDebug",
+        "assembleAmazonRelease",
+        "assembleGoogleDebug",
+        "assembleGoogleRelease",
       ]
       task = options[:task] || UI.select("Which task?", tasks)
 
@@ -274,7 +274,7 @@ platform :android do
     UI.message("Running tests")
     run_maestro_play_store_login_flow(google_email, google_password, retry_count: 2)
 
-    play_store_stabilization_wait_time_seconds = 30
+    play_store_stabilization_wait_time_seconds = 60
     UI.message("Waiting #{play_store_stabilization_wait_time_seconds} for Play Store to stabilize after login.")
     sleep(play_store_stabilization_wait_time_seconds)
 

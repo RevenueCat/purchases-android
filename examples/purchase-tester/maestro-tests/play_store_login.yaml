@@ -1,20 +1,24 @@
 appId: com.revenuecat.purchases_sample
 ---
 - launchApp:
-      appId: "com.android.vending"
-      clearState: true
+    appId: "com.android.vending"
+    clearState: true
 - tapOn:
-      text: "Sign in"
-- tapOn:
-      # This is the id for the inputText in the play store.
+    text: "Sign in"
+- extendedWaitUntil:
+    visible:
       id: "identifierId"
+    timeout: 30000
+- tapOn:
+    # This is the id for the inputText in the play store.
+    id: "identifierId"
 - inputText: ${GOOGLE_EMAIL}
 - hideKeyboard
 - tapOn:
-      id: "password"
+    id: "password"
 - inputText: ${GOOGLE_PASSWORD}
 - hideKeyboard
 - tapOn:
-      text: "I agree"
+    text: "I agree"
 - tapOn:
-      text: "Accept"
+    text: "Accept"

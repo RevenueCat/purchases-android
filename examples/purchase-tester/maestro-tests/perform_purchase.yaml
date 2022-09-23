@@ -21,5 +21,9 @@ appId: com.revenuecat.purchases_sample
 - tapOn:
     text: "OK"
     optional: true
-- assertVisible:
+- extendedWaitUntil:
+    visible:
       text: "Manage"
+    timeout: 30000
+- assertVisible:
+    text: "Manage"
