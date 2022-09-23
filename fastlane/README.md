@@ -45,7 +45,7 @@ Tag release version with latest if necessary
 [bundle exec] fastlane android automatic_bump
 ```
 
-Automatically bumps version, update swift header, edit changelog, and create pull request
+Automatically bumps version, replaces version numbers, updates changelog and creates PR
 
 ### android github_release
 
@@ -106,6 +106,14 @@ Builds a Magic Weather APK and prompts for:
 * Amazon pem path (optional)
 
 * New application id (optional)
+
+### android run_maestro_ui_tests
+
+```sh
+[bundle exec] fastlane android run_maestro_ui_tests
+```
+
+Runs Maestro UI tests
 
 ----
 

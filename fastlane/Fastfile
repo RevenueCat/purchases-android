@@ -253,6 +253,33 @@ platform :android do
       sh("git clean -fd")
     end
   end
+
+  desc "Runs Maestro UI tests"
+  lane :run_maestro_ui_tests do
+    emulator_name = ENV["MAESTRO_EMULATOR_NAME"] || UI.input("Name of the emulator you want to use? Note that it will be wiped on every run.")
+    google_email = ENV["MAESTRO_GOOGLE_EMAIL"] || UI.input("Email of the google account to use for tests?")
+    google_password = ENV["MAESTRO_GOOGLE_PASSWORD"] || UI.input("Password of the google account to use for tests?")
+
+    UI.message("Make sure 'emulator', 'adb' and 'maestro' are in your PATH.")
+
+    UI.message("Initializing emulator")
+    initialize_emulator(emulator_name)
+
+    UI.message("Installing purchase-tester")
+    Dir.chdir(get_root_folder) do
+      # Install purchase-tester in emulator
+      sh("./gradlew examples:purchase-tester:installLatestDependenciesDebug")
+    end
+
+    UI.message("Running tests")
+    run_maestro_play_store_login_flow(google_email, google_password, retry_count: 2)
+
+    play_store_stabilization_wait_time_seconds = 30
+    UI.message("Waiting #{play_store_stabilization_wait_time_seconds} for Play Store to stabilize after login.")
+    sleep(play_store_stabilization_wait_time_seconds)
+
+    run_maestro_purchase_flow(retry_count: 2)
+  end
 end
 
 def is_snapshot_version?(version_name)
@@ -267,4 +294,37 @@ def check_no_git_tag_exists(version_number)
   if git_tag_exists(tag: version_number, remote: true, remote_name: 'origin')
     raise "git tag with version #{version_number} already exists!"
   end
+end
+
+def get_root_folder
+  File.expand_path('../../', __FILE__)
+end
+
+def initialize_emulator(emulator_name)
+  # Make sure `emulator` is in your path
+  # This should be further polished to run on CI machines.
+  sh("emulator -avd #{emulator_name} -wipe-data > /dev/null 2>&1 &")
+
+  # Make sure `adb` is in your path
+  sh("adb wait-for-device")
+end
+
+def run_maestro_play_store_login_flow(google_email, google_password, retry_count: 0)
+  sh("maestro -p=android test -e GOOGLE_EMAIL=#{google_email} -e GOOGLE_PASSWORD=#{google_password} ../examples/purchase-tester/maestro-tests/play_store_login.yaml",
+     error_callback: -> (_) {
+       UI.user_error!("Error logging in to Play Store") if retry_count == 0
+       sleep(5)
+       run_maestro_play_store_login_flow(google_email, google_password, retry_count: retry_count - 1)
+     }
+  )
+end
+
+def run_maestro_purchase_flow(retry_count: 0)
+  sh("maestro -p=android test ../examples/purchase-tester/maestro-tests/perform_purchase.yaml",
+     error_callback: -> (_) {
+       UI.user_error!("Error testing purchase flow") if retry_count == 0
+       sleep(5)
+       run_maestro_purchase_flow(retry_count: retry_count - 1)
+     }
+  )
 end

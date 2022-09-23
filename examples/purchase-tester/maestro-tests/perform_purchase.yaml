@@ -1,0 +1,25 @@
+appId: com.revenuecat.purchases_sample
+---
+- launchApp:
+    appId: "com.revenuecat.purchases_sample"
+    clearState: true
+- tapOn:
+    id: "anonymous_user_button"
+- assertNotVisible:
+    text: "Manage"
+- tapOn:
+    text: "Default offering"
+- tapOn:
+    text: "Buy package"
+    index: 0
+- scroll
+- tapOn:
+    text: "Subscribe"
+- tapOn:
+    text: "No, thanks"
+    optional: true
+- tapOn:
+    text: "OK"
+    optional: true
+- assertVisible:
+      text: "Manage"
