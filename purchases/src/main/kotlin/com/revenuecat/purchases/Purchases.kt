@@ -1016,10 +1016,10 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getSkuDetails(skus, { productsBySku ->
-                            val offerings = offeringsJSON.createOfferings(productsBySku)
+                        getSkuDetails(skus, { productsById ->
+                            val offerings = offeringsJSON.createOfferings(productsById)
 
-                            logMissingProducts(offerings, productsBySku)
+                            logMissingProducts(offerings, productsById)
 
                             if (offerings.all.isEmpty()) {
                                 handleErrorFetchingOfferings(
@@ -1237,34 +1237,35 @@ class Purchases internal constructor(
     }
 
     private fun getSkuDetails(
-        skus: Set<String>,
+        productIds: Set<String>,
         onCompleted: (HashMap<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
-            skus,
-            { subscriptionsSKUDetails ->
-                val detailsByID = HashMap<String, StoreProduct>()
-                val inAPPSkus =
-                    skus - subscriptionsSKUDetails
-                        .map { details -> details.sku to details }
-                        .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
-                        .map { skuToDetails -> skuToDetails.first }
+            productIds,
+            { subscriptionProducts ->
+                val productsById = HashMap<String, StoreProduct>()
+                
+                val subscriptionProductsById = subscriptionProducts.map { subProduct -> subProduct.sku to subProduct }
+                productsById.putAll(subscriptionProductsById)
 
-                if (inAPPSkus.isNotEmpty()) {
+                val subscriptionIds = subscriptionProductsById.map { subProductById -> subProductById.first }.toSet()
+
+                val inAppProductIds = productIds - subscriptionIds
+                if (inAppProductIds.isNotEmpty()) {
                     billing.querySkuDetailsAsync(
                         ProductType.INAPP,
-                        inAPPSkus,
-                        { skuDetails ->
-                            detailsByID.putAll(skuDetails.map { it.sku to it })
-                            onCompleted(detailsByID)
+                        inAppProductIds,
+                        { product ->
+                            productsById.putAll(product.map { it.sku to it })
+                            onCompleted(productsById)
                         }, {
                             onError(it)
                         }
                     )
                 } else {
-                    onCompleted(detailsByID)
+                    onCompleted(productsById)
                 }
             }, {
                 onError(it)
