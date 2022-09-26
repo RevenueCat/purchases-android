@@ -3,12 +3,6 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.optNullableString
 import com.revenuecat.purchases.utils.parseExpirations

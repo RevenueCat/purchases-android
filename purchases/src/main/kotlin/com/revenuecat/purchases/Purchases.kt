@@ -1246,7 +1246,7 @@ class Purchases internal constructor(
             productIds,
             { subscriptionProducts ->
                 val productsById = HashMap<String, StoreProduct>()
-                
+
                 val subscriptionProductsById = subscriptionProducts.map { subProduct -> subProduct.sku to subProduct }
                 productsById.putAll(subscriptionProductsById)
 
