@@ -8,6 +8,7 @@ import com.revenuecat.sample.data.Constants
 import com.revenuecat.sample.ui.user.UserViewModel
 import com.revenuecat.purchases.amazon.AmazonConfiguration
 import java.lang.IllegalArgumentException
+import java.net.URL
 
 class MainApplication : Application() {
     override fun onCreate() {
@@ -29,6 +30,8 @@ class MainApplication : Application() {
             "google" -> PurchasesConfiguration.Builder(this, Constants.GOOGLE_API_KEY)
             else -> throw IllegalArgumentException("Invalid store.")
         }
+        Purchases.proxyURL = URL("http://192.168.1.45:8000")
+
         Purchases.configure(
             builder
                 .observerMode(false)

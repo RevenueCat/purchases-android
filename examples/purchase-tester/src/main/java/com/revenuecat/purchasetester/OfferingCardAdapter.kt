@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases_sample.databinding.OfferingCardBinding
+import com.stefanwehner.revenuecat.purchases_sample.databinding.OfferingCardBinding
 
 class OfferingCardAdapter(
     private val offerings: List<Offering>,

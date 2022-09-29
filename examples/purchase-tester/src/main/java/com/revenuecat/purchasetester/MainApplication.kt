@@ -17,6 +17,7 @@ import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import java.net.URL
 
 class MainApplication : Application(), UpdatedCustomerInfoListener {
 
@@ -30,7 +31,7 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
                 .build()
         )
         Purchases.debugLogsEnabled = true
-
+        Purchases.proxyURL = URL("http://192.168.1.45:8000")
         val purchasesConfigurationBuilder =
             when {
                 GOOGLE_API_KEY.isNotEmpty() -> PurchasesConfiguration.Builder(this, GOOGLE_API_KEY)

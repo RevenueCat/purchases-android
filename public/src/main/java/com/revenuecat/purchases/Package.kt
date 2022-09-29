@@ -11,7 +11,7 @@ import kotlinx.parcelize.Parcelize
  * @property product [StoreProduct] assigned to this package.
  */
 @Parcelize
-data class Package(
+data class `Package(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,

@@ -18,8 +18,8 @@ import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
-import com.revenuecat.purchases_sample.R
-import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
+import com.stefanwehner.revenuecat.purchases_sample.R
+import com.stefanwehner.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
 class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
 

@@ -2,7 +2,7 @@ package com.revenuecat.purchasetester
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.revenuecat.purchases_sample.R
+import com.stefanwehner.revenuecat.purchases_sample.R
 
 class MainActivity : AppCompatActivity() {
 

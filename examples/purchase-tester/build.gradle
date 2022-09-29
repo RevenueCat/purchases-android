@@ -18,7 +18,7 @@ android {
         dataBinding true
     }
     defaultConfig {
-        applicationId "com.revenuecat.purchases_sample"
+        applicationId "com.stefanwehner.revenuecat.purchases_sample"
         minSdkVersion 21
         versionCode 1
         versionName "1.0"
@@ -41,7 +41,7 @@ android {
         }
     }
     testBuildType obtainTestBuildType()
-    namespace 'com.revenuecat.purchases_sample'
+    namespace 'com.stefanwehner.revenuecat.purchases_sample'
 }
 
 def obtainTestBuildType() {

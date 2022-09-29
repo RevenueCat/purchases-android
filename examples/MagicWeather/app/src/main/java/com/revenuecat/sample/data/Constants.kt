@@ -7,7 +7,7 @@ object Constants {
 
      Modify this property to reflect your Google Play app's API key.
     */
-    const val GOOGLE_API_KEY = "googl_api_key"
+    const val GOOGLE_API_KEY = "appl_ERSTVcuGmbujeUMeahRMLNYXPOU"
 
     /*
     The API key for your Amazon App Store app. This can be found in via Project Settings >
@@ -22,5 +22,5 @@ object Constants {
 
      Modify this property to reflect your app's entitlement identifier.
      */
-    const val ENTITLEMENT_ID = "premium"
+    const val ENTITLEMENT_ID = "basic"
 }

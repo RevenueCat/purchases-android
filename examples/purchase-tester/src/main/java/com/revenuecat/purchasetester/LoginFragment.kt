@@ -9,7 +9,7 @@ import androidx.navigation.fragment.findNavController
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
-import com.revenuecat.purchases_sample.databinding.FragmentLoginBinding
+import com.stefanwehner.revenuecat.purchases_sample.databinding.FragmentLoginBinding
 
 class LoginFragment : Fragment() {
 

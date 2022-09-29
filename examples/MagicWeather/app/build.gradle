@@ -8,7 +8,7 @@ android {
     buildToolsVersion "30.0.3"
 
     defaultConfig {
-        applicationId "com.revenuecat.purchases_sample"
+        applicationId "com.stefanwehner.revenuecat.purchases_sample"
         minSdkVersion 26
         targetSdkVersion compileVersion
         versionCode 1

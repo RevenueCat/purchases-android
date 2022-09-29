@@ -20,8 +20,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.logOutWith
-import com.revenuecat.purchases_sample.R
-import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
+import com.stefanwehner.revenuecat.purchases_sample.R
+import com.stefanwehner.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
 
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener, OverviewInteractionHandler {
 

@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.google
 
+import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
@@ -22,5 +24,28 @@ fun SkuDetails.toStoreProduct() =
         introductoryPricePeriod.takeIf { it.isNotBlank() },
         introductoryPriceCycles,
         iconUrl,
-        JSONObject(originalJson)
+        JSONObject(originalJson),
+        null
+    )
+
+fun ProductDetails.toStoreProduct() =
+    StoreProduct(
+        productId,
+        ProductType.SUBS,
+        "price",
+        100,
+        "USD",
+        "originalPrice",
+        99,
+        title,
+        description,
+        "subPeriod",
+        "freeTrialPeriod",
+        "introductoryPrice",
+        98,
+        "introductoryPricePeriod",
+        123,
+        "icon",
+        JSONObject("{}"),
+        this
     )
