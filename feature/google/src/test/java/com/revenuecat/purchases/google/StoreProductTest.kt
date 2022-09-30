@@ -1,8 +1,8 @@
-package com.revenuecat.purchases.common.models
+package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.google.BC4StoreProduct
 import org.assertj.core.api.Assertions
 import org.json.JSONObject
 import org.junit.Test
@@ -13,7 +13,7 @@ class StoreProductTest {
 
     @Test
     fun `Two StoreProducts with the same properties are equal`() {
-        val storeProduct1 = StoreProduct(
+        val storeProduct1 = BC4StoreProduct(
             sku = "sku",
             type = ProductType.INAPP,
             price = "$2",
@@ -32,7 +32,7 @@ class StoreProductTest {
             iconUrl = "http://",
             originalJson = JSONObject("{}")
         )
-        val storeProduct2 = StoreProduct(
+        val storeProduct2 = BC4StoreProduct(
             sku = "sku",
             type = ProductType.INAPP,
             price = "$2",
@@ -56,7 +56,7 @@ class StoreProductTest {
 
     @Test
     fun `Two StoreProducts with the same properties have the same hashcode`() {
-        val storeProduct1 = StoreProduct(
+        val storeProduct1 = BC4StoreProduct(
             sku = "sku",
             type = ProductType.INAPP,
             price = "$2",
@@ -75,7 +75,7 @@ class StoreProductTest {
             iconUrl = "http://",
             originalJson = JSONObject("{}")
         )
-        val storeProduct2 = StoreProduct(
+        val storeProduct2 = BC4StoreProduct(
             sku = "sku",
             type = ProductType.INAPP,
             price = "$2",
