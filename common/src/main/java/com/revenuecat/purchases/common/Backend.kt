@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common
 
 import android.net.Uri
+import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -191,7 +192,9 @@ class Backend(
             "normal_duration" to receiptInfo.duration,
             "intro_duration" to receiptInfo.introDuration,
             "trial_duration" to receiptInfo.trialDuration,
-            "store_user_id" to storeAppUserID
+            "store_user_id" to storeAppUserID,
+            "pricing_phases" to (convertPhases(receiptInfo.storeProduct?.productDetails?.subscriptionOfferDetails?.get(0)?.pricingPhases?.pricingPhaseList)
+                ?: null)
         ).filterValues { value -> value != null }
 
         val extraHeaders = receiptInfo.storeProduct?.price?.let { priceString ->
@@ -244,6 +247,19 @@ class Backend(
         }
         synchronized(this@Backend) {
             postReceiptCallbacks.addCallback(call, cacheKey, onSuccess to onError)
+        }
+    }
+
+    private fun convertPhases(pricingPhases: MutableList<ProductDetails.PricingPhase>?): List<Map<String, Any>>? {
+        return pricingPhases?.map { phase ->
+            mapOf(
+                "billingCycleCount" to phase.billingCycleCount,
+                "billingPeriod" to phase.billingPeriod,
+                "formattedPrice" to phase.formattedPrice,
+                "priceCurrencyCode" to phase.priceCurrencyCode,
+                "recurrenceMode" to phase.recurrenceMode,
+                "priceAmountMicros" to phase.priceAmountMicros
+            )
         }
     }
 
