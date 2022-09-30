@@ -1247,10 +1247,10 @@ class Purchases internal constructor(
             { subscriptionProducts ->
                 val productsById = HashMap<String, StoreProduct>()
 
-                val subscriptionProductsById = subscriptionProducts.map { subProduct -> subProduct.sku to subProduct }
+                val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.sku }
                 productsById.putAll(subscriptionProductsById)
 
-                val subscriptionIds = subscriptionProductsById.map { subProductById -> subProductById.first }.toSet()
+                val subscriptionIds = subscriptionProductsById.keys
 
                 val inAppProductIds = productIds - subscriptionIds
                 if (inAppProductIds.isNotEmpty()) {
