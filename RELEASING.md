@@ -1,4 +1,26 @@
-Automatic Releasing
+Automatic Releasing using CircleCI
+=========
+For an almost fully automated release process, use the trigger pipeline feature in CircleCI passing name `action` and value `bump`
+
+![Screenshot!](https://user-images.githubusercontent.com/664544/191806930-07737e3d-8c44-4bfd-8cef-b471b72643a4.png "CircleCI screenshot")
+
+You can achieve the same using CircleCI API:
+
+```
+curl --location --request POST 'https://circleci.com/api/v2/project/github/RevenueCat/purchases-android/pipeline' \
+            --header 'Content-Type: application/json' \
+            -u "your_circleci_personal_token:" \
+            -d '{
+              "branch": "main",
+              "parameters": {
+                "action": "bump"
+              }
+            }'
+```
+
+More info on triggering pipelines in [CircleCI docs](https://circleci.com/docs/triggers-overview).
+
+Automatic Releasing using your machine
 =========
 1. Create a `fastlane/.env` file with your GitHub API token (see `fastlane/.env.SAMPLE`). This will be used to create the PR, so you should use your own token so the PR gets assigned to you.
 2. Run `bundle exec fastlane android bump`
