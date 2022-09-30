@@ -34,6 +34,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.google.SUBSCRIPTION_ID_BACKEND_KEY
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.google.toRevenueCatProductType
 import com.revenuecat.purchases.google.toStoreProduct
@@ -1006,8 +1007,8 @@ class Purchases internal constructor(
             appInBackground,
             { offeringsJSON ->
                 try {
-                    val skus = extractSkus(offeringsJSON)
-                    if (skus.isEmpty()) {
+                    val subscriptionIds = extractSubscriptionIds(offeringsJSON)
+                    if (subscriptionIds.isEmpty()) {
                         handleErrorFetchingOfferings(
                             PurchasesError(
                                 PurchasesErrorCode.ConfigurationError,
@@ -1016,7 +1017,7 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getSkuDetails(skus, { productsById ->
+                        getProductDetails(subscriptionIds, { productsById ->
                             val offerings = offeringsJSON.createOfferings(productsById)
 
                             logMissingProducts(offerings, productsById)
@@ -1056,20 +1057,20 @@ class Purchases internal constructor(
             })
     }
 
-    private fun extractSkus(offeringsJSON: JSONObject): Set<String> {
+    private fun extractSubscriptionIds(offeringsJSON: JSONObject): Set<String> {
         val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-        val skus = mutableSetOf<String>()
+        val subscriptionIds = mutableSetOf<String>()
         for (i in 0 until jsonArrayOfOfferings.length()) {
             val jsonPackagesArray =
                 jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
-                skus.add(
+                subscriptionIds.add(
                     jsonPackagesArray.getJSONObject(j)
-                        .getString("platform_product_identifier")
+                        .getString(SUBSCRIPTION_ID_BACKEND_KEY)
                 )
             }
         }
-        return skus
+        return subscriptionIds
     }
 
     private fun handleErrorFetchingOfferings(
@@ -1236,11 +1237,12 @@ class Purchases internal constructor(
         }
     }
 
-    private fun getSkuDetails(
+    private fun getProductDetails(
         productIds: Set<String>,
         onCompleted: (HashMap<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
+        // TODO do we want to rename the base BillingWrapper querySkuDetailsAsync -> queryProductDetailsAsync?
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
             productIds,

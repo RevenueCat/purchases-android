@@ -18,3 +18,5 @@ fun ProductType.toGoogleProductType(): String? {
         else -> null
     }
 }
+
+const val SUBSCRIPTION_ID_BACKEND_KEY = "platform_product_group_identifier"

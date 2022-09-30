@@ -18,3 +18,8 @@ fun ProductType.toGoogleProductType(): String? {
         else -> null
     }
 }
+
+// The key associated with the product ID
+// the value associated with this key is what we query BillingClient on
+// on BC4, the value is the sku. on BC5, it's the subscription ID
+const val SUBSCRIPTION_ID_BACKEND_KEY = "platform_product_identifier"
