@@ -31,7 +31,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
-import com.revenuecat.purchases.google.toSKUType
+import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
@@ -1964,13 +1964,13 @@ class PurchasesTest {
         } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
 
         every {
-            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.IN_APP_ITEMS_ON_VR)
+            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS_UPDATE)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
         Purchases.canMakePayments(
             mockContext,
             listOf(BillingFeature.SUBSCRIPTIONS,
-                BillingFeature.IN_APP_ITEMS_ON_VR)
+                BillingFeature.SUBSCRIPTIONS_UPDATE)
         ) {
             receivedCanMakePayments = it
         }
@@ -3233,10 +3233,10 @@ class PurchasesTest {
         } returns false
         purchases.updatePendingPurchaseQueue()
         verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!, any(), any())
+            mockBillingAbstract.queryPurchases(ProductType.SUBS.toGoogleProductType()!!, any(), any())
         }
         verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!, any(), any())
+            mockBillingAbstract.queryPurchases(ProductType.INAPP.toGoogleProductType()!!, any(), any())
         }
     }
 
@@ -4006,7 +4006,7 @@ class PurchasesTest {
         type: ProductType
     ): List<StoreProduct> {
         val storeProducts = skusSuccessfullyFetched.map { sku ->
-            stubSkuDetails(sku, type.toSKUType()!!).toStoreProduct()
+            stubSkuDetails(sku, type.toGoogleProductType()!!).toStoreProduct()
         }
 
         every {
