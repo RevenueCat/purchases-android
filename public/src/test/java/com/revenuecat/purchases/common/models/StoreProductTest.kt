@@ -30,7 +30,9 @@ class StoreProductTest {
             introductoryPricePeriod = "P1W",
             introductoryPriceCycles = 1,
             iconUrl = "http://",
-            originalJson = JSONObject("{}")
+            originalJson = JSONObject("{}"),
+            null,
+            null
         )
         val storeProduct2 = StoreProduct(
             sku = "sku",
@@ -49,7 +51,9 @@ class StoreProductTest {
             introductoryPricePeriod = "P1W",
             introductoryPriceCycles = 1,
             iconUrl = "http://",
-            originalJson = JSONObject("{}")
+            originalJson = JSONObject("{}"),
+            null,
+            null
         )
         Assertions.assertThat(storeProduct1).isEqualTo(storeProduct2)
     }
@@ -73,7 +77,9 @@ class StoreProductTest {
             introductoryPricePeriod = "P1W",
             introductoryPriceCycles = 1,
             iconUrl = "http://",
-            originalJson = JSONObject("{}")
+            originalJson = JSONObject("{}"),
+            null,
+            null
         )
         val storeProduct2 = StoreProduct(
             sku = "sku",
@@ -92,7 +98,9 @@ class StoreProductTest {
             introductoryPricePeriod = "P1W",
             introductoryPriceCycles = 1,
             iconUrl = "http://",
-            originalJson = JSONObject("{}")
+            originalJson = JSONObject("{}"),
+            null,
+            null
         )
         Assertions.assertThat(storeProduct1.hashCode()).isEqualTo(storeProduct2.hashCode())
     }

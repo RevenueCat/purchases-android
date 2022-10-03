@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
 import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 
@@ -136,7 +138,9 @@ data class StoreProduct(
      *
      * For Amazon, the original Product can be obtained using `StoreProduct.amazonProduct`
      */
-    val originalJson: JSONObject
+    val originalJson: JSONObject,
+    val productDetails: @RawValue ProductDetails?,
+    val offerToken: String?
 ) : Parcelable {
 
     // We use this to not include the originalJSON in the equals
@@ -160,7 +164,9 @@ private data class ComparableData(
     val introductoryPriceAmountMicros: Long,
     val introductoryPricePeriod: String?,
     val introductoryPriceCycles: Int,
-    val iconUrl: String
+    val iconUrl: String,
+    val productDetails: ProductDetails?,
+    val offerToken: String?,
 ) {
     constructor(
         storeProduct: StoreProduct
@@ -180,6 +186,8 @@ private data class ComparableData(
         introductoryPriceAmountMicros = storeProduct.introductoryPriceAmountMicros,
         introductoryPricePeriod = storeProduct.introductoryPricePeriod,
         introductoryPriceCycles = storeProduct.introductoryPriceCycles,
-        iconUrl = storeProduct.iconUrl
+        iconUrl = storeProduct.iconUrl,
+        productDetails = storeProduct.productDetails,
+        offerToken = storeProduct.offerToken
     )
 }

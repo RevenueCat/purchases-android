@@ -53,12 +53,9 @@ fun JSONObject.createPackage(
     productsById: Map<String, StoreProduct>,
     offeringIdentifier: String
 ): Package? {
-    val subscriptionId = getString(SUBSCRIPTION_ID_BACKEND_KEY)
-    return productsById[subscriptionId]?.let { product ->
+    val sku = getString("platform_product_identifier")
+    return productsById[sku]?.let { product ->
         val identifier = getString("identifier")
-        val duration = getString("duration")
-        // TODO get the base plan associated with that duration from the StoreProduct --
-        // does that mean we should finish up queryProductDetails first?
         val packageType = identifier.toPackageType()
         return Package(identifier, packageType, product, offeringIdentifier)
     }

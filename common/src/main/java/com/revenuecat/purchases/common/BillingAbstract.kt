@@ -107,4 +107,10 @@ abstract class BillingAbstract {
         fun onPurchasesUpdated(purchases: List<StoreTransaction>)
         fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
     }
+
+    abstract fun queryProductDetailsAsync(
+        skus: Set<String>,
+        onReceive: StoreProductsCallback,
+        onError: PurchasesErrorCallback
+    )
 }

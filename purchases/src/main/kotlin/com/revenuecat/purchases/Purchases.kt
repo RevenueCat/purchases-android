@@ -11,6 +11,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -1007,7 +1008,8 @@ class Purchases internal constructor(
             appInBackground,
             { offeringsJSON ->
                 try {
-                    val subscriptionIds = extractSubscriptionIds(offeringsJSON)
+                    val isBC5Enabled = getIsBC5Enabled(offeringsJSON)
+                    val subscriptionIds = if (isBC5Enabled) extractBC5SubscriptionIds(offeringsJSON) else extractSubscriptionIds(offeringsJSON)
                     if (subscriptionIds.isEmpty()) {
                         handleErrorFetchingOfferings(
                             PurchasesError(
@@ -1017,30 +1019,57 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getProductDetails(subscriptionIds, { productsById ->
-                            val offerings = offeringsJSON.createOfferings(productsById)
+                        if (isBC5Enabled) {
+                            getProductDetails(subscriptionIds, { productsById ->
+                                val offerings = offeringsJSON.createOfferings(productsById)
 
-                            logMissingProducts(offerings, productsById)
+                                logMissingProducts(offerings, productsById)
 
-                            if (offerings.all.isEmpty()) {
-                                handleErrorFetchingOfferings(
-                                    PurchasesError(
-                                        PurchasesErrorCode.ConfigurationError,
-                                        OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
-                                    ),
-                                    completion
-                                )
-                            } else {
-                                synchronized(this@Purchases) {
-                                    deviceCache.cacheOfferings(offerings)
+                                if (offerings.all.isEmpty()) {
+                                    handleErrorFetchingOfferings(
+                                        PurchasesError(
+                                            PurchasesErrorCode.ConfigurationError,
+                                            OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+                                        ),
+                                        completion
+                                    )
+                                } else {
+                                    synchronized(this@Purchases) {
+                                        deviceCache.cacheOfferings(offerings)
+                                    }
+                                    dispatch {
+                                        completion?.onReceived(offerings)
+                                    }
                                 }
-                                dispatch {
-                                    completion?.onReceived(offerings)
+                            }, { error ->
+                                handleErrorFetchingOfferings(error, completion)
+                            })
+                        } else {
+                            getSKUDetails(subscriptionIds, { productsById ->
+                                val offerings = offeringsJSON.createOfferings(productsById)
+
+                                logMissingProducts(offerings, productsById)
+
+                                if (offerings.all.isEmpty()) {
+                                    handleErrorFetchingOfferings(
+                                        PurchasesError(
+                                            PurchasesErrorCode.ConfigurationError,
+                                            OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+                                        ),
+                                        completion
+                                    )
+                                } else {
+                                    synchronized(this@Purchases) {
+                                        deviceCache.cacheOfferings(offerings)
+                                    }
+                                    dispatch {
+                                        completion?.onReceived(offerings)
+                                    }
                                 }
-                            }
-                        }, { error ->
-                            handleErrorFetchingOfferings(error, completion)
-                        })
+                            }, { error ->
+                                handleErrorFetchingOfferings(error, completion)
+                            })
+                        }
                     }
                 } catch (error: JSONException) {
                     log(LogIntent.RC_ERROR, OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage))
@@ -1057,6 +1086,20 @@ class Purchases internal constructor(
             })
     }
 
+    private fun getIsBC5Enabled(offeringsJSON: JSONObject): Boolean {
+        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
+        for (i in 0 until jsonArrayOfOfferings.length()) {
+            val jsonPackagesArray =
+                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+            for (j in 0 until jsonPackagesArray.length()) {
+                val pkg = jsonPackagesArray.getJSONObject(j)
+                if (pkg.has(SUBSCRIPTION_ID_BACKEND_KEY))
+                    return true
+            }
+        }
+        return false
+    }
+
     private fun extractSubscriptionIds(offeringsJSON: JSONObject): Set<String> {
         val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
         val subscriptionIds = mutableSetOf<String>()
@@ -1064,10 +1107,26 @@ class Purchases internal constructor(
             val jsonPackagesArray =
                 jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
-                subscriptionIds.add(
-                    jsonPackagesArray.getJSONObject(j)
-                        .getString(SUBSCRIPTION_ID_BACKEND_KEY)
-                )
+                val pkg = jsonPackagesArray.getJSONObject(j)
+                subscriptionIds.add(pkg.getString("platform_product_identifier"))
+            }
+        }
+        return subscriptionIds
+    }
+
+    private fun extractBC5SubscriptionIds(offeringsJSON: JSONObject): Set<String> {
+        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
+        val subscriptionIds = mutableSetOf<String>()
+        for (i in 0 until jsonArrayOfOfferings.length()) {
+            val jsonPackagesArray =
+                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+            for (j in 0 until jsonPackagesArray.length()) {
+                val pkg = jsonPackagesArray.getJSONObject(j)
+                if (!pkg.has(SUBSCRIPTION_ID_BACKEND_KEY)) {
+                    errorLog("Product ${pkg.getString("identifer")} doesn't have a group, and BC5 is enabled")
+                } else {
+                    subscriptionIds.add(pkg.getString(SUBSCRIPTION_ID_BACKEND_KEY))
+                }
             }
         }
         return subscriptionIds
@@ -1237,7 +1296,7 @@ class Purchases internal constructor(
         }
     }
 
-    private fun getProductDetails(
+    private fun getSKUDetails(
         productIds: Set<String>,
         onCompleted: (HashMap<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
@@ -1250,6 +1309,42 @@ class Purchases internal constructor(
                 val productsById = HashMap<String, StoreProduct>()
 
                 val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.sku }
+                productsById.putAll(subscriptionProductsById)
+
+                val subscriptionIds = subscriptionProductsById.keys
+
+                val inAppProductIds = productIds - subscriptionIds
+                if (inAppProductIds.isNotEmpty()) {
+                    billing.querySkuDetailsAsync(
+                        ProductType.INAPP,
+                        inAppProductIds,
+                        { product ->
+                            productsById.putAll(product.map { it.sku to it })
+                            onCompleted(productsById)
+                        }, {
+                            onError(it)
+                        }
+                    )
+                } else {
+                    onCompleted(productsById)
+                }
+            }, {
+                onError(it)
+            })
+    }
+
+    private fun getProductDetails(
+        productIds: Set<String>,
+        onCompleted: (HashMap<String, StoreProduct>) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        // TODO do we want to rename the base BillingWrapper querySkuDetailsAsync -> queryProductDetailsAsync?
+        billing.queryProductDetailsAsync(
+            productIds,
+            { subscriptionProducts ->
+                val productsById = HashMap<String, StoreProduct>()
+
+                val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.offerToken?:"" }
                 productsById.putAll(subscriptionProductsById)
 
                 val subscriptionIds = subscriptionProductsById.keys
@@ -1432,12 +1527,16 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $storeProduct ${offeringIdentifier?.let {
-                    PurchaseStrings.OFFERING + "$offeringIdentifier"
-                }} UpgradeInfo: $upgradeInfo"
+        log(
+            LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
+                " $storeProduct ${
+                    offeringIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$offeringIdentifier"
+                    }
+                } UpgradeInfo: $upgradeInfo"
 
-        ))
+            )
+        )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
             if (!appConfig.finishTransactions) {
