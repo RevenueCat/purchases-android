@@ -145,19 +145,12 @@ internal class AmazonBilling constructor(
         )
     }
 
-    override fun queryProductDetailsAsync(
-        skus: Set<String>,
-        onReceive: StoreProductsCallback,
-        onError: PurchasesErrorCallback
-    ) {
-        TODO("Not yet implemented")
-    }
-
     // region Product Data
 
     override fun querySkuDetailsAsync(
         productType: RevenueCatProductType,
         skus: Set<String>,
+        isBC5Enabled: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {

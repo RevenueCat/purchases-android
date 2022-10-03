@@ -359,6 +359,10 @@ class Purchases internal constructor(
      * @param [skus] List of skus
      * @param [callback] Response callback
      */
+    // TODO figure out how to handle this API, we need to know if bc5 is enabled...
+    // there were discussions of removing this and getNonSubscriptionSkus anyways, and consolidating to one
+    // getSkus without a type associated...but if we want to keep that API we need to know if bc5 is enabled
+    // perhaps we have a getBC4Skus or getBC5Skus?
     fun getSubscriptionSkus(
         skus: List<String>,
         callback: GetStoreProductsCallback
@@ -371,6 +375,9 @@ class Purchases internal constructor(
      * @param [skus] List of skus
      * @param [callback] Response callback
      */
+    // TODO figure out how to handle this API, we need to know if bc5 is enabled...
+    // there were discussions of removing this and getSubscriptionSkus anyways, and consolidating to one
+    // getSkus without a type associated...but if we want to keep that API we need to know if bc5 is enabled
     fun getNonSubscriptionSkus(
         skus: List<String>,
         callback: GetStoreProductsCallback
@@ -1019,57 +1026,31 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        if (isBC5Enabled) {
-                            getProductDetails(subscriptionIds, { productsById ->
-                                val offerings = offeringsJSON.createOfferings(productsById)
+                        getSKUDetails(isBC5Enabled, subscriptionIds, { productsById ->
+                            val offerings = offeringsJSON.createOfferings(productsById)
 
-                                logMissingProducts(offerings, productsById)
+                            logMissingProducts(offerings, productsById)
 
-                                if (offerings.all.isEmpty()) {
-                                    handleErrorFetchingOfferings(
-                                        PurchasesError(
-                                            PurchasesErrorCode.ConfigurationError,
-                                            OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
-                                        ),
-                                        completion
-                                    )
-                                } else {
-                                    synchronized(this@Purchases) {
-                                        deviceCache.cacheOfferings(offerings)
-                                    }
-                                    dispatch {
-                                        completion?.onReceived(offerings)
-                                    }
+                            if (offerings.all.isEmpty()) {
+                                handleErrorFetchingOfferings(
+                                    PurchasesError(
+                                        PurchasesErrorCode.ConfigurationError,
+                                        OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+                                    ),
+                                    completion
+                                )
+                            } else {
+                                synchronized(this@Purchases) {
+                                    deviceCache.cacheOfferings(offerings)
                                 }
-                            }, { error ->
-                                handleErrorFetchingOfferings(error, completion)
-                            })
-                        } else {
-                            getSKUDetails(subscriptionIds, { productsById ->
-                                val offerings = offeringsJSON.createOfferings(productsById)
-
-                                logMissingProducts(offerings, productsById)
-
-                                if (offerings.all.isEmpty()) {
-                                    handleErrorFetchingOfferings(
-                                        PurchasesError(
-                                            PurchasesErrorCode.ConfigurationError,
-                                            OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
-                                        ),
-                                        completion
-                                    )
-                                } else {
-                                    synchronized(this@Purchases) {
-                                        deviceCache.cacheOfferings(offerings)
-                                    }
-                                    dispatch {
-                                        completion?.onReceived(offerings)
-                                    }
+                                dispatch {
+                                    completion?.onReceived(offerings)
                                 }
-                            }, { error ->
-                                handleErrorFetchingOfferings(error, completion)
-                            })
-                        }
+                            }
+                        }, { error ->
+                            handleErrorFetchingOfferings(error, completion)
+                        })
+
                     }
                 } catch (error: JSONException) {
                     log(LogIntent.RC_ERROR, OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage))
@@ -1171,18 +1152,19 @@ class Purchases internal constructor(
         productType: ProductType,
         callback: GetStoreProductsCallback
     ) {
-        billing.querySkuDetailsAsync(
-            productType,
-            skus,
-            { storeProducts ->
-                dispatch {
-                    callback.onReceived(storeProducts)
-                }
-            }, {
-                dispatch {
-                    callback.onError(it)
-                }
-            })
+        // TODO figure out this API
+//        billing.querySkuDetailsAsync(
+//            productType,
+//            skus,
+//            { storeProducts ->
+//                dispatch {
+//                    callback.onReceived(storeProducts)
+//                }
+//            }, {
+//                dispatch {
+//                    callback.onError(it)
+//                }
+//            })
     }
 
     private fun updateAllCaches(
@@ -1297,6 +1279,7 @@ class Purchases internal constructor(
     }
 
     private fun getSKUDetails(
+        isBC5Enabled: Boolean,
         productIds: Set<String>,
         onCompleted: (HashMap<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
@@ -1305,6 +1288,7 @@ class Purchases internal constructor(
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
             productIds,
+            isBC5Enabled,
             { subscriptionProducts ->
                 val productsById = HashMap<String, StoreProduct>()
 
@@ -1318,42 +1302,7 @@ class Purchases internal constructor(
                     billing.querySkuDetailsAsync(
                         ProductType.INAPP,
                         inAppProductIds,
-                        { product ->
-                            productsById.putAll(product.map { it.sku to it })
-                            onCompleted(productsById)
-                        }, {
-                            onError(it)
-                        }
-                    )
-                } else {
-                    onCompleted(productsById)
-                }
-            }, {
-                onError(it)
-            })
-    }
-
-    private fun getProductDetails(
-        productIds: Set<String>,
-        onCompleted: (HashMap<String, StoreProduct>) -> Unit,
-        onError: (PurchasesError) -> Unit
-    ) {
-        // TODO do we want to rename the base BillingWrapper querySkuDetailsAsync -> queryProductDetailsAsync?
-        billing.queryProductDetailsAsync(
-            productIds,
-            { subscriptionProducts ->
-                val productsById = HashMap<String, StoreProduct>()
-
-                val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.offerToken?:"" }
-                productsById.putAll(subscriptionProductsById)
-
-                val subscriptionIds = subscriptionProductsById.keys
-
-                val inAppProductIds = productIds - subscriptionIds
-                if (inAppProductIds.isNotEmpty()) {
-                    billing.querySkuDetailsAsync(
-                        ProductType.INAPP,
-                        inAppProductIds,
+                        isBC5Enabled,
                         { product ->
                             productsById.putAll(product.map { it.sku to it })
                             onCompleted(productsById)

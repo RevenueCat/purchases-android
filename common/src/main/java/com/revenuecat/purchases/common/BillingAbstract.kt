@@ -55,6 +55,7 @@ abstract class BillingAbstract {
     abstract fun querySkuDetailsAsync(
         productType: ProductType,
         skus: Set<String>,
+        isBC5Enabled: Boolean = false,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     )
@@ -108,9 +109,4 @@ abstract class BillingAbstract {
         fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
     }
 
-    abstract fun queryProductDetailsAsync(
-        skus: Set<String>,
-        onReceive: StoreProductsCallback,
-        onError: PurchasesErrorCallback
-    )
 }

@@ -140,6 +140,7 @@ class BillingWrapper(
     override fun querySkuDetailsAsync(
         productType: ProductType,
         skus: Set<String>,
+        isBC5Enabled: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
