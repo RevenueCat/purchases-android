@@ -1,13 +1,19 @@
 package com.revenuecat.purchases.google
 
+import android.os.Parcelable
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.StoreProductImpl
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.parceler.JSONObjectParceler
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
+import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 
 fun SkuDetails.toStoreProduct() =
-    StoreProduct(
+    StoreProductImpl(
         sku,
         type.toRevenueCatProductType(),
         price,
@@ -24,13 +30,11 @@ fun SkuDetails.toStoreProduct() =
         introductoryPricePeriod.takeIf { it.isNotBlank() },
         introductoryPriceCycles,
         iconUrl,
-        JSONObject(originalJson),
-        null,
-        null
+        JSONObject(originalJson)
     )
 
 fun ProductDetails.toStoreProduct(offerToken: String) =
-    StoreProduct(
+    BC5StoreProduct(
         productId,
         ProductType.SUBS,
         "price",
@@ -51,3 +55,31 @@ fun ProductDetails.toStoreProduct(offerToken: String) =
         this,
         offerToken
     )
+
+
+@Parcelize
+@TypeParceler<JSONObject, JSONObjectParceler>()
+data class BC5StoreProduct(
+    override val sku: String,
+    override val type: ProductType,
+    override val price: String,
+    override val priceAmountMicros: Long,
+    override val priceCurrencyCode: String,
+    override val originalPrice: String?,
+    override val originalPriceAmountMicros: Long,
+    override val title: String,
+    override val description: String,
+    override val subscriptionPeriod: String?,
+    override val freeTrialPeriod: String?,
+    override val introductoryPrice: String?,
+    override val introductoryPriceAmountMicros: Long,
+    override val introductoryPricePeriod: String?,
+    override val introductoryPriceCycles: Int,
+    override val iconUrl: String,
+    override val originalJson: JSONObject,
+    val productDetails: @RawValue ProductDetails?,
+    val offerToken: String?,
+    // TODO add PricingPhases so we don't have to dig in ProductDetails (which has many)
+) : Parcelable, StoreProduct() {
+
+}

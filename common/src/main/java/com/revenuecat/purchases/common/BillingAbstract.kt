@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import org.json.JSONObject
 
 typealias StoreProductsCallback = (List<StoreProduct>) -> Unit
 
@@ -55,7 +56,7 @@ abstract class BillingAbstract {
     abstract fun querySkuDetailsAsync(
         productType: ProductType,
         skus: Set<String>,
-        isBC5Enabled: Boolean = false,
+        offeringsJSON: JSONObject, // TODO: this should be a Offerings structure instead of raw JSONs
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     )

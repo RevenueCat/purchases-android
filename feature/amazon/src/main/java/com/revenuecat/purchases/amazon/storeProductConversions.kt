@@ -5,6 +5,7 @@ import com.amazon.device.iap.model.Product
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.StoreProductImpl
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 import java.math.BigDecimal
@@ -30,7 +31,7 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
     val (currencyCode, priceAmountMicros) = price.extractPrice(marketplace)
 
-    return StoreProduct(
+    return StoreProductImpl(
         sku,
         productType.toRevenueCatProductType(),
         price,
@@ -48,8 +49,6 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         introductoryPriceCycles = 0,
         iconUrl = smallIconUrl,
         originalJson = toJSON(),
-        null,
-        null
     )
 }
 

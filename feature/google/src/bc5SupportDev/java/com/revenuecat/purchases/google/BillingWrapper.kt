@@ -50,6 +50,7 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
+import org.json.JSONObject
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -140,14 +141,62 @@ class BillingWrapper(
             }
         }
     }
+    private fun getIsBC5Enabled(offeringsJSON: JSONObject): Boolean {
+        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
+        for (i in 0 until jsonArrayOfOfferings.length()) {
+            val jsonPackagesArray =
+                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+            for (j in 0 until jsonPackagesArray.length()) {
+                val pkg = jsonPackagesArray.getJSONObject(j)
+                if (pkg.has(SUBSCRIPTION_ID_BACKEND_KEY))
+                    return true
+            }
+        }
+        return false
+    }
+
+    private fun extractSubscriptionIds(offeringsJSON: JSONObject): Set<String> {
+        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
+        val subscriptionIds = mutableSetOf<String>()
+        for (i in 0 until jsonArrayOfOfferings.length()) {
+            val jsonPackagesArray =
+                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+            for (j in 0 until jsonPackagesArray.length()) {
+                val pkg = jsonPackagesArray.getJSONObject(j)
+                subscriptionIds.add(pkg.getString("platform_product_identifier"))
+            }
+        }
+        return subscriptionIds
+    }
+
+    private fun extractBC5SubscriptionIds(offeringsJSON: JSONObject): Set<String> {
+        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
+        val subscriptionIds = mutableSetOf<String>()
+        for (i in 0 until jsonArrayOfOfferings.length()) {
+            val jsonPackagesArray =
+                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+            for (j in 0 until jsonPackagesArray.length()) {
+                val pkg = jsonPackagesArray.getJSONObject(j)
+                if (!pkg.has(SUBSCRIPTION_ID_BACKEND_KEY)) {
+                    errorLog("Product ${pkg.getString("identifer")} doesn't have a group, and BC5 is enabled")
+                } else {
+                    subscriptionIds.add(pkg.getString(SUBSCRIPTION_ID_BACKEND_KEY))
+                }
+            }
+        }
+        return subscriptionIds
+    }
 
     override fun querySkuDetailsAsync(
         productType: ProductType,
-        skus: Set<String>,
-        isBC5Enabled: Boolean,
+        skusIn: Set<String>,
+        offeringsJSON: JSONObject,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
+        val isBC5Enabled = getIsBC5Enabled(offeringsJSON)
+        val subscriptionIds = if (isBC5Enabled) extractBC5SubscriptionIds(offeringsJSON) else extractSubscriptionIds(offeringsJSON)
+        var skus = subscriptionIds.plus(skusIn)
         val nonEmptySkus = skus.filter { it.isNotEmpty() }
 
         if (nonEmptySkus.isEmpty()) {
@@ -293,18 +342,42 @@ class BillingWrapper(
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            val params = BillingFlowParams.newBuilder()
-                .setSkuDetails(storeProduct.skuDetails)
-                .apply {
-                    replaceSkuInfo?.let {
-                        setUpgradeInfo(it)
-                    } ?: setObfuscatedAccountId(appUserID.sha256())
-                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                    // https://issuetracker.google.com/issues/155005449
-                }.build()
-
+            val params = if (storeProduct is BC5StoreProduct) {
+                newPurchaseParams(storeProduct)
+            } else {
+                legacyPurchaseParams(storeProduct, replaceSkuInfo, appUserID)
+            }
             launchBillingFlow(activity, params)
         }
+    }
+
+    private fun newPurchaseParams(
+        storeProduct: BC5StoreProduct,
+    ): BillingFlowParams {
+        val builder = BillingFlowParams.ProductDetailsParams.newBuilder()
+        storeProduct.productDetails?.let { it1 -> builder.setProductDetails(it1) }
+        storeProduct.offerToken?.also { offer -> builder.setOfferToken(offer) }
+        val productDetailsParamsList = builder.build()
+
+        return BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(listOf(productDetailsParamsList))
+            .build()
+    }
+
+    private fun legacyPurchaseParams(
+        storeProduct: StoreProduct,
+        replaceSkuInfo: ReplaceSkuInfo?,
+        appUserID: String,
+    ): BillingFlowParams {
+        return BillingFlowParams.newBuilder()
+            .setSkuDetails(storeProduct.skuDetails)
+            .apply {
+                replaceSkuInfo?.let {
+                    setUpgradeInfo(it)
+                } ?: setObfuscatedAccountId(appUserID.sha256())
+                // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                // https://issuetracker.google.com/issues/155005449
+            }.build()
     }
 
     @UiThread

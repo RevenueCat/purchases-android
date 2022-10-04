@@ -1015,43 +1015,33 @@ class Purchases internal constructor(
             appInBackground,
             { offeringsJSON ->
                 try {
-                    val isBC5Enabled = getIsBC5Enabled(offeringsJSON)
-                    val subscriptionIds = if (isBC5Enabled) extractBC5SubscriptionIds(offeringsJSON) else extractSubscriptionIds(offeringsJSON)
-                    if (subscriptionIds.isEmpty()) {
-                        handleErrorFetchingOfferings(
-                            PurchasesError(
-                                PurchasesErrorCode.ConfigurationError,
-                                OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS
-                            ),
-                            completion
-                        )
-                    } else {
-                        getSKUDetails(isBC5Enabled, subscriptionIds, { productsById ->
-                            val offerings = offeringsJSON.createOfferings(productsById)
+                    // TODO: Parse Offerings into structures without StoreProducts
+                    getSKUDetails(offeringsJSON, emptySet(), { productsById ->
+                        // TODO - this should just receive a list of the storeProducts from the BIllingImplementation
+                        // ASK the billingimplementation to map the storeProducts to the packages in the offering structures
+                        val offerings = offeringsJSON.createOfferings(productsById)
 
-                            logMissingProducts(offerings, productsById)
+                        logMissingProducts(offerings, productsById)
 
-                            if (offerings.all.isEmpty()) {
-                                handleErrorFetchingOfferings(
-                                    PurchasesError(
-                                        PurchasesErrorCode.ConfigurationError,
-                                        OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
-                                    ),
-                                    completion
-                                )
-                            } else {
-                                synchronized(this@Purchases) {
-                                    deviceCache.cacheOfferings(offerings)
-                                }
-                                dispatch {
-                                    completion?.onReceived(offerings)
-                                }
+                        if (offerings.all.isEmpty()) {
+                            handleErrorFetchingOfferings(
+                                PurchasesError(
+                                    PurchasesErrorCode.ConfigurationError,
+                                    OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+                                ),
+                                completion
+                            )
+                        } else {
+                            synchronized(this@Purchases) {
+                                deviceCache.cacheOfferings(offerings)
                             }
-                        }, { error ->
-                            handleErrorFetchingOfferings(error, completion)
-                        })
-
-                    }
+                            dispatch {
+                                completion?.onReceived(offerings)
+                            }
+                        }
+                    }, { error ->
+                        handleErrorFetchingOfferings(error, completion)
+                    })
                 } catch (error: JSONException) {
                     log(LogIntent.RC_ERROR, OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage))
                     handleErrorFetchingOfferings(
@@ -1067,51 +1057,6 @@ class Purchases internal constructor(
             })
     }
 
-    private fun getIsBC5Enabled(offeringsJSON: JSONObject): Boolean {
-        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-        for (i in 0 until jsonArrayOfOfferings.length()) {
-            val jsonPackagesArray =
-                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
-            for (j in 0 until jsonPackagesArray.length()) {
-                val pkg = jsonPackagesArray.getJSONObject(j)
-                if (pkg.has(SUBSCRIPTION_ID_BACKEND_KEY))
-                    return true
-            }
-        }
-        return false
-    }
-
-    private fun extractSubscriptionIds(offeringsJSON: JSONObject): Set<String> {
-        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-        val subscriptionIds = mutableSetOf<String>()
-        for (i in 0 until jsonArrayOfOfferings.length()) {
-            val jsonPackagesArray =
-                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
-            for (j in 0 until jsonPackagesArray.length()) {
-                val pkg = jsonPackagesArray.getJSONObject(j)
-                subscriptionIds.add(pkg.getString("platform_product_identifier"))
-            }
-        }
-        return subscriptionIds
-    }
-
-    private fun extractBC5SubscriptionIds(offeringsJSON: JSONObject): Set<String> {
-        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-        val subscriptionIds = mutableSetOf<String>()
-        for (i in 0 until jsonArrayOfOfferings.length()) {
-            val jsonPackagesArray =
-                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
-            for (j in 0 until jsonPackagesArray.length()) {
-                val pkg = jsonPackagesArray.getJSONObject(j)
-                if (!pkg.has(SUBSCRIPTION_ID_BACKEND_KEY)) {
-                    errorLog("Product ${pkg.getString("identifer")} doesn't have a group, and BC5 is enabled")
-                } else {
-                    subscriptionIds.add(pkg.getString(SUBSCRIPTION_ID_BACKEND_KEY))
-                }
-            }
-        }
-        return subscriptionIds
-    }
 
     private fun handleErrorFetchingOfferings(
         error: PurchasesError,
@@ -1195,6 +1140,7 @@ class Purchases internal constructor(
                 billing.querySkuDetailsAsync(
                     productType = purchase.type,
                     skus = purchase.skus.toSet(),
+                    offeringsJSON = JSONObject(),
                     onReceive = { storeProducts ->
                         postToBackend(
                             purchase = purchase,
@@ -1279,7 +1225,7 @@ class Purchases internal constructor(
     }
 
     private fun getSKUDetails(
-        isBC5Enabled: Boolean,
+        offeringsJSON: JSONObject,
         productIds: Set<String>,
         onCompleted: (HashMap<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
@@ -1288,8 +1234,9 @@ class Purchases internal constructor(
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
             productIds,
-            isBC5Enabled,
+            offeringsJSON,
             { subscriptionProducts ->
+                // TODO: This associate by ID shouldn't be done cause it won't work for BC5 purchases - we'll have more than one StoreProduct pero subscriptionID (SKU)
                 val productsById = HashMap<String, StoreProduct>()
 
                 val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.sku }
@@ -1302,7 +1249,7 @@ class Purchases internal constructor(
                     billing.querySkuDetailsAsync(
                         ProductType.INAPP,
                         inAppProductIds,
-                        isBC5Enabled,
+                        offeringsJSON,
                         { product ->
                             productsById.putAll(product.map { it.sku to it })
                             onCompleted(productsById)
@@ -1371,6 +1318,9 @@ class Purchases internal constructor(
                     return
                 }
 
+                // TODO: How do we figure out what the storeProduct with the correct pricingPhases was?
+                // Maddie mentioned storing a SKU -> StoreProduct cache in a context somewhere, because we assume you
+                // can only buy one basePlanId for a subscription (won't work for restores)
                 postPurchases(
                     purchases,
                     allowSharingPlayStoreAccount,
