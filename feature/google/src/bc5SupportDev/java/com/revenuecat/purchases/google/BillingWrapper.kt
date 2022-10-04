@@ -144,6 +144,7 @@ class BillingWrapper(
     override fun querySkuDetailsAsync(
         productType: ProductType,
         skus: Set<String>,
+        isBC5Enabled: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
@@ -158,38 +159,20 @@ class BillingWrapper(
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                val params = SkuDetailsParams.newBuilder()
-                    .setType(productType.toGoogleProductType() ?: SkuType.INAPP)
-                    .setSkusList(nonEmptySkus).build()
-
-                withConnectedClient {
-                    querySkuDetailsAsyncEnsuringOneResponse(params) { billingResult, skuDetailsList ->
-                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                            log(
-                                LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                    .format(skus.joinToString())
-                            )
-                            log(
-                                LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
-                                    .format(skuDetailsList?.joinToString { it.toString() })
-                            )
-                            skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
-                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
-                            }
-
-                            onReceive(skuDetailsList?.map { it.toStoreProduct() } ?: emptyList())
-                        } else {
-                            log(
-                                LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
-                                    .format(billingResult.toHumanReadableDescription())
-                            )
-                            onError(
-                                billingResult.responseCode.billingResponseToPurchasesError(
-                                    "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
-                                ).also { errorLog(it) }
-                            )
-                        }
-                    }
+                if (isBC5Enabled) {
+                    queryProductDetailsAsync(
+                        nonEmptySkus,
+                        productType,
+                        onReceive,
+                        onError
+                    )
+                } else {
+                    queryProductDetailsAsyncBackwardsCompat(
+                        nonEmptySkus,
+                        productType,
+                        onReceive,
+                        onError
+                    )
                 }
             } else {
                 onError(connectionError)
@@ -197,68 +180,95 @@ class BillingWrapper(
         }
     }
 
-    override fun queryProductDetailsAsync(
+    private fun queryProductDetailsAsyncBackwardsCompat(
+        skus: List<String>,
         productType: ProductType,
-        skus: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
-        val nonEmptySkus = skus.filter { it.isNotEmpty() }
+        val params = SkuDetailsParams.newBuilder()
+            .setType(productType.toGoogleProductType() ?: SkuType.INAPP)
+            .setSkusList(skus).build()
 
-        if (nonEmptySkus.isEmpty()) {
-            log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
-            onReceive(emptyList())
-            return
-        }
+        withConnectedClient {
+            querySkuDetailsAsyncEnsuringOneResponse(params) { billingResult, skuDetailsList ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    log(
+                        LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
+                            .format(skus.joinToString())
+                    )
+                    log(
+                        LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
+                            .format(skuDetailsList?.joinToString { it.toString() })
+                    )
+                    skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
+                        log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
+                    }
 
-        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
-        executeRequestOnUIThread { connectionError ->
-            if (connectionError == null) {
-                val productList = skus.map { sku ->
-                    QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(sku)
-                        .setProductType(productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP)
-                        .build()
+
+                    onReceive(skuDetailsList?.map { it.toStoreProduct() } ?: emptyList())
+                } else {
+                    log(
+                        LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
+                            .format(billingResult.toHumanReadableDescription())
+                    )
+                    onError(
+                        billingResult.responseCode.billingResponseToPurchasesError(
+                            "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
+                        ).also { errorLog(it) }
+                    )
                 }
-                val params = QueryProductDetailsParams.newBuilder().setProductList(productList).build()
+            }
+        }
+    }
 
-                withConnectedClient {
-                    queryProductDetailsAsyncEnsuringOneResponse(params) { billingResult, productDetailsList ->
-                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                            log(
-                                LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                    .format(skus.joinToString())
-                            )
-                            log(
-                                LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
-                                    .format(productDetailsList?.joinToString { it.toString() })
-                            )
-                            productDetailsList?.takeUnless { it.isEmpty() }?.forEach {
-                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
-                            }
+    private fun queryProductDetailsAsync(
+        skus: List<String>,
+        productType: ProductType,
+        onReceive: StoreProductsCallback,
+        onError: PurchasesErrorCallback
+    ) {
+        val productList = skus.map { sku ->
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(sku)
+                .setProductType(productType.toGoogleProductType() ?: BillingClient.ProductType.SUBS)
+                .build()
+        }
+        val params = QueryProductDetailsParams.newBuilder().setProductList(productList).build()
 
-                            var storeProducts = ArrayList<StoreProduct>()
-                            productDetailsList?.forEach { product ->
-                                product.subscriptionOfferDetails?.forEach { offer ->
-                                    storeProducts.add(product.toStoreProduct(offer.offerToken))
-                                }
-                            }
-                            onReceive(storeProducts)
-                        } else {
-                            log(
-                                LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
-                                    .format(billingResult.toHumanReadableDescription())
-                            )
-                            onError(
-                                billingResult.responseCode.billingResponseToPurchasesError(
-                                    "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
-                                ).also { errorLog(it) }
-                            )
+        withConnectedClient {
+            queryProductDetailsAsync(params) { billingResult, productDetailsList ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    log(
+                        LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
+                            .format(skus.joinToString())
+                    )
+                    log(
+                        LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
+                            .format(productDetailsList.joinToString { it.toString() })
+                    )
+                    productDetailsList.takeUnless { it.isEmpty() }?.forEach {
+                        log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
+                    }
+
+                    val storeProducts = ArrayList<StoreProduct>()
+                    productDetailsList.forEach { product ->
+                        product.subscriptionOfferDetails?.forEach { offer ->
+                            storeProducts.add(product.toStoreProduct(offer.offerToken))
                         }
                     }
+                    onReceive(storeProducts)
+                } else {
+                    log(
+                        LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
+                            .format(billingResult.toHumanReadableDescription())
+                    )
+                    onError(
+                        billingResult.responseCode.billingResponseToPurchasesError(
+                            "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
+                        ).also { errorLog(it) }
+                    )
                 }
-            } else {
-                onError(connectionError)
             }
         }
     }
@@ -326,8 +336,7 @@ class BillingWrapper(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
-                    queryPurchaseHistoryAsyncEnsuringOneResponse(productType) {
-                            billingResult, purchaseHistoryRecordList ->
+                    queryPurchaseHistoryAsyncEnsuringOneResponse(productType) { billingResult, purchaseHistoryRecordList ->
 
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
@@ -474,8 +483,7 @@ class BillingWrapper(
                 )
                 return@withConnectedClient
             }
-            this.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{
-                    activeSubsResult, activeSubsPurchases ->
+            this.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{ activeSubsResult, activeSubsPurchases ->
 
                 if (!activeSubsResult.isSuccessful()) {
                     val purchasesError = activeSubsResult.responseCode.billingResponseToPurchasesError(
@@ -499,8 +507,7 @@ class BillingWrapper(
                     return@querySubPurchasesAsync
                 }
 
-                this.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppsPurchasesAsync@{
-                        unconsumedInAppsResult, unconsumedInAppsPurchases ->
+                this.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppsPurchasesAsync@{ unconsumedInAppsResult, unconsumedInAppsPurchases ->
 
                     if (!unconsumedInAppsResult.isSuccessful()) {
                         val purchasesError =
@@ -580,8 +587,7 @@ class BillingWrapper(
                 return
             }
 
-            client.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{
-                    querySubsResult, subsPurchasesList ->
+            client.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{ querySubsResult, subsPurchasesList ->
 
                 val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
                 val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
@@ -596,8 +602,7 @@ class BillingWrapper(
                     listener(ProductType.UNKNOWN)
                     return@querySubPurchasesAsync
                 }
-                client.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppPurchasesAsync@{
-                        queryInAppsResult, inAppPurchasesList ->
+                client.queryPurchasesAsync(queryInAppsPurchasesParams) queryInAppPurchasesAsync@{ queryInAppsResult, inAppPurchasesList ->
 
                     val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
                     val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
