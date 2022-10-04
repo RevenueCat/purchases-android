@@ -146,6 +146,7 @@ internal class AmazonBilling constructor(
     }
 
     override fun queryProductDetailsAsync(
+        productType: com.revenuecat.purchases.ProductType,
         skus: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback

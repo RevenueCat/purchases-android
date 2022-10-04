@@ -1340,6 +1340,7 @@ class Purchases internal constructor(
     ) {
         // TODO do we want to rename the base BillingWrapper querySkuDetailsAsync -> queryProductDetailsAsync?
         billing.queryProductDetailsAsync(
+            ProductType.SUBS,
             productIds,
             { subscriptionProducts ->
                 val productsById = HashMap<String, StoreProduct>()

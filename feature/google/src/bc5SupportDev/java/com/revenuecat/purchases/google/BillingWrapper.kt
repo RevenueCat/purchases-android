@@ -198,6 +198,7 @@ class BillingWrapper(
     }
 
     override fun queryProductDetailsAsync(
+        productType: ProductType,
         skus: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
@@ -216,13 +217,13 @@ class BillingWrapper(
                 val productList = skus.map { sku ->
                     QueryProductDetailsParams.Product.newBuilder()
                         .setProductId(sku)
-                        .setProductType(BillingClient.ProductType.SUBS)
+                        .setProductType(productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP)
                         .build()
                 }
                 val params = QueryProductDetailsParams.newBuilder().setProductList(productList).build()
 
                 withConnectedClient {
-                    queryProductDetailsAsync(params) { billingResult, productDetailsList ->
+                    queryProductDetailsAsyncEnsuringOneResponse(params) { billingResult, productDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             log(
                                 LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
