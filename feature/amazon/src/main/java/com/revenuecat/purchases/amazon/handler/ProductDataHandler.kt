@@ -26,7 +26,7 @@ class ProductDataHandler(
         private const val GET_PRODUCT_DATA_TIMEOUT_MILLIS = 10000L
     }
 
-    data class Request(
+    private data class Request(
         val skuList: List<String>,
         val marketplace: String,
         val onReceive: StoreProductsCallback,
