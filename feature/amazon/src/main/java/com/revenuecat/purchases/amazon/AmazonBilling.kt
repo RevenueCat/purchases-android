@@ -59,7 +59,7 @@ internal class AmazonBilling constructor(
     private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(
         purchasingServiceProvider
     ),
-    private val userDataHandler: UserDataResponseListener = UserDataHandler(purchasingServiceProvider)
+    private val userDataHandler: UserDataResponseListener = UserDataHandler(purchasingServiceProvider, mainHandler)
 ) : BillingAbstract(),
     ProductDataResponseListener by productDataHandler,
     PurchaseResponseListener by purchaseHandler,

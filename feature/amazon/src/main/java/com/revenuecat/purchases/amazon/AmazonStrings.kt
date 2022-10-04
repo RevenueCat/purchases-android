@@ -43,4 +43,6 @@ object AmazonStrings {
             "won't do anything. Please use syncObserverModeAmazonPurchase to send purchases to RevenueCat instead."
     const val ERROR_TIMEOUT_GETTING_PRODUCT_DATA =
         "Timeout error trying to get Amazon product data for SKUs: %s. Please check that the SKUs are correct."
+    const val ERROR_TIMEOUT_GETTING_USER_DATA =
+        "Timeout error trying to get Amazon user data."
 }

@@ -45,6 +45,7 @@ class ProductDataHandlerTest {
     @Before
     fun setup() {
         cache = MockDeviceCache(mockk(), apiKey)
+        mainHandlerCallbacks.clear()
         setupMainHandler()
         purchasingServiceProvider = PurchasingServiceProviderForTest()
         underTest = ProductDataHandler(purchasingServiceProvider, mainHandler)
