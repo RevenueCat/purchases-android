@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.common
 
 import android.app.Activity
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.PackageTemplate
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -56,7 +59,7 @@ abstract class BillingAbstract {
     abstract fun querySkuDetailsAsync(
         productType: ProductType,
         skus: Set<String>,
-        offeringsJSON: JSONObject, // TODO: this should be a Offerings structure instead of raw JSONs
+        offerings: Offerings,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     )
@@ -103,6 +106,38 @@ abstract class BillingAbstract {
         onError: (PurchasesError) -> Unit
     ) {
         onSuccess(productID)
+    }
+
+    open fun mapStoreProducts(offeringsIn: Offerings, products: List<StoreProduct>): Offerings {
+        return mapStoreProducts(offeringsIn, products, { product -> product.sku }, {template -> template.product_identifier})
+    }
+
+    fun mapStoreProducts(
+        offeringsIn: Offerings,
+        products: List<StoreProduct>,
+        storeProductKeyFunc: (StoreProduct) -> String,
+        packageKeyFunc: (PackageTemplate) -> String
+    ): Offerings {
+        val subscriptionProductsById = products.map { storeProductKeyFunc(it) to it }.filter { x -> x.first != "" }.toMap()
+        val offerings =
+            offeringsIn.all.values.map { offering -> setPackagesInOffering(offering, subscriptionProductsById, packageKeyFunc) }
+        return Offerings(offeringsIn.current, offerings.filterNotNull().map { it.identifier to it }.toMap())
+    }
+
+
+    private fun setPackagesInOffering(offering: Offering, subscriptionProductsById: Map<String, StoreProduct>, packageKeyFunc: (PackageTemplate) -> String): Offering? {
+        val packages = offering.packageTemplates.map { template ->
+            val product = subscriptionProductsById.get(packageKeyFunc(template))
+            if (product != null)
+                return@map template.makePackage(product)
+            else
+                return@map null
+        }.filterNotNull()
+
+        if (packages.isEmpty())
+            return null
+        else
+            return Offering(offering.identifier, offering.serverDescription, packages, offering.packageTemplates)
     }
 
     interface PurchasesUpdatedListener {

@@ -12,6 +12,9 @@ import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataResponse
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -145,12 +148,13 @@ internal class AmazonBilling constructor(
         )
     }
 
+
     // region Product Data
 
     override fun querySkuDetailsAsync(
         productType: RevenueCatProductType,
         skus: Set<String>,
-        offeringsJSON: JSONObject,
+        offerings: Offerings,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {

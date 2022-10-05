@@ -2,6 +2,7 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -81,7 +82,9 @@ data class StoreTransaction(
     /**
      * Amazon's marketplace. Null for Google
      */
-    val marketplace: String?
+    val marketplace: String?,
+
+    val storeProduct: StoreProduct?
 ) : Parcelable {
 
     /**

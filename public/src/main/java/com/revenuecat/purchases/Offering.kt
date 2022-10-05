@@ -20,7 +20,8 @@ import kotlinx.parcelize.Parcelize
 data class Offering constructor(
     val identifier: String,
     val serverDescription: String,
-    val availablePackages: List<Package>
+    val availablePackages: List<Package>,
+    val packageTemplates: List<PackageTemplate>
 ) : Parcelable {
 
     /**

@@ -182,7 +182,8 @@ class BackendTest {
             storeAppUserID = storeAppUserID,
             marketplace = marketplace,
             onSuccess = onReceivePostReceiptSuccessHandler,
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
 
         return info
@@ -445,7 +446,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         val productInfo1 = ReceiptInfo(
             productIDs,
@@ -462,7 +464,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
@@ -534,7 +537,8 @@ class BackendTest {
 
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
             assertThat(it).isEqualTo(updatedInfo)
@@ -655,7 +659,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         val (fetchToken1, _) = mockPostReceiptResponse(
             isRestore = false,
@@ -685,7 +690,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         lock.await()
         assertThat(lock.count).isEqualTo(0)
@@ -795,7 +801,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
@@ -808,7 +815,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
@@ -882,7 +890,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
@@ -895,7 +904,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         lock.await()
         assertThat(lock.count).isEqualTo(0)
@@ -940,7 +950,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
@@ -953,7 +964,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         lock.await()
         assertThat(lock.count).isEqualTo(0)
@@ -1337,7 +1349,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         val (fetchToken1, _) = mockPostReceiptResponse(
             isRestore = false,
@@ -1360,7 +1373,8 @@ class BackendTest {
             onSuccess = { _, _ ->
                 lock.countDown()
             },
-            onError = postReceiptErrorCallback
+            onError = postReceiptErrorCallback,
+            storeProduct = storeProduct
         )
         lock.await()
         assertThat(lock.count).isEqualTo(0)

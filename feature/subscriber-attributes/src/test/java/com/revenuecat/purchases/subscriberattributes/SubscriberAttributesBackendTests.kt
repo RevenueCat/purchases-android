@@ -258,7 +258,8 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             onSuccess = expectedOnSuccessPostReceipt,
-            onError = unexpectedOnErrorPostReceipt
+            onError = unexpectedOnErrorPostReceipt,
+            storeProduct = storeProduct
         )
 
         assertThat(receivedCustomerInfo).isNotNull
@@ -283,7 +284,8 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             onSuccess = expectedOnSuccessPostReceipt,
-            onError = unexpectedOnErrorPostReceipt
+            onError = unexpectedOnErrorPostReceipt,
+            storeProduct = storeProduct
         )
 
         assertThat(receivedCustomerInfo).isNotNull
@@ -311,7 +313,8 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             onSuccess = expectedOnSuccessPostReceipt,
-            onError = unexpectedOnErrorPostReceipt
+            onError = unexpectedOnErrorPostReceipt,
+            storeProduct = storeProduct
         )
 
         assertThat(receivedCustomerInfo).isNotNull
@@ -338,7 +341,8 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             onSuccess = unexpectedOnSuccessPostReceipt,
-            onError = expectedOnErrorPostReceipt
+            onError = expectedOnErrorPostReceipt,
+            storeProduct = storeProduct
         )
 
         assertThat(receivedCustomerInfo).isNull()
@@ -365,7 +369,8 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             onSuccess = unexpectedOnSuccessPostReceipt,
-            onError = expectedOnErrorPostReceipt
+            onError = expectedOnErrorPostReceipt,
+            storeProduct = storeProduct
         )
 
         assertThat(receivedCustomerInfo).isNull()

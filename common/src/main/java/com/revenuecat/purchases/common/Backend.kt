@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
@@ -166,7 +167,8 @@ class Backend(
         storeAppUserID: String?,
         marketplace: String? = null,
         onSuccess: PostReceiptDataSuccessCallback,
-        onError: PostReceiptDataErrorCallback
+        onError: PostReceiptDataErrorCallback,
+        storeProduct: StoreProduct?
     ) {
         val cacheKey = listOfNotNull(
             purchaseToken,
@@ -177,6 +179,15 @@ class Backend(
             receiptInfo.toString(),
             storeAppUserID
         )
+
+        val pricingPhases = if (storeProduct is BC5StoreProduct) storeProduct.pricingPhases.pricingPhaseList.map { mapOf(
+            "billingPeriod" to it.billingPeriod,
+            "billingCycleCount" to it.billingCycleCount,
+            "formattedPrice" to it.formattedPrice,
+            "priceAmountMicros" to it.priceAmountMicros,
+            "priceCurrencyCode" to it.priceCurrencyCode,
+            "recurrenceMode" to it.recurrenceMode
+        ) } else null
 
         val body = mapOf(
             "fetch_token" to purchaseToken,
@@ -191,7 +202,8 @@ class Backend(
             "normal_duration" to receiptInfo.duration,
             "intro_duration" to receiptInfo.introDuration,
             "trial_duration" to receiptInfo.trialDuration,
-            "store_user_id" to storeAppUserID
+            "store_user_id" to storeAppUserID,
+            "pricing_phases" to pricingPhases
         ).filterValues { value -> value != null }
 
         val extraHeaders = receiptInfo.storeProduct?.price?.let { priceString ->

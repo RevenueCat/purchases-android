@@ -26,10 +26,13 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.BC5StoreProduct
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceSkuInfo
@@ -50,7 +53,6 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
-import org.json.JSONObject
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -73,6 +75,7 @@ class BillingWrapper(
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
+    private val storeProductByProductIdentifier = mutableMapOf<String, StoreProduct?>()
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
@@ -141,61 +144,40 @@ class BillingWrapper(
             }
         }
     }
-    private fun getIsBC5Enabled(offeringsJSON: JSONObject): Boolean {
-        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-        for (i in 0 until jsonArrayOfOfferings.length()) {
-            val jsonPackagesArray =
-                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
-            for (j in 0 until jsonPackagesArray.length()) {
-                val pkg = jsonPackagesArray.getJSONObject(j)
-                if (pkg.has(SUBSCRIPTION_ID_BACKEND_KEY))
-                    return true
-            }
-        }
-        return false
+
+    private fun getIsBC5Enabled(offerings: Offerings): Boolean {
+        return !offerings.all.values
+            .flatMap { offering -> offering.packageTemplates }
+            .map { template -> template.group_identifier }
+            .filterNotNull()
+            .isEmpty()
     }
 
-    private fun extractSubscriptionIds(offeringsJSON: JSONObject): Set<String> {
-        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-        val subscriptionIds = mutableSetOf<String>()
-        for (i in 0 until jsonArrayOfOfferings.length()) {
-            val jsonPackagesArray =
-                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
-            for (j in 0 until jsonPackagesArray.length()) {
-                val pkg = jsonPackagesArray.getJSONObject(j)
-                subscriptionIds.add(pkg.getString("platform_product_identifier"))
-            }
-        }
-        return subscriptionIds
+    private fun extractSubscriptionIds(offerings: Offerings): Set<String> {
+        return offerings.all.values
+            .flatMap { offering -> offering.packageTemplates }
+            .map { template -> template.product_identifier }
+            .toSet()
     }
 
-    private fun extractBC5SubscriptionIds(offeringsJSON: JSONObject): Set<String> {
-        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-        val subscriptionIds = mutableSetOf<String>()
-        for (i in 0 until jsonArrayOfOfferings.length()) {
-            val jsonPackagesArray =
-                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
-            for (j in 0 until jsonPackagesArray.length()) {
-                val pkg = jsonPackagesArray.getJSONObject(j)
-                if (!pkg.has(SUBSCRIPTION_ID_BACKEND_KEY)) {
-                    errorLog("Product ${pkg.getString("identifer")} doesn't have a group, and BC5 is enabled")
-                } else {
-                    subscriptionIds.add(pkg.getString(SUBSCRIPTION_ID_BACKEND_KEY))
-                }
-            }
-        }
-        return subscriptionIds
+    private fun extractBC5SubscriptionIds(offerings: Offerings): Set<String> {
+        return offerings.all.values
+            .flatMap { offering -> offering.packageTemplates }
+            .map { template -> template.group_identifier }
+            .filterNotNull()
+            .toSet()
     }
 
     override fun querySkuDetailsAsync(
         productType: ProductType,
         skusIn: Set<String>,
-        offeringsJSON: JSONObject,
+        offerings: Offerings,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
-        val isBC5Enabled = getIsBC5Enabled(offeringsJSON)
-        val subscriptionIds = if (isBC5Enabled) extractBC5SubscriptionIds(offeringsJSON) else extractSubscriptionIds(offeringsJSON)
+        val isBC5Enabled = getIsBC5Enabled(offerings)
+        val subscriptionIds =
+            if (isBC5Enabled) extractBC5SubscriptionIds(offerings) else extractSubscriptionIds(offerings)
         var skus = subscriptionIds.plus(skusIn)
         val nonEmptySkus = skus.filter { it.isNotEmpty() }
 
@@ -303,7 +285,7 @@ class BillingWrapper(
                     val storeProducts = ArrayList<StoreProduct>()
                     productDetailsList.forEach { product ->
                         product.subscriptionOfferDetails?.forEach { offer ->
-                            storeProducts.add(product.toStoreProduct(offer.offerToken))
+                            storeProducts.add(product.toStoreProduct(offer.offerToken, offer.pricingPhases))
                         }
                     }
                     onReceive(storeProducts)
@@ -340,6 +322,7 @@ class BillingWrapper(
         synchronized(this@BillingWrapper) {
             productTypes[storeProduct.sku] = storeProduct.type
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
+            storeProductByProductIdentifier[storeProduct.sku] = storeProduct
         }
         executeRequestOnUIThread {
             val params = if (storeProduct is BC5StoreProduct) {
@@ -607,7 +590,8 @@ class BillingWrapper(
             val hash = purchase.purchaseToken.sha1()
             hash to purchase.toStoreTransaction(
                 productType.toRevenueCatProductType(),
-                presentedOfferingIdentifier = null
+                presentedOfferingIdentifier = null,
+                null
             )
         }
     }
@@ -844,11 +828,13 @@ class BillingWrapper(
 
         synchronized(this@BillingWrapper) {
             val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
+            val storeProduct = storeProductByProductIdentifier[purchase.firstSku]
             productTypes[purchase.firstSku]?.let { productType ->
                 completion(
                     purchase.toStoreTransaction(
                         productType,
-                        presentedOffering
+                        presentedOffering,
+                        storeProduct
                     )
                 )
                 return
@@ -858,7 +844,8 @@ class BillingWrapper(
                 completion(
                     purchase.toStoreTransaction(
                         type,
-                        presentedOffering
+                        presentedOffering,
+                        storeProduct
                     )
                 )
             }
@@ -930,6 +917,17 @@ class BillingWrapper(
             val devErrorResponseCode =
                 BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR).build()
             listener.onPurchaseHistoryResponse(devErrorResponseCode, null)
+        }
+    }
+
+    override fun mapStoreProducts(offeringsIn: Offerings, products: List<StoreProduct>): Offerings {
+        if (getIsBC5Enabled(offeringsIn)) {
+            return mapStoreProducts(offeringsIn, products,
+                { subProduct -> if (subProduct is BC5StoreProduct) subProduct.sku + "_" + subProduct.getDuration() else "" },
+                { template -> template.group_identifier + "_" + template.duration }
+            )
+        } else {
+            return super.mapStoreProducts(offeringsIn, products)
         }
     }
 }

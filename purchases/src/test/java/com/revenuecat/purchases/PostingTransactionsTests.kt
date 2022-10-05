@@ -86,7 +86,8 @@ class PostingTransactionsTests {
                 storeAppUserID = any(),
                 marketplace = any(),
                 onSuccess = capture(successSlot),
-                onError = capture(errorSlot)
+                onError = capture(errorSlot),
+                storeProduct = storeProduct
             )
         } answers {
             postReceiptError?.let {
@@ -186,11 +187,12 @@ class PostingTransactionsTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = expectedAttributes.toBackendMap(),
-                storeAppUserID = any(),
                 receiptInfo = any(),
+                storeAppUserID = any(),
                 marketplace = any(),
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -231,7 +233,8 @@ class PostingTransactionsTests {
                 storeAppUserID = any(),
                 marketplace = any(),
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -278,7 +281,8 @@ class PostingTransactionsTests {
                 storeAppUserID = expectedStoreUserID,
                 marketplace = any(),
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -319,7 +323,8 @@ class PostingTransactionsTests {
                 receiptInfo = any(),
                 storeAppUserID = any(),
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }

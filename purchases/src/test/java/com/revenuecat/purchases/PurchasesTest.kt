@@ -370,7 +370,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -384,7 +385,8 @@ class PurchasesTest {
                 receiptInfo = productInfo1,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -423,7 +425,8 @@ class PurchasesTest {
                     receiptInfo = it,
                     storeAppUserID = null,
                     onSuccess = any(),
-                    onError = any()
+                    onError = any(),
+                    storeProduct = storeProduct
                 )
             }
         }
@@ -440,10 +443,11 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                storeAppUserID = null,
                 receiptInfo = any(),
+                storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -590,7 +594,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -616,7 +621,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -644,7 +650,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -742,7 +749,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -757,7 +765,8 @@ class PurchasesTest {
                 receiptInfo = productInfo1,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -816,7 +825,8 @@ class PurchasesTest {
                 receiptInfo = any(),
                 storeAppUserID = null,
                 onSuccess = captureLambda(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         } answers {
             lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, mockInfo.jsonObject)
@@ -859,7 +869,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
         verify(exactly = 1) {
@@ -1450,7 +1461,8 @@ class PurchasesTest {
                 receiptInfo = any(),
                 storeAppUserID = null,
                 onSuccess = captureLambda(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         } answers {
             lambda<PostReceiptDataSuccessCallback>().captured.invoke(
@@ -2057,7 +2069,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -2071,7 +2084,8 @@ class PurchasesTest {
                 receiptInfo = productInfo1,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
         assertThat(capturedShouldTryToConsume.isCaptured).isTrue()
@@ -2259,7 +2273,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
         val productInfo1 = ReceiptInfo(productIDs = listOf(skuSub))
@@ -2273,7 +2288,8 @@ class PurchasesTest {
                 receiptInfo = productInfo1,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -2319,7 +2335,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -2334,7 +2351,8 @@ class PurchasesTest {
                 receiptInfo = productInfo1,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -2373,7 +2391,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
         verify(exactly = 0) {
@@ -2460,7 +2479,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = amazonUserID,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -2518,7 +2538,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = amazonUserID,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -2577,7 +2598,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = amazonUserID,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -2639,7 +2661,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = amazonUserID,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -2669,7 +2692,8 @@ class PurchasesTest {
                 receiptInfo = any(),
                 storeAppUserID = any(),
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -2748,7 +2772,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = amazonUserID,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -2804,7 +2829,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = amazonUserID,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -2859,7 +2885,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = amazonUserID,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -2960,7 +2987,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -3009,7 +3037,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -3023,7 +3052,8 @@ class PurchasesTest {
                 receiptInfo = any(),
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -3037,7 +3067,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = any(),
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -3080,7 +3111,19 @@ class PurchasesTest {
             mockBillingAbstract.queryPurchases(appUserId, any(), any())
         }
         verify(exactly = 0) {
-            mockBackend.postReceiptData(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            mockBackend.postReceiptData(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                storeProduct
+            )
         }
     }
 
@@ -3112,7 +3155,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -3145,7 +3189,8 @@ class PurchasesTest {
                 receiptInfo = receiptInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -3180,7 +3225,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -3267,7 +3313,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -3301,7 +3348,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
 
@@ -3365,7 +3413,8 @@ class PurchasesTest {
                 receiptInfo = productInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         }
     }
@@ -3932,7 +3981,8 @@ class PurchasesTest {
                     storeAppUserID = any(),
                     marketplace = any(),
                     onSuccess = captureLambda(),
-                    onError = any()
+                    onError = any(),
+                    storeProduct = storeProduct
                 )
             } answers {
                 lambda<PostReceiptDataSuccessCallback>().captured.invoke(
@@ -4166,7 +4216,8 @@ class PurchasesTest {
                 receiptInfo = if (isRestore) ReceiptInfo(productIDs = listOf(sku)) else receiptInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
-                onError = captureLambda()
+                onError = captureLambda(),
+                storeProduct = storeProduct
             )
         } answers answer
     }
@@ -4192,7 +4243,8 @@ class PurchasesTest {
                 receiptInfo = if (restore) ReceiptInfo(productIDs = listOf(sku)) else receiptInfo,
                 storeAppUserID = null,
                 onSuccess = captureLambda(),
-                onError = any()
+                onError = any(),
+                storeProduct = storeProduct
             )
         } answers {
             lambda<PostReceiptDataSuccessCallback>().captured.invoke(

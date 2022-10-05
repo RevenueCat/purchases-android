@@ -11,7 +11,6 @@ import android.app.Application
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -35,7 +34,6 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.google.SUBSCRIPTION_ID_BACKEND_KEY
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.google.toRevenueCatProductType
 import com.revenuecat.purchases.google.toStoreProduct
@@ -75,7 +73,6 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import org.json.JSONException
-import org.json.JSONObject
 import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.concurrent.ExecutorService
@@ -537,7 +534,8 @@ class Purchases internal constructor(
                                             if (sortedByTime.last() == purchase) {
                                                 dispatch { callback.onError(error) }
                                             }
-                                        }
+                                        },
+                                        storeProduct = null
                                     )
                                 }
                             }
@@ -1016,12 +1014,9 @@ class Purchases internal constructor(
             { offeringsJSON ->
                 try {
                     // TODO: Parse Offerings into structures without StoreProducts
-                    getSKUDetails(offeringsJSON, emptySet(), { productsById ->
-                        // TODO - this should just receive a list of the storeProducts from the BIllingImplementation
-                        // ASK the billingimplementation to map the storeProducts to the packages in the offering structures
-                        val offerings = offeringsJSON.createOfferings(productsById)
-
-                        logMissingProducts(offerings, productsById)
+                    val offeringsIn = offeringsJSON.createOfferings()
+                    getSKUDetails(offeringsIn, emptySet(), { products ->
+                        val offerings = billing.mapStoreProducts(offeringsIn, products)
 
                         if (offerings.all.isEmpty()) {
                             handleErrorFetchingOfferings(
@@ -1137,10 +1132,10 @@ class Purchases internal constructor(
     ) {
         purchases.forEach { purchase ->
             if (purchase.purchaseState != PurchaseState.PENDING) {
-                billing.querySkuDetailsAsync(
+                /*billing.querySkuDetailsAsync(
                     productType = purchase.type,
                     skus = purchase.skus.toSet(),
-                    offeringsJSON = JSONObject(),
+                    offerings = Offerings(null, emptyMap()),
                     onReceive = { storeProducts ->
                         postToBackend(
                             purchase = purchase,
@@ -1162,7 +1157,16 @@ class Purchases internal constructor(
                             onSuccess = onSuccess,
                             onError = onError
                         )
-                    }
+                    }*/
+                postToBackend(
+                    purchase = purchase,
+                    storeProduct = purchase.storeProduct,
+                    allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                    consumeAllTransactions = consumeAllTransactions,
+                    appUserID = appUserID,
+                    onSuccess = onSuccess,
+                    onError = onError
+
                 )
             } else {
                 onError?.invoke(
@@ -1198,6 +1202,7 @@ class Purchases internal constructor(
                 receiptInfo = receiptInfo,
                 storeAppUserID = purchase.storeUserID,
                 marketplace = purchase.marketplace,
+                storeProduct = storeProduct,
                 onSuccess = { info, body ->
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
@@ -1225,31 +1230,24 @@ class Purchases internal constructor(
     }
 
     private fun getSKUDetails(
-        offeringsJSON: JSONObject,
+        offerings: Offerings,
         productIds: Set<String>,
-        onCompleted: (HashMap<String, StoreProduct>) -> Unit,
+        onCompleted: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         // TODO do we want to rename the base BillingWrapper querySkuDetailsAsync -> queryProductDetailsAsync?
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
             productIds,
-            offeringsJSON,
+            offerings,
             { subscriptionProducts ->
-                // TODO: This associate by ID shouldn't be done cause it won't work for BC5 purchases - we'll have more than one StoreProduct pero subscriptionID (SKU)
-                val productsById = HashMap<String, StoreProduct>()
-
-                val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.sku }
-                productsById.putAll(subscriptionProductsById)
-
-                val subscriptionIds = subscriptionProductsById.keys
-
+/*
                 val inAppProductIds = productIds - subscriptionIds
                 if (inAppProductIds.isNotEmpty()) {
                     billing.querySkuDetailsAsync(
                         ProductType.INAPP,
                         inAppProductIds,
-                        offeringsJSON,
+                        offerings,
                         { product ->
                             productsById.putAll(product.map { it.sku to it })
                             onCompleted(productsById)
@@ -1260,6 +1258,8 @@ class Purchases internal constructor(
                 } else {
                     onCompleted(productsById)
                 }
+                */
+                onCompleted(subscriptionProducts)
             }, {
                 onError(it)
             })
@@ -1568,7 +1568,8 @@ class Purchases internal constructor(
                         deviceCache.addSuccessfullyPostedToken(purchaseToken)
                     }
                     onError(error)
-                }
+                },
+                storeProduct = null
             )
         }
     }
