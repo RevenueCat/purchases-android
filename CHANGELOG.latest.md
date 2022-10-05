@@ -1,6 +1,10 @@
-### Bugfixes
-* Wait to obtain unsubscribed attributes until finishing getting device identifiers (#604) via Toni Rico (@tonidero)
 ### Other Changes
-* Release train (#599) via Cesar de la Vega (@vegaro)
-* Adds Danger (#597) via Cesar de la Vega (@vegaro)
-* Update releasing documentation (#600) via Toni Rico (@tonidero)
+* Update fastlane plugin (#627) via Cesar de la Vega (@vegaro)
+* Offerings cleanup (#626) via beylmk (@beylmk)
+* Initial Support for BillingClient5 (#616) via beylmk (@beylmk)
+* Adds action parameter to CircleCI config to be able to trigger the automatic bump manually (#621) via Cesar de la Vega (@vegaro)
+* Not create release if next version should be skipped (#624) via Toni Rico (@tonidero)
+* Add missing packageName to helper methods in AppConfig (#620) via Toni Rico (@tonidero)
+* Add package name to all requests headers (#618) via Toni Rico (@tonidero)
+* Update releasing instructions (#602) via Cesar de la Vega (@vegaro)
+* Move to SNAPSHOT version on every commit to main if needed (#611) via Toni Rico (@tonidero)
