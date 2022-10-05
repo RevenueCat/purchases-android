@@ -50,7 +50,7 @@
                 app:layout_constraintTop_toTopOf="@id/api_key_label"
                 app:layout_constraintBottom_toBottomOf="@id/api_key_label"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintWidth_percent="0.6"
+                app:layout_constraintWidth_percent="0.55"
                 android:layout_marginLeft="20dp"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"/>
@@ -71,7 +71,7 @@
                 app:layout_constraintTop_toTopOf="@id/proxy_url_label"
                 app:layout_constraintBottom_toBottomOf="@id/proxy_url_label"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintWidth_percent="0.6"
+                app:layout_constraintWidth_percent="0.55"
                 android:layout_marginLeft="20dp"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"/>
