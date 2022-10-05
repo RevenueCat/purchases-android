@@ -1,11 +1,11 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreProductImpl
 import org.json.JSONObject
 
 fun SkuDetails.toStoreProduct() =
-    StoreProduct(
+    StoreProductImpl(
         sku,
         type.toRevenueCatProductType(),
         price,
