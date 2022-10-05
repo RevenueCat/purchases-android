@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreProductImpl
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.regex.Pattern
@@ -30,7 +31,7 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
     val (currencyCode, priceAmountMicros) = price.extractPrice(marketplace)
 
-    return StoreProduct(
+    return StoreProductImpl(
         sku,
         productType.toRevenueCatProductType(),
         price,
