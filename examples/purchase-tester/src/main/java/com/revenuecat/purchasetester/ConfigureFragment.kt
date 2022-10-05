@@ -41,7 +41,7 @@ class ConfigureFragment : Fragment() {
         val proxyUrl = binding.proxyUrlInput.text?.toString()
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
 
-        val application = (activity?.application as? MainApplication) ?: return
+        val application = (requireActivity().application as MainApplication)
 
         if (proxyUrl?.isEmpty() == false) Purchases.proxyURL = URL(proxyUrl)
 
