@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Purchases
@@ -12,6 +13,9 @@ import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentConfigureBinding
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import java.net.MalformedURLException
 import java.net.URL
 
@@ -19,31 +23,48 @@ class ConfigureFragment : Fragment() {
 
     lateinit var binding: FragmentConfigureBinding
 
+    private lateinit var dataStoreUtils: DataStoreUtils
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
         binding = FragmentConfigureBinding.inflate(inflater)
+
+        lifecycleScope.launch {
+            dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
+                binding.apiKeyInput.setText(sdkConfiguration.apiKey)
+                binding.proxyUrlInput.setText(sdkConfiguration.proxyUrl)
+                val storeToCheckId =
+                    if (sdkConfiguration.useAmazon) R.id.amazon_store_radio_id
+                    else R.id.google_store_radio_id
+                binding.storeRadioGroup.check(storeToCheckId)
+            }.collect()
+        }
 
         binding.continueButton.setOnClickListener {
             if (!validateInputs()) return@setOnClickListener
+            binding.continueButton.isEnabled = false
 
-            configureSDK()
-            navigateToLoginFragment()
+            lifecycleScope.launch {
+                configureSDK()
+                navigateToLoginFragment()
+            }
         }
 
         return binding.root
     }
 
-    private fun configureSDK() {
+    private suspend fun configureSDK() {
         val apiKey = binding.apiKeyInput.text.toString()
-        val proxyUrl = binding.proxyUrlInput.text?.toString()
+        val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
 
         val application = (requireActivity().application as MainApplication)
 
-        if (proxyUrl?.isEmpty() == false) Purchases.proxyURL = URL(proxyUrl)
+        if (proxyUrl.isNotEmpty()) Purchases.proxyURL = URL(proxyUrl)
 
         val configurationBuilder =
             if (useAmazonStore) AmazonConfiguration.Builder(application, apiKey)
@@ -56,6 +77,8 @@ class ConfigureFragment : Fragment() {
         Purchases.sharedInstance.setAttributes(mapOf("favorite_cat" to "garfield"))
 
         Purchases.sharedInstance.updatedCustomerInfoListener = application
+
+        dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, useAmazonStore))
     }
 
     private fun navigateToLoginFragment() {
