@@ -49,7 +49,7 @@ final class PurchasesAPI {
             @Override public void onError(@NonNull PurchasesError error) {}
         };
         final GetStoreProductsCallback skusResponseListener = new GetStoreProductsCallback() {
-            @Override public void onReceived(@NonNull List<? extends StoreProduct> storeProducts) { }
+            @Override public void onReceived(@NonNull List<StoreProduct> storeProducts) { }
             @Override public void onError(@NonNull PurchasesError error) {}
         };
         final ProductChangeCallback purchaseChangeListener = new ProductChangeCallback() {
