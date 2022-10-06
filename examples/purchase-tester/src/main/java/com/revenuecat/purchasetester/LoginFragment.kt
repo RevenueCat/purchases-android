@@ -40,11 +40,21 @@ class LoginFragment : Fragment() {
             }
         }
 
+        binding.resetSdkButton.setOnClickListener {
+            Purchases.sharedInstance.close()
+            navigateToConfigureFragment()
+        }
+
         return binding.root
     }
 
     private fun advanceToOverviewFragment() {
         val directions = LoginFragmentDirections.actionLoginFragmentToOverviewFragment()
+        findNavController().navigate(directions)
+    }
+
+    private fun navigateToConfigureFragment() {
+        val directions = LoginFragmentDirections.actionLoginFragmentToConfigureFragment()
         findNavController().navigate(directions)
     }
 }
