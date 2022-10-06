@@ -382,7 +382,7 @@ class ProductDataHandlerTest {
             unexpectedOnError
         )
 
-        verify(exactly = 1) { mainHandler.postDelayed(any(), 10000L) }
+        verify(exactly = 1) { mainHandler.postDelayed(any(), 10_000L) }
         assertThat(mainHandlerCallbacks.size).isEqualTo(1)
     }
 
