@@ -33,11 +33,11 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
         binding.customerInfoLogoutButton.setOnClickListener {
             if (Purchases.sharedInstance.isAnonymous) {
-                findNavController().navigateUp()
+                navigateToLoginFragment()
             } else {
                 Purchases.sharedInstance.logOutWith(
                     { error -> showUserError(requireActivity(), error) },
-                    { findNavController().navigateUp() }
+                    { navigateToLoginFragment() }
                 )
             }
         }
@@ -117,5 +117,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         val intent = Intent(Intent.ACTION_VIEW)
         intent.data = url
         startActivity(intent)
+    }
+
+    private fun navigateToLoginFragment() {
+        val directions = OverviewFragmentDirections.actionOverviewFragmentToLoginFragment()
+        findNavController().navigate(directions)
     }
 }
