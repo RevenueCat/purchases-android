@@ -32,10 +32,6 @@ data class BC5StoreProduct(
     override val originalJson: JSONObject,
     val productDetails: @RawValue ProductDetails?,
     val offerToken: String?,
-    val pricingPhases: @RawValue ProductDetails.PricingPhases
-    // TODO add PricingPhases so we don't have to dig in ProductDetails (which has many)
+    val pricingPhases: @RawValue ProductDetails.PricingPhases,
 ) : Parcelable, StoreProduct() {
-    fun getDuration(): String {
-        return pricingPhases.pricingPhaseList.last().billingPeriod
-    }
 }

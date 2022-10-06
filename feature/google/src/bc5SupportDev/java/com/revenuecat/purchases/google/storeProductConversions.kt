@@ -1,16 +1,10 @@
 package com.revenuecat.purchases.google
 
-import android.os.Parcelable
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.BC5StoreProduct
 import com.revenuecat.purchases.models.StoreProductImpl
-import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.parceler.JSONObjectParceler
-import kotlinx.parcelize.Parcelize
-import kotlinx.parcelize.RawValue
-import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 
 fun SkuDetails.toStoreProduct() =
@@ -45,12 +39,12 @@ fun ProductDetails.toStoreProduct(offerToken: String, pricingPhases: ProductDeta
         100,
         title,
         description,
-        "P1Y",
-        "P1W",
-        "introPrice",
-        90,
-        "P1M",
-        1,
+        pricingPhases.pricingPhaseList.last().billingPeriod,
+        null,
+        null,
+        0,
+        null,
+        0,
         "icon",
         JSONObject("{}"),
         this,

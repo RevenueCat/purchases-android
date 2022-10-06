@@ -19,6 +19,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.BC5StoreProduct
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
@@ -1132,42 +1133,44 @@ class Purchases internal constructor(
     ) {
         purchases.forEach { purchase ->
             if (purchase.purchaseState != PurchaseState.PENDING) {
-                /*billing.querySkuDetailsAsync(
-                    productType = purchase.type,
-                    skus = purchase.skus.toSet(),
-                    offerings = Offerings(null, emptyMap()),
-                    onReceive = { storeProducts ->
-                        postToBackend(
-                            purchase = purchase,
-                            storeProduct = storeProducts.takeUnless { it.isEmpty() }?.get(0),
-                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                            consumeAllTransactions = consumeAllTransactions,
-                            appUserID = appUserID,
-                            onSuccess = onSuccess,
-                            onError = onError
-                        )
-                    },
-                    onError = {
-                        postToBackend(
-                            purchase = purchase,
-                            storeProduct = null,
-                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                            consumeAllTransactions = consumeAllTransactions,
-                            appUserID = appUserID,
-                            onSuccess = onSuccess,
-                            onError = onError
-                        )
-                    }*/
-                postToBackend(
-                    purchase = purchase,
-                    storeProduct = purchase.storeProduct,
-                    allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                    consumeAllTransactions = consumeAllTransactions,
-                    appUserID = appUserID,
-                    onSuccess = onSuccess,
-                    onError = onError
-
-                )
+                if (purchase.storeProduct != null && purchase.storeProduct is BC5StoreProduct) {
+                    postToBackend(
+                        purchase = purchase,
+                        storeProduct = purchase.storeProduct,
+                        allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                        consumeAllTransactions = consumeAllTransactions,
+                        appUserID = appUserID,
+                        onSuccess = onSuccess,
+                        onError = onError
+                    )
+                } else {
+                    billing.querySkuDetailsAsync(
+                        productType = purchase.type,
+                        skus = purchase.skus.toSet(),
+                        offerings = Offerings(null, emptyMap()),
+                        onReceive = { storeProducts ->
+                            postToBackend(
+                                purchase = purchase,
+                                storeProduct = storeProducts.takeUnless { it.isEmpty() }?.get(0),
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                consumeAllTransactions = consumeAllTransactions,
+                                appUserID = appUserID,
+                                onSuccess = onSuccess,
+                                onError = onError
+                            )
+                        },
+                        onError = {
+                            postToBackend(
+                                purchase = purchase,
+                                storeProduct = null,
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                consumeAllTransactions = consumeAllTransactions,
+                                appUserID = appUserID,
+                                onSuccess = onSuccess,
+                                onError = onError
+                            )
+                        })
+                }
             } else {
                 onError?.invoke(
                     purchase,

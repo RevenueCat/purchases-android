@@ -923,7 +923,7 @@ class BillingWrapper(
     override fun mapStoreProducts(offeringsIn: Offerings, products: List<StoreProduct>): Offerings {
         if (getIsBC5Enabled(offeringsIn)) {
             return mapStoreProducts(offeringsIn, products,
-                { subProduct -> if (subProduct is BC5StoreProduct) subProduct.sku + "_" + subProduct.getDuration() else "" },
+                { subProduct -> if (subProduct is BC5StoreProduct) subProduct.sku + "_" + subProduct.subscriptionPeriod else "" },
                 { template -> template.group_identifier + "_" + template.duration }
             )
         } else {
