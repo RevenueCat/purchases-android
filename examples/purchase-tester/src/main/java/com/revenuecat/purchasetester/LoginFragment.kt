@@ -41,11 +41,15 @@ class LoginFragment : Fragment() {
         }
 
         binding.resetSdkButton.setOnClickListener {
-            Purchases.sharedInstance.close()
+            resetSdk()
             navigateToConfigureFragment()
         }
 
         return binding.root
+    }
+
+    private fun resetSdk() {
+        Purchases.sharedInstance.close()
     }
 
     private fun advanceToOverviewFragment() {
