@@ -161,7 +161,10 @@ data class StoreProductImpl(
     override val introductoryPriceCycles: Int,
     override val iconUrl: String,
     override val originalJson: JSONObject
-) : StoreProduct(), Parcelable {}
+) : StoreProduct(), Parcelable {
+    override fun equals(other: Any?) = super.equals(other)
+    override fun hashCode() = super.hashCode()
+}
 
 private data class ComparableData(
     val sku: String,
