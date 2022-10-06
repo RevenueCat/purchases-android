@@ -1,28 +1,27 @@
 package com.revenuecat.purchases.amazon.handler
 
+import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.amazon.device.iap.internal.model.ProductDataResponseBuilder
 import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductDataResponse
-import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
-import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.helpers.MockDeviceCache
 import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.models.StoreProduct
+import io.mockk.every
 import io.mockk.mockk
-import org.assertj.core.api.Assertions
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.lang.Exception
-import java.lang.RuntimeException
 
 @RunWith(AndroidJUnit4::class)
 class ProductDataHandlerTest {
@@ -30,6 +29,7 @@ class ProductDataHandlerTest {
     private lateinit var underTest: ProductDataHandler
     private val apiKey = "api_key"
     private lateinit var cache: MockDeviceCache
+    private lateinit var mainHandler: Handler
     private lateinit var purchasingServiceProvider: PurchasingServiceProviderForTest
 
     private var unexpectedOnSuccess: (List<StoreProduct>) -> Unit = {
@@ -40,11 +40,15 @@ class ProductDataHandlerTest {
         fail("should be success")
     }
 
+    private val mainHandlerCallbacks: MutableList<Runnable> = ArrayList()
+
     @Before
     fun setup() {
         cache = MockDeviceCache(mockk(), apiKey)
+        mainHandlerCallbacks.clear()
+        setupMainHandler()
         purchasingServiceProvider = PurchasingServiceProviderForTest()
-        underTest = ProductDataHandler(purchasingServiceProvider)
+        underTest = ProductDataHandler(purchasingServiceProvider, mainHandler)
     }
 
     @Test
@@ -73,7 +77,7 @@ class ProductDataHandlerTest {
         val receivedSkus = receivedStoreProducts!!.map { it.sku }
         assertThat(receivedSkus).hasSameElementsAs(expectedSkus)
 
-        assertThat(purchasingServiceProvider.getProductDataCalledTimes).isZero()
+        assertThat(purchasingServiceProvider.getProductDataCalledTimes).isZero
     }
 
     @Test
@@ -113,7 +117,7 @@ class ProductDataHandlerTest {
         val receivedSkus = receivedStoreProducts!!.map { it.sku }
         assertThat(receivedSkus).hasSameElementsAs(expectedSkus)
 
-        assertThat(purchasingServiceProvider.getProductDataCalledTimes).isOne()
+        assertThat(purchasingServiceProvider.getProductDataCalledTimes).isOne
     }
 
     @Test
@@ -360,10 +364,124 @@ class ProductDataHandlerTest {
             receivedException = e
         }
 
-        assertThat(receivedException).isNotNull()
-        assertThat(receivedLoggedException).isNotNull()
+        assertThat(receivedException).isNotNull
+        assertThat(receivedLoggedException).isNotNull
         assertThat(expectedException).isEqualTo(receivedException)
         assertThat(expectedException).isEqualTo(receivedLoggedException)
+    }
+
+    @Test
+    fun `timeout millis when getting products is correct`() {
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getProductDataRequestId = dummyRequestId
+
+        underTest.getProductData(
+            setOf("sku_a", "sku_b"),
+            "US",
+            unexpectedOnSuccess,
+            unexpectedOnError
+        )
+
+        verify(exactly = 1) { mainHandler.postDelayed(any(), 10_000L) }
+        assertThat(mainHandlerCallbacks.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `request fails with timeout if did not receive response`() {
+        val expectedProductData = mapOf(
+            "sku_a" to dummyAmazonProduct(sku = "sku_a")
+        )
+
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getProductDataRequestId = dummyRequestId
+
+        var resultError: PurchasesError? = null
+        underTest.getProductData(
+            expectedProductData.keys,
+            "US",
+            unexpectedOnSuccess
+        ) { resultError = it }
+
+        assertThat(resultError).isNull()
+
+        assertThat(mainHandlerCallbacks.size).isEqualTo(1)
+        mainHandlerCallbacks[0].run()
+
+        assertThat(resultError).isNotNull
+        assertThat(resultError?.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(resultError?.underlyingErrorMessage).isEqualTo(
+            "Timeout error trying to get Amazon product data for SKUs: [sku_a]. Please check that the SKUs are correct."
+        )
+    }
+
+    @Test
+    fun `request does not succeed if received response after timeout`() {
+        val expectedProductData = mapOf(
+            "sku_a" to dummyAmazonProduct(sku = "sku_a")
+        )
+
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getProductDataRequestId = dummyRequestId
+
+        var resultError: PurchasesError? = null
+        underTest.getProductData(
+            expectedProductData.keys,
+            "US",
+            unexpectedOnSuccess
+        ) { resultError = it }
+
+        assertThat(mainHandlerCallbacks.size).isEqualTo(1)
+        mainHandlerCallbacks[0].run()
+
+        val response = getDummyProductDataResponse(
+            requestId = dummyRequestId,
+            productData = expectedProductData
+        )
+
+        underTest.onProductDataResponse(response)
+
+        assertThat(resultError).isNotNull
+    }
+
+    @Test
+    fun `request succeeds if received response before timeout`() {
+        val expectedProductData = mapOf(
+            "sku_a" to dummyAmazonProduct(sku = "sku_a")
+        )
+
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getProductDataRequestId = dummyRequestId
+
+        var resultProducts: List<StoreProduct>? = null
+        underTest.getProductData(
+            expectedProductData.keys,
+            "US",
+            { resultProducts = it },
+            unexpectedOnError
+        )
+
+        assertThat(mainHandlerCallbacks.size).isEqualTo(1)
+
+        val response = getDummyProductDataResponse(
+            requestId = dummyRequestId,
+            productData = expectedProductData
+        )
+
+        underTest.onProductDataResponse(response)
+
+        mainHandlerCallbacks[0].run()
+
+        assertThat(resultProducts).isNotNull
+        assertThat(resultProducts?.size).isEqualTo(1)
+    }
+
+    private fun setupMainHandler() {
+        mainHandler = mockk()
+        every {
+            mainHandler.postDelayed(any(), any())
+        } answers {
+            mainHandlerCallbacks.add(firstArg())
+        }
     }
 }
 

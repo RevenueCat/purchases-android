@@ -52,13 +52,14 @@ internal class AmazonBilling constructor(
     private val observerMode: Boolean,
     private val mainHandler: Handler,
     private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
-    private val productDataHandler: ProductDataResponseListener = ProductDataHandler(purchasingServiceProvider),
+    private val productDataHandler: ProductDataResponseListener =
+        ProductDataHandler(purchasingServiceProvider, mainHandler),
     private val purchaseHandler: PurchaseResponseListener =
         PurchaseHandler(purchasingServiceProvider, applicationContext),
     private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(
         purchasingServiceProvider
     ),
-    private val userDataHandler: UserDataResponseListener = UserDataHandler(purchasingServiceProvider)
+    private val userDataHandler: UserDataResponseListener = UserDataHandler(purchasingServiceProvider, mainHandler)
 ) : BillingAbstract(),
     ProductDataResponseListener by productDataHandler,
     PurchaseResponseListener by purchaseHandler,
