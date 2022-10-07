@@ -1018,7 +1018,7 @@ class Purchases internal constructor(
                 try {
                     // TODO: Parse Offerings into structures without StoreProducts
                     val offeringsIn = offeringsJSON.createOfferings()
-                    val productIds = extractSubscriptionIds(offeringsJSON)
+                    val productIds = extractProductIds(offeringsJSON)
                     getSKUDetails(productIds, { products ->
                         val offerings = billing.mapStoreProducts(offeringsIn, products)
 
@@ -1150,7 +1150,6 @@ class Purchases internal constructor(
                     billing.querySkuDetailsAsync(
                         productType = purchase.type,
                         skus = purchase.skus.toSet(),
-                        offerings = Offerings(null, emptyMap()),
                         onReceive = { storeProducts ->
                             postToBackend(
                                 purchase = purchase,
@@ -1494,7 +1493,7 @@ class Purchases internal constructor(
     }
 
     // TODO move this to billing?
-    fun extractSubscriptionIds(offeringsJSON: JSONObject): Set<String> {
+    private fun extractProductIds(offeringsJSON: JSONObject): Set<String> {
         val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
         val subscriptionIds = mutableSetOf<String>()
         for (i in 0 until jsonArrayOfOfferings.length()) {
