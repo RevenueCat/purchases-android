@@ -28,17 +28,22 @@ fun SkuDetails.toStoreProduct() =
         JSONObject(originalJson)
     )
 
-fun ProductDetails.toStoreProduct(offerToken: String, pricingPhases: ProductDetails.PricingPhases) =
+fun ProductDetails.PricingPhases.readable(): String {
+    return "[" + pricingPhaseList.map { (if (it.billingCycleCount > 1) (it.billingCycleCount.toString() + "*") else "") + it.billingPeriod + "@" + it.formattedPrice }
+        .joinToString() + "]"
+}
+
+fun ProductDetails.toStoreProduct(offerToken: String, pricingPhases: ProductDetails.PricingPhases, offerTags: List<String>) =
     BC5StoreProduct(
         productId,
         ProductType.SUBS,
-        "price",
+        pricingPhases.readable(),
         100,
         "USD",
         "originalPrice",
         100,
         title,
-        description,
+        offerTags.toString(),
         pricingPhases.pricingPhaseList.last().billingPeriod,
         null,
         null,
@@ -46,7 +51,7 @@ fun ProductDetails.toStoreProduct(offerToken: String, pricingPhases: ProductDeta
         null,
         0,
         "icon",
-        JSONObject("{}"),
+        JSONObject(mapOf("offerToken" to offerToken)),
         this,
         offerToken,
         pricingPhases

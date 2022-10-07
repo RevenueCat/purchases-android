@@ -148,7 +148,6 @@ internal class AmazonBilling constructor(
         )
     }
 
-
     // region Product Data
 
     override fun querySkuDetailsAsync(

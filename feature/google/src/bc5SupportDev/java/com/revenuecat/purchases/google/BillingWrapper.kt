@@ -282,12 +282,13 @@ class BillingWrapper(
                         log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
                     }
 
-                    val storeProducts = ArrayList<StoreProduct>()
+                    val storeProducts = ArrayList<BC5StoreProduct>()
                     productDetailsList.forEach { product ->
                         product.subscriptionOfferDetails?.forEach { offer ->
-                            storeProducts.add(product.toStoreProduct(offer.offerToken, offer.pricingPhases))
+                            storeProducts.add(product.toStoreProduct(offer.offerToken, offer.pricingPhases, offer.offerTags))
                         }
                     }
+                    log(LogIntent.DEBUG, storeProducts.joinToString("\n"))
                     onReceive(storeProducts)
                 } else {
                     log(

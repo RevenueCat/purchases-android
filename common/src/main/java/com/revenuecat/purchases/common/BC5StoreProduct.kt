@@ -34,4 +34,7 @@ data class BC5StoreProduct(
     val offerToken: String?,
     val pricingPhases: @RawValue ProductDetails.PricingPhases,
 ) : Parcelable, StoreProduct() {
+    override fun toString(): String {
+        return "[" + listOf(title, description, sku, price).joinToString() + "]"
+    }
 }

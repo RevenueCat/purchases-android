@@ -118,21 +118,22 @@ abstract class BillingAbstract {
         storeProductKeyFunc: (StoreProduct) -> String,
         packageKeyFunc: (PackageTemplate) -> String
     ): Offerings {
-        val subscriptionProductsById = products.map { storeProductKeyFunc(it) to it }.filter { x -> x.first != "" }.toMap()
+        val subscriptionProductsById = products.groupBy(storeProductKeyFunc)
+        log(LogIntent.DEBUG, subscriptionProductsById.toString())
         val offerings =
             offeringsIn.all.values.map { offering -> setPackagesInOffering(offering, subscriptionProductsById, packageKeyFunc) }
-        return Offerings(offeringsIn.current, offerings.filterNotNull().map { it.identifier to it }.toMap())
+        return Offerings(offeringsIn.current, offerings.filterNotNull().associateBy { it.identifier })
     }
 
 
-    private fun setPackagesInOffering(offering: Offering, subscriptionProductsById: Map<String, StoreProduct>, packageKeyFunc: (PackageTemplate) -> String): Offering? {
-        val packages = offering.packageTemplates.map { template ->
-            val product = subscriptionProductsById.get(packageKeyFunc(template))
-            if (product != null)
-                return@map template.makePackage(product)
+    private fun setPackagesInOffering(offering: Offering, subscriptionProductsById: Map<String, List<StoreProduct>>, packageKeyFunc: (PackageTemplate) -> String): Offering? {
+        val packages = offering.packageTemplates.flatMap { template ->
+            val products = subscriptionProductsById.get(packageKeyFunc(template))
+            if (products != null)
+                return@flatMap products.map { template.makePackage(it) }
             else
-                return@map null
-        }.filterNotNull()
+                return@flatMap emptyList()
+        }
 
         if (packages.isEmpty())
             return null
