@@ -60,7 +60,8 @@ private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 1
 class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
-    private val deviceCache: DeviceCache
+    private val deviceCache: DeviceCache,
+    private val useBC5: Boolean
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
     @get:Synchronized

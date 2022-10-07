@@ -59,12 +59,15 @@ internal class PurchasesFactory(
 
             val cache = DeviceCache(prefs, apiKey)
 
+            val useBC5 = configuration.dangerousSettings.useBC5
+
             val billing: BillingAbstract = BillingFactory.createBilling(
                 store,
                 application,
                 backend,
                 cache,
-                observerMode
+                observerMode,
+                useBC5
             )
             val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 

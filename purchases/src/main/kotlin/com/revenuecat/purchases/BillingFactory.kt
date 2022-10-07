@@ -18,13 +18,17 @@ object BillingFactory {
         application: Application,
         backend: Backend,
         cache: DeviceCache,
-        observerMode: Boolean
+        observerMode: Boolean,
+        useBC5: Boolean
     ) = when (store) {
-        Store.PLAY_STORE -> BillingWrapper(
-            BillingWrapper.ClientFactory(application),
-            Handler(application.mainLooper),
-            cache
-        )
+        Store.PLAY_STORE -> {
+            BillingWrapper(
+                BillingWrapper.ClientFactory(application),
+                Handler(application.mainLooper),
+                cache,
+                useBC5
+            )
+        }
         Store.AMAZON -> {
             try {
                 Class.forName("com.revenuecat.purchases.amazon.AmazonBilling")
