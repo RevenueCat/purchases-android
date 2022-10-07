@@ -172,15 +172,10 @@ class BillingWrapper(
     override fun querySkuDetailsAsync(
         productType: ProductType,
         skusIn: Set<String>,
-        offerings: Offerings,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
-        val isBC5Enabled = getIsBC5Enabled(offerings)
-        val subscriptionIds =
-            if (isBC5Enabled) extractBC5SubscriptionIds(offerings) else extractSubscriptionIds(offerings)
-        var skus = subscriptionIds.plus(skusIn)
-        val nonEmptySkus = skus.filter { it.isNotEmpty() }
+        val nonEmptySkus = skusIn.filter { it.isNotEmpty() }
 
         if (nonEmptySkus.isEmpty()) {
             log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
@@ -188,10 +183,10 @@ class BillingWrapper(
             return
         }
 
-        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
+        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(nonEmptySkus.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                if (isBC5Enabled) {
+                if (useBC5) {
                     queryProductDetailsAsync(
                         nonEmptySkus,
                         productType,

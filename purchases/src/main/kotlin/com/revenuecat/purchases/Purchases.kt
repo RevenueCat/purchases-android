@@ -35,6 +35,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.google.SUBSCRIPTION_ID_BACKEND_KEY
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.google.toRevenueCatProductType
 import com.revenuecat.purchases.google.toStoreProduct
@@ -74,6 +75,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import org.json.JSONException
+import org.json.JSONObject
 import java.net.URL
 import java.util.Collections.emptyMap
 import java.util.concurrent.ExecutorService
@@ -1016,7 +1018,8 @@ class Purchases internal constructor(
                 try {
                     // TODO: Parse Offerings into structures without StoreProducts
                     val offeringsIn = offeringsJSON.createOfferings()
-                    getSKUDetails(offeringsIn, emptySet(), { products ->
+                    val productIds = extractSubscriptionIds(offeringsJSON)
+                    getSKUDetails(productIds, { products ->
                         val offerings = billing.mapStoreProducts(offeringsIn, products)
 
                         if (offerings.all.isEmpty()) {
@@ -1233,7 +1236,6 @@ class Purchases internal constructor(
     }
 
     private fun getSKUDetails(
-        offerings: Offerings,
         productIds: Set<String>,
         onCompleted: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
@@ -1242,7 +1244,6 @@ class Purchases internal constructor(
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
             productIds,
-            offerings,
             { subscriptionProducts ->
 /*
                 val inAppProductIds = productIds - subscriptionIds
@@ -1490,6 +1491,23 @@ class Purchases internal constructor(
                     listener.onError(error, false)
                 }
             })
+    }
+
+    // TODO move this to billing?
+    fun extractSubscriptionIds(offeringsJSON: JSONObject): Set<String> {
+        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
+        val subscriptionIds = mutableSetOf<String>()
+        for (i in 0 until jsonArrayOfOfferings.length()) {
+            val jsonPackagesArray =
+                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+            for (j in 0 until jsonPackagesArray.length()) {
+                subscriptionIds.add(
+                    jsonPackagesArray.getJSONObject(j)
+                        .getString(SUBSCRIPTION_ID_BACKEND_KEY)
+                )
+            }
+        }
+        return subscriptionIds
     }
 
     @JvmSynthetic

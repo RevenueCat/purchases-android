@@ -153,7 +153,6 @@ internal class AmazonBilling constructor(
     override fun querySkuDetailsAsync(
         productType: RevenueCatProductType,
         skus: Set<String>,
-        offerings: Offerings,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
