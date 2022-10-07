@@ -65,7 +65,8 @@ private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 1
 class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
-    private val deviceCache: DeviceCache
+    private val deviceCache: DeviceCache,
+    private val useBC5: Boolean
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
     @get:Synchronized
@@ -540,7 +541,11 @@ class BillingWrapper(
                 )
                 return@withConnectedClient
             }
-            this.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{ activeSubsResult, activeSubsPurchases ->
+
+            this.queryPurchasesAsync(querySubsPurchasesParams) querySubPurchasesAsync@{
+                    activeSubsResult, activeSubsPurchases ->
+                Log.e("maddietest", "queryPurchasesAsync for subs returned with result $activeSubsResult" +
+                    "and purchases $activeSubsPurchases")
 
                 if (!activeSubsResult.isSuccessful()) {
                     val purchasesError = activeSubsResult.responseCode.billingResponseToPurchasesError(
@@ -922,13 +927,13 @@ class BillingWrapper(
     }
 
     override fun mapStoreProducts(offeringsIn: Offerings, products: List<StoreProduct>): Offerings {
-        if (getIsBC5Enabled(offeringsIn)) {
-            return mapStoreProducts(offeringsIn, products,
+        return if (useBC5) {
+            mapStoreProducts(offeringsIn, products,
                 { subProduct -> if (subProduct is BC5StoreProduct) subProduct.sku + "_" + subProduct.subscriptionPeriod else "" },
                 { template -> template.group_identifier + "_" + template.duration }
             )
         } else {
-            return super.mapStoreProducts(offeringsIn, products)
+            super.mapStoreProducts(offeringsIn, products)
         }
     }
 }
