@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
@@ -10,22 +11,32 @@ import org.json.JSONObject
 /**
  * Represents an in-app product's or subscription's listing details.
  */
-
-abstract class StoreProduct:Parcelable {
+@Parcelize
+@TypeParceler<JSONObject, JSONObjectParceler>()
+data class StoreProduct(
     /**
      * The product ID.
      */
-    abstract val sku: String
+    val sku: String,
 
     /**
      * Type of product. One of [ProductType].
      */
-    abstract val type: ProductType
+    val type: ProductType,
+
+    // TODO make our own pricingPhase class that is parcelable
+    // TODO create single pricing phase for old BC4 sub
+//    val pricingPhases: List<ProductDetails.PricingPhase>,
+
+    // TODO make our own Offer class that is parcelable
+    // TODO pull free trial and intro price from old BC4 sub into offer
+    // TODO offer flow for BC4 will be weird...intro/free trial get automatically applied. will have to think about that
+//    val offers: List<Offer>
 
     /**
      * Formatted price of the item, including its currency sign. For example $3.00.
      */
-    abstract val price: String
+    val price: String, // TODO get from pricing phase
 
     /**
      * Price in micro-units, where 1,000,000 micro-units equal one unit of the currency.
@@ -33,7 +44,7 @@ abstract class StoreProduct:Parcelable {
      * For example, if price is "€7.99", price_amount_micros is 7,990,000. This value represents
      * the localized, rounded price for a particular currency.
      */
-    abstract val priceAmountMicros: Long
+    val priceAmountMicros: Long, // TODO get from pricing phase
 
     /**
      * Returns ISO 4217 currency code for price and original price.
@@ -42,14 +53,14 @@ abstract class StoreProduct:Parcelable {
      *
      * If currency code cannot be determined, currency symbol is returned.
      */
-    abstract val priceCurrencyCode: String
+    val priceCurrencyCode: String, // TODO get from pricing phase
 
     /**
      * Formatted original price of the item, including its currency sign.
      *
      * Note: returned only for Google products. Not available for Amazon.
      */
-    abstract val originalPrice: String?
+    val originalPrice: String?, // TODO get from pricing phase
 
     /**
      * Returns the original price in micro-units, where 1,000,000 micro-units equal one unit
@@ -57,17 +68,17 @@ abstract class StoreProduct:Parcelable {
      *
      * Note: returned only for Google products. Always 0 for Amazon subscriptions.
      */
-    abstract val originalPriceAmountMicros: Long
+    val originalPriceAmountMicros: Long, // TODO get from pricing phase
 
     /**
      * Title of the product.
      */
-    abstract val title: String
+    val title: String,
 
     /**
      * The description of the product.
      */
-    abstract val description: String
+    val description: String,
 
     /**
      * Subscription period, specified in ISO 8601 format. For example, P1W equates to one week,
@@ -76,7 +87,7 @@ abstract class StoreProduct:Parcelable {
      *
      * Note: Returned only for Google subscriptions. Not available for Amazon.
      */
-    abstract val subscriptionPeriod: String?
+    val subscriptionPeriod: String?, // TODO get from pricing phase
 
     /**
      * Subscription period, specified in ISO 8601 format. For example, P1W equates to one week,
@@ -85,7 +96,7 @@ abstract class StoreProduct:Parcelable {
      *
      * Note: Returned only for Google subscriptions. Not available for Amazon.
      */
-    abstract val freeTrialPeriod: String?
+    val freeTrialPeriod: String?, // TODO get from offers pricing phase
 
     /**
      * The billing period of the introductory price, specified in ISO 8601 format.
@@ -93,7 +104,7 @@ abstract class StoreProduct:Parcelable {
      * Note: Returned only for Google subscriptions which have an introductory period configured.
      * Not available for Amazon.
      */
-    abstract val introductoryPrice: String?
+    val introductoryPrice: String?, // TODO get from offers pricing phase
 
     /**
      * Introductory price in micro-units. The currency is the same as price_currency_code.
@@ -101,7 +112,7 @@ abstract class StoreProduct:Parcelable {
      * Note: Returns 0 if the product is not Google a subscription or doesn't
      * have an introductory period. Always 0 for Amazon subscriptions.
      */
-    abstract val introductoryPriceAmountMicros: Long
+    val introductoryPriceAmountMicros: Long, // TODO get from offers pricing phase
 
     /**
      * The billing period of the introductory price, specified in ISO 8601 format.
@@ -109,7 +120,7 @@ abstract class StoreProduct:Parcelable {
      * Note: Returned only for Google subscriptions which have an introductory period configured.
      * Not available for Amazon.
      */
-    abstract val introductoryPricePeriod: String?
+    val introductoryPricePeriod: String?, // TODO get from offers pricing phase
 
     /**
      * The number of subscription billing periods for which the user will be given the
@@ -118,12 +129,12 @@ abstract class StoreProduct:Parcelable {
      * Note: Returns 0 if the SKU is not a Google subscription or doesn't
      * have an introductory period. Always 0 for Amazon subscriptions.
      */
-    abstract val introductoryPriceCycles: Int
+    val introductoryPriceCycles: Int, // TODO get from offers pricing phase
 
     /**
      * The icon of the product if present.
      */
-    abstract val iconUrl: String
+    val iconUrl: String,
 
     /**
      * JSONObject representing the original product class from Google or Amazon.
@@ -135,18 +146,14 @@ abstract class StoreProduct:Parcelable {
      *
      * For Amazon, the original Product can be obtained using `StoreProduct.amazonProduct`
      */
-    abstract val originalJson: JSONObject
-}
-/*) : Parcelable {
+    val originalJson: JSONObject
+) : Parcelable {
 
     // We use this to not include the originalJSON in the equals
     override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
     override fun hashCode() = ComparableData(this).hashCode()
-}*/
+}
 
-// TODO: fix all the comparable stuff
-
-/*
 private data class ComparableData(
     val sku: String,
     val type: ProductType,
@@ -163,9 +170,7 @@ private data class ComparableData(
     val introductoryPriceAmountMicros: Long,
     val introductoryPricePeriod: String?,
     val introductoryPriceCycles: Int,
-    val iconUrl: String,
-    val productDetails: ProductDetails?,
-    val offerToken: String?,
+    val iconUrl: String
 ) {
     constructor(
         storeProduct: StoreProduct
@@ -185,32 +190,6 @@ private data class ComparableData(
         introductoryPriceAmountMicros = storeProduct.introductoryPriceAmountMicros,
         introductoryPricePeriod = storeProduct.introductoryPricePeriod,
         introductoryPriceCycles = storeProduct.introductoryPriceCycles,
-        iconUrl = storeProduct.iconUrl,
+        iconUrl = storeProduct.iconUrl
     )
-}
-*/
-
-
-@Parcelize
-@TypeParceler<JSONObject, JSONObjectParceler>()
-data class StoreProductImpl(
-    override val sku: String,
-    override val type: ProductType,
-    override val price: String,
-    override val priceAmountMicros: Long,
-    override val priceCurrencyCode: String,
-    override val originalPrice: String?,
-    override val originalPriceAmountMicros: Long,
-    override val title: String,
-    override val description: String,
-    override val subscriptionPeriod: String?,
-    override val freeTrialPeriod: String?,
-    override val introductoryPrice: String?,
-    override val introductoryPriceAmountMicros: Long,
-    override val introductoryPricePeriod: String?,
-    override val introductoryPriceCycles: Int,
-    override val iconUrl: String,
-    override val originalJson: JSONObject,
-) : Parcelable, StoreProduct() {
-
 }
