@@ -146,29 +146,6 @@ class BillingWrapper(
         }
     }
 
-    private fun getIsBC5Enabled(offerings: Offerings): Boolean {
-        return !offerings.all.values
-            .flatMap { offering -> offering.packageTemplates }
-            .map { template -> template.group_identifier }
-            .filterNotNull()
-            .isEmpty()
-    }
-
-    private fun extractSubscriptionIds(offerings: Offerings): Set<String> {
-        return offerings.all.values
-            .flatMap { offering -> offering.packageTemplates }
-            .map { template -> template.product_identifier }
-            .toSet()
-    }
-
-    private fun extractBC5SubscriptionIds(offerings: Offerings): Set<String> {
-        return offerings.all.values
-            .flatMap { offering -> offering.packageTemplates }
-            .map { template -> template.group_identifier }
-            .filterNotNull()
-            .toSet()
-    }
-
     override fun querySkuDetailsAsync(
         productType: ProductType,
         skusIn: Set<String>,
@@ -921,14 +898,4 @@ class BillingWrapper(
         }
     }
 
-    override fun mapStoreProducts(offeringsIn: Offerings, products: List<StoreProduct>): Offerings {
-        return if (useBC5) {
-            mapStoreProducts(offeringsIn, products,
-                { subProduct -> if (subProduct is BC5StoreProduct) subProduct.sku + "_" + subProduct.subscriptionPeriod else "" },
-                { template -> template.group_identifier + "_" + template.duration }
-            )
-        } else {
-            super.mapStoreProducts(offeringsIn, products)
-        }
-    }
 }

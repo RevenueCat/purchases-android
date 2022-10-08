@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PackageTemplate
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -12,14 +11,14 @@ import org.json.JSONObject
 /**
  * Note: this may return an empty Offerings.
  */
-fun JSONObject.createOfferings(): Offerings {
+fun JSONObject.createOfferings(productsById: Map<String, StoreProduct>): Offerings {
     val jsonOfferings = getJSONArray("offerings")
     val currentOfferingID = getString("current_offering_id")
 
     val offerings = mutableMapOf<String, Offering>()
     for (i in 0 until jsonOfferings.length()) {
         val offeringJson = jsonOfferings.getJSONObject(i)
-        offeringJson.createOffering()?.let {
+        offeringJson.createOffering(productsById)?.let {
             offerings[it.identifier] = it
 
             if (it.availablePackages.isEmpty()) {
@@ -31,49 +30,41 @@ fun JSONObject.createOfferings(): Offerings {
     return Offerings(offerings[currentOfferingID], offerings)
 }
 
-fun JSONObject.createOffering(): Offering? {
+fun JSONObject.createOffering(productsById: Map<String, StoreProduct>): Offering? {
     val offeringIdentifier = getString("identifier")
     val jsonPackages = getJSONArray("packages")
 
-    val availablePackageTemplates = mutableListOf<PackageTemplate>()
+    val availablePackages = mutableListOf<Package>()
     for (i in 0 until jsonPackages.length()) {
         val packageJson = jsonPackages.getJSONObject(i)
-        availablePackageTemplates.add(packageJson.createPackageTemplate(offeringIdentifier))
+        packageJson.createPackage(productsById, offeringIdentifier)?.let {
+            availablePackages.add(it)
+        }
     }
 
-    return if (availablePackageTemplates.isNotEmpty()) {
-        Offering(offeringIdentifier, getString("description"), emptyList(), availablePackageTemplates)
+    return if (availablePackages.isNotEmpty()) {
+        Offering(offeringIdentifier, getString("description"), availablePackages)
     } else {
         null
     }
 }
 
 fun JSONObject.createPackage(
-    offeringIdentifier: String,
-    storeProduct: StoreProduct
-): Package? {
-    val identifier = getString("identifier")
-    val packageType = identifier.toPackageType()
-    return Package(identifier, packageType, storeProduct, offeringIdentifier)
-}
-
-fun JSONObject.createPackageTemplate(
+    productsById: Map<String, StoreProduct>,
     offeringIdentifier: String
-): PackageTemplate {
-    val sku = getString("platform_product_identifier")
-    val identifier = getString("identifier")
-    val group_identifier = optionalString("platform_product_group_identifier")
-    val duration = optionalString("product_duration")
-    val packageType = identifier.toPackageType()
-    return PackageTemplate(identifier, packageType, offeringIdentifier, sku, group_identifier, duration)
+): Package? {
+    val productId = getString("platform_product_identifier")
+    return productsById[productId]?.let { product ->
+        val identifier = getString("identifier")
+        val groupIdentifier = optionalString("platform_product_group_identifier")
+        val duration = optionalString("product_duration")
+        val packageType = identifier.toPackageType()
+        return Package(identifier, packageType, product, offeringIdentifier, groupIdentifier, duration)
+    }
 }
-
 
 fun JSONObject.optionalString(id: String): String? {
-    if (this.has(id)) {
-        return getString(id)
-    }
-    return null
+    return if (this.has(id)) getString(id) else null
 }
 
 fun String.toPackageType(): PackageType =

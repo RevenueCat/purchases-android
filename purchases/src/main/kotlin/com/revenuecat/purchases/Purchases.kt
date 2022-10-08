@@ -1016,31 +1016,39 @@ class Purchases internal constructor(
             appInBackground,
             { offeringsJSON ->
                 try {
-                    // TODO: Parse Offerings into structures without StoreProducts
-                    val offeringsIn = offeringsJSON.createOfferings()
                     val productIds = extractProductIds(offeringsJSON)
-                    getSKUDetails(productIds, { products ->
-                        val offerings = billing.mapStoreProducts(offeringsIn, products)
+                    if (productIds.isEmpty()) {
+                        handleErrorFetchingOfferings(
+                            PurchasesError(
+                                PurchasesErrorCode.ConfigurationError,
+                                OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS
+                            ),
+                            completion
+                        )
+                    } else {
+                        getSkuDetails(productIds, { productsById ->
+                            val offerings = billing.createOfferings(offeringsJSON, productsById)
 
-                        if (offerings.all.isEmpty()) {
-                            handleErrorFetchingOfferings(
-                                PurchasesError(
-                                    PurchasesErrorCode.ConfigurationError,
-                                    OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
-                                ),
-                                completion
-                            )
-                        } else {
-                            synchronized(this@Purchases) {
-                                deviceCache.cacheOfferings(offerings)
+                            if (offerings.all.isEmpty()) {
+                                handleErrorFetchingOfferings(
+                                    PurchasesError(
+                                        PurchasesErrorCode.ConfigurationError,
+                                        OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+                                    ),
+                                    completion
+                                )
+                            } else {
+                                synchronized(this@Purchases) {
+                                    deviceCache.cacheOfferings(offerings)
+                                }
+                                dispatch {
+                                    completion?.onReceived(offerings)
+                                }
                             }
-                            dispatch {
-                                completion?.onReceived(offerings)
-                            }
-                        }
-                    }, { error ->
-                        handleErrorFetchingOfferings(error, completion)
-                    })
+                        }, { error ->
+                            handleErrorFetchingOfferings(error, completion)
+                        })
+                    }
                 } catch (error: JSONException) {
                     log(LogIntent.RC_ERROR, OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage))
                     handleErrorFetchingOfferings(
@@ -1234,23 +1242,27 @@ class Purchases internal constructor(
         }
     }
 
-    private fun getSKUDetails(
+    private fun getSkuDetails(
         productIds: Set<String>,
-        onCompleted: (List<StoreProduct>) -> Unit,
+        onCompleted: (HashMap<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        // TODO do we want to rename the base BillingWrapper querySkuDetailsAsync -> queryProductDetailsAsync?
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
             productIds,
             { subscriptionProducts ->
-/*
+                val productsById = HashMap<String, StoreProduct>()
+
+                val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.sku }
+                productsById.putAll(subscriptionProductsById)
+
+                val subscriptionIds = subscriptionProductsById.keys
+
                 val inAppProductIds = productIds - subscriptionIds
                 if (inAppProductIds.isNotEmpty()) {
                     billing.querySkuDetailsAsync(
                         ProductType.INAPP,
                         inAppProductIds,
-                        offerings,
                         { product ->
                             productsById.putAll(product.map { it.sku to it })
                             onCompleted(productsById)
@@ -1261,8 +1273,6 @@ class Purchases internal constructor(
                 } else {
                     onCompleted(productsById)
                 }
-                */
-                onCompleted(subscriptionProducts)
             }, {
                 onError(it)
             })

@@ -3,12 +3,15 @@ package com.revenuecat.purchases.common
 import android.app.Activity
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageTemplate
+import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.OfferingStrings
 import org.json.JSONObject
 
 typealias StoreProductsCallback = (List<StoreProduct>) -> Unit
@@ -107,38 +110,87 @@ abstract class BillingAbstract {
         onSuccess(productID)
     }
 
-    open fun mapStoreProducts(offeringsIn: Offerings, products: List<StoreProduct>): Offerings {
-        return mapStoreProducts(offeringsIn, products, { product -> product.sku }, {template -> template.product_identifier})
-    }
+    /**
+     * Note: this may return an empty Offerings.
+     */
+    fun createOfferings(offeringsJson: JSONObject, productsById: Map<String, StoreProduct>): Offerings {
+        with (offeringsJson) {
+            val jsonOfferings = getJSONArray("offerings")
+            val currentOfferingID = getString("current_offering_id")
 
-    fun mapStoreProducts(
-        offeringsIn: Offerings,
-        products: List<StoreProduct>,
-        storeProductKeyFunc: (StoreProduct) -> String,
-        packageKeyFunc: (PackageTemplate) -> String
-    ): Offerings {
-        val subscriptionProductsById = products.groupBy(storeProductKeyFunc)
-        log(LogIntent.DEBUG, subscriptionProductsById.toString())
-        val offerings =
-            offeringsIn.all.values.map { offering -> setPackagesInOffering(offering, subscriptionProductsById, packageKeyFunc) }
-        return Offerings(offeringsIn.current, offerings.filterNotNull().associateBy { it.identifier })
-    }
+            val offerings = mutableMapOf<String, Offering>()
+            for (i in 0 until jsonOfferings.length()) {
+                val offeringJson = jsonOfferings.getJSONObject(i)
+                createOffering(offeringJson, productsById)?.let {
+                    offerings[it.identifier] = it
 
+                    if (it.availablePackages.isEmpty()) {
+                        warnLog(OfferingStrings.OFFERING_EMPTY.format(it.identifier))
+                    }
+                }
+            }
 
-    private fun setPackagesInOffering(offering: Offering, subscriptionProductsById: Map<String, List<StoreProduct>>, packageKeyFunc: (PackageTemplate) -> String): Offering? {
-        val packages = offering.packageTemplates.flatMap { template ->
-            val products = subscriptionProductsById.get(packageKeyFunc(template))
-            if (products != null)
-                return@flatMap products.map { template.makePackage(it) }
-            else
-                return@flatMap emptyList()
+            return Offerings(offerings[currentOfferingID], offerings)
         }
-
-        if (packages.isEmpty())
-            return null
-        else
-            return Offering(offering.identifier, offering.serverDescription, packages, offering.packageTemplates)
     }
+
+    private fun createOffering(offeringJson: JSONObject, productsById: Map<String, StoreProduct>): Offering? {
+        with (offeringJson) {
+            val offeringIdentifier = getString("identifier")
+            val jsonPackages = getJSONArray("packages")
+
+            val availablePackages = mutableListOf<Package>()
+            for (i in 0 until jsonPackages.length()) {
+                val packageJson = jsonPackages.getJSONObject(i)
+                createPackage(packageJson, productsById, offeringIdentifier)?.let {
+                    availablePackages.add(it)
+                }
+            }
+
+            return if (availablePackages.isNotEmpty()) {
+                Offering(offeringIdentifier, getString("description"), availablePackages)
+            } else {
+                null
+            }
+        }
+    }
+
+    private fun createPackage(
+        packageJson: JSONObject,
+        productsById: Map<String, StoreProduct>,
+        offeringIdentifier: String
+    ): Package? {
+        with (packageJson) {
+            val productId = getString("platform_product_identifier")
+            return productsById[productId]?.let { product ->
+                val identifier = getString("identifier")
+
+                // don't need to check if bc5, can just be null in Package
+                val groupIdentifier = optionalString("platform_product_group_identifier")
+                val duration = optionalString("product_duration")
+                val packageType = identifier.toPackageType()
+                return Package(
+                    identifier,
+                    packageType,
+                    product,
+                    offeringIdentifier,
+                    groupIdentifier,
+                    duration
+                )
+            }
+        }
+    }
+
+    // TODO pull out common
+    fun JSONObject.optionalString(id: String): String? {
+        return if (this.has(id)) getString(id) else null
+    }
+
+    // TODO pull out common
+    fun String.toPackageType(): PackageType =
+        PackageType.values().firstOrNull { it.identifier == this }
+            ?: if (this.startsWith("\$rc_")) PackageType.UNKNOWN else PackageType.CUSTOM
+
 
     interface PurchasesUpdatedListener {
         fun onPurchasesUpdated(purchases: List<StoreTransaction>)
