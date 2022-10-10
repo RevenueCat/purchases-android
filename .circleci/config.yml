@@ -231,6 +231,8 @@ jobs:
     steps:
       - checkout
       - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
       - android/accept-licenses
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
