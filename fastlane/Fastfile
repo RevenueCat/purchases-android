@@ -205,7 +205,7 @@ platform :android do
     json_key_data = ENV["PUBLISH_SERVICE_ACCOUNT_JSON_KEY_DATA"] || UI.user_error!("Missing JSON key data to publish purchase tester.")
     aab_path = options[:aab_path] || UI.user_error!("Missing aab_path parameter.")
     upload_to_play_store(
-      package_name: 'com.purchases.purchases_sample',
+      package_name: 'com.revenuecat.purchases_sample',
       track: 'internal',
       json_key_data: json_key_data,
       aab: aab_path
