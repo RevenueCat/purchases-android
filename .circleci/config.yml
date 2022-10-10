@@ -397,6 +397,8 @@ workflows:
     jobs:
       - test
       - assemble-sample-app
+      - publish-purchase-tester-latest-dependencies-release
+
 
   integration-test:
     when:
