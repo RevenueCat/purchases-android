@@ -182,9 +182,9 @@ platform :android do
   lane :build_purchase_tester_bundle do |options|
     build_number = ENV['CIRCLE_BUILD_NUM'] || UI.user_error!('Could not find CircleCI build number.')
     version_name = current_version_number
-    release_key_alias = ENV['RELEASE_KEY_ALIAS'] || UI.user_error!('Release key alias not found.')
-    release_key_password = ENV['RELEASE_KEY_PASSWORD'] || UI.user_error!('Release key password not found.')
-    release_keystore_password = ENV['RELEASE_KEYSTORE_PASSWORD'] || UI.user_error!('Release keystore password not found.')
+    release_key_alias = ENV['PURCHASE_TESTER_RELEASE_KEY_ALIAS'] || UI.user_error!('Release key alias not found.')
+    release_key_password = ENV['PURCHASE_TESTER_RELEASE_KEY_PASSWORD'] || UI.user_error!('Release key password not found.')
+    release_keystore_password = ENV['PURCHASE_TESTER_RELEASE_KEYSTORE_PASSWORD'] || UI.user_error!('Release keystore password not found.')
     gradle(
       task: 'examples:purchase-tester:bundle',
       flavor: 'latestDependencies',
