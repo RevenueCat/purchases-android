@@ -222,7 +222,7 @@ jobs:
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/apk/latestDependencies/release/purchase-tester-release.apk
+          path: examples/purchase-tester/build/outputs/apk/latestDependencies/release/purchase-tester-latestDependencies-release.apk
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
 
