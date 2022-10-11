@@ -168,7 +168,8 @@ class Backend(
         marketplace: String? = null,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
-        storeProduct: StoreProduct?
+        storeProduct: StoreProduct?,
+        sendPricingPhases: Boolean = false,
     ) {
         val cacheKey = listOfNotNull(
             purchaseToken,
@@ -180,7 +181,7 @@ class Backend(
             storeAppUserID
         )
 
-        val pricingPhases = if (storeProduct is BC5StoreProduct) storeProduct.pricingPhases.pricingPhaseList.map { mapOf(
+        val pricingPhases = if (sendPricingPhases) storeProduct?.pricingPhases?.map { mapOf(
             "billingPeriod" to it.billingPeriod,
             "billingCycleCount" to it.billingCycleCount,
             "formattedPrice" to it.formattedPrice,

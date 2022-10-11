@@ -3,7 +3,8 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.common.BC5StoreProduct
+import com.revenuecat.purchases.models.BC5StoreProduct
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProductImpl
 import org.json.JSONObject
 
@@ -25,7 +26,7 @@ fun SkuDetails.toStoreProduct() =
         introductoryPricePeriod.takeIf { it.isNotBlank() },
         introductoryPriceCycles,
         iconUrl,
-        JSONObject(originalJson)
+        JSONObject(originalJson),
     )
 
 fun ProductDetails.PricingPhases.readable(): String {
@@ -52,7 +53,13 @@ fun ProductDetails.toStoreProduct(offerToken: String, pricingPhases: ProductDeta
         0,
         "icon",
         JSONObject(mapOf("offerToken" to offerToken)),
+        pricingPhases.pricingPhaseList.map { it -> PricingPhase(
+            it.billingPeriod,
+            it.priceCurrencyCode,
+            it.formattedPrice,
+            it.priceAmountMicros,
+            it.recurrenceMode,
+            it.billingCycleCount) },
         this,
-        offerToken,
-        pricingPhases
+        offerToken
     )

@@ -1,9 +1,8 @@
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
@@ -30,10 +29,10 @@ data class BC5StoreProduct(
     override val introductoryPriceCycles: Int,
     override val iconUrl: String,
     override val originalJson: JSONObject,
+    override val pricingPhases: List<PricingPhase>,
     val productDetails: @RawValue ProductDetails?,
     val offerToken: String?,
-    val pricingPhases: @RawValue ProductDetails.PricingPhases,
-) : Parcelable, StoreProduct() {
+) : Parcelable, StoreProduct {
     override fun toString(): String {
         return "[" + listOf(title, description, sku, price).joinToString() + "]"
     }

@@ -10,30 +10,29 @@ import org.json.JSONObject
 /**
  * Represents an in-app product's or subscription's listing details.
  */
-
-abstract class StoreProduct:Parcelable {
+interface StoreProduct : Parcelable {
     /**
      * The product ID.
      */
-    abstract val sku: String
+    val sku: String
 
     /**
      * Type of product. One of [ProductType].
      */
-    abstract val type: ProductType
+    val type: ProductType
 
     /**
      * Formatted price of the item, including its currency sign. For example $3.00.
      */
-    abstract val price: String
+    val price: String
 
     /**
      * Price in micro-units, where 1,000,000 micro-units equal one unit of the currency.
      *
-     * For example, if price is "€7.99", price_amount_micros is 7,990,000. This value represents
+     * For example, if price is "€7.99", price_amount_micros is 7,990,000. This abstract value represents
      * the localized, rounded price for a particular currency.
      */
-    abstract val priceAmountMicros: Long
+    val priceAmountMicros: Long
 
     /**
      * Returns ISO 4217 currency code for price and original price.
@@ -42,14 +41,14 @@ abstract class StoreProduct:Parcelable {
      *
      * If currency code cannot be determined, currency symbol is returned.
      */
-    abstract val priceCurrencyCode: String
+    val priceCurrencyCode: String
 
     /**
      * Formatted original price of the item, including its currency sign.
      *
      * Note: returned only for Google products. Not available for Amazon.
      */
-    abstract val originalPrice: String?
+    val originalPrice: String?
 
     /**
      * Returns the original price in micro-units, where 1,000,000 micro-units equal one unit
@@ -57,17 +56,17 @@ abstract class StoreProduct:Parcelable {
      *
      * Note: returned only for Google products. Always 0 for Amazon subscriptions.
      */
-    abstract val originalPriceAmountMicros: Long
+    val originalPriceAmountMicros: Long
 
     /**
      * Title of the product.
      */
-    abstract val title: String
+    val title: String
 
     /**
      * The description of the product.
      */
-    abstract val description: String
+    val description: String
 
     /**
      * Subscription period, specified in ISO 8601 format. For example, P1W equates to one week,
@@ -76,7 +75,7 @@ abstract class StoreProduct:Parcelable {
      *
      * Note: Returned only for Google subscriptions. Not available for Amazon.
      */
-    abstract val subscriptionPeriod: String?
+    val subscriptionPeriod: String?
 
     /**
      * Subscription period, specified in ISO 8601 format. For example, P1W equates to one week,
@@ -85,7 +84,7 @@ abstract class StoreProduct:Parcelable {
      *
      * Note: Returned only for Google subscriptions. Not available for Amazon.
      */
-    abstract val freeTrialPeriod: String?
+    val freeTrialPeriod: String?
 
     /**
      * The billing period of the introductory price, specified in ISO 8601 format.
@@ -93,7 +92,7 @@ abstract class StoreProduct:Parcelable {
      * Note: Returned only for Google subscriptions which have an introductory period configured.
      * Not available for Amazon.
      */
-    abstract val introductoryPrice: String?
+    val introductoryPrice: String?
 
     /**
      * Introductory price in micro-units. The currency is the same as price_currency_code.
@@ -101,7 +100,7 @@ abstract class StoreProduct:Parcelable {
      * Note: Returns 0 if the product is not Google a subscription or doesn't
      * have an introductory period. Always 0 for Amazon subscriptions.
      */
-    abstract val introductoryPriceAmountMicros: Long
+    val introductoryPriceAmountMicros: Long
 
     /**
      * The billing period of the introductory price, specified in ISO 8601 format.
@@ -109,7 +108,7 @@ abstract class StoreProduct:Parcelable {
      * Note: Returned only for Google subscriptions which have an introductory period configured.
      * Not available for Amazon.
      */
-    abstract val introductoryPricePeriod: String?
+    val introductoryPricePeriod: String?
 
     /**
      * The number of subscription billing periods for which the user will be given the
@@ -118,12 +117,12 @@ abstract class StoreProduct:Parcelable {
      * Note: Returns 0 if the SKU is not a Google subscription or doesn't
      * have an introductory period. Always 0 for Amazon subscriptions.
      */
-    abstract val introductoryPriceCycles: Int
+    val introductoryPriceCycles: Int
 
     /**
      * The icon of the product if present.
      */
-    abstract val iconUrl: String
+    val iconUrl: String
 
     /**
      * JSONObject representing the original product class from Google or Amazon.
@@ -135,61 +134,10 @@ abstract class StoreProduct:Parcelable {
      *
      * For Amazon, the original Product can be obtained using `StoreProduct.amazonProduct`
      */
-    abstract val originalJson: JSONObject
+    val originalJson: JSONObject
+
+    val pricingPhases: List<PricingPhase>
 }
-/*) : Parcelable {
-
-    // We use this to not include the originalJSON in the equals
-    override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
-}*/
-
-// TODO: fix all the comparable stuff
-
-/*
-private data class ComparableData(
-    val sku: String,
-    val type: ProductType,
-    val price: String,
-    val priceAmountMicros: Long,
-    val priceCurrencyCode: String,
-    val originalPrice: String?,
-    val originalPriceAmountMicros: Long,
-    val title: String,
-    val description: String,
-    val subscriptionPeriod: String?,
-    val freeTrialPeriod: String?,
-    val introductoryPrice: String?,
-    val introductoryPriceAmountMicros: Long,
-    val introductoryPricePeriod: String?,
-    val introductoryPriceCycles: Int,
-    val iconUrl: String,
-    val productDetails: ProductDetails?,
-    val offerToken: String?,
-) {
-    constructor(
-        storeProduct: StoreProduct
-    ) : this(
-        sku = storeProduct.sku,
-        type = storeProduct.type,
-        price = storeProduct.price,
-        priceAmountMicros = storeProduct.priceAmountMicros,
-        priceCurrencyCode = storeProduct.priceCurrencyCode,
-        originalPrice = storeProduct.originalPrice,
-        originalPriceAmountMicros = storeProduct.originalPriceAmountMicros,
-        title = storeProduct.title,
-        description = storeProduct.description,
-        subscriptionPeriod = storeProduct.subscriptionPeriod,
-        freeTrialPeriod = storeProduct.freeTrialPeriod,
-        introductoryPrice = storeProduct.introductoryPrice,
-        introductoryPriceAmountMicros = storeProduct.introductoryPriceAmountMicros,
-        introductoryPricePeriod = storeProduct.introductoryPricePeriod,
-        introductoryPriceCycles = storeProduct.introductoryPriceCycles,
-        iconUrl = storeProduct.iconUrl,
-    )
-}
-*/
-
 
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
@@ -210,7 +158,63 @@ data class StoreProductImpl(
     override val introductoryPricePeriod: String?,
     override val introductoryPriceCycles: Int,
     override val iconUrl: String,
-    override val originalJson: JSONObject,
-) : Parcelable, StoreProduct() {
+    override val originalJson: JSONObject
+) : StoreProduct, Parcelable {
+    override val pricingPhases: List<PricingPhase>
+        get() = emptyList() //implement from trial, intro, price fields
 
+    // We use this to not include the originalJSON in the equals
+    override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
+    override fun hashCode() = ComparableData(this).hashCode()
 }
+
+private data class ComparableData(
+    val sku: String,
+    val type: ProductType,
+    val price: String,
+    val priceAmountMicros: Long,
+    val priceCurrencyCode: String,
+    val originalPrice: String?,
+    val originalPriceAmountMicros: Long,
+    val title: String,
+    val description: String,
+    val subscriptionPeriod: String?,
+    val freeTrialPeriod: String?,
+    val introductoryPrice: String?,
+    val introductoryPriceAmountMicros: Long,
+    val introductoryPricePeriod: String?,
+    val introductoryPriceCycles: Int,
+    val iconUrl: String
+) {
+    constructor(
+        storeProduct: StoreProduct
+    ) : this(
+        sku = storeProduct.sku,
+        type = storeProduct.type,
+        price = storeProduct.price,
+        priceAmountMicros = storeProduct.priceAmountMicros,
+        priceCurrencyCode = storeProduct.priceCurrencyCode,
+        originalPrice = storeProduct.originalPrice,
+        originalPriceAmountMicros = storeProduct.originalPriceAmountMicros,
+        title = storeProduct.title,
+        description = storeProduct.description,
+        subscriptionPeriod = storeProduct.subscriptionPeriod,
+        freeTrialPeriod = storeProduct.freeTrialPeriod,
+        introductoryPrice = storeProduct.introductoryPrice,
+        introductoryPriceAmountMicros = storeProduct.introductoryPriceAmountMicros,
+        introductoryPricePeriod = storeProduct.introductoryPricePeriod,
+        introductoryPriceCycles = storeProduct.introductoryPriceCycles,
+        iconUrl = storeProduct.iconUrl
+    )
+}
+
+@Parcelize
+@TypeParceler<JSONObject, JSONObjectParceler>()
+data class PricingPhase(
+    val billingPeriod: String?,
+    val priceCurrencyCode: String?,
+    val formattedPrice: String?,
+    val priceAmountMicros: Long?,
+    val recurrenceMode: Int?,
+    val billingCycleCount: Int?
+): Parcelable {}

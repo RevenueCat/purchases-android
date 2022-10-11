@@ -26,13 +26,12 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
-import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.common.BC5StoreProduct
+import com.revenuecat.purchases.models.BC5StoreProduct
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceSkuInfo
@@ -937,6 +936,7 @@ class BillingWrapper(
     }
 
     fun chooseBestOffer(products: List<StoreProduct>): StoreProduct? {
-        return products.maxWithOrNull(compareBy { (it as BC5StoreProduct).pricingPhases.pricingPhaseList.size })
+        //TODO this needs to be improved
+        return products.maxWithOrNull(compareBy { it.pricingPhases.size })
     }
 }

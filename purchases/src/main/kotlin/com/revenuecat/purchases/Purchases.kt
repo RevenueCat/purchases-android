@@ -19,7 +19,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.BC5StoreProduct
+import com.revenuecat.purchases.models.BC5StoreProduct
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
@@ -1227,7 +1227,8 @@ class Purchases internal constructor(
                         billing.consumeAndSave(consumeAllTransactions, purchase)
                     }
                     onError?.let { it(purchase, error) }
-                }
+                },
+                sendPricingPhases = (storeProduct is BC5StoreProduct)
             )
         }
     }
