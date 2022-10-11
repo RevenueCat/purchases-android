@@ -217,7 +217,7 @@ jobs:
       - run:
           name: Assemble
           command: |
-            ./gradlew -p examples/purchase-tester assembleLatestDependenciesRelease \
+            ./gradlew -p examples/purchase-tester assemble \
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
