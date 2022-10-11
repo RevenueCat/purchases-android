@@ -3,13 +3,12 @@ package com.revenuecat.purchases.common
 import android.app.Activity
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.PackageTemplate
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import org.json.JSONObject
 
 typealias StoreProductsCallback = (List<StoreProduct>) -> Unit
 
@@ -109,36 +108,61 @@ abstract class BillingAbstract {
     }
 
     open fun mapStoreProducts(offeringsIn: Offerings, products: List<StoreProduct>): Offerings {
-        return mapStoreProducts(offeringsIn, products, { product -> product.sku }, {template -> template.product_identifier})
+        return mapStoreProducts(
+            offeringsIn,
+            products,
+            { product -> product.sku },
+            { template -> template.identifier },
+            { products -> products.get(0) })
     }
 
     fun mapStoreProducts(
         offeringsIn: Offerings,
         products: List<StoreProduct>,
         storeProductKeyFunc: (StoreProduct) -> String,
-        packageKeyFunc: (PackageTemplate) -> String
+        packageKeyFunc: (Package) -> String,
+        reduceFunc: (List<StoreProduct>) -> StoreProduct?
     ): Offerings {
         val subscriptionProductsById = products.groupBy(storeProductKeyFunc)
         log(LogIntent.DEBUG, subscriptionProductsById.toString())
         val offerings =
-            offeringsIn.all.values.map { offering -> setPackagesInOffering(offering, subscriptionProductsById, packageKeyFunc) }
+            offeringsIn.all.values.map { offering ->
+                setPackagesInOffering(
+                    offering,
+                    subscriptionProductsById,
+                    packageKeyFunc,
+                    reduceFunc
+                )
+            }
         return Offerings(offeringsIn.current, offerings.filterNotNull().associateBy { it.identifier })
     }
 
-
-    private fun setPackagesInOffering(offering: Offering, subscriptionProductsById: Map<String, List<StoreProduct>>, packageKeyFunc: (PackageTemplate) -> String): Offering? {
-        val packages = offering.packageTemplates.flatMap { template ->
-            val products = subscriptionProductsById.get(packageKeyFunc(template))
-            if (products != null)
-                return@flatMap products.map { template.makePackage(it) }
+    private fun setPackagesInOffering(
+        offering: Offering,
+        subscriptionProductsById: Map<String, List<StoreProduct>>,
+        packageKeyFunc: (Package) -> String,
+        reduceFunc: (List<StoreProduct>) -> StoreProduct?
+    ): Offering? {
+        val packages = offering.availablePackages.map { template ->
+            val product = reduceFunc(subscriptionProductsById.get(packageKeyFunc(template)) ?: emptyList())
+            if (product != null)
+                return@map Package(
+                    template.identifier,
+                    template.packageType,
+                    product,
+                    template.offering,
+                    template.duration,
+                    template.product_identifier,
+                    template.group_identifier
+                )
             else
-                return@flatMap emptyList()
+                return@map null
         }
 
         if (packages.isEmpty())
             return null
         else
-            return Offering(offering.identifier, offering.serverDescription, packages, offering.packageTemplates)
+            return Offering(offering.identifier, offering.serverDescription, packages.filterNotNull())
     }
 
     interface PurchasesUpdatedListener {

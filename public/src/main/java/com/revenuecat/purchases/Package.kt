@@ -16,7 +16,10 @@ data class Package(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,
-    val offering: String
+    val offering: String,
+    val duration: String?,
+    val product_identifier: String,
+    val group_identifier: String?
 ) : Parcelable
 
 /**

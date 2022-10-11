@@ -146,23 +146,19 @@ class BillingWrapper(
     }
 
     private fun getIsBC5Enabled(offerings: Offerings): Boolean {
-        return !offerings.all.values
-            .flatMap { offering -> offering.packageTemplates }
-            .map { template -> template.group_identifier }
-            .filterNotNull()
-            .isEmpty()
+        return !extractBC5SubscriptionIds(offerings).isEmpty()
     }
 
     private fun extractSubscriptionIds(offerings: Offerings): Set<String> {
         return offerings.all.values
-            .flatMap { offering -> offering.packageTemplates }
+            .flatMap { offering -> offering.availablePackages }
             .map { template -> template.product_identifier }
             .toSet()
     }
 
     private fun extractBC5SubscriptionIds(offerings: Offerings): Set<String> {
         return offerings.all.values
-            .flatMap { offering -> offering.packageTemplates }
+            .flatMap { offering -> offering.availablePackages }
             .map { template -> template.group_identifier }
             .filterNotNull()
             .toSet()
@@ -285,7 +281,13 @@ class BillingWrapper(
                     val storeProducts = ArrayList<BC5StoreProduct>()
                     productDetailsList.forEach { product ->
                         product.subscriptionOfferDetails?.forEach { offer ->
-                            storeProducts.add(product.toStoreProduct(offer.offerToken, offer.pricingPhases, offer.offerTags))
+                            storeProducts.add(
+                                product.toStoreProduct(
+                                    offer.offerToken,
+                                    offer.pricingPhases,
+                                    offer.offerTags
+                                )
+                            )
                         }
                     }
                     log(LogIntent.DEBUG, storeProducts.joinToString("\n"))
@@ -923,12 +925,18 @@ class BillingWrapper(
 
     override fun mapStoreProducts(offeringsIn: Offerings, products: List<StoreProduct>): Offerings {
         if (getIsBC5Enabled(offeringsIn)) {
-            return mapStoreProducts(offeringsIn, products,
+            return mapStoreProducts(
+                offeringsIn, products,
                 { subProduct -> if (subProduct is BC5StoreProduct) subProduct.sku + "_" + subProduct.subscriptionPeriod else "" },
-                { template -> template.group_identifier + "_" + template.duration }
+                { template -> template.group_identifier + "_" + template.duration },
+                { product -> chooseBestOffer(product) },
             )
         } else {
             return super.mapStoreProducts(offeringsIn, products)
         }
+    }
+
+    fun chooseBestOffer(products: List<StoreProduct>): StoreProduct? {
+        return products.maxWithOrNull(compareBy { (it as BC5StoreProduct).pricingPhases.pricingPhaseList.size })
     }
 }
