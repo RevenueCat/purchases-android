@@ -206,7 +206,7 @@ platform :android do
     aab_path = options[:aab_path] || UI.user_error!("Missing aab_path parameter.")
     upload_to_play_store(
       package_name: 'com.revenuecat.purchases_sample',
-      track: 'Closed testing - Alpha',
+      track: 'alpha',
       json_key_data: json_key_data,
       aab: aab_path
     )
