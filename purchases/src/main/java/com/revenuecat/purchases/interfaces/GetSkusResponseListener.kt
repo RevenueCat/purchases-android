@@ -7,7 +7,6 @@ package com.revenuecat.purchases.interfaces
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.skuDetails
 
 /**
  * Interface to be implemented when making calls to fetch [SkuDetails]
