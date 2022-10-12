@@ -15,7 +15,7 @@ dependencies {
     implementation "androidx.core:core-ktx:$androidxCoreVersion"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     bc5SupportDevImplementation "com.android.billingclient:billing:$billing5Version"
-    latestDependenciesImplementation "com.android.billingclient:billing:$billing4Version"
+    latestDependenciesImplementation "com.android.billingclient:billing:$billing5Version"
     unityIAPCompileOnly "com.android.billingclient:billing:$billing4Version"
 
     testImplementation project(":test-utils")
