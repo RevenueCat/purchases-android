@@ -1,10 +1,8 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.parceler.JSONObjectParceler
-import kotlinx.parcelize.Parcelize
-import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 
 /**
@@ -134,37 +132,15 @@ interface StoreProduct : Parcelable {
      *
      * For Amazon, the original Product can be obtained using `StoreProduct.amazonProduct`
      */
+    @Deprecated("Implementation specific details can be accessed by downcasting")
     val originalJson: JSONObject
+
+    @Deprecated("Implementation specific details can be accessed by downcasting")
+    val skuDetails: SkuDetails
+        get() = throw IllegalArgumentException("This implementation of StoreProduct doesn't support SkuDetails")
 }
 
-@Parcelize
-@TypeParceler<JSONObject, JSONObjectParceler>()
-data class StoreProductImpl(
-    override val sku: String,
-    override val type: ProductType,
-    override val price: String,
-    override val priceAmountMicros: Long,
-    override val priceCurrencyCode: String,
-    override val originalPrice: String?,
-    override val originalPriceAmountMicros: Long,
-    override val title: String,
-    override val description: String,
-    override val subscriptionPeriod: String?,
-    override val freeTrialPeriod: String?,
-    override val introductoryPrice: String?,
-    override val introductoryPriceAmountMicros: Long,
-    override val introductoryPricePeriod: String?,
-    override val introductoryPriceCycles: Int,
-    override val iconUrl: String,
-    override val originalJson: JSONObject
-) : StoreProduct, Parcelable {
-
-    // We use this to not include the originalJSON in the equals
-    override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
-}
-
-private data class ComparableData(
+data class ComparableData(
     val sku: String,
     val type: ProductType,
     val price: String,
