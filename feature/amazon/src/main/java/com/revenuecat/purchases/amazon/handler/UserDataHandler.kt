@@ -13,14 +13,17 @@ import com.revenuecat.purchases.amazon.listener.UserDataResponseListener
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.utils.TimestampUtils
 
 class UserDataHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
-    private val mainHandler: Handler
+    private val mainHandler: Handler,
+    private val timestampUtils: TimestampUtils = TimestampUtils()
 ) : UserDataResponseListener {
 
     companion object {
         private const val GET_USER_DATA_TIMEOUT_MILLIS = 10_000L
+        private const val CACHE_EXPIRATION_TIME_MILLIS = 300_000L
     }
 
     private data class Request(
@@ -28,7 +31,14 @@ class UserDataHandler(
         val onError: PurchasesErrorCallback
     )
 
+    @get:Synchronized
     private val requests = mutableMapOf<RequestId, Request>()
+
+    @get:Synchronized @set:Synchronized
+    private var userDataCache: UserData? = null
+
+    @get:Synchronized @set:Synchronized
+    private var lastUserDataRequestTimestamp: Long? = null
 
     override fun onUserDataResponse(response: UserDataResponse) {
         // Amazon is catching all exceptions and swallowing them so we have to catch ourselves and log
@@ -38,7 +48,13 @@ class UserDataHandler(
             val request = getRequest(response.requestId) ?: return
 
             when (response.requestStatus) {
-                UserDataResponse.RequestStatus.SUCCESSFUL -> request.onReceive(response.userData)
+                UserDataResponse.RequestStatus.SUCCESSFUL -> {
+                    synchronized(this) {
+                        lastUserDataRequestTimestamp = timestampUtils.currentTimeMillis()
+                        userDataCache = response.userData
+                    }
+                    request.onReceive(response.userData)
+                }
                 UserDataResponse.RequestStatus.FAILED ->
                     request.onError.invokeWithStoreProblem(AmazonStrings.ERROR_FAILED_USER_DATA)
                 UserDataResponse.RequestStatus.NOT_SUPPORTED ->
@@ -56,12 +72,28 @@ class UserDataHandler(
         onSuccess: (UserData) -> Unit,
         onError: PurchasesErrorCallback
     ) {
+        getCachedUserDataIfAvailable()?.let { cachedUserData ->
+            onSuccess(cachedUserData)
+            return
+        }
         val userDataRequestId = purchasingServiceProvider.getUserData()
         val request = Request(onSuccess, onError)
         synchronized(this) {
             requests[userDataRequestId] = request
             addTimeoutToUserDataRequest(userDataRequestId)
         }
+    }
+
+    @Synchronized
+    private fun getCachedUserDataIfAvailable(): UserData? {
+        userDataCache?.let { userData ->
+            lastUserDataRequestTimestamp?.let { lastUserDataRequestTimestamp ->
+                if (timestampUtils.currentTimeMillis() - lastUserDataRequestTimestamp < CACHE_EXPIRATION_TIME_MILLIS) {
+                    return userData
+                }
+            }
+        }
+        return null
     }
 
     private fun PurchasesErrorCallback.invokeWithStoreProblem(message: String) {
