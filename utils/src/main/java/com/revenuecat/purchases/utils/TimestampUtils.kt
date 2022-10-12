@@ -1,5 +1,5 @@
 package com.revenuecat.purchases.utils
 
-open class TimestampUtils {
-    open fun currentTimeMillis() = System.currentTimeMillis()
+class TimestampUtils {
+    fun currentTimeMillis() = System.currentTimeMillis()
 }
