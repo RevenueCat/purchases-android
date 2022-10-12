@@ -11,6 +11,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -2062,6 +2063,7 @@ class Purchases internal constructor(
         fun configure(
             configuration: PurchasesConfiguration
         ): Purchases {
+            Log.e("maddietest", "configuring latest-bc5 branch")
             return PurchasesFactory().createPurchases(
                 configuration,
                 platformInfo,

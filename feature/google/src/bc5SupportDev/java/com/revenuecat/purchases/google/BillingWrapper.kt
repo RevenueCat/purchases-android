@@ -255,6 +255,7 @@ class BillingWrapper(
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType))
+        log(LogIntent.DEBUG, "maddietest querypurchasehistoryasync with bc5 flavor")
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
