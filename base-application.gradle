@@ -37,7 +37,7 @@ android {
     // TODO remove after BC5 is merged
     sourceSets {
         latestDependencies {
-            java.srcDirs = ['src/unityIAP/java']
+            java.srcDirs = ['src/bc5SupportDev/java']
         }
     }
 }
