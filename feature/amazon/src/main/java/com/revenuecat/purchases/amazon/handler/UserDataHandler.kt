@@ -73,6 +73,7 @@ class UserDataHandler(
         onError: PurchasesErrorCallback
     ) {
         getCachedUserDataIfAvailable()?.let { cachedUserData ->
+            log(LogIntent.DEBUG, AmazonStrings.USER_DATA_REQUEST_FROM_CACHE)
             onSuccess(cachedUserData)
             return
         }
