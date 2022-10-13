@@ -165,8 +165,9 @@ class Backend(
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
         marketplace: String? = null,
+        sendPricingPhases: Boolean = false,
         onSuccess: PostReceiptDataSuccessCallback,
-        onError: PostReceiptDataErrorCallback
+        onError: PostReceiptDataErrorCallback,
     ) {
         val cacheKey = listOfNotNull(
             purchaseToken,
@@ -177,6 +178,9 @@ class Backend(
             receiptInfo.toString(),
             storeAppUserID
         )
+        val phases = if (sendPricingPhases) {
+            receiptInfo.storeProduct?.pricingPhases?.map { it.toMap() }
+        } else null
 
         val body = mapOf(
             "fetch_token" to purchaseToken,
@@ -191,7 +195,8 @@ class Backend(
             "normal_duration" to receiptInfo.duration,
             "intro_duration" to receiptInfo.introDuration,
             "trial_duration" to receiptInfo.trialDuration,
-            "store_user_id" to storeAppUserID
+            "store_user_id" to storeAppUserID,
+            "pricing_phases" to phases
         ).filterValues { value -> value != null }
 
         val extraHeaders = receiptInfo.storeProduct?.price?.let { priceString ->

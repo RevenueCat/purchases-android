@@ -136,12 +136,41 @@ data class StoreProduct(
      *
      * For Amazon, the original Product can be obtained using `StoreProduct.amazonProduct`
      */
-    val originalJson: JSONObject
+    val originalJson: JSONObject,
+
+    val pricingPhases: List<PricingPhase>? = null
 ) : Parcelable {
 
     // We use this to not include the originalJSON in the equals
     override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
     override fun hashCode() = ComparableData(this).hashCode()
+}
+
+@Parcelize
+data class PricingPhase(
+    val billingPeriod: String,
+    val billingCycleCount: Int,
+    val formattedPrice: String,
+    val priceAmountMicros: Long,
+    val priceCurrencyCode: String,
+    val recurrenceMode: Int,
+) : Parcelable {
+    companion object {
+        const val FINITE_RECURRING = 2
+        const val INFINITE_RECURRING = 1
+        const val NON_RECURRING = 3
+    }
+
+    fun toMap(): Map<String, Any> {
+        return mapOf(
+            "billingPeriod" to this.billingPeriod,
+            "billingCycleCount" to this.billingCycleCount,
+            "formattedPrice" to this.formattedPrice,
+            "priceAmountMicros" to this.priceAmountMicros,
+            "priceCurrencyCode" to this.priceCurrencyCode,
+            "recurrenceMode" to this.recurrenceMode
+        )
+    }
 }
 
 private data class ComparableData(

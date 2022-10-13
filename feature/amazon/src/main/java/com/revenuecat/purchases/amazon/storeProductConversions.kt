@@ -47,7 +47,9 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         introductoryPricePeriod = null,
         introductoryPriceCycles = 0,
         iconUrl = smallIconUrl,
-        originalJson = toJSON()
+        originalJson = toJSON(),
+        // TODO Review, but doesn't seem to make much sense given we don't have any data on billing period
+        null
     )
 }
 

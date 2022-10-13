@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
@@ -22,5 +23,48 @@ fun SkuDetails.toStoreProduct() =
         introductoryPricePeriod.takeIf { it.isNotBlank() },
         introductoryPriceCycles,
         iconUrl,
-        JSONObject(originalJson)
+        JSONObject(originalJson),
+        getPricingPhases()
     )
+
+fun SkuDetails.getPricingPhases(): List<PricingPhase> {
+    if (subscriptionPeriod.isBlank()) {
+        return emptyList() // TODO what should we do for one time purchases?
+    }
+    val phases = mutableListOf<PricingPhase>()
+    if (freeTrialPeriod.isNotBlank()) {
+        phases.add(
+            PricingPhase(
+                freeTrialPeriod,
+                1,
+                "Free",
+                0,
+                priceCurrencyCode,
+                PricingPhase.FINITE_RECURRING
+            )
+        ) // TOOD check is this is NON_RECURRING
+    }
+    if (introductoryPricePeriod.isNotBlank()) {
+        phases.add(
+            PricingPhase(
+                introductoryPricePeriod,
+                introductoryPriceCycles,
+                "",
+                introductoryPriceAmountMicros,
+                priceCurrencyCode,
+                PricingPhase.FINITE_RECURRING
+            )
+        )
+    }
+    phases.add(
+        PricingPhase(
+            subscriptionPeriod,
+            0,
+            price,
+            priceAmountMicros,
+            priceCurrencyCode,
+            PricingPhase.INFINITE_RECURRING
+        )
+    )
+    return phases
+}

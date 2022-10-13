@@ -12,8 +12,10 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
+import io.mockk.Matcher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -72,6 +74,7 @@ class BackendTest {
     private var receivedShouldConsumePurchase: Boolean? = null
 
     private val headersSlot = slot<Map<String, String>>()
+    private val bodySlot = slot<Map<String, Any>>()
 
     private val onReceiveCustomerInfoSuccessHandler: (CustomerInfo) -> Unit = { info ->
             this@BackendTest.receivedCustomerInfo = info
@@ -109,6 +112,19 @@ class BackendTest {
         this@BackendTest.receivedError = it
     }
 
+    /**
+     * Checks that the specified map values are set, allowing extra values to be exist
+     */
+    class ContainsMatcher(val min: Map<String, Any?>): Matcher<Map<String, Any?>>{
+        override fun match(arg: Map<String, Any?>?): Boolean {
+            for ((key, expectedValue) in min) {
+                if (arg?.get(key) != expectedValue)
+                    return false
+            }
+            return true
+        }
+    }
+
     @Test
     fun canBeCreated() {
         assertThat(backend).isNotNull
@@ -135,7 +151,7 @@ class BackendTest {
         val everyMockedCall = every {
             mockClient.performRequest(
                 eq(path),
-                (if (body == null) any() else eq(body)),
+                if (body == null) any() else and(capture(bodySlot), match(ContainsMatcher(body))),
                 capture(headersSlot)
             )
         }
@@ -160,7 +176,8 @@ class BackendTest {
         observerMode: Boolean,
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
-        marketplace: String? = null
+        marketplace: String? = null,
+        sendPricingPhases: Boolean = false
     ): CustomerInfo {
         val (fetchToken, info) = mockPostReceiptResponse(
             isRestore,
@@ -181,6 +198,7 @@ class BackendTest {
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
             marketplace = marketplace,
+            sendPricingPhases = sendPricingPhases,
             onSuccess = onReceivePostReceiptSuccessHandler,
             onError = postReceiptErrorCallback
         )
@@ -1451,12 +1469,41 @@ class BackendTest {
         assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
     }
 
+    @Test
+    fun `postReceipt sends pricingPhases`() {
+        val storeProduct = mockStoreProduct()
+
+        postReceipt(
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = Responses.validFullPurchaserResponse,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null,
+            sendPricingPhases = true
+        )
+
+        assertThat(bodySlot.isCaptured).isTrue
+        assertThat(bodySlot.captured["pricing_phases"]).isEqualTo(listOf(mapOf(
+            "billingPeriod" to "P1M",
+            "billingCycleCount" to 1,
+            "formattedPrice" to "$1",
+            "priceAmountMicros" to 1000000L,
+            "priceCurrencyCode" to "USD",
+            "recurrenceMode" to PricingPhase.INFINITE_RECURRING)))
+    }
+
     private fun mockStoreProduct(
         price: Long = 25_000_000,
         duration: String = "P1M",
         introDuration: String = "P1M",
         trialDuration: String = "P1M"
     ): StoreProduct {
+
         val storeProduct = mockk<StoreProduct>()
         every { storeProduct.priceAmountMicros } returns price
         every { storeProduct.priceCurrencyCode } returns "USD"
@@ -1464,6 +1511,8 @@ class BackendTest {
         every { storeProduct.introductoryPricePeriod } returns introDuration
         every { storeProduct.freeTrialPeriod } returns trialDuration
         every { storeProduct.price } returns "$25"
+        val pricingPhases = listOf(PricingPhase("P1M", 1, "$1", 1000000, "USD", PricingPhase.INFINITE_RECURRING))
+        every { storeProduct.pricingPhases } returns pricingPhases
         return storeProduct
     }
 
