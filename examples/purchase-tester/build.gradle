@@ -20,8 +20,8 @@ android {
     defaultConfig {
         applicationId "com.revenuecat.purchases_sample"
         minSdkVersion 21
-        versionCode 1
-        versionName "1.0"
+        versionCode purchaseTesterVersionCode as Integer
+        versionName purchaseTesterVersionName
         vectorDrawables.useSupportLibrary = true
     }
     signingConfigs {
