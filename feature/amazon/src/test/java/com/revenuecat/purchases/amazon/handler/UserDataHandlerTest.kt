@@ -12,7 +12,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
-import com.revenuecat.purchases.utils.TimestampUtils
+import com.revenuecat.purchases.utils.MockTimestampProvider
+import com.revenuecat.purchases.utils.TimestampProvider
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -29,7 +30,7 @@ class UserDataHandlerTest {
 
     private lateinit var underTest: UserDataHandler
     private lateinit var mainHandler: Handler
-    private lateinit var timestampUtils: TimestampUtils
+    private lateinit var timestampProvider: MockTimestampProvider
     private lateinit var purchasingServiceProvider: PurchasingServiceProviderForTest
 
     private var receivedUserData: UserData? = null
@@ -56,10 +57,9 @@ class UserDataHandlerTest {
     fun setup() {
         purchasingServiceProvider = PurchasingServiceProviderForTest()
         mainHandlerCallbacks.clear()
-        timestampUtils = mockk()
-        every { timestampUtils.currentTimeMillis() } returns System.currentTimeMillis()
+        timestampProvider = MockTimestampProvider()
         setupMainHandler()
-        underTest = UserDataHandler(purchasingServiceProvider, mainHandler, timestampUtils)
+        underTest = UserDataHandler(purchasingServiceProvider, mainHandler, timestampProvider)
     }
 
     @Test
@@ -251,7 +251,7 @@ class UserDataHandlerTest {
         val dummyRequestId = "a_request_id"
         purchasingServiceProvider.getUserDataRequestId = dummyRequestId
 
-        every { timestampUtils.currentTimeMillis() } returns 5_000L
+        timestampProvider.overridenCurrentTimeMillis = 5_000L
 
         var userDataRequest1: UserData? = null
         underTest.getUserData(
@@ -262,7 +262,7 @@ class UserDataHandlerTest {
         val response = getDummyUserDataResponse(expectedRequestId = dummyRequestId)
         underTest.onUserDataResponse(response)
 
-        every { timestampUtils.currentTimeMillis() } returns 304_000L
+        timestampProvider.overridenCurrentTimeMillis = 304_000L
 
         var userDataRequest2: UserData? = null
         underTest.getUserData(
@@ -280,7 +280,7 @@ class UserDataHandlerTest {
     fun `getting user data after cache expiration returns cached user data without initiating new requests`() {
         val dummyRequestId = "a_request_id"
         purchasingServiceProvider.getUserDataRequestId = dummyRequestId
-        every { timestampUtils.currentTimeMillis() } returns 5_000L
+        timestampProvider.overridenCurrentTimeMillis = 5_000L
 
         var userDataRequest1: UserData? = null
         underTest.getUserData(
@@ -293,7 +293,7 @@ class UserDataHandlerTest {
 
         assertThat(userDataRequest1).isNotNull
 
-        every { timestampUtils.currentTimeMillis() } returns 306_000L
+        timestampProvider.overridenCurrentTimeMillis = 306_000L
 
         var userDataRequest2: UserData? = null
         underTest.getUserData(

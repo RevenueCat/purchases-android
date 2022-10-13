@@ -13,12 +13,13 @@ import com.revenuecat.purchases.amazon.listener.UserDataResponseListener
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.utils.TimestampUtils
+import com.revenuecat.purchases.utils.DefaultTimestampProvider
+import com.revenuecat.purchases.utils.TimestampProvider
 
 class UserDataHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
     private val mainHandler: Handler,
-    private val timestampUtils: TimestampUtils = TimestampUtils()
+    private val timestampProvider: TimestampProvider = DefaultTimestampProvider()
 ) : UserDataResponseListener {
 
     companion object {
@@ -50,7 +51,7 @@ class UserDataHandler(
             when (response.requestStatus) {
                 UserDataResponse.RequestStatus.SUCCESSFUL -> {
                     synchronized(this) {
-                        lastUserDataRequestTimestamp = timestampUtils.currentTimeMillis()
+                        lastUserDataRequestTimestamp = timestampProvider.currentTimeMillis
                         userDataCache = response.userData
                     }
                     request.onReceive(response.userData)
@@ -89,7 +90,7 @@ class UserDataHandler(
     private fun getCachedUserDataIfAvailable(): UserData? {
         userDataCache?.let { userData ->
             lastUserDataRequestTimestamp?.let { lastUserDataRequestTimestamp ->
-                if (timestampUtils.currentTimeMillis() - lastUserDataRequestTimestamp < CACHE_EXPIRATION_TIME_MILLIS) {
+                if (timestampProvider.currentTimeMillis - lastUserDataRequestTimestamp < CACHE_EXPIRATION_TIME_MILLIS) {
                     return userData
                 }
             }
