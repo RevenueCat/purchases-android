@@ -27,7 +27,6 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
                 VmPolicy.Builder()
                     .detectLeakedClosableObjects()
                     .penaltyLog()
-                    .penaltyDeath()
                     .build()
             )
         }
