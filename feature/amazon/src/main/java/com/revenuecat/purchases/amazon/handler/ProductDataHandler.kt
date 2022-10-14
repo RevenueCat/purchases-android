@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.amazon.handler
 
+import android.os.Handler
 import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.RequestId
@@ -17,10 +18,15 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.StoreProduct
 
 class ProductDataHandler(
-    private val purchasingServiceProvider: PurchasingServiceProvider
+    private val purchasingServiceProvider: PurchasingServiceProvider,
+    private val mainHandler: Handler
 ) : ProductDataResponseListener {
 
-    data class Request(
+    companion object {
+        private const val GET_PRODUCT_DATA_TIMEOUT_MILLIS = 10_000L
+    }
+
+    private data class Request(
         val skuList: List<String>,
         val marketplace: String,
         val onReceive: StoreProductsCallback,
@@ -47,8 +53,10 @@ class ProductDataHandler(
                 handleSuccessfulProductDataResponse(cachedProducts, marketplace, onReceive)
             } else {
                 val productDataRequestId = purchasingServiceProvider.getProductData(skus)
+                val request = Request(skus.toList(), marketplace, onReceive, onError)
                 synchronized(this) {
-                    productDataRequests[productDataRequestId] = Request(skus.toList(), marketplace, onReceive, onError)
+                    productDataRequests[productDataRequestId] = request
+                    addTimeoutToProductDataRequest(productDataRequestId)
                 }
             }
         }
@@ -64,19 +72,17 @@ class ProductDataHandler(
             }
 
             val requestId = response.requestId
-            val request = synchronized(this) { productDataRequests.remove(requestId) }
+            val request = getRequest(requestId) ?: return
 
-            if (request != null) {
-                val responseIsSuccessful = response.requestStatus == ProductDataResponse.RequestStatus.SUCCESSFUL
+            val responseIsSuccessful = response.requestStatus == ProductDataResponse.RequestStatus.SUCCESSFUL
 
-                if (responseIsSuccessful) {
-                    synchronized(this) {
-                        productDataCache.putAll(response.productData)
-                    }
-                    handleSuccessfulProductDataResponse(response.productData, request.marketplace, request.onReceive)
-                } else {
-                    handleUnsuccessfulProductDataResponse(response, request.onError)
+            if (responseIsSuccessful) {
+                synchronized(this) {
+                    productDataCache.putAll(response.productData)
                 }
+                handleSuccessfulProductDataResponse(response.productData, request.marketplace, request.onReceive)
+            } else {
+                handleUnsuccessfulProductDataResponse(response, request.onError)
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             errorLog("Exception in onProductDataResponse", e)
@@ -113,5 +119,24 @@ class ProductDataHandler(
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
 
         onError(purchasesError)
+    }
+
+    private fun addTimeoutToProductDataRequest(requestId: RequestId) {
+        mainHandler.postDelayed(
+            {
+                val request = getRequest(requestId) ?: return@postDelayed
+                val error = PurchasesError(
+                    PurchasesErrorCode.UnknownError,
+                    AmazonStrings.ERROR_TIMEOUT_GETTING_PRODUCT_DATA.format(request.skuList.toString())
+                )
+                request.onError(error)
+            },
+            GET_PRODUCT_DATA_TIMEOUT_MILLIS
+        )
+    }
+
+    @Synchronized
+    private fun getRequest(requestId: RequestId): Request? {
+        return productDataRequests.remove(requestId)
     }
 }
