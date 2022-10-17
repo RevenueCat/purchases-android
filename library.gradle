@@ -49,13 +49,9 @@ android {
 }
 
 def artifactId = project.property("POM_ARTIFACT_ID")
-def publishVariant = project.property("PUBLISH_VARIANT")
+def publishVariant = project.property("ANDROID_VARIANT_TO_PUBLISH")
 if (publishVariant == "unityIAPRelease") {
     project.ext.POM_ARTIFACT_ID = artifactId + "-unityiap"
 }
 
 apply plugin: 'com.vanniktech.maven.publish'
-
-mavenPublish {
-    androidVariantToPublish = project.property("PUBLISH_VARIANT")
-}
