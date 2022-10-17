@@ -429,11 +429,11 @@ workflows:
             - hold
           <<: *release-branches
       - deploy: *release-tags
-      - deploy-snapshot
-          # filters:
-            # branches:
-              # only:
-                # - main
+      - deploy-snapshot:
+          filters:
+            branches:
+              only:
+                - main
       - docs-deploy: *release-tags
       - publish-purchase-tester-latest-dependencies-release:
           requires:
