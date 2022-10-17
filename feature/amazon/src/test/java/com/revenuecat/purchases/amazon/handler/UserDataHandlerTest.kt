@@ -12,6 +12,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
+import com.revenuecat.purchases.utils.MockTimestampProvider
+import com.revenuecat.purchases.utils.TimestampProvider
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -28,6 +30,7 @@ class UserDataHandlerTest {
 
     private lateinit var underTest: UserDataHandler
     private lateinit var mainHandler: Handler
+    private lateinit var timestampProvider: MockTimestampProvider
     private lateinit var purchasingServiceProvider: PurchasingServiceProviderForTest
 
     private var receivedUserData: UserData? = null
@@ -54,8 +57,9 @@ class UserDataHandlerTest {
     fun setup() {
         purchasingServiceProvider = PurchasingServiceProviderForTest()
         mainHandlerCallbacks.clear()
+        timestampProvider = MockTimestampProvider()
         setupMainHandler()
-        underTest = UserDataHandler(purchasingServiceProvider, mainHandler)
+        underTest = UserDataHandler(purchasingServiceProvider, mainHandler, timestampProvider)
     }
 
     @Test
@@ -65,7 +69,7 @@ class UserDataHandlerTest {
 
         underTest.getUserData(expectedOnSuccess, unexpectedOnError)
 
-        assertThat(purchasingServiceProvider.getUserDataCalled).isTrue
+        assertThat(purchasingServiceProvider.getUserDataCalledTimes).isEqualTo(1)
 
         val response = getDummyUserDataResponse(dummyRequestId)
         underTest.onUserDataResponse(response)
@@ -80,7 +84,7 @@ class UserDataHandlerTest {
 
         underTest.getUserData(unexpectedOnSuccess, expectedOnError)
 
-        assertThat(purchasingServiceProvider.getUserDataCalled).isTrue
+        assertThat(purchasingServiceProvider.getUserDataCalledTimes).isEqualTo(1)
 
         val response = getDummyUserDataResponse(dummyRequestId, requestStatus = UserDataResponse.RequestStatus.FAILED)
         underTest.onUserDataResponse(response)
@@ -96,7 +100,7 @@ class UserDataHandlerTest {
 
         underTest.getUserData(unexpectedOnSuccess, expectedOnError)
 
-        assertThat(purchasingServiceProvider.getUserDataCalled).isTrue
+        assertThat(purchasingServiceProvider.getUserDataCalledTimes).isEqualTo(1)
 
         val response =
             getDummyUserDataResponse(dummyRequestId, requestStatus = UserDataResponse.RequestStatus.NOT_SUPPORTED)
@@ -114,7 +118,7 @@ class UserDataHandlerTest {
         var receivedCount = 0
         underTest.getUserData(onSuccess = { receivedCount++ }, unexpectedOnError)
 
-        assertThat(purchasingServiceProvider.getUserDataCalled).isTrue
+        assertThat(purchasingServiceProvider.getUserDataCalledTimes).isEqualTo(1)
 
         val response = getDummyUserDataResponse(dummyRequestId)
         underTest.onUserDataResponse(response)
@@ -147,7 +151,7 @@ class UserDataHandlerTest {
 
         underTest.getUserData(onSuccess = { throw expectedException }, unexpectedOnError)
 
-        assertThat(purchasingServiceProvider.getUserDataCalled).isTrue
+        assertThat(purchasingServiceProvider.getUserDataCalledTimes).isEqualTo(1)
 
         val response = getDummyUserDataResponse(dummyRequestId)
         try {
@@ -240,6 +244,69 @@ class UserDataHandlerTest {
         mainHandlerCallbacks[0].run()
 
         assertThat(userData).isNotNull
+    }
+
+    @Test
+    fun `getting user data before cache expiration returns cached user data without initiating new requests`() {
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getUserDataRequestId = dummyRequestId
+
+        timestampProvider.overridenCurrentTimeMillis = 5_000L
+
+        var userDataRequest1: UserData? = null
+        underTest.getUserData(
+            { userDataRequest1 = it },
+            unexpectedOnError
+        )
+
+        val response = getDummyUserDataResponse(expectedRequestId = dummyRequestId)
+        underTest.onUserDataResponse(response)
+
+        timestampProvider.overridenCurrentTimeMillis = 304_000L
+
+        var userDataRequest2: UserData? = null
+        underTest.getUserData(
+            { userDataRequest2 = it },
+            unexpectedOnError
+        )
+
+        assertThat(userDataRequest1).isNotNull
+        assertThat(userDataRequest2).isNotNull
+
+        assertThat(purchasingServiceProvider.getUserDataCalledTimes).isEqualTo(1)
+    }
+
+    @Test
+    fun `getting user data after cache expiration returns cached user data without initiating new requests`() {
+        val dummyRequestId = "a_request_id"
+        purchasingServiceProvider.getUserDataRequestId = dummyRequestId
+        timestampProvider.overridenCurrentTimeMillis = 5_000L
+
+        var userDataRequest1: UserData? = null
+        underTest.getUserData(
+            { userDataRequest1 = it },
+            unexpectedOnError
+        )
+
+        val response = getDummyUserDataResponse(expectedRequestId = dummyRequestId)
+        underTest.onUserDataResponse(response)
+
+        assertThat(userDataRequest1).isNotNull
+
+        timestampProvider.overridenCurrentTimeMillis = 306_000L
+
+        var userDataRequest2: UserData? = null
+        underTest.getUserData(
+            { userDataRequest2 = it },
+            unexpectedOnError
+        )
+
+        assertThat(userDataRequest2).isNull()
+
+        underTest.onUserDataResponse(response)
+        assertThat(userDataRequest2).isNotNull
+
+        assertThat(purchasingServiceProvider.getUserDataCalledTimes).isEqualTo(2)
     }
 
     private fun getDummyUserDataResponse(
