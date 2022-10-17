@@ -151,14 +151,14 @@ class BillingWrapper(
     private fun extractSubscriptionIds(offerings: Offerings): Set<String> {
         return offerings.all.values
             .flatMap { offering -> offering.availablePackages }
-            .map { template -> template.product_identifier }
+            .map { pkg -> pkg.product_identifier }
             .toSet()
     }
 
     private fun extractBC5SubscriptionIds(offerings: Offerings): Set<String> {
         return offerings.all.values
             .flatMap { offering -> offering.availablePackages }
-            .map { template -> template.group_identifier }
+            .map { pkg -> pkg.group_identifier }
             .filterNotNull()
             .toSet()
     }
@@ -927,7 +927,7 @@ class BillingWrapper(
             return mapStoreProducts(
                 offeringsIn, products,
                 { subProduct -> if (subProduct is BC5StoreProduct) subProduct.sku + "_" + subProduct.subscriptionPeriod else "" },
-                { template -> template.group_identifier + "_" + template.duration },
+                { pkg -> pkg.group_identifier + "_" + pkg.duration },
                 { product -> chooseBestOffer(product) },
             )
         } else {

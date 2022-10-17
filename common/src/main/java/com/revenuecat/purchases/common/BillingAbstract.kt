@@ -112,8 +112,8 @@ abstract class BillingAbstract {
             offeringsIn,
             products,
             { product -> product.sku },
-            { template -> template.identifier },
-            { products -> products.get(0) })
+            { template -> template.product_identifier },
+            { products -> if (products.isNotEmpty()) products.get(0) else null })
     }
 
     fun mapStoreProducts(
