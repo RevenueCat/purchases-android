@@ -4,6 +4,7 @@ import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
+import java.text.NumberFormat
 
 fun SkuDetails.toStoreProduct() =
     StoreProduct(
@@ -37,19 +38,19 @@ fun SkuDetails.getPricingPhases(): List<PricingPhase> {
             PricingPhase(
                 freeTrialPeriod,
                 1,
-                "Free",
+                PricingPhase.FORMATTED_PRICE_FREE,
                 0,
                 priceCurrencyCode,
                 PricingPhase.FINITE_RECURRING
             )
-        ) // TOOD check is this is NON_RECURRING
+        )
     }
     if (introductoryPricePeriod.isNotBlank()) {
         phases.add(
             PricingPhase(
                 introductoryPricePeriod,
                 introductoryPriceCycles,
-                "",
+                "", //TODO format price
                 introductoryPriceAmountMicros,
                 priceCurrencyCode,
                 PricingPhase.FINITE_RECURRING

@@ -1488,13 +1488,8 @@ class BackendTest {
         )
 
         assertThat(bodySlot.isCaptured).isTrue
-        assertThat(bodySlot.captured["pricing_phases"]).isEqualTo(listOf(mapOf(
-            "billingPeriod" to "P1M",
-            "billingCycleCount" to 1,
-            "formattedPrice" to "$1",
-            "priceAmountMicros" to 1000000L,
-            "priceCurrencyCode" to "USD",
-            "recurrenceMode" to PricingPhase.INFINITE_RECURRING)))
+        assertThat(bodySlot.captured["pricing_phases"])
+            .isEqualTo(listOf(pricingPhaseMapOf("P1M", 1, "$1", 1000000L, "USD", PricingPhase.INFINITE_RECURRING)))
     }
 
     private fun mockStoreProduct(
@@ -1514,6 +1509,16 @@ class BackendTest {
         val pricingPhases = listOf(PricingPhase("P1M", 1, "$1", 1000000, "USD", PricingPhase.INFINITE_RECURRING))
         every { storeProduct.pricingPhases } returns pricingPhases
         return storeProduct
+    }
+
+    private fun pricingPhaseMapOf(billingPeriod: String, billingCycleCount: Int, formattedPrice: String, priceAmountMicros: Long, priceCurrencyCode: String, recurrenceMode: Int): Map<String, Any> {
+        return mapOf(
+            "billingPeriod" to billingPeriod,
+            "billingCycleCount" to billingCycleCuunt,
+            "formattedPrice" to formattedPrice,
+            "priceAmountMicros" to priceAmountMicros,
+            "priceCurrencyCode" to priceCurrencyCode,
+            "recurrenceMode" to recurrenceMode)
     }
 
 }

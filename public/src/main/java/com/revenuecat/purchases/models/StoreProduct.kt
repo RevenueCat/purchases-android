@@ -159,6 +159,8 @@ data class PricingPhase(
         const val FINITE_RECURRING = 2
         const val INFINITE_RECURRING = 1
         const val NON_RECURRING = 3
+
+        const val FORMATTED_PRICE_FREE = "Free"
     }
 
     fun toMap(): Map<String, Any> {
