@@ -19,6 +19,8 @@ import com.revenuecat.purchases_sample.BuildConfig
 
 class MainApplication : Application(), UpdatedCustomerInfoListener {
 
+    val logHandler = TesterLogHandler(this)
+
     override fun onCreate() {
         super.onCreate()
 
@@ -34,7 +36,7 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
 
         Purchases.debugLogsEnabled = true
 
-        Purchases.logHandler = TesterLogHandler(this)
+        Purchases.logHandler = logHandler
     }
 
     override fun onReceived(customerInfo: CustomerInfo) {

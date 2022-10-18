@@ -45,6 +45,10 @@ class LoginFragment : Fragment() {
             navigateToConfigureFragment()
         }
 
+        binding.logsButton.setOnClickListener {
+            navigateToLogsFragment()
+        }
+
         return binding.root
     }
 
@@ -59,6 +63,11 @@ class LoginFragment : Fragment() {
 
     private fun navigateToConfigureFragment() {
         val directions = LoginFragmentDirections.actionLoginFragmentToConfigureFragment()
+        findNavController().navigate(directions)
+    }
+
+    private fun navigateToLogsFragment() {
+        val directions = LoginFragmentDirections.actionLoginFragmentToLogsFragment()
         findNavController().navigate(directions)
     }
 }
