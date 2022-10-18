@@ -26,9 +26,9 @@ import io.mockk.runs
 import io.mockk.slot
 import org.junit.Before
 
-open class BillingWrapperTestBase {
+open class GoogleBillingTestBase {
     internal var onConnectedCalled: Boolean = false
-    internal var mockClientFactory: BillingWrapper.ClientFactory = mockk()
+    internal var mockClientFactory: GoogleBilling.ClientFactory = mockk()
     internal var mockClient: BillingClient = mockk()
     internal var purchasesUpdatedListener: PurchasesUpdatedListener? = null
     internal var billingClientStateListener: BillingClientStateListener? = null
@@ -42,7 +42,7 @@ open class BillingWrapperTestBase {
     internal var capturedConsumeResponseListener = slot<ConsumeResponseListener>()
     internal var capturedConsumeParams = slot<ConsumeParams>()
 
-    internal lateinit var wrapper: BillingWrapper
+    internal lateinit var wrapper: GoogleBilling
 
     private lateinit var mockDetailsList: List<SkuDetails>
 
@@ -93,7 +93,7 @@ open class BillingWrapperTestBase {
 
         mockDetailsList = listOf(stubSkuDetails())
 
-        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache)
+        wrapper = GoogleBilling(mockClientFactory, handler, mockDeviceCache)
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         onConnectedCalled = false
         wrapper.stateListener = object : BillingAbstract.StateListener {

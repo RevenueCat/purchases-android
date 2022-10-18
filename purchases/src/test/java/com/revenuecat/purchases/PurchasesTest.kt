@@ -100,7 +100,7 @@ class PurchasesTest {
     private val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
 
     private var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
-    private var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
+    private var capturedBillingStateListener = slot<BillingAbstract.StateListener>()
     private val capturedConsumePurchaseWrapper = slot<StoreTransaction>()
     private val capturedShouldTryToConsume = slot<Boolean>()
 
@@ -144,7 +144,7 @@ class PurchasesTest {
         val skus = listOf(stubProductIdentifier)
         mockCache()
         mockBackend()
-        mockBillingWrapper()
+        mockBilling()
         mockStoreProduct(skus, skus, ProductType.SUBS)
         mockCustomerInfoHelper()
 
@@ -3207,7 +3207,7 @@ class PurchasesTest {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
-        capturedBillingWrapperStateListener.captured.onConnected()
+        capturedBillingStateListener.captured.onConnected()
         verify(exactly = 1) {
             mockBillingAbstract.queryPurchases(appUserId, any(), any())
         }
@@ -3519,7 +3519,7 @@ class PurchasesTest {
     }
 
     // region Private Methods
-    private fun mockBillingWrapper() {
+    private fun mockBilling() {
         with(mockBillingAbstract) {
             every {
                 makePurchaseAsync(any(), any(), any(), any(), any())
@@ -3534,7 +3534,7 @@ class PurchasesTest {
                 purchasesUpdatedListener = null
             } just Runs
             every {
-                stateListener = capture(capturedBillingWrapperStateListener)
+                stateListener = capture(capturedBillingStateListener)
             } just Runs
             every {
                 isConnected()

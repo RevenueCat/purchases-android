@@ -12,7 +12,7 @@
     <ID>TooGenericExceptionCaught:Factories.kt$e: RuntimeException</ID>
     <ID>TooGenericExceptionCaught:utils.kt$e: RuntimeException</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
-    <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper : PurchasesUpdatedListenerBillingClientStateListener</ID>
+    <ID>TooManyFunctions:GoogleBilling.kt$GoogleBilling : PurchasesUpdatedListenerBillingClientStateListener</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
   </Whitelist>

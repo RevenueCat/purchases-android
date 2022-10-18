@@ -8,7 +8,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.GoogleBilling
 
 @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
 object BillingFactory {
@@ -20,8 +20,8 @@ object BillingFactory {
         cache: DeviceCache,
         observerMode: Boolean
     ) = when (store) {
-        Store.PLAY_STORE -> BillingWrapper(
-            BillingWrapper.ClientFactory(application),
+        Store.PLAY_STORE -> GoogleBilling(
+            GoogleBilling.ClientFactory(application),
             Handler(application.mainLooper),
             cache
         )

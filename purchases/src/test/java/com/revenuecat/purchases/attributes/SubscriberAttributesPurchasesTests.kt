@@ -49,7 +49,7 @@ class SubscriberAttributesPurchasesTests {
     private val appUserId = "juan"
     private val subscriberAttributesManagerMock = mockk<SubscriberAttributesManager>()
     private val backendMock = mockk<Backend>(relaxed = true)
-    private val billingWrapperMock = mockk<BillingAbstract>(relaxed = true)
+    private val googleBillingMock = mockk<BillingAbstract>(relaxed = true)
     private val customerInfoHelperMock = mockk<CustomerInfoHelper>()
     private lateinit var applicationMock: Application
 
@@ -78,7 +78,7 @@ class SubscriberAttributesPurchasesTests {
     @Before
     fun setup() {
         every {
-            billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
+            googleBillingMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
             lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
@@ -134,7 +134,7 @@ class SubscriberAttributesPurchasesTests {
             application = mockk<Application>(relaxed = true).also { applicationMock = it },
             backingFieldAppUserID = appUserId,
             backend = backendMock,
-            billing = billingWrapperMock,
+            billing = googleBillingMock,
             deviceCache = mockk(relaxed = true),
             dispatcher = SyncDispatcher(),
             identityManager = mockk<IdentityManager>(relaxed = true).apply {

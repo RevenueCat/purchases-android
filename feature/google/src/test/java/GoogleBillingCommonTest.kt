@@ -42,7 +42,7 @@ import java.util.concurrent.CountDownLatch
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class BillingWrapperCommonTest : BillingWrapperTestBase() {
+class GoogleBillingCommonTest : GoogleBillingTestBase() {
 
     @Test
     fun canBeCreated() {
@@ -728,7 +728,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
         every {
             BillingClient.newBuilder(context)
         } returns mockBuilder
-        BillingWrapper.ClientFactory(context).buildClient(mockk())
+        GoogleBilling.ClientFactory(context).buildClient(mockk())
         verify(exactly = 1) {
             mockBuilder.enablePendingPurchases()
         }
@@ -1165,7 +1165,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
             ProductType.UNKNOWN,
             productIDs,
             {
-                this@BillingWrapperCommonTest.storeProducts = it
+                this@GoogleBillingCommonTest.storeProducts = it
             }, {
                 fail("shouldn't be an error")
             })

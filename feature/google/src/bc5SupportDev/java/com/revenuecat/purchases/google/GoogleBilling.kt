@@ -57,7 +57,7 @@ private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
 @Suppress("LargeClass")
-class BillingWrapper(
+class GoogleBilling(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
     private val deviceCache: DeviceCache
@@ -86,7 +86,7 @@ class BillingWrapper(
     }
 
     private fun executePendingRequests() {
-        synchronized(this@BillingWrapper) {
+        synchronized(this@GoogleBilling) {
             while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
                 serviceRequests.remove().let { mainHandler.post { it(null) } }
             }
@@ -101,7 +101,7 @@ class BillingWrapper(
     }
 
     override fun startConnection() {
-        synchronized(this@BillingWrapper) {
+        synchronized(this@GoogleBilling) {
             if (billingClient == null) {
                 billingClient = clientFactory.buildClient(this)
             }
@@ -117,7 +117,7 @@ class BillingWrapper(
 
     override fun endConnection() {
         mainHandler.post {
-            synchronized(this@BillingWrapper) {
+            synchronized(this@GoogleBilling) {
                 billingClient?.let {
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_ENDING.format(it))
                     it.endConnection()
@@ -210,7 +210,7 @@ class BillingWrapper(
         } else {
             log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
         }
-        synchronized(this@BillingWrapper) {
+        synchronized(this@GoogleBilling) {
             productTypes[storeProduct.sku] = storeProduct.type
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
@@ -610,7 +610,7 @@ class BillingWrapper(
                     log(LogIntent.GOOGLE_WARNING, message)
                     // The calls will fail with an error that will be surfaced. We want to surface these errors
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
-                    synchronized(this@BillingWrapper) {
+                    synchronized(this@GoogleBilling) {
                         while (!serviceRequests.isEmpty()) {
                             serviceRequests.remove().let { serviceRequest ->
                                 mainHandler.post {
@@ -696,7 +696,7 @@ class BillingWrapper(
                 .format(purchase.toHumanReadableDescription())
         )
 
-        synchronized(this@BillingWrapper) {
+        synchronized(this@GoogleBilling) {
             val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
             productTypes[purchase.firstSku]?.let { productType ->
                 completion(
@@ -725,7 +725,7 @@ class BillingWrapper(
     ) {
         var hasResponded = false
         querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
-            synchronized(this@BillingWrapper) {
+            synchronized(this@GoogleBilling) {
                 if (hasResponded) {
                     log(
                         LogIntent.GOOGLE_ERROR,
@@ -747,7 +747,7 @@ class BillingWrapper(
 
         productType.buildQueryPurchaseHistoryParams()?.let { queryPurchaseHistoryParams ->
             queryPurchaseHistoryAsync(queryPurchaseHistoryParams) { billingResult, purchaseHistory ->
-                synchronized(this@BillingWrapper) {
+                synchronized(this@GoogleBilling) {
                     if (hasResponded) {
                         log(
                             LogIntent.GOOGLE_ERROR,

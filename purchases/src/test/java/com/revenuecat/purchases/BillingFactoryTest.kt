@@ -12,7 +12,7 @@ import org.junit.runner.RunWith
 class BillingFactoryTest {
 
     @Test
-    fun `BillingWrapper can be created`() {
+    fun `GoogleBilling can be created`() {
         val mockApplication = mockk<Application>(relaxed = true)
         val mockBackend = mockk<Backend>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)

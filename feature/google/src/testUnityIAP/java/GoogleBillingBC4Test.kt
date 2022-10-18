@@ -3,8 +3,8 @@ package com.revenuecat.purchases.google
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.PurchaseHistoryResponseListener
-import com.android.billingclient.api.QueryPurchaseHistoryParams
-import com.revenuecat.purchases.utils.mockQueryPurchaseHistory
+import com.android.billingclient.api.PurchasesResponseListener
+import com.revenuecat.purchases.ProductType
 import io.mockk.every
 import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
@@ -16,29 +16,7 @@ import java.util.concurrent.CountDownLatch
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class BillingWrapperBC5Test : BillingWrapperTestBase() {
-
-    @Test
-    fun `queryPurchaseHistoryAsync fails if sent invalid type`() {
-        // TODO pull to common once refactoring queryPurchaseHistoryAsync to take RCProductType
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-
-        mockClient.mockQueryPurchaseHistory(
-            billingClientOKResult,
-            emptyList()
-        )
-        var errorCalled = false
-        wrapper.queryPurchaseHistoryAsync(
-            "notValid",
-            {
-                fail("call should not succeed")
-            },
-            {
-                errorCalled = true
-            }
-        )
-        assertThat(errorCalled).isTrue
-    }
+class GoogleBillingBC4Test : GoogleBillingTestBase() {
 
     @Test
     fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice`() {
@@ -47,7 +25,7 @@ class BillingWrapperBC5Test : BillingWrapperTestBase() {
         val slot = slot<PurchaseHistoryResponseListener>()
         every {
             mockClient.queryPurchaseHistoryAsync(
-                any<QueryPurchaseHistoryParams>(),
+                any(),
                 capture(slot)
             )
         } answers {
@@ -56,7 +34,7 @@ class BillingWrapperBC5Test : BillingWrapperTestBase() {
         }
 
         wrapper.queryPurchaseHistoryAsync(
-            BillingClient.ProductType.SUBS,
+            BillingClient.SkuType.SUBS,
             {
                 numCallbacks++
             }, {
@@ -74,7 +52,7 @@ class BillingWrapperBC5Test : BillingWrapperTestBase() {
         val lock = CountDownLatch(2)
         every {
             mockClient.queryPurchaseHistoryAsync(
-                any<QueryPurchaseHistoryParams>(),
+                any(),
                 capture(slot)
             )
         } answers {
@@ -90,7 +68,7 @@ class BillingWrapperBC5Test : BillingWrapperTestBase() {
         }
 
         wrapper.queryPurchaseHistoryAsync(
-            BillingClient.ProductType.SUBS,
+            BillingClient.SkuType.SUBS,
             {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
                 handler.post {
@@ -104,5 +82,42 @@ class BillingWrapperBC5Test : BillingWrapperTestBase() {
         assertThat(lock.count).isEqualTo(0)
 
         assertThat(numCallbacks).isEqualTo(1)
+    }
+
+    @Test
+    fun `getPurchaseType returns UNKNOWN if sub not found and inapp responses not OK`() {
+        val subPurchaseToken = "subToken"
+
+        val querySubPurchasesListenerSlot = slot<PurchasesResponseListener>()
+        every {
+            mockClient.queryPurchasesAsync(
+                BillingClient.SkuType.SUBS,
+                capture(querySubPurchasesListenerSlot)
+            )
+        } answers {
+            querySubPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                billingClientOKResult,
+                getMockedPurchaseList(subPurchaseToken)
+            )
+        }
+
+        val errorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
+        val inAppPurchaseToken = "inAppToken"
+        val queryInAppPurchasesListenerSlot = slot<PurchasesResponseListener>()
+        every {
+            mockClient.queryPurchasesAsync(
+                BillingClient.SkuType.INAPP,
+                capture(queryInAppPurchasesListenerSlot)
+            )
+        } answers {
+            queryInAppPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                errorResult,
+                getMockedPurchaseList(inAppPurchaseToken)
+            )
+        }
+
+        wrapper.getPurchaseType(inAppPurchaseToken) { productType ->
+            assertThat(productType).isEqualTo(ProductType.UNKNOWN)
+        }
     }
 }

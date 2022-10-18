@@ -9,7 +9,7 @@ import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildCustomerInfo
-import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.GoogleBilling
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -40,7 +40,7 @@ class PostingTransactionsTests {
     private val appUserId = "juan"
     private val subscriberAttributesManagerMock = mockk<SubscriberAttributesManager>()
     private val backendMock = mockk<Backend>(relaxed = true)
-    private val billingWrapperMock = mockk<BillingWrapper>(relaxed = true)
+    private val googleBillingMock = mockk<GoogleBilling>(relaxed = true)
     private val customerInfoHelperMock = mockk<CustomerInfoHelper>()
     private var postReceiptError: PostReceiptErrorContainer? = null
     private var postReceiptSuccess: PostReceiptCompletionContainer? = null
@@ -67,7 +67,7 @@ class PostingTransactionsTests {
     @Before
     fun setup() {
         every {
-            billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
+            googleBillingMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
             lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(listOf(mockk(relaxed = true)))
@@ -123,7 +123,7 @@ class PostingTransactionsTests {
             application = mockk(relaxed = true),
             backingFieldAppUserID = appUserId,
             backend = backendMock,
-            billing = billingWrapperMock,
+            billing = googleBillingMock,
             deviceCache = mockk(relaxed = true),
             dispatcher = SyncDispatcher(),
             identityManager = mockk<com.revenuecat.purchases.identity.IdentityManager>(relaxed = true).apply {

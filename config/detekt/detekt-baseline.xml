@@ -8,17 +8,17 @@
     <ID>EmptyFunctionBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${}</ID>
     <ID>Filename:com.revenuecat.purchases.PostingTransactionsTests.kt:1</ID>
     <ID>Filename:com.revenuecat.purchases.google.BillingResponseCodeTest.kt:1</ID>
-    <ID>Filename:com.revenuecat.purchases.google.BillingWrapperTest.kt:1</ID>
+    <ID>Filename:com.revenuecat.purchases.google.GoogleBillingTest.kt:1</ID>
     <ID>Filename:com.revenuecat.purchases.google.ParcelableTests.kt:1</ID>
-    <ID>LargeClass:BillingWrapperTest.kt$BillingWrapperTest</ID>
+    <ID>LargeClass:GoogleBillingTest.kt$GoogleBillingTest</ID>
     <ID>LargeClass:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>LongMethod:PostingTransactionsTests.kt$PostingTransactionsTests$@Before fun setup()</ID>
     <ID>LongMethod:Purchases.kt$Purchases$ fun restorePurchases( callback: ReceiveCustomerInfoCallback )</ID>
-    <ID>LongParameterList:BillingWrapperTest.kt$BillingWrapperTest$( sku: String, purchaseToken: String, productType: ProductType, offeringIdentifier: String? = null, purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = false )</ID>
+    <ID>LongParameterList:GoogleBillingTest.kt$GoogleBillingTest$( sku: String, purchaseToken: String, productType: ProductType, offeringIdentifier: String? = null, purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = false )</ID>
     <ID>LongParameterList:stubsBillingClient4.kt$( productIds: List&lt;String> = listOf("com.revenuecat.lifetime"), purchaseTime: Long = System.currentTimeMillis(), purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" + "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg", signature: String = "signature${System.currentTimeMillis()}", purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = true, orderId: String = "GPA.3372-4150-8203-17209" )</ID>
     <ID>LongParameterList:stubsBillingClient5.kt$( productIds: List&lt;String> = listOf("com.revenuecat.lifetime"), purchaseTime: Long = System.currentTimeMillis(), purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" + "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg", signature: String = "signature${System.currentTimeMillis()}", purchaseState: Int = Purchase.PurchaseState.PURCHASED, acknowledged: Boolean = true, orderId: String = "GPA.3372-4150-8203-17209" )</ID>
     <ID>MagicNumber:BillingResponseCodeTest.kt$BillingResponseCodeTest$12</ID>
-    <ID>MagicNumber:BillingWrapperTest.kt$BillingWrapperTest$200</ID>
+    <ID>MagicNumber:GoogleBillingTest.kt$GoogleBillingTest$200</ID>
     <ID>MagicNumber:PostingTransactionsTests.kt$PostingTransactionsTests$2000000</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
@@ -32,13 +32,13 @@
     <ID>MagicNumber:stubsBillingClient4.kt$4</ID>
     <ID>MagicNumber:stubsBillingClient5.kt$4</ID>
     <ID>MatchingDeclarationName:BillingResponseCodeTest.kt$BillingResponseCodeTest</ID>
-    <ID>MatchingDeclarationName:BillingWrapperTest.kt$BillingWrapperTest</ID>
+    <ID>MatchingDeclarationName:GoogleBillingTest.kt$GoogleBillingTest</ID>
     <ID>MatchingDeclarationName:ParcelableTests.kt$ParcelableTests</ID>
     <ID>MatchingDeclarationName:PostingTransactionsTests.kt$PostingTransactionsTests</ID>
     <ID>MaxLineLength:Constants.kt$Constants$/* The entitlement ID from the RevenueCat dashboard that is activated upon successful in-app purchase for the duration of the purchase. Modify this property to reflect your app's entitlement identifier. */</ID>
     <ID>NoWildcardImports:com.revenuecat.sample.ui.paywall.PaywallFragment.kt:10</ID>
     <ID>NoWildcardImports:com.revenuecat.sample.ui.user.UserFragment.kt:14</ID>
-    <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): ProductType</ID>
+    <ID>ReturnCount:GoogleBilling.kt$GoogleBilling$internal fun getPurchaseType(purchaseToken: String): ProductType</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$catch (e: ClassCastException) { emptySet() }</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$catch (e: JSONException) { null }</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$catch (e: NullPointerException) { emptySet() }</ID>
@@ -50,8 +50,8 @@
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
     <ID>TooManyFunctions:AmazonBilling.kt$AmazonBilling : BillingAbstractProductDataResponseListenerPurchaseResponseListenerPurchaseUpdatesResponseListenerUserDataResponseListener</ID>
     <ID>TooManyFunctions:Backend.kt$Backend</ID>
-    <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper : BillingAbstractPurchasesUpdatedListenerBillingClientStateListener</ID>
-    <ID>TooManyFunctions:BillingWrapperTest.kt$BillingWrapperTest</ID>
+    <ID>TooManyFunctions:GoogleBilling.kt$GoogleBilling : BillingAbstractPurchasesUpdatedListenerBillingClientStateListener</ID>
+    <ID>TooManyFunctions:GoogleBillingTest.kt$GoogleBillingTest</ID>
     <ID>TooManyFunctions:DeviceCache.kt$DeviceCache</ID>
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
@@ -60,6 +60,6 @@
     <ID>VarCouldBeVal:Purchases.kt$Purchases.Companion.&lt;no name provided>$var featureSupportedResultOk = features.all { billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful() }</ID>
     <ID>WildcardImport:PaywallFragment.kt$import com.revenuecat.purchases.*</ID>
     <ID>WildcardImport:UserFragment.kt$import com.revenuecat.purchases.*</ID>
-    <ID>ReturnCount:BillingWrapper.kt$BillingWrapper$internal fun getPurchaseType(purchaseToken: String): ProductType</ID>
+    <ID>ReturnCount:GoogleBilling.kt$GoogleBilling$internal fun getPurchaseType(purchaseToken: String): ProductType</ID>
   </CurrentIssues>
 </SmellBaseline>
