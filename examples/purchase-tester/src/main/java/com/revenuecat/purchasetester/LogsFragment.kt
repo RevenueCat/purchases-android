@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.NavigationUI
 import androidx.recyclerview.widget.DiffUtil
@@ -45,7 +46,7 @@ class LogsFragment : Fragment() {
             val logMessage = logs[position]
             holder.binding.logMessageTextView.text = logMessage.message
             holder.binding.logMessageContainer.setBackgroundColor(
-                holder.binding.root.context.getColor(logMessage.logLevel.colorResource)
+                ContextCompat.getColor(holder.binding.root.context, logMessage.logLevel.colorResource)
             )
         }
 
