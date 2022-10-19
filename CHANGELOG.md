@@ -1,3 +1,9 @@
+## 5.6.3
+### Other Changes
+* Add navigation to logs fragment from different screens (#647) via Toni Rico (@tonidero)
+* Update Maven publish plugin (#646) via Cesar de la Vega (@vegaro)
+* Add cache amazon user data (#640) via Toni Rico (@tonidero)
+
 ## 5.6.2
 ### Bugfixes
 * Add timeout to Amazon's getProducts and getUserData requests (#630) via Toni Rico (@tonidero)
