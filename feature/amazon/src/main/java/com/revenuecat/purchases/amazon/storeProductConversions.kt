@@ -49,6 +49,8 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         iconUrl = smallIconUrl,
         originalJson = toJSON(),
         // TODO Review, but doesn't seem to make much sense given we don't have any data on billing period
+        emptyList(),
+        null,
         null
     )
 }

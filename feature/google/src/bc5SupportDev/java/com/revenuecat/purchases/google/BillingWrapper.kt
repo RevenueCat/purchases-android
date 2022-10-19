@@ -13,17 +13,19 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingClient.SkuType
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -38,12 +40,10 @@ import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -70,6 +70,7 @@ class BillingWrapper(
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
+    private val storeProductByProductIdentifier = mutableMapOf<String, StoreProduct?>()
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
@@ -156,41 +157,72 @@ class BillingWrapper(
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                val params = SkuDetailsParams.newBuilder()
-                    .setType(productType.toGoogleProductType() ?: SkuType.INAPP)
-                    .setSkusList(nonEmptySkus).build()
+                queryProductDetailsAsync(
+                    nonEmptySkus,
+                    productType,
+                    onReceive,
+                    onError
+                )
+            } else {
+                onError(connectionError)
+            }
+        }
+    }
 
-                withConnectedClient {
-                    querySkuDetailsAsyncEnsuringOneResponse(params) { billingResult, skuDetailsList ->
-                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                            log(
-                                LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                    .format(skus.joinToString())
-                            )
-                            log(
-                                LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
-                                    .format(skuDetailsList?.joinToString { it.toString() })
-                            )
-                            skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
-                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
-                            }
+    private fun queryProductDetailsAsync(
+        skus: List<String>,
+        productType: ProductType,
+        onReceive: StoreProductsCallback,
+        onError: PurchasesErrorCallback
+    ) {
+        val productList = skus.map { sku ->
+            QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(sku)
+                .setProductType(productType.toGoogleProductType() ?: BillingClient.ProductType.SUBS)
+                .build()
+        }
+        val params = QueryProductDetailsParams.newBuilder().setProductList(productList).build()
 
-                            onReceive(skuDetailsList?.map { it.toStoreProduct() } ?: emptyList())
-                        } else {
-                            log(
-                                LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
-                                    .format(billingResult.toHumanReadableDescription())
-                            )
-                            onError(
-                                billingResult.responseCode.billingResponseToPurchasesError(
-                                    "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
-                                ).also { errorLog(it) }
+        withConnectedClient {
+            queryProductDetailsAsync(params) { billingResult, productDetailsList ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    log(
+                        LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
+                            .format(skus.joinToString())
+                    )
+                    log(
+                        LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
+                            .format(productDetailsList.joinToString { it.toString() })
+                    )
+                    productDetailsList.takeUnless { it.isEmpty() }?.forEach {
+                        log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
+                    }
+
+                    val storeProducts = ArrayList<StoreProduct>()
+                    productDetailsList.forEach { product ->
+                        product.subscriptionOfferDetails?.forEach { offer ->
+                            storeProducts.add(
+                                product.toStoreProduct(
+                                    offer.offerToken,
+                                    offer.pricingPhases,
+                                    offer.offerTags
+                                )
                             )
                         }
                     }
+                    log(LogIntent.DEBUG, storeProducts.joinToString("\n"))
+                    onReceive(storeProducts)
+                } else {
+                    log(
+                        LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
+                            .format(billingResult.toHumanReadableDescription())
+                    )
+                    onError(
+                        billingResult.responseCode.billingResponseToPurchasesError(
+                            "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
+                        ).also { errorLog(it) }
+                    )
                 }
-            } else {
-                onError(connectionError)
             }
         }
     }
@@ -213,20 +245,25 @@ class BillingWrapper(
         synchronized(this@BillingWrapper) {
             productTypes[storeProduct.sku] = storeProduct.type
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
+            storeProductByProductIdentifier[storeProduct.sku] = storeProduct
         }
         executeRequestOnUIThread {
-            val params = BillingFlowParams.newBuilder()
-                .setSkuDetails(storeProduct.skuDetails)
-                .apply {
-                    replaceSkuInfo?.let {
-                        setUpgradeInfo(it)
-                    } ?: setObfuscatedAccountId(appUserID.sha256())
-                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                    // https://issuetracker.google.com/issues/155005449
-                }.build()
-
+            val params = newPurchaseParams(storeProduct)
             launchBillingFlow(activity, params)
         }
+    }
+
+    private fun newPurchaseParams(
+        storeProduct: StoreProduct,
+    ): BillingFlowParams {
+        val builder = BillingFlowParams.ProductDetailsParams.newBuilder()
+        storeProduct.productDetails?.let { it1 -> builder.setProductDetails(it1) }
+        storeProduct.offerToken?.also { offer -> builder.setOfferToken(offer) }
+        val productDetailsParamsList = builder.build()
+
+        return BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(listOf(productDetailsParamsList))
+            .build()
     }
 
     @UiThread
@@ -459,7 +496,8 @@ class BillingWrapper(
             val hash = purchase.purchaseToken.sha1()
             hash to purchase.toStoreTransaction(
                 productType.toRevenueCatProductType(),
-                presentedOfferingIdentifier = null
+                presentedOfferingIdentifier = null,
+                null
             )
         }
     }
@@ -698,11 +736,13 @@ class BillingWrapper(
 
         synchronized(this@BillingWrapper) {
             val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
+            val storeProduct = storeProductByProductIdentifier[purchase.firstSku]
             productTypes[purchase.firstSku]?.let { productType ->
                 completion(
                     purchase.toStoreTransaction(
                         productType,
-                        presentedOffering
+                        presentedOffering,
+                        storeProduct
                     )
                 )
                 return
@@ -712,7 +752,8 @@ class BillingWrapper(
                 completion(
                     purchase.toStoreTransaction(
                         type,
-                        presentedOffering
+                        presentedOffering,
+                        storeProduct
                     )
                 )
             }
@@ -736,6 +777,26 @@ class BillingWrapper(
                 hasResponded = true
             }
             listener.onSkuDetailsResponse(billingResult, skuDetailsList)
+        }
+    }
+
+    private fun BillingClient.queryProductDetailsAsyncEnsuringOneResponse(
+        params: QueryProductDetailsParams,
+        listener: ProductDetailsResponseListener
+    ) {
+        var hasResponded = false
+        queryProductDetailsAsync(params) { billingResult, productDetailsList ->
+            synchronized(this@BillingWrapper) {
+                if (hasResponded) {
+                    log(
+                        LogIntent.GOOGLE_ERROR,
+                        OfferingStrings.EXTRA_QUERY_SKU_DETAILS_RESPONSE.format(billingResult.responseCode)
+                    )
+                    return@queryProductDetailsAsync
+                }
+                hasResponded = true
+            }
+            listener.onProductDetailsResponse(billingResult, productDetailsList)
         }
     }
 
@@ -765,5 +826,10 @@ class BillingWrapper(
                 BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR).build()
             listener.onPurchaseHistoryResponse(devErrorResponseCode, null)
         }
+    }
+
+    fun chooseBestOffer(products: List<StoreProduct>): StoreProduct? {
+        //TODO this needs to be improved
+        return products.maxWithOrNull(compareBy { it.pricingPhases.size })
     }
 }

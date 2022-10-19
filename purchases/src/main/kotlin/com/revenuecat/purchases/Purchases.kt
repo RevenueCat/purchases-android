@@ -72,6 +72,7 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
+import com.revenuecat.purchases.utils.getNullableString
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
@@ -1019,7 +1020,7 @@ class Purchases internal constructor(
                         getSkuDetails(skus, { productsById ->
                             val offerings = offeringsJSON.createOfferings(productsById)
 
-                            logMissingProducts(offerings, productsById)
+                            //logMissingProducts(offerings, productsById)
 
                             if (offerings.all.isEmpty()) {
                                 handleErrorFetchingOfferings(
@@ -1063,10 +1064,9 @@ class Purchases internal constructor(
             val jsonPackagesArray =
                 jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
-                skus.add(
-                    jsonPackagesArray.getJSONObject(j)
-                        .getString("platform_product_identifier")
-                )
+                val sku = jsonPackagesArray.getJSONObject(j)
+                    .getNullableString("platform_product_group_identifier")
+                if (sku!=null) skus.add(sku)
             }
         }
         return skus
@@ -1150,32 +1150,43 @@ class Purchases internal constructor(
     ) {
         purchases.forEach { purchase ->
             if (purchase.purchaseState != PurchaseState.PENDING) {
-                billing.querySkuDetailsAsync(
-                    productType = purchase.type,
-                    skus = purchase.skus.toSet(),
-                    onReceive = { storeProducts ->
-                        postToBackend(
-                            purchase = purchase,
-                            storeProduct = storeProducts.takeUnless { it.isEmpty() }?.get(0),
-                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                            consumeAllTransactions = consumeAllTransactions,
-                            appUserID = appUserID,
-                            onSuccess = onSuccess,
-                            onError = onError
-                        )
-                    },
-                    onError = {
-                        postToBackend(
-                            purchase = purchase,
-                            storeProduct = null,
-                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                            consumeAllTransactions = consumeAllTransactions,
-                            appUserID = appUserID,
-                            onSuccess = onSuccess,
-                            onError = onError
-                        )
-                    }
-                )
+                if (purchase.storeProduct != null) {
+                    postToBackend(
+                        purchase = purchase,
+                        storeProduct = purchase.storeProduct,
+                        allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                        consumeAllTransactions = consumeAllTransactions,
+                        appUserID = appUserID,
+                        onSuccess = onSuccess,
+                        onError = onError
+                    )
+                } else {
+                    billing.querySkuDetailsAsync(
+                        productType = purchase.type,
+                        skus = purchase.skus.toSet(),
+                        onReceive = { storeProducts ->
+                            postToBackend(
+                                purchase = purchase,
+                                storeProduct = storeProducts.takeUnless { it.isEmpty() }?.get(0),
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                consumeAllTransactions = consumeAllTransactions,
+                                appUserID = appUserID,
+                                onSuccess = onSuccess,
+                                onError = onError
+                            )
+                        },
+                        onError = {
+                            postToBackend(
+                                purchase = purchase,
+                                storeProduct = null,
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                consumeAllTransactions = consumeAllTransactions,
+                                appUserID = appUserID,
+                                onSuccess = onSuccess,
+                                onError = onError
+                            )
+                        })
+                }
             } else {
                 onError?.invoke(
                     purchase,
@@ -1210,6 +1221,7 @@ class Purchases internal constructor(
                 receiptInfo = receiptInfo,
                 storeAppUserID = purchase.storeUserID,
                 marketplace = purchase.marketplace,
+                storeVersion = 2,
                 onSuccess = { info, body ->
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
@@ -1238,21 +1250,21 @@ class Purchases internal constructor(
 
     private fun getSkuDetails(
         productIds: Set<String>,
-        onCompleted: (HashMap<String, StoreProduct>) -> Unit,
+        onCompleted: (HashMap<String, List<StoreProduct>>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
             productIds,
             { subscriptionProducts ->
-                val productsById = HashMap<String, StoreProduct>()
+                val productsById = HashMap<String, List<StoreProduct>>()
 
-                val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.sku }
+                val subscriptionProductsById = subscriptionProducts.groupBy{ it -> it.sku + "_" + it.subscriptionPeriod}
                 productsById.putAll(subscriptionProductsById)
 
                 val subscriptionIds = subscriptionProductsById.keys
 
-                val inAppProductIds = productIds - subscriptionIds
+                /*val inAppProductIds = productIds - subscriptionIds
                 if (inAppProductIds.isNotEmpty()) {
                     billing.querySkuDetailsAsync(
                         ProductType.INAPP,
@@ -1264,9 +1276,9 @@ class Purchases internal constructor(
                             onError(it)
                         }
                     )
-                } else {
-                    onCompleted(productsById)
-                }
+                } else {*/
+                onCompleted(productsById)
+                //}
             }, {
                 onError(it)
             })
@@ -1773,12 +1785,12 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeListener
     ) {
-        purchaseProduct(
+        /*purchaseProduct(
             activity,
             skuDetails.toStoreProduct(),
             upgradeInfo,
             listener.toProductChangeCallback()
-        )
+        )*/
     }
 
     @Suppress("DeprecatedCallableAddReplaceWith")
@@ -1807,12 +1819,12 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        purchaseProduct(
+        /*purchaseProduct(
             activity,
             skuDetails.toStoreProduct(),
             upgradeInfo,
             listener
-        )
+        )*/
     }
 
     /**
@@ -1870,11 +1882,11 @@ class Purchases internal constructor(
         skuDetails: SkuDetails,
         listener: PurchaseCallback
     ) {
-        purchaseProduct(
+        /*purchaseProduct(
             activity,
             skuDetails.toStoreProduct(),
             listener
-        )
+        )*/
     }
 
     /**

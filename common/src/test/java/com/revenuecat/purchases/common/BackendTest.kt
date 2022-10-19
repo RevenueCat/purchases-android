@@ -198,7 +198,6 @@ class BackendTest {
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
             marketplace = marketplace,
-            sendPricingPhases = sendPricingPhases,
             onSuccess = onReceivePostReceiptSuccessHandler,
             onError = postReceiptErrorCallback
         )
@@ -1514,7 +1513,7 @@ class BackendTest {
     private fun pricingPhaseMapOf(billingPeriod: String, billingCycleCount: Int, formattedPrice: String, priceAmountMicros: Long, priceCurrencyCode: String, recurrenceMode: Int): Map<String, Any> {
         return mapOf(
             "billingPeriod" to billingPeriod,
-            "billingCycleCount" to billingCycleCuunt,
+            "billingCycleCount" to billingCycleCount,
             "formattedPrice" to formattedPrice,
             "priceAmountMicros" to priceAmountMicros,
             "priceCurrencyCode" to priceCurrencyCode,

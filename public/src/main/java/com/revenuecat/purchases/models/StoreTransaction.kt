@@ -81,7 +81,9 @@ data class StoreTransaction(
     /**
      * Amazon's marketplace. Null for Google
      */
-    val marketplace: String?
+    val marketplace: String?,
+
+    val storeProduct: StoreProduct?
 ) : Parcelable {
 
     /**

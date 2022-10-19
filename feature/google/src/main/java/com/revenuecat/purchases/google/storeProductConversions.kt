@@ -5,7 +5,7 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 import java.text.NumberFormat
-
+/*
 fun SkuDetails.toStoreProduct() =
     StoreProduct(
         sku,
@@ -69,3 +69,4 @@ fun SkuDetails.getPricingPhases(): List<PricingPhase> {
     )
     return phases
 }
+*/

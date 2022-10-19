@@ -7,11 +7,13 @@ import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
 fun Purchase.toStoreTransaction(
     productType: ProductType,
-    presentedOfferingIdentifier: String?
+    presentedOfferingIdentifier: String?,
+    storeProduct: StoreProduct?,
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
     skus = this.listOfSkus,
@@ -25,7 +27,8 @@ fun Purchase.toStoreTransaction(
     presentedOfferingIdentifier = presentedOfferingIdentifier,
     storeUserID = null,
     purchaseType = PurchaseType.GOOGLE_PURCHASE,
-    marketplace = null
+    marketplace = null,
+    storeProduct = storeProduct,
 )
 
 val StoreTransaction.originalGooglePurchase: Purchase?
@@ -50,6 +53,7 @@ fun PurchaseHistoryRecord.toStoreTransaction(
         presentedOfferingIdentifier = null,
         storeUserID = null,
         purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE,
-        marketplace = null
+        marketplace = null,
+        storeProduct = null,
     )
 }
