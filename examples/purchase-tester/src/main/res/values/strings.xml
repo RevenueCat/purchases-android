@@ -10,4 +10,6 @@
     <string name="continue_text">Continue</string>
     <string name="loving_cat">😻</string>
     <string name="logs">Logs</string>
+    <string name="google_store_is_unavailable">Google Store is unavailable. Use a different version with Google enabled.</string>
+    <string name="amazon_store_is_unavailable">Amazon Store is unavailable. Use a different version with Amazon enabled.</string>
 </resources>
