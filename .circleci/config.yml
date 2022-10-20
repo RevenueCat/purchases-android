@@ -399,6 +399,8 @@ workflows:
     jobs:
       - test
       - assemble-sample-app
+#      TODO: Remove this, only to test upload
+      - publish-purchase-tester-latest-dependencies-release
 
   integration-test:
     when:
