@@ -23,6 +23,8 @@ android {
         versionCode purchaseTesterVersionCode as Integer
         versionName purchaseTesterVersionName
         vectorDrawables.useSupportLibrary = true
+
+        buildConfigField "String", "SUPPORTED_STORES", "\"${purchaseTesterSupportedStores}\""
     }
     signingConfigs {
         release {
