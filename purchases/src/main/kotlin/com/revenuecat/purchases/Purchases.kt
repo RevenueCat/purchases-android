@@ -1453,9 +1453,9 @@ class Purchases internal constructor(
         billing.findPurchaseInPurchaseHistory(
             appUserID,
             storeProduct.type,
-            upgradeInfo.oldSku,
+            upgradeInfo.oldProductId,
             onCompletion = { purchaseRecord ->
-                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
+                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldProductId))
 
                 billing.makePurchaseAsync(
                     activity,
