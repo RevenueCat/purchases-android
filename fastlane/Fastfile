@@ -181,6 +181,7 @@ platform :android do
       build_type: 'Release',
       print_command: false,
       properties: {
+        purchaseTesterSupportedStores: 'google',
         purchaseTesterVersionCode: build_number,
         purchaseTesterVersionName: version_name,
         releaseKeyAlias: release_key_alias,
