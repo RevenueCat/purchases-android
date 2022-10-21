@@ -20,6 +20,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.logOutWith
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
 
@@ -73,6 +75,8 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             binding.offeringHeader.text = "No Offerings"
             return
         }
+
+        val skuDetails = offerings.all["default"]?.availablePackages?.get(0)?.product?.skuDetails
 
         binding.overviewOfferingsRecycler.layoutManager = LinearLayoutManager(requireContext())
         binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(

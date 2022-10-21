@@ -134,10 +134,6 @@ interface StoreProduct : Parcelable {
      */
     @Deprecated("Implementation specific details can be accessed by downcasting")
     val originalJson: JSONObject
-
-    @Deprecated("Implementation specific details can be accessed by downcasting")
-    val skuDetails: SkuDetails
-        get() = throw IllegalArgumentException("This implementation of StoreProduct doesn't support SkuDetails")
 }
 
 data class ComparableData(
