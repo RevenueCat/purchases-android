@@ -141,6 +141,8 @@ platform :android do
       ],
       properties: gradleProperties
     )
+
+    github_release(version: version) unless is_snapshot_version?(version)
   end
 
   desc "Upload a snapshot release"
