@@ -22,12 +22,6 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
     }
-    
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-        main.java.srcDirs += 'src/main/java'
-        test.java.srcDirs += 'src/test/java'
-    }
 
     testOptions {
         unitTests.includeAndroidResources = true
