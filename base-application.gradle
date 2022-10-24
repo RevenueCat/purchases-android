@@ -29,9 +29,6 @@ android {
         latestDependencies {
             dimension "dependencyVersions"
         }
-        bc5SupportDev {
-            dimension "dependencyVersions"
-        }
     }
 
     // TODO remove after BC5 is merged
