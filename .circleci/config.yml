@@ -223,6 +223,8 @@ jobs:
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - store_artifacts:
           path: examples/purchase-tester/build/outputs/apk/latestDependencies/release/purchase-tester-latestDependencies-release.apk
+      - store_artifacts:
+          path: examples/purchase-tester/build/outputs/apk/latestDependencies/debug/purchase-tester-latestDependencies-debug.apk
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
 
