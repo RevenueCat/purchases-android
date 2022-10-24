@@ -23,13 +23,6 @@ android {
         consumerProguardFiles "consumer-rules.pro"
     }
 
-    // TODO remove after BC5 is merged
-    sourceSets {
-        latestDependencies {
-            java.srcDirs = ['src/unityIAP/java']
-        }
-    }
-
     testOptions {
         unitTests.includeAndroidResources = true
         unitTests.all {

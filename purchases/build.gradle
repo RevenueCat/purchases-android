@@ -18,7 +18,7 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.annotation:annotation:$annotationVersion"
-    latestDependenciesApi "com.android.billingclient:billing:$billing4Version"
+    latestDependenciesApi "com.android.billingclient:billing:$billing5Version"
     unityIAPCompileOnly "com.android.billingclient:billing:$billing4Version"
     implementation "androidx.lifecycle:lifecycle-runtime:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-common:$lifecycleVersion"
@@ -32,7 +32,7 @@ dependencies {
     testImplementation "org.robolectric:robolectric:$robolectricVersion"
     testImplementation "io.mockk:mockk:$mockkVersion"
     testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testLatestDependenciesImplementation "com.android.billingclient:billing:$billing4Version"
+    testLatestDependenciesImplementation "com.android.billingclient:billing:$billing5Version"
     testUnityIAPImplementation "com.android.billingclient:billing:$billing4Version"
 }
 
