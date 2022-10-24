@@ -5,12 +5,14 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.get
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.amazon.AmazonConfiguration
+import com.revenuecat.purchases_sample.BuildConfig
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentConfigureBinding
 import kotlinx.coroutines.flow.collect
@@ -33,6 +35,8 @@ class ConfigureFragment : Fragment() {
         dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
         binding = FragmentConfigureBinding.inflate(inflater)
 
+        setupSupportedStoresRadioButtons()
+
         lifecycleScope.launch {
             dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
                 binding.apiKeyInput.setText(sdkConfiguration.apiKey)
@@ -52,6 +56,10 @@ class ConfigureFragment : Fragment() {
                 configureSDK()
                 navigateToLoginFragment()
             }
+        }
+
+        binding.logsButton.setOnClickListener {
+            navigateToLogsFragment()
         }
 
         return binding.root
@@ -81,8 +89,25 @@ class ConfigureFragment : Fragment() {
         dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, useAmazonStore))
     }
 
+    private fun setupSupportedStoresRadioButtons() {
+        val supportedStores = BuildConfig.SUPPORTED_STORES.split(",")
+        if (!supportedStores.contains("google")) {
+            binding.googleStoreRadioId.isEnabled = false
+            binding.googleUnavailableTextView.visibility = View.VISIBLE
+        }
+        if (!supportedStores.contains("amazon")) {
+            binding.amazonStoreRadioId.isEnabled = false
+            binding.amazonUnavailableTextView.visibility = View.VISIBLE
+        }
+    }
+
     private fun navigateToLoginFragment() {
         val directions = ConfigureFragmentDirections.actionConfigureFragmentToLoginFragment()
+        findNavController().navigate(directions)
+    }
+
+    private fun navigateToLogsFragment() {
+        val directions = ConfigureFragmentDirections.actionConfigureFragmentToLogsFragment()
         findNavController().navigate(directions)
     }
 

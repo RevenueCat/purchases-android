@@ -125,32 +125,24 @@ platform :android do
     UI.verbose("Deploying #{version}")
     gradle(
       tasks: [
-        "androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
+        "publish --no-daemon --no-parallel"
       ],
       properties: gradleProperties
     )
 
     UI.verbose("Creating special version for Unity IAP with BillingClient 4 and Amazon 2 for version: #{version}")
-    gradleProperties["PUBLISH_VARIANT"] = "unityIAPRelease"
+    gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "unityIAPRelease"
     
     UI.verbose("Adding -unityiap to artifact ids")
 
     gradle(
       tasks: [
-        "androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
+        "publish --no-daemon --no-parallel"
       ],
       properties: gradleProperties
     )
-    
-    unless is_snapshot_version?(version)
-      gradle(
-        tasks: [
-          "closeAndReleaseRepository"
-        ],
-        properties: gradleProperties
-      )
-      github_release(version: version)
-    end
+
+    github_release(version: version) unless is_snapshot_version?(version)
   end
 
   desc "Upload a snapshot release"
@@ -191,6 +183,7 @@ platform :android do
       build_type: 'Release',
       print_command: false,
       properties: {
+        purchaseTesterSupportedStores: 'google',
         purchaseTesterVersionCode: build_number,
         purchaseTesterVersionName: version_name,
         releaseKeyAlias: release_key_alias,

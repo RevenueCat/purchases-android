@@ -18,7 +18,6 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.annotation:annotation:$annotationVersion"
 
-    bc5SupportDevImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
     latestDependenciesImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
     unityIAPCompileOnly files("libs/in-app-purchasing-${amazon2Version}.jar")
 
@@ -80,6 +79,4 @@ afterEvaluate {
     preUnityIAPReleaseBuild.dependsOn getAmazonLibrary
     preLatestDependenciesDebugBuild.dependsOn cleanAmazonLibrary
     preLatestDependenciesReleaseBuild.dependsOn cleanAmazonLibrary
-    preBc5SupportDevDebugBuild.dependsOn cleanAmazonLibrary
-    preBc5SupportDevReleaseBuild.dependsOn cleanAmazonLibrary
 }

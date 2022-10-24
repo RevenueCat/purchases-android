@@ -23,6 +23,7 @@ import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
 
+@SuppressWarnings("TooManyFunctions")
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener, OverviewInteractionHandler {
 
     private lateinit var viewModel: OverviewViewModel
@@ -40,6 +41,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                     { navigateToLoginFragment() }
                 )
             }
+        }
+
+        binding.logsButton.setOnClickListener {
+            navigateToLogsFragment()
         }
 
         viewModel = OverviewViewModel(this)
@@ -121,6 +126,11 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
     private fun navigateToLoginFragment() {
         val directions = OverviewFragmentDirections.actionOverviewFragmentToLoginFragment()
+        findNavController().navigate(directions)
+    }
+
+    private fun navigateToLogsFragment() {
+        val directions = OverviewFragmentDirections.actionOverviewFragmentToLogsFragment()
         findNavController().navigate(directions)
     }
 }
