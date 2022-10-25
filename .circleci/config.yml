@@ -1,13 +1,4 @@
 aliases:
-  release-tags-and-branches: &release-tags-and-branches
-    filters:
-      tags:
-        ignore:
-          - /^.*-SNAPSHOT/
-          - latest
-      branches:
-        only: /^release\/.*/
-
   release-tags: &release-tags
     filters:
       tags:
@@ -370,26 +361,23 @@ workflows:
       - test
       - assemble-sample-app
 
-  integration-test:
+  deploy:
     when:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
-      - integration-tests-build: *release-tags-and-branches
+      - integration-tests-build: *release-branches
       - run-firebase-tests-latest-dependencies:
           requires:
             - integration-tests-build
       - run-firebase-tests-unityIAP:
           requires:
             - integration-tests-build
-
-  deploy:
-    when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-    jobs:
       - hold:
           type: approval
+          requires:
+            - run-firebase-tests-latest-dependencies
+            - run-firebase-tests-unityIAP
           <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
