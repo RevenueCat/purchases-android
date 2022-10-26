@@ -10,9 +10,9 @@ import org.json.JSONObject
  */
 interface StoreProduct : Parcelable {
     /**
-     * The product ID.
+     * sku for BC4 and Amazon, subId for BC5
      */
-    val sku: String
+    val storeProductId: String
 
     /**
      * Type of product. One of [ProductType].
@@ -42,21 +42,6 @@ interface StoreProduct : Parcelable {
     val priceCurrencyCode: String
 
     /**
-     * Formatted original price of the item, including its currency sign.
-     *
-     * Note: returned only for Google products. Not available for Amazon.
-     */
-    val originalPrice: String?
-
-    /**
-     * Returns the original price in micro-units, where 1,000,000 micro-units equal one unit
-     * of the currency.
-     *
-     * Note: returned only for Google products. Always 0 for Amazon subscriptions.
-     */
-    val originalPriceAmountMicros: Long
-
-    /**
      * Title of the product.
      */
     val title: String
@@ -72,106 +57,32 @@ interface StoreProduct : Parcelable {
      * and P1Y equates to one year.
      *
      * Note: Returned only for Google subscriptions. Not available for Amazon.
+     *
+     * maddie note: this used to come from BC, now we get it from getOfferings
      */
     val subscriptionPeriod: String?
-
-    /**
-     * Subscription period, specified in ISO 8601 format. For example, P1W equates to one week,
-     * P1M equates to one month, P3M equates to three months, P6M equates to six months,
-     * and P1Y equates to one year.
-     *
-     * Note: Returned only for Google subscriptions. Not available for Amazon.
-     */
-    val freeTrialPeriod: String?
-
-    /**
-     * The billing period of the introductory price, specified in ISO 8601 format.
-     *
-     * Note: Returned only for Google subscriptions which have an introductory period configured.
-     * Not available for Amazon.
-     */
-    val introductoryPrice: String?
-
-    /**
-     * Introductory price in micro-units. The currency is the same as price_currency_code.
-     *
-     * Note: Returns 0 if the product is not Google a subscription or doesn't
-     * have an introductory period. Always 0 for Amazon subscriptions.
-     */
-    val introductoryPriceAmountMicros: Long
-
-    /**
-     * The billing period of the introductory price, specified in ISO 8601 format.
-     *
-     * Note: Returned only for Google subscriptions which have an introductory period configured.
-     * Not available for Amazon.
-     */
-    val introductoryPricePeriod: String?
-
-    /**
-     * The number of subscription billing periods for which the user will be given the
-     * introductory price, such as 3.
-     *
-     * Note: Returns 0 if the SKU is not a Google subscription or doesn't
-     * have an introductory period. Always 0 for Amazon subscriptions.
-     */
-    val introductoryPriceCycles: Int
-
-    /**
-     * The icon of the product if present.
-     */
-    val iconUrl: String
-
-    /**
-     * JSONObject representing the original product class from Google or Amazon.
-     *
-     * Note: there's a convenience extension property that can be used to get the original
-     * SkuDetails class: `StoreProduct.skuDetails`.
-     * Alternatively, the original SkuDetails can be built doing the following:
-     * `SkuDetails(this.originalJson.toString())`
-     *
-     * For Amazon, the original Product can be obtained using `StoreProduct.amazonProduct`
-     */
-    @Deprecated("Implementation specific details can be accessed by downcasting")
-    val originalJson: JSONObject
 }
 
 data class ComparableData(
-    val sku: String,
+    val storeProductId: String,
     val type: ProductType,
     val price: String,
     val priceAmountMicros: Long,
     val priceCurrencyCode: String,
-    val originalPrice: String?,
-    val originalPriceAmountMicros: Long,
     val title: String,
     val description: String,
-    val subscriptionPeriod: String?,
-    val freeTrialPeriod: String?,
-    val introductoryPrice: String?,
-    val introductoryPriceAmountMicros: Long,
-    val introductoryPricePeriod: String?,
-    val introductoryPriceCycles: Int,
-    val iconUrl: String
+    val subscriptionPeriod: String?
 ) {
     constructor(
         storeProduct: StoreProduct
     ) : this(
-        sku = storeProduct.sku,
+        storeProductId = storeProduct.storeProductId,
         type = storeProduct.type,
         price = storeProduct.price,
         priceAmountMicros = storeProduct.priceAmountMicros,
         priceCurrencyCode = storeProduct.priceCurrencyCode,
-        originalPrice = storeProduct.originalPrice,
-        originalPriceAmountMicros = storeProduct.originalPriceAmountMicros,
         title = storeProduct.title,
         description = storeProduct.description,
-        subscriptionPeriod = storeProduct.subscriptionPeriod,
-        freeTrialPeriod = storeProduct.freeTrialPeriod,
-        introductoryPrice = storeProduct.introductoryPrice,
-        introductoryPriceAmountMicros = storeProduct.introductoryPriceAmountMicros,
-        introductoryPricePeriod = storeProduct.introductoryPricePeriod,
-        introductoryPriceCycles = storeProduct.introductoryPriceCycles,
-        iconUrl = storeProduct.iconUrl
+        subscriptionPeriod = storeProduct.subscriptionPeriod
     )
 }
