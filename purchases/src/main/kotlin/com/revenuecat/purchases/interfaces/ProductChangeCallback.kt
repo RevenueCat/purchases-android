@@ -6,9 +6,6 @@
 package com.revenuecat.purchases.interfaces
 
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.PurchaserInfo
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.google.originalGooglePurchase
 import com.revenuecat.purchases.models.StoreTransaction
 
 /**
@@ -22,23 +19,4 @@ interface ProductChangeCallback : PurchaseErrorCallback {
      * @param customerInfo Updated [CustomerInfo].
      */
     fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo)
-}
-
-@Deprecated("Deprecated in favor of ProductChangeCallback. This helper will be removed in a future release.")
-fun ProductChangeListener.toProductChangeCallback(): ProductChangeCallback {
-    return object : ProductChangeCallback {
-        override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
-            if (storeTransaction == null) {
-                this@toProductChangeCallback.onCompleted(null, PurchaserInfo(customerInfo))
-            } else {
-                storeTransaction.originalGooglePurchase?.let {
-                    this@toProductChangeCallback.onCompleted(it, PurchaserInfo(customerInfo))
-                } ?: throw IllegalArgumentException("Couldn't find original Google purchase")
-            }
-        }
-
-        override fun onError(error: PurchasesError, userCancelled: Boolean) {
-            this@toProductChangeCallback.onError(error, userCancelled)
-        }
-    }
 }

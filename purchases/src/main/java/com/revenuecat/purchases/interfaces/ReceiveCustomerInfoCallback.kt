@@ -5,7 +5,6 @@
 package com.revenuecat.purchases.interfaces
 
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.PurchasesError
 
 /**
@@ -23,17 +22,4 @@ interface ReceiveCustomerInfoCallback {
      * @param error A [PurchasesError] containing the reason for the failure of the call
      */
     fun onError(error: PurchasesError)
-}
-
-@Deprecated("Deprecated in favor of ReceiveCustomerInfoCallback. This helper will be removed in a future release.")
-fun ReceivePurchaserInfoListener.toReceiveCustomerInfoCallback(): ReceiveCustomerInfoCallback {
-    return object : ReceiveCustomerInfoCallback {
-        override fun onReceived(customerInfo: CustomerInfo) {
-            this@toReceiveCustomerInfoCallback.onReceived(PurchaserInfo(customerInfo))
-        }
-
-        override fun onError(error: PurchasesError) {
-            this@toReceiveCustomerInfoCallback.onError(error)
-        }
-    }
 }

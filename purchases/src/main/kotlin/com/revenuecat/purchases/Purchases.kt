@@ -17,7 +17,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -35,29 +34,16 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.google.isSuccessful
-import com.revenuecat.purchases.google.toRevenueCatProductType
-import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
-import com.revenuecat.purchases.interfaces.GetSkusResponseListener
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
-import com.revenuecat.purchases.interfaces.MakePurchaseListener
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
-import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
-import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
-import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
-import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
-import com.revenuecat.purchases.interfaces.toGetStoreProductsCallback
-import com.revenuecat.purchases.interfaces.toProductChangeCallback
-import com.revenuecat.purchases.interfaces.toPurchaseCallback
-import com.revenuecat.purchases.interfaces.toReceiveCustomerInfoCallback
-import com.revenuecat.purchases.interfaces.toReceiveOfferingsCallback
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -76,8 +62,6 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
 import java.util.Collections.emptyMap
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 typealias SuccessfulPurchaseCallback = (StoreTransaction, CustomerInfo) -> Unit
 typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
@@ -1577,32 +1561,6 @@ class Purchases internal constructor(
 
     // region Deprecated
 
-    private var _updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = null
-        @Synchronized get
-        @Synchronized set
-
-    /**
-     * The listener is responsible for handling changes to purchaser information.
-     * Make sure [removeUpdatedPurchaserInfoListener] is called when the listener needs to be destroyed.
-     */
-    @Deprecated(
-        "Renamed to updatedCustomerInfoListener",
-        ReplaceWith("updatedCustomerInfoListener")
-    )
-    var updatedPurchaserInfoListener: UpdatedPurchaserInfoListener?
-        @Synchronized get() = _updatedPurchaserInfoListener
-        set(value) {
-            _updatedPurchaserInfoListener = value
-            val converted = value?.let {
-                UpdatedCustomerInfoListener { customerInfo ->
-                    it.onReceived(PurchaserInfo(customerInfo))
-                }
-            }
-            synchronized(this@Purchases) {
-                customerInfoHelper.updatedCustomerInfoListener = converted
-            }
-        }
-
     /**
      * If it should allow sharing Play Store accounts. False by
      * default. If true treats all purchases as restores, aliasing together appUserIDs that share a
@@ -1618,327 +1576,6 @@ class Purchases internal constructor(
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
-
-    /**
-     * Get latest available purchaser info.
-     * @param listener A listener called when purchaser info is available and not stale.
-     * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
-     */
-    @Deprecated(
-        """
-            Function has been renamed to getCustomerInfo and listener has been replaced with ReceiveCustomerInfoCallback
-            """,
-        ReplaceWith("Purchases.sharedInstance.getCustomerInfo(listener)")
-    )
-    fun getPurchaserInfo(
-        listener: ReceivePurchaserInfoListener
-    ) {
-        getPurchaserInfo(listener.toReceiveCustomerInfoCallback())
-    }
-
-    /**
-     * Get latest available purchaser info.
-     * @param callback A listener called when purchaser info is available and not stale.
-     * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
-     */
-    @Deprecated(
-        "Function has been renamed to getCustomerInfo",
-        ReplaceWith("Purchases.sharedInstance.getCustomerInfo(listener)")
-    )
-    fun getPurchaserInfo(
-        callback: ReceiveCustomerInfoCallback
-    ) {
-        getCustomerInfo(callback)
-    }
-
-    /**
-     * Get latest available purchaser info.
-     * @param listener A listener called when purchaser info is available and not stale.
-     * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("Listener has been replaced with ReceiveCustomerInfoCallback")
-    fun getCustomerInfo(
-        listener: ReceivePurchaserInfoListener
-    ) {
-        getCustomerInfo(listener.toReceiveCustomerInfoCallback())
-    }
-
-    /**
-     * Restores purchases made with the current Play Store account for the current user.
-     * This method will post all purchases associated with the current Play Store account to
-     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
-     * used by an existing user, the current `appUserID` will be aliased together with the
-     * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
-     * the same user.
-     *
-     * You shouldn't use this method if you have your own account system. In that case
-     * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
-     * @param [listener] The listener that will be called when purchase restore completes.
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("Listener has been replaced with ReceiveCustomerInfoCallback")
-    fun restorePurchases(
-        listener: ReceivePurchaserInfoListener
-    ) {
-        restorePurchases(listener.toReceiveCustomerInfoCallback())
-    }
-
-    /**
-     * Resets the Purchases client clearing the save appUserID. This will generate a random user
-     * id and save it in the cache.
-     * @param [listener] An optional listener to listen for successes or errors.
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("Listener has been replaced with ReceiveCustomerInfoCallback")
-    fun logOut(
-        listener: ReceivePurchaserInfoListener
-    ) {
-        logOut(listener.toReceiveCustomerInfoCallback())
-    }
-
-    /**
-     * Invalidates the cache for purchaser information.
-     *
-     * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
-     * Refer to https://docs.revenuecat.com/docs/purchaserinfo#section-get-user-information for more information on
-     * using the cache properly.
-     *
-     * This is useful for cases where purchaser information might have been updated outside of the
-     * app, like if a promotional subscription is granted through the RevenueCat dashboard.
-     */
-    @Deprecated(
-        "Renamed to invalidateCustomerInfoCache",
-        ReplaceWith("Purchases.sharedInstance.invalidateCustomerInfoCache()")
-    )
-    fun invalidatePurchaserInfoCache() {
-        invalidateCustomerInfoCache()
-    }
-
-    @Deprecated(
-        "Renamed to removeUpdatedCustomerInfoListener",
-        ReplaceWith("Purchases.sharedInstance.removeUpdatedCustomerInfoListener()")
-    )
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun removeUpdatedPurchaserInfoListener() {
-        _updatedPurchaserInfoListener = null
-        removeUpdatedCustomerInfoListener()
-    }
-
-    /**
-     * Gets the SKUDetails for the given list of subscription skus.
-     * @param [skus] List of skus
-     * @param [listener] Response listener
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("GetSkusResponseListener replaced with GetStoreProductsCallback")
-    fun getSubscriptionSkus(
-        skus: List<String>,
-        listener: GetSkusResponseListener
-    ) {
-        getSkus(
-            skus.toSet(),
-            BillingClient.SkuType.SUBS.toRevenueCatProductType(),
-            listener.toGetStoreProductsCallback()
-        )
-    }
-
-    /**
-     * Gets the SKUDetails for the given list of non-subscription skus.
-     * @param [skus] List of skus
-     * @param [listener] Response listener
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("GetSkusResponseListener replaced with GetStoreProductsCallback")
-    fun getNonSubscriptionSkus(
-        skus: List<String>,
-        listener: GetSkusResponseListener
-    ) {
-        getSkus(
-            skus.toSet(),
-            BillingClient.SkuType.INAPP.toRevenueCatProductType(),
-            listener.toGetStoreProductsCallback()
-        )
-    }
-
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated(
-        """
-            SkuDetails replaced with StoreProduct and ProductChangeListener replaced with ProductChangeCallback
-            """
-    )
-    fun purchaseProduct(
-        activity: Activity,
-        skuDetails: SkuDetails,
-        upgradeInfo: UpgradeInfo,
-        listener: ProductChangeListener
-    ) {
-        purchaseProduct(
-            activity,
-            skuDetails.toStoreProduct(),
-            upgradeInfo,
-            listener.toProductChangeCallback()
-        )
-    }
-
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("ProductChangeListener replaced with ProductChangeCallback")
-    fun purchaseProduct(
-        activity: Activity,
-        storeProduct: StoreProduct,
-        upgradeInfo: UpgradeInfo,
-        listener: ProductChangeListener
-    ) {
-        purchaseProduct(
-            activity,
-            storeProduct,
-            upgradeInfo,
-            listener.toProductChangeCallback()
-        )
-    }
-
-    @Deprecated(
-        "SkuDetails replaced with StoreProduct",
-        ReplaceWith("Purchases.sharedInstance.purchaseProduct(activity, StoreProduct, upgradeInfo, listener)")
-    )
-    fun purchaseProduct(
-        activity: Activity,
-        skuDetails: SkuDetails,
-        upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
-    ) {
-        purchaseProduct(
-            activity,
-            skuDetails.toStoreProduct(),
-            upgradeInfo,
-            listener
-        )
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [skuDetails] The skuDetails of the product you wish to purchase
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("SkuDetails replaced with StoreProduct and MakePurchaseListener replaced with PurchaseCallback")
-    fun purchaseProduct(
-        activity: Activity,
-        skuDetails: SkuDetails,
-        listener: MakePurchaseListener
-    ) {
-        purchaseProduct(
-            activity,
-            skuDetails,
-            listener.toPurchaseCallback()
-        )
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [storeProduct] The storeProduct you wish to purchase
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("MakePurchaseListener replaced with PurchaseCallback")
-    fun purchaseProduct(
-        activity: Activity,
-        storeProduct: StoreProduct,
-        listener: MakePurchaseListener
-    ) {
-        purchaseProduct(
-            activity,
-            storeProduct,
-            listener.toPurchaseCallback()
-        )
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [skuDetails] The skuDetails of the product you wish to purchase
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Deprecated(
-        "SkuDetails replaced with StoreProduct",
-        ReplaceWith("Purchases.sharedInstance.purchaseProduct(activity, StoreProduct, listener)")
-    )
-    fun purchaseProduct(
-        activity: Activity,
-        skuDetails: SkuDetails,
-        listener: PurchaseCallback
-    ) {
-        purchaseProduct(
-            activity,
-            skuDetails.toStoreProduct(),
-            listener
-        )
-    }
-
-    /**
-     * Change the product from [upgradeInfo] with the one in [packageToPurchase].
-     *
-     * @param [activity] Current activity
-     * @param [packageToPurchase] The new package to purchase
-     * @param [upgradeInfo] The oldProduct of this object will be replaced with the product in [packageToPurchase].
-     * An optional [BillingFlowParams.ProrationMode] can also be specified.
-     * @param [listener] The listener that will be called when the purchase of the new product completes.
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("MakePurchaseListener replaced with ProductChangeCallback")
-    fun purchasePackage(
-        activity: Activity,
-        packageToPurchase: Package,
-        upgradeInfo: UpgradeInfo,
-        listener: ProductChangeListener
-    ) {
-        purchasePackage(
-            activity,
-            packageToPurchase,
-            upgradeInfo,
-            listener.toProductChangeCallback()
-        )
-    }
-
-    /**
-     * Make a purchase.
-     * @param [activity] Current activity
-     * @param [packageToPurchase] The Package you wish to purchase
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("MakePurchaseListener replaced with PurchaseCallback")
-    fun purchasePackage(
-        activity: Activity,
-        packageToPurchase: Package,
-        listener: MakePurchaseListener
-    ) {
-        purchasePackage(
-            activity,
-            packageToPurchase,
-            listener.toPurchaseCallback()
-        )
-    }
-
-    /**
-     * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
-     * products vis RevenueCat and greatly simplifies management. See
-     * [the guide](https://docs.revenuecat.com/offerings) for more info.
-     *
-     * Offerings will be fetched and cached on instantiation so that, by the time they are needed,
-     * your prices are loaded for your purchase flow. Time is money.
-     *
-     * @param [listener] Called when offerings are available. Called immediately if offerings are cached.
-     */
-    @Suppress("DeprecatedCallableAddReplaceWith")
-    @Deprecated("ReceiveOfferingsListener replaced with ReceiveOfferingsCallback")
-    fun getOfferings(
-        listener: ReceiveOfferingsListener
-    ) {
-        getOfferings(listener.toReceiveOfferingsCallback())
-    }
 
     // endregion
 
@@ -2017,40 +1654,6 @@ class Purchases internal constructor(
         @JvmStatic
         val isConfigured: Boolean
             get() = this.backingFieldSharedInstance != null
-
-        /**
-         * Configures an instance of the Purchases SDK with a specified API key. The instance will
-         * be set as a singleton. You should access the singleton instance using [Purchases.sharedInstance]
-         * @param apiKey The API Key generated for your app from https://app.revenuecat.com/
-         * @param appUserID Optional user identifier. Use this if your app has an account system.
-         * If `null` `[Purchases] will generate a unique identifier for the current device and persist
-         * it the SharedPreferences. This also affects the behavior of [restorePurchases].
-         * @param observerMode Optional boolean set to FALSE by default. Set to TRUE if you are using your own
-         * subscription system and you want to use RevenueCat's backend only. If set to TRUE, you should
-         * be consuming and acknowledging transactions outside of the Purchases SDK.
-         * @param service Optional [ExecutorService] to use for the backend calls.
-         * @return An instantiated `[Purchases] object that has been set as a singleton.
-         */
-        @JvmOverloads
-        @JvmStatic
-        @Deprecated(
-            message = "Parameters have been replaced with a Builder",
-            replaceWith = ReplaceWith("Purchases.configure(PurchasesConfiguration)")
-        )
-        fun configure(
-            context: Context,
-            apiKey: String,
-            appUserID: String? = null,
-            observerMode: Boolean = false,
-            service: ExecutorService = createDefaultExecutor()
-        ): Purchases {
-            val builtConfiguration = PurchasesConfiguration.Builder(context, apiKey)
-                .appUserID(appUserID)
-                .observerMode(observerMode)
-                .service(service)
-                .build()
-            return configure(builtConfiguration)
-        }
 
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
@@ -2143,10 +1746,6 @@ class Purchases internal constructor(
                             }
                         })
                 }
-        }
-
-        private fun createDefaultExecutor(): ExecutorService {
-            return Executors.newSingleThreadScheduledExecutor()
         }
     }
 

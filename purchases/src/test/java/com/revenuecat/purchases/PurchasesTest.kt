@@ -269,27 +269,6 @@ class PurchasesTest {
     }
 
     @Test
-    fun canMakePurchaseWithDeprecatedFunction() {
-        val sku = "onemonth_freetrial"
-        val skuDetails = stubSkuDetails(
-            productId = sku
-        )
-
-        val slot = slot<StoreProduct>()
-        every {
-            mockBillingAbstract.makePurchaseAsync(any(), any(), capture(slot), any(), any())
-        } just Runs
-
-        purchases.purchaseProductWith(
-            mockActivity,
-            skuDetails
-        ) { _, _ -> }
-
-        assertThat(slot.isCaptured).isTrue()
-        assertThat(slot.captured.sku).isEqualTo(sku)
-    }
-
-    @Test
     fun canMakePurchaseOfAPackage() {
         val (skuDetails, offerings) = stubOfferings("onemonth_freetrial")
 
@@ -819,7 +798,7 @@ class PurchasesTest {
                 onError = any()
             )
         } answers {
-            lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, mockInfo.jsonObject)
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(mockInfo, mockInfo.rawData)
         }
 
         var callbackCalled = false
@@ -3374,7 +3353,7 @@ class PurchasesTest {
     fun `Setting platform info sets it in the AppConfig when configuring the SDK`() {
         val expected = PlatformInfo("flavor", "version")
         Purchases.platformInfo = expected
-        Purchases.configure(mockContext, "api")
+        Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api").build())
         assertThat(Purchases.sharedInstance.appConfig.platformInfo).isEqualTo(expected)
     }
 
@@ -3382,19 +3361,21 @@ class PurchasesTest {
     fun `Setting proxy URL info sets it in the HttpClient when configuring the SDK`() {
         val expected = URL("https://a-proxy.com")
         Purchases.proxyURL = expected
-        Purchases.configure(mockContext, "api")
+        Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api").build())
         assertThat(Purchases.sharedInstance.appConfig.baseURL).isEqualTo(expected)
     }
 
     @Test
     fun `Setting observer mode on sets finish transactions to false`() {
-        Purchases.configure(mockContext, "api", observerMode = true)
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").observerMode(true)
+        Purchases.configure(builder.build())
         assertThat(Purchases.sharedInstance.appConfig.finishTransactions).isFalse()
     }
 
     @Test
     fun `Setting observer mode off sets finish transactions to true`() {
-        Purchases.configure(mockContext, "api", observerMode = false)
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").observerMode(false)
+        Purchases.configure(builder.build())
         assertThat(Purchases.sharedInstance.appConfig.finishTransactions).isTrue()
     }
 

@@ -110,7 +110,7 @@ open class DeviceCache(
 
     @Synchronized
     fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
-        val jsonObject = info.jsonObject.also {
+        val jsonObject = info.rawData.also {
             it.put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
         }
         preferences.edit()

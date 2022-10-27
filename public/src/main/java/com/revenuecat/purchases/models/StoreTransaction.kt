@@ -82,17 +82,7 @@ data class StoreTransaction(
      * Amazon's marketplace. Null for Google
      */
     val marketplace: String?
-) : Parcelable {
-
-    /**
-     * Product Id.
-     */
-    @Deprecated(
-        message = "Will be removed in a future release in favor of a list of product ids",
-        replaceWith = ReplaceWith("skus[0]"))
-    val sku: String
-        get() = skus[0]
-}
+) : Parcelable
 
 enum class PurchaseType {
     GOOGLE_PURCHASE,

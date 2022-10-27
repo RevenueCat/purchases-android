@@ -54,7 +54,6 @@ fun JSONObject.buildCustomerInfo(): CustomerInfo {
 
     return CustomerInfo(
         entitlements = entitlementInfos,
-        purchasedNonSubscriptionSkus = nonSubscriptions.keys().asSequence().toSet(),
         allExpirationDatesByProduct = expirationDatesByProduct,
         allPurchaseDatesByProduct = purchaseDatesByProduct,
         requestDate = requestDate,
