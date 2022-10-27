@@ -211,11 +211,6 @@ jobs:
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
       - run:
-          name: Replace API_KEY
-          working_directory: examples/purchase-tester
-          command: |
-            sed -i s/api_key/$API_KEY/ src/main/java/com/revenuecat/purchasetester/MainApplication.kt
-      - run:
           name: Prepare Keystore
           working_directory: examples/purchase-tester
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
@@ -227,9 +222,36 @@ jobs:
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/apk/release/purchase-tester-release.apk
+          path: examples/purchase-tester/build/outputs/apk/latestDependencies/release/purchase-tester-latestDependencies-release.apk
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
+
+  publish-purchase-tester-latest-dependencies-release:
+    executor: android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/accept-licenses
+      - android-wordpress-orb/restore-gradle-cache
+      - android/restore-build-cache
+      - run:
+          name: Prepare Keystore
+          working_directory: examples/purchase-tester
+          command: echo $PURCHASE_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
+          name: Create app bundle
+          command: |
+            bundle exec fastlane android build_purchase_tester_bundle
+      - store_artifacts:
+          path: examples/purchase-tester/build/outputs/bundle/latestDependenciesRelease/purchase-tester-latestDependencies-release.aab
+      - android-wordpress-orb/save-gradle-cache
+      - android/save-build-cache
+      - run:
+            name: Publish aab
+            command: |
+              bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/latestDependenciesRelease/purchase-tester-latestDependencies-release.aab'
 
   integration-tests-build:
     executor: android-executor
@@ -264,10 +286,8 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - integration-tests/build/outputs/apk/bc5SupportDev/release/integration-tests-bc5SupportDev-release.apk
             - integration-tests/build/outputs/apk/latestDependencies/release/integration-tests-latestDependencies-release.apk
             - integration-tests/build/outputs/apk/unityIAP/release/integration-tests-unityIAP-release.apk
-            - integration-tests/build/outputs/apk/androidTest/bc5SupportDev/release/integration-tests-bc5SupportDev-release-androidTest.apk
             - integration-tests/build/outputs/apk/androidTest/latestDependencies/release/integration-tests-latestDependencies-release-androidTest.apk
             - integration-tests/build/outputs/apk/androidTest/unityIAP/release/integration-tests-unityIAP-release-androidTest.apk
 
@@ -331,36 +351,6 @@ jobs:
       - store_test_results:
           path: ~/gsutil/
 
-  run-firebase-tests-bc5SupportDev:
-    description: "Run integration tests for Android in Firebase. Variant bc5SupportDev"
-    executor: gcp-cli/google
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
-      - run:
-          name: Test with Firebase Test Lab
-          command: >
-            gcloud firebase test android run --type instrumentation \
-              --app integration-tests/build/outputs/apk/bc5SupportDev/release/integration-tests-bc5SupportDev-release.apk \
-              --test integration-tests/build/outputs/apk/androidTest/bc5SupportDev/release/integration-tests-bc5SupportDev-release-androidTest.apk \
-              --timeout 2m \
-              --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
-      - run:
-          name: Copy test results data
-          command: |
-            mkdir -p ~/gsutil/
-            gsutil -m cp -r -U `gsutil ls gs://cloud-test-$GOOGLE_PROJECT_ID | tail -1` ~/gsutil/ | true
-          when: always
-      - store_artifacts:
-          path: ~/gsutil/
-      - store_test_results:
-          path: ~/gsutil/
-
 workflows:
   version: 2
   danger:
@@ -390,9 +380,6 @@ workflows:
       - run-firebase-tests-unityIAP:
           requires:
             - integration-tests-build
-      - run-firebase-tests-bc5SupportDev:
-          requires:
-            - integration-tests-build
 
   deploy:
     when:
@@ -413,6 +400,11 @@ workflows:
               only:
                 - main
       - docs-deploy: *release-tags
+      - publish-purchase-tester-latest-dependencies-release:
+          requires:
+            - deploy
+            - docs-deploy
+          <<: *release-tags
 
   snapshot-bump:
     when:

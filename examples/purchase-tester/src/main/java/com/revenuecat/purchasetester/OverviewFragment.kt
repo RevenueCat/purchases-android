@@ -25,6 +25,7 @@ import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
 
+@SuppressWarnings("TooManyFunctions")
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener, OverviewInteractionHandler {
 
     private lateinit var viewModel: OverviewViewModel
@@ -35,13 +36,17 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
         binding.customerInfoLogoutButton.setOnClickListener {
             if (Purchases.sharedInstance.isAnonymous) {
-                findNavController().navigateUp()
+                navigateToLoginFragment()
             } else {
                 Purchases.sharedInstance.logOutWith(
                     { error -> showUserError(requireActivity(), error) },
-                    { findNavController().navigateUp() }
+                    { navigateToLoginFragment() }
                 )
             }
+        }
+
+        binding.logsButton.setOnClickListener {
+            navigateToLogsFragment()
         }
 
         viewModel = OverviewViewModel(this)
@@ -121,5 +126,15 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         val intent = Intent(Intent.ACTION_VIEW)
         intent.data = url
         startActivity(intent)
+    }
+
+    private fun navigateToLoginFragment() {
+        val directions = OverviewFragmentDirections.actionOverviewFragmentToLoginFragment()
+        findNavController().navigate(directions)
+    }
+
+    private fun navigateToLogsFragment() {
+        val directions = OverviewFragmentDirections.actionOverviewFragmentToLogsFragment()
+        findNavController().navigate(directions)
     }
 }

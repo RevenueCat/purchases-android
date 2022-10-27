@@ -125,33 +125,22 @@ platform :android do
     UI.verbose("Deploying #{version}")
     gradle(
       tasks: [
-        "androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
+        "publish --no-daemon --no-parallel"
       ],
       properties: gradleProperties
     )
 
     UI.verbose("Creating special version for Unity IAP with BillingClient 4 and Amazon 2 for version: #{version}")
-    gradleProperties["PUBLISH_VARIANT"] = "unityIAPRelease"
+    gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "unityIAPRelease"
     
     UI.verbose("Adding -unityiap to artifact ids")
-    
 
     gradle(
       tasks: [
-        "androidSourcesJar", "androidJavadocJar", "publish --no-daemon --no-parallel"
+        "publish --no-daemon --no-parallel"
       ],
       properties: gradleProperties
     )
-    
-    unless is_snapshot_version?(version)
-      gradle(
-        tasks: [
-          "closeAndReleaseRepository"
-        ],
-        properties: gradleProperties
-      )
-      github_release(version: version)
-    end
   end
 
   desc "Upload a snapshot release"
@@ -177,6 +166,41 @@ platform :android do
 
     add_git_tag(tag: version_number)
     push_git_tags(tag: version_number)
+  end
+
+  desc "Build purchase tester app bundle"
+  lane :build_purchase_tester_bundle do |options|
+    build_number = ENV['CIRCLE_BUILD_NUM'] || UI.user_error!('Could not find CircleCI build number.')
+    version_name = current_version_number
+    release_key_alias = ENV['PURCHASE_TESTER_RELEASE_KEY_ALIAS'] || UI.user_error!('Release key alias not found.')
+    release_key_password = ENV['PURCHASE_TESTER_RELEASE_KEY_PASSWORD'] || UI.user_error!('Release key password not found.')
+    release_keystore_password = ENV['PURCHASE_TESTER_RELEASE_KEYSTORE_PASSWORD'] || UI.user_error!('Release keystore password not found.')
+    gradle(
+      task: 'examples:purchase-tester:bundle',
+      flavor: 'latestDependencies',
+      build_type: 'Release',
+      print_command: false,
+      properties: {
+        purchaseTesterSupportedStores: 'google',
+        purchaseTesterVersionCode: build_number,
+        purchaseTesterVersionName: version_name,
+        releaseKeyAlias: release_key_alias,
+        releaseKeyPassword: release_key_password,
+        releaseKeystorePassword: release_keystore_password
+      }
+    )
+  end
+
+  desc "Publish purchase tester to test track in Play Console"
+  lane :publish_purchase_tester do |options|
+    json_key_data = ENV["PUBLISH_SERVICE_ACCOUNT_JSON_KEY_DATA"] || UI.user_error!("Missing JSON key data to publish purchase tester.")
+    aab_path = options[:aab_path] || UI.user_error!("Missing aab_path parameter.")
+    upload_to_play_store(
+      package_name: 'com.revenuecat.purchases_sample',
+      track: 'alpha',
+      json_key_data: json_key_data,
+      aab: aab_path
+    )
   end
 
   desc "Builds a Magic Weather APK and prompts for:"

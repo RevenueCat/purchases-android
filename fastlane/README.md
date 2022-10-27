@@ -45,7 +45,7 @@ Tag release version with latest if necessary
 [bundle exec] fastlane android automatic_bump
 ```
 
-Automatically bumps version, update swift header, edit changelog, and create pull request
+Automatically bumps version, replaces version numbers, updates changelog and creates PR
 
 ### android github_release
 
@@ -86,6 +86,22 @@ Creates PR changing version to next minor adding a -SNAPSHOT suffix
 ```
 
 Tag current branch with current version number
+
+### android build_purchase_tester_bundle
+
+```sh
+[bundle exec] fastlane android build_purchase_tester_bundle
+```
+
+Build purchase tester app bundle
+
+### android publish_purchase_tester
+
+```sh
+[bundle exec] fastlane android publish_purchase_tester
+```
+
+Publish purchase tester to test track in Play Console
 
 ### android build_magic_weather
 

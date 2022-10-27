@@ -1,3 +1,28 @@
+## 5.6.3
+### Other Changes
+* Add navigation to logs fragment from different screens (#647) via Toni Rico (@tonidero)
+* Update Maven publish plugin (#646) via Cesar de la Vega (@vegaro)
+* Add cache amazon user data (#640) via Toni Rico (@tonidero)
+
+## 5.6.2
+### Bugfixes
+* Add timeout to Amazon's getProducts and getUserData requests (#630) via Toni Rico (@tonidero)
+### Other Changes
+* Automate purchase tester publish on releases (#639) via Toni Rico (@tonidero)
+* Enable HTTP traffic in purchase tester (#636) via Toni Rico (@tonidero)
+* Add button to navigate from login fragment to configure fragment (#635) via Toni Rico (@tonidero)
+* Store purchase tester sdk configuration in DataStore (#633) via Toni Rico (@tonidero)
+* Add configuration fragment to purchase tester (#632) via Toni Rico (@tonidero)
+* Update fastlane plugin (#627) via Cesar de la Vega (@vegaro)
+* Offerings cleanup (#626) via beylmk (@beylmk)
+* Initial Support for BillingClient5 (#616) via beylmk (@beylmk)
+* Adds action parameter to CircleCI config to be able to trigger the automatic bump manually (#621) via Cesar de la Vega (@vegaro)
+* Not create release if next version should be skipped (#624) via Toni Rico (@tonidero)
+* Add missing packageName to helper methods in AppConfig (#620) via Toni Rico (@tonidero)
+* Add package name to all requests headers (#618) via Toni Rico (@tonidero)
+* Update releasing instructions (#602) via Cesar de la Vega (@vegaro)
+* Move to SNAPSHOT version on every commit to main if needed (#611) via Toni Rico (@tonidero)
+
 ## 5.6.1
 ### Bugfixes
 * Wait to obtain unsubscribed attributes until finishing getting device identifiers (#604) via Toni Rico (@tonidero)
