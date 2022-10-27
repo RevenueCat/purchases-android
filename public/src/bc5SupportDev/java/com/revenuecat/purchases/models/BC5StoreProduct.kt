@@ -17,9 +17,7 @@ import org.json.JSONObject
 private data class BC5StoreProduct(
     override val storeProductId: String,
     override val type: ProductType,
-    override val price: String,
-    override val priceAmountMicros: Long,
-    override val priceCurrencyCode: String,
+    override val oneTimeProductPrice: Price?,
     override val title: String,
     override val description: String,
     override val subscriptionPeriod: String?,

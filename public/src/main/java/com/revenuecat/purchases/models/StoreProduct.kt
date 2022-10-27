@@ -20,26 +20,10 @@ interface StoreProduct : Parcelable {
     val type: ProductType
 
     /**
-     * Formatted price of the item, including its currency sign. For example $3.00.
+     * Price information for a non-subscription product. Null for subscriptions.
+     * For subscriptions, use PurchaseOption's pricing phases.
      */
-    val price: String
-
-    /**
-     * Price in micro-units, where 1,000,000 micro-units equal one unit of the currency.
-     *
-     * For example, if price is "€7.99", price_amount_micros is 7,990,000. This abstract value represents
-     * the localized, rounded price for a particular currency.
-     */
-    val priceAmountMicros: Long
-
-    /**
-     * Returns ISO 4217 currency code for price and original price.
-     *
-     * For example, if price is specified in British pounds sterling, price_currency_code is "GBP".
-     *
-     * If currency code cannot be determined, currency symbol is returned.
-     */
-    val priceCurrencyCode: String
+    val oneTimeProductPrice: Price?
 
     /**
      * Title of the product.
@@ -56,9 +40,7 @@ interface StoreProduct : Parcelable {
      * P1M equates to one month, P3M equates to three months, P6M equates to six months,
      * and P1Y equates to one year.
      *
-     * Note: Returned only for Google subscriptions. Not available for Amazon.
-     *
-     * maddie note: this used to come from BC, now we get it from getOfferings
+     * Note: Returned only for Google subscriptions. Null for Amazon or for INAPP products.
      */
     val subscriptionPeriod: String?
 }
@@ -66,9 +48,7 @@ interface StoreProduct : Parcelable {
 data class ComparableData(
     val storeProductId: String,
     val type: ProductType,
-    val price: String,
-    val priceAmountMicros: Long,
-    val priceCurrencyCode: String,
+    val oneTimeProductPrice: Price?,
     val title: String,
     val description: String,
     val subscriptionPeriod: String?
@@ -78,9 +58,7 @@ data class ComparableData(
     ) : this(
         storeProductId = storeProduct.storeProductId,
         type = storeProduct.type,
-        price = storeProduct.price,
-        priceAmountMicros = storeProduct.priceAmountMicros,
-        priceCurrencyCode = storeProduct.priceCurrencyCode,
+        oneTimeProductPrice = storeProduct.oneTimeProductPrice,
         title = storeProduct.title,
         description = storeProduct.description,
         subscriptionPeriod = storeProduct.subscriptionPeriod

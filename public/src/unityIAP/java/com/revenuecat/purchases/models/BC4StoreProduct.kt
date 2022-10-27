@@ -16,9 +16,7 @@ import org.json.JSONObject
 private data class BC4StoreProduct(
     override val storeProductId: String,
     override val type: ProductType,
-    override val price: String,
-    override val priceAmountMicros: Long,
-    override val priceCurrencyCode: String,
+    override val oneTimeProductPrice: Price?
     override val title: String,
     override val description: String,
     override val subscriptionPeriod: String?,
@@ -47,9 +45,7 @@ private fun SkuDetails.toStoreProduct() =
     BC4StoreProduct(
         sku,
         type.toRevenueCatProductType(),
-        price,
-        priceAmountMicros,
-        priceCurrencyCode,
+        if (type == ProductType.INAPP) Price(price, priceAmountMicros, priceCurrencyCode) else null,
         title,
         description,
         subscriptionPeriod.takeIf { it.isNotBlank() },
