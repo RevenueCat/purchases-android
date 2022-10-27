@@ -2,10 +2,7 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.android.billingclient.api.ProductDetails
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.ComparableData
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
@@ -21,6 +18,6 @@ data class GoogleStoreProduct(
     override val title: String,
     override val description: String,
     override val subscriptionPeriod: String?,
-    override val purchaseOptions: List<PurchaseOption>
-    val productDetails: @RawValue ProductDetails,
+    override val purchaseOptions: List<PurchaseOption>,
+    val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable

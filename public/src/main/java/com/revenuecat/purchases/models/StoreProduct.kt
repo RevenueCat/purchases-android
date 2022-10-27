@@ -10,7 +10,7 @@ import org.json.JSONObject
  */
 interface StoreProduct : Parcelable {
     /**
-     * sku for BC4 and Amazon, subId for BC5
+     * The product ID
      */
     val storeProductId: String
 
@@ -44,25 +44,8 @@ interface StoreProduct : Parcelable {
      */
     val subscriptionPeriod: String?
 
+    /**
+     * List of PurchaseOptions.
+     */
     val purchaseOptions: List<PurchaseOption>
-}
-
-data class ComparableData(
-    val storeProductId: String,
-    val type: ProductType,
-    val oneTimeProductPrice: Price?,
-    val title: String,
-    val description: String,
-    val subscriptionPeriod: String?
-) {
-    constructor(
-        storeProduct: StoreProduct
-    ) : this(
-        storeProductId = storeProduct.storeProductId,
-        type = storeProduct.type,
-        oneTimeProductPrice = storeProduct.oneTimeProductPrice,
-        title = storeProduct.title,
-        description = storeProduct.description,
-        subscriptionPeriod = storeProduct.subscriptionPeriod
-    )
 }

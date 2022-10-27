@@ -5,7 +5,7 @@ import kotlinx.parcelize.Parceler
 import org.json.JSONObject
 
 /** @suppress */
-object JSONObjectParceler : Parceler<JSONObject> {
+internal object JSONObjectParceler : Parceler<JSONObject> {
 
     override fun create(parcel: Parcel): JSONObject {
         return JSONObject(parcel.readString())
