@@ -21,5 +21,4 @@ dependencies {
     testImplementation "io.mockk:mockk:$mockkVersion"
     testImplementation "org.assertj:assertj-core:$assertJVersion"
     testImplementation "com.squareup.okhttp3:mockwebserver:$mockwebserverVersion"
-    testImplementation "com.android.billingclient:billing:$billing4Version"
 }

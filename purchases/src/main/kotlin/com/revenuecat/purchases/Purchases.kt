@@ -357,6 +357,7 @@ class Purchases internal constructor(
      * @param [skus] List of skus
      * @param [callback] Response callback
      */
+    // TODO deprecate, replaced with getProducts
     fun getSubscriptionSkus(
         skus: List<String>,
         callback: GetStoreProductsCallback
@@ -369,6 +370,7 @@ class Purchases internal constructor(
      * @param [skus] List of skus
      * @param [callback] Response callback
      */
+    // TODO deprecate, replaced with getProducts
     fun getNonSubscriptionSkus(
         skus: List<String>,
         callback: GetStoreProductsCallback
