@@ -6,7 +6,6 @@ package com.revenuecat.purchases.interfaces
 
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.models.StoreProduct
 
 /**
  * Interface to be implemented when making calls to fetch [SkuDetails]
@@ -32,17 +31,4 @@ interface GetSkusResponseListener {
      * @param error A [PurchasesError] containing the reason for the failure when fetching the [SkuDetails]
      */
     fun onError(error: PurchasesError)
-}
-
-@Deprecated("Deprecated in favor of GetStoreProductsCallback. This helper will be removed in a future release.")
-fun GetSkusResponseListener.toGetStoreProductsCallback(): GetStoreProductsCallback {
-    return object : GetStoreProductsCallback {
-        override fun onReceived(storeProducts: List<StoreProduct>) {
-            this@toGetStoreProductsCallback.onReceived(storeProducts.map { it.skuDetails })
-        }
-
-        override fun onError(error: PurchasesError) {
-            this@toGetStoreProductsCallback.onError(error)
-        }
-    }
 }
