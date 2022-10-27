@@ -14,13 +14,13 @@ import org.json.JSONObject
 
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-private data class BC5StoreProduct(
+data class GoogleStoreProduct(
     override val storeProductId: String,
     override val type: ProductType,
     override val oneTimeProductPrice: Price?,
     override val title: String,
     override val description: String,
     override val subscriptionPeriod: String?,
+    override val purchaseOptions: List<PurchaseOption>
     val productDetails: @RawValue ProductDetails,
-    val purchaseOptions: List<PurchaseOption>
 ) : StoreProduct, Parcelable

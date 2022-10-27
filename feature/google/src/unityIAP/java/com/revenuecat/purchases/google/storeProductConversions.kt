@@ -1,16 +1,16 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.GoogleStoreProduct
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.RecurrenceMode
-import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
 private fun SkuDetails.toStoreProduct() =
-    BC4StoreProduct(
+    GoogleStoreProduct(
         sku,
         type.toRevenueCatProductType(),
         createPrice(),

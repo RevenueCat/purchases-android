@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.google
+package com.revenuecat.purchases
 
 import android.os.Parcelable
 import com.android.billingclient.api.SkuDetails
@@ -15,7 +15,7 @@ import org.json.JSONObject
 
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-internal data class BC4StoreProduct(
+data class GoogleStoreProduct(
     override val storeProductId: String,
     override val type: ProductType,
     override val oneTimeProductPrice: Price?,
@@ -40,4 +40,4 @@ internal data class BC4StoreProduct(
 }
 
 val StoreProduct.skuDetails: SkuDetails?
-    get() = SkuDetails((this as? BC4StoreProduct)?.originalJson.toString())
+    get() = SkuDetails((this as? GoogleStoreProduct)?.originalJson.toString())
