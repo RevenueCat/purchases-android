@@ -76,8 +76,6 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             return
         }
 
-        val skuDetails = offerings.all["default"]?.availablePackages?.get(0)?.product?.skuDetails
-
         binding.overviewOfferingsRecycler.layoutManager = LinearLayoutManager(requireContext())
         binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(
             offerings.all.values.toList(),

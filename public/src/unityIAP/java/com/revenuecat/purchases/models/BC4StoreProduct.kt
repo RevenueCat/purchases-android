@@ -40,17 +40,3 @@ private data class BC4StoreProduct(
 
 val StoreProduct.skuDetails: SkuDetails?
     get() = (this as? BC4StoreProduct)?.skuDetails
-
-private fun SkuDetails.toStoreProduct() =
-    BC4StoreProduct(
-        sku,
-        type.toRevenueCatProductType(),
-        if (type == ProductType.INAPP) Price(price, priceAmountMicros, priceCurrencyCode) else null,
-        title,
-        description,
-        subscriptionPeriod.takeIf { it.isNotBlank() },
-        freeTrialPeriod.takeIf { it.isNotBlank() },
-        iconUrl,
-        JSONObject(originalJson),
-        this
-    )
