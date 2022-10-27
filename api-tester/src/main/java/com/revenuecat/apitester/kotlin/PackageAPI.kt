@@ -1,5 +1,6 @@
 package com.revenuecat.apitester.kotlin
 
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.StoreProduct
@@ -11,7 +12,7 @@ private class PackageAPI {
             val identifier: String = identifier
             val packageType: PackageType = packageType
             val product: StoreProduct = product
-            val offering: String = offering
+            val offering: Offering = offering
         }
     }
 

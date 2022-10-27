@@ -70,10 +70,10 @@ private class PurchasesAPI {
         purchases.syncPurchases()
         purchases.getOfferings(receiveOfferingsCallback)
 
-
-//        purchases.getSubscriptionSkus(skus, skusResponseCallback)
-//        purchases.getNonSubscriptionSkus(skus, skusResponseCallback)
-        purchases.getProducts(productIds, productsResponseCallback)
+        // TODO deprecate, replaced with getProducts
+        purchases.getSubscriptionSkus(skus, productsResponseCallback)
+        purchases.getNonSubscriptionSkus(skus, productsResponseCallback)
+//        purchases.getProducts(productIds, productsResponseCallback)
 
         // we need these for hybrids... these all fall back on some "best offer" or just purchase the base plan
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
@@ -81,9 +81,9 @@ private class PurchasesAPI {
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
         purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
 
-        // new methods -- pull desired purchaseoption from the storeproduct, doesn't have to be package vs product anymore
-        purchases.purchase(activity, purchaseOption, upgradeInfo, purchaseChangeCallback)
-        purchases.purchase(activity, purchaseOption, purchaseCallback)
+        // TODO new methods -- pull desired purchaseoption from the storeproduct
+//        purchases.purchase(activity, purchaseOption, upgradeInfo, purchaseChangeCallback)
+//        purchases.purchase(activity, purchaseOption, purchaseCallback)
 
         purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.logIn("", logInCallback)

@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.java;
 
-import com.android.billingclient.api.SkuDetails;
+import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.PackageType;
 import com.revenuecat.purchases.models.StoreProduct;
@@ -11,7 +11,7 @@ final class PackageAPI {
         final String identifier = p.getIdentifier();
         final PackageType packageType = p.getPackageType();
         final StoreProduct product = p.getProduct();
-        final String offering = p.getOffering();
+        final Offering offering = p.getOffering();
     }
 
     static void check(final PackageType type) {
