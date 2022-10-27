@@ -36,22 +36,15 @@ import java.util.Date
 @TypeParceler<JSONObject, JSONObjectParceler>()
 data class CustomerInfo constructor(
     val entitlements: EntitlementInfos,
-    @Deprecated(
-        "Use nonSubscriptionTransactions instead",
-        ReplaceWith("nonSubscriptionTransactions.map{ it.productIdentifier }.toSet()")
-    ) val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
     val requestDate: Date,
-    @Deprecated(
-        "Use rawData instead",
-        replaceWith = ReplaceWith("rawData")
-    ) val jsonObject: JSONObject,
     val schemaVersion: Int,
     val firstSeen: Date,
     val originalAppUserId: String,
     val managementURL: Uri?,
-    val originalPurchaseDate: Date?
+    val originalPurchaseDate: Date?,
+    private val jsonObject: JSONObject
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     /**

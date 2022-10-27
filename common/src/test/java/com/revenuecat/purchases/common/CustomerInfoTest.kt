@@ -50,11 +50,6 @@ class CustomerInfoTest {
     fun `Given a full response with non subscription SKUs, all SKUs are parsed properly`() {
         val info = fullCustomerInfo
 
-        assertThat(info.purchasedNonSubscriptionSkus.size).isEqualTo(3)
-        assertThat(info.purchasedNonSubscriptionSkus).contains("100_coins_pack")
-        assertThat(info.purchasedNonSubscriptionSkus).contains("7_extra_lives")
-        assertThat(info.purchasedNonSubscriptionSkus).contains("lifetime_access")
-
         assertThat(info.nonSubscriptionTransactions.size).isEqualTo(5)
         assertThat(
             info.nonSubscriptionTransactions.filter { it.productIdentifier == "100_coins_pack" }.size
