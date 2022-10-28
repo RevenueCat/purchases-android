@@ -40,9 +40,11 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.productDetails
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -69,6 +71,7 @@ class BillingWrapper(
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
+    private val storeProductByProductIdentifier = mutableMapOf<String, StoreProduct>()
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
@@ -198,9 +201,14 @@ class BillingWrapper(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption?,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
+        if (purchaseOption == null) {
+            errorLog("PurchaseOption is mandatory in BC5") //TODOBC5: Improve and move error message
+            return
+        }
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
@@ -209,20 +217,14 @@ class BillingWrapper(
         } else {
             log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
         }
+
         synchronized(this@BillingWrapper) {
             productTypes[storeProduct.sku] = storeProduct.type
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
+            storeProductByProductIdentifier[storeProduct.sku] = storeProduct
         }
         executeRequestOnUIThread {
-            val params = BillingFlowParams.newBuilder()
-                //TODOBC5 .setSkuDetails(storeProduct.skuDetails)
-                .apply {
-                    replaceSkuInfo?.let {
-                        setUpgradeInfo(it)
-                    } ?: setObfuscatedAccountId(appUserID.sha256())
-                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                    // https://issuetracker.google.com/issues/155005449
-                }.build()
+            val params = newPurchaseParams(storeProduct, purchaseOption) ?: return@executeRequestOnUIThread
 
             launchBillingFlow(activity, params)
         }
@@ -764,5 +766,29 @@ class BillingWrapper(
                 BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR).build()
             listener.onPurchaseHistoryResponse(devErrorResponseCode, null)
         }
+    }
+
+    private fun newPurchaseParams(
+        storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption
+    ): BillingFlowParams? {
+        val token = purchaseOption.token
+        val productDetails = storeProduct.productDetails
+        if (token == null) {
+            errorLog("PurchaseOption must have a token with BC5.") //TODOBC5: Improve and move error message
+            return null
+        }
+        if (productDetails == null) {
+            errorLog("ProductDetails must exist when using BC5.") //TODOBC5: Improve and move error message
+            return null
+        }
+        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+            setOfferToken(token)
+            setProductDetails(productDetails)
+        }.build()
+
+        return BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(listOf(productDetailsParamsList))
+            .build()
     }
 }

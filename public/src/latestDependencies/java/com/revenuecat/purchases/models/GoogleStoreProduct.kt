@@ -2,6 +2,7 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
@@ -21,3 +22,6 @@ data class GoogleStoreProduct(
     override val purchaseOptions: List<PurchaseOption>,
     val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable
+
+val StoreProduct.productDetails: ProductDetails?
+    get() = (this as? GoogleStoreProduct)?.productDetails

@@ -1403,8 +1403,9 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 storeProduct,
-                null,
-                presentedOfferingIdentifier
+                purchaseOption = null, //TODOBC5: Choose a purchase option when using BC5.
+                replaceSkuInfo = null,
+                presentedOfferingIdentifier = presentedOfferingIdentifier
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
@@ -1463,8 +1464,9 @@ class Purchases internal constructor(
                     activity,
                     appUserID,
                     storeProduct,
-                    ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
-                    presentedOfferingIdentifier
+                    purchaseOption = null, //TODOBC5: Choose a purchase option when using BC5.
+                    replaceSkuInfo = ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
+                    presentedOfferingIdentifier = presentedOfferingIdentifier
                 )
             },
             onError = { error ->
