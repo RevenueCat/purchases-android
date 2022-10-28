@@ -19,7 +19,7 @@ data class Package(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,
-    val offering: Offering,
+    val offering: String, //TODOBC5 change type?
 
     // TODO both of these are only used to create StoreProduct, maybe we don't need to store them in this class
     private val subscriptionPeriod: String?,

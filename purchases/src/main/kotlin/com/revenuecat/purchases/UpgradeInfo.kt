@@ -9,6 +9,6 @@ import com.android.billingclient.api.BillingFlowParams
  */
 data class UpgradeInfo(
     // TODO deprecate oldSku
-    val oldProductId: String,
+    val oldSku: String, //TODOBC5 rename?
     @BillingFlowParams.ProrationMode val prorationMode: Int? = null
 )

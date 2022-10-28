@@ -174,7 +174,7 @@ class BillingWrapper(
                                 log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
                             }
 
-                            onReceive(skuDetailsList?.map { it.toStoreProduct() } ?: emptyList())
+                            onReceive(emptyList()) //TODOBC5 skuDetailsList?.map { it.toStoreProduct() } ?: emptyList())
                         } else {
                             log(
                                 LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
@@ -215,7 +215,7 @@ class BillingWrapper(
         }
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
-                .setSkuDetails(storeProduct.skuDetails)
+                //TODOBC5 .setSkuDetails(storeProduct.skuDetails)
                 .apply {
                     replaceSkuInfo?.let {
                         setUpgradeInfo(it)

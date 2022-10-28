@@ -9,7 +9,7 @@ import org.json.JSONObject;
 @SuppressWarnings({"unused"})
 final class StoreProductAPI {
     static void check(final StoreProduct product) {
-        final String sku = product.getStoreProductId();
+        final String sku = product.getSku(); //TODOBC5 rename
         final ProductType type = product.getType();
         final Price price = product.getOneTimeProductPrice();
         final String title = product.getTitle();

@@ -20,8 +20,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.logOutWith
-import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.skuDetails
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
 

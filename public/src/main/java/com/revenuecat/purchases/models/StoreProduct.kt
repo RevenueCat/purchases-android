@@ -12,7 +12,7 @@ interface StoreProduct : Parcelable {
     /**
      * The product ID
      */
-    val storeProductId: String
+    val sku: String //TODOBC5 rename?
 
     /**
      * Type of product. One of [ProductType].

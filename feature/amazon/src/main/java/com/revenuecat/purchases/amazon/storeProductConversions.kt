@@ -6,8 +6,8 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.ComparableData
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -20,27 +20,31 @@ import java.util.regex.Pattern
 data class AmazonStoreProduct(
     override val sku: String,
     override val type: ProductType,
-    override val price: String,
-    override val priceAmountMicros: Long,
-    override val priceCurrencyCode: String,
-    override val originalPrice: String?,
-    override val originalPriceAmountMicros: Long,
     override val title: String,
     override val description: String,
     override val subscriptionPeriod: String?,
-    override val freeTrialPeriod: String?,
-    override val introductoryPrice: String?,
-    override val introductoryPriceAmountMicros: Long,
-    override val introductoryPricePeriod: String?,
-    override val introductoryPriceCycles: Int,
-    override val iconUrl: String,
-    override val originalJson: JSONObject,
-    val amazonProduct: Product
+
+    //TODOBC5
+    override val oneTimeProductPrice: com.revenuecat.purchases.models.Price?,
+    override val purchaseOptions: List<PurchaseOption>,
+    val price: String,
+    val priceAmountMicros: Long,
+    val priceCurrencyCode: String,
+    val originalPrice: String?,
+    val originalPriceAmountMicros: Long,
+    val freeTrialPeriod: String?,
+    val introductoryPrice: String?,
+    val introductoryPriceAmountMicros: Long,
+    val introductoryPricePeriod: String?,
+    val introductoryPriceCycles: Int,
+    val iconUrl: String,
+    val originalJson: JSONObject,
+    val amazonProduct: Product,
 ) : StoreProduct, Parcelable {
 
     // We use this to not include the originalJSON in the equals
-    override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
+    /*override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
+    override fun hashCode() = ComparableData(this).hashCode()*/ //TODOBC5
 }
 
 fun Product.toStoreProduct(marketplace: String): StoreProduct? {
@@ -55,14 +59,16 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     return AmazonStoreProduct(
         sku,
         productType.toRevenueCatProductType(),
+        title,
+        description,
+        subscriptionPeriod = null,
+        null,
+        emptyList(),
         price,
         priceAmountMicros = priceAmountMicros,
         priceCurrencyCode = currencyCode,
         originalPrice = null,
         originalPriceAmountMicros = 0,
-        title,
-        description,
-        subscriptionPeriod = null,
         freeTrialPeriod = null,
         introductoryPrice = null,
         introductoryPriceAmountMicros = 0,

@@ -9,7 +9,7 @@ import org.json.JSONObject
 private class StoreProductAPI {
     fun check(product: StoreProduct) {
         with(product) {
-            val storeProductId: String = storeProductId
+            val storeProductId: String = sku //TODOBC5 - rename to storeProductId
             val type: ProductType = type
             val oneTimeProductPrice: Price? = oneTimeProductPrice
             val title: String = title
