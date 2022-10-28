@@ -11,7 +11,7 @@ import org.json.JSONObject
 /**
  * Note: this may return an empty Offerings.
  */
-fun JSONObject.createOfferings(productsById: Map<String, StoreProduct>): Offerings {
+fun JSONObject.createOfferings(productsById: Map<String, List<StoreProduct>>): Offerings {
     val jsonOfferings = getJSONArray("offerings")
     val currentOfferingID = getString("current_offering_id")
 
@@ -30,7 +30,7 @@ fun JSONObject.createOfferings(productsById: Map<String, StoreProduct>): Offerin
     return Offerings(offerings[currentOfferingID], offerings)
 }
 
-fun JSONObject.createOffering(productsById: Map<String, StoreProduct>): Offering? {
+fun JSONObject.createOffering(productsById: Map<String, List<StoreProduct>>): Offering? {
     val offeringIdentifier = getString("identifier")
     val jsonPackages = getJSONArray("packages")
 
@@ -50,14 +50,16 @@ fun JSONObject.createOffering(productsById: Map<String, StoreProduct>): Offering
 }
 
 fun JSONObject.createPackage(
-    productsById: Map<String, StoreProduct>,
+    productsById: Map<String, List<StoreProduct>>,
     offeringIdentifier: String
 ): Package? {
-    val sku = getString("platform_product_identifier")
-    return productsById[sku]?.let { product ->
-        val identifier = getString("identifier")
-        val packageType = identifier.toPackageType()
-        return Package(identifier, packageType, product, offeringIdentifier, "TODOBC5", "TODOBC5")
+    val packageIdentifier = getString("identifier")
+    val productGroupIdentifier = optString("platform_product_group_identifier")
+    val productIdentifier = getString("platform_product_identifier")
+    val productDuration = optString("product_duration")
+    return productsById[productGroupIdentifier]?.let { product ->
+        val packageType = packageIdentifier.toPackageType()
+        return Package(packageIdentifier, packageType, product.first(), offeringIdentifier, productDuration, productIdentifier)
     }
 }
 
