@@ -1138,7 +1138,7 @@ class Purchases internal constructor(
             if (purchase.purchaseState != PurchaseState.PENDING) {
                 billing.queryProductDetailsAsync(
                     productType = purchase.type,
-                    skus = purchase.skus.toSet(),
+                    productIds = purchase.skus.toSet(),
                     onReceive = { storeProducts ->
                         postToBackend(
                             purchase = purchase,
