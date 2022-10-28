@@ -1136,7 +1136,7 @@ class Purchases internal constructor(
     ) {
         purchases.forEach { purchase ->
             if (purchase.purchaseState != PurchaseState.PENDING) {
-                billing.querySkuDetailsAsync(
+                billing.queryProductDetailsAsync(
                     productType = purchase.type,
                     skus = purchase.skus.toSet(),
                     onReceive = { storeProducts ->
@@ -1227,7 +1227,7 @@ class Purchases internal constructor(
         onCompleted: (HashMap<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        billing.querySkuDetailsAsync(
+        billing.queryProductDetailsAsync(
             ProductType.SUBS,
             productIds,
             { subscriptionProducts ->

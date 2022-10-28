@@ -138,7 +138,7 @@ class BillingWrapper(
         }
     }
 
-    override fun querySkuDetailsAsync(
+    override fun queryProductDetailsAsync(
         productType: ProductType,
         skus: Set<String>,
         onReceive: StoreProductsCallback,

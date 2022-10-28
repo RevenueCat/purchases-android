@@ -3285,7 +3285,7 @@ class PurchasesTest {
         }
 
         verify(exactly = 1) {
-            mockBillingAbstract.querySkuDetailsAsync(
+            mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.SUBS,
                 any(),
                 any(),
@@ -3992,7 +3992,7 @@ class PurchasesTest {
         }
 
         every {
-            mockBillingAbstract.querySkuDetailsAsync(
+            mockBillingAbstract.queryProductDetailsAsync(
                 type,
                 skus.toSet(),
                 captureLambda(),
@@ -4205,7 +4205,7 @@ class PurchasesTest {
         )
 
         every {
-            mockBillingAbstract.querySkuDetailsAsync(
+            mockBillingAbstract.queryProductDetailsAsync(
                 type,
                 setOf(sku),
                 captureLambda(),

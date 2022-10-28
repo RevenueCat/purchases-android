@@ -52,7 +52,7 @@ abstract class BillingAbstract {
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     )
 
-    abstract fun querySkuDetailsAsync(
+    abstract fun queryProductDetailsAsync(
         productType: ProductType,
         skus: Set<String>,
         onReceive: StoreProductsCallback,

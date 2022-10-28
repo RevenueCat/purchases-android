@@ -148,7 +148,7 @@ internal class AmazonBilling constructor(
 
     // region Product Data
 
-    override fun querySkuDetailsAsync(
+    override fun queryProductDetailsAsync(
         productType: RevenueCatProductType,
         skus: Set<String>,
         onReceive: StoreProductsCallback,
