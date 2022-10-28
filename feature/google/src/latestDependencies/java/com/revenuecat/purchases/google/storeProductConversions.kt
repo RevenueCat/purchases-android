@@ -39,17 +39,16 @@ private fun ProductDetails.createOneTimeProductPrice(): Price? {
 fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     val storeProducts = mutableListOf<StoreProduct>()
     forEach { productDetails ->
-        val basePlans = productDetails.subscriptionOfferDetails?.filter {
-            it.pricingPhases.pricingPhaseList.size == 1
-        } ?: emptyList()
+        val basePlans = productDetails.subscriptionOfferDetails?.filter { it.isBasePlan } ?: return emptyList()
 
         val offersBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
             it.subscriptionBillingPeriod
         } ?: emptyMap()
+
         basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
             val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
-            val offers = offersBySubPeriod[basePlanBillingPeriod] ?: emptyList()
-            productDetails.toStoreProduct(basePlan, offers).let { storeProducts.add(it) }
+            val offersForBasePlan = offersBySubPeriod[basePlanBillingPeriod] ?: emptyList()
+            productDetails.toStoreProduct(basePlan, offersForBasePlan).let { storeProducts.add(it) }
         } ?: productDetails.toStoreProduct().let { storeProducts.add(it) }
     }
     return storeProducts

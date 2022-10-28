@@ -39,3 +39,6 @@ fun @receiver:BillingClient.ProductType String.buildQueryProductDetailsParams(
 // TODO move somewhere
 val SubscriptionOfferDetails.subscriptionBillingPeriod: String?
     get() = this.pricingPhases.pricingPhaseList.lastOrNull()?.billingPeriod
+
+val SubscriptionOfferDetails.isBasePlan: Boolean
+    get() = this.pricingPhases.pricingPhaseList.size == 1
