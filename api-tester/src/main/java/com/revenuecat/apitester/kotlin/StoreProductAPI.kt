@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
@@ -8,23 +9,12 @@ import org.json.JSONObject
 private class StoreProductAPI {
     fun check(product: StoreProduct) {
         with(product) {
-            val sku: String = sku
+            val storeProductId: String = sku //TODOBC5 - rename to storeProductId
             val type: ProductType = type
-            val price: String = price
-            val priceAmountMicros: Long = priceAmountMicros
-            val priceCurrencyCode: String = priceCurrencyCode
-            val originalPrice: String? = originalPrice
-            val originalPriceAmountMicros: Long = originalPriceAmountMicros
+            val oneTimeProductPrice: Price? = oneTimeProductPrice
             val title: String = title
             val description: String = description
             val subscriptionPeriod: String? = subscriptionPeriod
-            val freeTrialPeriod: String? = freeTrialPeriod
-            val introductoryPrice: String? = introductoryPrice
-            val introductoryPriceAmountMicros: Long = introductoryPriceAmountMicros
-            val introductoryPricePeriod: String? = introductoryPricePeriod
-            val introductoryPriceCycles: Int = introductoryPriceCycles
-            val iconUrl: String = iconUrl
-            val originalJson: JSONObject = originalJson
         }
     }
 

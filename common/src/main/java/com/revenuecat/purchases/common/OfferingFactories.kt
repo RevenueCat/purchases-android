@@ -57,7 +57,7 @@ fun JSONObject.createPackage(
     return productsById[sku]?.let { product ->
         val identifier = getString("identifier")
         val packageType = identifier.toPackageType()
-        return Package(identifier, packageType, product, offeringIdentifier)
+        return Package(identifier, packageType, product, offeringIdentifier, "TODOBC5", "TODOBC5")
     }
 }
 

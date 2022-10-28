@@ -194,9 +194,9 @@ class Backend(
             "store_user_id" to storeAppUserID
         ).filterValues { value -> value != null }
 
-        val extraHeaders = receiptInfo.storeProduct?.price?.let { priceString ->
+        val extraHeaders = /*receiptInfo.storeProduct?.price?.let { priceString ->
             mapOf("price_string" to priceString, "marketplace" to marketplace).filterNotNullValues()
-        } ?: mapOf()
+        } ?:*/mapOf<String, String>() //TODOBC5
 
         val call = object : Dispatcher.AsyncCall() {
 

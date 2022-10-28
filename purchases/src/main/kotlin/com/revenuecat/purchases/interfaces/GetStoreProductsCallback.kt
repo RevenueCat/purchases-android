@@ -9,6 +9,7 @@ interface GetStoreProductsCallback {
      *
      * @param storeProducts List of [StoreProduct] retrieved after a successful call to fetch [StoreProduct]
      */
+    @JvmSuppressWildcards
     fun onReceived(storeProducts: List<StoreProduct>)
 
     /**

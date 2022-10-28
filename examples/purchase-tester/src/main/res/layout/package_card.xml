@@ -92,7 +92,7 @@
                     app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_type"
-                    bind:header="@{`Price: ` + currentPackage.product.price}"
+                    bind:header="@{`Price: TODOBC5`}"
                     tools:text="$1.99" />
 
             <androidx.constraintlayout.widget.Barrier

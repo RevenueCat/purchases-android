@@ -9,14 +9,21 @@ import kotlinx.parcelize.Parcelize
  * @property identifier Unique identifier for this package. Can be one a predefined package type or a custom one.
  * @property packageType Package type for the product. Will be one of [PackageType].
  * @property product [StoreProduct] assigned to this package.
- * @property offering offeringID this package was returned from.
+ * @property offering offering this package was returned from.
+ * @property subscriptionPeriod Google BC5 only. String representation of the subscription period, used for filtering ProductDetails
+ * for the proper base plan to create a StoreProduct. For now, we are not worrying if it matches PackageType
+ * @property storeProductIdentifier  Amazon sku/Google product ID used for querying the store.
  */
 @Parcelize
 data class Package(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,
-    val offering: String
+    val offering: String, //TODOBC5 change type?
+
+    // TODO both of these are only used to create StoreProduct, maybe we don't need to store them in this class
+    private val subscriptionPeriod: String?,
+    private val storeProductIdentifier: String
 ) : Parcelable
 
 /**

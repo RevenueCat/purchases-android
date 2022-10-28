@@ -1,25 +1,51 @@
 package com.revenuecat.purchases.amazon
 
-import com.amazon.device.iap.internal.model.ProductBuilder
+import android.os.Parcelable
 import com.amazon.device.iap.model.Product
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.parceler.JSONObjectParceler
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.regex.Pattern
-import com.amazon.device.iap.model.ProductType as AmazonProductType
 
-val StoreProduct.amazonProduct: Product
-    get() = ProductBuilder()
-        .setSku(originalJson.getString("sku"))
-        .setProductType(originalJson.getProductType("productType"))
-        .setDescription(originalJson.getString("description"))
-        .setPrice(originalJson.getString("price"))
-        .setSmallIconUrl(originalJson.getString("smallIconUrl"))
-        .setTitle(originalJson.getString("title"))
-        .setCoinsRewardAmount(originalJson.getInt("coinsRewardAmount")).build()
+@Parcelize
+@TypeParceler<JSONObject, JSONObjectParceler>()
+data class AmazonStoreProduct(
+    override val sku: String,
+    override val type: ProductType,
+    override val title: String,
+    override val description: String,
+    override val subscriptionPeriod: String?,
+
+    //TODOBC5
+    override val oneTimeProductPrice: com.revenuecat.purchases.models.Price?,
+    override val purchaseOptions: List<PurchaseOption>,
+    val price: String,
+    val priceAmountMicros: Long,
+    val priceCurrencyCode: String,
+    val originalPrice: String?,
+    val originalPriceAmountMicros: Long,
+    val freeTrialPeriod: String?,
+    val introductoryPrice: String?,
+    val introductoryPriceAmountMicros: Long,
+    val introductoryPricePeriod: String?,
+    val introductoryPriceCycles: Int,
+    val iconUrl: String,
+    val originalJson: JSONObject,
+    val amazonProduct: Product,
+) : StoreProduct, Parcelable {
+
+    // We use this to not include the originalJSON in the equals
+    /*override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
+    override fun hashCode() = ComparableData(this).hashCode()*/ //TODOBC5
+}
 
 fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     if (price == null) {
@@ -30,24 +56,27 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
     val (currencyCode, priceAmountMicros) = price.extractPrice(marketplace)
 
-    return StoreProduct(
+    return AmazonStoreProduct(
         sku,
         productType.toRevenueCatProductType(),
+        title,
+        description,
+        subscriptionPeriod = null,
+        null,
+        emptyList(),
         price,
         priceAmountMicros = priceAmountMicros,
         priceCurrencyCode = currencyCode,
         originalPrice = null,
         originalPriceAmountMicros = 0,
-        title,
-        description,
-        subscriptionPeriod = null,
         freeTrialPeriod = null,
         introductoryPrice = null,
         introductoryPriceAmountMicros = 0,
         introductoryPricePeriod = null,
         introductoryPriceCycles = 0,
         iconUrl = smallIconUrl,
-        originalJson = toJSON()
+        originalJson = toJSON(),
+        amazonProduct = this
     )
 }
 
@@ -101,6 +130,3 @@ internal fun String.parsePriceUsingRegex(): BigDecimal? {
         BigDecimal(price)
     }
 }
-
-private fun JSONObject.getProductType(productType: String) =
-    AmazonProductType.values().firstOrNull { it.name == this.getString(productType) }

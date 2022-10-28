@@ -48,8 +48,8 @@ class PackageCardAdapter(
                 currentPackage.packageType.toString()
             }
 
-            binding.packageDetailsJsonObject.detail =
-                currentPackage.product.originalJson.toString(JSON_FORMATTER_INDENT_SPACES)
+            binding.packageDetailsJsonObject.detail = ""
+                //TODOBC5 currentPackage.product.originalJson.toString(JSON_FORMATTER_INDENT_SPACES)
 
             binding.root.setOnClickListener {
                 with(binding.packageDetailsContainer) {
