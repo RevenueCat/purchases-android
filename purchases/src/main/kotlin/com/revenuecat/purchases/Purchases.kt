@@ -992,8 +992,8 @@ class Purchases internal constructor(
             appInBackground,
             { offeringsJSON ->
                 try {
-                    val skus = extractSkus(offeringsJSON)
-                    if (skus.isEmpty()) {
+                    val productGroupIdentifiers = extractProductGroupIdentifiers(offeringsJSON)
+                    if (productGroupIdentifiers.isEmpty()) {
                         handleErrorFetchingOfferings(
                             PurchasesError(
                                 PurchasesErrorCode.ConfigurationError,
@@ -1002,7 +1002,7 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getSkuDetails(skus, { productsById ->
+                        getSkuDetails(productGroupIdentifiers, { productsById ->
                             val offerings = offeringsJSON.createOfferings(productsById)
 
                             logMissingProducts(offerings, productsById)
@@ -1042,7 +1042,7 @@ class Purchases internal constructor(
             })
     }
 
-    private fun extractSkus(offeringsJSON: JSONObject): Set<String> {
+    private fun extractProductGroupIdentifiers(offeringsJSON: JSONObject): Set<String> {
         val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
         val skus = mutableSetOf<String>()
         for (i in 0 until jsonArrayOfOfferings.length()) {
@@ -1051,7 +1051,7 @@ class Purchases internal constructor(
             for (j in 0 until jsonPackagesArray.length()) {
                 skus.add(
                     jsonPackagesArray.getJSONObject(j)
-                        .getString("platform_product_identifier")
+                        .getString("platform_product_group_identifier")
                 )
             }
         }
