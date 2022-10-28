@@ -13,17 +13,16 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingClient.SkuType
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.SkuDetailsParams
-import com.android.billingclient.api.SkuDetailsResponseListener
+import com.android.billingclient.api.QueryProductDetailsParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -155,12 +154,17 @@ class BillingWrapper(
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                val params = SkuDetailsParams.newBuilder()
-                    .setType(productType.toGoogleProductType() ?: SkuType.INAPP)
-                    .setSkusList(nonEmptySkus).build()
+                val productList = skus.map { sku ->
+                    QueryProductDetailsParams.Product.newBuilder()
+                        .setProductId(sku)
+                        .setProductType(productType.toGoogleProductType() ?: BillingClient.ProductType.SUBS)
+                        .build()
+                }
+                val params = QueryProductDetailsParams.newBuilder()
+                    .setProductList(productList).build()
 
                 withConnectedClient {
-                    querySkuDetailsAsyncEnsuringOneResponse(params) { billingResult, skuDetailsList ->
+                    queryProductDetailsAsyncEnsuringOneResponse(params) { billingResult, productDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             log(
                                 LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
@@ -168,10 +172,10 @@ class BillingWrapper(
                             )
                             log(
                                 LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
-                                    .format(skuDetailsList?.joinToString { it.toString() })
+                                    .format(productDetailsList.joinToString { it.toString() })
                             )
-                            skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
-                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
+                            productDetailsList.takeUnless { it.isEmpty() }?.forEach {
+                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
                             }
 
                             onReceive(emptyList()) //TODOBC5 skuDetailsList?.map { it.toStoreProduct() } ?: emptyList())
@@ -215,7 +219,7 @@ class BillingWrapper(
         }
         executeRequestOnUIThread {
             val params = BillingFlowParams.newBuilder()
-                //TODOBC5 .setSkuDetails(storeProduct.skuDetails)
+                // TODOBC5 .setSkuDetails(storeProduct.skuDetails)
                 .apply {
                     replaceSkuInfo?.let {
                         setUpgradeInfo(it)
@@ -718,23 +722,23 @@ class BillingWrapper(
         }
     }
 
-    private fun BillingClient.querySkuDetailsAsyncEnsuringOneResponse(
-        params: SkuDetailsParams,
-        listener: SkuDetailsResponseListener
+    private fun BillingClient.queryProductDetailsAsyncEnsuringOneResponse(
+        params: QueryProductDetailsParams,
+        listener: ProductDetailsResponseListener
     ) {
         var hasResponded = false
-        querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
+        queryProductDetailsAsync(params) { billingResult, skuDetailsList ->
             synchronized(this@BillingWrapper) {
                 if (hasResponded) {
                     log(
                         LogIntent.GOOGLE_ERROR,
                         OfferingStrings.EXTRA_QUERY_SKU_DETAILS_RESPONSE.format(billingResult.responseCode)
                     )
-                    return@querySkuDetailsAsync
+                    return@queryProductDetailsAsync
                 }
                 hasResponded = true
             }
-            listener.onSkuDetailsResponse(billingResult, skuDetailsList)
+            listener.onProductDetailsResponse(billingResult, skuDetailsList)
         }
     }
 
