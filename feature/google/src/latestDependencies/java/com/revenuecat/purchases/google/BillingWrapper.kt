@@ -38,7 +38,6 @@ import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
@@ -71,7 +70,6 @@ class BillingWrapper(
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
-    private val storeProductByProductIdentifier = mutableMapOf<String, StoreProduct>()
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
@@ -217,10 +215,9 @@ class BillingWrapper(
         synchronized(this@BillingWrapper) {
             productTypes[storeProduct.sku] = storeProduct.type
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
-            storeProductByProductIdentifier[storeProduct.sku] = storeProduct
         }
         executeRequestOnUIThread {
-            val params = newPurchaseParams(storeProduct, purchaseOption) ?: return@executeRequestOnUIThread
+            val params = createPurchaseParams(storeProduct, purchaseOption) ?: return@executeRequestOnUIThread
 
             launchBillingFlow(activity, params)
         }
@@ -764,7 +761,7 @@ class BillingWrapper(
         }
     }
 
-    private fun newPurchaseParams(
+    private fun createPurchaseParams(
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption
     ): BillingFlowParams? {
