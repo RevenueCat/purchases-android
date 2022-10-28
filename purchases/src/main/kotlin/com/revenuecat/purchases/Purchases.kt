@@ -1538,9 +1538,9 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 storeProduct,
-                purchaseOption = purchaseOption,
-                replaceSkuInfo = null,
-                presentedOfferingIdentifier = presentedOfferingIdentifier
+                purchaseOption,
+                null,
+                presentedOfferingIdentifier
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
@@ -1602,9 +1602,9 @@ class Purchases internal constructor(
                     activity,
                     appUserID,
                     storeProduct,
-                    purchaseOption = purchaseOption,
-                    replaceSkuInfo = ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
-                    presentedOfferingIdentifier = presentedOfferingIdentifier
+                    purchaseOption,
+                    ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
+                    presentedOfferingIdentifier
                 )
             },
             onError = { error ->
