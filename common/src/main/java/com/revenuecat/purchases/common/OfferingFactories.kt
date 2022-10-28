@@ -11,7 +11,7 @@ import org.json.JSONObject
 /**
  * Note: this may return an empty Offerings.
  */
-fun JSONObject.createOfferings(productsById: Map<String, List<StoreProduct>>): Offerings {
+fun JSONObject.createOfferings(productsById: Map<String, StoreProduct>): Offerings {
     val jsonOfferings = getJSONArray("offerings")
     val currentOfferingID = getString("current_offering_id")
 
@@ -30,7 +30,7 @@ fun JSONObject.createOfferings(productsById: Map<String, List<StoreProduct>>): O
     return Offerings(offerings[currentOfferingID], offerings)
 }
 
-fun JSONObject.createOffering(productsById: Map<String, List<StoreProduct>>): Offering? {
+fun JSONObject.createOffering(productsById: Map<String, StoreProduct>): Offering? {
     val offeringIdentifier = getString("identifier")
     val jsonPackages = getJSONArray("packages")
 
@@ -50,7 +50,7 @@ fun JSONObject.createOffering(productsById: Map<String, List<StoreProduct>>): Of
 }
 
 fun JSONObject.createPackage(
-    productsById: Map<String, List<StoreProduct>>,
+    productsById: Map<String, StoreProduct>,
     offeringIdentifier: String
 ): Package? {
     val packageIdentifier = getString("identifier")
@@ -59,7 +59,7 @@ fun JSONObject.createPackage(
     val productDuration = optString("product_duration")
     return productsById[productGroupIdentifier]?.let { product ->
         val packageType = packageIdentifier.toPackageType()
-        return Package(packageIdentifier, packageType, product.first(), offeringIdentifier, productDuration, productIdentifier)
+        return Package(packageIdentifier, packageType, product, offeringIdentifier, productDuration, productIdentifier)
     }
 }
 

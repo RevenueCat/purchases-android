@@ -1005,7 +1005,7 @@ class Purchases internal constructor(
                         getProductGroups(productGroupIdentifiers, { productsById ->
                             val offerings = offeringsJSON.createOfferings(productsById)
 
-//                            logMissingProducts(offerings, productsById)
+                            logMissingProducts(offerings, productsById)
 
                             if (offerings.all.isEmpty()) {
                                 handleErrorFetchingOfferings(
@@ -1231,9 +1231,9 @@ class Purchases internal constructor(
             ProductType.SUBS,
             productIds,
             { subscriptionProducts ->
-                val productsById = HashMap<String, List<StoreProduct>>()
+                val productsById = HashMap<String, StoreProduct>()
 
-                val subscriptionProductsById = subscriptionProducts.groupBy { subProduct -> subProduct.sku }
+                val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.sku }
                 productsById.putAll(subscriptionProductsById)
 
                 val subscriptionIds = subscriptionProductsById.keys
@@ -1252,7 +1252,7 @@ class Purchases internal constructor(
                     )
                 } else {
                     onCompleted(productsById)
-//                }
+                }
             }, {
                 onError(it)
             })
