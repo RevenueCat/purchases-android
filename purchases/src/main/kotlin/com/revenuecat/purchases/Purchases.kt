@@ -372,8 +372,8 @@ class Purchases internal constructor(
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
     @Deprecated(
-        "Replaced with purchaseProductWithPurchaseOption",
-        ReplaceWith("purchaseProductWithPurchaseOption")
+        "Replaced with purchaseProductWithOption",
+        ReplaceWith("purchaseProductWithOption")
     )
     fun purchaseProduct(
         activity: Activity,
@@ -404,8 +404,8 @@ class Purchases internal constructor(
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
     @Deprecated(
-        "Replaced with purchaseProductWithPurchaseOption",
-        ReplaceWith("purchaseProductWithPurchaseOption")
+        "Replaced with purchaseProductWithOption",
+        ReplaceWith("purchaseProductWithOption")
     )
     fun purchaseProduct(
         activity: Activity,
@@ -472,8 +472,8 @@ class Purchases internal constructor(
      * @param [callback] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        "Replaced with purchasePackageWithPurchaseOption",
-        ReplaceWith("purchasePackageWithPurchaseOption")
+        "Replaced with purchasePackageWithOption",
+        ReplaceWith("purchasePackageWithOption")
     )
     fun purchasePackage(
         activity: Activity,
@@ -504,8 +504,8 @@ class Purchases internal constructor(
      * @param [listener] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        "Replaced with purchasePackageWithPurchaseOption",
-        ReplaceWith("purchasePackageWithPurchaseOption")
+        "Replaced with purchasePackageWithOption",
+        ReplaceWith("purchasePackageWithOption")
     )
     fun purchasePackage(
         activity: Activity,
