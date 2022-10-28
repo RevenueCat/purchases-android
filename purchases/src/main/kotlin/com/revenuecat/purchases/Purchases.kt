@@ -1002,7 +1002,7 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getProductGroups(productGroupIdentifiers, { productsById ->
+                        getStoreProductsById(productGroupIdentifiers, { productsById ->
                             val offerings = offeringsJSON.createOfferings(productsById)
 
                             logMissingProducts(offerings, productsById)
@@ -1081,7 +1081,7 @@ class Purchases internal constructor(
 
     private fun logMissingProducts(
         offerings: Offerings,
-        storeProductByID: Map<String, StoreProduct>
+        storeProductByID: Map<String, List<StoreProduct>>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
         .map { it.product.sku }
@@ -1222,29 +1222,32 @@ class Purchases internal constructor(
         }
     }
 
-    private fun getProductGroups(
+    private fun getStoreProductsById(
         productIds: Set<String>,
-        onCompleted: (Map<String, StoreProduct>) -> Unit,
+        onCompleted: (Map<String, List<StoreProduct>>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         billing.queryProductDetailsAsync(
             ProductType.SUBS,
             productIds,
             { subscriptionProducts ->
-                val productsById = HashMap<String, StoreProduct>()
+                val productsById = HashMap<String, List<StoreProduct>>()
 
-                val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.sku }
-                productsById.putAll(subscriptionProductsById)
+                productIds.forEach { productId ->
+                    val storeProducts = mutableListOf<StoreProduct>()
+                    storeProducts.addAll(subscriptionProducts.filter { sub -> sub.sku == productId })
+                    productsById[productId] = storeProducts
+                }
 
-                val subscriptionIds = subscriptionProductsById.keys
+                val subscriptionIds = productsById.keys
 
                 val inAppProductIds = productIds - subscriptionIds
                 if (inAppProductIds.isNotEmpty()) {
                     billing.queryProductDetailsAsync(
                         ProductType.INAPP,
                         inAppProductIds,
-                        { product ->
-                            productsById.putAll(product.map { it.sku to it })
+                        { inAppProducts ->
+                            productsById.putAll(inAppProducts.map { it.sku to listOf(it) })
                             onCompleted(productsById)
                         }, {
                             onError(it)
