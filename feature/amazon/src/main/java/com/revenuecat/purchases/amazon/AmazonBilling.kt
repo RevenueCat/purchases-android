@@ -223,15 +223,11 @@ internal class AmazonBilling constructor(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchaseOption: PurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
         if (checkObserverMode()) return
-        if (purchaseOption != null) {
-            //TODOBC5: Improve and move error message
-            errorLog("PurchaseOption shouldn't be provided when purchasing with Amazon. Ignoring for now")
-        }
 
         if (replaceSkuInfo != null) {
             log(LogIntent.AMAZON_WARNING, AmazonStrings.PRODUCT_CHANGES_NOT_SUPPORTED)

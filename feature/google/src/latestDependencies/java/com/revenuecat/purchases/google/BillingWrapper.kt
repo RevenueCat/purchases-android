@@ -201,14 +201,10 @@ class BillingWrapper(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchaseOption: PurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
-        if (purchaseOption == null) {
-            errorLog("PurchaseOption is mandatory in BC5") //TODOBC5: Improve and move error message
-            return
-        }
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU

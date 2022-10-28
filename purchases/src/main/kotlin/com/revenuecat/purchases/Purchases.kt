@@ -44,9 +44,11 @@ import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.bestPurchaseOption
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -376,9 +378,16 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
+        val purchaseOption = storeProduct.bestPurchaseOption
+        if (purchaseOption == null) {
+            //TODOBC5: Improve and move error message
+            errorLog("PurchaseProduct with upgrade: Product does not have any purchase option")
+            return
+        }
         startProductChange(
             activity,
             storeProduct,
+            purchaseOption,
             null,
             upgradeInfo,
             listener
@@ -396,7 +405,13 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, storeProduct, null, callback)
+        val purchaseOption = storeProduct.bestPurchaseOption
+        if (purchaseOption == null) {
+            //TODOBC5: Improve and move error message
+            errorLog("PurchaseProduct: Product does not have any purchase option")
+            return
+        }
+        startPurchase(activity, storeProduct, purchaseOption, null, callback)
     }
 
     /**
@@ -413,9 +428,16 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         callback: ProductChangeCallback
     ) {
+        val purchaseOption = packageToPurchase.product.bestPurchaseOption
+        if (purchaseOption == null) {
+            //TODOBC5: Improve and move error message
+            errorLog("PurchasePackage with upgrade: Product does not have any purchase option")
+            return
+        }
         startProductChange(
             activity,
             packageToPurchase.product,
+            purchaseOption,
             packageToPurchase.offering,
             upgradeInfo,
             callback
@@ -433,9 +455,16 @@ class Purchases internal constructor(
         packageToPurchase: Package,
         listener: PurchaseCallback
     ) {
+        val purchaseOption = packageToPurchase.product.bestPurchaseOption
+        if (purchaseOption == null) {
+            //TODOBC5: Improve and move error message
+            errorLog("PurchasePackage: Product does not have any purchase option")
+            return
+        }
         startPurchase(
             activity,
             packageToPurchase.product,
+            purchaseOption,
             packageToPurchase.offering,
             listener
         )
@@ -1378,6 +1407,7 @@ class Purchases internal constructor(
     private fun startPurchase(
         activity: Activity,
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
@@ -1403,7 +1433,7 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 storeProduct,
-                purchaseOption = null, //TODOBC5: Choose a purchase option when using BC5.
+                purchaseOption = purchaseOption,
                 replaceSkuInfo = null,
                 presentedOfferingIdentifier = presentedOfferingIdentifier
             )
@@ -1413,6 +1443,7 @@ class Purchases internal constructor(
     private fun startProductChange(
         activity: Activity,
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
@@ -1436,6 +1467,7 @@ class Purchases internal constructor(
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
                 storeProduct,
+                purchaseOption,
                 upgradeInfo,
                 activity,
                 appUserID,
@@ -1447,6 +1479,7 @@ class Purchases internal constructor(
 
     private fun replaceOldPurchaseWithNewProduct(
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
@@ -1464,7 +1497,7 @@ class Purchases internal constructor(
                     activity,
                     appUserID,
                     storeProduct,
-                    purchaseOption = null, //TODOBC5: Choose a purchase option when using BC5.
+                    purchaseOption = purchaseOption,
                     replaceSkuInfo = ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier = presentedOfferingIdentifier
                 )

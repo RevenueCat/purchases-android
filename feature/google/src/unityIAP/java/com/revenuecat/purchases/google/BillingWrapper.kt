@@ -197,14 +197,10 @@ class BillingWrapper(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchaseOption: PurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
-        if (purchaseOption != null) {
-            //TODOBC5: Improve and move error message
-            errorLog("PurchaseOption shouldn't be provided when purchasing with BC4. Ignoring for now")
-        }
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
