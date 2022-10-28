@@ -12,7 +12,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.strings.NetworkStrings
-import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -196,7 +195,7 @@ class Backend(
 
         val extraHeaders = /*receiptInfo.storeProduct?.price?.let { priceString ->
             mapOf("price_string" to priceString, "marketplace" to marketplace).filterNotNullValues()
-        } ?:*/mapOf<String, String>() //TODOBC5
+        } ?:*/mapOf<String, String>() // TODOBC5
 
         val call = object : Dispatcher.AsyncCall() {
 

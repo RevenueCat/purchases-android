@@ -33,5 +33,4 @@ data class PurchaseOption(
         get() = pricingPhases.size == 1
 
     // TODO add helpers to check if free trial, intro price, etc?
-
 }

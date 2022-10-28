@@ -12,7 +12,7 @@ import org.json.JSONObject
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 data class GoogleStoreProduct(
-    override val sku: String, //TODOBC5 rename?
+    override val sku: String, // TODOBC5 rename?
     override val type: ProductType,
     override val oneTimeProductPrice: Price?,
     override val title: String,

@@ -2,14 +2,12 @@ package com.revenuecat.purchases
 
 import android.os.Parcelable
 import com.android.billingclient.api.SkuDetails
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.ComparableData
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
-import kotlinx.parcelize.RawValue
 import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 
