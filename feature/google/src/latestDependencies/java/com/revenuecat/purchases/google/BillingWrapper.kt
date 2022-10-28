@@ -173,20 +173,20 @@ class BillingWrapper(
                             }
 
                             val storeProducts = mutableListOf<StoreProduct>()
-                            productDetailsList.forEach { product ->
-                                val basePlans = product.subscriptionOfferDetails?.filter {
+                            productDetailsList.forEach { productDetails ->
+                                val basePlans = productDetails.subscriptionOfferDetails?.filter {
                                     it.pricingPhases.pricingPhaseList.size == 1
                                 } ?: emptyList()
 
-                                val groupedOffers = product.subscriptionOfferDetails?.groupBy {
+                                val offersBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
                                     it.pricingPhases.pricingPhaseList.last().billingPeriod
                                 } ?: emptyMap()
                                 basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
                                     val billingPeriod =
                                         basePlan.pricingPhases.pricingPhaseList.firstOrNull()?.billingPeriod
-                                    val offers = groupedOffers[billingPeriod] ?: emptyList()
-                                    product.toStoreProduct(basePlan, offers).let { storeProducts.add(it) }
-                                } ?: product.toStoreProduct().let { storeProducts.add(it) }
+                                    val offers = offersBySubPeriod[billingPeriod] ?: emptyList()
+                                    productDetails.toStoreProduct(basePlan, offers).let { storeProducts.add(it) }
+                                } ?: productDetails.toStoreProduct().let { storeProducts.add(it) }
                             }
 
                             onReceive(storeProducts)
