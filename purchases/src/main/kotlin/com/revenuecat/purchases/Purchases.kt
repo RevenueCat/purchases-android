@@ -1097,7 +1097,7 @@ class Purchases internal constructor(
         productType: ProductType,
         callback: GetStoreProductsCallback
     ) {
-        billing.querySkuDetailsAsync(
+        billing.queryProductDetailsAsync(
             productType,
             skus,
             { storeProducts ->
