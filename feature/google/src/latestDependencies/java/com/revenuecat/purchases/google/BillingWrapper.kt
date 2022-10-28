@@ -172,22 +172,7 @@ class BillingWrapper(
                                 log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
                             }
 
-                            val storeProducts = mutableListOf<StoreProduct>()
-                            productDetailsList.forEach { productDetails ->
-                                val basePlans = productDetails.subscriptionOfferDetails?.filter {
-                                    it.pricingPhases.pricingPhaseList.size == 1
-                                } ?: emptyList()
-
-                                val offersBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
-                                    it.subscriptionBillingPeriod
-                                } ?: emptyMap()
-                                basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
-                                    val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
-                                    val offers = offersBySubPeriod[basePlanBillingPeriod] ?: emptyList()
-                                    productDetails.toStoreProduct(basePlan, offers).let { storeProducts.add(it) }
-                                } ?: productDetails.toStoreProduct().let { storeProducts.add(it) }
-                            }
-
+                            val storeProducts = productDetailsList.toStoreProducts()
                             onReceive(storeProducts)
                         } else {
                             log(
