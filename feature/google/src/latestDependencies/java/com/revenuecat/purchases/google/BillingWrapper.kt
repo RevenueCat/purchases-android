@@ -139,24 +139,24 @@ class BillingWrapper(
 
     override fun queryProductDetailsAsync(
         productType: ProductType,
-        skus: Set<String>,
+        productIds: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
-        val nonEmptySkus = skus.filter { it.isNotEmpty() }
+        val nonEmptyProductIds = productIds.filter { it.isNotEmpty() }
 
-        if (nonEmptySkus.isEmpty()) {
+        if (nonEmptyProductIds.isEmpty()) {
             log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
             onReceive(emptyList())
             return
         }
 
-        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
+        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                val productList = skus.map { sku ->
+                val productList = productIds.map { productId ->
                     QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(sku)
+                        .setProductId(productId)
                         .setProductType(productType.toGoogleProductType() ?: BillingClient.ProductType.SUBS)
                         .build()
                 }
@@ -168,7 +168,7 @@ class BillingWrapper(
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             log(
                                 LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                    .format(skus.joinToString())
+                                    .format(productIds.joinToString())
                             )
                             log(
                                 LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
