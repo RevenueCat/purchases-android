@@ -83,32 +83,10 @@ private class PurchasesAPI {
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
         purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
 
-        purchases.purchaseProductWithPurchaseOption(
-            activity,
-            storeProduct,
-            purchaseOption,
-            upgradeInfo,
-            purchaseChangeCallback
-        )
-        purchases.purchaseProductWithPurchaseOption(
-            activity,
-            storeProduct,
-            purchaseOption,
-            purchaseCallback
-        )
-        purchases.purchasePackageWithPurchaseOption(
-            activity,
-            packageToPurchase,
-            purchaseOption,
-            upgradeInfo,
-            purchaseChangeCallback
-        )
-        purchases.purchasePackageWithPurchaseOption(
-            activity,
-            packageToPurchase,
-            purchaseOption,
-            purchaseCallback
-        )
+        purchases.purchaseProductWithOption(activity, storeProduct, purchaseOption, upgradeInfo, purchaseChangeCallback)
+        purchases.purchaseProductWithOption(activity, storeProduct, purchaseOption, purchaseCallback)
+        purchases.purchasePackageWithOption(activity, packageToPurchase, purchaseOption, upgradeInfo, purchaseChangeCallback)
+        purchases.purchasePackageWithOption(activity, packageToPurchase, purchaseOption, purchaseCallback)
 
         // TODO new methods -- pull desired purchaseoption from the storeproduct
 //        purchases.purchase(activity, purchaseOption, upgradeInfo, purchaseChangeCallback)

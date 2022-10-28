@@ -430,7 +430,7 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
-    fun purchaseProductWithPurchaseOption(
+    fun purchaseProductWithOption(
         activity: Activity,
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption,
@@ -454,7 +454,7 @@ class Purchases internal constructor(
      * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
-    fun purchaseProductWithPurchaseOption(
+    fun purchaseProductWithOption(
         activity: Activity,
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption,
@@ -536,7 +536,7 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
      */
-    fun purchasePackageWithPurchaseOption(
+    fun purchasePackageWithOption(
         activity: Activity,
         packageToPurchase: Package,
         purchaseOption: PurchaseOption,
@@ -560,7 +560,7 @@ class Purchases internal constructor(
      * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
      * @param [listener] The listener that will be called when purchase completes.
      */
-    fun purchasePackageWithPurchaseOption(
+    fun purchasePackageWithOption(
         activity: Activity,
         packageToPurchase: Package,
         purchaseOption: PurchaseOption,
