@@ -188,7 +188,8 @@ class BillingWrapper(
                                     it.pricingPhases.pricingPhaseList.last().billingPeriod
                                 } ?: emptyMap()
                                 basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
-                                    val billingPeriod = basePlan.pricingPhases.pricingPhaseList[0].billingPeriod
+                                    val billingPeriod =
+                                        basePlan.pricingPhases.pricingPhaseList.firstOrNull()?.billingPeriod
                                     val offers = groupedOffers[billingPeriod] ?: emptyList()
                                     product.toStoreProduct(basePlan, offers).let { storeProducts.add(it) }
                                 } ?: product.toStoreProduct().let { storeProducts.add(it) }
