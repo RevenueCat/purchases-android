@@ -179,12 +179,11 @@ class BillingWrapper(
                                 } ?: emptyList()
 
                                 val offersBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
-                                    it.pricingPhases.pricingPhaseList.last().billingPeriod
+                                    it.subscriptionBillingPeriod
                                 } ?: emptyMap()
                                 basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
-                                    val billingPeriod =
-                                        basePlan.pricingPhases.pricingPhaseList.firstOrNull()?.billingPeriod
-                                    val offers = offersBySubPeriod[billingPeriod] ?: emptyList()
+                                    val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
+                                    val offers = offersBySubPeriod[basePlanBillingPeriod] ?: emptyList()
                                     productDetails.toStoreProduct(basePlan, offers).let { storeProducts.add(it) }
                                 } ?: productDetails.toStoreProduct().let { storeProducts.add(it) }
                             }
