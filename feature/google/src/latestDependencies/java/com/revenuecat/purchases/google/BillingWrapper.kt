@@ -178,7 +178,23 @@ class BillingWrapper(
                                 log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
                             }
 
-                            onReceive(emptyList()) //TODOBC5 skuDetailsList?.map { it.toStoreProduct() } ?: emptyList())
+                            val storeProducts = mutableListOf<StoreProduct>()
+                            productDetailsList.forEach { product ->
+                                val basePlans = product.subscriptionOfferDetails?.filter {
+                                    it.pricingPhases.pricingPhaseList.size == 1
+                                } ?: emptyList()
+
+                                val groupedOffers = product.subscriptionOfferDetails?.groupBy {
+                                    it.pricingPhases.pricingPhaseList.last().billingPeriod
+                                } ?: emptyMap()
+                                basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
+                                    val billingPeriod = basePlan.pricingPhases.pricingPhaseList[0].billingPeriod
+                                    val offers = groupedOffers[billingPeriod] ?: emptyList()
+                                    product.toStoreProduct(basePlan, offers).let { storeProducts.add(it) }
+                                } ?: product.toStoreProduct().let { storeProducts.add(it) }
+                            }
+
+                            onReceive(storeProducts)
                         } else {
                             log(
                                 LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR

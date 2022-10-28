@@ -1002,7 +1002,7 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getSkuDetails(productGroupIdentifiers, { productsById ->
+                        getProductGroups(productGroupIdentifiers, { productsById ->
                             val offerings = offeringsJSON.createOfferings(productsById)
 
                             logMissingProducts(offerings, productsById)
@@ -1081,7 +1081,7 @@ class Purchases internal constructor(
 
     private fun logMissingProducts(
         offerings: Offerings,
-        storeProductByID: HashMap<String, StoreProduct>
+        storeProductByID: Map<String, StoreProduct>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
         .map { it.product.sku }
@@ -1222,9 +1222,9 @@ class Purchases internal constructor(
         }
     }
 
-    private fun getSkuDetails(
+    private fun getProductGroups(
         productIds: Set<String>,
-        onCompleted: (HashMap<String, StoreProduct>) -> Unit,
+        onCompleted: (Map<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         billing.queryProductDetailsAsync(
@@ -1240,7 +1240,7 @@ class Purchases internal constructor(
 
                 val inAppProductIds = productIds - subscriptionIds
                 if (inAppProductIds.isNotEmpty()) {
-                    billing.querySkuDetailsAsync(
+                    billing.queryProductDetailsAsync(
                         ProductType.INAPP,
                         inAppProductIds,
                         { product ->
