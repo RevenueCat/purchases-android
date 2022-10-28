@@ -23,6 +23,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
+import com.revenuecat.purchases.models.PurchaseOption;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
 
@@ -41,6 +42,7 @@ final class PurchasesAPI {
                       final Activity activity,
                       final StoreProduct storeProduct,
                       final Package packageToPurchase,
+                      final PurchaseOption purchaseOption,
                       final UpgradeInfo upgradeInfo) {
         final ArrayList<String> skus = new ArrayList<>();
 
@@ -77,6 +79,10 @@ final class PurchasesAPI {
         purchases.purchaseProduct(activity, storeProduct, makePurchaseListener);
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeListener);
         purchases.purchasePackage(activity, packageToPurchase, makePurchaseListener);
+        purchases.purchaseProductWithPurchaseOption(activity, storeProduct, purchaseOption, upgradeInfo, purchaseChangeListener);
+        purchases.purchaseProductWithPurchaseOption(activity, storeProduct, purchaseOption, makePurchaseListener);
+        purchases.purchasePackageWithPurchaseOption(activity, packageToPurchase, purchaseOption, upgradeInfo, purchaseChangeListener);
+        purchases.purchasePackageWithPurchaseOption(activity, packageToPurchase, purchaseOption, makePurchaseListener);
         purchases.restorePurchases(receiveCustomerInfoListener);
 
         purchases.logIn("", logInCallback);

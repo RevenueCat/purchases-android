@@ -25,6 +25,7 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.purchasePackageWith
@@ -40,6 +41,7 @@ private class PurchasesAPI {
         activity: Activity,
         storeProduct: StoreProduct,
         packageToPurchase: Package,
+        purchaseOption: PurchaseOption,
         upgradeInfo: UpgradeInfo
     ) {
         val skus = ArrayList<String>()
@@ -80,6 +82,33 @@ private class PurchasesAPI {
         purchases.purchaseProduct(activity, storeProduct, purchaseCallback)
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
         purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
+
+        purchases.purchaseProductWithPurchaseOption(
+            activity,
+            storeProduct,
+            purchaseOption,
+            upgradeInfo,
+            purchaseChangeCallback
+        )
+        purchases.purchaseProductWithPurchaseOption(
+            activity,
+            storeProduct,
+            purchaseOption,
+            purchaseCallback
+        )
+        purchases.purchasePackageWithPurchaseOption(
+            activity,
+            packageToPurchase,
+            purchaseOption,
+            upgradeInfo,
+            purchaseChangeCallback
+        )
+        purchases.purchasePackageWithPurchaseOption(
+            activity,
+            packageToPurchase,
+            purchaseOption,
+            purchaseCallback
+        )
 
         // TODO new methods -- pull desired purchaseoption from the storeproduct
 //        purchases.purchase(activity, purchaseOption, upgradeInfo, purchaseChangeCallback)

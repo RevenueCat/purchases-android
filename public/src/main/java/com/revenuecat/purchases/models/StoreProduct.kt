@@ -49,9 +49,3 @@ interface StoreProduct : Parcelable {
      */
     val purchaseOptions: List<PurchaseOption>
 }
-
-val StoreProduct.bestPurchaseOption: PurchaseOption?
-    get() {
-        if (purchaseOptions.size == 1) return purchaseOptions[0]
-        return purchaseOptions.firstOrNull { it.isBasePlan }
-    }
