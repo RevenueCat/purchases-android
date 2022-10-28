@@ -622,6 +622,82 @@ class BillingWrapper(
 
     override fun isConnected(): Boolean = billingClient?.isReady ?: false
 
+    override fun queryProductDetailsAsync(
+        productType: ProductType,
+        skus: Set<String>,
+        onReceive: StoreProductsCallback,
+        onError: PurchasesErrorCallback
+    ) {
+        val nonEmptySkus = skus.filter { it.isNotEmpty() }
+
+        if (nonEmptySkus.isEmpty()) {
+            log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
+            onReceive(emptyList())
+            return
+        }
+
+        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                val params = SkuDetailsParams.newBuilder()
+                    .setType(productType.toGoogleProductType() ?: SkuType.INAPP)
+                    .setSkusList(nonEmptySkus).build()
+
+                withConnectedClient {
+                    querySkuDetailsAsyncEnsuringOneResponse(params) { billingResult, skuDetailsList ->
+                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                            log(
+                                LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
+                                    .format(skus.joinToString())
+                            )
+                            log(
+                                LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
+                                    .format(skuDetailsList?.joinToString { it.toString() })
+                            )
+                            skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
+                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
+                            }
+
+                            onReceive(skuDetailsList?.map { it.toStoreProduct() } ?: emptyList())
+                        } else {
+                            log(
+                                LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
+                                    .format(billingResult.toHumanReadableDescription())
+                            )
+                            onError(
+                                billingResult.responseCode.billingResponseToPurchasesError(
+                                    "Error when fetching products. ${billingResult.toHumanReadableDescription()}"
+                                ).also { errorLog(it) }
+                            )
+                        }
+                    }
+                }
+            } else {
+                onError(connectionError)
+            }
+        }
+    }
+
+    private fun BillingClient.querySkuDetailsAsyncEnsuringOneResponse(
+        params: SkuDetailsParams,
+        listener: SkuDetailsResponseListener
+    ) {
+        var hasResponded = false
+        querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
+            synchronized(this@BillingWrapper) {
+                if (hasResponded) {
+                    log(
+                        LogIntent.GOOGLE_ERROR,
+                        OfferingStrings.EXTRA_QUERY_SKU_DETAILS_RESPONSE.format(billingResult.responseCode)
+                    )
+                    return@querySkuDetailsAsync
+                }
+                hasResponded = true
+            }
+            listener.onSkuDetailsResponse(billingResult, skuDetailsList)
+        }
+    }
+
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {
             it.receivingFunction()
