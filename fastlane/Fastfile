@@ -177,7 +177,6 @@ platform :android do
     release_keystore_password = ENV['PURCHASE_TESTER_RELEASE_KEYSTORE_PASSWORD'] || UI.user_error!('Release keystore password not found.')
     gradle(
       task: 'examples:purchase-tester:bundle',
-      flavor: 'latestDependencies',
       build_type: 'Release',
       print_command: false,
       properties: {
