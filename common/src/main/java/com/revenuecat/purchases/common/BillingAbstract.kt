@@ -4,6 +4,7 @@ import android.app.Activity
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -72,10 +73,12 @@ abstract class BillingAbstract {
         onError: (PurchasesError) -> Unit
     )
 
+    @SuppressWarnings("LongParameterList")
     abstract fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     )

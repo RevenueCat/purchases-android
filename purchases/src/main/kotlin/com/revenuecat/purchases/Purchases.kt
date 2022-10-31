@@ -44,6 +44,7 @@ import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -370,15 +371,26 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
+    @Deprecated(
+        "Replaced with purchaseProductWithOption",
+        ReplaceWith("purchaseProductWithOption")
+    )
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
+        val purchaseOption = storeProduct.bestPurchaseOption
+        if (purchaseOption == null) {
+            //TODOBC5: Improve and move error message
+            errorLog("PurchaseProduct with upgrade: Product does not have any purchase option")
+            return
+        }
         startProductChange(
             activity,
             storeProduct,
+            purchaseOption,
             null,
             upgradeInfo,
             listener
@@ -391,12 +403,64 @@ class Purchases internal constructor(
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
+    @Deprecated(
+        "Replaced with purchaseProductWithOption",
+        ReplaceWith("purchaseProductWithOption")
+    )
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, storeProduct, null, callback)
+        val purchaseOption = storeProduct.bestPurchaseOption
+        if (purchaseOption == null) {
+            //TODOBC5: Improve and move error message
+            errorLog("PurchaseProduct: Product does not have any purchase option")
+            return
+        }
+        startPurchase(activity, storeProduct, purchaseOption, null, callback)
+    }
+
+    /**
+     * Make a purchase upgrading from a previous sku.
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     */
+    fun purchaseProductWithOption(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeCallback
+    ) {
+        startProductChange(
+            activity,
+            storeProduct,
+            purchaseOption,
+            null,
+            upgradeInfo,
+            listener
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [callback] The PurchaseCallback that will be called when purchase completes.
+     */
+    fun purchaseProductWithOption(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
+        callback: PurchaseCallback
+    ) {
+        startPurchase(activity, storeProduct, purchaseOption, null, callback)
     }
 
     /**
@@ -407,15 +471,26 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
      */
+    @Deprecated(
+        "Replaced with purchasePackageWithOption",
+        ReplaceWith("purchasePackageWithOption")
+    )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         upgradeInfo: UpgradeInfo,
         callback: ProductChangeCallback
     ) {
+        val purchaseOption = packageToPurchase.product.bestPurchaseOption
+        if (purchaseOption == null) {
+            //TODOBC5: Improve and move error message
+            errorLog("PurchasePackage with upgrade: Product does not have any purchase option")
+            return
+        }
         startProductChange(
             activity,
             packageToPurchase.product,
+            purchaseOption,
             packageToPurchase.offering,
             upgradeInfo,
             callback
@@ -428,14 +503,73 @@ class Purchases internal constructor(
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated(
+        "Replaced with purchasePackageWithOption",
+        ReplaceWith("purchasePackageWithOption")
+    )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         listener: PurchaseCallback
     ) {
+        val purchaseOption = packageToPurchase.product.bestPurchaseOption
+        if (purchaseOption == null) {
+            //TODOBC5: Improve and move error message
+            errorLog("PurchasePackage: Product does not have any purchase option")
+            return
+        }
         startPurchase(
             activity,
             packageToPurchase.product,
+            purchaseOption,
+            packageToPurchase.offering,
+            listener
+        )
+    }
+
+    /**
+     * Make a purchase upgrading from a previous sku.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [callback] The listener that will be called when purchase completes.
+     */
+    fun purchasePackageWithOption(
+        activity: Activity,
+        packageToPurchase: Package,
+        purchaseOption: PurchaseOption,
+        upgradeInfo: UpgradeInfo,
+        callback: ProductChangeCallback
+    ) {
+        startProductChange(
+            activity,
+            packageToPurchase.product,
+            purchaseOption,
+            packageToPurchase.offering,
+            upgradeInfo,
+            callback
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun purchasePackageWithOption(
+        activity: Activity,
+        packageToPurchase: Package,
+        purchaseOption: PurchaseOption,
+        listener: PurchaseCallback
+    ) {
+        startPurchase(
+            activity,
+            packageToPurchase.product,
+            purchaseOption,
             packageToPurchase.offering,
             listener
         )
@@ -1378,6 +1512,7 @@ class Purchases internal constructor(
     private fun startPurchase(
         activity: Activity,
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
@@ -1403,6 +1538,7 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 storeProduct,
+                purchaseOption,
                 null,
                 presentedOfferingIdentifier
             )
@@ -1412,6 +1548,7 @@ class Purchases internal constructor(
     private fun startProductChange(
         activity: Activity,
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
@@ -1435,6 +1572,7 @@ class Purchases internal constructor(
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
                 storeProduct,
+                purchaseOption,
                 upgradeInfo,
                 activity,
                 appUserID,
@@ -1446,6 +1584,7 @@ class Purchases internal constructor(
 
     private fun replaceOldPurchaseWithNewProduct(
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
@@ -1463,6 +1602,7 @@ class Purchases internal constructor(
                     activity,
                     appUserID,
                     storeProduct,
+                    purchaseOption,
                     ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier
                 )
