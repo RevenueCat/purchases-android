@@ -15,15 +15,18 @@ interface PurchaseOption : Parcelable {
     val pricingPhases: List<PricingPhase>
 
     /**
-     * Tags defined on the base plan or offer
+     * Tags defined on the base plan or offer. Empty for Amazon.
      */
     val tags: List<String>
 
+    /**
+     * The StoreProduct this PurchaseOption is associated with.
+     */
     val storeProduct: StoreProduct
 
     /**
      * True if this PurchaseOption represents a Google subscription base plan (rather than an offer).
-     * Not applicable for Amazon or one-time purchases.
+     * Not applicable for Amazon or INAPP products.
      */
     val isBasePlan: Boolean
         get() = pricingPhases.size == 1

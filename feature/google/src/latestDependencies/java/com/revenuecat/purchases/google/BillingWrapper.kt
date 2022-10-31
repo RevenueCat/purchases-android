@@ -218,8 +218,7 @@ class BillingWrapper(
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            val params = createPurchaseParams(storeProduct as GoogleStoreProduct, purchaseOption as GooglePurchaseOption) ?: return@executeRequestOnUIThread
-
+            val params = storeProduct.buildPurchaseParams(purchaseOption) ?: return@executeRequestOnUIThread
             launchBillingFlow(activity, params)
         }
     }
@@ -762,27 +761,4 @@ class BillingWrapper(
         }
     }
 
-    private fun createPurchaseParams(
-        storeProduct: GoogleStoreProduct,
-        purchaseOption: GooglePurchaseOption
-    ): BillingFlowParams? {
-        val token = purchaseOption.token
-        val googleProduct = storeProduct.googleProduct
-        if (token == null) {
-            errorLog("PurchaseOption must have a token with BC5.") // TODOBC5: Improve and move error message
-            return null
-        }
-        if (googleProduct == null) {
-            errorLog("Product must be a Google Product.") // TODOBC5: Improve and move error message
-            return null
-        }
-        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(token)
-            setProductDetails(googleProduct.productDetails)
-        }.build()
-
-        return BillingFlowParams.newBuilder()
-            .setProductDetailsParamsList(listOf(productDetailsParamsList))
-            .build()
-    }
 }
