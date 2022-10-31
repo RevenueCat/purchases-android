@@ -88,10 +88,6 @@ private class PurchasesAPI {
         purchases.purchasePackageWithOption(activity, packageToPurchase, purchaseOption, upgradeInfo, purchaseChangeCallback)
         purchases.purchasePackageWithOption(activity, packageToPurchase, purchaseOption, purchaseCallback)
 
-        // TODO new methods -- pull desired purchaseoption from the storeproduct
-//        purchases.purchase(activity, purchaseOption, upgradeInfo, purchaseChangeCallback)
-//        purchases.purchase(activity, purchaseOption, purchaseCallback)
-
         purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.logIn("", logInCallback)
         purchases.logOut()
