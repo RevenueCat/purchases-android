@@ -23,5 +23,5 @@ data class GoogleStoreProduct(
     val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable
 
-val StoreProduct.productDetails: ProductDetails?
-    get() = (this as? GoogleStoreProduct)?.productDetails
+val StoreProduct.googleProduct: GoogleStoreProduct?
+    get() = this as? GoogleStoreProduct

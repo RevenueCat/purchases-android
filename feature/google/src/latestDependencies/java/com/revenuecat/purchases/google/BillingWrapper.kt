@@ -43,7 +43,7 @@ import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.productDetails
+import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -766,18 +766,18 @@ class BillingWrapper(
         purchaseOption: PurchaseOption
     ): BillingFlowParams? {
         val token = purchaseOption.token
-        val productDetails = storeProduct.productDetails
+        val googleProduct = storeProduct.googleProduct
         if (token == null) {
             errorLog("PurchaseOption must have a token with BC5.") //TODOBC5: Improve and move error message
             return null
         }
-        if (productDetails == null) {
-            errorLog("ProductDetails must exist when using BC5.") //TODOBC5: Improve and move error message
+        if (googleProduct == null) {
+            errorLog("Product must be a Google Product.") //TODOBC5: Improve and move error message
             return null
         }
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
             setOfferToken(token)
-            setProductDetails(productDetails)
+            setProductDetails(googleProduct.productDetails)
         }.build()
 
         return BillingFlowParams.newBuilder()
