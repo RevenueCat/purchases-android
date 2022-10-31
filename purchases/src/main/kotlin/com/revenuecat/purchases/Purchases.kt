@@ -1218,7 +1218,7 @@ class Purchases internal constructor(
 
     private fun logMissingProducts(
         offerings: Offerings,
-        storeProductByID: HashMap<String, StoreProduct>
+        storeProductByID: Map<String, StoreProduct>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
         .map { it.product.sku }
