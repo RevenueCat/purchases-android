@@ -1231,14 +1231,7 @@ class Purchases internal constructor(
             ProductType.SUBS,
             productIds,
             { subscriptionProducts ->
-                val productsById = HashMap<String, List<StoreProduct>>()
-
-                productIds.forEach { productId ->
-                    val storeProducts = mutableListOf<StoreProduct>()
-                    storeProducts.addAll(subscriptionProducts.filter { sub -> sub.sku == productId })
-                    productsById[productId] = storeProducts
-                }
-
+                val productsById = subscriptionProducts.groupBy { subProduct -> subProduct.sku }.toMutableMap()
                 val subscriptionIds = productsById.keys
 
                 val inAppProductIds = productIds - subscriptionIds

@@ -55,7 +55,7 @@ fun JSONObject.createPackage(
 ): Package? {
     val packageIdentifier = getString("identifier")
     val productGroupIdentifier = optString("platform_product_group_identifier")
-    // TODO do we care about productIdentifier? that was used for BC4, not sure it matters now... 
+    // TODO handle INAPP products
     val productIdentifier = getString("platform_product_identifier")
     val productDuration = optString("product_duration")
     val subProducts = productsById[productGroupIdentifier]
