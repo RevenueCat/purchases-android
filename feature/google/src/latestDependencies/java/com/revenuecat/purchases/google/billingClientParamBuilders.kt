@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetails.SubscriptionOfferDetails
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchaseHistoryParams

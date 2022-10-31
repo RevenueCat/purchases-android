@@ -222,8 +222,10 @@ class Purchases internal constructor(
                                 log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
                             },
                             { error ->
-                                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                    .format(purchase, error))
+                                log(
+                                    LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
+                                        .format(purchase, error)
+                                )
                             }
                         )
                     }
@@ -268,9 +270,9 @@ class Purchases internal constructor(
             amazonUserID,
             { normalizedProductID ->
                 val receiptInfo = ReceiptInfo(
-                        productIDs = listOf(normalizedProductID),
-                        price = price?.takeUnless { it == 0.0 },
-                        currency = isoCurrencyCode?.takeUnless { it.isBlank() }
+                    productIDs = listOf(normalizedProductID),
+                    price = price?.takeUnless { it == 0.0 },
+                    currency = isoCurrencyCode?.takeUnless { it.isBlank() }
                 )
                 syncPurchaseWithBackend(
                     receiptID,
@@ -326,9 +328,11 @@ class Purchases internal constructor(
             }
             state.appInBackground.let { appInBackground ->
                 if (deviceCache.isOfferingsCacheStale(appInBackground)) {
-                    log(LogIntent.DEBUG,
-                            if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
-                            else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
+                    log(
+                        LogIntent.DEBUG,
+                        if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
+                        else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
+                    )
                     fetchAndCacheOfferings(appUserID, appInBackground)
                     log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
                 }
@@ -472,8 +476,7 @@ class Purchases internal constructor(
                     } else {
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                             sortedByTime.forEach { purchase ->
-                                subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) {
-                                    unsyncedSubscriberAttributesByKey ->
+                                subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
                                     val receiptInfo = ReceiptInfo(productIDs = purchase.skus)
                                     backend.postReceiptData(
                                         purchaseToken = purchase.purchaseToken,
@@ -771,9 +774,9 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.Airship,
             airshipChannelID,
-			appUserID
-		)
-	}
+            appUserID
+        )
+    }
 
     /**
      * Subscriber attribute associated with the Firebase App Instance ID for the user
@@ -1049,10 +1052,10 @@ class Purchases internal constructor(
             val jsonPackagesArray =
                 jsonOfferingsArray.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
-                productGroupIds.add(
-                    jsonPackagesArray.getJSONObject(j)
-                        .getString("platform_product_group_identifier")
-                )
+                jsonPackagesArray.getJSONObject(j)
+                    .optString("platform_product_group_identifier").takeIf { it.isNotBlank() }?.let {
+                        productGroupIds.add(it)
+                    }
             }
         }
         return productGroupIds
@@ -1088,8 +1091,10 @@ class Purchases internal constructor(
         .filterNot { storeProductByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
-            log(LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
-                    .format(missingProducts.joinToString(", ")))
+            log(
+                LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
+                    .format(missingProducts.joinToString(", "))
+            )
         }
 
     private fun getSkus(
@@ -1381,11 +1386,15 @@ class Purchases internal constructor(
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
-                " $storeProduct ${presentedOfferingIdentifier?.let {
-                    PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
-                }}"
-        ))
+        log(
+            LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
+                " $storeProduct ${
+                    presentedOfferingIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
+                    }
+                }"
+            )
+        )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
             if (!appConfig.finishTransactions) {
@@ -1416,12 +1425,16 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $storeProduct ${offeringIdentifier?.let {
-                    PurchaseStrings.OFFERING + "$offeringIdentifier"
-                }} UpgradeInfo: $upgradeInfo"
+        log(
+            LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
+                " $storeProduct ${
+                    offeringIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$offeringIdentifier"
+                    }
+                } UpgradeInfo: $upgradeInfo"
 
-        ))
+            )
+        )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
             if (!appConfig.finishTransactions) {
@@ -1489,8 +1502,10 @@ class Purchases internal constructor(
                         appUserID,
                         onSuccess = { purchasesByHashedToken ->
                             purchasesByHashedToken.forEach { (hash, purchase) ->
-                                log(LogIntent.DEBUG,
-                                    RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash))
+                                log(
+                                    LogIntent.DEBUG,
+                                    RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash)
+                                )
                             }
                             deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
                             postPurchases(
