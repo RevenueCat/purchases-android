@@ -49,23 +49,16 @@ val SubscriptionOfferDetails.subscriptionBillingPeriod: String?
 val SubscriptionOfferDetails.isBasePlan: Boolean
     get() = this.pricingPhases.pricingPhaseList.size == 1
 
-fun StoreProduct.buildPurchaseParams(purchaseOption: PurchaseOption): BillingFlowParams? {
-    val googleProduct = this as? GoogleStoreProduct
-    if (googleProduct == null) {
-        errorLog("Product must be a GoogleStoreProduct.") //TODOBC5: Improve and move error message
-        return null
-    }
-
-    val googlePurchaseOption = purchaseOption as? GooglePurchaseOption
+fun PurchaseOption.buildPurchaseParams(): BillingFlowParams? {
+    val googlePurchaseOption = this as? GooglePurchaseOption
     if (googlePurchaseOption == null) {
         errorLog("PurchaseOption must be a GooglePurchaseOption.") //TODOBC5: Improve and move error message
         return null
     }
 
-    val token = purchaseOption.token
     val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-        setOfferToken(token)
-        setProductDetails(googleProduct.productDetails)
+        setOfferToken(googlePurchaseOption.token)
+        setProductDetails(googlePurchaseOption.storeProduct.productDetails)
     }.build()
 
     return BillingFlowParams.newBuilder()

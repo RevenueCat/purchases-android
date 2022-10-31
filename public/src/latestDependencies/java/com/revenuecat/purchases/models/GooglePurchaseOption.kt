@@ -6,7 +6,7 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class GooglePurchaseOption(
     override val pricingPhases: List<PricingPhase>,
-    override val storeProduct: StoreProduct,
+    override val storeProduct: GoogleStoreProduct,
     override val tags: List<String>,
 
     /**
