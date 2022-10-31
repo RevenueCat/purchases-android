@@ -2,7 +2,6 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.android.billingclient.api.ProductDetails
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
@@ -13,7 +12,7 @@ import org.json.JSONObject
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 data class GoogleStoreProduct(
-    override val sku: String, //TODOBC5 rename?
+    override val sku: String, // TODOBC5 rename?
     override val type: ProductType,
     override val oneTimeProductPrice: Price?,
     override val title: String,

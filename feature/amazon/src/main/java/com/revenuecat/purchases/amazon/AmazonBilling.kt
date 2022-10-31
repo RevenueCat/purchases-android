@@ -149,9 +149,9 @@ internal class AmazonBilling constructor(
 
     // region Product Data
 
-    override fun querySkuDetailsAsync(
+    override fun queryProductDetailsAsync(
         productType: RevenueCatProductType,
-        skus: Set<String>,
+        productIds: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
@@ -160,7 +160,7 @@ internal class AmazonBilling constructor(
             if (connectionError == null) {
                 userDataHandler.getUserData(
                     onSuccess = { userData ->
-                        productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
+                        productDataHandler.getProductData(productIds, userData.marketplace, onReceive, onError)
                     },
                     onError
                 )

@@ -6,13 +6,13 @@ class ReceiptInfo(
     val productIDs: List<String>,
     val offeringIdentifier: String? = null,
     val storeProduct: StoreProduct? = null,
-    val price: Double? = 1.0, //TODOBC5 storeProduct?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble()),
-    val currency: String? = "USD" //TODOBC5 storeProduct?.priceCurrencyCode
+    val price: Double? = 1.0, // TODOBC5 storeProduct?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble()),
+    val currency: String? = "USD" // TODOBC5 storeProduct?.priceCurrencyCode
 ) {
 
     val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }
-    val introDuration: String? = null //TODOBC5 storeProduct?.introductoryPricePeriod?.takeUnless { it.isEmpty() }
-    val trialDuration: String? = null //TODOBC5 storeProduct?.freeTrialPeriod?.takeUnless { it.isEmpty() }
+    val introDuration: String? = null // TODOBC5 storeProduct?.introductoryPricePeriod?.takeUnless { it.isEmpty() }
+    val trialDuration: String? = null // TODOBC5 storeProduct?.freeTrialPeriod?.takeUnless { it.isEmpty() }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

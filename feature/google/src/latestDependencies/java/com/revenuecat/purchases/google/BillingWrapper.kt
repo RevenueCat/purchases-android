@@ -13,17 +13,16 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingClient.SkuType
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.SkuDetailsParams
-import com.android.billingclient.api.SkuDetailsResponseListener
+import com.android.billingclient.api.QueryProductDetailsParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -139,43 +138,43 @@ class BillingWrapper(
         }
     }
 
-    override fun querySkuDetailsAsync(
+    override fun queryProductDetailsAsync(
         productType: ProductType,
-        skus: Set<String>,
+        productIds: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
-        val nonEmptySkus = skus.filter { it.isNotEmpty() }
+        val nonEmptyProductIds = productIds.filter { it.isNotEmpty() }
 
-        if (nonEmptySkus.isEmpty()) {
+        if (nonEmptyProductIds.isEmpty()) {
             log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
             onReceive(emptyList())
             return
         }
 
-        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
+        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                val params = SkuDetailsParams.newBuilder()
-                    .setType(productType.toGoogleProductType() ?: SkuType.INAPP)
-                    .setSkusList(nonEmptySkus).build()
+                val googleType = productType.toGoogleProductType() ?: BillingClient.ProductType.SUBS
+                val params = googleType.buildQueryProductDetailsParams(productIds)
 
                 withConnectedClient {
-                    querySkuDetailsAsyncEnsuringOneResponse(params) { billingResult, skuDetailsList ->
+                    queryProductDetailsAsyncEnsuringOneResponse(params) { billingResult, productDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             log(
                                 LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                    .format(skus.joinToString())
+                                    .format(productIds.joinToString())
                             )
                             log(
                                 LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
-                                    .format(skuDetailsList?.joinToString { it.toString() })
+                                    .format(productDetailsList.joinToString { it.toString() })
                             )
-                            skuDetailsList?.takeUnless { it.isEmpty() }?.forEach {
-                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.sku, it))
+                            productDetailsList.takeUnless { it.isEmpty() }?.forEach {
+                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
                             }
 
-                            onReceive(emptyList()) //TODOBC5 skuDetailsList?.map { it.toStoreProduct() } ?: emptyList())
+                            val storeProducts = productDetailsList.toStoreProducts()
+                            onReceive(storeProducts)
                         } else {
                             log(
                                 LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
@@ -713,23 +712,23 @@ class BillingWrapper(
         }
     }
 
-    private fun BillingClient.querySkuDetailsAsyncEnsuringOneResponse(
-        params: SkuDetailsParams,
-        listener: SkuDetailsResponseListener
+    private fun BillingClient.queryProductDetailsAsyncEnsuringOneResponse(
+        params: QueryProductDetailsParams,
+        listener: ProductDetailsResponseListener
     ) {
         var hasResponded = false
-        querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
+        queryProductDetailsAsync(params) { billingResult, skuDetailsList ->
             synchronized(this@BillingWrapper) {
                 if (hasResponded) {
                     log(
                         LogIntent.GOOGLE_ERROR,
                         OfferingStrings.EXTRA_QUERY_SKU_DETAILS_RESPONSE.format(billingResult.responseCode)
                     )
-                    return@querySkuDetailsAsync
+                    return@queryProductDetailsAsync
                 }
                 hasResponded = true
             }
-            listener.onSkuDetailsResponse(billingResult, skuDetailsList)
+            listener.onProductDetailsResponse(billingResult, skuDetailsList)
         }
     }
 
@@ -768,11 +767,11 @@ class BillingWrapper(
         val token = purchaseOption.token
         val googleProduct = storeProduct.googleProduct
         if (token == null) {
-            errorLog("PurchaseOption must have a token with BC5.") //TODOBC5: Improve and move error message
+            errorLog("PurchaseOption must have a token with BC5.") // TODOBC5: Improve and move error message
             return null
         }
         if (googleProduct == null) {
-            errorLog("Product must be a Google Product.") //TODOBC5: Improve and move error message
+            errorLog("Product must be a Google Product.") // TODOBC5: Improve and move error message
             return null
         }
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {

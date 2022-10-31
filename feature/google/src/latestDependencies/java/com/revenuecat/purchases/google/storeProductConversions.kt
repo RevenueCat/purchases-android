@@ -1,29 +1,31 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.ProductDetails
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.models.PurchaseOption
-import com.revenuecat.purchases.models.RecurrenceMode
-import org.json.JSONObject
+import com.revenuecat.purchases.models.StoreProduct
 
-private fun ProductDetails.toStoreProduct() =
+// In-apps don't have base plan nor offers
+fun ProductDetails.toStoreProduct(): StoreProduct = this.toStoreProduct(null, emptyList())
+
+fun ProductDetails.toStoreProduct(
+    basePlan: ProductDetails.SubscriptionOfferDetails?,
+    offers: List<ProductDetails.SubscriptionOfferDetails>
+) =
     GoogleStoreProduct(
         productId,
         productType.toRevenueCatProductType(),
-        createPrice(),
+        createOneTimeProductPrice(),
         title,
         description,
-        "", // TODO pass from package
-        createPurchaseOptions(),
+        basePlan?.pricingPhases?.pricingPhaseList?.get(0)?.billingPeriod,
+        offers.map { it.toPurchaseOption() },
         this
     )
 
-private fun ProductDetails.createPrice(): Price? {
-    return if (productType.toRevenueCatProductType() == ProductType.INAPP)
+private fun ProductDetails.createOneTimeProductPrice(): Price? {
+    return if (productType.toRevenueCatProductType() == ProductType.INAPP) {
         oneTimePurchaseOfferDetails?.let {
             Price(
                 it.formattedPrice,
@@ -31,10 +33,23 @@ private fun ProductDetails.createPrice(): Price? {
                 it.priceCurrencyCode
             )
         }
-    else null
+    } else null
 }
 
-private fun ProductDetails.createPurchaseOptions(): List<PurchaseOption> {
-    // TODO copy code converting productdetails to pricingphases from poc branch
-    return listOf()
+fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
+    val storeProducts = mutableListOf<StoreProduct>()
+    forEach { productDetails ->
+        val basePlans = productDetails.subscriptionOfferDetails?.filter { it.isBasePlan } ?: return emptyList()
+
+        val offersBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
+            it.subscriptionBillingPeriod
+        } ?: emptyMap()
+
+        basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
+            val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
+            val offersForBasePlan = offersBySubPeriod[basePlanBillingPeriod] ?: emptyList()
+            productDetails.toStoreProduct(basePlan, offersForBasePlan).let { storeProducts.add(it) }
+        } ?: productDetails.toStoreProduct().let { storeProducts.add(it) }
+    }
+    return storeProducts
 }

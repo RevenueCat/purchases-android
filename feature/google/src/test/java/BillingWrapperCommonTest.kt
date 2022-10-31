@@ -459,7 +459,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
         val productIDs = setOf("product_a")
 
         var receivedList: List<StoreProduct>? = null
-        wrapper.querySkuDetailsAsync(
+        wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             productIDs, {
                 receivedList = it
@@ -497,7 +497,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
             mockClient.isReady
         } returns false
 
-        wrapper.querySkuDetailsAsync(
+        wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             setOf("product_a"),
             {},
@@ -1161,7 +1161,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
 
         val productIDs = setOf("product_a")
 
-        wrapper.querySkuDetailsAsync(
+        wrapper.queryProductDetailsAsync(
             ProductType.UNKNOWN,
             productIDs,
             {
@@ -1343,7 +1343,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
             mockClient.querySkuDetailsAsync(capture(slot), any())
         } just Runs
 
-        wrapper.querySkuDetailsAsync(
+        wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             skuSet,
             {}, {
@@ -1355,7 +1355,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
 
     @Test
     fun `querySkuDetails with empty list returns empty list and does not query BillingClient`() {
-        wrapper.querySkuDetailsAsync(
+        wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             emptySet(),
             {
@@ -1371,7 +1371,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
 
     @Test
     fun `querySkuDetails with only empty skus returns empty list and does not query BillingClient`() {
-        wrapper.querySkuDetailsAsync(
+        wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             setOf("", ""),
             {
@@ -1400,7 +1400,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
             slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
         }
 
-        wrapper.querySkuDetailsAsync(
+        wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             setOf("asdf", "asdf"),
             {
@@ -1436,7 +1436,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
             }.start()
         }
 
-        wrapper.querySkuDetailsAsync(
+        wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             setOf("asdf"),
             {

@@ -30,9 +30,9 @@ private fun SkuDetails.toStoreProduct() =
     )
 
 private fun SkuDetails.createPrice(): Price? {
-    return if (type.toRevenueCatProductType() == ProductType.INAPP)
+    return if (type.toRevenueCatProductType() == ProductType.INAPP) {
         Price(price, priceAmountMicros, priceCurrencyCode)
-    else null
+    } else null
 }
 
 private fun SkuDetails.createPurchaseOptions(): List<PurchaseOption> {
@@ -43,10 +43,9 @@ private fun SkuDetails.createPurchaseOptions(): List<PurchaseOption> {
                 priceCurrencyCode,
                 price,
                 priceAmountMicros,
-                RecurrenceMode.INFINITE_RECURRING, //TODO confirm if this is the value we want
+                RecurrenceMode.INFINITE_RECURRING, // TODO confirm if this is the value we want
                 0
             )
         return listOf(PurchaseOption(listOf(subPricingPhase)))
     } else listOf()
-
 }

@@ -24,7 +24,7 @@ data class AmazonStoreProduct(
     override val description: String,
     override val subscriptionPeriod: String?,
 
-    //TODOBC5
+    // TODOBC5
     override val oneTimeProductPrice: com.revenuecat.purchases.models.Price?,
     override val purchaseOptions: List<PurchaseOption>,
     val price: String,
@@ -44,7 +44,7 @@ data class AmazonStoreProduct(
 
     // We use this to not include the originalJSON in the equals
     /*override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()*/ //TODOBC5
+    override fun hashCode() = ComparableData(this).hashCode()*/ // TODOBC5
 }
 
 fun Product.toStoreProduct(marketplace: String): StoreProduct? {

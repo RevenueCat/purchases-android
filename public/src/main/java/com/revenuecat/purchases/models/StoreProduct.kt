@@ -1,9 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
-import org.json.JSONObject
 
 /**
  * Represents an in-app product's or subscription's listing details.
@@ -12,7 +10,7 @@ interface StoreProduct : Parcelable {
     /**
      * The product ID
      */
-    val sku: String //TODOBC5 rename?
+    val sku: String // TODOBC5 rename?
 
     /**
      * Type of product. One of [ProductType].
