@@ -1043,19 +1043,19 @@ class Purchases internal constructor(
     }
 
     private fun extractProductGroupIdentifiers(offeringsJSON: JSONObject): Set<String> {
-        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-        val skus = mutableSetOf<String>()
-        for (i in 0 until jsonArrayOfOfferings.length()) {
+        val jsonOfferingsArray = offeringsJSON.getJSONArray("offerings")
+        val productGroupIds = mutableSetOf<String>()
+        for (i in 0 until jsonOfferingsArray.length()) {
             val jsonPackagesArray =
-                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+                jsonOfferingsArray.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
-                skus.add(
+                productGroupIds.add(
                     jsonPackagesArray.getJSONObject(j)
                         .getString("platform_product_group_identifier")
                 )
             }
         }
-        return skus
+        return productGroupIds
     }
 
     private fun handleErrorFetchingOfferings(

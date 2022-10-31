@@ -154,14 +154,8 @@ class BillingWrapper(
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                val productList = productIds.map { productId ->
-                    QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(productId)
-                        .setProductType(productType.toGoogleProductType() ?: BillingClient.ProductType.SUBS)
-                        .build()
-                }
-                val params = QueryProductDetailsParams.newBuilder()
-                    .setProductList(productList).build()
+                val googleType = productType.toGoogleProductType() ?: BillingClient.ProductType.SUBS
+                val params = googleType.buildQueryProductDetailsParams(productIds)
 
                 withConnectedClient {
                     queryProductDetailsAsyncEnsuringOneResponse(params) { billingResult, productDetailsList ->
@@ -178,22 +172,7 @@ class BillingWrapper(
                                 log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
                             }
 
-                            val storeProducts = mutableListOf<StoreProduct>()
-                            productDetailsList.forEach { product ->
-                                val basePlans = product.subscriptionOfferDetails?.filter {
-                                    it.pricingPhases.pricingPhaseList.size == 1
-                                } ?: emptyList()
-
-                                val groupedOffers = product.subscriptionOfferDetails?.groupBy {
-                                    it.pricingPhases.pricingPhaseList.last().billingPeriod
-                                } ?: emptyMap()
-                                basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
-                                    val billingPeriod = basePlan.pricingPhases.pricingPhaseList[0].billingPeriod
-                                    val offers = groupedOffers[billingPeriod] ?: emptyList()
-                                    product.toStoreProduct(basePlan, offers).let { storeProducts.add(it) }
-                                } ?: product.toStoreProduct().let { storeProducts.add(it) }
-                            }
-
+                            val storeProducts = productDetailsList.toStoreProducts()
                             onReceive(storeProducts)
                         } else {
                             log(
