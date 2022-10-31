@@ -14,11 +14,6 @@ interface PurchaseOption : Parcelable {
     val tags: List<String>
 
     /**
-     * The StoreProduct this PurchaseOption is associated with.
-     */
-    val storeProduct: StoreProduct
-
-    /**
      * True if this PurchaseOption represents a Google subscription base plan (rather than an offer).
      * Not applicable for Amazon or INAPP products.
      */

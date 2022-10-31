@@ -215,7 +215,7 @@ class BillingWrapper(
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            val params = purchaseOption.buildPurchaseParams() ?: return@executeRequestOnUIThread
+            val params = purchaseOption.buildPurchaseParams(storeProduct) ?: return@executeRequestOnUIThread
             launchBillingFlow(activity, params)
         }
     }

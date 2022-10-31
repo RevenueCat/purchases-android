@@ -1,9 +1,9 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.ProductDetails.SubscriptionOfferDetails
 import com.android.billingclient.api.QueryProductDetailsParams
-import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.common.errorLog
@@ -11,7 +11,6 @@ import com.revenuecat.purchases.models.GooglePurchaseOption
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.googleProduct
 
 fun @receiver:BillingClient.ProductType String.buildQueryPurchaseHistoryParams(): QueryPurchaseHistoryParams? {
     return when (this) {
@@ -49,16 +48,23 @@ val SubscriptionOfferDetails.subscriptionBillingPeriod: String?
 val SubscriptionOfferDetails.isBasePlan: Boolean
     get() = this.pricingPhases.pricingPhaseList.size == 1
 
-fun PurchaseOption.buildPurchaseParams(): BillingFlowParams? {
+fun PurchaseOption.buildPurchaseParams(storeProduct: StoreProduct): BillingFlowParams? {
     val googlePurchaseOption = this as? GooglePurchaseOption
     if (googlePurchaseOption == null) {
-        errorLog("PurchaseOption must be a GooglePurchaseOption.") //TODOBC5: Improve and move error message
+        errorLog("PurchaseOption for a Play purchase must be a GooglePurchaseOption.") //TODOBC5: Improve and move error message
         return null
     }
 
+    val googleStoreProduct = storeProduct as? GoogleStoreProduct
+    if (googleStoreProduct == null) {
+        errorLog("StoreProduct for a Play purchase must be a GoogleStoreProduct.") //TODOBC5: Improve and move error message
+        return null
+    }
+
+
     val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
         setOfferToken(googlePurchaseOption.token)
-        setProductDetails(googlePurchaseOption.storeProduct.productDetails)
+        setProductDetails(storeProduct.productDetails)
     }.build()
 
     return BillingFlowParams.newBuilder()
