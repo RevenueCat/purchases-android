@@ -21,3 +21,6 @@ data class GoogleStoreProduct(
     override val purchaseOptions: List<PurchaseOption>,
     val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable
+
+val StoreProduct.googleProduct: GoogleStoreProduct?
+    get() = this as? GoogleStoreProduct

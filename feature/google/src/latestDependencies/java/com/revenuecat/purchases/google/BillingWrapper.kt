@@ -37,11 +37,12 @@ import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -139,36 +140,30 @@ class BillingWrapper(
 
     override fun queryProductDetailsAsync(
         productType: ProductType,
-        skus: Set<String>,
+        productIds: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
-        val nonEmptySkus = skus.filter { it.isNotEmpty() }
+        val nonEmptyProductIds = productIds.filter { it.isNotEmpty() }
 
-        if (nonEmptySkus.isEmpty()) {
+        if (nonEmptyProductIds.isEmpty()) {
             log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
             onReceive(emptyList())
             return
         }
 
-        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(skus.joinToString()))
+        log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                val productList = skus.map { sku ->
-                    QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(sku)
-                        .setProductType(productType.toGoogleProductType() ?: BillingClient.ProductType.SUBS)
-                        .build()
-                }
-                val params = QueryProductDetailsParams.newBuilder()
-                    .setProductList(productList).build()
+                val googleType = productType.toGoogleProductType() ?: BillingClient.ProductType.SUBS
+                val params = googleType.buildQueryProductDetailsParams(productIds)
 
                 withConnectedClient {
                     queryProductDetailsAsyncEnsuringOneResponse(params) { billingResult, productDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             log(
                                 LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                    .format(skus.joinToString())
+                                    .format(productIds.joinToString())
                             )
                             log(
                                 LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
@@ -178,22 +173,7 @@ class BillingWrapper(
                                 log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
                             }
 
-                            val storeProducts = mutableListOf<StoreProduct>()
-                            productDetailsList.forEach { product ->
-                                val basePlans = product.subscriptionOfferDetails?.filter {
-                                    it.pricingPhases.pricingPhaseList.size == 1
-                                } ?: emptyList()
-
-                                val groupedOffers = product.subscriptionOfferDetails?.groupBy {
-                                    it.pricingPhases.pricingPhaseList.last().billingPeriod
-                                } ?: emptyMap()
-                                basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
-                                    val billingPeriod = basePlan.pricingPhases.pricingPhaseList[0].billingPeriod
-                                    val offers = groupedOffers[billingPeriod] ?: emptyList()
-                                    product.toStoreProduct(basePlan, offers).let { storeProducts.add(it) }
-                                } ?: product.toStoreProduct().let { storeProducts.add(it) }
-                            }
-
+                            val storeProducts = productDetailsList.toStoreProducts()
                             onReceive(storeProducts)
                         } else {
                             log(
@@ -218,6 +198,7 @@ class BillingWrapper(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
@@ -229,20 +210,13 @@ class BillingWrapper(
         } else {
             log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
         }
+
         synchronized(this@BillingWrapper) {
             productTypes[storeProduct.sku] = storeProduct.type
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            val params = BillingFlowParams.newBuilder()
-                // TODOBC5 .setSkuDetails(storeProduct.skuDetails)
-                .apply {
-                    replaceSkuInfo?.let {
-                        setUpgradeInfo(it)
-                    } ?: setObfuscatedAccountId(appUserID.sha256())
-                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                    // https://issuetracker.google.com/issues/155005449
-                }.build()
+            val params = createPurchaseParams(storeProduct, purchaseOption) ?: return@executeRequestOnUIThread
 
             launchBillingFlow(activity, params)
         }
@@ -784,5 +758,29 @@ class BillingWrapper(
                 BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR).build()
             listener.onPurchaseHistoryResponse(devErrorResponseCode, null)
         }
+    }
+
+    private fun createPurchaseParams(
+        storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption
+    ): BillingFlowParams? {
+        val token = purchaseOption.token
+        val googleProduct = storeProduct.googleProduct
+        if (token == null) {
+            errorLog("PurchaseOption must have a token with BC5.") // TODOBC5: Improve and move error message
+            return null
+        }
+        if (googleProduct == null) {
+            errorLog("Product must be a Google Product.") // TODOBC5: Improve and move error message
+            return null
+        }
+        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+            setOfferToken(token)
+            setProductDetails(googleProduct.productDetails)
+        }.build()
+
+        return BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(listOf(productDetailsParamsList))
+            .build()
     }
 }

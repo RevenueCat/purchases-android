@@ -32,6 +32,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -150,7 +151,7 @@ internal class AmazonBilling constructor(
 
     override fun queryProductDetailsAsync(
         productType: RevenueCatProductType,
-        skus: Set<String>,
+        productIds: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
@@ -159,7 +160,7 @@ internal class AmazonBilling constructor(
             if (connectionError == null) {
                 userDataHandler.getUserData(
                     onSuccess = { userData ->
-                        productDataHandler.getProductData(skus, userData.marketplace, onReceive, onError)
+                        productDataHandler.getProductData(productIds, userData.marketplace, onReceive, onError)
                     },
                     onError
                 )
@@ -222,6 +223,7 @@ internal class AmazonBilling constructor(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {

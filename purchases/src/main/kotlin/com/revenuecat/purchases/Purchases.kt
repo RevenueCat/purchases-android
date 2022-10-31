@@ -44,6 +44,7 @@ import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -222,8 +223,10 @@ class Purchases internal constructor(
                                 log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
                             },
                             { error ->
-                                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                    .format(purchase, error))
+                                log(
+                                    LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
+                                        .format(purchase, error)
+                                )
                             }
                         )
                     }
@@ -268,9 +271,9 @@ class Purchases internal constructor(
             amazonUserID,
             { normalizedProductID ->
                 val receiptInfo = ReceiptInfo(
-                        productIDs = listOf(normalizedProductID),
-                        price = price?.takeUnless { it == 0.0 },
-                        currency = isoCurrencyCode?.takeUnless { it.isBlank() }
+                    productIDs = listOf(normalizedProductID),
+                    price = price?.takeUnless { it == 0.0 },
+                    currency = isoCurrencyCode?.takeUnless { it.isBlank() }
                 )
                 syncPurchaseWithBackend(
                     receiptID,
@@ -326,9 +329,11 @@ class Purchases internal constructor(
             }
             state.appInBackground.let { appInBackground ->
                 if (deviceCache.isOfferingsCacheStale(appInBackground)) {
-                    log(LogIntent.DEBUG,
-                            if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
-                            else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
+                    log(
+                        LogIntent.DEBUG,
+                        if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
+                        else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
+                    )
                     fetchAndCacheOfferings(appUserID, appInBackground)
                     log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
                 }
@@ -370,15 +375,26 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
+    @Deprecated(
+        "Replaced with purchaseProductWithOption",
+        ReplaceWith("purchaseProductWithOption")
+    )
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
+        val purchaseOption = storeProduct.bestPurchaseOption
+        if (purchaseOption == null) {
+            // TODOBC5: Improve and move error message
+            errorLog("PurchaseProduct with upgrade: Product does not have any purchase option")
+            return
+        }
         startProductChange(
             activity,
             storeProduct,
+            purchaseOption,
             null,
             upgradeInfo,
             listener
@@ -391,12 +407,64 @@ class Purchases internal constructor(
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
+    @Deprecated(
+        "Replaced with purchaseProductWithOption",
+        ReplaceWith("purchaseProductWithOption")
+    )
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, storeProduct, null, callback)
+        val purchaseOption = storeProduct.bestPurchaseOption
+        if (purchaseOption == null) {
+            // TODOBC5: Improve and move error message
+            errorLog("PurchaseProduct: Product does not have any purchase option")
+            return
+        }
+        startPurchase(activity, storeProduct, purchaseOption, null, callback)
+    }
+
+    /**
+     * Make a purchase upgrading from a previous sku.
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     */
+    fun purchaseProductWithOption(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeCallback
+    ) {
+        startProductChange(
+            activity,
+            storeProduct,
+            purchaseOption,
+            null,
+            upgradeInfo,
+            listener
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [callback] The PurchaseCallback that will be called when purchase completes.
+     */
+    fun purchaseProductWithOption(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
+        callback: PurchaseCallback
+    ) {
+        startPurchase(activity, storeProduct, purchaseOption, null, callback)
     }
 
     /**
@@ -407,15 +475,26 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
      */
+    @Deprecated(
+        "Replaced with purchasePackageWithOption",
+        ReplaceWith("purchasePackageWithOption")
+    )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         upgradeInfo: UpgradeInfo,
         callback: ProductChangeCallback
     ) {
+        val purchaseOption = packageToPurchase.product.bestPurchaseOption
+        if (purchaseOption == null) {
+            // TODOBC5: Improve and move error message
+            errorLog("PurchasePackage with upgrade: Product does not have any purchase option")
+            return
+        }
         startProductChange(
             activity,
             packageToPurchase.product,
+            purchaseOption,
             packageToPurchase.offering,
             upgradeInfo,
             callback
@@ -428,14 +507,73 @@ class Purchases internal constructor(
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @Deprecated(
+        "Replaced with purchasePackageWithOption",
+        ReplaceWith("purchasePackageWithOption")
+    )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         listener: PurchaseCallback
     ) {
+        val purchaseOption = packageToPurchase.product.bestPurchaseOption
+        if (purchaseOption == null) {
+            // TODOBC5: Improve and move error message
+            errorLog("PurchasePackage: Product does not have any purchase option")
+            return
+        }
         startPurchase(
             activity,
             packageToPurchase.product,
+            purchaseOption,
+            packageToPurchase.offering,
+            listener
+        )
+    }
+
+    /**
+     * Make a purchase upgrading from a previous sku.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [callback] The listener that will be called when purchase completes.
+     */
+    fun purchasePackageWithOption(
+        activity: Activity,
+        packageToPurchase: Package,
+        purchaseOption: PurchaseOption,
+        upgradeInfo: UpgradeInfo,
+        callback: ProductChangeCallback
+    ) {
+        startProductChange(
+            activity,
+            packageToPurchase.product,
+            purchaseOption,
+            packageToPurchase.offering,
+            upgradeInfo,
+            callback
+        )
+    }
+
+    /**
+     * Make a purchase.
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun purchasePackageWithOption(
+        activity: Activity,
+        packageToPurchase: Package,
+        purchaseOption: PurchaseOption,
+        listener: PurchaseCallback
+    ) {
+        startPurchase(
+            activity,
+            packageToPurchase.product,
+            purchaseOption,
             packageToPurchase.offering,
             listener
         )
@@ -472,8 +610,7 @@ class Purchases internal constructor(
                     } else {
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                             sortedByTime.forEach { purchase ->
-                                subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) {
-                                    unsyncedSubscriberAttributesByKey ->
+                                subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
                                     val receiptInfo = ReceiptInfo(productIDs = purchase.skus)
                                     backend.postReceiptData(
                                         purchaseToken = purchase.purchaseToken,
@@ -771,9 +908,9 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.Airship,
             airshipChannelID,
-			appUserID
-		)
-	}
+            appUserID
+        )
+    }
 
     /**
      * Subscriber attribute associated with the Firebase App Instance ID for the user
@@ -1043,19 +1180,19 @@ class Purchases internal constructor(
     }
 
     private fun extractProductGroupIdentifiers(offeringsJSON: JSONObject): Set<String> {
-        val jsonArrayOfOfferings = offeringsJSON.getJSONArray("offerings")
-        val skus = mutableSetOf<String>()
-        for (i in 0 until jsonArrayOfOfferings.length()) {
+        val jsonOfferingsArray = offeringsJSON.getJSONArray("offerings")
+        val productGroupIds = mutableSetOf<String>()
+        for (i in 0 until jsonOfferingsArray.length()) {
             val jsonPackagesArray =
-                jsonArrayOfOfferings.getJSONObject(i).getJSONArray("packages")
+                jsonOfferingsArray.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
-                skus.add(
-                    jsonPackagesArray.getJSONObject(j)
-                        .getString("platform_product_group_identifier")
-                )
+                jsonPackagesArray.getJSONObject(j)
+                    .optString("platform_product_group_identifier").takeIf { it.isNotBlank() }?.let {
+                        productGroupIds.add(it)
+                    }
             }
         }
-        return skus
+        return productGroupIds
     }
 
     private fun handleErrorFetchingOfferings(
@@ -1081,15 +1218,17 @@ class Purchases internal constructor(
 
     private fun logMissingProducts(
         offerings: Offerings,
-        storeProductByID: Map<String, List<StoreProduct>>
+        storeProductByID: HashMap<String, StoreProduct>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
         .map { it.product.sku }
         .filterNot { storeProductByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
-            log(LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
-                    .format(missingProducts.joinToString(", ")))
+            log(
+                LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
+                    .format(missingProducts.joinToString(", "))
+            )
         }
 
     private fun getSkus(
@@ -1138,7 +1277,7 @@ class Purchases internal constructor(
             if (purchase.purchaseState != PurchaseState.PENDING) {
                 billing.queryProductDetailsAsync(
                     productType = purchase.type,
-                    skus = purchase.skus.toSet(),
+                    productIds = purchase.skus.toSet(),
                     onReceive = { storeProducts ->
                         postToBackend(
                             purchase = purchase,
@@ -1374,14 +1513,19 @@ class Purchases internal constructor(
     private fun startPurchase(
         activity: Activity,
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
-                " $storeProduct ${presentedOfferingIdentifier?.let {
-                    PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
-                }}"
-        ))
+        log(
+            LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
+                " $storeProduct ${
+                    presentedOfferingIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
+                    }
+                }"
+            )
+        )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
             if (!appConfig.finishTransactions) {
@@ -1399,6 +1543,7 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 storeProduct,
+                purchaseOption,
                 null,
                 presentedOfferingIdentifier
             )
@@ -1408,16 +1553,21 @@ class Purchases internal constructor(
     private fun startProductChange(
         activity: Activity,
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $storeProduct ${offeringIdentifier?.let {
-                    PurchaseStrings.OFFERING + "$offeringIdentifier"
-                }} UpgradeInfo: $upgradeInfo"
+        log(
+            LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
+                " $storeProduct ${
+                    offeringIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$offeringIdentifier"
+                    }
+                } UpgradeInfo: $upgradeInfo"
 
-        ))
+            )
+        )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
             if (!appConfig.finishTransactions) {
@@ -1431,6 +1581,7 @@ class Purchases internal constructor(
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
                 storeProduct,
+                purchaseOption,
                 upgradeInfo,
                 activity,
                 appUserID,
@@ -1442,6 +1593,7 @@ class Purchases internal constructor(
 
     private fun replaceOldPurchaseWithNewProduct(
         storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
@@ -1459,6 +1611,7 @@ class Purchases internal constructor(
                     activity,
                     appUserID,
                     storeProduct,
+                    purchaseOption,
                     ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier
                 )
@@ -1485,8 +1638,10 @@ class Purchases internal constructor(
                         appUserID,
                         onSuccess = { purchasesByHashedToken ->
                             purchasesByHashedToken.forEach { (hash, purchase) ->
-                                log(LogIntent.DEBUG,
-                                    RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash))
+                                log(
+                                    LogIntent.DEBUG,
+                                    RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash)
+                                )
                             }
                             deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
                             postPurchases(
