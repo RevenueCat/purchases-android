@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.google
+package com.revenuecat.purchases.google.com.revenuecat.purchases.google
 
 import android.app.Activity
 import android.content.Context
@@ -31,6 +31,9 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
+import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.toGoogleProductType
+import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.mockQueryPurchaseHistory

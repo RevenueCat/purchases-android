@@ -1,8 +1,10 @@
-package com.revenuecat.purchases.google
+package com.revenuecat.purchases.google.com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.google.billingResponseToPurchasesError
+import com.revenuecat.purchases.google.getBillingResponseCodeName
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
