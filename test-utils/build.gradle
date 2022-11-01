@@ -10,7 +10,7 @@ dependencies {
     implementation project(":feature:google")
     implementation project(":utils")
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "com.android.billingclient:billing:$billing5Version"
+    implementation "com.android.billingclient:billing:$billingVersion"
     implementation "org.assertj:assertj-core:$assertJVersion"
     implementation "io.mockk:mockk:$mockkVersion"
     implementation "androidx.test.ext:junit:$testJUnitVersion"

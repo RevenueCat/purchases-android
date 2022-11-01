@@ -286,7 +286,7 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - integration-tests/build/outputs/apk//release/integration-tests-release.apk
+            - integration-tests/build/outputs/apk/release/integration-tests-release.apk
             - integration-tests/build/outputs/apk/androidTest/release/integration-tests-release-androidTest.apk
 
   run-firebase-tests:

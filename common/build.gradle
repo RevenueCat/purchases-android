@@ -10,7 +10,7 @@ dependencies {
     implementation project(":strings")
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.core:core-ktx:$androidxCoreVersion"
-    implementation "com.android.billingclient:billing:$billing5Version"
+    implementation "com.android.billingclient:billing:$billingVersion"
     testImplementation project(":test-utils")
     testImplementation "androidx.test:core:$testLibrariesVersion"
     testImplementation "androidx.test:runner:$testLibrariesVersion"
