@@ -7,9 +7,9 @@
     <ID>EmptyCatchBlock:Purchases.kt$Purchases.Companion.&lt;no name provided>${ }</ID>
     <ID>EmptyFunctionBlock:AdvertisingIdClient.kt$AdvertisingIdClient.AdvertisingConnection${}</ID>
     <ID>Filename:com.revenuecat.purchases.PostingTransactionsTests.kt:1</ID>
-    <ID>Filename:com.revenuecat.purchases.google.com.revenuecat.purchases.google.BillingResponseCodeTest.kt:1</ID>
-    <ID>Filename:com.revenuecat.purchases.google.com.revenuecat.purchases.google.BillingWrapperTest.kt:1</ID>
-    <ID>Filename:com.revenuecat.purchases.google.com.revenuecat.purchases.google.ParcelableTests.kt:1</ID>
+    <ID>Filename:com.revenuecat.purchases.google.BillingResponseCodeTest.kt:1</ID>
+    <ID>Filename:com.revenuecat.purchases.google.BillingWrapperTest.kt:1</ID>
+    <ID>Filename:com.revenuecat.purchases.google.ParcelableTests.kt:1</ID>
     <ID>LargeClass:BillingWrapperTest.kt$BillingWrapperTest</ID>
     <ID>LargeClass:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>LongMethod:PostingTransactionsTests.kt$PostingTransactionsTests$@Before fun setup()</ID>
