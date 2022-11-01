@@ -1,13 +1,4 @@
 aliases:
-  release-tags-and-branches: &release-tags-and-branches
-    filters:
-      tags:
-        ignore:
-          - /^.*-SNAPSHOT/
-          - latest
-      branches:
-        only: /^release\/.*/
-
   release-tags: &release-tags
     filters:
       tags:
@@ -25,12 +16,25 @@ aliases:
       branches:
         only: /^release\/.*/
 
+  only-main-branch: &only-main-branch
+    filters:
+      tags:
+        ignore: /.*/
+      branches:
+        only: main
+
 version: 2.1
 orbs:
   android: circleci/android@0.2.1
   android-wordpress-orb: wordpress-mobile/android@1.0.15
   gcp-cli: circleci/gcp-cli@2.1.0
   revenuecat: revenuecat/sdks-common-config@2.0.0
+
+parameters:
+  action:
+    type: enum
+    enum: [default, bump]
+    default: default
 
 executors:
   android-executor:
@@ -129,7 +133,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/purchases-android/docs/5.6.0 s3://purchases-docs/android/5.6.0 --delete
+          command: aws s3 sync ~/purchases-android/docs/5.7.0-SNAPSHOT s3://purchases-docs/android/5.7.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/purchases-android/docs/index.html s3://purchases-docs/android/index.html
@@ -198,11 +202,6 @@ jobs:
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
       - run:
-          name: Replace API_KEY
-          working_directory: examples/purchase-tester
-          command: |
-            sed -i s/api_key/$API_KEY/ src/main/java/com/revenuecat/purchasetester/MainApplication.kt
-      - run:
           name: Prepare Keystore
           working_directory: examples/purchase-tester
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
@@ -214,9 +213,38 @@ jobs:
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/apk/release/purchase-tester-release.apk
+          path: examples/purchase-tester/build/outputs/apk/latestDependencies/release/purchase-tester-latestDependencies-release.apk
+      - store_artifacts:
+          path: examples/purchase-tester/build/outputs/apk/latestDependencies/debug/purchase-tester-latestDependencies-debug.apk
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
+
+  publish-purchase-tester-latest-dependencies-release:
+    executor: android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/accept-licenses
+      - android-wordpress-orb/restore-gradle-cache
+      - android/restore-build-cache
+      - run:
+          name: Prepare Keystore
+          working_directory: examples/purchase-tester
+          command: echo $PURCHASE_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
+          name: Create app bundle
+          command: |
+            bundle exec fastlane android build_purchase_tester_bundle
+      - store_artifacts:
+          path: examples/purchase-tester/build/outputs/bundle/latestDependenciesRelease/purchase-tester-latestDependencies-release.aab
+      - android-wordpress-orb/save-gradle-cache
+      - android/save-build-cache
+      - run:
+            name: Publish aab
+            command: |
+              bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/latestDependenciesRelease/purchase-tester-latestDependencies-release.aab'
 
   integration-tests-build:
     executor: android-executor
@@ -333,43 +361,59 @@ workflows:
       - test
       - assemble-sample-app
 
-  integration-test:
+  deploy:
     when:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
-      - integration-tests-build: *release-tags-and-branches
+      - integration-tests-build: *release-branches
       - run-firebase-tests-latest-dependencies:
           requires:
             - integration-tests-build
       - run-firebase-tests-unityIAP:
           requires:
             - integration-tests-build
-
-  deploy:
-    when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-    jobs:
       - hold:
           type: approval
+          requires:
+            - run-firebase-tests-latest-dependencies
+            - run-firebase-tests-unityIAP
           <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
             - hold
           <<: *release-branches
       - deploy: *release-tags
-      - prepare-next-version: *release-tags
       - deploy-snapshot:
           filters:
             branches:
               only:
                 - main
       - docs-deploy: *release-tags
+      - publish-purchase-tester-latest-dependencies-release:
+          requires:
+            - deploy
+            - docs-deploy
+          <<: *release-tags
+
+  snapshot-bump:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+    jobs:
+      - prepare-next-version:
+          <<: *only-main-branch
+
   weekly-run-workflow:
     when:
       and:
         - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "release-train", << pipeline.schedule.name >> ]
+    jobs:
+      - revenuecat/automatic-bump
+  
+  manual-trigger-bump:
+    when:
+      equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump

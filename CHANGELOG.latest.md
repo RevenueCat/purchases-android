@@ -1,5 +1,4 @@
-### New Features
-* CleverTapID integration (#593) via Joshua Liebowitz (@taquitos)
-
 ### Other Changes
-* Rename package name of purchase tester app to com.revenuecat.purchases_sample (#592) via Toni Rico (@tonidero)
+* Add navigation to logs fragment from different screens (#647) via Toni Rico (@tonidero)
+* Update Maven publish plugin (#646) via Cesar de la Vega (@vegaro)
+* Add cache amazon user data (#640) via Toni Rico (@tonidero)

@@ -160,4 +160,5 @@ final class PurchasesAPI {
         );
         final LogHandler handler = Purchases.getLogHandler();
     }
+
 }

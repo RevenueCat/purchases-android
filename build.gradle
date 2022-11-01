@@ -3,7 +3,8 @@ buildscript {
     ext.compileVersion = 31
     ext.buildToolsVersion = "30.0.3"
     ext.minVersion = 14
-    ext.billingVersion = "4.1.0"
+    ext.billing5Version = "5.0.0"
+    ext.billing4Version = "4.1.0"
     ext.lifecycleVersion = "2.5.0"
     ext.testLibrariesVersion = "1.4.0"
     ext.testJUnitVersion  = "1.1.3"
@@ -19,8 +20,8 @@ buildscript {
         google()
     }
     dependencies {
-        classpath "com.vanniktech:gradle-maven-publish-plugin:0.15.1"
-        classpath 'com.android.tools.build:gradle:7.2.1'
+        classpath "com.vanniktech:gradle-maven-publish-plugin:0.22.0"
+        classpath 'com.android.tools.build:gradle:7.3.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:1.6.21"
     }

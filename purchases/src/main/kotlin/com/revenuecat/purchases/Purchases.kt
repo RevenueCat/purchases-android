@@ -35,7 +35,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.google.isSuccessful
-import com.revenuecat.purchases.google.toProductType
+import com.revenuecat.purchases.google.toRevenueCatProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -155,6 +155,7 @@ class Purchases internal constructor(
     init {
         log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
         log(LogIntent.DEBUG, ConfigureStrings.SDK_VERSION.format(frameworkVersion))
+        log(LogIntent.DEBUG, ConfigureStrings.PACKAGE_NAME.format(appConfig.packageName))
         log(LogIntent.USER, ConfigureStrings.INITIAL_APP_USER_ID.format(backingFieldAppUserID))
         identityManager.configure(backingFieldAppUserID)
 
@@ -485,52 +486,51 @@ class Purchases internal constructor(
                     } else {
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                             sortedByTime.forEach { purchase ->
-                                val unsyncedSubscriberAttributesByKey =
-                                    subscriberAttributesManager.getUnsyncedSubscriberAttributes(
-                                        appUserID
-                                    )
-                                val receiptInfo = ReceiptInfo(productIDs = purchase.skus)
-                                backend.postReceiptData(
-                                    purchaseToken = purchase.purchaseToken,
-                                    appUserID = appUserID,
-                                    isRestore = true,
-                                    observerMode = !finishTransactions,
-                                    subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                                    receiptInfo = receiptInfo,
-                                    storeAppUserID = purchase.storeUserID,
-                                    marketplace = purchase.marketplace,
-                                    onSuccess = { info, body ->
-                                        subscriberAttributesManager.markAsSynced(
-                                            appUserID,
-                                            unsyncedSubscriberAttributesByKey,
-                                            body.getAttributeErrors()
-                                        )
-                                        billing.consumeAndSave(finishTransactions, purchase)
-                                        customerInfoHelper.cacheCustomerInfo(info)
-                                        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
-                                        log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
-                                        if (sortedByTime.last() == purchase) {
-                                            dispatch { callback.onReceived(info) }
-                                        }
-                                    },
-                                    onError = { error, shouldConsumePurchase, body ->
-                                        if (shouldConsumePurchase) {
+                                subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) {
+                                    unsyncedSubscriberAttributesByKey ->
+                                    val receiptInfo = ReceiptInfo(productIDs = purchase.skus)
+                                    backend.postReceiptData(
+                                        purchaseToken = purchase.purchaseToken,
+                                        appUserID = appUserID,
+                                        isRestore = true,
+                                        observerMode = !finishTransactions,
+                                        subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+                                        receiptInfo = receiptInfo,
+                                        storeAppUserID = purchase.storeUserID,
+                                        marketplace = purchase.marketplace,
+                                        onSuccess = { info, body ->
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
                                                 unsyncedSubscriberAttributesByKey,
                                                 body.getAttributeErrors()
                                             )
                                             billing.consumeAndSave(finishTransactions, purchase)
+                                            customerInfoHelper.cacheCustomerInfo(info)
+                                            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                                            log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
+                                            if (sortedByTime.last() == purchase) {
+                                                dispatch { callback.onReceived(info) }
+                                            }
+                                        },
+                                        onError = { error, shouldConsumePurchase, body ->
+                                            if (shouldConsumePurchase) {
+                                                subscriberAttributesManager.markAsSynced(
+                                                    appUserID,
+                                                    unsyncedSubscriberAttributesByKey,
+                                                    body.getAttributeErrors()
+                                                )
+                                                billing.consumeAndSave(finishTransactions, purchase)
+                                            }
+                                            log(
+                                                LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
+                                                    .format(purchase, error)
+                                            )
+                                            if (sortedByTime.last() == purchase) {
+                                                dispatch { callback.onError(error) }
+                                            }
                                         }
-                                        log(
-                                            LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
-                                                .format(purchase, error)
-                                        )
-                                        if (sortedByTime.last() == purchase) {
-                                            dispatch { callback.onError(error) }
-                                        }
-                                    }
-                                )
+                                    )
+                                }
                             }
                         }
                     }
@@ -1016,10 +1016,10 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getSkuDetails(skus, { detailsByID ->
-                            val offerings = offeringsJSON.createOfferings(detailsByID)
+                        getSkuDetails(skus, { productsById ->
+                            val offerings = offeringsJSON.createOfferings(productsById)
 
-                            logMissingProducts(offerings, detailsByID)
+                            logMissingProducts(offerings, productsById)
 
                             if (offerings.all.isEmpty()) {
                                 handleErrorFetchingOfferings(
@@ -1195,76 +1195,77 @@ class Purchases internal constructor(
         onSuccess: (SuccessfulPurchaseCallback)? = null,
         onError: (ErrorPurchaseCallback)? = null
     ) {
-        val unsyncedSubscriberAttributesByKey =
-            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-        val receiptInfo = ReceiptInfo(
-            productIDs = purchase.skus,
-            offeringIdentifier = purchase.presentedOfferingIdentifier,
-            storeProduct = storeProduct
-        )
-        backend.postReceiptData(
-            purchaseToken = purchase.purchaseToken,
-            appUserID = appUserID,
-            isRestore = allowSharingPlayStoreAccount,
-            observerMode = !consumeAllTransactions,
-            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-            receiptInfo = receiptInfo,
-            storeAppUserID = purchase.storeUserID,
-            marketplace = purchase.marketplace,
-            onSuccess = { info, body ->
-                subscriberAttributesManager.markAsSynced(
-                    appUserID,
-                    unsyncedSubscriberAttributesByKey,
-                    body.getAttributeErrors()
-                )
-                billing.consumeAndSave(consumeAllTransactions, purchase)
-                customerInfoHelper.cacheCustomerInfo(info)
-                customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
-                onSuccess?.let { it(purchase, info) }
-            },
-            onError = { error, shouldConsumePurchase, body ->
-                if (shouldConsumePurchase) {
+        subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
+            val receiptInfo = ReceiptInfo(
+                productIDs = purchase.skus,
+                offeringIdentifier = purchase.presentedOfferingIdentifier,
+                storeProduct = storeProduct
+            )
+            backend.postReceiptData(
+                purchaseToken = purchase.purchaseToken,
+                appUserID = appUserID,
+                isRestore = allowSharingPlayStoreAccount,
+                observerMode = !consumeAllTransactions,
+                subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+                receiptInfo = receiptInfo,
+                storeAppUserID = purchase.storeUserID,
+                marketplace = purchase.marketplace,
+                onSuccess = { info, body ->
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
                         unsyncedSubscriberAttributesByKey,
                         body.getAttributeErrors()
                     )
                     billing.consumeAndSave(consumeAllTransactions, purchase)
+                    customerInfoHelper.cacheCustomerInfo(info)
+                    customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                    onSuccess?.let { it(purchase, info) }
+                },
+                onError = { error, shouldConsumePurchase, body ->
+                    if (shouldConsumePurchase) {
+                        subscriberAttributesManager.markAsSynced(
+                            appUserID,
+                            unsyncedSubscriberAttributesByKey,
+                            body.getAttributeErrors()
+                        )
+                        billing.consumeAndSave(consumeAllTransactions, purchase)
+                    }
+                    onError?.let { it(purchase, error) }
                 }
-                onError?.let { it(purchase, error) }
-            }
-        )
+            )
+        }
     }
 
     private fun getSkuDetails(
-        skus: Set<String>,
+        productIds: Set<String>,
         onCompleted: (HashMap<String, StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         billing.querySkuDetailsAsync(
             ProductType.SUBS,
-            skus,
-            { subscriptionsSKUDetails ->
-                val detailsByID = HashMap<String, StoreProduct>()
-                val inAPPSkus =
-                    skus - subscriptionsSKUDetails
-                        .map { details -> details.sku to details }
-                        .also { skuToDetails -> detailsByID.putAll(skuToDetails) }
-                        .map { skuToDetails -> skuToDetails.first }
+            productIds,
+            { subscriptionProducts ->
+                val productsById = HashMap<String, StoreProduct>()
 
-                if (inAPPSkus.isNotEmpty()) {
+                val subscriptionProductsById = subscriptionProducts.associateBy { subProduct -> subProduct.sku }
+                productsById.putAll(subscriptionProductsById)
+
+                val subscriptionIds = subscriptionProductsById.keys
+
+                val inAppProductIds = productIds - subscriptionIds
+                if (inAppProductIds.isNotEmpty()) {
                     billing.querySkuDetailsAsync(
                         ProductType.INAPP,
-                        inAPPSkus,
-                        { skuDetails ->
-                            detailsByID.putAll(skuDetails.map { it.sku to it })
-                            onCompleted(detailsByID)
+                        inAppProductIds,
+                        { product ->
+                            productsById.putAll(product.map { it.sku to it })
+                            onCompleted(productsById)
                         }, {
                             onError(it)
                         }
                     )
                 } else {
-                    onCompleted(detailsByID)
+                    onCompleted(productsById)
                 }
             }, {
                 onError(it)
@@ -1536,40 +1537,40 @@ class Purchases internal constructor(
         onSuccess: () -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        val unsyncedSubscriberAttributesByKey =
-            subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID)
-        backend.postReceiptData(
-            purchaseToken = purchaseToken,
-            appUserID = appUserID,
-            isRestore = this.allowSharingPlayStoreAccount,
-            observerMode = !this.finishTransactions,
-            subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-            receiptInfo = productInfo,
-            storeAppUserID = storeUserID,
-            marketplace = marketplace,
-            onSuccess = { info, body ->
-                subscriberAttributesManager.markAsSynced(
-                    appUserID,
-                    unsyncedSubscriberAttributesByKey,
-                    body.getAttributeErrors()
-                )
-                deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                customerInfoHelper.cacheCustomerInfo(info)
-                customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
-                onSuccess()
-            },
-            onError = { error, shouldConsumePurchase, body ->
-                if (shouldConsumePurchase) {
+        subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
+            backend.postReceiptData(
+                purchaseToken = purchaseToken,
+                appUserID = appUserID,
+                isRestore = this.allowSharingPlayStoreAccount,
+                observerMode = !this.finishTransactions,
+                subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+                receiptInfo = productInfo,
+                storeAppUserID = storeUserID,
+                marketplace = marketplace,
+                onSuccess = { info, body ->
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
                         unsyncedSubscriberAttributesByKey,
                         body.getAttributeErrors()
                     )
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                    customerInfoHelper.cacheCustomerInfo(info)
+                    customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
+                    onSuccess()
+                },
+                onError = { error, shouldConsumePurchase, body ->
+                    if (shouldConsumePurchase) {
+                        subscriberAttributesManager.markAsSynced(
+                            appUserID,
+                            unsyncedSubscriberAttributesByKey,
+                            body.getAttributeErrors()
+                        )
+                        deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                    }
+                    onError(error)
                 }
-                onError(error)
-            }
-        )
+            )
+        }
     }
 
     // endregion
@@ -1735,7 +1736,11 @@ class Purchases internal constructor(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.SUBS.toProductType(), listener.toGetStoreProductsCallback())
+        getSkus(
+            skus.toSet(),
+            BillingClient.SkuType.SUBS.toRevenueCatProductType(),
+            listener.toGetStoreProductsCallback()
+        )
     }
 
     /**
@@ -1749,7 +1754,11 @@ class Purchases internal constructor(
         skus: List<String>,
         listener: GetSkusResponseListener
     ) {
-        getSkus(skus.toSet(), BillingClient.SkuType.INAPP.toProductType(), listener.toGetStoreProductsCallback())
+        getSkus(
+            skus.toSet(),
+            BillingClient.SkuType.INAPP.toRevenueCatProductType(),
+            listener.toGetStoreProductsCallback()
+        )
     }
 
     @Suppress("DeprecatedCallableAddReplaceWith")
@@ -2108,7 +2117,7 @@ class Purchases internal constructor(
                                             return@post
                                         }
                                         // If billing is supported, IN-APP purchases are supported.
-                                        var featureSupportedResultOk = features.all {
+                                        val featureSupportedResultOk = features.all {
                                             billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful()
                                         }
 

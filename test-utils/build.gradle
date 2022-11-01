@@ -6,9 +6,12 @@ android {
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation project(":common")
+    implementation project(":public")
+    implementation project(":feature:google")
+    implementation project(":utils")
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    latestDependenciesImplementation "com.android.billingclient:billing:$billingVersion"
-    unityIAPCompileOnly "com.android.billingclient:billing:$billingVersion"
+    latestDependenciesImplementation "com.android.billingclient:billing:$billing4Version"
+    unityIAPCompileOnly "com.android.billingclient:billing:$billing4Version"
     implementation "org.assertj:assertj-core:$assertJVersion"
     implementation "io.mockk:mockk:$mockkVersion"
     implementation "androidx.test.ext:junit:$testJUnitVersion"

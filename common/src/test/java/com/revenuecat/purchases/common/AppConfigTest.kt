@@ -91,6 +91,26 @@ class AppConfigTest {
     }
 
     @Test
+    fun `packageName is created successfully`() {
+        val expected = "com.revenuecat.test-package-name"
+        mockkStatic("com.revenuecat.purchases.common.UtilsKt")
+        val mockContext = mockk<Context>(relaxed = true) {
+            every {
+                packageName
+            } returns expected
+        }
+
+        val appConfig = AppConfig(
+            context = mockContext,
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE
+        )
+        assertThat(appConfig.packageName).isEqualTo(expected)
+    }
+
+    @Test
     fun `finishTransactions is set correctly when observer mode is false`() {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
@@ -239,6 +259,15 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE
         )
-        assertThat(x.toString()).isNotNull()
+        assertThat(x.toString()).isEqualTo(
+            "AppConfig(" +
+                "platformInfo=PlatformInfo(flavor=native, version=3.2.0), " +
+                "store=PLAY_STORE, " +
+                "dangerousSettings=DangerousSettings(autoSyncPurchases=true), " +
+                "languageTag='', " +
+                "versionName='', " +
+                "packageName='', " +
+                "finishTransactions=true, " +
+                "baseURL=https://api.revenuecat.com/)")
     }
 }

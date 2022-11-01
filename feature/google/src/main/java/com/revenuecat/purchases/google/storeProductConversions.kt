@@ -7,7 +7,7 @@ import org.json.JSONObject
 fun SkuDetails.toStoreProduct() =
     StoreProduct(
         sku,
-        type.toProductType(),
+        type.toRevenueCatProductType(),
         price,
         priceAmountMicros,
         priceCurrencyCode,

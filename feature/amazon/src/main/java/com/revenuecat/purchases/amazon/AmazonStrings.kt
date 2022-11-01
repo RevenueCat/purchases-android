@@ -4,6 +4,7 @@ object AmazonStrings {
     const val REQUESTING_PRODUCTS = "Requesting Amazon products with identifiers: %s"
     const val PRODUCT_CHANGES_NOT_SUPPORTED = "Amazon doesn't support product changes"
     const val PRODUCTS_REQUEST_FINISHED = "Products request finished with result %s"
+    const val USER_DATA_REQUEST_FROM_CACHE = "Getting User data from cache"
     const val USER_DATA_REQUEST_FINISHED = "User data request finished with result %s"
     const val PRODUCTS_REQUEST_UNAVAILABLE = "Unavailable products: %s"
     const val RETRIEVED_PRODUCT_DATA = "Retrieved productData: %s"
@@ -41,4 +42,8 @@ object AmazonStrings {
     const val WARNING_AMAZON_OBSERVER_MODE =
         "Attempting to interact with Amazon App Store with an Amazon Purchases configuration in observer mode " +
             "won't do anything. Please use syncObserverModeAmazonPurchase to send purchases to RevenueCat instead."
+    const val ERROR_TIMEOUT_GETTING_PRODUCT_DATA =
+        "Timeout error trying to get Amazon product data for SKUs: %s. Please check that the SKUs are correct."
+    const val ERROR_TIMEOUT_GETTING_USER_DATA =
+        "Timeout error trying to get Amazon user data."
 }

@@ -31,7 +31,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
-import com.revenuecat.purchases.google.toSKUType
+import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
@@ -138,6 +138,7 @@ class PurchasesTest {
     @Before
     fun setup() {
         mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
+        mockkStatic("com.revenuecat.purchases.common.OfferingFactoriesKt")
         mockkStatic(ProcessLifecycleOwner::class)
 
         val skus = listOf(stubProductIdentifier)
@@ -1964,13 +1965,13 @@ class PurchasesTest {
         } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
 
         every {
-            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.IN_APP_ITEMS_ON_VR)
+            mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS_UPDATE)
         } returns BillingClient.BillingResponseCode.OK.buildResult()
 
         Purchases.canMakePayments(
             mockContext,
             listOf(BillingFeature.SUBSCRIPTIONS,
-                BillingFeature.IN_APP_ITEMS_ON_VR)
+                BillingFeature.SUBSCRIPTIONS_UPDATE)
         ) {
             receivedCanMakePayments = it
         }
@@ -2698,8 +2699,12 @@ class PurchasesTest {
         purchases.allowSharingPlayStoreAccount = true
 
         every {
-            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserId)
-        } returns unsyncedSubscriberAttributes
+            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserId, captureLambda())
+        } answers {
+            lambda<(Map<String, SubscriberAttribute>) -> Unit>().captured.also {
+                it.invoke(unsyncedSubscriberAttributes)
+            }
+        }
 
         var capturedLambda: ((String) -> Unit)? = null
         every {
@@ -3229,10 +3234,10 @@ class PurchasesTest {
         } returns false
         purchases.updatePendingPurchaseQueue()
         verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toSKUType()!!, any(), any())
+            mockBillingAbstract.queryPurchases(ProductType.SUBS.toGoogleProductType()!!, any(), any())
         }
         verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toSKUType()!!, any(), any())
+            mockBillingAbstract.queryPurchases(ProductType.INAPP.toGoogleProductType()!!, any(), any())
         }
     }
 
@@ -4002,7 +4007,7 @@ class PurchasesTest {
         type: ProductType
     ): List<StoreProduct> {
         val storeProducts = skusSuccessfullyFetched.map { sku ->
-            stubSkuDetails(sku, type.toSKUType()!!).toStoreProduct()
+            stubSkuDetails(sku, type.toGoogleProductType()!!).toStoreProduct()
         }
 
         every {
@@ -4250,8 +4255,12 @@ class PurchasesTest {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
         every {
-            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(userIdToUse)
-        } returns emptyMap()
+            mockSubscriberAttributesManager.getUnsyncedSubscriberAttributes(userIdToUse, captureLambda())
+        } answers {
+            lambda<(Map<String, SubscriberAttribute>) -> Unit>().captured.also {
+                it.invoke(emptyMap())
+            }
+        }
         every {
             mockSubscriberAttributesManager.markAsSynced(userIdToUse, any(), any())
         } just runs

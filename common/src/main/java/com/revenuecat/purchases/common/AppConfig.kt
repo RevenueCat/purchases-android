@@ -17,6 +17,7 @@ class AppConfig(
 
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""
     val versionName: String = context.versionName ?: ""
+    val packageName: String = context.packageName
     var finishTransactions: Boolean = !observerMode
     val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO, ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET)
@@ -33,6 +34,7 @@ class AppConfig(
         if (dangerousSettings != other.dangerousSettings) return false
         if (languageTag != other.languageTag) return false
         if (versionName != other.versionName) return false
+        if (packageName != other.packageName) return false
         if (finishTransactions != other.finishTransactions) return false
         if (baseURL != other.baseURL) return false
 
@@ -45,6 +47,7 @@ class AppConfig(
         result = 31 * result + dangerousSettings.hashCode()
         result = 31 * result + languageTag.hashCode()
         result = 31 * result + versionName.hashCode()
+        result = 31 * result + packageName.hashCode()
         result = 31 * result + finishTransactions.hashCode()
         result = 31 * result + baseURL.hashCode()
         return result
@@ -57,6 +60,7 @@ class AppConfig(
             "dangerousSettings=$dangerousSettings, " +
             "languageTag='$languageTag', " +
             "versionName='$versionName', " +
+            "packageName='$packageName', " +
             "finishTransactions=$finishTransactions, " +
             "baseURL=$baseURL)"
     }

@@ -18,6 +18,8 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -313,7 +315,7 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `getting unsynchronized attributes`() {
+    fun `getting unsynchronized attributes finishes immediately if not currently getting device identifiers`() {
         val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
         val expected = mapOf(
             "key" to subscriberAttribute
@@ -322,9 +324,105 @@ class SubscriberAttributesManagerTests {
             mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
         } returns expected
 
-        val actual = underTest.getUnsyncedSubscriberAttributes(appUserID)
+        var unsyncedAttributes: Map<String, SubscriberAttribute>? = null
+        underTest.getUnsyncedSubscriberAttributes(appUserID) {
+            unsyncedAttributes = it
+        }
 
-        assertThat(actual).isEqualTo(expected)
+        assertNotNull(unsyncedAttributes)
+        assertThat(unsyncedAttributes).isEqualTo(expected)
+    }
+
+    @Test
+    fun `getting unsynchronized attributes waits if currently getting device identifiers`() {
+        val mockContext = mockk<Application>(relaxed = true)
+        val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
+        val expected = mapOf(
+            "key" to subscriberAttribute
+        )
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
+        } returns expected
+
+        mockSettingAttributesOnEmptyCache()
+
+        var deviceIdentifiersLambda: ((Map<String, String>) -> Unit)? = null
+        every {
+            mockDeviceIdentifiersFetcher.getDeviceIdentifiers(mockContext, captureLambda())
+        } answers {
+            deviceIdentifiersLambda = lambda<(Map<String, String>) -> Unit>().captured
+        }
+
+        underTest.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Adjust,
+            "test-adjust-id",
+            appUserID,
+            mockContext
+        )
+
+        var unsyncedAttributes: Map<String, SubscriberAttribute>? = null
+        underTest.getUnsyncedSubscriberAttributes(appUserID) {
+            unsyncedAttributes = it
+        }
+
+        assertNull(unsyncedAttributes)
+        deviceIdentifiersLambda?.invoke(mapOf("random-key" to "random-value"))
+        assertNotNull(unsyncedAttributes)
+        assertThat(unsyncedAttributes).isEqualTo(expected)
+    }
+
+    @Test
+    fun `getting unsynchronized attributes waits if currently getting device identifiers multiple times`() {
+        val mockContext = mockk<Application>(relaxed = true)
+        val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
+        val expected = mapOf(
+            "key" to subscriberAttribute
+        )
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
+        } returns expected
+
+        mockSettingAttributesOnEmptyCache()
+
+        var deviceIdentifiersFirstCallLambda: ((Map<String, String>) -> Unit)? = null
+        var deviceIdentifiersSecondCallLambda: ((Map<String, String>) -> Unit)? = null
+        var deviceIdentifiersFetchInvocationCount = 0
+        every {
+            mockDeviceIdentifiersFetcher.getDeviceIdentifiers(mockContext, captureLambda())
+        } answers {
+            deviceIdentifiersFetchInvocationCount++
+            if (deviceIdentifiersFetchInvocationCount == 1) {
+                deviceIdentifiersFirstCallLambda = lambda<(Map<String, String>) -> Unit>().captured
+            } else if (deviceIdentifiersFetchInvocationCount == 2) {
+                deviceIdentifiersSecondCallLambda = lambda<(Map<String, String>) -> Unit>().captured
+            }
+        }
+
+        underTest.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Adjust,
+            "test-adjust-id",
+            appUserID,
+            mockContext
+        )
+
+        underTest.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Facebook,
+            "test-facebook-id",
+            appUserID,
+            mockContext
+        )
+
+        var unsyncedAttributes: Map<String, SubscriberAttribute>? = null
+        underTest.getUnsyncedSubscriberAttributes(appUserID) {
+            unsyncedAttributes = it
+        }
+
+        assertNull(unsyncedAttributes)
+        deviceIdentifiersFirstCallLambda?.invoke(mapOf("random-key" to "random-value"))
+        assertNull(unsyncedAttributes)
+        deviceIdentifiersSecondCallLambda?.invoke(mapOf("random-key-2" to "random-value-2"))
+        assertNotNull(unsyncedAttributes)
+        assertThat(unsyncedAttributes).isEqualTo(expected)
     }
 
     @Test
