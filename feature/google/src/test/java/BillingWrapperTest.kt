@@ -45,6 +45,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -58,35 +59,35 @@ import java.util.concurrent.CountDownLatch
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class BillingWrapperCommonTest {
+class BillingWrapperTest {
 
-    internal var onConnectedCalled: Boolean = false
-    internal var mockClientFactory: BillingWrapper.ClientFactory = mockk()
-    internal var mockClient: BillingClient = mockk()
-    internal var purchasesUpdatedListener: PurchasesUpdatedListener? = null
-    internal var billingClientStateListener: BillingClientStateListener? = null
-    internal var handler: Handler = mockk()
-    internal var mockDeviceCache: DeviceCache = mockk()
+    private var onConnectedCalled: Boolean = false
+    private var mockClientFactory: BillingWrapper.ClientFactory = mockk()
+    private var mockClient: BillingClient = mockk()
+    private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
+    private var billingClientStateListener: BillingClientStateListener? = null
+    private var handler: Handler = mockk()
+    private var mockDeviceCache: DeviceCache = mockk()
 
-    internal var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
+    private var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
 
-    internal var capturedAcknowledgeResponseListener = slot<AcknowledgePurchaseResponseListener>()
-    internal var capturedAcknowledgePurchaseParams = slot<AcknowledgePurchaseParams>()
-    internal var capturedConsumeResponseListener = slot<ConsumeResponseListener>()
-    internal var capturedConsumeParams = slot<ConsumeParams>()
+    private var capturedAcknowledgeResponseListener = slot<AcknowledgePurchaseResponseListener>()
+    private var capturedAcknowledgePurchaseParams = slot<AcknowledgePurchaseParams>()
+    private var capturedConsumeResponseListener = slot<ConsumeResponseListener>()
+    private var capturedConsumeParams = slot<ConsumeParams>()
 
-    internal lateinit var wrapper: BillingWrapper
+    private lateinit var wrapper: BillingWrapper
 
     private lateinit var mockDetailsList: List<SkuDetails>
 
-    internal var storeProducts: List<StoreProduct>? = null
+    private var storeProducts: List<StoreProduct>? = null
 
-    internal val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
-    internal val appUserId = "jerry"
-    internal var mockActivity = mockk<Activity>()
+    private val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
+    private val appUserId = "jerry"
+    private var mockActivity = mockk<Activity>()
 
-    internal val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!
-    internal val inAppGoogleProductType = ProductType.INAPP.toGoogleProductType()!!
+    private val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!
+    private val inAppGoogleProductType = ProductType.INAPP.toGoogleProductType()!!
 
     @Before
     fun setup() {
@@ -138,47 +139,6 @@ class BillingWrapperCommonTest {
         every {
             mockActivity.intent
         } returns Intent()
-    }
-
-    internal fun Int.buildResult(): BillingResult {
-        return BillingResult.newBuilder().setResponseCode(this).build()
-    }
-
-    internal fun mockConsumeAsync(billingResult: BillingResult) {
-        every {
-            mockClient.consumeAsync(capture(capturedConsumeParams), capture(capturedConsumeResponseListener))
-        } answers {
-            capturedConsumeResponseListener.captured.onConsumeResponse(
-                billingResult,
-                capturedConsumeParams.captured.purchaseToken
-            )
-        }
-    }
-
-    internal fun getMockedPurchaseList(purchaseToken: String): List<Purchase> {
-        return listOf(mockk(
-            relaxed = true
-        ) {
-            every { this@mockk.purchaseToken } returns purchaseToken
-        })
-    }
-
-    private fun mockRunnables() {
-        val slot = slot<Runnable>()
-        every {
-            handler.post(capture(slot))
-        } answers {
-            slot.captured.run()
-            true
-        }
-
-        val delayedSlot = slot<Runnable>()
-        every {
-            handler.postDelayed(capture(delayedSlot), any())
-        } answers {
-            delayedSlot.captured.run()
-            true
-        }
     }
 
     @Test
@@ -1433,7 +1393,7 @@ class BillingWrapperCommonTest {
             ProductType.UNKNOWN,
             productIDs,
             {
-                this@BillingWrapperCommonTest.storeProducts = it
+                this@BillingWrapperTest.storeProducts = it
             }, {
                 fail("shouldn't be an error")
             })
@@ -1913,6 +1873,47 @@ class BillingWrapperCommonTest {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
         return mockBuilder
+    }
+
+    private fun Int.buildResult(): BillingResult {
+        return BillingResult.newBuilder().setResponseCode(this).build()
+    }
+
+    private fun mockConsumeAsync(billingResult: BillingResult) {
+        every {
+            mockClient.consumeAsync(capture(capturedConsumeParams), capture(capturedConsumeResponseListener))
+        } answers {
+            capturedConsumeResponseListener.captured.onConsumeResponse(
+                billingResult,
+                capturedConsumeParams.captured.purchaseToken
+            )
+        }
+    }
+
+    private fun getMockedPurchaseList(purchaseToken: String): List<Purchase> {
+        return listOf(mockk(
+            relaxed = true
+        ) {
+            every { this@mockk.purchaseToken } returns purchaseToken
+        })
+    }
+
+    private fun mockRunnables() {
+        val slot = slot<Runnable>()
+        every {
+            handler.post(capture(slot))
+        } answers {
+            slot.captured.run()
+            true
+        }
+
+        val delayedSlot = slot<Runnable>()
+        every {
+            handler.postDelayed(capture(delayedSlot), any())
+        } answers {
+            delayedSlot.captured.run()
+            true
+        }
     }
 
 }
