@@ -789,6 +789,8 @@ class BillingWrapper(
         return BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(listOf(productDetailsParamsList))
             .apply {
+                // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                // https://issuetracker.google.com/issues/155005449
                 replaceSkuInfo?.let {
                     setUpgradeInfo(it)
                 } ?: setObfuscatedAccountId(appUserID.sha256())
