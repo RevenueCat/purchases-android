@@ -37,6 +37,7 @@ import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
@@ -216,8 +217,12 @@ class BillingWrapper(
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            val params = createPurchaseParams(storeProduct, purchaseOption) ?: return@executeRequestOnUIThread
-
+            val params = createPurchaseParams(
+                storeProduct,
+                purchaseOption,
+                replaceSkuInfo,
+                appUserID
+            ) ?: return@executeRequestOnUIThread
             launchBillingFlow(activity, params)
         }
     }
@@ -762,7 +767,9 @@ class BillingWrapper(
 
     private fun createPurchaseParams(
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption
+        purchaseOption: PurchaseOption,
+        replaceSkuInfo: ReplaceSkuInfo?,
+        appUserID: String
     ): BillingFlowParams? {
         val token = purchaseOption.token
         val googleProduct = storeProduct.googleProduct
@@ -781,6 +788,13 @@ class BillingWrapper(
 
         return BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(listOf(productDetailsParamsList))
+            .apply {
+                // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                // https://issuetracker.google.com/issues/155005449
+                replaceSkuInfo?.let {
+                    setUpgradeInfo(it)
+                } ?: setObfuscatedAccountId(appUserID.sha256())
+            }
             .build()
     }
 }
