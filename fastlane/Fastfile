@@ -130,17 +130,6 @@ platform :android do
       properties: gradleProperties
     )
 
-    UI.verbose("Creating special version for Unity IAP with BillingClient 4 and Amazon 2 for version: #{version}")
-    gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "unityIAPRelease"
-    
-    UI.verbose("Adding -unityiap to artifact ids")
-
-    gradle(
-      tasks: [
-        "publish --no-daemon --no-parallel"
-      ],
-      properties: gradleProperties
-    )
   end
 
   desc "Upload a snapshot release"
@@ -177,7 +166,6 @@ platform :android do
     release_keystore_password = ENV['PURCHASE_TESTER_RELEASE_KEYSTORE_PASSWORD'] || UI.user_error!('Release keystore password not found.')
     gradle(
       task: 'examples:purchase-tester:bundle',
-      flavor: 'latestDependencies',
       build_type: 'Release',
       print_command: false,
       properties: {

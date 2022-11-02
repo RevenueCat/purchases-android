@@ -5,15 +5,7 @@ apply plugin: 'kotlin-parcelize'
 android {
     compileSdkVersion compileVersion
     buildToolsVersion buildToolsVersion
-    flavorDimensions "dependencyVersions"
-    productFlavors {
-        unityIAP {
-            dimension "dependencyVersions"
-        }
-        latestDependencies {
-            dimension "dependencyVersions"
-        }
-    }
+
     defaultConfig {
         minSdkVersion minVersion
         targetSdkVersion compileVersion
@@ -36,12 +28,6 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-}
-
-def artifactId = project.property("POM_ARTIFACT_ID")
-def publishVariant = project.property("ANDROID_VARIANT_TO_PUBLISH")
-if (publishVariant == "unityIAPRelease") {
-    project.ext.POM_ARTIFACT_ID = artifactId + "-unityiap"
 }
 
 apply plugin: 'com.vanniktech.maven.publish'

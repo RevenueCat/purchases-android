@@ -222,7 +222,7 @@ jobs:
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/apk/latestDependencies/release/purchase-tester-latestDependencies-release.apk
+          path: examples/purchase-tester/build/outputs/apk/release/purchase-tester-release.apk
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
 
@@ -245,13 +245,13 @@ jobs:
           command: |
             bundle exec fastlane android build_purchase_tester_bundle
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/bundle/latestDependenciesRelease/purchase-tester-latestDependencies-release.aab
+          path: examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
       - run:
             name: Publish aab
             command: |
-              bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/latestDependenciesRelease/purchase-tester-latestDependencies-release.aab'
+              bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
 
   integration-tests-build:
     executor: android-executor
@@ -286,13 +286,11 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - integration-tests/build/outputs/apk/latestDependencies/release/integration-tests-latestDependencies-release.apk
-            - integration-tests/build/outputs/apk/unityIAP/release/integration-tests-unityIAP-release.apk
-            - integration-tests/build/outputs/apk/androidTest/latestDependencies/release/integration-tests-latestDependencies-release-androidTest.apk
-            - integration-tests/build/outputs/apk/androidTest/unityIAP/release/integration-tests-unityIAP-release-androidTest.apk
+            - integration-tests/build/outputs/apk/release/integration-tests-release.apk
+            - integration-tests/build/outputs/apk/androidTest/release/integration-tests-release-androidTest.apk
 
-  run-firebase-tests-latest-dependencies:
-    description: "Run integration tests for Android in Firebase. Variant latestDependencies"
+  run-firebase-tests:
+    description: "Run integration tests for Android in Firebase."
     executor: gcp-cli/google
     steps:
       - checkout
@@ -306,38 +304,8 @@ jobs:
           name: Test with Firebase Test Lab
           command: >
             gcloud firebase test android run --type instrumentation \
-              --app integration-tests/build/outputs/apk/latestDependencies/release/integration-tests-latestDependencies-release.apk \
-              --test integration-tests/build/outputs/apk/androidTest/latestDependencies/release/integration-tests-latestDependencies-release-androidTest.apk \
-              --timeout 2m \
-              --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
-      - run:
-          name: Copy test results data
-          command: |
-            mkdir -p ~/gsutil/
-            gsutil -m cp -r -U `gsutil ls gs://cloud-test-$GOOGLE_PROJECT_ID | tail -1` ~/gsutil/ | true
-          when: always
-      - store_artifacts:
-          path: ~/gsutil/
-      - store_test_results:
-          path: ~/gsutil/
-
-  run-firebase-tests-unityIAP:
-    description: "Run integration tests for Android in Firebase. Variant unityIAP"
-    executor: gcp-cli/google
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
-      - run:
-          name: Test with Firebase Test Lab
-          command: >
-            gcloud firebase test android run --type instrumentation \
-              --app integration-tests/build/outputs/apk/unityIAP/release/integration-tests-unityIAP-release.apk \
-              --test integration-tests/build/outputs/apk/androidTest/unityIAP/release/integration-tests-unityIAP-release-androidTest.apk \
+              --app integration-tests/build/outputs/apk/release/integration-tests-release.apk \
+              --test integration-tests/build/outputs/apk/androidTest/release/integration-tests-release-androidTest.apk \
               --timeout 2m \
               --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
       - run:
@@ -374,10 +342,7 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - integration-tests-build: *release-tags-and-branches
-      - run-firebase-tests-latest-dependencies:
-          requires:
-            - integration-tests-build
-      - run-firebase-tests-unityIAP:
+      - run-firebase-tests:
           requires:
             - integration-tests-build
 
