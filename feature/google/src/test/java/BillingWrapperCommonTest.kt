@@ -6,6 +6,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
+import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
@@ -318,6 +319,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
 
         mockClient.mockQueryPurchasesAsync(
             billingClientOKResult,
+            billingClientOKResult,
             purchases,
             emptyList()
         )
@@ -589,6 +591,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
     fun `when querying anything and billing client returns an empty list, returns an empty list`() {
         mockClient.mockQueryPurchasesAsync(
             billingClientOKResult,
+            billingClientOKResult,
             emptyList(),
             emptyList()
         )
@@ -622,6 +625,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
         )
 
         mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
             billingClientOKResult,
             emptyList(),
             listOf(purchase)
@@ -664,6 +668,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
         )
 
         mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
             billingClientOKResult,
             listOf(purchase),
             emptyList()
@@ -752,6 +757,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
 
         mockClient.mockQueryPurchasesAsync(
             billingClientOKResult,
+            billingClientOKResult,
             getMockedPurchaseList(subsToken),
             getMockedPurchaseList(inAppToken)
         )
@@ -767,6 +773,7 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
         val subToken = "subToken"
 
         mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
             billingClientOKResult,
             getMockedPurchaseList(subToken),
             getMockedPurchaseList(inAppToken)
@@ -786,11 +793,48 @@ class BillingWrapperCommonTest : BillingWrapperTestBase() {
 
         mockClient.mockQueryPurchasesAsync(
             errorResult,
+            errorResult,
             getMockedPurchaseList(subToken),
             getMockedPurchaseList(inAppToken)
         )
 
         wrapper.getPurchaseType(inAppToken) { productType ->
+            assertThat(productType).isEqualTo(ProductType.UNKNOWN)
+        }
+    }
+
+    @Test
+    fun `getPurchaseType returns UNKNOWN if sub not found and inapp responses not OK`() {
+        val subPurchaseToken = "subToken"
+
+        val querySubPurchasesListenerSlot = slot<PurchasesResponseListener>()
+        every {
+            mockClient.queryPurchasesAsync(
+                BillingClient.SkuType.SUBS,
+                capture(querySubPurchasesListenerSlot)
+            )
+        } answers {
+            querySubPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                billingClientOKResult,
+                getMockedPurchaseList(subPurchaseToken)
+            )
+        }
+        val errorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
+        val inAppPurchaseToken = "inAppToken"
+        val queryInAppPurchasesListenerSlot = slot<PurchasesResponseListener>()
+        every {
+            mockClient.queryPurchasesAsync(
+                BillingClient.SkuType.INAPP,
+                capture(queryInAppPurchasesListenerSlot)
+            )
+        } answers {
+            queryInAppPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                errorResult,
+                getMockedPurchaseList(inAppPurchaseToken)
+            )
+        }
+
+        wrapper.getPurchaseType(inAppPurchaseToken) { productType ->
             assertThat(productType).isEqualTo(ProductType.UNKNOWN)
         }
     }

@@ -137,7 +137,8 @@ fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(
 }
 
 fun BillingClient.mockQueryPurchasesAsync(
-    result: BillingResult,
+    subsResult: BillingResult,
+    inAppResult: BillingResult,
     subPurchases: List<Purchase>,
     inAppPurchases: List<Purchase> = listOf()
 ): Any {
@@ -166,19 +167,23 @@ fun BillingClient.mockQueryPurchasesAsync(
             capture(queryPurchasesListenerSlot)
         )
     } answers {
-        val purchasesToReturn = when (typeSlot.captured) {
-            BillingClient.ProductType.SUBS -> subPurchases
-            BillingClient.ProductType.INAPP -> inAppPurchases
+        when (typeSlot.captured) {
+            BillingClient.ProductType.SUBS -> {
+                queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                    subsResult,
+                    subPurchases
+                )
+            }
+            BillingClient.ProductType.INAPP -> {
+                queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                    inAppResult,
+                    inAppPurchases
+                )
+            }
             else -> {
                 fail("queryPurchasesAsync typeSlot not captured or captured unexpected type")
-                null
             }
         }
-
-        queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
-            result,
-            purchasesToReturn ?: emptyList()
-        )
     }
 
     return mockBuilder
