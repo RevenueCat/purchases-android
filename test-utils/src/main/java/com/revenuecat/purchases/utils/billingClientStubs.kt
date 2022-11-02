@@ -81,19 +81,36 @@ fun mockPricingPhase(
 }
 
 fun createMockProductDetailsNoOffers(): ProductDetails = mockProductDetails()
-fun createMockProductDetailsFreeTrial(): ProductDetails = mockProductDetails(
-    productId = "product_id_with_trial",
+fun createMockProductDetailsFreeTrial(
+    productId: String = "mock-free-trial-subscription",
+    priceAfterFreeTrial: Double = 4.99,
+    freeTrialPeriod: String = "P7D",
+    subscriptionPeriod: String = "P1M"
+): ProductDetails = mockProductDetails(
+    productId = productId,
     subscriptionOfferDetails = listOf(
         mockSubscriptionOfferDetails(
-            token = "free_trial_offer_phase",
+            token = "free_trial_offer",
             pricingPhases = listOf(
                 mockPricingPhase(
                     price = 0.0,
                     billingCycleCount = 1,
+                    billingPeriod = freeTrialPeriod,
                     recurrenceMode = RecurrenceMode.FINITE_RECURRING
                 ),
                 mockPricingPhase(
-                    price = 4.99,
+                    price = priceAfterFreeTrial,
+                    billingPeriod = subscriptionPeriod,
+                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING
+                )
+            )
+        ),
+        mockSubscriptionOfferDetails(
+            token = "base_plan_offer",
+            pricingPhases = listOf(
+                mockPricingPhase(
+                    price = priceAfterFreeTrial,
+                    billingPeriod = subscriptionPeriod,
                     recurrenceMode = RecurrenceMode.INFINITE_RECURRING
                 )
             )
