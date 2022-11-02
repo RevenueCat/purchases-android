@@ -8,7 +8,9 @@ import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.GooglePurchaseOption
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.PurchaseOption
@@ -51,7 +53,11 @@ val SubscriptionOfferDetails.subscriptionBillingPeriod: String?
 val SubscriptionOfferDetails.isBasePlan: Boolean
     get() = this.pricingPhases.pricingPhaseList.size == 1
 
-fun PurchaseOption.buildPurchaseParams(storeProduct: StoreProduct): BillingFlowParams? {
+fun PurchaseOption.buildPurchaseParams(
+    storeProduct: StoreProduct,
+    replaceSkuInfo: ReplaceSkuInfo?,
+    appUserID: String
+): BillingFlowParams? {
     val googlePurchaseOption = this as? GooglePurchaseOption
     if (googlePurchaseOption == null) {
         val error = PurchasesError(
@@ -85,5 +91,11 @@ fun PurchaseOption.buildPurchaseParams(storeProduct: StoreProduct): BillingFlowP
 
     return BillingFlowParams.newBuilder()
         .setProductDetailsParamsList(listOf(productDetailsParamsList))
-        .build()
+        .apply {
+            // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+            // https://issuetracker.google.com/issues/155005449
+            replaceSkuInfo?.let {
+                setUpgradeInfo(it)
+            } ?: setObfuscatedAccountId(appUserID.sha256())
+        }.build()
 }

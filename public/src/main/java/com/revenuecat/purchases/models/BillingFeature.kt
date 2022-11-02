@@ -1,4 +1,4 @@
-package com.revenuecat.purchases
+package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.BillingClient
 

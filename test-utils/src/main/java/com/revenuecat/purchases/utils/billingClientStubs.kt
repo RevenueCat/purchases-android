@@ -2,13 +2,17 @@ package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.ProductDetails.OneTimePurchaseOfferDetails
+import com.android.billingclient.api.ProductDetails.PricingPhase
+import com.android.billingclient.api.ProductDetails.RecurrenceMode
+import com.android.billingclient.api.ProductDetails.SubscriptionOfferDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.QueryPurchasesParams
-import com.android.billingclient.api.SkuDetails
 import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.mockk
@@ -19,34 +23,102 @@ import org.assertj.core.api.AssertionsForClassTypes.fail
 import org.json.JSONArray
 
 @SuppressWarnings("LongParameterList", "MagicNumber")
-fun stubSkuDetails(
-    productId: String = "monthly_intro_pricing_one_week",
+fun mockProductDetails(
+    productId: String = "sample_product_id",
     @BillingClient.ProductType type: String = BillingClient.ProductType.SUBS,
-    price: Double = 4.99,
-    subscriptionPeriod: String = "P1M",
-    freeTrialPeriod: String? = null,
-    introductoryPricePeriod: String? = null
-): SkuDetails = SkuDetails("""
-            {
-              "skuDetailsToken":"AEuhp4KxWQR-b-OAOXVicqHM4QqnqK9vkPnOXw0vSB9zWPBlTsW8TmtjSEJ_rJ6f0_-i",
-              "productId":"$productId",
-              "type":"$type",
-              "price":"${'$'}$price",
-              "price_amount_micros":${price.times(1_000_000)},
-              "price_currency_code":"USD",
-              "subscriptionPeriod":"$subscriptionPeriod",
-              "freeTrialPeriod":"$freeTrialPeriod",
-              ${ introductoryPricePeriod?.let { """
-                  "introductoryPricePeriod":"$it",
-                  "introductoryPriceAmountMicros":990000,
-                  "introductoryPrice":"${'$'}0.99",
-                  "introductoryPriceCycles":2,
-              """.trimIndent() } ?: "" }
-              "title":"Monthly Product Intro Pricing One Week (PurchasesSample)",
-              "description":"Monthly Product Intro Pricing One Week"
-            }    
-        """.trimIndent())
+    oneTimePurchaseOfferDetails: OneTimePurchaseOfferDetails? = null,
+    subscriptionOfferDetails: List<SubscriptionOfferDetails> = listOf(mockSubscriptionOfferDetails()),
+    name: String = "subscription_mock_name",
+    description: String = "subscription_mock_description",
+    title: String = "subscription_mock_title"
+): ProductDetails = mockk<ProductDetails>().apply {
+    every { getProductId() } returns productId
+    every { productType } returns type
+    every { getName() } returns name
+    every { getDescription() } returns description
+    every { getTitle() } returns title
+    every { getOneTimePurchaseOfferDetails() } returns oneTimePurchaseOfferDetails
+    every { getSubscriptionOfferDetails() } returns subscriptionOfferDetails
+    every { zza() } returns "mock-package-name" // This seems to return the packageName property from the response json
+}
 
+@SuppressWarnings("MagicNumber")
+fun mockOneTimePurchaseOfferDetails(
+    price: Double = 4.99,
+    priceCurrencyCodeValue: String = "USD"
+): OneTimePurchaseOfferDetails = mockk<OneTimePurchaseOfferDetails>().apply {
+    every { formattedPrice } returns "${'$'}$price"
+    every { priceAmountMicros } returns price.times(1_000_000).toLong()
+    every { priceCurrencyCode } returns priceCurrencyCodeValue
+}
+
+fun mockSubscriptionOfferDetails(
+    tags: List<String> = emptyList(),
+    token: String = "mock-subscription-offer-token",
+    pricingPhases: List<PricingPhase> = listOf(mockPricingPhase())
+): SubscriptionOfferDetails = mockk<SubscriptionOfferDetails>().apply {
+    every { offerTags } returns tags
+    every { offerToken } returns token
+    every { getPricingPhases() } returns mockk<ProductDetails.PricingPhases>().apply {
+        every { pricingPhaseList } returns pricingPhases
+    }
+}
+
+@SuppressWarnings("MagicNumber")
+fun mockPricingPhase(
+    price: Double = 4.99,
+    priceCurrencyCodeValue: String = "USD",
+    billingPeriod: String = "P1M",
+    billingCycleCount: Int = 0,
+    recurrenceMode: Int = RecurrenceMode.INFINITE_RECURRING
+): PricingPhase = mockk<PricingPhase>().apply {
+    every { formattedPrice } returns "${'$'}$price"
+    every { priceAmountMicros } returns price.times(1_000_000).toLong()
+    every { priceCurrencyCode } returns priceCurrencyCodeValue
+    every { getBillingPeriod() } returns billingPeriod
+    every { getBillingCycleCount() } returns billingCycleCount
+    every { getRecurrenceMode() } returns recurrenceMode
+}
+
+fun createMockProductDetailsNoOffers(): ProductDetails = mockProductDetails()
+fun createMockProductDetailsFreeTrial(
+    productId: String = "mock-free-trial-subscription",
+    priceAfterFreeTrial: Double = 4.99,
+    freeTrialPeriod: String = "P7D",
+    subscriptionPeriod: String = "P1M"
+): ProductDetails = mockProductDetails(
+    productId = productId,
+    subscriptionOfferDetails = listOf(
+        mockSubscriptionOfferDetails(
+            token = "free_trial_offer",
+            pricingPhases = listOf(
+                mockPricingPhase(
+                    price = 0.0,
+                    billingCycleCount = 1,
+                    billingPeriod = freeTrialPeriod,
+                    recurrenceMode = RecurrenceMode.FINITE_RECURRING
+                ),
+                mockPricingPhase(
+                    price = priceAfterFreeTrial,
+                    billingPeriod = subscriptionPeriod,
+                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING
+                )
+            )
+        ),
+        mockSubscriptionOfferDetails(
+            token = "base_plan_offer",
+            pricingPhases = listOf(
+                mockPricingPhase(
+                    price = priceAfterFreeTrial,
+                    billingPeriod = subscriptionPeriod,
+                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING
+                )
+            )
+        )
+    )
+)
+
+@SuppressWarnings("LongParameterList", "MagicNumber")
 fun stubGooglePurchase(
     productIds: List<String> = listOf("com.revenuecat.lifetime"),
     purchaseTime: Long = System.currentTimeMillis(),
@@ -137,7 +209,8 @@ fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(
 }
 
 fun BillingClient.mockQueryPurchasesAsync(
-    result: BillingResult,
+    subsResult: BillingResult,
+    inAppResult: BillingResult,
     subPurchases: List<Purchase>,
     inAppPurchases: List<Purchase> = listOf()
 ): Any {
@@ -166,19 +239,23 @@ fun BillingClient.mockQueryPurchasesAsync(
             capture(queryPurchasesListenerSlot)
         )
     } answers {
-        val purchasesToReturn = when (typeSlot.captured) {
-            BillingClient.ProductType.SUBS -> subPurchases
-            BillingClient.ProductType.INAPP -> inAppPurchases
+        when (typeSlot.captured) {
+            BillingClient.ProductType.SUBS -> {
+                queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                    subsResult,
+                    subPurchases
+                )
+            }
+            BillingClient.ProductType.INAPP -> {
+                queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
+                    inAppResult,
+                    inAppPurchases
+                )
+            }
             else -> {
                 fail("queryPurchasesAsync typeSlot not captured or captured unexpected type")
-                null
             }
         }
-
-        queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
-            result,
-            purchasesToReturn ?: emptyList()
-        )
     }
 
     return mockBuilder

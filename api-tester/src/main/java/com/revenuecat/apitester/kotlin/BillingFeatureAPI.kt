@@ -1,9 +1,9 @@
 package com.revenuecat.apitester.kotlin
 
-import com.revenuecat.purchases.BillingFeature
+import com.revenuecat.purchases.models.BillingFeature
 
-@Suppress("unused")
-private class PurchasesBC5API {
+@Suppress("unused", "UNUSED_VARIABLE")
+private class BillingFeatureAPI {
     fun check(billingFeature: BillingFeature) {
         when (billingFeature) {
             BillingFeature.PRICE_CHANGE_CONFIRMATION,

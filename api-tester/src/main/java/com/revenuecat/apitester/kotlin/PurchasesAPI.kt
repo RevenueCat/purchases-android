@@ -2,7 +2,6 @@ package com.revenuecat.apitester.kotlin
 
 import android.app.Activity
 import android.content.Context
-import com.revenuecat.purchases.BillingFeature
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.LogHandler
@@ -25,6 +24,7 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
+import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction

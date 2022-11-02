@@ -1,9 +1,9 @@
 package com.revenuecat.apitester.java;
 
-import com.revenuecat.purchases.BillingFeature;
+import com.revenuecat.purchases.models.BillingFeature;
 
-@SuppressWarnings({"unused"})
-final class PurchasesBC5API {
+@SuppressWarnings({"unused", "SpellCheckingInspection"})
+final class BillingFeatureAPI {
     static void check(final BillingFeature feature) {
         switch (feature) {
             case SUBSCRIPTIONS:
