@@ -458,7 +458,7 @@ class BillingWrapperTest {
         assertThat(tokenSlot.isCaptured).isTrue
         assertThat(tokenSlot.captured).isEqualTo("mock-subscription-offer-token")
         assertThat(productDetailsSlot.isCaptured).isTrue
-        assertThat(productDetailsSlot.captured == productDetails)
+        assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
     }
 
     @Test
