@@ -776,10 +776,12 @@ class BillingWrapper(
         val googleProduct = storeProduct.googleProduct
         if (token == null) {
             errorLog("PurchaseOption must have a token with BC5.") // TODOBC5: Improve and move error message
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(PurchasesError(PurchasesErrorCode.UnknownError))
             return null
         }
         if (googleProduct == null) {
             errorLog("Product must be a Google Product.") // TODOBC5: Improve and move error message
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(PurchasesError(PurchasesErrorCode.UnknownError))
             return null
         }
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {

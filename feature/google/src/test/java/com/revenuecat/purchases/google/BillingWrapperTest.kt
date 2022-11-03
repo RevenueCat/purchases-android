@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
+import android.os.Parcel
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
@@ -18,8 +19,8 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchaseHistoryResponseListener
+import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.SkuDetailsParams
@@ -33,6 +34,11 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
+import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
@@ -43,6 +49,7 @@ import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.verifyQueryPurchaseHistoryCalledWithType
 import io.mockk.Runs
+import io.mockk.clearAllMocks
 import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.just
@@ -94,6 +101,7 @@ class BillingWrapperTest {
 
     @Before
     fun setup() {
+        clearAllMocks()
         mockRunnables()
 
         val listenerSlot = slot<PurchasesUpdatedListener>()
@@ -401,6 +409,59 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `properly sets ProductDetailsParams`() {
+        mockkStatic(BillingFlowParams::class)
+        mockkStatic(BillingFlowParams.ProductDetailsParams::class)
+        mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
+
+        val mockProductDetailsBuilder = mockk<ProductDetailsParams.Builder>(relaxed = true)
+        every {
+            ProductDetailsParams.newBuilder()
+        } returns mockProductDetailsBuilder
+
+        val tokenSlot = slot<String>()
+        every {
+            mockProductDetailsBuilder.setOfferToken(capture(tokenSlot))
+        } returns mockProductDetailsBuilder
+
+        val productDetailsSlot = slot<ProductDetails>()
+        every {
+            mockProductDetailsBuilder.setProductDetails(capture(productDetailsSlot))
+        } returns mockProductDetailsBuilder
+
+        val productId = "product_a"
+
+        val upgradeInfo = mockReplaceSkuInfo()
+        val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
+        val storeProduct = productDetails.toStoreProduct(
+            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!!
+        )
+
+        val slot = slot<BillingFlowParams>()
+        every {
+            mockClient.launchBillingFlow(eq(mockActivity), capture(slot))
+        } answers {
+            billingClientOKResult
+        }
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct,
+            storeProduct.purchaseOptions[0],
+            upgradeInfo,
+            null
+        )
+
+        assertThat(tokenSlot.isCaptured).isTrue
+        assertThat(tokenSlot.captured).isEqualTo("mock-subscription-offer-token")
+        assertThat(productDetailsSlot.isCaptured).isTrue
+        assertThat(productDetailsSlot.captured == productDetails)
+    }
+
+    @Test
     fun `obfuscatedAccountId is set for non-transfer purchases`() {
         val mockBuilder = setUpForObfuscatedAccountIDTests()
 
@@ -508,6 +569,99 @@ class BillingWrapperTest {
         verify(exactly = 2) {
             handler.post(any())
         }
+    }
+
+    @Test
+    fun `purchase fails if purchase option does not have token`() {
+        val storeProduct = GoogleStoreProduct(
+            sku = "mock-sku",
+            type = ProductType.SUBS,
+            oneTimeProductPrice = null,
+            title = "",
+            description = "",
+            subscriptionPeriod = null,
+            purchaseOptions = listOf(PurchaseOption(
+                pricingPhases = listOf(PricingPhase(
+                    billingPeriod = "",
+                    priceCurrencyCode = "",
+                    formattedPrice = "",
+                    priceAmountMicros = 0L,
+                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                    billingCycleCount = 0
+                )),
+                tags = emptyList(),
+                token = null
+            )),
+            productDetails = mockProductDetails()
+        )
+
+        val slot = slot<PurchasesError>()
+
+        every {
+            mockPurchasesListener.onPurchasesFailedToUpdate(capture(slot))
+        } just Runs
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct,
+            storeProduct.purchaseOptions[0],
+            mockReplaceSkuInfo(),
+            null
+        )
+
+        verify(exactly = 0) {
+            mockClient.launchBillingFlow(any(), any())
+        }
+
+        assertThat(slot.isCaptured).isTrue
+        assertThat(slot.captured.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `purchase fails if store product is not GoogleStoreProduct`() {
+        val storeProduct = object : StoreProduct {
+            override val sku: String
+                get() = "mock-sku"
+            override val type: ProductType
+                get() = ProductType.SUBS
+            override val oneTimeProductPrice: Price?
+                get() = null
+            override val title: String
+                get() = ""
+            override val description: String
+                get() = ""
+            override val subscriptionPeriod: String?
+                get() = null
+            override val purchaseOptions: List<PurchaseOption>
+                get() = listOf(PurchaseOption(emptyList(), emptyList(), "fake-token"))
+
+            override fun describeContents(): Int = 0
+
+            override fun writeToParcel(dest: Parcel?, flags: Int) {}
+        }
+
+        val slot = slot<PurchasesError>()
+
+        every {
+            mockPurchasesListener.onPurchasesFailedToUpdate(capture(slot))
+        } just Runs
+
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct,
+            storeProduct.purchaseOptions[0],
+            mockReplaceSkuInfo(),
+            null
+        )
+
+        verify(exactly = 0) {
+            mockClient.launchBillingFlow(any(), any())
+        }
+
+        assertThat(slot.isCaptured).isTrue
+        assertThat(slot.captured.code).isEqualTo(PurchasesErrorCode.UnknownError)
     }
 
     @Test
