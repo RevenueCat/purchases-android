@@ -218,8 +218,9 @@ class BillingWrapper(
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            val params = purchaseOption.buildPurchaseParams(
+            val params = buildPurchaseParams(
                 storeProduct,
+                purchaseOption,
                 replaceSkuInfo,
                 appUserID
             ) ?: return@executeRequestOnUIThread
@@ -764,51 +765,53 @@ class BillingWrapper(
             listener.onPurchaseHistoryResponse(devErrorResponseCode, null)
         }
     }
-}
 
-private fun PurchaseOption.buildPurchaseParams(
-    storeProduct: StoreProduct,
-    replaceSkuInfo: ReplaceSkuInfo?,
-    appUserID: String
-): BillingFlowParams? {
-    val googlePurchaseOption = this as? GooglePurchaseOption
-    if (googlePurchaseOption == null) {
-        val error = PurchasesError(
-            PurchasesErrorCode.PurchaseInvalidError,
-            PurchaseStrings.INVALID_PURCHASE_OPTION_TYPE.format(
-                "Play",
-                "GooglePurchaseOption"
+    private fun buildPurchaseParams(
+        storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption,
+        replaceSkuInfo: ReplaceSkuInfo?,
+        appUserID: String
+    ): BillingFlowParams? {
+        val googlePurchaseOption = purchaseOption as? GooglePurchaseOption
+        if (googlePurchaseOption == null) {
+            val error = PurchasesError(
+                PurchasesErrorCode.PurchaseInvalidError,
+                PurchaseStrings.INVALID_PURCHASE_OPTION_TYPE.format(
+                    "Play",
+                    "GooglePurchaseOption"
+                )
             )
-        )
-        errorLog(error)
-        return null
-    }
+            errorLog(error)
+            return null
+        }
 
-    val googleStoreProduct = storeProduct as? GoogleStoreProduct
-    if (googleStoreProduct == null) {
-        val error = PurchasesError(
-            PurchasesErrorCode.PurchaseInvalidError,
-            PurchaseStrings.INVALID_STORE_PRODUCT_TYPE.format(
-                "Play",
-                "GoogleStoreProduct"
+        val googleStoreProduct = storeProduct as? GoogleStoreProduct
+        if (googleStoreProduct == null) {
+            val error = PurchasesError(
+                PurchasesErrorCode.PurchaseInvalidError,
+                PurchaseStrings.INVALID_STORE_PRODUCT_TYPE.format(
+                    "Play",
+                    "GoogleStoreProduct"
+                )
             )
-        )
-        errorLog(error)
-        return null
-    }
+            errorLog(error)
+            return null
+        }
 
-    val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-        setOfferToken(googlePurchaseOption.token)
-        setProductDetails(storeProduct.productDetails)
-    }.build()
-
-    return BillingFlowParams.newBuilder()
-        .setProductDetailsParamsList(listOf(productDetailsParamsList))
-        .apply {
-            // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-            // https://issuetracker.google.com/issues/155005449
-            replaceSkuInfo?.let {
-                setUpgradeInfo(it)
-            } ?: setObfuscatedAccountId(appUserID.sha256())
+        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+            setOfferToken(googlePurchaseOption.token)
+            setProductDetails(storeProduct.productDetails)
         }.build()
+
+        return BillingFlowParams.newBuilder()
+            .setProductDetailsParamsList(listOf(productDetailsParamsList))
+            .apply {
+                // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                // https://issuetracker.google.com/issues/155005449
+                replaceSkuInfo?.let {
+                    setUpgradeInfo(it)
+                } ?: setObfuscatedAccountId(appUserID.sha256())
+            }.build()
+    }
+
 }
