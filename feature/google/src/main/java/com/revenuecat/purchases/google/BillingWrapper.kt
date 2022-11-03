@@ -39,6 +39,8 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.models.GooglePurchaseOption
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -216,9 +218,8 @@ class BillingWrapper(
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            val params = purchaseOption.buildPurchaseParams
+            val params = purchaseOption.buildPurchaseParams(
                 storeProduct,
-                purchaseOption,
                 replaceSkuInfo,
                 appUserID
             ) ?: return@executeRequestOnUIThread
@@ -763,16 +764,51 @@ class BillingWrapper(
             listener.onPurchaseHistoryResponse(devErrorResponseCode, null)
         }
     }
+}
 
-        return BillingFlowParams.newBuilder()
-            .setProductDetailsParamsList(listOf(productDetailsParamsList))
-            .apply {
-                // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                // https://issuetracker.google.com/issues/155005449
-                replaceSkuInfo?.let {
-                    setUpgradeInfo(it)
-                } ?: setObfuscatedAccountId(appUserID.sha256())
-            }
-            .build()
+private fun PurchaseOption.buildPurchaseParams(
+    storeProduct: StoreProduct,
+    replaceSkuInfo: ReplaceSkuInfo?,
+    appUserID: String
+): BillingFlowParams? {
+    val googlePurchaseOption = this as? GooglePurchaseOption
+    if (googlePurchaseOption == null) {
+        val error = PurchasesError(
+            PurchasesErrorCode.PurchaseInvalidError,
+            PurchaseStrings.INVALID_PURCHASE_OPTION_TYPE.format(
+                "Play",
+                "GooglePurchaseOption"
+            )
+        )
+        errorLog(error)
+        return null
     }
+
+    val googleStoreProduct = storeProduct as? GoogleStoreProduct
+    if (googleStoreProduct == null) {
+        val error = PurchasesError(
+            PurchasesErrorCode.PurchaseInvalidError,
+            PurchaseStrings.INVALID_STORE_PRODUCT_TYPE.format(
+                "Play",
+                "GoogleStoreProduct"
+            )
+        )
+        errorLog(error)
+        return null
+    }
+
+    val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+        setOfferToken(googlePurchaseOption.token)
+        setProductDetails(storeProduct.productDetails)
+    }.build()
+
+    return BillingFlowParams.newBuilder()
+        .setProductDetailsParamsList(listOf(productDetailsParamsList))
+        .apply {
+            // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+            // https://issuetracker.google.com/issues/155005449
+            replaceSkuInfo?.let {
+                setUpgradeInfo(it)
+            } ?: setObfuscatedAccountId(appUserID.sha256())
+        }.build()
 }

@@ -2,6 +2,9 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 
+/**
+ * A purchase-able entity for a subscription product.
+ */
 interface PurchaseOption : Parcelable {
     /**
      * Pricing phases defining a user's payment plan for the product over time.
@@ -15,7 +18,7 @@ interface PurchaseOption : Parcelable {
 
     /**
      * True if this PurchaseOption represents a Google subscription base plan (rather than an offer).
-     * Not applicable for Amazon or INAPP products.
+     * Not applicable for Amazon subscriptions.
      */
     val isBasePlan: Boolean
         get() = pricingPhases.size == 1
