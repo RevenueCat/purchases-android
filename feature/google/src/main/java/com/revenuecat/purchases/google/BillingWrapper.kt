@@ -39,6 +39,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -203,6 +204,15 @@ class BillingWrapper(
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
+        val googleProduct = storeProduct.googleProduct
+        if (googleProduct == null) {
+            val errorMessage = "Product must be a Google Product."
+            errorLog(errorMessage)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(
+                PurchasesError(PurchasesErrorCode.UnknownError, errorMessage)
+            )
+            return
+        }
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
@@ -217,20 +227,13 @@ class BillingWrapper(
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            try {
-                val params = createPurchaseParams(
-                    storeProduct,
-                    purchaseOption,
-                    replaceSkuInfo,
-                    appUserID
-                )
-                launchBillingFlow(activity, params)
-            } catch (exception: InvalidProductException) {
-                errorLog("Error creating purchase params to purchase", exception)
-                purchasesUpdatedListener?.onPurchasesFailedToUpdate(
-                    PurchasesError(PurchasesErrorCode.UnknownError, exception.message)
-                )
-            }
+            val params = createPurchaseParams(
+                googleProduct,
+                purchaseOption,
+                replaceSkuInfo,
+                appUserID
+            )
+            launchBillingFlow(activity, params)
         }
     }
 
@@ -772,19 +775,15 @@ class BillingWrapper(
         }
     }
 
-    @SuppressWarnings("ReturnCount")
     private fun createPurchaseParams(
-        storeProduct: StoreProduct,
+        storeProduct: GoogleStoreProduct,
         purchaseOption: PurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         appUserID: String
     ): BillingFlowParams {
-        val token = purchaseOption.token ?: throw InvalidProductException("PurchaseOption must have a token with BC5.")
-        val googleProduct = storeProduct.googleProduct
-            ?: throw InvalidProductException("Product must be a Google Product.")
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(token)
-            setProductDetails(googleProduct.productDetails)
+            setOfferToken(purchaseOption.token!!)
+            setProductDetails(storeProduct.productDetails)
         }.build()
 
         return BillingFlowParams.newBuilder()
@@ -798,6 +797,4 @@ class BillingWrapper(
             }
             .build()
     }
-
-    private class InvalidProductException(override val message: String) : Exception(message)
 }
