@@ -217,13 +217,20 @@ class BillingWrapper(
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            val params = createPurchaseParams(
-                storeProduct,
-                purchaseOption,
-                replaceSkuInfo,
-                appUserID
-            ) ?: return@executeRequestOnUIThread
-            launchBillingFlow(activity, params)
+            try {
+                val params = createPurchaseParams(
+                    storeProduct,
+                    purchaseOption,
+                    replaceSkuInfo,
+                    appUserID
+                )
+                launchBillingFlow(activity, params)
+            } catch (exception: InvalidProductException) {
+                errorLog("Error creating purchase params to purchase", exception)
+                purchasesUpdatedListener?.onPurchasesFailedToUpdate(
+                    PurchasesError(PurchasesErrorCode.UnknownError, exception.message)
+                )
+            }
         }
     }
 
@@ -771,19 +778,10 @@ class BillingWrapper(
         purchaseOption: PurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         appUserID: String
-    ): BillingFlowParams? {
-        val token = purchaseOption.token
+    ): BillingFlowParams {
+        val token = purchaseOption.token ?: throw InvalidProductException("PurchaseOption must have a token with BC5.")
         val googleProduct = storeProduct.googleProduct
-        if (token == null) {
-            errorLog("PurchaseOption must have a token with BC5.") // TODOBC5: Improve and move error message
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(PurchasesError(PurchasesErrorCode.UnknownError))
-            return null
-        }
-        if (googleProduct == null) {
-            errorLog("Product must be a Google Product.") // TODOBC5: Improve and move error message
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(PurchasesError(PurchasesErrorCode.UnknownError))
-            return null
-        }
+            ?: throw InvalidProductException("Product must be a Google Product.")
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
             setOfferToken(token)
             setProductDetails(googleProduct.productDetails)
@@ -800,4 +798,6 @@ class BillingWrapper(
             }
             .build()
     }
+
+    private class InvalidProductException(override val message: String) : Exception(message)
 }
