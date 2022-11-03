@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.BillingClient
@@ -115,6 +116,13 @@ fun createMockProductDetailsFreeTrial(
                 )
             )
         )
+    )
+)
+fun createMockOneTimeProductDetails(productId: String, price: Double = 4.99): ProductDetails = mockProductDetails(
+    productId = productId,
+    type = BillingClient.ProductType.INAPP,
+    oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(
+        price = price
     )
 )
 

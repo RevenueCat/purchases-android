@@ -765,6 +765,7 @@ class BillingWrapper(
         }
     }
 
+    @SuppressWarnings("ReturnCount")
     private fun createPurchaseParams(
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption,

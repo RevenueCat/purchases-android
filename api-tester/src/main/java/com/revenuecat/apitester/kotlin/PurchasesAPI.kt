@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "RemoveExplicitTypeArguments", "RedundantLambdaArrow")
 private class PurchasesAPI {
+    @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
         activity: Activity,
@@ -85,7 +86,13 @@ private class PurchasesAPI {
 
         purchases.purchaseProductWithOption(activity, storeProduct, purchaseOption, upgradeInfo, purchaseChangeCallback)
         purchases.purchaseProductWithOption(activity, storeProduct, purchaseOption, purchaseCallback)
-        purchases.purchasePackageWithOption(activity, packageToPurchase, purchaseOption, upgradeInfo, purchaseChangeCallback)
+        purchases.purchasePackageWithOption(
+            activity,
+            packageToPurchase,
+            purchaseOption,
+            upgradeInfo,
+            purchaseChangeCallback
+        )
         purchases.purchasePackageWithOption(activity, packageToPurchase, purchaseOption, purchaseCallback)
 
         purchases.restorePurchases(receiveCustomerInfoCallback)
