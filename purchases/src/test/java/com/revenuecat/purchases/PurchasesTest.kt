@@ -271,6 +271,27 @@ class PurchasesTest {
     }
 
     @Test
+    fun canMakePurchaseWithoutProvidingOption() {
+        val storeProduct = createStoreProductWithoutOffers()
+
+        purchases.purchaseProductWith(
+            mockActivity,
+            storeProduct
+        ) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct,
+                storeProduct.purchaseOptions[0],
+                null,
+                null
+            )
+        }
+    }
+
+    @Test
     fun canMakePurchaseOfAPackage() {
         val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
 
@@ -278,6 +299,27 @@ class PurchasesTest {
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
+        ) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct,
+                storeProduct.purchaseOptions[0],
+                null,
+                stubOfferingIdentifier
+            )
+        }
+    }
+
+    @Test
+    fun canMakePurchaseOfAPackageWithoutProvidingOption() {
+        val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
+
+        purchases.purchasePackageWith(
+            mockActivity,
+            offerings[stubOfferingIdentifier]!!.monthly!!
         ) { _, _ -> }
 
         verify {
@@ -302,6 +344,30 @@ class PurchasesTest {
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
+            UpgradeInfo(oldPurchase.skus[0])
+        ) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct,
+                storeProduct.purchaseOptions[0],
+                ReplaceSkuInfo(oldPurchase),
+                stubOfferingIdentifier
+            )
+        }
+    }
+
+    @Test
+    fun canMakePurchaseUpgradeOfAPackageWithoutProvidingOption() {
+        val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
+
+        val oldPurchase = mockPurchaseFound()
+
+        purchases.purchasePackageWith(
+            mockActivity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
             UpgradeInfo(oldPurchase.skus[0])
         ) { _, _ -> }
 
