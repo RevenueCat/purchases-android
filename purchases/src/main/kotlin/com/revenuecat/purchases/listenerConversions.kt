@@ -7,6 +7,7 @@ import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -117,6 +118,10 @@ fun Purchases.getOfferingsWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
+@Deprecated(
+    "Replaced with purchaseProductWithOption",
+    ReplaceWith("purchaseProductWithOption")
+)
 fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
@@ -124,6 +129,29 @@ fun Purchases.purchaseProductWith(
     onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
 ) {
     purchaseProduct(activity, storeProduct, purchaseCompletedCallback(onSuccess, onError))
+}
+
+/**
+ * Purchase product.
+ * @param [activity] Current activity
+ * @param [storeProduct] The storeProduct of the product you wish to purchase
+ * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+fun Purchases.purchaseProductWithOption(
+    activity: Activity,
+    storeProduct: StoreProduct,
+    purchaseOption: PurchaseOption,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
+    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
+) {
+    purchaseProductWithOption(
+        activity,
+        storeProduct,
+        purchaseOption,
+        purchaseCompletedCallback(onSuccess, onError)
+    )
 }
 
 /**
@@ -135,6 +163,10 @@ fun Purchases.purchaseProductWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
+@Deprecated(
+    "Replaced with purchaseProductWithOption",
+    ReplaceWith("purchaseProductWithOption")
+)
 fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
@@ -148,12 +180,43 @@ fun Purchases.purchaseProductWith(
 /**
  * Make a purchase upgrading from a previous sku.
  * @param [activity] Current activity
+ * @param [storeProduct] The storeProduct of the product you wish to purchase
+ * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+ * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
+ * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+fun Purchases.purchaseProductWithOption(
+    activity: Activity,
+    storeProduct: StoreProduct,
+    purchaseOption: PurchaseOption,
+    upgradeInfo: UpgradeInfo,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
+    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
+) {
+    purchaseProductWithOption(
+        activity,
+        storeProduct,
+        purchaseOption,
+        upgradeInfo,
+        productChangeCompletedListener(onSuccess, onError)
+    )
+}
+
+/**
+ * Make a purchase upgrading from a previous sku.
+ * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
+@Deprecated(
+    "Replaced with purchasePackageWithOption",
+    ReplaceWith("purchasePackageWithOption")
+)
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
@@ -165,12 +228,44 @@ fun Purchases.purchasePackageWith(
 }
 
 /**
+ * Make a purchase upgrading from a previous sku.
+ * @param [activity] Current activity
+ * @param [packageToPurchase] The Package you wish to purchase
+ * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+ * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
+ * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+@SuppressWarnings("LongParameterList")
+fun Purchases.purchasePackageWithOption(
+    activity: Activity,
+    packageToPurchase: Package,
+    purchaseOption: PurchaseOption,
+    upgradeInfo: UpgradeInfo,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
+    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
+) {
+    purchasePackageWithOption(
+        activity,
+        packageToPurchase,
+        purchaseOption,
+        upgradeInfo,
+        productChangeCompletedListener(onSuccess, onError)
+    )
+}
+
+/**
  * Make a purchase.
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
+@Deprecated(
+    "Replaced with purchasePackageWithOption",
+    ReplaceWith("purchasePackageWithOption")
+)
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
@@ -178,6 +273,29 @@ fun Purchases.purchasePackageWith(
     onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
 ) {
     purchasePackage(activity, packageToPurchase, purchaseCompletedCallback(onSuccess, onError))
+}
+
+/**
+ * Make a purchase.
+ * @param [activity] Current activity
+ * @param [packageToPurchase] The Package you wish to purchase
+ * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called after the purchase has completed with error
+ */
+fun Purchases.purchasePackageWithOption(
+    activity: Activity,
+    packageToPurchase: Package,
+    purchaseOption: PurchaseOption,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
+    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
+) {
+    purchasePackageWithOption(
+        activity,
+        packageToPurchase,
+        purchaseOption,
+        purchaseCompletedCallback(onSuccess, onError)
+    )
 }
 
 /**
