@@ -209,32 +209,28 @@ class BillingWrapper(
 
         if (googleProduct == null) {
             val error = PurchasesError(
-                PurchasesErrorCode.PurchaseInvalidError,
+                PurchasesErrorCode.UnknownError,
                 PurchaseStrings.INVALID_STORE_PRODUCT_TYPE.format(
                     "Play",
                     "GoogleStoreProduct"
                 )
             )
             errorLog(error)
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(
-                PurchasesError(PurchasesErrorCode.UnknownError, error.message)
-            )
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
             return
         }
 
         val googlePurchaseOption = purchaseOption as? GooglePurchaseOption
         if (googlePurchaseOption == null) {
             val error = PurchasesError(
-                PurchasesErrorCode.PurchaseInvalidError,
+                PurchasesErrorCode.UnknownError,
                 PurchaseStrings.INVALID_PURCHASE_OPTION_TYPE.format(
                     "Play",
                     "GooglePurchaseOption"
                 )
             )
             errorLog(error)
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(
-                PurchasesError(PurchasesErrorCode.UnknownError, error.message)
-            )
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
             return
         }
 
