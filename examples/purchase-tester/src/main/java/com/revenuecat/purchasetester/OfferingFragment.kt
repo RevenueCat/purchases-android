@@ -16,8 +16,8 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.purchasePackageWith
-import com.revenuecat.purchases.purchaseProductWith
+import com.revenuecat.purchases.purchasePackageWithOption
+import com.revenuecat.purchases.purchaseProductWithOption
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
@@ -59,9 +59,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     override fun onPurchasePackageClicked(cardView: View, currentPackage: Package) {
         binding.purchaseProgress.visibility = View.VISIBLE
-        Purchases.sharedInstance.purchasePackageWith(
+        val basePlanOption = currentPackage.product.purchaseOptions.first { it.isBasePlan }
+
+        // TODOBC5 this was confusing, there were 4 autocomplete options... we should rename the listener conversion ones
+        Purchases.sharedInstance.purchasePackageWithOption(
             requireActivity(),
             currentPackage,
+            basePlanOption,
             { error, userCancelled ->
                 if (!userCancelled) {
                     showUserError(requireActivity(), error)
@@ -74,9 +78,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     override fun onPurchaseProductClicked(cardView: View, currentProduct: StoreProduct) {
         binding.purchaseProgress.visibility = View.VISIBLE
-        Purchases.sharedInstance.purchaseProductWith(
+
+        // TODOBC5 should we make this a convenience function?
+        val basePlan = currentProduct.purchaseOptions.first { it.isBasePlan }
+        Purchases.sharedInstance.purchaseProductWithOption(
             requireActivity(),
             currentProduct,
+            basePlan,
             { error, userCancelled ->
                 if (!userCancelled) {
                     showUserError(requireActivity(), error)
