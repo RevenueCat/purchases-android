@@ -5,17 +5,14 @@
 
 package com.revenuecat.purchases.common
 
-import android.os.Parcel
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.toRecurrenceMode
+import com.revenuecat.purchases.utils.stubPricingPhase
+import com.revenuecat.purchases.utils.stubPurchaseOption
+import com.revenuecat.purchases.utils.stubStoreProduct
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
@@ -32,7 +29,7 @@ class OfferingsTest {
     @Test
     fun `Package is not created if there are no valid products`() {
         val packageToTest = getPackageJSON().createPackage(
-            getProducts("com.myproduct.annual" to "P1Y"),
+            getProductsByGroupId("com.myproduct.annual" to "P1Y"),
             "offering"
         )
         assertThat(packageToTest).isNull()
@@ -40,7 +37,7 @@ class OfferingsTest {
 
     @Test
     fun `Package is created if there are valid products`() {
-        val products: Map<String, List<StoreProduct>> = getProducts()
+        val products: Map<String, List<StoreProduct>> = getProductsByGroupId()
         val packageJSON = getPackageJSON(
             packageIdentifier = PackageType.MONTHLY.identifier!!,
             productIdentifier = monthlyProductIdentifier,
@@ -56,7 +53,7 @@ class OfferingsTest {
     @Test
     fun `Package is created for migrated products with same product identifier and group`() {
         val productIdPreBC5 = "onemonth_freetrial"
-        val products: Map<String, List<StoreProduct>> = getProducts(productIdPreBC5 to "P1M")
+        val products: Map<String, List<StoreProduct>> = getProductsByGroupId(productIdPreBC5 to "P1M")
         val packageJSON = getPackageJSON(
             packageIdentifier = PackageType.MONTHLY.identifier!!,
             productIdentifier = productIdPreBC5,
@@ -71,7 +68,7 @@ class OfferingsTest {
 
     @Test
     fun `Offering is not created if there are no valid packages`() {
-        val products = getProducts("com.myproduct.bad" to "P1M")
+        val products = getProductsByGroupId("com.myproduct.bad" to "P1M")
         val offeringJSON = getOfferingJSON()
         val offering = offeringJSON.createOffering(products)
         assertThat(offering).isNull()
@@ -79,14 +76,14 @@ class OfferingsTest {
 
     @Test
     fun `Offering is created if there are valid packages`() {
-        val products = getProducts()
+        val products = getProductsByGroupId()
         val offering = getOfferingJSON().createOffering(products)
         assertThat(offering).isNotNull
     }
 
     @Test
     fun `List of offerings is empty if there are no valid offerings`() {
-        val products = getProducts("com.myproduct.bad" to "P1M")
+        val products = getProductsByGroupId("com.myproduct.bad" to "P1M")
         val offerings = getOfferingsJSON().createOfferings(products)
         assertThat(offerings).isNotNull
         assertThat(offerings.current).isNull()
@@ -96,7 +93,7 @@ class OfferingsTest {
 
     @Test
     fun `Offerings can be created`() {
-        val products = getProducts("com.myproduct" to "P6M", "com.myproduct" to "P1M")
+        val products = getProductsByGroupId("com.myproduct" to "P6M", "com.myproduct" to "P1M")
         val offerings = getOfferingsJSON().createOfferings(products)
         assertThat(offerings).isNotNull
         assertThat(offerings.current!!.identifier).isEqualTo("offering_a")
@@ -168,6 +165,11 @@ class OfferingsTest {
         assertThat(offerings.current).isNull()
     }
 
+    @Test
+    fun `multiple offerings with packages of the same duration`() {
+        // TODOBC5 https://github.com/RevenueCat/purchases-android/pull/674#discussion_r1013951751
+    }
+
     private fun testPackageType(packageType: PackageType) {
         var identifier = packageType.identifier
         if (identifier == null) {
@@ -180,10 +182,7 @@ class OfferingsTest {
         val productGroupIdentifier = "com.revenuecat.premium"
         val productIdentifier = "com.revenuecat.premium.monthly"
         val duration = "P1M"
-        val products = getProducts(productGroupIdentifier to duration)
-        getOfferingJSON(
-
-        )
+        val products = getProductsByGroupId(productGroupIdentifier to duration)
         val offeringJSON = getOfferingJSON(
             offeringIdentifier = "offering_a",
             packageIdentifier = identifier,
@@ -275,7 +274,7 @@ class OfferingsTest {
             """.trimIndent()
         )
 
-    private fun getProducts(
+    private fun getProductsByGroupId(
         vararg productGroupsAndDurations: Pair<String, String> = arrayOf(monthlyProductGroupIdentifier to "P1M")
     ): Map<String, List<StoreProduct>> =
         productGroupsAndDurations.associate { (productGroupIdentifier, duration) ->
@@ -287,56 +286,8 @@ class OfferingsTest {
                 )
             )
             val purchaseOption = stubPurchaseOption(pricingPhases, listOf("tag"))
-            val storeProduct = stubStoreProduct(sku = productGroupIdentifier, duration, listOf(purchaseOption))
+            val storeProduct = stubStoreProduct(productId = productGroupIdentifier, duration, listOf(purchaseOption))
             productGroupIdentifier to listOf(storeProduct)
         }
 
-    private fun stubStoreProduct(
-        sku: String = monthlyProductGroupIdentifier,
-        duration: String = "P1M",
-        purchaseOptions: List<PurchaseOption> = emptyList()
-    ): StoreProduct = object : StoreProduct {
-        override val sku: String
-            get() = sku
-        override val type: ProductType
-            get() = ProductType.SUBS
-        override val oneTimeProductPrice: Price?
-            get() = null
-        override val title: String
-            get() = ""
-        override val description: String
-            get() = ""
-        override val subscriptionPeriod: String
-            get() = duration
-        override val purchaseOptions: List<PurchaseOption>
-            get() = purchaseOptions
-
-        override fun describeContents(): Int = 0
-
-        override fun writeToParcel(dest: Parcel?, flags: Int) {}
-    }
-
-    private fun stubPurchaseOption(
-        pricingPhases: List<PricingPhase>,
-        tags: List<String>,
-    ): PurchaseOption = PurchaseOption(
-        pricingPhases,
-        tags,
-        "token"
-    )
-
-    private fun stubPricingPhase(
-        billingPeriod: String = "P1M",
-        priceCurrencyCodeValue: String = "USD",
-        price: Double = 4.99,
-        recurrenceMode: Int = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
-        billingCycleCount: Int = 0
-    ): PricingPhase = PricingPhase(
-        billingPeriod,
-        priceCurrencyCodeValue,
-        formattedPrice = "${'$'}$price",
-        priceAmountMicros = price.times(1_000_000).toLong(),
-        recurrenceMode.toRecurrenceMode(),
-        billingCycleCount
-    )
 }
