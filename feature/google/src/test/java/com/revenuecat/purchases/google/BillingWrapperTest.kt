@@ -22,9 +22,8 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchaseHistoryParams
-import com.android.billingclient.api.SkuDetailsParams
-import com.android.billingclient.api.SkuDetailsResponseListener
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -1107,7 +1106,7 @@ class BillingWrapperTest {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         wrapper.acknowledge(token) { _, _ -> }
 
-        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue()
+        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
         assertThat(capturedAcknowledgePurchaseParams.captured.purchaseToken).isEqualTo(token)
     }
 
@@ -1300,7 +1299,7 @@ class BillingWrapperTest {
 
         wrapper.consumeAndSave(true, historyRecordWrapper)
 
-        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue()
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
             billingClientOKResult
         )
@@ -1370,7 +1369,7 @@ class BillingWrapperTest {
 
         wrapper.consumeAndSave(true, googlePurchaseWrapper)
 
-        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue()
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
             BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult()
         )
@@ -1392,7 +1391,7 @@ class BillingWrapperTest {
 
         wrapper.consumeAndSave(true, historyRecordWrapper)
 
-        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue()
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
             BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult()
         )
@@ -1489,12 +1488,12 @@ class BillingWrapperTest {
 
         wrapper.consumeAndSave(true, historyRecordWrapper)
 
-        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue()
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
             billingClientOKResult
         )
 
-        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue()
+        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
         val capturedAcknowledgeParams = capturedAcknowledgePurchaseParams.captured
         assertThat(capturedAcknowledgeParams.purchaseToken).isEqualTo(token)
     }
@@ -1516,13 +1515,13 @@ class BillingWrapperTest {
 
         wrapper.consumeAndSave(true, googlePurchaseWrapper)
 
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue()
+        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
         capturedConsumeResponseListener.captured.onConsumeResponse(
             billingClientOKResult,
             token
         )
 
-        assertThat(capturedConsumeParams.isCaptured).isTrue()
+        assertThat(capturedConsumeParams.isCaptured).isTrue
         val capturedConsumeParams = capturedConsumeParams.captured
         assertThat(capturedConsumeParams.purchaseToken).isEqualTo(token)
     }
@@ -1543,22 +1542,22 @@ class BillingWrapperTest {
 
         wrapper.consumeAndSave(true, historyRecordWrapper)
 
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue()
+        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
         capturedConsumeResponseListener.captured.onConsumeResponse(
             billingClientOKResult,
             token
         )
 
-        assertThat(capturedConsumeParams.isCaptured).isTrue()
+        assertThat(capturedConsumeParams.isCaptured).isTrue
         val capturedConsumeParams = capturedConsumeParams.captured
         assertThat(capturedConsumeParams.purchaseToken).isEqualTo(token)
     }
 
     @Test
-    fun `product type defaults to INAPP when querying sku details`() {
-        val slot = slot<SkuDetailsParams>()
+    fun `product type defaults to INAPP when querying product details`() {
+        val slot = slot<QueryProductDetailsParams>()
         every {
-            mockClient.querySkuDetailsAsync(
+            mockClient.queryProductDetailsAsync(
                 capture(slot),
                 any()
             )
@@ -1576,7 +1575,7 @@ class BillingWrapperTest {
             })
 
         assertThat(slot.isCaptured).isTrue
-        assertThat(slot.captured.skuType).isEqualTo(BillingClient.SkuType.INAPP)
+        assertThat(slot.captured.productList[0].productType).isEqualTo(BillingClient.ProductType.INAPP)
     }
 
     @Test
@@ -1740,12 +1739,12 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `querySkuDetails filters empty skus before querying BillingClient`() {
+    fun `queryProductDetails filters empty skus before querying BillingClient`() {
         val skuSet = setOf("abcd", "", "1", "")
 
-        val slot = slot<SkuDetailsParams>()
+        val slot = slot<QueryProductDetailsParams>()
         every {
-            mockClient.querySkuDetailsAsync(capture(slot), any())
+            mockClient.queryProductDetailsAsync(capture(slot), any())
         } just Runs
 
         wrapper.queryProductDetailsAsync(
@@ -1755,7 +1754,10 @@ class BillingWrapperTest {
                 fail("shouldn't be an error")
             })
 
-        assertThat(slot.captured.skusList).isEqualTo(skuSet.filter { it.isNotEmpty() })
+        assertThat(slot.captured).isNotNull
+        val queryProductDetailsParamsProductList = slot.captured.productList
+        val queriedProductIds = queryProductDetailsParamsProductList.map { it.productId }
+        assertThat(queriedProductIds).isEqualTo(skuSet.filter { it.isNotEmpty() })
     }
 
     @Test
@@ -1770,7 +1772,7 @@ class BillingWrapperTest {
             })
 
         verify(exactly = 0) {
-            mockClient.querySkuDetailsAsync(any(), any())
+            mockClient.queryProductDetailsAsync(any(), any())
         }
     }
 
@@ -1786,23 +1788,23 @@ class BillingWrapperTest {
             })
 
         verify(exactly = 0) {
-            mockClient.querySkuDetailsAsync(any(), any())
+            mockClient.queryProductDetailsAsync(any(), any())
         }
     }
 
     @Test
-    fun `querySkuDetailsAsync only calls one response when BillingClient responds twice`() {
+    fun `queryProductDetailsAsync only calls one response when BillingClient responds twice`() {
         var numCallbacks = 0
 
-        val slot = slot<SkuDetailsResponseListener>()
+        val slot = slot<ProductDetailsResponseListener>()
         every {
-            mockClient.querySkuDetailsAsync(
+            mockClient.queryProductDetailsAsync(
                 any(),
                 capture(slot)
             )
         } answers {
-            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
-            slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
+            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
         }
 
         wrapper.queryProductDetailsAsync(
@@ -1819,24 +1821,24 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `querySkuDetailsAsync only calls one response when BillingClient responds twice in separate threads`() {
+    fun `queryProductDetailsAsync only calls one response when BillingClient responds twice in separate threads`() {
         var numCallbacks = 0
 
-        val slot = slot<SkuDetailsResponseListener>()
+        val slot = slot<ProductDetailsResponseListener>()
         val lock = CountDownLatch(2)
         every {
-            mockClient.querySkuDetailsAsync(
+            mockClient.queryProductDetailsAsync(
                 any(),
                 capture(slot)
             )
         } answers {
             Thread {
-                slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
                 lock.countDown()
             }.start()
 
             Thread {
-                slot.captured.onSkuDetailsResponse(billingClientOKResult, null)
+                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
                 lock.countDown()
             }.start()
         }
