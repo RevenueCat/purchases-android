@@ -14,7 +14,8 @@ fun Purchase.toStoreTransaction(
     presentedOfferingIdentifier: String?
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
-    skus = this.listOfSkus,
+    skus = this.products,
+    productIds = this.products,
     type = productType,
     purchaseTime = this.purchaseTime,
     purchaseToken = this.purchaseToken,
@@ -39,7 +40,8 @@ fun PurchaseHistoryRecord.toStoreTransaction(
 ): StoreTransaction {
     return StoreTransaction(
         orderId = null,
-        skus = this.listOfSkus,
+        skus = this.products,
+        productIds = this.products,
         type = type,
         purchaseTime = this.purchaseTime,
         purchaseToken = this.purchaseToken,

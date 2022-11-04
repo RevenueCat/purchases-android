@@ -12,6 +12,7 @@ private class PaymentTransactionAPI {
         with(transaction) {
             val orderId: String? = orderId
             val skus: List<String> = skus
+            val productIds: List<String> = productIds
             val type: ProductType = type
             val purchaseTime: Long = purchaseTime
             val purchaseToken: String = purchaseToken

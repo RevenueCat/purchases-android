@@ -17,6 +17,7 @@ fun Receipt.toStoreTransaction(
     return StoreTransaction(
         orderId = null,
         skus = listOf(sku),
+        productIds = listOf(sku),
         type = type,
         purchaseTime = this.purchaseDate.time,
         purchaseToken = this.receiptId,

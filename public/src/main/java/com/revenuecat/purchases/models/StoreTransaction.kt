@@ -23,7 +23,16 @@ data class StoreTransaction(
     /**
      * Product Ids.
      */
+    @Deprecated(
+        "Replaced with productIds",
+        ReplaceWith("productIds")
+    )
     val skus: List<String>,
+
+    /**
+     * Product IDs purchased.
+     */
+    val productIds: List<String>,
 
     /**
      * Type of the product associated with the purchase.
