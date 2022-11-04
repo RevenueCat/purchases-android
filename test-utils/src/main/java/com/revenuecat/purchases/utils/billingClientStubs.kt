@@ -1,3 +1,4 @@
+@file:Suppress("TooManyFunctions")
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.BillingClient
@@ -27,7 +28,7 @@ fun mockProductDetails(
     productId: String = "sample_product_id",
     @BillingClient.ProductType type: String = BillingClient.ProductType.SUBS,
     oneTimePurchaseOfferDetails: OneTimePurchaseOfferDetails? = null,
-    subscriptionOfferDetails: List<SubscriptionOfferDetails> = listOf(mockSubscriptionOfferDetails()),
+    subscriptionOfferDetails: List<SubscriptionOfferDetails>? = listOf(mockSubscriptionOfferDetails()),
     name: String = "subscription_mock_name",
     description: String = "subscription_mock_description",
     title: String = "subscription_mock_title"
@@ -116,6 +117,14 @@ fun createMockProductDetailsFreeTrial(
             )
         )
     )
+)
+fun createMockOneTimeProductDetails(productId: String, price: Double = 4.99): ProductDetails = mockProductDetails(
+    productId = productId,
+    type = BillingClient.ProductType.INAPP,
+    oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(
+        price = price
+    ),
+    subscriptionOfferDetails = null
 )
 
 @SuppressWarnings("LongParameterList", "MagicNumber")

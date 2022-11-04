@@ -39,6 +39,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -203,6 +204,15 @@ class BillingWrapper(
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
+        val googleProduct = storeProduct.googleProduct
+        if (googleProduct == null) {
+            val errorMessage = "Product must be a Google Product."
+            errorLog(errorMessage)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(
+                PurchasesError(PurchasesErrorCode.UnknownError, errorMessage)
+            )
+            return
+        }
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
@@ -218,11 +228,11 @@ class BillingWrapper(
         }
         executeRequestOnUIThread {
             val params = createPurchaseParams(
-                storeProduct,
+                googleProduct,
                 purchaseOption,
                 replaceSkuInfo,
                 appUserID
-            ) ?: return@executeRequestOnUIThread
+            )
             launchBillingFlow(activity, params)
         }
     }
@@ -766,24 +776,14 @@ class BillingWrapper(
     }
 
     private fun createPurchaseParams(
-        storeProduct: StoreProduct,
+        storeProduct: GoogleStoreProduct,
         purchaseOption: PurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         appUserID: String
-    ): BillingFlowParams? {
-        val token = purchaseOption.token
-        val googleProduct = storeProduct.googleProduct
-        if (token == null) {
-            errorLog("PurchaseOption must have a token with BC5.") // TODOBC5: Improve and move error message
-            return null
-        }
-        if (googleProduct == null) {
-            errorLog("Product must be a Google Product.") // TODOBC5: Improve and move error message
-            return null
-        }
+    ): BillingFlowParams {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(token)
-            setProductDetails(googleProduct.productDetails)
+            setOfferToken(purchaseOption.token!!)
+            setProductDetails(storeProduct.productDetails)
         }.build()
 
         return BillingFlowParams.newBuilder()
