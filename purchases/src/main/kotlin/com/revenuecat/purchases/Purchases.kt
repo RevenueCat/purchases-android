@@ -378,7 +378,7 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Replaced with purchaseProductWithOption",
-        ReplaceWith("purchaseProductWithOption")
+        ReplaceWith("purchaseProductWithOption(activity, storeProduct, purchaseOption, upgradeInfo, listener)")
     )
     fun purchaseProduct(
         activity: Activity,
@@ -410,7 +410,7 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Replaced with purchaseProductWithOption",
-        ReplaceWith("purchaseProductWithOption")
+        ReplaceWith("purchaseProductWithOption(activity, storeProduct, purchaseOption, callback)")
     )
     fun purchaseProduct(
         activity: Activity,
@@ -478,7 +478,7 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Replaced with purchasePackageWithOption",
-        ReplaceWith("purchasePackageWithOption")
+        ReplaceWith("purchasePackageWithOption(activity, packageToPurchase, purchaseOption, upgradeInfo, callback)")
     )
     fun purchasePackage(
         activity: Activity,
@@ -510,7 +510,7 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Replaced with purchasePackageWithOption",
-        ReplaceWith("purchasePackageWithOption")
+        ReplaceWith("purchasePackageWithOption(activity, packageToPurchase, purchaseOption, listener)")
     )
     fun purchasePackage(
         activity: Activity,
