@@ -120,7 +120,7 @@ fun Purchases.getOfferingsWith(
  */
 @Deprecated(
     "Replaced with purchaseProductWithOption",
-    ReplaceWith("purchaseProductWithOption")
+    ReplaceWith("purchaseProductWithOption(activity, storeProduct, purchaseOption, onError, onSuccess)")
 )
 fun Purchases.purchaseProductWith(
     activity: Activity,
@@ -165,7 +165,7 @@ fun Purchases.purchaseProductWithOption(
  */
 @Deprecated(
     "Replaced with purchaseProductWithOption",
-    ReplaceWith("purchaseProductWithOption")
+    ReplaceWith("purchaseProductWithOption(activity, storeProduct, upgradeInfo, purchaseOption, onError, onSuccess)")
 )
 fun Purchases.purchaseProductWith(
     activity: Activity,
@@ -215,7 +215,9 @@ fun Purchases.purchaseProductWithOption(
  */
 @Deprecated(
     "Replaced with purchasePackageWithOption",
-    ReplaceWith("purchasePackageWithOption")
+    ReplaceWith(
+        "purchasePackageWithOption(activity, packageToPurchase, upgradeInfo, purchaseOption, onError, onSuccess)"
+    )
 )
 fun Purchases.purchasePackageWith(
     activity: Activity,
@@ -264,7 +266,7 @@ fun Purchases.purchasePackageWithOption(
  */
 @Deprecated(
     "Replaced with purchasePackageWithOption",
-    ReplaceWith("purchasePackageWithOption")
+    ReplaceWith("purchasePackageWithOption(activity, packageToPurchase, purchaseOption, onError, onSuccess)")
 )
 fun Purchases.purchasePackageWith(
     activity: Activity,
