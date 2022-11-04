@@ -204,6 +204,15 @@ class BillingWrapper(
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
+        val googleProduct = storeProduct.googleProduct
+        if (googleProduct == null) {
+            val errorMessage = "Product must be a Google Product."
+            errorLog(errorMessage)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(
+                PurchasesError(PurchasesErrorCode.UnknownError, errorMessage)
+            )
+            return
+        }
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
@@ -219,11 +228,11 @@ class BillingWrapper(
         }
         executeRequestOnUIThread {
             val params = buildPurchaseParams(
-                storeProduct,
+                googleProduct,
                 purchaseOption,
                 replaceSkuInfo,
                 appUserID
-            ) ?: return@executeRequestOnUIThread
+            )
             launchBillingFlow(activity, params)
         }
     }
@@ -767,7 +776,7 @@ class BillingWrapper(
     }
 
     private fun buildPurchaseParams(
-        storeProduct: StoreProduct,
+        storeProduct: GoogleStoreProduct,
         purchaseOption: PurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         appUserID: String
