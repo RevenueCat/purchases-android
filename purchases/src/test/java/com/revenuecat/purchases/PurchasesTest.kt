@@ -31,6 +31,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
+import com.revenuecat.purchases.google.isBasePlan
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
@@ -123,7 +124,7 @@ class PurchasesTest {
         "'description': 'This is the base offering', " +
         "'packages': [" +
         "{'identifier': '\$rc_monthly','platform_product_identifier': '$stubProductIdentifier'," +
-        "'platform_product_group_identifier': '$stubProductGroupIdentifier'}]}]," +
+        "'platform_product_group_identifier': '$stubProductGroupIdentifier','product_duration': 'P1M'}]}]," +
         "'current_offering_id': '$stubOfferingIdentifier'}"
     private val oneOfferingWithNoProductsResponse = "{'offerings': [" +
         "{'identifier': '$stubOfferingIdentifier', " +
@@ -4190,7 +4191,7 @@ class PurchasesTest {
             else createMockOneTimeProductDetails(sku, 2.00)
 
         val storeProduct = if (type == ProductType.SUBS) productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![1],
+            productDetails.subscriptionOfferDetails!!.first { it.isBasePlan },
             productDetails.subscriptionOfferDetails!!
         ) else productDetails.toStoreProduct()
 
