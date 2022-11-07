@@ -147,7 +147,7 @@ class BillingWrapper(
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     ) {
-        val nonEmptyProductIds = productIds.filter { it.isNotEmpty() }
+        val nonEmptyProductIds = productIds.filter { it.isNotEmpty() }.toSet()
 
         if (nonEmptyProductIds.isEmpty()) {
             log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
@@ -158,8 +158,8 @@ class BillingWrapper(
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                val googleType = productType.toGoogleProductType() ?: BillingClient.ProductType.SUBS
-                val params = googleType.buildQueryProductDetailsParams(productIds)
+                val googleType = productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
+                val params = googleType.buildQueryProductDetailsParams(nonEmptyProductIds)
 
                 withConnectedClient {
                     queryProductDetailsAsyncEnsuringOneResponse(params) { billingResult, productDetailsList ->

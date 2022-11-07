@@ -4270,13 +4270,13 @@ class PurchasesTest {
     }
 
     private fun mockQueryingSkuDetails(
-        sku: String,
+        productId: String,
         type: ProductType,
         offeringIdentifier: String?
     ): ReceiptInfo {
         val productDetails =
-            if (type == ProductType.SUBS) createMockProductDetailsFreeTrial(sku, 2.00)
-            else createMockOneTimeProductDetails(sku, 2.00)
+            if (type == ProductType.SUBS) createMockProductDetailsFreeTrial(productId, 2.00)
+            else createMockOneTimeProductDetails(productId, 2.00)
 
         val storeProduct = if (type == ProductType.SUBS) productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!.first { it.isBasePlan },
@@ -4284,7 +4284,7 @@ class PurchasesTest {
         ) else productDetails.toStoreProduct()
 
         val productInfo = ReceiptInfo(
-            productIDs = listOf(sku),
+            productIDs = listOf(productId),
             offeringIdentifier = offeringIdentifier,
             storeProduct = storeProduct
         )
@@ -4292,7 +4292,7 @@ class PurchasesTest {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 type,
-                setOf(sku),
+                setOf(productId),
                 captureLambda(),
                 any()
             )
