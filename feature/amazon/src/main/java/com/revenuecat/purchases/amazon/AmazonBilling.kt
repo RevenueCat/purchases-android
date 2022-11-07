@@ -223,7 +223,7 @@ internal class AmazonBilling constructor(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {

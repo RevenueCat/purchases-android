@@ -37,11 +37,15 @@ fun stubStoreProduct(
 fun stubPurchaseOption(
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase()),
     tags: List<String> = listOf("tag"),
-): PurchaseOption = PurchaseOption(
-    pricingPhases,
-    tags,
-    "token"
-)
+): PurchaseOption = object : PurchaseOption {
+    override val pricingPhases: List<PricingPhase>
+        get() = pricingPhases
+    override val tags: List<String>
+        get() = tags
+
+    override fun describeContents(): Int = 0
+    override fun writeToParcel(dest: Parcel?, flags: Int) {}
+}
 
 fun stubPricingPhase(
     billingPeriod: String = "P1M",
