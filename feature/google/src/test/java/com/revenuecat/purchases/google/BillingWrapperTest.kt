@@ -318,7 +318,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun canMakeAPurchase() {
+    fun `can make a purchase`() {
         every {
             mockClient.launchBillingFlow(any(), any())
         } returns billingClientOKResult
@@ -344,7 +344,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun properlySetsBillingFlowParamsForSubscriptionPurchase() {
+    fun `properly sets billingFlowParams for subscription purchase`() {
         mockkStatic(BillingFlowParams::class)
         mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
 
