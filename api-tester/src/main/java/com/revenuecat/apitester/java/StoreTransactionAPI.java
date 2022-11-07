@@ -10,7 +10,7 @@ import org.json.JSONObject;
 import java.util.List;
 
 @SuppressWarnings({"unused"})
-final class PaymentTransactionAPI {
+final class StoreTransactionAPI {
     static void check(final StoreTransaction transaction) {
         final String orderId = transaction.getOrderId();
         final List<String> skus = transaction.getSkus();
