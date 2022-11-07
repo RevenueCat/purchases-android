@@ -50,6 +50,7 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
+import com.revenuecat.purchases.utils.Result
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -58,7 +59,7 @@ import kotlin.math.min
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
-@Suppress("LargeClass")
+@Suppress("LargeClass", "TooManyFunctions")
 class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
@@ -201,39 +202,10 @@ class BillingWrapper(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
-        val googleProduct = storeProduct.googleProduct
-
-        if (googleProduct == null) {
-            val error = PurchasesError(
-                PurchasesErrorCode.UnknownError,
-                PurchaseStrings.INVALID_STORE_PRODUCT_TYPE.format(
-                    "Play",
-                    "GoogleStoreProduct"
-                )
-            )
-            errorLog(error)
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
-            return
-        }
-
-        val googlePurchaseOption = purchaseOption as? GooglePurchaseOption
-        if (googlePurchaseOption == null) {
-            val error = PurchasesError(
-                PurchasesErrorCode.UnknownError,
-                PurchaseStrings.INVALID_PURCHASE_OPTION_TYPE.format(
-                    "Play",
-                    "GooglePurchaseOption"
-                )
-            )
-            errorLog(error)
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
-            return
-        }
-
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
@@ -248,13 +220,16 @@ class BillingWrapper(
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            val params = buildPurchaseParams(
-                googleProduct,
+            val result = buildPurchaseParams(
+                storeProduct,
                 purchaseOption,
                 replaceSkuInfo,
                 appUserID
             )
-            launchBillingFlow(activity, params)
+            when (result) {
+                is Result.Success -> launchBillingFlow(activity, result.value)
+                is Result.Error -> purchasesUpdatedListener?.onPurchasesFailedToUpdate(result.value)
+            }
         }
     }
 
@@ -797,24 +772,83 @@ class BillingWrapper(
     }
 
     private fun buildPurchaseParams(
-        storeProduct: GoogleStoreProduct,
-        purchaseOption: GooglePurchaseOption,
+        storeProduct: StoreProduct,
+        purchaseOption: PurchaseOption?,
         replaceSkuInfo: ReplaceSkuInfo?,
         appUserID: String
-    ): BillingFlowParams {
+    ): Result<BillingFlowParams, PurchasesError> {
+        val googleProduct = storeProduct.googleProduct
+
+        if (googleProduct == null) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                PurchaseStrings.INVALID_STORE_PRODUCT_TYPE.format(
+                    "Play",
+                    "GoogleStoreProduct"
+                )
+            )
+            errorLog(error)
+            return Result.Error(error)
+        }
+
+        return if (googleProduct.type == ProductType.SUBS) {
+            buildSubscriptionPurchaseParams(googleProduct, purchaseOption, replaceSkuInfo, appUserID)
+        } else {
+            buildOneTimePurchaseParams(googleProduct, appUserID)
+        }
+    }
+
+    private fun buildOneTimePurchaseParams(
+        googleProduct: GoogleStoreProduct,
+        appUserID: String
+    ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(purchaseOption.token)
-            setProductDetails(storeProduct.productDetails)
+            setProductDetails(googleProduct.productDetails)
         }.build()
 
-        return BillingFlowParams.newBuilder()
-            .setProductDetailsParamsList(listOf(productDetailsParamsList))
-            .apply {
-                // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
-                // https://issuetracker.google.com/issues/155005449
-                replaceSkuInfo?.let {
-                    setUpgradeInfo(it)
-                } ?: setObfuscatedAccountId(appUserID.sha256())
-            }.build()
+        return Result.Success(
+            BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                .setObfuscatedAccountId(appUserID.sha256())
+                .build()
+        )
+    }
+
+    private fun buildSubscriptionPurchaseParams(
+        googleProduct: GoogleStoreProduct,
+        purchaseOption: PurchaseOption?,
+        replaceSkuInfo: ReplaceSkuInfo?,
+        appUserID: String
+    ): Result<BillingFlowParams, PurchasesError> {
+        val googlePurchaseOption = purchaseOption as? GooglePurchaseOption
+        if (googlePurchaseOption == null) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                PurchaseStrings.INVALID_PURCHASE_OPTION_TYPE.format(
+                    "Play",
+                    "GooglePurchaseOption"
+                )
+            )
+            errorLog(error)
+            return Result.Error(error)
+        }
+
+        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+            setOfferToken(googlePurchaseOption.token)
+            setProductDetails(googleProduct.productDetails)
+        }.build()
+
+        return Result.Success(
+            BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                .apply {
+                    // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
+                    // https://issuetracker.google.com/issues/155005449
+                    replaceSkuInfo?.let {
+                        setUpgradeInfo(it)
+                    } ?: setObfuscatedAccountId(appUserID.sha256())
+                }
+                .build()
+        )
     }
 }

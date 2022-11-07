@@ -33,6 +33,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
+import com.revenuecat.purchases.models.GooglePurchaseOption
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -41,6 +42,7 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
+import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.mockQueryPurchaseHistory
 import com.revenuecat.purchases.utils.mockQueryPurchasesAsync
@@ -316,7 +318,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun canMakeAPurchase() {
+    fun `can make a purchase`() {
         every {
             mockClient.launchBillingFlow(any(), any())
         } returns billingClientOKResult
@@ -342,7 +344,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun properlySetsBillingFlowParams() {
+    fun `properly sets billingFlowParams for subscription purchase`() {
         mockkStatic(BillingFlowParams::class)
         mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
 
@@ -408,7 +410,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `properly sets ProductDetailsParams`() {
+    fun `properly sets ProductDetailsParams for subscription product`() {
         mockkStatic(BillingFlowParams::class)
         mockkStatic(BillingFlowParams.ProductDetailsParams::class)
         mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
@@ -437,9 +439,8 @@ class BillingWrapperTest {
             productDetails.subscriptionOfferDetails!!
         )
 
-        val slot = slot<BillingFlowParams>()
         every {
-            mockClient.launchBillingFlow(eq(mockActivity), capture(slot))
+            mockClient.launchBillingFlow(eq(mockActivity), any())
         } answers {
             billingClientOKResult
         }
@@ -456,6 +457,57 @@ class BillingWrapperTest {
 
         assertThat(tokenSlot.isCaptured).isTrue
         assertThat(tokenSlot.captured).isEqualTo("mock-subscription-offer-token")
+        assertThat(productDetailsSlot.isCaptured).isTrue
+        assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
+    }
+
+    @Test
+    fun `properly sets ProductDetailsParams for inapp product`() {
+        mockkStatic(BillingFlowParams::class)
+        mockkStatic(BillingFlowParams.ProductDetailsParams::class)
+        mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
+
+        val mockProductDetailsBuilder = mockk<ProductDetailsParams.Builder>(relaxed = true)
+        every {
+            ProductDetailsParams.newBuilder()
+        } returns mockProductDetailsBuilder
+
+        val productDetailsSlot = slot<ProductDetails>()
+        every {
+            mockProductDetailsBuilder.setProductDetails(capture(productDetailsSlot))
+        } returns mockProductDetailsBuilder
+
+        val productId = "product_a"
+
+        val upgradeInfo = mockReplaceSkuInfo()
+        val productDetails = mockProductDetails(
+            productId = productId,
+            type = inAppGoogleProductType,
+            oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(),
+            subscriptionOfferDetails = null
+        )
+        val storeProduct = productDetails.toStoreProduct()
+
+        every {
+            mockClient.launchBillingFlow(eq(mockActivity), any())
+        } answers {
+            billingClientOKResult
+        }
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct,
+            null,
+            upgradeInfo,
+            null
+        )
+
+        verify(exactly = 0) {
+            mockProductDetailsBuilder.setOfferToken(any())
+        }
+
         assertThat(productDetailsSlot.isCaptured).isTrue
         assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
     }
@@ -571,7 +623,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `purchase fails if purchase option does not have token`() {
+    fun `subscription purchase fails if purchase option is not GooglePurchaseOption`() {
         val storeProduct = GoogleStoreProduct(
             sku = "mock-sku",
             type = ProductType.SUBS,
@@ -579,7 +631,7 @@ class BillingWrapperTest {
             title = "",
             description = "",
             subscriptionPeriod = null,
-            purchaseOptions = listOf(PurchaseOption(
+            purchaseOptions = listOf(GooglePurchaseOption(
                 pricingPhases = listOf(PricingPhase(
                     billingPeriod = "",
                     priceCurrencyCode = "",
@@ -589,7 +641,7 @@ class BillingWrapperTest {
                     billingCycleCount = 0
                 )),
                 tags = emptyList(),
-                token = null
+                token = "mock-token"
             )),
             productDetails = mockProductDetails()
         )
@@ -600,11 +652,29 @@ class BillingWrapperTest {
             mockPurchasesListener.onPurchasesFailedToUpdate(capture(slot))
         } just Runs
 
+        val nonGooglePurchaseOption = object : PurchaseOption {
+            override val pricingPhases: List<PricingPhase>
+                get() = listOf(PricingPhase(
+                    billingPeriod = "",
+                    priceCurrencyCode = "",
+                    formattedPrice = "",
+                    priceAmountMicros = 0L,
+                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                    billingCycleCount = 0
+                ))
+            override val tags: List<String>
+                get() = emptyList()
+
+            override fun describeContents(): Int = 0
+
+            override fun writeToParcel(dest: Parcel?, flags: Int) {}
+        }
+
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
             storeProduct,
-            storeProduct.purchaseOptions[0],
+            nonGooglePurchaseOption,
             mockReplaceSkuInfo(),
             null
         )
@@ -633,7 +703,7 @@ class BillingWrapperTest {
             override val subscriptionPeriod: String?
                 get() = null
             override val purchaseOptions: List<PurchaseOption>
-                get() = listOf(PurchaseOption(emptyList(), emptyList(), "fake-token"))
+                get() = listOf(GooglePurchaseOption(emptyList(), emptyList(), "fake-token"))
 
             override fun describeContents(): Int = 0
 
