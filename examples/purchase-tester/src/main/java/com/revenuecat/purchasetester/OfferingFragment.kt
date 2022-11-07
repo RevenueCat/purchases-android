@@ -61,7 +61,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         binding.purchaseProgress.visibility = View.VISIBLE
         val basePlanOption = currentPackage.product.purchaseOptions.first { it.isBasePlan }
 
-        // TODOBC5 this was confusing, there were 4 autocomplete options... we should rename the listener conversion ones
         Purchases.sharedInstance.purchasePackageWithOption(
             requireActivity(),
             currentPackage,
@@ -79,7 +78,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     override fun onPurchaseProductClicked(cardView: View, currentProduct: StoreProduct) {
         binding.purchaseProgress.visibility = View.VISIBLE
 
-        // TODOBC5 should we make this a convenience function?
         val basePlan = currentProduct.purchaseOptions.first { it.isBasePlan }
         Purchases.sharedInstance.purchaseProductWithOption(
             requireActivity(),
