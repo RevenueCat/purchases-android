@@ -718,7 +718,7 @@ class Purchases internal constructor(
             } else {
                 backend.clearCaches()
                 synchronized(this@Purchases) {
-                    state = state.copy(purchaseCallbacks = emptyMap())
+                    state = state.copy(purchaseCallbacksByProductId = emptyMap())
                 }
                 updateAllCaches(identityManager.currentAppUserID, callback)
             }
@@ -730,7 +730,7 @@ class Purchases internal constructor(
      */
     fun close() {
         synchronized(this@Purchases) {
-            state = state.copy(purchaseCallbacks = emptyMap())
+            state = state.copy(purchaseCallbacksByProductId = emptyMap())
         }
         this.backend.close()
 
@@ -1403,10 +1403,10 @@ class Purchases internal constructor(
         }
     }
 
-    private fun getPurchaseCallback(sku: String): PurchaseCallback? {
-        return state.purchaseCallbacks[sku].also {
+    private fun getPurchaseCallback(productId: String): PurchaseCallback? {
+        return state.purchaseCallbacksByProductId[productId].also {
             state =
-                state.copy(purchaseCallbacks = state.purchaseCallbacks.filterNot { it.key == sku })
+                state.copy(purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId })
         }
     }
 
@@ -1462,8 +1462,8 @@ class Purchases internal constructor(
                     state.productChangeCallback?.let { productChangeCallback ->
                         state = state.copy(productChangeCallback = null)
                         productChangeCallback.dispatch(purchasesError)
-                    } ?: state.purchaseCallbacks.let { purchaseCallbacks ->
-                        state = state.copy(purchaseCallbacks = emptyMap())
+                    } ?: state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
+                        state = state.copy(purchaseCallbacksByProductId = emptyMap())
                         purchaseCallbacks.values.forEach { it.dispatch(purchasesError) }
                     }
                 }
@@ -1532,9 +1532,9 @@ class Purchases internal constructor(
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
-            if (!state.purchaseCallbacks.containsKey(storeProduct.productId)) {
+            if (!state.purchaseCallbacksByProductId.containsKey(storeProduct.productId)) {
                 state = state.copy(
-                    purchaseCallbacks = state.purchaseCallbacks + mapOf(storeProduct.productId to listener)
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOf(storeProduct.productId to listener)
                 )
                 userPurchasing = identityManager.currentAppUserID
             }
