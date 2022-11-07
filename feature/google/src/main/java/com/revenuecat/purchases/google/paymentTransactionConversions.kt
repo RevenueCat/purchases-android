@@ -3,7 +3,6 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
