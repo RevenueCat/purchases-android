@@ -213,7 +213,7 @@ class Purchases internal constructor(
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isNotEmpty()) {
                     allPurchases.forEach { purchase ->
-                        val productInfo = ReceiptInfo(productIDs = purchase.skus)
+                        val productInfo = ReceiptInfo(productIDs = purchase.productIds)
                         syncPurchaseWithBackend(
                             purchase.purchaseToken,
                             purchase.storeUserID,
@@ -612,7 +612,7 @@ class Purchases internal constructor(
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                             sortedByTime.forEach { purchase ->
                                 subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
-                                    val receiptInfo = ReceiptInfo(productIDs = purchase.skus)
+                                    val receiptInfo = ReceiptInfo(productIDs = purchase.productIds)
                                     backend.postReceiptData(
                                         purchaseToken = purchase.purchaseToken,
                                         appUserID = appUserID,
@@ -1278,7 +1278,7 @@ class Purchases internal constructor(
             if (purchase.purchaseState != PurchaseState.PENDING) {
                 billing.queryProductDetailsAsync(
                     productType = purchase.type,
-                    productIds = purchase.skus.toSet(),
+                    productIds = purchase.productIds.toSet(),
                     onReceive = { storeProducts ->
                         postToBackend(
                             purchase = purchase,
@@ -1323,7 +1323,7 @@ class Purchases internal constructor(
     ) {
         subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
             val receiptInfo = ReceiptInfo(
-                productIDs = purchase.skus,
+                productIDs = purchase.productIds,
                 offeringIdentifier = purchase.presentedOfferingIdentifier,
                 storeProduct = storeProduct
             )
@@ -1473,14 +1473,14 @@ class Purchases internal constructor(
 
     private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
-            getPurchaseCallback(storeTransaction.skus[0])?.let { purchaseCallback ->
+            getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
                 dispatch {
                     purchaseCallback.onCompleted(storeTransaction, info)
                 }
             }
         }
         val onError: ErrorPurchaseCallback = { purchase, error ->
-            getPurchaseCallback(purchase.skus[0])?.dispatch(error)
+            getPurchaseCallback(purchase.productIds[0])?.dispatch(error)
         }
 
         return Pair(onSuccess, onError)

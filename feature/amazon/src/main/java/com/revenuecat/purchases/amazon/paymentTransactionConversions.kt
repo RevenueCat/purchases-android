@@ -8,7 +8,7 @@ import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
 
 fun Receipt.toStoreTransaction(
-    sku: String,
+    productId: String,
     presentedOfferingIdentifier: String?,
     purchaseState: PurchaseState,
     userData: UserData
@@ -16,8 +16,8 @@ fun Receipt.toStoreTransaction(
     val type = this.productType.toRevenueCatProductType()
     return StoreTransaction(
         orderId = null,
-        skus = listOf(sku),
-        productIds = listOf(sku),
+        skus = listOf(productId),
+        productIds = listOf(productId),
         type = type,
         purchaseTime = this.purchaseDate.time,
         purchaseToken = this.receiptId,

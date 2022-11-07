@@ -184,7 +184,7 @@ class AmazonBillingTest {
         assertThat(receivedPurchases).isNotNull
         assertThat(receivedPurchases!!.size).isEqualTo(2)
 
-        val purchaseA = receivedPurchases!!.values.first { it.skus[0] == expectedTermSkuA }
+        val purchaseA = receivedPurchases!!.values.first { it.productIds[0] == expectedTermSkuA }
         checkPurchaseIsCorrect(
             purchaseA,
             expectedTermSkuA,
@@ -192,7 +192,7 @@ class AmazonBillingTest {
             PurchaseState.UNSPECIFIED_STATE
         )
 
-        val purchaseB = receivedPurchases!!.values.first { it.skus[0] == expectedTermSkuB }
+        val purchaseB = receivedPurchases!!.values.first { it.productIds[0] == expectedTermSkuB }
         checkPurchaseIsCorrect(
             purchaseB,
             expectedTermSkuB,
@@ -270,7 +270,7 @@ class AmazonBillingTest {
         assertThat(receivedPurchases).isNotNull
         assertThat(receivedPurchases!!.size).isEqualTo(2)
 
-        val purchaseA = receivedPurchases!!.values.first { it.skus[0] == expectedTermSkuA }
+        val purchaseA = receivedPurchases!!.values.first { it.productIds[0] == expectedTermSkuA }
         checkPurchaseIsCorrect(
             purchaseA,
             expectedTermSkuA,
@@ -278,7 +278,7 @@ class AmazonBillingTest {
             PurchaseState.UNSPECIFIED_STATE
         )
 
-        val purchaseB = receivedPurchases!!.values.first { it.skus[0] == "sub_sku_b.monthly" }
+        val purchaseB = receivedPurchases!!.values.first { it.productIds[0] == "sub_sku_b.monthly" }
         checkPurchaseIsCorrect(
             purchaseB,
             "sub_sku_b.monthly",
@@ -384,7 +384,7 @@ class AmazonBillingTest {
         setup()
         underTest.startConnection()
 
-        val skus = setOf("sku", "sku_2")
+        val productIds = setOf("sku", "sku_2")
         val marketplace = "ES"
         val dummyUserData = dummyUserData(marketplace = marketplace)
 
@@ -398,15 +398,15 @@ class AmazonBillingTest {
         val storeProducts = listOfNotNull(dummyAmazonProduct().toStoreProduct(marketplace))
 
         every {
-            mockProductDataHandler.getProductData(skus, capture(marketplaceSlot), captureLambda(), any())
+            mockProductDataHandler.getProductData(productIds, capture(marketplaceSlot), captureLambda(), any())
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)
         }
 
         var onReceiveCalled = false
-        underTest.querySkuDetailsAsync(
+        underTest.queryProductDetailsAsync(
             productType = com.revenuecat.purchases.ProductType.SUBS,
-            skus = skus,
+            productIds = productIds,
             onReceive = {
                 onReceiveCalled = true
             },
@@ -425,7 +425,7 @@ class AmazonBillingTest {
         underTest.consumeAndSave(
             shouldTryToConsume = true,
             purchase = dummyReceipt().toStoreTransaction(
-                sku = "sku.monthly",
+                productId = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PENDING,
                 userData = dummyUserData(
@@ -456,7 +456,7 @@ class AmazonBillingTest {
         underTest.consumeAndSave(
             shouldTryToConsume = true,
             purchase = dummyReceipt.toStoreTransaction(
-                sku = "sku.monthly",
+                productId = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PURCHASED,
                 userData = dummyUserData(
@@ -491,7 +491,7 @@ class AmazonBillingTest {
         underTest.consumeAndSave(
             shouldTryToConsume = false,
             purchase = dummyReceipt.toStoreTransaction(
-                sku = "sku.monthly",
+                productId = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PURCHASED,
                 userData = dummyUserData(

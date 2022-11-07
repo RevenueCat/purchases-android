@@ -1074,7 +1074,7 @@ class BillingWrapperTest {
         assertThat(purchaseWrapper!!.type).isEqualTo(type)
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
-        assertThat(purchaseWrapper.skus[0]).isEqualTo(sku)
+        assertThat(purchaseWrapper.productIds[0]).isEqualTo(sku)
         assertThat(purchasesByHashedToken?.size == 1)
 
     }
@@ -1117,7 +1117,7 @@ class BillingWrapperTest {
         assertThat(purchaseWrapper!!.type).isEqualTo(ProductType.SUBS)
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
-        assertThat(purchaseWrapper.skus[0]).isEqualTo(sku)
+        assertThat(purchaseWrapper.productIds[0]).isEqualTo(sku)
     }
 
     @Test
@@ -1293,7 +1293,7 @@ class BillingWrapperTest {
         )
 
         assertThat(recordFound).isNotNull
-        assertThat(recordFound!!.skus[0]).isEqualTo(purchaseHistoryRecord.firstSku)
+        assertThat(recordFound!!.productIds[0]).isEqualTo(purchaseHistoryRecord.firstSku)
         assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
         assertThat(recordFound!!.purchaseToken).isEqualTo(purchaseHistoryRecord.purchaseToken)
     }
@@ -1809,8 +1809,8 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `queryProductDetails filters empty skus before querying BillingClient`() {
-        val skuSet = setOf("abcd", "", "1", "")
+    fun `queryProductDetails filters empty productIds before querying BillingClient`() {
+        val productIdsSet = setOf("abcd", "", "1", "")
 
         val slot = slot<QueryProductDetailsParams>()
         every {
@@ -1819,7 +1819,7 @@ class BillingWrapperTest {
 
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
-            skuSet,
+            productIdsSet,
             {}, {
                 fail("shouldn't be an error")
             })
@@ -1827,11 +1827,11 @@ class BillingWrapperTest {
         assertThat(slot.captured).isNotNull
         val queryProductDetailsParamsProductList = slot.captured.productList
         val queriedProductIds = queryProductDetailsParamsProductList.map { it.productId }
-        assertThat(queriedProductIds).isEqualTo(skuSet.filter { it.isNotEmpty() })
+        assertThat(queriedProductIds).isEqualTo(productIdsSet.filter { it.isNotEmpty() })
     }
 
     @Test
-    fun `querySkuDetails with empty list returns empty list and does not query BillingClient`() {
+    fun `queryProductDetails with empty list returns empty list and does not query BillingClient`() {
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             emptySet(),
@@ -1847,7 +1847,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `querySkuDetails with only empty skus returns empty list and does not query BillingClient`() {
+    fun `queryProductDetails with only empty productIds returns empty list and does not query BillingClient`() {
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             setOf("", ""),
@@ -2067,7 +2067,7 @@ class BillingWrapperTest {
     }
 
     private fun getMockedPurchaseWrapper(
-        sku: String,
+        productId: String,
         purchaseToken: String,
         productType: ProductType,
         offeringIdentifier: String? = null,
@@ -2075,7 +2075,7 @@ class BillingWrapperTest {
         acknowledged: Boolean = false
     ): StoreTransaction {
         val p = stubGooglePurchase(
-            productIds = listOf(sku),
+            productIds = listOf(productId),
             purchaseToken = purchaseToken,
             purchaseState = purchaseState,
             acknowledged = acknowledged
@@ -2085,12 +2085,12 @@ class BillingWrapperTest {
     }
 
     private fun getMockedPurchaseHistoryRecordWrapper(
-        sku: String,
+        productId: String,
         purchaseToken: String,
         productType: ProductType
     ): StoreTransaction {
         val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
-            productIds = listOf(sku),
+            productIds = listOf(productId),
             purchaseToken = purchaseToken
         )
 
