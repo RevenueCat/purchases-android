@@ -800,8 +800,7 @@ class BillingWrapper(
         storeProduct: GoogleStoreProduct,
         purchaseOption: GooglePurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
-        appUserID: String,
-        callback: ()
+        appUserID: String
     ): BillingFlowParams {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
             setOfferToken(purchaseOption.token)

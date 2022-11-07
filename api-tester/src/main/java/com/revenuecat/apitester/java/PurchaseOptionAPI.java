@@ -16,10 +16,8 @@ final class PurchaseOptionAPI {
     }
 
     static void checkGooglePurchaseOption(GooglePurchaseOption googlePurchaseOption) {
-        List<PricingPhase> pricingPhases = googlePurchaseOption.getPricingPhases();
-        List<String> tags = googlePurchaseOption.getTags();
+        checkPurchaseOption(googlePurchaseOption);
         String token = googlePurchaseOption.getToken();
-        Boolean isBasePlan = googlePurchaseOption.isBasePlan();
     }
 
 }
