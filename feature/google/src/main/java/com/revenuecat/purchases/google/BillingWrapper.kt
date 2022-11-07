@@ -39,6 +39,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.models.GooglePurchaseOption
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
@@ -205,14 +206,34 @@ class BillingWrapper(
         presentedOfferingIdentifier: String?
     ) {
         val googleProduct = storeProduct.googleProduct
+
         if (googleProduct == null) {
-            val errorMessage = "Product must be a Google Product."
-            errorLog(errorMessage)
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(
-                PurchasesError(PurchasesErrorCode.UnknownError, errorMessage)
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                PurchaseStrings.INVALID_STORE_PRODUCT_TYPE.format(
+                    "Play",
+                    "GoogleStoreProduct"
+                )
             )
+            errorLog(error)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
             return
         }
+
+        val googlePurchaseOption = purchaseOption as? GooglePurchaseOption
+        if (googlePurchaseOption == null) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                PurchaseStrings.INVALID_PURCHASE_OPTION_TYPE.format(
+                    "Play",
+                    "GooglePurchaseOption"
+                )
+            )
+            errorLog(error)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+            return
+        }
+
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
@@ -227,7 +248,7 @@ class BillingWrapper(
             presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
-            val params = createPurchaseParams(
+            val params = buildPurchaseParams(
                 googleProduct,
                 purchaseOption,
                 replaceSkuInfo,
@@ -775,14 +796,14 @@ class BillingWrapper(
         }
     }
 
-    private fun createPurchaseParams(
+    private fun buildPurchaseParams(
         storeProduct: GoogleStoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: GooglePurchaseOption,
         replaceSkuInfo: ReplaceSkuInfo?,
         appUserID: String
     ): BillingFlowParams {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(purchaseOption.token!!)
+            setOfferToken(purchaseOption.token)
             setProductDetails(storeProduct.productDetails)
         }.build()
 
@@ -794,7 +815,6 @@ class BillingWrapper(
                 replaceSkuInfo?.let {
                     setUpgradeInfo(it)
                 } ?: setObfuscatedAccountId(appUserID.sha256())
-            }
-            .build()
+            }.build()
     }
 }

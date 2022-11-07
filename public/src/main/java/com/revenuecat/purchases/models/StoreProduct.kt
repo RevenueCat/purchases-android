@@ -43,7 +43,7 @@ interface StoreProduct : Parcelable {
     val subscriptionPeriod: String?
 
     /**
-     * List of PurchaseOptions.
+     * List of PurchaseOptions. Empty list for INAPP products.
      */
     val purchaseOptions: List<PurchaseOption>
 }
