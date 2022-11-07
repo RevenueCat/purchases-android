@@ -211,8 +211,6 @@ class BackendTest {
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "normal_duration" to receiptInfo.duration,
-            "intro_duration" to receiptInfo.introDuration,
-            "trial_duration" to receiptInfo.trialDuration,
             "store_user_id" to storeAppUserID
         ).mapNotNull { entry: Map.Entry<String, Any?> ->
             entry.value?.let { entry.key to it }
@@ -1458,12 +1456,7 @@ class BackendTest {
         trialDuration: String = "P1M"
     ): StoreProduct {
         val storeProduct = mockk<StoreProduct>()
-        every { storeProduct.priceAmountMicros } returns price
-        every { storeProduct.priceCurrencyCode } returns "USD"
         every { storeProduct.subscriptionPeriod } returns duration
-        every { storeProduct.introductoryPricePeriod } returns introDuration
-        every { storeProduct.freeTrialPeriod } returns trialDuration
-        every { storeProduct.price } returns "$25"
         return storeProduct
     }
 

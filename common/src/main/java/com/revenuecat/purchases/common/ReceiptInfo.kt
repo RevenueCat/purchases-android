@@ -11,8 +11,6 @@ class ReceiptInfo(
 ) {
 
     val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }
-    val introDuration: String? = null // TODOBC5 storeProduct?.introductoryPricePeriod?.takeUnless { it.isEmpty() }
-    val trialDuration: String? = null // TODOBC5 storeProduct?.freeTrialPeriod?.takeUnless { it.isEmpty() }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -25,8 +23,6 @@ class ReceiptInfo(
         if (price != other.price) return false
         if (currency != other.currency) return false
         if (duration != other.duration) return false
-        if (introDuration != other.introDuration) return false
-        if (trialDuration != other.trialDuration) return false
 
         return true
     }
@@ -44,8 +40,6 @@ class ReceiptInfo(
             "offeringIdentifier=$offeringIdentifier, " +
             "price=$price, " +
             "currency=$currency, " +
-            "duration=$duration, " +
-            "introDuration=$introDuration, " +
-            "trialDuration=$trialDuration)"
+            "duration=$duration)"
     }
 }
