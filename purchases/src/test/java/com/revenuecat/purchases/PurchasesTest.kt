@@ -253,7 +253,7 @@ class PurchasesTest {
     fun canMakePurchase() {
         val storeProduct = createStoreProductWithoutOffers()
 
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockActivity,
             storeProduct,
             storeProduct.purchaseOptions[0]
@@ -296,7 +296,7 @@ class PurchasesTest {
     fun canMakePurchaseOfAPackage() {
         val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
 
-        purchases.purchasePackageOption(
+        purchases.purchasePackageOptionWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
@@ -341,7 +341,7 @@ class PurchasesTest {
 
         val oldPurchase = mockPurchaseFound()
 
-        purchases.purchasePackageOption(
+        purchases.purchasePackageOptionWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
@@ -504,7 +504,7 @@ class PurchasesTest {
     fun passesUpErrors() {
         var errorCalled = false
         val storeProduct = createStoreProductWithoutOffers()
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockk(),
             storeProduct,
             storeProduct.purchaseOptions[0],
@@ -1526,7 +1526,7 @@ class PurchasesTest {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         val storeProduct = createStoreProductWithoutOffers()
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockk(),
             storeProduct,
             storeProduct.purchaseOptions[0],
@@ -1535,7 +1535,7 @@ class PurchasesTest {
         }
 
         var errorCalled: PurchasesError? = null
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockk(),
             storeProduct,
             storeProduct.purchaseOptions[0],
@@ -1558,7 +1558,7 @@ class PurchasesTest {
         val storeProduct = createStoreProductWithoutOffers(productId)
 
         var callCount = 0
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockActivity,
             storeProduct,
             storeProduct.purchaseOptions[0],
@@ -1584,7 +1584,7 @@ class PurchasesTest {
         var callCount = 0
         mockQueryingSkuDetails(productId1, ProductType.SUBS, null)
         val storeProduct = createStoreProductWithoutOffers(productId)
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockActivity,
             storeProduct,
             storeProduct.purchaseOptions[0],
@@ -1602,13 +1602,13 @@ class PurchasesTest {
     @Test
     fun `when multiple make purchase callbacks, a failure doesn't throw ConcurrentModificationException`() {
         val storeProduct = createStoreProductWithoutOffers("productId")
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockActivity,
             storeProduct,
             storeProduct.purchaseOptions[0]
         ) { _, _ -> }
 
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockActivity,
             storeProduct,
             storeProduct.purchaseOptions[0]
@@ -3460,7 +3460,7 @@ class PurchasesTest {
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
-        purchases.purchasePackageOption(
+        purchases.purchasePackageOptionWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
@@ -3517,7 +3517,7 @@ class PurchasesTest {
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
-        purchases.purchasePackageOption(
+        purchases.purchasePackageOptionWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
@@ -3564,7 +3564,7 @@ class PurchasesTest {
             lambda<(StoreTransaction) -> Unit>().captured.invoke(oldPurchase)
         }
 
-        purchases.purchasePackageOption(
+        purchases.purchasePackageOptionWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
@@ -3738,7 +3738,7 @@ class PurchasesTest {
 
         var callCount = 0
 
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
@@ -3764,7 +3764,7 @@ class PurchasesTest {
         val oldPurchase = mockPurchaseFound()
 
         var callCount = 0
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
@@ -3798,7 +3798,7 @@ class PurchasesTest {
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
 
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
@@ -3826,7 +3826,7 @@ class PurchasesTest {
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
 
-        purchases.purchaseProductOption(
+        purchases.purchaseProductOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
@@ -3860,7 +3860,7 @@ class PurchasesTest {
 
         var callCount = 0
 
-        purchases.purchasePackageOption(
+        purchases.purchasePackageOptionWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
@@ -3890,7 +3890,7 @@ class PurchasesTest {
 
         var callCount = 0
 
-        purchases.purchasePackageOption(
+        purchases.purchasePackageOptionWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
@@ -3924,7 +3924,7 @@ class PurchasesTest {
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
-        purchases.purchasePackageOption(
+        purchases.purchasePackageOptionWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
@@ -3950,7 +3950,7 @@ class PurchasesTest {
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
-        purchases.purchasePackageOption(
+        purchases.purchasePackageOptionWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
             storeProduct.purchaseOptions[0],
