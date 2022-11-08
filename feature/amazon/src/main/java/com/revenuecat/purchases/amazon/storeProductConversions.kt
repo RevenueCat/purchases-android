@@ -42,6 +42,8 @@ data class AmazonStoreProduct(
     val amazonProduct: Product,
 ) : StoreProduct, Parcelable {
 
+    override val sku: String = productId
+
     // We use this to not include the originalJSON in the equals
     /*override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
     override fun hashCode() = ComparableData(this).hashCode()*/ // TODOBC5

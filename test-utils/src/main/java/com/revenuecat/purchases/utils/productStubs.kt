@@ -28,6 +28,8 @@ fun stubStoreProduct(
         get() = duration
     override val purchaseOptions: List<PurchaseOption>
         get() = purchaseOptions
+    override val sku: String
+        get() = productId
 
     override fun describeContents(): Int = 0
 
