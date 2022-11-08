@@ -377,8 +377,8 @@ class Purchases internal constructor(
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
     @Deprecated(
-        "Replaced with purchaseProductWithOption",
-        ReplaceWith("purchaseProductWithOption(activity, storeProduct, purchaseOption, upgradeInfo, listener)")
+        "Replaced with purchaseProductOption",
+        ReplaceWith("purchaseProductOption(activity, storeProduct, purchaseOption, upgradeInfo, listener)")
     )
     fun purchaseProduct(
         activity: Activity,
@@ -409,8 +409,8 @@ class Purchases internal constructor(
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
     @Deprecated(
-        "Replaced with purchaseProductWithOption",
-        ReplaceWith("purchaseProductWithOption(activity, storeProduct, purchaseOption, callback)")
+        "Replaced with purchaseProductOption",
+        ReplaceWith("purchaseProductOption(activity, storeProduct, purchaseOption, callback)")
     )
     fun purchaseProduct(
         activity: Activity,
@@ -427,7 +427,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase upgrading from a previous sku.
+     * Purchase a [StoreProduct]'s [PurchaseOption] upgrading from a previous product.
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
@@ -435,7 +435,7 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
-    fun purchaseProductWithOption(
+    fun purchaseProductOption(
         activity: Activity,
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption,
@@ -453,13 +453,13 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase.
+     * Purchase a [StoreProduct]'s [PurchaseOption].
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
-     * @param [callback] The PurchaseCallback that will be called when purchase completes.
+     * @param [callback] The PurchaseCallback that will be called when purchase completes
      */
-    fun purchaseProductWithOption(
+    fun purchaseProductOption(
         activity: Activity,
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption,
@@ -477,8 +477,8 @@ class Purchases internal constructor(
      * @param [callback] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        "Replaced with purchasePackageWithOption",
-        ReplaceWith("purchasePackageWithOption(activity, packageToPurchase, purchaseOption, upgradeInfo, callback)")
+        "Replaced with purchasePackageOption",
+        ReplaceWith("purchasePackageOption(activity, packageToPurchase, purchaseOption, upgradeInfo, callback)")
     )
     fun purchasePackage(
         activity: Activity,
@@ -509,8 +509,8 @@ class Purchases internal constructor(
      * @param [listener] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        "Replaced with purchasePackageWithOption",
-        ReplaceWith("purchasePackageWithOption(activity, packageToPurchase, purchaseOption, listener)")
+        "Replaced with purchasePackageOption",
+        ReplaceWith("purchasePackageOption(activity, packageToPurchase, purchaseOption, listener)")
     )
     fun purchasePackage(
         activity: Activity,
@@ -533,7 +533,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase upgrading from a previous sku.
+     * Purchase a [Package]'s [PurchaseOption], switching from an old product.
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
@@ -541,7 +541,7 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
      */
-    fun purchasePackageWithOption(
+    fun purchasePackageOption(
         activity: Activity,
         packageToPurchase: Package,
         purchaseOption: PurchaseOption,
@@ -565,7 +565,7 @@ class Purchases internal constructor(
      * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
      * @param [listener] The listener that will be called when purchase completes.
      */
-    fun purchasePackageWithOption(
+    fun purchasePackageOption(
         activity: Activity,
         packageToPurchase: Package,
         purchaseOption: PurchaseOption,
