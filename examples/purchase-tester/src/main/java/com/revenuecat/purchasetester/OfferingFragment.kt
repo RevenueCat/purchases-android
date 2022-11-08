@@ -16,8 +16,8 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.purchasePackageWithOption
-import com.revenuecat.purchases.purchaseProductWithOption
+import com.revenuecat.purchases.purchasePackageOptionWith
+import com.revenuecat.purchases.purchaseProductOptionWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
@@ -61,7 +61,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         binding.purchaseProgress.visibility = View.VISIBLE
         val basePlanOption = currentPackage.product.purchaseOptions.first { it.isBasePlan }
 
-        Purchases.sharedInstance.purchasePackageWithOption(
+        Purchases.sharedInstance.purchasePackageOptionWith(
             requireActivity(),
             currentPackage,
             basePlanOption,
@@ -79,7 +79,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         binding.purchaseProgress.visibility = View.VISIBLE
 
         val basePlan = currentProduct.purchaseOptions.first { it.isBasePlan }
-        Purchases.sharedInstance.purchaseProductWithOption(
+        Purchases.sharedInstance.purchaseProductOptionWith(
             requireActivity(),
             currentProduct,
             basePlan,
