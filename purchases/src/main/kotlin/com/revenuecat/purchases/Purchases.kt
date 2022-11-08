@@ -1222,7 +1222,7 @@ class Purchases internal constructor(
         storeProductByID: Map<String, List<StoreProduct>>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
-        .map { it.product.sku }
+        .map { it.product.productId }
         .filterNot { storeProductByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
@@ -1371,7 +1371,7 @@ class Purchases internal constructor(
             ProductType.SUBS,
             productIds,
             { subscriptionProducts ->
-                val productsById = subscriptionProducts.groupBy { subProduct -> subProduct.sku }.toMutableMap()
+                val productsById = subscriptionProducts.groupBy { subProduct -> subProduct.productId }.toMutableMap()
                 val subscriptionIds = productsById.keys
 
                 val inAppProductIds = productIds - subscriptionIds
@@ -1380,7 +1380,7 @@ class Purchases internal constructor(
                         ProductType.INAPP,
                         inAppProductIds,
                         { inAppProducts ->
-                            productsById.putAll(inAppProducts.map { it.sku to listOf(it) })
+                            productsById.putAll(inAppProducts.map { it.productId to listOf(it) })
                             onCompleted(productsById)
                         }, {
                             onError(it)
@@ -1532,9 +1532,9 @@ class Purchases internal constructor(
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
-            if (!state.purchaseCallbacks.containsKey(storeProduct.sku)) {
+            if (!state.purchaseCallbacks.containsKey(storeProduct.productId)) {
                 state = state.copy(
-                    purchaseCallbacks = state.purchaseCallbacks + mapOf(storeProduct.sku to listener)
+                    purchaseCallbacks = state.purchaseCallbacks + mapOf(storeProduct.productId to listener)
                 )
                 userPurchasing = identityManager.currentAppUserID
             }

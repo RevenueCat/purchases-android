@@ -625,7 +625,7 @@ class BillingWrapperTest {
     @Test
     fun `subscription purchase fails if purchase option is not GooglePurchaseOption`() {
         val storeProduct = GoogleStoreProduct(
-            sku = "mock-sku",
+            productId = "mock-sku",
             type = ProductType.SUBS,
             oneTimeProductPrice = null,
             title = "",
@@ -690,7 +690,7 @@ class BillingWrapperTest {
     @Test
     fun `purchase fails if store product is not GoogleStoreProduct`() {
         val storeProduct = object : StoreProduct {
-            override val sku: String
+            override val productId: String
                 get() = "mock-sku"
             override val type: ProductType
                 get() = ProductType.SUBS

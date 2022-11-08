@@ -2,21 +2,28 @@ package com.revenuecat.apitester.java;
 
 import com.android.billingclient.api.ProductDetails;
 import com.revenuecat.purchases.ProductType;
+import com.revenuecat.purchases.StoreProductExtensionsKt;
+import com.revenuecat.purchases.models.GooglePurchaseOption;
 import com.revenuecat.purchases.models.GoogleStoreProduct;
+import com.revenuecat.purchases.models.GoogleStoreProductKt;
 import com.revenuecat.purchases.models.Price;
+import com.revenuecat.purchases.models.PurchaseOption;
 import com.revenuecat.purchases.models.StoreProduct;
 
-import org.json.JSONObject;
+import java.util.List;
 
 @SuppressWarnings({"unused"})
 final class StoreProductAPI {
     static void check(final StoreProduct product) {
-        final String sku = product.getSku(); //TODOBC5 rename
+        final String productId = product.getProductId();
+        final String sku = product.getSku();
         final ProductType type = product.getType();
         final Price price = product.getOneTimeProductPrice();
         final String title = product.getTitle();
         final String description = product.getDescription();
         final String subscriptionPeriod = product.getSubscriptionPeriod();
+        List<PurchaseOption> purchaseOptions = product.getPurchaseOptions();
+        GoogleStoreProduct underlyingProduct = GoogleStoreProductKt.getGoogleProduct(product);
     }
 
     static void check(final ProductType type) {
@@ -29,6 +36,17 @@ final class StoreProductAPI {
 
     static void checkGoogleStoreProduct(GoogleStoreProduct googleStoreProduct) {
         check(googleStoreProduct);
-        ProductDetails productDetails = googleStoreProduct.getProductDetails();
+        ProductDetails productDetails  = googleStoreProduct.getProductDetails();
+        List<GooglePurchaseOption> purchaseOptions = googleStoreProduct.getPurchaseOptions();
+        GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
+                googleStoreProduct.getProductId(),
+                googleStoreProduct.getType(),
+                googleStoreProduct.getOneTimeProductPrice(),
+                googleStoreProduct.getTitle(),
+                googleStoreProduct.getDescription(),
+                googleStoreProduct.getSubscriptionPeriod(),
+                googleStoreProduct.getPurchaseOptions(),
+                googleStoreProduct.getProductDetails()
+        );
     }
 }

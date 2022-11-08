@@ -42,7 +42,7 @@ class PurchaseHandler(
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
+        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.productId))
 
         startProxyActivity(mainHandler, activity, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
     }
@@ -61,7 +61,7 @@ class PurchaseHandler(
         val intent = ProxyAmazonBillingActivity.newStartIntent(
             activity,
             resultReceiver,
-            storeProduct.sku,
+            storeProduct.productId,
             purchasingServiceProvider
         )
         // ProxyAmazonBillingActivity will initiate the purchase
@@ -80,8 +80,8 @@ class PurchaseHandler(
                 val requestId = resultData?.get(ProxyAmazonBillingActivity.EXTRAS_REQUEST_ID) as? RequestId
                 if (requestId != null) {
                     purchaseCallbacks[requestId] = onSuccess to onError
-                    productTypes[storeProduct.sku] = storeProduct.type
-                    presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
+                    productTypes[storeProduct.productId] = storeProduct.type
+                    presentedOfferingsByProductIdentifier[storeProduct.productId] = presentedOfferingIdentifier
                 } else {
                     errorLog("No RequestId coming from ProxyAmazonBillingActivity")
                 }

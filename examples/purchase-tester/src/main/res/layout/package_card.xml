@@ -65,7 +65,7 @@
                     app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_product_description"
-                    bind:detail="@{currentPackage.product.sku}"
+                    bind:detail="@{currentPackage.product.productId}"
                     bind:header="@{`Sku:`}"
                     tools:text="$rc_monthly" />
 

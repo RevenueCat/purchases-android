@@ -2,6 +2,7 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.revenuecat.purchases.ProductType
+import kotlinx.parcelize.IgnoredOnParcel
 
 /**
  * Represents an in-app product's or subscription's listing details.
@@ -10,7 +11,7 @@ interface StoreProduct : Parcelable {
     /**
      * The product ID
      */
-    val sku: String // TODOBC5 rename?
+    val productId: String
 
     /**
      * Type of product. One of [ProductType].
@@ -46,4 +47,14 @@ interface StoreProduct : Parcelable {
      * List of PurchaseOptions. Empty list for INAPP products.
      */
     val purchaseOptions: List<PurchaseOption>
+
+    /**
+     * The sku of the StoreProduct
+     */
+    @IgnoredOnParcel
+    @Deprecated(
+        "Replaced with productId",
+        ReplaceWith("productId")
+    )
+    val sku: String
 }

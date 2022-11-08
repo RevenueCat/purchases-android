@@ -3,6 +3,7 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.parceler.JSONObjectParceler
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
@@ -87,6 +88,7 @@ data class StoreTransaction(
     /**
      * Skus associated with the transaction
      */
+    @IgnoredOnParcel
     @Deprecated(
         "Replaced with productIds",
         ReplaceWith("productIds")

@@ -3,9 +3,9 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.StoreTransaction
 import org.json.JSONObject
 
 fun Purchase.toStoreTransaction(

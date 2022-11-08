@@ -32,7 +32,7 @@ class PackageCardAdapter(
 
         fun bind(currentPackage: Package) {
             binding.currentPackage = currentPackage
-            binding.isActive = activeSubscriptions.contains(currentPackage.product.sku)
+            binding.isActive = activeSubscriptions.contains(currentPackage.product.productId)
 
             binding.packageBuyButton.setOnClickListener {
                 listener.onPurchasePackageClicked(binding.root, currentPackage)

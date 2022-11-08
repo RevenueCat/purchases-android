@@ -430,7 +430,7 @@ internal class AmazonBilling constructor(
              * since there's no terms and we can just use the sku
              */
             val amazonPurchaseWrapper = receipt.toStoreTransaction(
-                productId = storeProduct.sku,
+                productId = storeProduct.productId,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
                 purchaseState = PurchaseState.PURCHASED,
                 userData

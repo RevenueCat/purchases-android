@@ -18,7 +18,7 @@ import java.util.regex.Pattern
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 data class AmazonStoreProduct(
-    override val sku: String,
+    override val productId: String,
     override val type: ProductType,
     override val title: String,
     override val description: String,
