@@ -38,7 +38,6 @@ fun PurchaseHistoryRecord.toStoreTransaction(
 ): StoreTransaction {
     return StoreTransaction(
         orderId = null,
-        skus = this.products,
         productIds = this.products,
         type = type,
         purchaseTime = this.purchaseTime,

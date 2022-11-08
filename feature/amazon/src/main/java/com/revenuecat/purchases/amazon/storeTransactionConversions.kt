@@ -16,7 +16,6 @@ fun Receipt.toStoreTransaction(
     val type = this.productType.toRevenueCatProductType()
     return StoreTransaction(
         orderId = null,
-        skus = listOf(productId),
         productIds = listOf(productId),
         type = type,
         purchaseTime = this.purchaseDate.time,
