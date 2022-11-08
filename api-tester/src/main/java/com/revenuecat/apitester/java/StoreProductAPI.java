@@ -1,6 +1,8 @@
 package com.revenuecat.apitester.java;
 
+import com.android.billingclient.api.ProductDetails;
 import com.revenuecat.purchases.ProductType;
+import com.revenuecat.purchases.models.GoogleStoreProduct;
 import com.revenuecat.purchases.models.Price;
 import com.revenuecat.purchases.models.StoreProduct;
 
@@ -23,5 +25,10 @@ final class StoreProductAPI {
             case INAPP:
             case UNKNOWN:
         }
+    }
+
+    static void checkGoogleStoreProduct(GoogleStoreProduct googleStoreProduct) {
+        check(googleStoreProduct);
+        ProductDetails productDetails = googleStoreProduct.getProductDetails();
     }
 }

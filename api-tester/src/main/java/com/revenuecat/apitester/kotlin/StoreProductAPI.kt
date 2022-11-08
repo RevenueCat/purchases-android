@@ -1,8 +1,11 @@
 package com.revenuecat.apitester.kotlin
 
+import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.googleProduct
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class StoreProductAPI {
@@ -14,6 +17,7 @@ private class StoreProductAPI {
             val title: String = title
             val description: String = description
             val subscriptionPeriod: String? = subscriptionPeriod
+            val underlyingProduct: GoogleStoreProduct? = googleProduct
         }
     }
 
@@ -24,5 +28,10 @@ private class StoreProductAPI {
             ProductType.UNKNOWN
             -> {}
         }.exhaustive
+    }
+
+    fun checkGoogleStoreProduct(googleStoreProduct: GoogleStoreProduct) {
+        check(googleStoreProduct)
+        val productDetails: ProductDetails = googleStoreProduct.productDetails
     }
 }
