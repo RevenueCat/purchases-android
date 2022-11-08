@@ -1,9 +1,9 @@
 package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.StoreTransaction
 import org.json.JSONObject
 
 @Suppress("unused", "UNUSED_VARIABLE")
@@ -23,7 +23,25 @@ private class StoreTransactionAPI {
             val presentedOfferingIdentifier: String? = presentedOfferingIdentifier
             val su1: String? = storeUserID
             val purchaseType: PurchaseType = purchaseType
+
+            val constructedStoreTransaction = StoreTransaction(
+                orderId,
+                productIds,
+                type,
+                purchaseTime,
+                purchaseToken,
+                purchaseState,
+                isAutoRenewing,
+                signature,
+                originalJson,
+                presentedOfferingIdentifier,
+                storeUserID,
+                purchaseType,
+                marketplace
+            )
         }
+
+
     }
 
     fun check(type: PurchaseType) {

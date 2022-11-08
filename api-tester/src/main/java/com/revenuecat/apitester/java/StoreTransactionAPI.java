@@ -25,6 +25,23 @@ final class StoreTransactionAPI {
         final String presentedOfferingIdentifier = transaction.getPresentedOfferingIdentifier();
         final String su1 = transaction.getStoreUserID();
         final PurchaseType purchaseType = transaction.getPurchaseType();
+        final String marketplace = transaction.getMarketplace();
+
+        StoreTransaction constructedStoreTransaction = new StoreTransaction(
+                transaction.getOrderId(),
+                transaction.getProductIds(),
+                transaction.getType(),
+                transaction.getPurchaseTime(),
+                transaction.getPurchaseToken(),
+                transaction.getPurchaseState(),
+                transaction.isAutoRenewing(),
+                transaction.getSignature(),
+                transaction.getOriginalJson(),
+                transaction.getPresentedOfferingIdentifier(),
+                transaction.getStoreUserID(),
+                transaction.getPurchaseType(),
+                transaction.getMarketplace()
+        );
     }
 
     static void check(final PurchaseType type) {

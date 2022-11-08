@@ -13,7 +13,6 @@ fun Purchase.toStoreTransaction(
     presentedOfferingIdentifier: String?
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
-    skus = this.products,
     productIds = this.products,
     type = productType,
     purchaseTime = this.purchaseTime,

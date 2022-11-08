@@ -21,15 +21,6 @@ data class StoreTransaction(
     val orderId: String?,
 
     /**
-     * Product Ids.
-     */
-    @Deprecated(
-        "Replaced with productIds",
-        ReplaceWith("productIds")
-    )
-    val skus: List<String>,
-
-    /**
      * Product IDs purchased.
      */
     val productIds: List<String>,
@@ -91,7 +82,18 @@ data class StoreTransaction(
      * Amazon's marketplace. Null for Google
      */
     val marketplace: String?
-) : Parcelable
+) : Parcelable {
+
+    /**
+     * Skus associated with the transaction
+     */
+    @Deprecated(
+        "Replaced with productIds",
+        ReplaceWith("productIds")
+    )
+    val skus: List<String> = productIds
+
+}
 
 enum class PurchaseType {
     GOOGLE_PURCHASE,
