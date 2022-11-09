@@ -7,6 +7,7 @@
 | `PurchaseOption`       |
 | `GooglePurchaseOption` |
 | `GoogleStoreProduct`   |
+| `AmazonStoreProduct`   |
 | `Price`                |
 | `PricingPhase`         |
 | `RecurrenceMode`       |
