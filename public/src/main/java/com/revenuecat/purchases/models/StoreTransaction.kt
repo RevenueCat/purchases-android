@@ -91,7 +91,8 @@ data class StoreTransaction(
         "Replaced with productIds",
         ReplaceWith("productIds")
     )
-    val skus: List<String> = productIds
+    val skus: List<String>
+        get() = productIds
 
 }
 
