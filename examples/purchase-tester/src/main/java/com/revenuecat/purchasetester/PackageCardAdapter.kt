@@ -39,6 +39,8 @@ class PackageCardAdapter(
     inner class PackageViewHolder(private val binding: PackageCardBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
+        private val nothingCheckedIndex = -1
+
         fun bind(currentPackage: Package) {
             val product = currentPackage.product
             binding.currentPackage = currentPackage
@@ -111,7 +113,8 @@ class PackageCardAdapter(
         }
 
         private fun validateStartPurchase(product: StoreProduct): String? {
-            if (product.type == ProductType.SUBS && binding.packagePurchaseOptionGroup.checkedRadioButtonId != -1) {
+            if (product.type == ProductType.SUBS
+                && binding.packagePurchaseOptionGroup.checkedRadioButtonId == nothingCheckedIndex) {
                 return "Please choose purchase option first"
             }
             return null
