@@ -15,6 +15,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.purchasePackageOptionWith
 import com.revenuecat.purchases.purchaseProductOptionWith
@@ -57,14 +58,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         return binding.root
     }
 
-    override fun onPurchasePackageClicked(cardView: View, currentPackage: Package) {
+    override fun onPurchasePackageClicked(cardView: View, currentPackage: Package, purchaseOption: PurchaseOption?) {
         binding.purchaseProgress.visibility = View.VISIBLE
-        val basePlanOption = currentPackage.product.purchaseOptions.first { it.isBasePlan }
 
         Purchases.sharedInstance.purchasePackageOptionWith(
             requireActivity(),
             currentPackage,
-            basePlanOption,
+            purchaseOption!!, // TODOBC5: Fix API for OTP
             { error, userCancelled ->
                 if (!userCancelled) {
                     showUserError(requireActivity(), error)
@@ -75,14 +75,17 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             })
     }
 
-    override fun onPurchaseProductClicked(cardView: View, currentProduct: StoreProduct) {
+    override fun onPurchaseProductClicked(
+        cardView: View,
+        currentProduct: StoreProduct,
+        purchaseOption: PurchaseOption?
+    ) {
         binding.purchaseProgress.visibility = View.VISIBLE
 
-        val basePlan = currentProduct.purchaseOptions.first { it.isBasePlan }
         Purchases.sharedInstance.purchaseProductOptionWith(
             requireActivity(),
             currentProduct,
-            basePlan,
+            purchaseOption!!, // TODOBC5: Fix API for OTP
             { error, userCancelled ->
                 if (!userCancelled) {
                     showUserError(requireActivity(), error)

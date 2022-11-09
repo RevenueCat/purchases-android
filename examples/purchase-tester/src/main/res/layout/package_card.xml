@@ -5,13 +5,17 @@
         xmlns:tools="http://schemas.android.com/tools">
 
     <data>
-
+        <import type="android.view.View"/>
         <variable
                 name="currentPackage"
                 type="com.revenuecat.purchases.Package" />
 
         <variable
                 name="isActive"
+                type="Boolean" />
+
+        <variable
+                name="isSubscription"
                 type="Boolean" />
     </data>
 
@@ -83,17 +87,44 @@
                     tools:text="$rc_monthly" />
 
             <include
-                    android:id="@+id/package_price"
+                    android:id="@+id/package_one_time_price"
                     layout="@layout/row_view"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/padding_tiny"
                     android:layout_marginEnd="@dimen/padding_tiny"
+                    android:visibility="@{isSubscription ? View.GONE : View.VISIBLE}"
                     app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_type"
-                    bind:header="@{`Price: TODOBC5`}"
+                    bind:header="@{`One Time Price:`}"
+                    bind:detail="@{currentPackage.product.oneTimeProductPrice.formattedPrice}"
                     tools:text="$1.99" />
+
+            <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/package_purchase_option_title"
+                    android:textStyle="bold"
+                    android:text="@string/purchase_options"
+                    android:paddingHorizontal="4dp"
+                    android:layout_marginHorizontal="@dimen/padding_tiny"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:visibility="@{isSubscription ? View.VISIBLE : View.GONE}"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/package_one_time_price" />
+
+            <RadioGroup
+                    android:id="@+id/package_purchase_option_group"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:divider="?android:attr/dividerHorizontal"
+                    android:showDividers="middle"
+                    android:visibility="@{isSubscription ? View.VISIBLE : View.GONE}"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/package_purchase_option_title">
+            </RadioGroup>
 
             <androidx.constraintlayout.widget.Barrier
                     android:id="@+id/package_card_barrier"
@@ -118,7 +149,7 @@
                     android:layout_height="wrap_content"
                     android:enabled="@{!isActive}"
                     android:text="Buy product"
-                    app:layout_constraintBottom_toTopOf="@+id/package_details_container"
+                    app:layout_constraintBottom_toTopOf="@+id/package_purchase_option_title"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_buy_button" />
 
@@ -131,7 +162,7 @@
                     android:visibility="gone"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/package_price"
+                    app:layout_constraintTop_toBottomOf="@+id/package_purchase_option_group"
                     app:layout_constraintVertical_bias="0">
 
                 <include
