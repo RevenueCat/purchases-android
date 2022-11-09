@@ -93,6 +93,7 @@ data class StoreTransaction(
         "Replaced with productIds",
         ReplaceWith("productIds")
     )
+    // TODO should we access skus in originaljson
     val skus: List<String>
         get() = productIds
 
