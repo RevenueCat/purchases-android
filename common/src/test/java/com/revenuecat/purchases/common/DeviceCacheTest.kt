@@ -399,7 +399,9 @@ class DeviceCacheTest {
             "custom",
             PackageType.CUSTOM,
             storeProduct,
-            "offering_a"
+            "offering_a",
+            "P4M",
+            "onemonth_freetrial"
         )
         val offering = Offering(
             "offering_a",
