@@ -1,6 +1,5 @@
 package com.revenuecat.purchasetester
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,11 +10,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
-import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
 
 class PackageCardAdapter(
@@ -90,7 +87,6 @@ class PackageCardAdapter(
             }
         }
 
-        @SuppressLint("SetTextI18n")
         private fun bindPurchaseOptions(product: StoreProduct) {
             binding.packagePurchaseOptionGroup.removeAllViews()
             val numberOfPurchaseOptions = product.purchaseOptions.size
@@ -98,9 +94,9 @@ class PackageCardAdapter(
                 val radioButton = RadioButton(binding.root.context).apply {
                     text = purchaseOption.toButtonString()
                     tag = purchaseOption
-                    if (numberOfPurchaseOptions == 1) isChecked = true
                 }
                 binding.packagePurchaseOptionGroup.addView(radioButton)
+                if (numberOfPurchaseOptions == 1) binding.packagePurchaseOptionGroup.check(radioButton.id)
             }
         }
 
