@@ -43,11 +43,6 @@
 |------------|------------|
 | skus       | productIds |
 
-### Type Changes
-
-| Old type name | New type name  |
-|---------------|----------------|
-
 ### Deprecated + New APIs
 
 | Deprecated                                                                    | New                                                                                                 |
@@ -122,8 +117,6 @@
 | CustomerInfo.purchasedNonSubscriptionSkus |
 | CustomerInfo.jsonObject                   |
 | EntitlementInfo.jsonObject                |
-
-### Other changes:
 
 ### Reporting undocumented issues:
 
