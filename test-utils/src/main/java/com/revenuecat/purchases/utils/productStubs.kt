@@ -14,7 +14,7 @@ fun stubStoreProduct(
     duration: String = "P1M",
     purchaseOptions: List<PurchaseOption> = listOf(stubPurchaseOption())
 ): StoreProduct = object : StoreProduct {
-    override val sku: String
+    override val productId: String
         get() = productId
     override val type: ProductType
         get() = ProductType.SUBS
@@ -28,6 +28,8 @@ fun stubStoreProduct(
         get() = duration
     override val purchaseOptions: List<PurchaseOption>
         get() = purchaseOptions
+    override val sku: String
+        get() = productId
 
     override fun describeContents(): Int = 0
 

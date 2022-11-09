@@ -3873,7 +3873,7 @@ class PurchasesTest {
         )
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(
-                offerings[stubOfferingIdentifier]!!.monthly!!.product.sku,
+                offerings[stubOfferingIdentifier]!!.monthly!!.product.productId,
                 purchaseToken,
                 ProductType.SUBS
             )

@@ -208,15 +208,15 @@ class BillingWrapper(
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
-                    .format(replaceSkuInfo.oldPurchase.productIds[0], storeProduct.sku)
+                    .format(replaceSkuInfo.oldPurchase.productIds[0], storeProduct.productId)
             )
         } else {
-            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
+            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.productId))
         }
 
         synchronized(this@BillingWrapper) {
-            productTypes[storeProduct.sku] = storeProduct.type
-            presentedOfferingsByProductIdentifier[storeProduct.sku] = presentedOfferingIdentifier
+            productTypes[storeProduct.productId] = storeProduct.type
+            presentedOfferingsByProductIdentifier[storeProduct.productId] = presentedOfferingIdentifier
         }
         executeRequestOnUIThread {
             val result = buildPurchaseParams(

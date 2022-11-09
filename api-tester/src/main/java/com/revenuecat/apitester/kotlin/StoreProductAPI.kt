@@ -2,8 +2,10 @@ package com.revenuecat.apitester.kotlin
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.GooglePurchaseOption
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 
@@ -11,12 +13,14 @@ import com.revenuecat.purchases.models.googleProduct
 private class StoreProductAPI {
     fun check(product: StoreProduct) {
         with(product) {
-            val storeProductId: String = sku // TODOBC5 - rename to storeProductId
+            val storeProductId: String = productId
+            val sku: String = sku
             val type: ProductType = type
             val oneTimeProductPrice: Price? = oneTimeProductPrice
             val title: String = title
             val description: String = description
             val subscriptionPeriod: String? = subscriptionPeriod
+            val purchaseOptions: List<PurchaseOption> = purchaseOptions
             val underlyingProduct: GoogleStoreProduct? = googleProduct
         }
     }
@@ -33,5 +37,16 @@ private class StoreProductAPI {
     fun checkGoogleStoreProduct(googleStoreProduct: GoogleStoreProduct) {
         check(googleStoreProduct)
         val productDetails: ProductDetails = googleStoreProduct.productDetails
+        val purchaseOptions: List<GooglePurchaseOption> = googleStoreProduct.purchaseOptions
+        val constructedGoogleStoreProduct = GoogleStoreProduct(
+            googleStoreProduct.productId,
+            googleStoreProduct.type,
+            googleStoreProduct.oneTimeProductPrice,
+            googleStoreProduct.title,
+            googleStoreProduct.description,
+            googleStoreProduct.subscriptionPeriod,
+            googleStoreProduct.purchaseOptions,
+            googleStoreProduct.productDetails
+        )
     }
 }

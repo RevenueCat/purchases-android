@@ -18,7 +18,7 @@ import java.util.regex.Pattern
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 data class AmazonStoreProduct(
-    override val sku: String,
+    override val productId: String,
     override val type: ProductType,
     override val title: String,
     override val description: String,
@@ -41,6 +41,9 @@ data class AmazonStoreProduct(
     val originalJson: JSONObject,
     val amazonProduct: Product,
 ) : StoreProduct, Parcelable {
+
+    override val sku: String
+        get() = productId
 
     // We use this to not include the originalJSON in the equals
     /*override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)

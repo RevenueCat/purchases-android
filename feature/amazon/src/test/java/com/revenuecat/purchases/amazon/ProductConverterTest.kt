@@ -16,7 +16,7 @@ class ProductConverterTest {
         val expectedSku = "sku"
         val product = dummyAmazonProduct(expectedSku)
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct?.sku).isEqualTo(expectedSku)
+        assertThat(storeProduct?.productId).isEqualTo(expectedSku)
     }
 
     @Test
