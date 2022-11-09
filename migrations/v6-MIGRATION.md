@@ -103,7 +103,7 @@
 | `purchaseProductWith(Activity, SkuDetails, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)`              |
 | `purchaseProductWith(Activity, SkuDetails, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` |
 
-| Removed                        |  
+| Removed Listeners              |  
 |--------------------------------|
 | `ReceiveOfferingsListener`     |
 | `GetSkusResponseListener`      |
@@ -111,7 +111,7 @@
 | `MakePurchaseListener`         |
 | `ReceivePurchaserInfoListener` |
 | `UpdatedPurchaserInfoListener` |
-| `PurchaseErrorListener` |
+| `PurchaseErrorListener`        |
 
 | Removed properties                        |
 |-------------------------------------------|
