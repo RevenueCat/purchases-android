@@ -50,13 +50,22 @@
 
 ### Deprecated + New APIs
 
-| Deprecated                                                      | New                                 |
-|-----------------------------------------------------------------|-------------------------------------|
+| Deprecated                                                                    | New                                                                                                 |
+|-------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| `purchaseProduct(Activity, StoreProduct, PurchaseCallback)`                   | `purchaseProductOption(Activity, StoreProduct, PurchaseOption, PurchaseCallback)`                   |
+| `purchaseProduct(Activity, StoreProduct, UpgradeInfo, ProductChangeCallback)` | `purchaseProductOption(Activity, StoreProduct, PurchaseOption, UpgradeInfo, ProductChangeCallback)` |
+| `purchasePackage(Activity, Package, PurchaseCallback)`                        | `purchasePackageOption(Activity, Package, PurchaseOption, PurchaseCallback)`                        |
+| `purchasePackage(Activity, Package, UpgradeInfo, ProductChangeCallback)`      | `purchasePackage(Activity, Package, PurchaseOption, UpgradeInfo, ProductChangeCallback)`            |
+
 
 ### Kotlin Helpers Changes
 
-| Old signature | New signature |
-|---------------|---------------|
+| Old signature                                                                                                                           | New signature                                                                                                                                                 |
+|-----------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `purchaseProductWith(Activity, StoreProduct, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              | `purchaseProductOptionWith(Activity, StoreProduct, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              |
+| `purchaseProductWith(Activity, StoreProduct, UpgradeInfo, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` | `purchaseProductOptionWith(Activity, StoreProduct, UpgradeInfo, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+| `purchasePackageWith(Activity, Package, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                   | `purchasePackageOptionWith(Activity, Package, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                   |
+| `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`      | `purchasePackageOptionWith(Activity, Package, UpgradeInfo, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`      |
 
 | Removed|  
 |----------------------------------------------------------------------------------------------------------------------|
@@ -119,8 +128,3 @@
 ### Reporting undocumented issues:
 
 Feel free to file an issue! [New RevenueCat Issue](https://github.com/RevenueCat/purchases-android/issues/new/).
-
-
-// TODO:
-- listenerconversions
-- Purchases
