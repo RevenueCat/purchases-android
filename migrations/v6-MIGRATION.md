@@ -14,6 +14,8 @@
 
 ### StoreProduct updates
 
+StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonStoreProduct` implement.
+
 | Previous                      | New                                                                           |
 |-------------------------------|-------------------------------------------------------------------------------|
 | price                         | Moved to PricingPhase                                                         |
