@@ -33,8 +33,7 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.firstSku
-import com.revenuecat.purchases.common.listOfSkus
+import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
@@ -151,7 +150,7 @@ class BillingWrapper(
         val nonEmptyProductIds = productIds.filter { it.isNotEmpty() }.toSet()
 
         if (nonEmptyProductIds.isEmpty()) {
-            log(LogIntent.DEBUG, OfferingStrings.EMPTY_SKU_LIST)
+            log(LogIntent.DEBUG, OfferingStrings.EMPTY_PRODUCT_ID_LIST)
             onReceive(emptyList())
             return
         }
@@ -209,7 +208,7 @@ class BillingWrapper(
         if (replaceSkuInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
-                    .format(replaceSkuInfo.oldPurchase.skus[0], storeProduct.sku)
+                    .format(replaceSkuInfo.oldPurchase.productIds[0], storeProduct.sku)
             )
         } else {
             log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.sku))
@@ -471,28 +470,28 @@ class BillingWrapper(
     override fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: ProductType,
-        sku: String,
+        productId: String,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         withConnectedClient {
-            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
+            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name))
             productType.toGoogleProductType()?.let { googleProductType ->
                 queryPurchaseHistoryAsyncEnsuringOneResponse(googleProductType) { result, purchasesList ->
                     if (result.isSuccessful()) {
                         val purchaseHistoryRecordWrapper =
-                            purchasesList?.firstOrNull { it.listOfSkus.contains(sku) }
+                            purchasesList?.firstOrNull { it.products.contains(productId) }
                                 ?.toStoreTransaction(productType)
 
                         if (purchaseHistoryRecordWrapper != null) {
                             onCompletion(purchaseHistoryRecordWrapper)
                         } else {
-                            val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(sku)
+                            val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
                             val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
                             onError(error)
                         }
                     } else {
-                        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format(sku)
+                        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format(productId)
                         val error =
                             result.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
                         onError(error)
@@ -701,8 +700,8 @@ class BillingWrapper(
         )
 
         synchronized(this@BillingWrapper) {
-            val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstSku]
-            productTypes[purchase.firstSku]?.let { productType ->
+            val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstProductId]
+            productTypes[purchase.firstProductId]?.let { productType ->
                 completion(
                     purchase.toStoreTransaction(
                         productType,
@@ -728,18 +727,18 @@ class BillingWrapper(
         listener: ProductDetailsResponseListener
     ) {
         var hasResponded = false
-        queryProductDetailsAsync(params) { billingResult, skuDetailsList ->
+        queryProductDetailsAsync(params) { billingResult, productDetailsList ->
             synchronized(this@BillingWrapper) {
                 if (hasResponded) {
                     log(
                         LogIntent.GOOGLE_ERROR,
-                        OfferingStrings.EXTRA_QUERY_SKU_DETAILS_RESPONSE.format(billingResult.responseCode)
+                        OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode)
                     )
                     return@queryProductDetailsAsync
                 }
                 hasResponded = true
             }
-            listener.onProductDetailsResponse(billingResult, skuDetailsList)
+            listener.onProductDetailsResponse(billingResult, productDetailsList)
         }
     }
 

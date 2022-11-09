@@ -16,8 +16,8 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.purchasePackageWith
-import com.revenuecat.purchases.purchaseProductWith
+import com.revenuecat.purchases.purchasePackageOptionWith
+import com.revenuecat.purchases.purchaseProductOptionWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
@@ -59,9 +59,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     override fun onPurchasePackageClicked(cardView: View, currentPackage: Package) {
         binding.purchaseProgress.visibility = View.VISIBLE
-        Purchases.sharedInstance.purchasePackageWith(
+        val basePlanOption = currentPackage.product.purchaseOptions.first { it.isBasePlan }
+
+        Purchases.sharedInstance.purchasePackageOptionWith(
             requireActivity(),
             currentPackage,
+            basePlanOption,
             { error, userCancelled ->
                 if (!userCancelled) {
                     showUserError(requireActivity(), error)
@@ -74,9 +77,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     override fun onPurchaseProductClicked(cardView: View, currentProduct: StoreProduct) {
         binding.purchaseProgress.visibility = View.VISIBLE
-        Purchases.sharedInstance.purchaseProductWith(
+
+        val basePlan = currentProduct.purchaseOptions.first { it.isBasePlan }
+        Purchases.sharedInstance.purchaseProductOptionWith(
             requireActivity(),
             currentProduct,
+            basePlan,
             { error, userCancelled ->
                 if (!userCancelled) {
                     showUserError(requireActivity(), error)

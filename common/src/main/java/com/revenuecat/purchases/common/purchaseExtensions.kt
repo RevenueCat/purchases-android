@@ -5,8 +5,8 @@ import com.revenuecat.purchases.strings.BillingStrings
 import java.util.ArrayList
 
 fun Purchase.toHumanReadableDescription() =
-    "skus: ${
-        this.skus.joinToString(prefix = "[", postfix = "]")
+    "productIds: ${
+        this.products.joinToString(prefix = "[", postfix = "]")
     }, orderId: ${this.orderId}, purchaseToken: ${this.purchaseToken}"
 
 /**
@@ -14,12 +14,10 @@ fun Purchase.toHumanReadableDescription() =
  * we assume that there will be only a single sku in the purchase.
  * https://android-developers.googleblog.com/2021/05/whats-new-in-google-play-2021.html
  */
-val Purchase.firstSku: String
-    get() = skus[0].also {
-        if (skus.size > 1) {
+val Purchase.firstProductId: String
+    get() = products[0].also {
+        if (products.size > 1) {
             log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_PURCHASE_MORE_THAN_ONE_SKU)
         }
     }
 
-val Purchase.listOfSkus: ArrayList<String>
-    get() = this.skus

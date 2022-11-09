@@ -205,8 +205,8 @@ internal class AmazonBilling constructor(
         queryAllPurchases(
             appUserID,
             onReceivePurchaseHistory = {
-                // We get skus[0] because the list is guaranteed to have just one item in Amazon's case.
-                val record: StoreTransaction? = it.firstOrNull { record -> sku == record.skus[0] }
+                // We get productIds[0] because the list is guaranteed to have just one item in Amazon's case.
+                val record: StoreTransaction? = it.firstOrNull { record -> sku == record.productIds[0] }
                 if (record != null) {
                     onCompletion(record)
                 } else {
@@ -310,7 +310,7 @@ internal class AmazonBilling constructor(
             return@mapNotNull null
         }
         val amazonPurchaseWrapper = receipt.toStoreTransaction(
-            sku = sku,
+            productId = sku,
             presentedOfferingIdentifier = null,
             purchaseState = PurchaseState.UNSPECIFIED_STATE,
             userData
@@ -430,7 +430,7 @@ internal class AmazonBilling constructor(
              * since there's no terms and we can just use the sku
              */
             val amazonPurchaseWrapper = receipt.toStoreTransaction(
-                sku = storeProduct.sku,
+                productId = storeProduct.sku,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
                 purchaseState = PurchaseState.PURCHASED,
                 userData
@@ -445,7 +445,7 @@ internal class AmazonBilling constructor(
             onSuccess = { response ->
                 val termSku = response[TERM_SKU_JSON_KEY] as String
                 val amazonPurchaseWrapper = receipt.toStoreTransaction(
-                    sku = termSku,
+                    productId = termSku,
                     presentedOfferingIdentifier = presentedOfferingIdentifier,
                     purchaseState = PurchaseState.PURCHASED,
                     userData
