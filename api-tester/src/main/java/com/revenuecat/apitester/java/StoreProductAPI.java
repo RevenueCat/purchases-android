@@ -23,6 +23,8 @@ final class StoreProductAPI {
         final String description = product.getDescription();
         final String subscriptionPeriod = product.getSubscriptionPeriod();
         List<PurchaseOption> purchaseOptions = product.getPurchaseOptions();
+
+        // TODOBC5 can we find an easier way to do this in java?
         GoogleStoreProduct underlyingProduct = GoogleStoreProductKt.getGoogleProduct(product);
     }
 
@@ -36,7 +38,7 @@ final class StoreProductAPI {
 
     static void checkGoogleStoreProduct(GoogleStoreProduct googleStoreProduct) {
         check(googleStoreProduct);
-        ProductDetails productDetails  = googleStoreProduct.getProductDetails();
+        ProductDetails productDetails = googleStoreProduct.getProductDetails();
         List<GooglePurchaseOption> purchaseOptions = googleStoreProduct.getPurchaseOptions();
         GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
                 googleStoreProduct.getProductId(),
