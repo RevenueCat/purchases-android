@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONException
 import org.json.JSONObject
@@ -163,7 +164,8 @@ class Backend(
         subscriberAttributes: Map<String, Map<String, Any?>>,
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
-        marketplace: String? = null,
+        pricingPhases: List<PricingPhase>? = null,
+        marketplace: String? = null, // TODO is this used?
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback
     ) {
@@ -174,7 +176,8 @@ class Backend(
             observerMode.toString(),
             subscriberAttributes.toString(),
             receiptInfo.toString(),
-            storeAppUserID
+            storeAppUserID,
+            pricingPhases.toString()
         )
 
         val body = mapOf(
@@ -188,12 +191,9 @@ class Backend(
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
             "normal_duration" to receiptInfo.duration,
-            "store_user_id" to storeAppUserID
+            "store_user_id" to storeAppUserID,
+            "pricing_phases" to pricingPhases
         ).filterValues { value -> value != null }
-
-        val extraHeaders = /*receiptInfo.storeProduct?.price?.let { priceString ->
-            mapOf("price_string" to priceString, "marketplace" to marketplace).filterNotNullValues()
-        } ?:*/mapOf<String, String>() // TODOBC5
 
         val call = object : Dispatcher.AsyncCall() {
 
@@ -201,7 +201,7 @@ class Backend(
                 return httpClient.performRequest(
                     "/receipts",
                     body,
-                    authenticationHeaders + extraHeaders
+                    authenticationHeaders
                 )
             }
 

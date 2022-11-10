@@ -9,6 +9,7 @@ import org.json.JSONObject
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 // TODO javadocs
+// TODO should we rename so it's not the same as BC? BC api is exposed through our library...
 data class PricingPhase(
     val billingPeriod: String,
     val priceCurrencyCode: String,
