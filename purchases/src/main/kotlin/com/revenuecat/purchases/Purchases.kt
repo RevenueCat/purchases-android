@@ -45,8 +45,10 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.AttributionStrings
@@ -271,6 +273,17 @@ class Purchases internal constructor(
             receiptID,
             amazonUserID,
             { normalizedProductID ->
+
+                // todomaddie either we do this and backend needs ot know what to do with null/default values,
+                // OR we keep price/currnecy around for observer mode stuff. will probably need for google too.
+                val pricingPhase = PricingPhase(
+                    "todo period",
+                    isoCurrencyCode ?: "",
+                    "",
+                    price?.takeUnless { it == 0.0 }?.toLong() ?: -1L,
+                    RecurrenceMode.UNKNOWN
+                )
+
                 val receiptInfo = ReceiptInfo(
                     productIDs = listOf(normalizedProductID),
                     price = price?.takeUnless { it == 0.0 },

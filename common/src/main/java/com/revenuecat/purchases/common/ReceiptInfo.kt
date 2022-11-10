@@ -5,9 +5,10 @@ import com.revenuecat.purchases.models.StoreProduct
 class ReceiptInfo(
     val productIDs: List<String>,
     val offeringIdentifier: String? = null,
-    val storeProduct: StoreProduct? = null,
-    val price: Double? = 1.0, // TODOBC5 storeProduct?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble()),
-    val currency: String? = "USD" // TODOBC5 storeProduct?.priceCurrencyCode
+    val storeProduct: StoreProduct? = null, // this appears to never be used?
+    // TODO maddie - replace price/currency with making a single PricingPhase for amazon observermode products
+    val price: Double? = 1.0, // only passed for amazon observer mode
+    val currency: String? = "USD" // only passed for amazon observer mode
 ) {
 
     val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }

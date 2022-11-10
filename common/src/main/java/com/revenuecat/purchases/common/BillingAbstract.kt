@@ -96,6 +96,13 @@ abstract class BillingAbstract {
      * the correct product ID the RevenueCat backend expects for a specific purchase.
      * Google doesn't need normalization so we return the productID by default
      */
+
+    // todo maddie
+    // this is my understanding, could you confirm?:
+    // the Amazon purchase returns the parent product ID, not the term sku, and RC backend needs term sku
+    // this function in amazon gets the term sku for the purchase
+    // it's only called when syncing an amazon observer mode purchase, we do the same thing in a normal purchase flow
+    // too, though
     open fun normalizePurchaseData(
         productID: String,
         purchaseToken: String,
