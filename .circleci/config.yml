@@ -1,13 +1,4 @@
 aliases:
-  release-tags-and-branches: &release-tags-and-branches
-    filters:
-      tags:
-        ignore:
-          - /^.*-SNAPSHOT/
-          - latest
-      branches:
-        only: /^release\/.*/
-
   release-tags: &release-tags
     filters:
       tags:
@@ -223,10 +214,12 @@ jobs:
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
       - store_artifacts:
           path: examples/purchase-tester/build/outputs/apk/release/purchase-tester-release.apk
+      - store_artifacts:
+          path: examples/purchase-tester/build/outputs/apk/debug/purchase-tester-debug.apk
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
 
-  publish-purchase-tester-latest-dependencies-release:
+  publish-purchase-tester-release:
     executor: android-executor
     steps:
       - checkout
@@ -336,23 +329,19 @@ workflows:
       - test
       - assemble-sample-app
 
-  integration-test:
-    when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-    jobs:
-      - integration-tests-build: *release-tags-and-branches
-      - run-firebase-tests:
-          requires:
-            - integration-tests-build
-
   deploy:
     when:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
+      - integration-tests-build: *release-branches
+      - run-firebase-tests:
+          requires:
+            - integration-tests-build
       - hold:
           type: approval
+          requires:
+            - run-firebase-tests
           <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
@@ -365,7 +354,7 @@ workflows:
               only:
                 - main
       - docs-deploy: *release-tags
-      - publish-purchase-tester-latest-dependencies-release:
+      - publish-purchase-tester-release:
           requires:
             - deploy
             - docs-deploy
