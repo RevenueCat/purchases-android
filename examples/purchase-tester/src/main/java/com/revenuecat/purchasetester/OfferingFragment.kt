@@ -64,7 +64,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         Purchases.sharedInstance.purchasePackageOptionWith(
             requireActivity(),
             currentPackage,
-            purchaseOption!!, // TODOBC5: Fix API for OTP
+            purchaseOption,
             { error, userCancelled ->
                 if (!userCancelled) {
                     showUserError(requireActivity(), error)
@@ -85,7 +85,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         Purchases.sharedInstance.purchaseProductOptionWith(
             requireActivity(),
             currentProduct,
-            purchaseOption!!, // TODOBC5: Fix API for OTP
+            purchaseOption,
             { error, userCancelled ->
                 if (!userCancelled) {
                     showUserError(requireActivity(), error)

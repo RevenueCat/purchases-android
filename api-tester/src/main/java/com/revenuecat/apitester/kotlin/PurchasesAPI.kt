@@ -44,7 +44,7 @@ private class PurchasesAPI {
         activity: Activity,
         storeProduct: StoreProduct,
         packageToPurchase: Package,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         upgradeInfo: UpgradeInfo
     ) {
         val skus = ArrayList<String>()
@@ -126,7 +126,7 @@ private class PurchasesAPI {
         activity: Activity,
         packageToPurchase: Package,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         upgradeInfo: UpgradeInfo
     ) {
         purchases.getOfferingsWith(

@@ -135,14 +135,14 @@ fun Purchases.purchaseProductWith(
  * Purchase a [Product]'s [PurchaseOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
- * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+ * @param [purchaseOption] For subscriptions only. Your choice of purchase options available for the StoreProduct
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
 fun Purchases.purchaseProductOptionWith(
     activity: Activity,
     storeProduct: StoreProduct,
-    purchaseOption: PurchaseOption,
+    purchaseOption: PurchaseOption?,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
 ) {
@@ -181,7 +181,7 @@ fun Purchases.purchaseProductWith(
  * Purchase a [Product]'s [PurchaseOption], upgrading from an old product.
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
- * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+ * @param [purchaseOption] For subscriptions only. Your choice of purchase options available for the StoreProduct
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
@@ -190,7 +190,7 @@ fun Purchases.purchaseProductWith(
 fun Purchases.purchaseProductOptionWith(
     activity: Activity,
     storeProduct: StoreProduct,
-    purchaseOption: PurchaseOption,
+    purchaseOption: PurchaseOption?,
     upgradeInfo: UpgradeInfo,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
@@ -233,7 +233,7 @@ fun Purchases.purchasePackageWith(
  * Purchase a [Package]'s [PurchaseOption], upgrading from an old product
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
- * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+ * @param [purchaseOption] For subscriptions only. Your choice of purchase options available for the StoreProduct
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases
  * @param [onSuccess] Will be called after the purchase has completed
@@ -243,7 +243,7 @@ fun Purchases.purchasePackageWith(
 fun Purchases.purchasePackageOptionWith(
     activity: Activity,
     packageToPurchase: Package,
-    purchaseOption: PurchaseOption,
+    purchaseOption: PurchaseOption?,
     upgradeInfo: UpgradeInfo,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
@@ -280,7 +280,7 @@ fun Purchases.purchasePackageWith(
 /**
  * Purchase a [Package]'s [PurchaseOption]
  * @param [activity] Current activity
- * @param [packageToPurchase] The Package you wish to purchase
+ * @param [packageToPurchase] For subscriptions only. The Package you wish to purchase
  * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
@@ -288,7 +288,7 @@ fun Purchases.purchasePackageWith(
 fun Purchases.purchasePackageOptionWith(
     activity: Activity,
     packageToPurchase: Package,
-    purchaseOption: PurchaseOption,
+    purchaseOption: PurchaseOption?,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
 ) {

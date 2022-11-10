@@ -430,7 +430,7 @@ class Purchases internal constructor(
      * Purchase a [StoreProduct]'s [PurchaseOption] upgrading from a previous product.
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [purchaseOption] For subscriptions only. Your choice of purchase options available for the StoreProduct
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
@@ -438,7 +438,7 @@ class Purchases internal constructor(
     fun purchaseProductOption(
         activity: Activity,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
@@ -456,13 +456,13 @@ class Purchases internal constructor(
      * Purchase a [StoreProduct]'s [PurchaseOption].
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [purchaseOption] For subscriptions only. Your choice of purchase options available for the StoreProduct
      * @param [callback] The PurchaseCallback that will be called when purchase completes
      */
     fun purchaseProductOption(
         activity: Activity,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         callback: PurchaseCallback
     ) {
         startPurchase(activity, storeProduct, purchaseOption, null, callback)
@@ -536,7 +536,7 @@ class Purchases internal constructor(
      * Purchase a [Package]'s [PurchaseOption], switching from an old product.
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
-     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [purchaseOption] For subscriptions only. Your choice of purchase options available for the StoreProduct
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
@@ -544,7 +544,7 @@ class Purchases internal constructor(
     fun purchasePackageOption(
         activity: Activity,
         packageToPurchase: Package,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         upgradeInfo: UpgradeInfo,
         callback: ProductChangeCallback
     ) {
@@ -562,13 +562,13 @@ class Purchases internal constructor(
      * Make a purchase.
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
-     * @param [purchaseOption] Your choice of purchase options available for the StoreProduct
+     * @param [purchaseOption] For subscriptions only. Your choice of purchase options available for the StoreProduct
      * @param [listener] The listener that will be called when purchase completes.
      */
     fun purchasePackageOption(
         activity: Activity,
         packageToPurchase: Package,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         listener: PurchaseCallback
     ) {
         startPurchase(
@@ -1514,7 +1514,7 @@ class Purchases internal constructor(
     private fun startPurchase(
         activity: Activity,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
@@ -1554,7 +1554,7 @@ class Purchases internal constructor(
     private fun startProductChange(
         activity: Activity,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
@@ -1594,7 +1594,7 @@ class Purchases internal constructor(
 
     private fun replaceOldPurchaseWithNewProduct(
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
