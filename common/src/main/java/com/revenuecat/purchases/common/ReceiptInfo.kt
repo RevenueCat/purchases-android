@@ -8,12 +8,17 @@ class ReceiptInfo(
     val storeProduct: StoreProduct? = null, // this appears unused. if we remove, we have to pass full pricing phases
     val purchaseOptionId: String? = null,
 
-    // TODO maddie - replace price/currency with making a single PricingPhase for amazon observermode products?
+    // TODO BC5 - replace price/currency with making a single PricingPhase for amazon observermode products?
     val price: Double? = 1.0, // only passed for amazon observer mode
     val currency: String? = "USD" // only passed for amazon observer mode
 ) {
 
     val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }
+
+    // TODO BC5 update once getOfferings updated to include purchase option ids
+//        val pricingPhases = receiptInfo.storeProduct?.purchaseOptions?.first { it.id == receiptInfo.purchaseOptionId }
+    val pricingPhases = storeProduct?.purchaseOptions?.get(0)?.pricingPhases
+
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

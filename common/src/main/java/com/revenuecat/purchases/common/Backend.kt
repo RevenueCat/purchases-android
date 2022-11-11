@@ -177,10 +177,6 @@ class Backend(
             storeAppUserID
         )
 
-        // TODO update once getOfferings updated to include purchase option ids
-//        val pricingPhases = receiptInfo.storeProduct?.purchaseOptions?.first { it.id == receiptInfo.purchaseOptionId }
-        val pricingPhases = receiptInfo.storeProduct?.purchaseOptions?.get(0)?.pricingPhases
-
         val body = mapOf(
             "fetch_token" to purchaseToken,
             "product_ids" to receiptInfo.productIDs,
@@ -193,7 +189,7 @@ class Backend(
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
-            "pricing_phases" to pricingPhases
+            "pricing_phases" to receiptInfo.pricingPhases
         ).filterValues { value -> value != null }
 
         val call = object : Dispatcher.AsyncCall() {
