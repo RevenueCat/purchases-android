@@ -177,6 +177,10 @@ class Backend(
             storeAppUserID
         )
 
+        // TODO update once getOfferings updated to include purchase option ids
+//        val pricingPhases = receiptInfo.storeProduct?.purchaseOptions?.first { it.id == receiptInfo.purchaseOptionId }
+        val pricingPhases = receiptInfo.storeProduct?.purchaseOptions?.get(0)?.pricingPhases
+
         val body = mapOf(
             "fetch_token" to purchaseToken,
             "product_ids" to receiptInfo.productIDs,
@@ -188,12 +192,9 @@ class Backend(
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
             "normal_duration" to receiptInfo.duration,
-            "store_user_id" to storeAppUserID
+            "store_user_id" to storeAppUserID,
+            "pricing_phases" to pricingPhases
         ).filterValues { value -> value != null }
-
-        val extraHeaders = /*receiptInfo.storeProduct?.price?.let { priceString ->
-            mapOf("price_string" to priceString, "marketplace" to marketplace).filterNotNullValues()
-        } ?:*/mapOf<String, String>() // TODOBC5
 
         val call = object : Dispatcher.AsyncCall() {
 
@@ -201,7 +202,7 @@ class Backend(
                 return httpClient.performRequest(
                     "/receipts",
                     body,
-                    authenticationHeaders + extraHeaders
+                    authenticationHeaders
                 )
             }
 

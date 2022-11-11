@@ -5,8 +5,10 @@ import com.revenuecat.purchases.models.StoreProduct
 class ReceiptInfo(
     val productIDs: List<String>,
     val offeringIdentifier: String? = null,
-    val storeProduct: StoreProduct? = null, // this appears to never be used?
-    // TODO maddie - replace price/currency with making a single PricingPhase for amazon observermode products
+    val storeProduct: StoreProduct? = null, // this appears unused. if we remove, we have to pass full pricing phases
+    val purchaseOptionId: String? = null,
+
+    // TODO maddie - replace price/currency with making a single PricingPhase for amazon observermode products?
     val price: Double? = 1.0, // only passed for amazon observer mode
     val currency: String? = "USD" // only passed for amazon observer mode
 ) {
@@ -24,6 +26,7 @@ class ReceiptInfo(
         if (price != other.price) return false
         if (currency != other.currency) return false
         if (duration != other.duration) return false
+        if (purchaseOptionId != other.purchaseOptionId) return false
 
         return true
     }
@@ -32,6 +35,7 @@ class ReceiptInfo(
         var result = productIDs.hashCode()
         result = 31 * result + (offeringIdentifier?.hashCode() ?: 0)
         result = 31 * result + (storeProduct?.hashCode() ?: 0)
+        result = 31 * result + (purchaseOptionId?.hashCode() ?: 0)
         return result
     }
 
@@ -39,6 +43,8 @@ class ReceiptInfo(
         return "ReceiptInfo(" +
             "productIDs='${productIDs.joinToString()}', " +
             "offeringIdentifier=$offeringIdentifier, " +
+            "storeProduct=${storeProduct.toString()}, " +
+            "purchaseOptionId=${purchaseOptionId}, " +
             "price=$price, " +
             "currency=$currency, " +
             "duration=$duration)"
