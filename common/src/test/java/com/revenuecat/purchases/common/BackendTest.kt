@@ -72,7 +72,7 @@ class BackendTest {
     )
 
     private var receivedCustomerInfo: CustomerInfo? = null
-    private var receivedCreated: Boolean? = null
+    private var receivedCustomerCreated: Boolean? = null
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
     private var receivedShouldConsumePurchase: Boolean? = null
@@ -108,7 +108,7 @@ class BackendTest {
 
     private val onLoginSuccessHandler: (CustomerInfo, Boolean) -> Unit = { customerInfo, created ->
         this@BackendTest.receivedCustomerInfo = customerInfo
-        this@BackendTest.receivedCreated = created
+        this@BackendTest.receivedCustomerCreated = created
     }
 
     private val onReceiveLoginErrorHandler: (PurchasesError) -> Unit = {
@@ -233,6 +233,29 @@ class BackendTest {
             onError = {}
         )
     }
+
+    @Test
+    fun encodesAppUserId() {
+        val encodeableUserID = "userid with spaces"
+
+        val encodedUserID = "userid%20with%20spaces"
+        val path = "/subscribers/$encodedUserID/offerings"
+
+        backend.getOfferings(
+            encodeableUserID,
+            appInBackground = false,
+            onSuccess = {},
+            onError = {}
+        )
+
+        verify {
+            mockClient.performRequest(
+                eq(path),
+                any(),
+                any()
+            )
+        }
+    }
     
     // endregion
     
@@ -299,14 +322,12 @@ class BackendTest {
         )
 
         assertThat(headersSlot.isCaptured).isTrue
-        assertThat(headersSlot.captured.keys).contains("price_string")
-        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
+        assertThat(headersSlot.captured.keys).contains("marketplace")
         assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
     }
     
     @Test
     fun `given multiple post calls for same subscriber different store user ID, both are triggered`() {
-
         val lock = CountDownLatch(2)
         val (fetchToken, _) = mockPostReceiptResponse(
             isRestore = false,
@@ -367,6 +388,7 @@ class BackendTest {
     
     @Test
     fun postReceiptCallsProperURL() {
+        // TODO is this testing anything
         val info = postReceipt(
             responseCode = 200,
             isRestore = false,
@@ -398,7 +420,7 @@ class BackendTest {
     }
 
     @Test
-    fun `given multiple postReceipt calls for same subscriber, only one is triggered`() {
+    fun `given multiple postReceipt calls for same subscriber same body, only one is triggered`() {
         val (fetchToken, _) = mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
@@ -450,7 +472,7 @@ class BackendTest {
     }
 
     @Test
-    fun `given multiple postRecipt calls for same subscriber different offering, both are triggered`() {
+    fun `given multiple postReceipt calls for same subscriber different offering, both are triggered`() {
         val (fetchToken, _) = mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
@@ -476,6 +498,11 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
+
+        val receiptInfo2 = ReceiptInfo(
+            basicReceiptInfo.productIDs,
+            basicReceiptInfo.offeringIdentifier + "a"
+        )
         val (fetchToken1, _) = mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
@@ -483,7 +510,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = basicReceiptInfo,
+            receiptInfo = receiptInfo2,
             storeAppUserID = null
         )
 
@@ -493,7 +520,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = basicReceiptInfo,
+            receiptInfo = receiptInfo2,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -530,6 +557,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes price and currency`() {
+        // TODO what was this testing?
         val info = postReceipt(
             responseCode = 200,
             isRestore = false,
@@ -548,7 +576,7 @@ class BackendTest {
     }
 
     @Test
-    fun `given multiple postReceipt calls for same subscriber different price, both are triggered`() {
+    fun `given multiple postReceipt calls for same subscriber different purchaseOption, both are triggered`() {
         val (fetchToken, _) = mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
@@ -560,17 +588,17 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        // TODO make storeproduct w different price
-        val storeProduct2 = mockStoreProduct(price = 350000)
         val receiptInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            storeProduct = storeProductNoOffers
+            storeProduct = storeProductNoOffers,
+            purchaseOptionId = "abc"
         )
         val receiptInfo2 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            storeProduct = storeProduct2
+            storeProduct = storeProductNoOffers,
+            purchaseOptionId = "def"
         )
         mockPostReceiptResponse(
             isRestore = false,
@@ -643,14 +671,17 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        // TODO make storeproduct with different duration
-        val storeProduct2 = mockStoreProduct(duration = "P2M")
-
         val receiptInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
             storeProduct = storeProductNoOffers
         )
+
+        val storeProduct2 = stubStoreProduct(
+            storeProductNoOffers.productId,
+            duration = storeProductNoOffers.subscriptionPeriod + "a"
+        )
+
         val receiptInfo2 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
@@ -746,6 +777,7 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
+
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
@@ -771,14 +803,7 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt passes durations`() {
-        // TODO replace this
-        val storeProduct = mockStoreProduct(
-            duration = "P1M",
-            introDuration = "P2M",
-            trialDuration = "P3M"
-        )
-
+    fun `postReceipt passes duration`() {
         val info = postReceipt(
             responseCode = 200,
             isRestore = false,
@@ -787,7 +812,7 @@ class BackendTest {
             observerMode = true,
             receiptInfo = ReceiptInfo(
                 productIDs,
-                storeProduct = storeProduct
+                storeProduct = storeProductNoOffers
             ),
             storeAppUserID = null,
         )
@@ -982,30 +1007,6 @@ class BackendTest {
     }
 
     // endregion
-
-    @Test
-    fun encodesAppUserId() {
-        // TODO is this testing anything?
-        val encodeableUserID = "userid with spaces"
-
-        val encodedUserID = "userid%20with%20spaces"
-        val path = "/subscribers/$encodedUserID/offerings"
-
-        backend.getOfferings(
-            encodeableUserID,
-            appInBackground = false,
-            onSuccess = {},
-            onError = {}
-        )
-
-        verify {
-            mockClient.performRequest(
-                eq(path),
-                any(),
-                any()
-            )
-        }
-    }
     
     // region login
 
@@ -1067,7 +1068,7 @@ class BackendTest {
             fail("Should have called success")
         }
         assertThat(receivedCustomerInfo).isEqualTo(expectedCustomerInfo)
-        assertThat(receivedCreated).isEqualTo(true)
+        assertThat(receivedCustomerCreated).isEqualTo(true)
     }
 
     @Test
@@ -1122,7 +1123,7 @@ class BackendTest {
         ) {
             fail("Should have called success")
         }
-        assertThat(receivedCreated).isTrue
+        assertThat(receivedCustomerCreated).isTrue
     }
 
     @Test
@@ -1148,7 +1149,7 @@ class BackendTest {
         ) {
             fail("Should have called success")
         }
-        assertThat(receivedCreated).isFalse
+        assertThat(receivedCustomerCreated).isFalse
     }
 
     @Test
