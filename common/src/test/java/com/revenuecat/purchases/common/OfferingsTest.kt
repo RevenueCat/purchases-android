@@ -267,9 +267,11 @@ class OfferingsTest {
             """
                 {
                     'identifier': '$packageIdentifier',
-                    'platform_product_group_identifier': '$productGroupIdentifier',
                     'platform_product_identifier': '$productIdentifier',
-                    'product_duration': '$duration'
+                    'store_identifier': {
+                        'subscription': '$productIdentifier',
+                        'base_plan': 'bp1'
+                    }
                 }
             """.trimIndent()
         )
