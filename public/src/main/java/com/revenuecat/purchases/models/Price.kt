@@ -7,11 +7,6 @@ import kotlinx.parcelize.Parcelize
 data class Price(
 
     /**
-     * Formatted price of the item, including its currency sign. For example $3.00.
-     */
-    val formattedPrice: String,
-
-    /**
      * Price in micro-units, where 1,000,000 micro-units equal one unit of the currency.
      *
      * For example, if price is "€7.99", price_amount_micros is 7,990,000. This value represents
@@ -26,5 +21,11 @@ data class Price(
      *
      * If currency code cannot be determined, currency symbol is returned.
      */
-    val currencyCode: String
+    val currencyCode: String,
+
+    /**
+     * Formatted price of the item, including its currency sign. For example $3.00.
+     */
+    val formattedPrice: String? = null
+
 ) : Parcelable

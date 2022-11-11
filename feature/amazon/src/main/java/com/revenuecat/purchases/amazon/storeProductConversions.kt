@@ -6,6 +6,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.parceler.JSONObjectParceler
@@ -25,7 +26,7 @@ data class AmazonStoreProduct(
     override val subscriptionPeriod: String?,
 
     // TODOBC5
-    override val oneTimeProductPrice: com.revenuecat.purchases.models.Price?,
+    override val oneTimeProductPrice: Price?,
     override val purchaseOptions: List<PurchaseOption>,
     val price: String,
     val priceAmountMicros: Long,
@@ -57,7 +58,7 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     }
     // By default, Amazon automatically converts the base list price of your IAP items into
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
-    val (currencyCode, priceAmountMicros) = price.extractPrice(marketplace)
+    val priceInfo = price.extractPrice(marketplace)
 
     return AmazonStoreProduct(
         sku,
@@ -68,11 +69,11 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         null,
         emptyList(),
         price,
-        priceAmountMicros = priceAmountMicros,
-        priceCurrencyCode = currencyCode,
+        priceAmountMicros = priceInfo.priceAmountMicros,
+        priceCurrencyCode = priceInfo.currencyCode,
         originalPrice = null,
         originalPriceAmountMicros = 0,
-        freeTrialPeriod = null,
+        freeTrialPeriod = null, // TODO why don't we use product.freeTrialPeriod?
         introductoryPrice = null,
         introductoryPriceAmountMicros = 0,
         introductoryPricePeriod = null,
@@ -89,15 +90,10 @@ internal fun String.extractPrice(marketplace: String): Price {
     val currencyCode = ISO3166Alpha2ToISO42170Converter.convertOrEmpty(marketplace)
 
     return Price(
-        currencyCode,
-        priceAmountMicros
+        priceAmountMicros,
+        currencyCode
     )
 }
-
-internal data class Price(
-    val currencyCode: String,
-    val priceAmountMicros: Long
-)
 
 // Explanations about the regexp:
 // \\d+: match the first(s) number(s)
