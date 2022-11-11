@@ -15,10 +15,7 @@ class ReceiptInfo(
 
     val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }
 
-    // TODO BC5 update once getOfferings updated to include purchase option ids
-//        val pricingPhases = receiptInfo.storeProduct?.purchaseOptions?.first { it.id == receiptInfo.purchaseOptionId }
-    val pricingPhases = storeProduct?.purchaseOptions?.get(0)?.pricingPhases
-
+    val pricingPhases = storeProduct?.purchaseOptions?.first { it.id == purchaseOptionId }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
