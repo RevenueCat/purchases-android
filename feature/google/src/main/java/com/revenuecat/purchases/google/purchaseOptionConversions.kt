@@ -5,5 +5,5 @@ import com.revenuecat.purchases.models.GooglePurchaseOption
 
 fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(): GooglePurchaseOption {
     val pricingPhases = pricingPhases.pricingPhaseList.map { it.toRevenueCatPricingPhase() }
-    return GooglePurchaseOption(pricingPhases, offerTags, offerToken)
+    return GooglePurchaseOption(offerId ?: basePlanId, pricingPhases, offerTags, offerToken)
 }

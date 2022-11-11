@@ -54,15 +54,16 @@ fun JSONObject.createPackage(
     offeringIdentifier: String
 ): Package? {
     val packageIdentifier = getString("identifier")
-    val productGroupIdentifier = optString("platform_product_group_identifier")
     // TODO handle INAPP products
     val productIdentifier = getString("platform_product_identifier")
-    val productDuration = optString("product_duration")
-    val subProducts = productsById[productGroupIdentifier]
-    val matchingProduct = subProducts?.firstOrNull { it.subscriptionPeriod == productDuration }
+    val planIdentifier = getString("platform_product_plan_identifier")
+    val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
+    val matchingProduct = storeProducts?.firstOrNull { storeProduct ->
+        storeProduct.purchaseOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
+    }
     return matchingProduct?.let { product ->
         val packageType = packageIdentifier.toPackageType()
-        return Package(packageIdentifier, packageType, product, offeringIdentifier, productDuration, productGroupIdentifier)
+        return Package(packageIdentifier, packageType, product, offeringIdentifier)
     }
 }
 
