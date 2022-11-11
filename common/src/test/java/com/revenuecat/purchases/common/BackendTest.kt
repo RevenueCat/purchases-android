@@ -145,6 +145,34 @@ class BackendTest {
         assertThat(calledWithRandomDelay).isNotNull
         assertThat(calledWithRandomDelay).isTrue
     }
+
+    @Test
+    fun `given multiple getCustomerInfo calls for same subscriber, only one is triggered`() {
+        mockResponse(
+            "/subscribers/$appUserID",
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveCustomerInfoErrorHandler)
+        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveCustomerInfoErrorHandler)
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/" + Uri.encode(appUserID),
+                null,
+                any()
+            )
+        }
+    }
     
     // endregion
     
@@ -185,34 +213,6 @@ class BackendTest {
     fun handlesMissingMessageInErrorBody() {
         getCustomerInfo(404, null, "{'no_message': 'Dude not found'}")
         assertThat(receivedError).`as`("Received error is not null").isNotNull
-    }
-
-    @Test
-    fun `given multiple get calls for same subscriber, only one is triggered`() {
-        mockResponse(
-            "/subscribers/$appUserID",
-            null,
-            200,
-            null,
-            null,
-            true
-        )
-        val lock = CountDownLatch(2)
-        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
-            lock.countDown()
-        }, onError = onReceiveCustomerInfoErrorHandler)
-        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
-            lock.countDown()
-        }, onError = onReceiveCustomerInfoErrorHandler)
-        lock.await(2000, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
-        verify(exactly = 1) {
-            mockClient.performRequest(
-                "/subscribers/" + Uri.encode(appUserID),
-                null,
-                any()
-            )
-        }
     }
 
     @Test
@@ -261,26 +261,26 @@ class BackendTest {
         assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse
     }
 
-    @Test
-    fun `postReceipt passes formatted price as header`() {
-        postReceipt(
-            responseCode = 200,
-            isRestore = false,
-            clientException = null,
-            resultBody = null,
-            observerMode = true,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                storeProduct = storeProductNoOffers
-            ),
-            storeAppUserID = null,
-        )
-
-        assertThat(headersSlot.isCaptured).isTrue
-        assertThat(headersSlot.captured.keys).contains("price_string")
-        // TODO fix
-        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
-    }
+    // TODO BC5 confirm if this is still a requirement or how to replace
+//    @Test
+//    fun `postReceipt passes formatted price as header`() {
+//        postReceipt(
+//            responseCode = 200,
+//            isRestore = false,
+//            clientException = null,
+//            resultBody = null,
+//            observerMode = true,
+//            receiptInfo = ReceiptInfo(
+//                productIDs,
+//                storeProduct = storeProductNoOffers
+//            ),
+//            storeAppUserID = null,
+//        )
+//
+//        assertThat(headersSlot.isCaptured).isTrue
+//        assertThat(headersSlot.captured.keys).contains("price_string")
+//        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
+//    }
 
     @Test
     fun `postReceipt passes marketplace as header`() {

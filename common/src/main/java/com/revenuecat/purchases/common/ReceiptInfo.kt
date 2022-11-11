@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 
 class ReceiptInfo(
@@ -14,8 +15,8 @@ class ReceiptInfo(
 ) {
 
     val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }
-
-    val pricingPhases = storeProduct?.purchaseOptions?.first { it.id == purchaseOptionId }
+    val pricingPhases: List<PricingPhase>? =
+        storeProduct?.purchaseOptions?.first { it.id == purchaseOptionId }?.pricingPhases
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -47,6 +48,7 @@ class ReceiptInfo(
             "offeringIdentifier=$offeringIdentifier, " +
             "storeProduct=${storeProduct.toString()}, " +
             "purchaseOptionId=${purchaseOptionId}, " +
+            "pricingPhases=${pricingPhases.toString()}, " +
             "price=$price, " +
             "currency=$currency, " +
             "duration=$duration)"

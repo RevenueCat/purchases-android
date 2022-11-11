@@ -12,6 +12,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.strings.NetworkStrings
+import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -177,6 +178,11 @@ class Backend(
             storeAppUserID
         )
 
+        // TODO BC5 is price_string still expected? what to pass?
+        val extraHeaders = receiptInfo.pricingPhases?.first()?.formattedPrice?.let { priceString ->
+            mapOf("price_string" to priceString, "marketplace" to marketplace).filterNotNullValues()
+        } ?: mapOf()
+
         val body = mapOf(
             "fetch_token" to purchaseToken,
             "product_ids" to receiptInfo.productIDs,
@@ -198,7 +204,7 @@ class Backend(
                 return httpClient.performRequest(
                     "/receipts",
                     body,
-                    authenticationHeaders
+                    authenticationHeaders + extraHeaders
                 )
             }
 
