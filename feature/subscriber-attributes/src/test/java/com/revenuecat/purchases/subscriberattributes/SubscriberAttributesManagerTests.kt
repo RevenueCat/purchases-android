@@ -18,6 +18,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -423,6 +424,45 @@ class SubscriberAttributesManagerTests {
         deviceIdentifiersSecondCallLambda?.invoke(mapOf("random-key-2" to "random-value-2"))
         assertNotNull(unsyncedAttributes)
         assertThat(unsyncedAttributes).isEqualTo(expected)
+    }
+
+    @Test
+    fun `getting unsynchronized attributes calls completion only once`() {
+        val mockContext = mockk<Application>(relaxed = true)
+        val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
+        val expected = mapOf(
+            "key" to subscriberAttribute
+        )
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
+        } returns expected
+
+        mockSettingAttributesOnEmptyCache()
+
+        var deviceIdentifiersCallLambda: ((Map<String, String>) -> Unit)? = null
+        every {
+            mockDeviceIdentifiersFetcher.getDeviceIdentifiers(mockContext, captureLambda())
+        } answers {
+            deviceIdentifiersCallLambda = lambda<(Map<String, String>) -> Unit>().captured
+        }
+
+        var callbackCallCount = 0
+        underTest.getUnsyncedSubscriberAttributes(appUserID) {
+            callbackCallCount += 1
+        }
+
+        underTest.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Facebook,
+            "test-facebook-id",
+            appUserID,
+            mockContext
+        )
+
+        assertEquals(1, callbackCallCount)
+
+        deviceIdentifiersCallLambda!!.invoke(emptyMap())
+
+        assertEquals(1, callbackCallCount)
     }
 
     @Test
