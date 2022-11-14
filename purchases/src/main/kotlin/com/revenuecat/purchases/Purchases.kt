@@ -1067,6 +1067,9 @@ class Purchases internal constructor(
                 val sku = jsonPackagesArray.getJSONObject(j)
                     .getNullableString("platform_product_group_identifier")
                 if (sku!=null) skus.add(sku)
+                val id = jsonPackagesArray.getJSONObject(j)
+                    .getNullableString("platform_product_identifier")
+                if (id!=null) skus.add(id)
             }
         }
         return skus
@@ -1259,12 +1262,18 @@ class Purchases internal constructor(
             { subscriptionProducts ->
                 val productsById = HashMap<String, List<StoreProduct>>()
 
-                val subscriptionProductsById = subscriptionProducts.groupBy{ it -> it.sku + "_" + it.subscriptionPeriod}
-                productsById.putAll(subscriptionProductsById)
+                val hasBasePlan = subscriptionProducts.map { it -> it.basePlan?.isNotEmpty() }.any()
+                val subscriptionProductsByBasePlan =
+                    subscriptionProducts.groupBy { it -> it.sku + "_" + it.basePlan }
+                val subscriptionProductsByDuration =
+                    subscriptionProducts.groupBy { it -> it.sku + "_" + it.subscriptionPeriod }
 
-                val subscriptionIds = subscriptionProductsById.keys
+                productsById.putAll(subscriptionProductsByBasePlan)
+                productsById.putAll(subscriptionProductsByDuration)
 
-                /*val inAppProductIds = productIds - subscriptionIds
+                /*val subscriptionIds = subscriptionProductsById.keys
+
+                val inAppProductIds = productIds - subscriptionIds
                 if (inAppProductIds.isNotEmpty()) {
                     billing.querySkuDetailsAsync(
                         ProductType.INAPP,

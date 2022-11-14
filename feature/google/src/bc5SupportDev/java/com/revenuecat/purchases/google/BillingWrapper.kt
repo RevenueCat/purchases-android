@@ -205,7 +205,8 @@ class BillingWrapper(
                                 product.toStoreProduct(
                                     offer.offerToken,
                                     offer.pricingPhases,
-                                    offer.offerTags
+                                    offer.offerTags,
+                                    offer.basePlanId,
                                 )
                             )
                         }

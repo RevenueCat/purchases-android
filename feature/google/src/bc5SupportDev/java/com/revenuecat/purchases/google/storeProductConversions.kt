@@ -33,7 +33,7 @@ fun ProductDetails.PricingPhases.readable(): String {
         .joinToString() + "]"
 }
 
-fun ProductDetails.toStoreProduct(offerToken: String, pricingPhases: ProductDetails.PricingPhases, offerTags: List<String>) =
+fun ProductDetails.toStoreProduct(offerToken: String, pricingPhases: ProductDetails.PricingPhases, offerTags: List<String>, basePlan: String) =
     StoreProduct(
         productId,
         ProductType.SUBS,
@@ -60,5 +60,6 @@ fun ProductDetails.toStoreProduct(offerToken: String, pricingPhases: ProductDeta
             it.priceCurrencyCode,
             it.recurrenceMode) },
         this,
-        offerToken
+        offerToken,
+        basePlan,
     )

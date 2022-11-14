@@ -61,10 +61,14 @@ fun JSONObject.createPackage(
     productsById: Map<String, List<StoreProduct>>,
     offeringIdentifier: String
 ): Package? {
-    val sku = optString("platform_product_group_identifier")
-    val product_identifier = getString("platform_product_identifier")
+    val group = optString("platform_product_group_identifier")
+    val plan = optString("platform_product_plan_identifier")
     val duration = optString("product_duration")
-    return chooseBestOffer(productsById[sku + "_" + duration])?.let { product ->
+    val product_identifier = getString("platform_product_identifier")
+    val sku = if (plan.isNotEmpty()) product_identifier else group
+    val key = if (plan.isNotEmpty()) product_identifier + "_" + plan else group + "_" + duration
+
+    return chooseBestOffer(productsById[key])?.let { product ->
         val identifier = getString("identifier")
         val packageType = identifier.toPackageType()
         return Package(identifier, packageType, product, offeringIdentifier, duration, product_identifier, sku)

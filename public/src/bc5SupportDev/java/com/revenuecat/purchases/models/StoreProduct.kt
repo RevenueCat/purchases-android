@@ -32,6 +32,7 @@ data class StoreProduct(
     val pricingPhases: List<PricingPhase>,
     val productDetails: @RawValue ProductDetails?,
     val offerToken: String?,
+    val basePlan: String?,
 ) : Parcelable {
     override fun toString(): String {
         return "[" + listOf(title, description, sku, price).joinToString() + "]"
