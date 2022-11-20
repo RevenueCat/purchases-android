@@ -28,7 +28,6 @@ class ReceiptInfo(
         if (offeringIdentifier != other.offeringIdentifier) return false
         if (price != other.price) return false
         if (currency != other.currency) return false
-        if (duration != other.duration) return false
         if (purchaseOptionId != other.purchaseOptionId) return false
 
         return true

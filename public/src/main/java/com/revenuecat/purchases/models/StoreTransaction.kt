@@ -82,7 +82,10 @@ data class StoreTransaction(
     /**
      * Amazon's marketplace. Null for Google
      */
-    val marketplace: String?
+    val marketplace: String?,
+
+    // TODO bc5 should we just put the pricingphases in here?
+    val purchaseOptionId: String?
 ) : Parcelable {
 
     /**

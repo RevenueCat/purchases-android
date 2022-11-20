@@ -17,6 +17,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -274,15 +275,7 @@ class Purchases internal constructor(
             amazonUserID,
             { normalizedProductID ->
 
-                // todomaddie either we do this and backend needs ot know what to do with null/default values,
-                // OR we keep price/currnecy around for observer mode stuff. will probably need for google too.
-                val pricingPhase = PricingPhase(
-                    "todo period",
-                    isoCurrencyCode ?: "",
-                    "",
-                    price?.takeUnless { it == 0.0 }?.toLong() ?: -1L,
-                    RecurrenceMode.UNKNOWN
-                )
+                // TODO BC5 clean up amazon postreceipt
 
                 val receiptInfo = ReceiptInfo(
                     productIDs = listOf(normalizedProductID),
@@ -1289,32 +1282,56 @@ class Purchases internal constructor(
     ) {
         purchases.forEach { purchase ->
             if (purchase.purchaseState != PurchaseState.PENDING) {
-                billing.queryProductDetailsAsync(
-                    productType = purchase.type,
-                    productIds = purchase.productIds.toSet(),
-                    onReceive = { storeProducts ->
-                        postToBackend(
-                            purchase = purchase,
-                            storeProduct = storeProducts.takeUnless { it.isEmpty() }?.get(0),
-                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                            consumeAllTransactions = consumeAllTransactions,
-                            appUserID = appUserID,
-                            onSuccess = onSuccess,
-                            onError = onError
-                        )
-                    },
-                    onError = {
-                        postToBackend(
-                            purchase = purchase,
-                            storeProduct = null,
-                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                            consumeAllTransactions = consumeAllTransactions,
-                            appUserID = appUserID,
-                            onSuccess = onSuccess,
-                            onError = onError
-                        )
-                    }
-                )
+                if (purchase.purchaseOptionId != null) {
+                    billing.queryProductDetailsAsync(
+                        productType = purchase.type,
+                        productIds = purchase.productIds.toSet(),
+                        onReceive = { storeProducts ->
+
+                            // TODO there will be multiple storeproducts here, for each base plan
+                            // if purchaseoptionid is null, how do we find the one that was purchased?
+                            // it could be null if this comes from updatePendingPurchaseQueue
+                            // perhaps we just always send null if we aren't sure and backend has to figure it out
+                            val purchasedStoreProduct = storeProducts.first { product ->
+                                product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
+                            }
+
+                            // before we defaulted to the first product, i think this was an OK assumption because
+                            // we assumed only one product per Purchase (i.e. Purchase.productIds.size was 1)
+                            // and before, one productId mapped perfectly to one SkuDetails,
+                            postToBackend(
+                                purchase = purchase,
+                                storeProduct = purchasedStoreProduct,
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                consumeAllTransactions = consumeAllTransactions,
+                                appUserID = appUserID,
+                                onSuccess = onSuccess,
+                                onError = onError
+                            )
+                        },
+                        onError = {
+                            postToBackend(
+                                purchase = purchase,
+                                storeProduct = null,
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                consumeAllTransactions = consumeAllTransactions,
+                                appUserID = appUserID,
+                                onSuccess = onSuccess,
+                                onError = onError
+                            )
+                        }
+                    )
+                } else {
+                    postToBackend(
+                        purchase = purchase,
+                        storeProduct = null,
+                        allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                        consumeAllTransactions = consumeAllTransactions,
+                        appUserID = appUserID,
+                        onSuccess = onSuccess,
+                        onError = onError
+                    )
+                }
             } else {
                 onError?.invoke(
                     purchase,

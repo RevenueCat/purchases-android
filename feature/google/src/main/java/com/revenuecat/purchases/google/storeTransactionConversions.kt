@@ -10,7 +10,8 @@ import org.json.JSONObject
 
 fun Purchase.toStoreTransaction(
     productType: ProductType,
-    presentedOfferingIdentifier: String?
+    presentedOfferingIdentifier: String?,
+    purchaseOptionId: String? = null
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
     productIds = this.products,
@@ -24,7 +25,8 @@ fun Purchase.toStoreTransaction(
     presentedOfferingIdentifier = presentedOfferingIdentifier,
     storeUserID = null,
     purchaseType = PurchaseType.GOOGLE_PURCHASE,
-    marketplace = null
+    marketplace = null,
+    purchaseOptionId = purchaseOptionId
 )
 
 val StoreTransaction.originalGooglePurchase: Purchase?
@@ -49,6 +51,7 @@ fun PurchaseHistoryRecord.toStoreTransaction(
         presentedOfferingIdentifier = null,
         storeUserID = null,
         purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE,
-        marketplace = null
+        marketplace = null,
+        purchaseOptionId = null
     )
 }
