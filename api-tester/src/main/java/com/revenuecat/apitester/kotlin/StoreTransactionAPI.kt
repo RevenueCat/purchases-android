@@ -40,8 +40,6 @@ private class StoreTransactionAPI {
                 marketplace
             )
         }
-
-
     }
 
     fun check(type: PurchaseType) {

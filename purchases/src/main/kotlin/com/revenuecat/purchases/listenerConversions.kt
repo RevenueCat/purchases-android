@@ -187,6 +187,7 @@ fun Purchases.purchaseProductWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
+@Suppress("LongParameterList")
 fun Purchases.purchaseProductOptionWith(
     activity: Activity,
     storeProduct: StoreProduct,

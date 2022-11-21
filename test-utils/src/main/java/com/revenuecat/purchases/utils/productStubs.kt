@@ -3,12 +3,14 @@ package com.revenuecat.purchases.utils
 import android.os.Parcel
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.toRecurrenceMode
 
+@SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
     duration: String = "P1M",
@@ -36,6 +38,7 @@ fun stubStoreProduct(
     override fun writeToParcel(dest: Parcel?, flags: Int) {}
 }
 
+@SuppressWarnings("EmptyFunctionBlock")
 fun stubPurchaseOption(
     id: String,
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase())
@@ -61,7 +64,7 @@ fun stubPricingPhase(
     billingPeriod,
     priceCurrencyCodeValue,
     formattedPrice = "${'$'}$price",
-    priceAmountMicros = price.times(1_000_000).toLong(),
+    priceAmountMicros = price.times(MICROS_MULTIPLIER).toLong(),
     recurrenceMode.toRecurrenceMode(),
     billingCycleCount
 )

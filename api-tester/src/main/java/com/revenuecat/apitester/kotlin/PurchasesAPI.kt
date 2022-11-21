@@ -120,7 +120,7 @@ private class PurchasesAPI {
         purchases.onAppForegrounded()
     }
 
-    @Suppress("RedundantLambdaArrow", "LongMethod")
+    @Suppress("RedundantLambdaArrow", "LongMethod", "LongParameterList")
     fun checkListenerConversions(
         purchases: Purchases,
         activity: Activity,
