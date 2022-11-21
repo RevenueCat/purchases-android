@@ -62,11 +62,6 @@ class OfferingsTest {
     }
 
     @Test
-    fun `Package is created for migrated products with same product identifier and group`() {
-        // TODO BC5: not sure how migrated products will look like
-    }
-
-    @Test
     fun `Offering is not created if there are no valid packages`() {
         val productId = "com.myproduct.bad"
         val storeProductAnnual = getStoreProduct(productId, annualDuration, annualBasePlan)
