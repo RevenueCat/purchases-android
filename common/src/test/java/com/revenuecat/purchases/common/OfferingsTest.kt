@@ -23,13 +23,19 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class OfferingsTest {
 
-    private val monthlyProductGroupIdentifier = "com.myproduct"
-    private val monthlyProductIdentifier = "com.myproduct.monthly"
+    private val productIdentifier = "com.myproduct"
+    private val monthlyBasePlan = "monthly_base_plan"
+    private val annualBasePlan = "annual_base_plan"
+    private val monthlyDuration = "P1M"
+    private val annualDuration = "P1Y"
 
     @Test
     fun `Package is not created if there are no valid products`() {
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualDuration, annualBasePlan)
+        val products = mapOf(productIdentifier to listOf(storeProductAnnual))
+
         val packageToTest = getPackageJSON().createPackage(
-            getProductsByGroupId("com.myproduct.annual" to "P1Y"),
+            products,
             "offering"
         )
         assertThat(packageToTest).isNull()
@@ -37,38 +43,30 @@ class OfferingsTest {
 
     @Test
     fun `Package is created if there are valid products`() {
-        val products: Map<String, List<StoreProduct>> = getProductsByGroupId()
-        val packageJSON = getPackageJSON(
-            packageIdentifier = PackageType.MONTHLY.identifier!!,
-            productIdentifier = monthlyProductIdentifier,
-            productGroupIdentifier = monthlyProductGroupIdentifier
-        )
-        val packageToTest = packageJSON.createPackage(products, "offering")
-        assertThat(packageToTest).isNotNull
-        assertThat(packageToTest!!.product).isEqualTo(products[monthlyProductGroupIdentifier]?.get(0))
-        assertThat(packageToTest.identifier).isEqualTo(PackageType.MONTHLY.identifier)
-        assertThat(packageToTest.packageType).isEqualTo(PackageType.MONTHLY)
-    }
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyDuration, monthlyBasePlan)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualDuration, annualBasePlan)
 
-    @Test
-    fun `Package is created for migrated products with same product identifier and group`() {
-        val productIdPreBC5 = "onemonth_freetrial"
-        val products: Map<String, List<StoreProduct>> = getProductsByGroupId(productIdPreBC5 to "P1M")
-        val packageJSON = getPackageJSON(
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+
+        val monthlyPackageJSON = getPackageJSON(
             packageIdentifier = PackageType.MONTHLY.identifier!!,
-            productIdentifier = productIdPreBC5,
-            productGroupIdentifier = productIdPreBC5
+            productIdentifier = productIdentifier,
+            basePlanId = monthlyBasePlan
         )
-        val packageToTest = packageJSON.createPackage(products, "offering")
+
+        val packageToTest = monthlyPackageJSON.createPackage(products, "offering")
         assertThat(packageToTest).isNotNull
-        assertThat(packageToTest!!.product).isEqualTo(products[productIdPreBC5]?.get(0))
+        assertThat(packageToTest!!.product).isEqualTo(products[productIdentifier]?.get(0))
         assertThat(packageToTest.identifier).isEqualTo(PackageType.MONTHLY.identifier)
         assertThat(packageToTest.packageType).isEqualTo(PackageType.MONTHLY)
     }
 
     @Test
     fun `Offering is not created if there are no valid packages`() {
-        val products = getProductsByGroupId("com.myproduct.bad" to "P1M")
+        val productId = "com.myproduct.bad"
+        val storeProductAnnual = getStoreProduct(productId, annualDuration, annualBasePlan)
+        val products = mapOf(productId to listOf(storeProductAnnual))
+
         val offeringJSON = getOfferingJSON()
         val offering = offeringJSON.createOffering(products)
         assertThat(offering).isNull()
@@ -76,14 +74,36 @@ class OfferingsTest {
 
     @Test
     fun `Offering is created if there are valid packages`() {
-        val products = getProductsByGroupId()
-        val offering = getOfferingJSON().createOffering(products)
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyDuration, monthlyBasePlan)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualDuration, annualBasePlan)
+
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+
+        val monthlyPackageJSON = getPackageJSON(
+            PackageType.MONTHLY.identifier!!,
+            productIdentifier,
+            monthlyBasePlan
+        )
+        val annualPackageJSON = getPackageJSON(
+            PackageType.ANNUAL.identifier!!,
+            productIdentifier,
+            annualBasePlan
+        )
+        val offeringJSON = getOfferingJSON(
+            offeringIdentifier = "offering_a",
+            packagesJSON = listOf(monthlyPackageJSON, annualPackageJSON)
+        )
+
+        val offering = offeringJSON.createOffering(products)
         assertThat(offering).isNotNull
     }
 
     @Test
     fun `List of offerings is empty if there are no valid offerings`() {
-        val products = getProductsByGroupId("com.myproduct.bad" to "P1M")
+        val productId = "com.myproduct.bad"
+        val storeProductAnnual = getStoreProduct(productId, annualDuration, annualBasePlan)
+        val products = mapOf(productId to listOf(storeProductAnnual))
+
         val offerings = getOfferingsJSON().createOfferings(products)
         assertThat(offerings).isNotNull
         assertThat(offerings.current).isNull()
@@ -93,7 +113,11 @@ class OfferingsTest {
 
     @Test
     fun `Offerings can be created`() {
-        val products = getProductsByGroupId("com.myproduct" to "P6M", "com.myproduct" to "P1M")
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyDuration, monthlyBasePlan)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualDuration, annualBasePlan)
+
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+
         val offerings = getOfferingsJSON().createOfferings(products)
         assertThat(offerings).isNotNull
         assertThat(offerings.current!!.identifier).isEqualTo("offering_a")
@@ -179,22 +203,20 @@ class OfferingsTest {
                 "custom"
             }
         }
-        val productGroupIdentifier = "com.revenuecat.premium"
-        val productIdentifier = "com.revenuecat.premium.monthly"
-        val duration = "P1M"
-        val products = getProductsByGroupId(productGroupIdentifier to duration)
+        val storeProductMonthly = getStoreProduct()
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly))
         val offeringJSON = getOfferingJSON(
             offeringIdentifier = "offering_a",
-            packageIdentifier = identifier,
-            productIdentifier = productIdentifier,
-            productGroupIdentifier = productGroupIdentifier
+            listOf(
+                getPackageJSON(packageIdentifier = identifier)
+            )
         )
         val offerings = JSONObject(
             """
                 {
                   'offerings': [
                     $offeringJSON
-                  ], 
+                  ],
                   'current_offering_id': 'offering_a'
                }""".trimIndent()
         ).createOfferings(products)
@@ -227,67 +249,77 @@ class OfferingsTest {
     private fun getOfferingsJSON() =
         JSONObject(
             "{'offerings': [" +
-                "${getOfferingJSON(
-                    offeringIdentifier = "offering_a",
-                    packageIdentifier = PackageType.SIX_MONTH.identifier!!,
-                    productIdentifier = "com.myproduct.sixMonth",
-                    productGroupIdentifier = "com.myproduct"
-                )}, " +
-                "${getOfferingJSON(
-                    offeringIdentifier = "offering_b",
-                    packageIdentifier = PackageType.MONTHLY.identifier!!,
-                    productIdentifier = "com.myproduct.monthly",
-                    productGroupIdentifier = "com.myproduct"
-                )}]" +
+                "${
+                    getOfferingJSON(
+                        offeringIdentifier = "offering_a",
+                        packagesJSON = listOf(getPackageJSON(
+                            PackageType.ANNUAL.identifier!!,
+                            productIdentifier,
+                            annualBasePlan
+                        ))
+                    )
+                }, " +
+                "${
+                    getOfferingJSON(offeringIdentifier = "offering_b")
+                }]" +
                 ", 'current_offering_id': 'offering_a'}"
         )
 
     private fun getOfferingJSON(
         offeringIdentifier: String = "offering_a",
-        packageIdentifier: String = PackageType.MONTHLY.identifier!!,
-        productIdentifier: String = monthlyProductIdentifier,
-        productGroupIdentifier: String = monthlyProductGroupIdentifier
+        packagesJSON: List<JSONObject> = listOf(
+            getPackageJSON(
+                PackageType.MONTHLY.identifier!!,
+                this.productIdentifier,
+                monthlyBasePlan
+            )
+        )
     ) = JSONObject(
         """
             {
                 'description': 'This is the base offering',
                 'identifier': '$offeringIdentifier',
-                'packages':[${getPackageJSON(packageIdentifier, productIdentifier, productGroupIdentifier)}]
+                'packages': ${packagesJSON}
             }
         """.trimIndent()
     )
 
     private fun getPackageJSON(
         packageIdentifier: String = PackageType.MONTHLY.identifier!!,
-        productIdentifier: String = monthlyProductIdentifier,
-        productGroupIdentifier: String = monthlyProductGroupIdentifier,
-        duration: String = "P1M"
+        productIdentifier: String = this.productIdentifier,
+        basePlanId: String = monthlyBasePlan,
     ) =
         JSONObject(
             """
                 {
                     'identifier': '$packageIdentifier',
-                    'platform_product_group_identifier': '$productGroupIdentifier',
                     'platform_product_identifier': '$productIdentifier',
-                    'product_duration': '$duration'
+                    'platform_product_plan_identifier': '$basePlanId'
                 }
             """.trimIndent()
         )
 
-    private fun getProductsByGroupId(
-        vararg productGroupsAndDurations: Pair<String, String> = arrayOf(monthlyProductGroupIdentifier to "P1M")
-    ): Map<String, List<StoreProduct>> =
-        productGroupsAndDurations.associate { (productGroupIdentifier, duration) ->
-            val pricingPhases = listOf(
-                stubPricingPhase(
-                    price = 1.99,
-                    billingPeriod = duration,
-                    recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING
-                )
-            )
-            val purchaseOption = stubPurchaseOption(pricingPhases, listOf("tag"))
-            val storeProduct = stubStoreProduct(productId = productGroupIdentifier, duration, listOf(purchaseOption))
-            productGroupIdentifier to listOf(storeProduct)
-        }
+    private fun getStoreProduct(
+        productId: String = productIdentifier,
+        duration: String = monthlyDuration,
+        basePlanId: String = monthlyBasePlan,
+    ): StoreProduct {
+        val basePlanPricingPhase = stubPricingPhase(
+            price = 1.99,
+            billingPeriod = duration,
+            recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING
+        )
+        val basePlanPurchaseOption = stubPurchaseOption(basePlanId, listOf(basePlanPricingPhase))
 
+        val offerPricingPhases = listOf(
+            stubPricingPhase(
+                price = 0.0,
+                billingPeriod = duration,
+                recurrenceMode = ProductDetails.RecurrenceMode.NON_RECURRING
+            ),
+            basePlanPricingPhase
+        )
+        val offerPurchaseOption = stubPurchaseOption(basePlanId, offerPricingPhases)
+        return stubStoreProduct(productId, duration, listOf(basePlanPurchaseOption, offerPurchaseOption))
+    }
 }

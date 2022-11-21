@@ -12,7 +12,7 @@ import com.revenuecat.purchases.models.toRecurrenceMode
 fun stubStoreProduct(
     productId: String,
     duration: String = "P1M",
-    purchaseOptions: List<PurchaseOption> = listOf(stubPurchaseOption())
+    purchaseOptions: List<PurchaseOption> = listOf(stubPurchaseOption("monthly_base_plan"))
 ): StoreProduct = object : StoreProduct {
     override val productId: String
         get() = productId
@@ -37,13 +37,15 @@ fun stubStoreProduct(
 }
 
 fun stubPurchaseOption(
-    pricingPhases: List<PricingPhase> = listOf(stubPricingPhase()),
-    tags: List<String> = listOf("tag"),
+    id: String,
+    pricingPhases: List<PricingPhase> = listOf(stubPricingPhase())
 ): PurchaseOption = object : PurchaseOption {
+    override val id: String
+        get() = id
     override val pricingPhases: List<PricingPhase>
         get() = pricingPhases
     override val tags: List<String>
-        get() = tags
+        get() = listOf("tag")
 
     override fun describeContents(): Int = 0
     override fun writeToParcel(dest: Parcel?, flags: Int) {}
