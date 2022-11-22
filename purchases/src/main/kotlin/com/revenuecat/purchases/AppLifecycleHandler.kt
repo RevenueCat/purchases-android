@@ -25,6 +25,7 @@ internal class AppLifecycleHandler(
 
     override fun onPause(owner: LifecycleOwner) {
     }
+
     override fun onDestroy(owner: LifecycleOwner) {
     }
     // endregion
