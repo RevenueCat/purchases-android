@@ -7,13 +7,17 @@ import androidx.lifecycle.LifecycleOwner
 internal class AppLifecycleHandler(
     private val lifecycleDelegate: LifecycleDelegate,
 ) : DefaultLifecycleObserver {
-    // Some functions are implemented and left empty to prevent issues with Java default interfaces
-
-    override fun onCreate(owner: LifecycleOwner) {
-    }
-
     override fun onStart(owner: LifecycleOwner) {
         lifecycleDelegate.onAppForegrounded()
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        lifecycleDelegate.onAppBackgrounded()
+    }
+
+    // Some functions are implemented and left empty to prevent issues with Java default interfaces
+    // region default implementations
+    override fun onCreate(owner: LifecycleOwner) {
     }
 
     override fun onResume(owner: LifecycleOwner) {
@@ -21,13 +25,9 @@ internal class AppLifecycleHandler(
 
     override fun onPause(owner: LifecycleOwner) {
     }
-
-    override fun onStop(owner: LifecycleOwner) {
-        lifecycleDelegate.onAppBackgrounded()
-    }
-
     override fun onDestroy(owner: LifecycleOwner) {
     }
+    // endregion
 }
 
 internal interface LifecycleDelegate {
