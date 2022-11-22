@@ -178,11 +178,6 @@ class Backend(
             storeAppUserID
         )
 
-        // TODO BC5 is price_string still expected? what to pass?
-        val extraHeaders = receiptInfo.pricingPhases?.first()?.formattedPrice?.let { priceString ->
-            mapOf("price_string" to priceString, "marketplace" to marketplace).filterNotNullValues()
-        } ?: mapOf()
-
         val body = mapOf(
             "fetch_token" to purchaseToken,
             "product_ids" to receiptInfo.productIDs,
@@ -197,6 +192,11 @@ class Backend(
             "store_user_id" to storeAppUserID,
             "pricing_phases" to receiptInfo.pricingPhases
         ).filterValues { value -> value != null }
+
+        // TODO BC5 is price_string still expected? what to pass?
+        val extraHeaders = receiptInfo.pricingPhases?.first()?.formattedPrice?.let { priceString ->
+            mapOf("price_string" to priceString, "marketplace" to marketplace).filterNotNullValues()
+        } ?: mapOf()
 
         val call = object : Dispatcher.AsyncCall() {
 

@@ -84,7 +84,11 @@ data class StoreTransaction(
      */
     val marketplace: String?,
 
-    // TODO bc5 should we just put the pricingphases in here?
+    /**
+     * The id of the PurchaseOption purchased.
+     * In Google, this will either be the basePlanId or the offerId.
+     * Null for restored transactions and purchases initiated outside of the app.
+     */
     val purchaseOptionId: String?
 ) : Parcelable {
 

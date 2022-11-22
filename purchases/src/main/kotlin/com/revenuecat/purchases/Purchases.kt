@@ -1288,17 +1288,14 @@ class Purchases internal constructor(
                         productIds = purchase.productIds.toSet(),
                         onReceive = { storeProducts ->
 
-                            // TODO there will be multiple storeproducts here, for each base plan
-                            // if purchaseoptionid is null, how do we find the one that was purchased?
-                            // it could be null if this comes from updatePendingPurchaseQueue
-                            // perhaps we just always send null if we aren't sure and backend has to figure it out
+                            // before we defaulted to the first product, i think this was an OK assumption because
+                            // we assumed only one product per Purchase (i.e. Purchase.productIds.size was 1)
+                            // and before, one productId mapped perfectly to one SkuDetails
+                            // TODO BC5 confirm multi line purchases
                             val purchasedStoreProduct = storeProducts.first { product ->
                                 product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
                             }
 
-                            // before we defaulted to the first product, i think this was an OK assumption because
-                            // we assumed only one product per Purchase (i.e. Purchase.productIds.size was 1)
-                            // and before, one productId mapped perfectly to one SkuDetails,
                             postToBackend(
                                 purchase = purchase,
                                 storeProduct = purchasedStoreProduct,
