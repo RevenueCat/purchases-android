@@ -190,7 +190,7 @@ class Backend(
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
-            "pricing_phases" to receiptInfo.pricingPhases
+            "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() }
         ).filterValues { value -> value != null }
 
         // TODO BC5 we used to only pass this if storeProduct.price was non-null,

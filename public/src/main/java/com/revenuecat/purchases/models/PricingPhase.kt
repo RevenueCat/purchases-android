@@ -21,4 +21,18 @@ data class PricingPhase(
      * Null for INFINITE_RECURRING or NON_RECURRING recurrence modes.
      */
     val billingCycleCount: Int?
-) : Parcelable
+) : Parcelable {
+
+    fun toMap(): Map<String, Any?> {
+        // TODO BC5 better defaults for null values, or change to Any?
+        return mapOf(
+            "billingPeriod" to this.billingPeriod,
+            "billingCycleCount" to (this.billingCycleCount),
+            "formattedPrice" to this.formattedPrice,
+            "priceAmountMicros" to this.priceAmountMicros,
+            "priceCurrencyCode" to this.priceCurrencyCode,
+            "recurrenceMode" to (this.recurrenceMode.identifier)
+        )
+    }
+
+}
