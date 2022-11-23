@@ -1352,7 +1352,8 @@ class Purchases internal constructor(
             val receiptInfo = ReceiptInfo(
                 productIDs = purchase.productIds,
                 offeringIdentifier = purchase.presentedOfferingIdentifier,
-                storeProduct = storeProduct
+                storeProduct = storeProduct,
+                purchaseOptionId = purchase.purchaseOptionId
             )
             backend.postReceiptData(
                 purchaseToken = purchase.purchaseToken,
