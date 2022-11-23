@@ -58,6 +58,7 @@ fun JSONObject.createPackage(
     val productIdentifier = getString("platform_product_identifier")
     val planIdentifier = getString("platform_product_plan_identifier")
     val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
+
     val matchingProduct = storeProducts?.firstOrNull { storeProduct ->
         storeProduct.purchaseOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
     }
