@@ -193,9 +193,10 @@ class Backend(
             "pricing_phases" to receiptInfo.pricingPhases
         ).filterValues { value -> value != null }
 
-        // TODO BC5 is price_string still expected? what to pass?
-        val extraHeaders = receiptInfo.pricingPhases?.first()?.formattedPrice?.let { priceString ->
-            mapOf("price_string" to priceString, "marketplace" to marketplace).filterNotNullValues()
+        // TODO BC5 we used to only pass this if storeProduct.price was non-null,
+        // is it okay to update the logic to pass it when it is non-null?
+        val extraHeaders = marketplace?.let {
+            mapOf("marketplace" to it)
         } ?: mapOf()
 
         val call = object : Dispatcher.AsyncCall() {
