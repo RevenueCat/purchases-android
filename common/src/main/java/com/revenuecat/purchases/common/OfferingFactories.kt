@@ -60,7 +60,7 @@ fun JSONObject.createPackage(
     val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
 
     val matchingProduct = storeProducts?.firstOrNull { storeProduct ->
-        storeProduct.purchaseOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
+        storeProduct.purchaseOptions.firstOrNull { it.isBasePlan }?.basePlanId == planIdentifier
     }
     return matchingProduct?.let { product ->
         val packageType = packageIdentifier.toPackageType()

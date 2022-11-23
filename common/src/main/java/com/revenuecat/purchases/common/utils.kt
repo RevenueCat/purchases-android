@@ -8,6 +8,7 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import android.os.Build
 import android.util.Base64
+import com.revenuecat.purchases.models.PurchaseOption
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -91,3 +92,7 @@ fun String.sha256() =
 
 val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
+
+
+val PurchaseOption.id: String
+    get() = basePlanId + offerId.orEmpty()
