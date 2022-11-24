@@ -117,13 +117,12 @@ class PurchasesTest {
 
     private val stubOfferingIdentifier = "offering_a"
     private val stubProductIdentifier = "monthly_freetrial"
-    private val stubProductGroupIdentifier = "monthly_freetrial"
     private val oneOfferingsResponse = "{'offerings': [" +
         "{'identifier': '$stubOfferingIdentifier', " +
         "'description': 'This is the base offering', " +
         "'packages': [" +
         "{'identifier': '\$rc_monthly','platform_product_identifier': '$stubProductIdentifier'," +
-        "'platform_product_group_identifier': '$stubProductGroupIdentifier','product_duration': 'P1M'}]}]," +
+        "'platform_product_plan_identifier': 'p1m'}]}]," +
         "'current_offering_id': '$stubOfferingIdentifier'}"
     private val oneOfferingWithNoProductsResponse = "{'offerings': [" +
         "{'identifier': '$stubOfferingIdentifier', " +
@@ -185,9 +184,7 @@ class PurchasesTest {
             "\$rc_monthly",
             PackageType.MONTHLY,
             storeProduct,
-            stubOfferingIdentifier,
-            null,
-            productId
+            stubOfferingIdentifier
         )
         val offering = Offering(
             stubOfferingIdentifier,

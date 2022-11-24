@@ -1182,18 +1182,18 @@ class Purchases internal constructor(
 
     private fun extractProductGroupIdentifiers(offeringsJSON: JSONObject): Set<String> {
         val jsonOfferingsArray = offeringsJSON.getJSONArray("offerings")
-        val productGroupIds = mutableSetOf<String>()
+        val productIds = mutableSetOf<String>()
         for (i in 0 until jsonOfferingsArray.length()) {
             val jsonPackagesArray =
                 jsonOfferingsArray.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
                 jsonPackagesArray.getJSONObject(j)
-                    .optString("platform_product_group_identifier").takeIf { it.isNotBlank() }?.let {
-                        productGroupIds.add(it)
+                    .optString("platform_product_identifier").takeIf { it.isNotBlank() }?.let {
+                        productIds.add(it)
                     }
             }
         }
-        return productGroupIds
+        return productIds
     }
 
     private fun handleErrorFetchingOfferings(
