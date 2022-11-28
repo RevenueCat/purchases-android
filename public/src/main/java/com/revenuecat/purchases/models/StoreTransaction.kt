@@ -102,7 +102,6 @@ data class StoreTransaction(
     )
     val skus: List<String>
         get() = productIds
-
 }
 
 enum class PurchaseType {

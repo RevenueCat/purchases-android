@@ -15,7 +15,6 @@ private class PurchaseOptionApi {
 
     fun checkGooglePurchaseOption(googlePurchaseOption: GooglePurchaseOption) {
         checkPurchaseOption(googlePurchaseOption)
-        val token: String  = googlePurchaseOption.token
+        val token: String = googlePurchaseOption.token
     }
-
 }

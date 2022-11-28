@@ -618,21 +618,21 @@ class Purchases internal constructor(
                     } else {
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                             sortedByTime.forEach { purchase ->
-                                subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
+                                subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { attrsByKey ->
                                     val receiptInfo = ReceiptInfo(productIDs = purchase.productIds)
                                     backend.postReceiptData(
                                         purchaseToken = purchase.purchaseToken,
                                         appUserID = appUserID,
                                         isRestore = true,
                                         observerMode = !finishTransactions,
-                                        subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+                                        subscriberAttributes = attrsByKey.toBackendMap(),
                                         receiptInfo = receiptInfo,
                                         storeAppUserID = purchase.storeUserID,
                                         marketplace = purchase.marketplace,
                                         onSuccess = { info, body ->
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
-                                                unsyncedSubscriberAttributesByKey,
+                                                attrsByKey,
                                                 body.getAttributeErrors()
                                             )
                                             billing.consumeAndSave(finishTransactions, purchase)
@@ -647,7 +647,7 @@ class Purchases internal constructor(
                                             if (shouldConsumePurchase) {
                                                 subscriberAttributesManager.markAsSynced(
                                                     appUserID,
-                                                    unsyncedSubscriberAttributesByKey,
+                                                    attrsByKey,
                                                     body.getAttributeErrors()
                                                 )
                                                 billing.consumeAndSave(finishTransactions, purchase)
@@ -1137,8 +1137,8 @@ class Purchases internal constructor(
             appInBackground,
             { offeringsJSON ->
                 try {
-                    val productGroupIdentifiers = extractProductGroupIdentifiers(offeringsJSON)
-                    if (productGroupIdentifiers.isEmpty()) {
+                    val productIdentifiers = extractProductIdentifiers(offeringsJSON)
+                    if (productIdentifiers.isEmpty()) {
                         handleErrorFetchingOfferings(
                             PurchasesError(
                                 PurchasesErrorCode.ConfigurationError,
@@ -1147,7 +1147,7 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getStoreProductsById(productGroupIdentifiers, { productsById ->
+                        getStoreProductsById(productIdentifiers, { productsById ->
                             val offerings = offeringsJSON.createOfferings(productsById)
 
                             logMissingProducts(offerings, productsById)
@@ -1187,20 +1187,20 @@ class Purchases internal constructor(
             })
     }
 
-    private fun extractProductGroupIdentifiers(offeringsJSON: JSONObject): Set<String> {
+    private fun extractProductIdentifiers(offeringsJSON: JSONObject): Set<String> {
         val jsonOfferingsArray = offeringsJSON.getJSONArray("offerings")
-        val productGroupIds = mutableSetOf<String>()
+        val productIds = mutableSetOf<String>()
         for (i in 0 until jsonOfferingsArray.length()) {
             val jsonPackagesArray =
                 jsonOfferingsArray.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
                 jsonPackagesArray.getJSONObject(j)
                     .optString("platform_product_identifier").takeIf { it.isNotBlank() }?.let {
-                        productGroupIds.add(it)
+                        productIds.add(it)
                     }
             }
         }
-        return productGroupIds
+        return productIds
     }
 
     private fun handleErrorFetchingOfferings(

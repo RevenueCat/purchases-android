@@ -164,6 +164,7 @@ class Backend(
         subscriberAttributes: Map<String, Map<String, Any?>>,
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
+        @SuppressWarnings("UnusedPrivateMember")
         marketplace: String? = null,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback
