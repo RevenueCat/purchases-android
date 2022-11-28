@@ -10,9 +10,6 @@ import kotlinx.parcelize.Parcelize
  * @property packageType Package type for the product. Will be one of [PackageType].
  * @property product [StoreProduct] assigned to this package.
  * @property offering offering this package was returned from.
- * @property subscriptionPeriod Google BC5 only. String representation of the subscription period, used for filtering ProductDetails
- * for the proper base plan to create a StoreProduct. For now, we are not worrying if it matches PackageType
- * @property storeProductIdentifier  Amazon sku/Google product ID used for querying the store.
  */
 @Parcelize
 data class Package(

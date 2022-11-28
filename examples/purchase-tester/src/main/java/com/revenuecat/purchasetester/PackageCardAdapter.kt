@@ -109,8 +109,8 @@ class PackageCardAdapter(
         }
 
         private fun validateStartPurchase(product: StoreProduct): String? {
-            if (product.type == ProductType.SUBS
-                && binding.packagePurchaseOptionGroup.checkedRadioButtonId == nothingCheckedIndex) {
+            if (product.type == ProductType.SUBS &&
+                binding.packagePurchaseOptionGroup.checkedRadioButtonId == nothingCheckedIndex) {
                 return "Please choose purchase option first"
             }
             return null

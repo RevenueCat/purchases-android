@@ -29,7 +29,6 @@ data class GoogleStoreProduct(
     )
     override val sku: String
         get() = sku
-
 }
 
 val StoreProduct.googleProduct: GoogleStoreProduct?

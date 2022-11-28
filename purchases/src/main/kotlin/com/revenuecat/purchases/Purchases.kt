@@ -611,21 +611,21 @@ class Purchases internal constructor(
                     } else {
                         allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                             sortedByTime.forEach { purchase ->
-                                subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
+                                subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { attrsByKey ->
                                     val receiptInfo = ReceiptInfo(productIDs = purchase.productIds)
                                     backend.postReceiptData(
                                         purchaseToken = purchase.purchaseToken,
                                         appUserID = appUserID,
                                         isRestore = true,
                                         observerMode = !finishTransactions,
-                                        subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
+                                        subscriberAttributes = attrsByKey.toBackendMap(),
                                         receiptInfo = receiptInfo,
                                         storeAppUserID = purchase.storeUserID,
                                         marketplace = purchase.marketplace,
                                         onSuccess = { info, body ->
                                             subscriberAttributesManager.markAsSynced(
                                                 appUserID,
-                                                unsyncedSubscriberAttributesByKey,
+                                                attrsByKey,
                                                 body.getAttributeErrors()
                                             )
                                             billing.consumeAndSave(finishTransactions, purchase)
@@ -640,7 +640,7 @@ class Purchases internal constructor(
                                             if (shouldConsumePurchase) {
                                                 subscriberAttributesManager.markAsSynced(
                                                     appUserID,
-                                                    unsyncedSubscriberAttributesByKey,
+                                                    attrsByKey,
                                                     body.getAttributeErrors()
                                                 )
                                                 billing.consumeAndSave(finishTransactions, purchase)
