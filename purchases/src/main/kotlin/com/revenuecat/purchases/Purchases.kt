@@ -1130,8 +1130,8 @@ class Purchases internal constructor(
             appInBackground,
             { offeringsJSON ->
                 try {
-                    val productGroupIdentifiers = extractProductGroupIdentifiers(offeringsJSON)
-                    if (productGroupIdentifiers.isEmpty()) {
+                    val productIdentifiers = extractProductIdentifiers(offeringsJSON)
+                    if (productIdentifiers.isEmpty()) {
                         handleErrorFetchingOfferings(
                             PurchasesError(
                                 PurchasesErrorCode.ConfigurationError,
@@ -1140,7 +1140,7 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getStoreProductsById(productGroupIdentifiers, { productsById ->
+                        getStoreProductsById(productIdentifiers, { productsById ->
                             val offerings = offeringsJSON.createOfferings(productsById)
 
                             logMissingProducts(offerings, productsById)
@@ -1180,20 +1180,20 @@ class Purchases internal constructor(
             })
     }
 
-    private fun extractProductGroupIdentifiers(offeringsJSON: JSONObject): Set<String> {
+    private fun extractProductIdentifiers(offeringsJSON: JSONObject): Set<String> {
         val jsonOfferingsArray = offeringsJSON.getJSONArray("offerings")
-        val productGroupIds = mutableSetOf<String>()
+        val productIds = mutableSetOf<String>()
         for (i in 0 until jsonOfferingsArray.length()) {
             val jsonPackagesArray =
                 jsonOfferingsArray.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
                 jsonPackagesArray.getJSONObject(j)
-                    .optString("platform_product_group_identifier").takeIf { it.isNotBlank() }?.let {
-                        productGroupIds.add(it)
+                    .optString("platform_product_identifier").takeIf { it.isNotBlank() }?.let {
+                        productIds.add(it)
                     }
             }
         }
-        return productGroupIds
+        return productIds
     }
 
     private fun handleErrorFetchingOfferings(
