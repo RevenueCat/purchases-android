@@ -56,7 +56,7 @@ fun JSONObject.createPackage(
     val packageIdentifier = getString("identifier")
     // TODO handle INAPP products
     val productIdentifier = getString("platform_product_identifier")
-    val planIdentifier = getString("platform_product_plan_identifier")
+    val planIdentifier = optString("platform_product_plan_identifier") ?: return null // TODO do we want a crash/error
     val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
 
     val matchingProduct = storeProducts?.firstOrNull { storeProduct ->
