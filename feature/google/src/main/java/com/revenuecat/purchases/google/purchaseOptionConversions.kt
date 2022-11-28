@@ -8,4 +8,6 @@ fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(): GooglePurchaseOp
     return GooglePurchaseOption(determinePurchaseOptionId(), pricingPhases, offerTags, offerToken)
 }
 
-private fun ProductDetails.SubscriptionOfferDetails.determinePurchaseOptionId() = offerId ?: basePlanId
+private fun ProductDetails.SubscriptionOfferDetails.determinePurchaseOptionId() =
+    basePlanId + if (offerId.isNullOrBlank()) "" else ":$offerId"
+
