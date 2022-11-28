@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
-import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 
 /**
@@ -9,8 +8,7 @@ import kotlinx.parcelize.Parcelize
  */
 @Parcelize
 data class GooglePurchaseOption(
-    override val basePlanId: String,
-    override val offerId: String?,
+    override val id: String,
     override val pricingPhases: List<PricingPhase>,
     override val tags: List<String>,
 

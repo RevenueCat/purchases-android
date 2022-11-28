@@ -6,12 +6,12 @@ import android.os.Parcelable
  * A purchase-able entity for a subscription product.
  */
 interface PurchaseOption : Parcelable {
-
-    // TODO BC5 javadoc
-    val basePlanId: String
-
-    // TODO BC5 javadoc
-    val offerId: String?
+    /**
+     * If this PurchaseOption represents a Google subscription base plan, this will be the base plan ID.
+     * If it represents an offer, it will be the offer ID.
+     * Not applicable for Amazon subscriptions.
+     */
+    val id: String
 
     /**
      * Pricing phases defining a user's payment plan for the product over time.
