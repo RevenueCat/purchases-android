@@ -26,11 +26,11 @@ data class PricingPhase(
     fun toMap(): Map<String, Any?> {
         return mapOf(
             "billingPeriod" to this.billingPeriod,
-            "billingCycleCount" to (this.billingCycleCount),
+            "billingCycleCount" to this.billingCycleCount,
             "formattedPrice" to this.formattedPrice,
             "priceAmountMicros" to this.priceAmountMicros,
             "priceCurrencyCode" to this.priceCurrencyCode,
-            "recurrenceMode" to (this.recurrenceMode.identifier)
+            "recurrenceMode" to this.recurrenceMode.identifier
         )
     }
 

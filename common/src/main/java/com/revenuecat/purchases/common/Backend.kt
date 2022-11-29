@@ -198,7 +198,7 @@ class Backend(
         // is it okay to update the logic to pass it when it is non-null?
         val extraHeaders = marketplace?.let {
             mapOf("marketplace" to it)
-        } ?: mapOf()
+        } ?: emptyMap()
 
         val call = object : Dispatcher.AsyncCall() {
 
