@@ -284,27 +284,6 @@ class BackendTest {
         assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse
     }
 
-    // TODO BC5 confirm if this is still a requirement or how to replace
-//    @Test
-//    fun `postReceipt passes formatted price as header`() {
-//        postReceipt(
-//            responseCode = 200,
-//            isRestore = false,
-//            clientException = null,
-//            resultBody = null,
-//            observerMode = true,
-//            receiptInfo = ReceiptInfo(
-//                productIDs,
-//                storeProduct = storeProductNoOffers
-//            ),
-//            storeAppUserID = null,
-//        )
-//
-//        assertThat(headersSlot.isCaptured).isTrue
-//        assertThat(headersSlot.captured.keys).contains("price_string")
-//        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
-//    }
-
     @Test
     fun `postReceipt passes marketplace as header`() {
         postReceipt(
@@ -314,8 +293,7 @@ class BackendTest {
             resultBody = null,
             observerMode = true,
             receiptInfo = ReceiptInfo(
-                productIDs,
-                storeProduct = storeProductNoOffers
+                productIDs
             ),
             storeAppUserID = null,
             marketplace = "DE"
@@ -537,7 +515,6 @@ class BackendTest {
             )
         }
     }
-
 
     @Test
     fun postReceiptObserverMode() {
