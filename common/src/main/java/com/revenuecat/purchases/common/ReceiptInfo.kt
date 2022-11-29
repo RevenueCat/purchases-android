@@ -16,7 +16,7 @@ class ReceiptInfo(
 
     val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }
     val pricingPhases: List<PricingPhase>? =
-        storeProduct?.purchaseOptions?.first { it.id == purchaseOptionId }?.pricingPhases
+        storeProduct?.purchaseOptions?.firstOrNull { it.id == purchaseOptionId }?.pricingPhases
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

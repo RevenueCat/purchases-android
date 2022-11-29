@@ -1287,7 +1287,7 @@ class Purchases internal constructor(
                         onReceive = { storeProducts ->
 
                             // TODO BC5 confirm multi line purchases
-                            val purchasedStoreProduct = storeProducts.first { product ->
+                            val purchasedStoreProduct = storeProducts.firstOrNull { product ->
                                 product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
                             }
 
