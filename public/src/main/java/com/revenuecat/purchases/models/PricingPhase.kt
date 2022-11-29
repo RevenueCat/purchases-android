@@ -24,7 +24,6 @@ data class PricingPhase(
 ) : Parcelable {
 
     fun toMap(): Map<String, Any?> {
-        // TODO BC5 better defaults for null values, or change to Any?
         return mapOf(
             "billingPeriod" to this.billingPeriod,
             "billingCycleCount" to (this.billingCycleCount),

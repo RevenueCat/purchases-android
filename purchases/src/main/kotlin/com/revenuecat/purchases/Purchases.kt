@@ -275,8 +275,6 @@ class Purchases internal constructor(
             amazonUserID,
             { normalizedProductID ->
 
-                // TODO BC5 clean up amazon postreceipt
-
                 val receiptInfo = ReceiptInfo(
                     productIDs = listOf(normalizedProductID),
                     price = price?.takeUnless { it == 0.0 },
@@ -1288,9 +1286,6 @@ class Purchases internal constructor(
                         productIds = purchase.productIds.toSet(),
                         onReceive = { storeProducts ->
 
-                            // before we defaulted to the first product, i think this was an OK assumption because
-                            // we assumed only one product per Purchase (i.e. Purchase.productIds.size was 1)
-                            // and before, one productId mapped perfectly to one SkuDetails
                             // TODO BC5 confirm multi line purchases
                             val purchasedStoreProduct = storeProducts.first { product ->
                                 product.purchaseOptions.any { it.id == purchase.purchaseOptionId }

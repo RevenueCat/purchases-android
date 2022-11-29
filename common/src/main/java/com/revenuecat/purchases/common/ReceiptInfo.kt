@@ -6,8 +6,8 @@ import com.revenuecat.purchases.models.StoreProduct
 class ReceiptInfo(
     val productIDs: List<String>,
     val offeringIdentifier: String? = null,
-    val storeProduct: StoreProduct? = null, // this appears unused. if we remove, we have to pass full pricing phases
     val purchaseOptionId: String? = null,
+    val storeProduct: StoreProduct? = null,
 
     // TODO BC5 - replace price/currency with making a single PricingPhase for amazon observermode products?
     val price: Double? = 1.0, // only passed for amazon observer mode

@@ -8,7 +8,7 @@ import android.os.Parcelable
 interface PurchaseOption : Parcelable {
     /**
      * If this PurchaseOption represents a Google subscription base plan, this will be the base plan ID.
-     * If it represents an offer, it will be the {basePlanId}:{offerId}
+     * If it represents an offer, it will be {basePlanId}:{offerId}
      * Not applicable for Amazon subscriptions.
      */
     val id: String

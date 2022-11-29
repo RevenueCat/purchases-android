@@ -439,7 +439,6 @@ internal class AmazonBilling constructor(
             return
         }
 
-        // TODO maddie - could this call normalize purchase data? looks like all it does is get the right id
         amazonBackend.getAmazonReceiptData(
             receipt.receiptId,
             userData.userId,

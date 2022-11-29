@@ -41,14 +41,14 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     forEach { productDetails ->
         val basePlans = productDetails.subscriptionOfferDetails?.filter { it.isBasePlan } ?: return emptyList()
 
-        val optionsBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
+        val offerDetailsBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
             it.subscriptionBillingPeriod
         } ?: emptyMap()
 
         basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
             val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
-            val optionsForBasePlan = optionsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
-            productDetails.toStoreProduct(basePlanBillingPeriod, optionsForBasePlan).let { storeProducts.add(it) }
+            val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
+            productDetails.toStoreProduct(basePlanBillingPeriod, offerDetailsForBasePlan).let { storeProducts.add(it) }
         } ?: productDetails.toStoreProduct().let { storeProducts.add(it) }
     }
     return storeProducts
