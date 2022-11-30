@@ -82,7 +82,14 @@ data class StoreTransaction(
     /**
      * Amazon's marketplace. Null for Google
      */
-    val marketplace: String?
+    val marketplace: String?,
+
+    /**
+     * The id of the PurchaseOption purchased.
+     * In Google, this will be calculated from the basePlanId and offerId
+     * Null for restored transactions and purchases initiated outside of the app.
+     */
+    val purchaseOptionId: String?
 ) : Parcelable {
 
     /**

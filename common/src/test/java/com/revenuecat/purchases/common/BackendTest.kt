@@ -74,8 +74,8 @@ class BackendTest {
     private val headersSlot = slot<Map<String, String>>()
 
     private val onReceiveCustomerInfoSuccessHandler: (CustomerInfo) -> Unit = { info ->
-            this@BackendTest.receivedCustomerInfo = info
-        }
+        this@BackendTest.receivedCustomerInfo = info
+    }
 
     private val onReceivePostReceiptSuccessHandler: (CustomerInfo, JSONObject?) -> Unit =
         { info, _ ->
@@ -84,13 +84,13 @@ class BackendTest {
 
     private val postReceiptErrorCallback: (PurchasesError, Boolean, JSONObject?) -> Unit =
         { error, shouldConsumePurchase, _ ->
-        this@BackendTest.receivedError = error
-        this@BackendTest.receivedShouldConsumePurchase = shouldConsumePurchase
-    }
+            this@BackendTest.receivedError = error
+            this@BackendTest.receivedShouldConsumePurchase = shouldConsumePurchase
+        }
 
     private val onReceiveCustomerInfoErrorHandler: (PurchasesError) -> Unit = {
-            this@BackendTest.receivedError = it
-        }
+        this@BackendTest.receivedError = it
+    }
 
     private val onReceiveOfferingsResponseSuccessHandler: (JSONObject) -> Unit = { offeringsJSON ->
         this@BackendTest.receivedOfferingsJSON = offeringsJSON
