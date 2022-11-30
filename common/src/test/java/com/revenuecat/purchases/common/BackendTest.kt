@@ -70,7 +70,7 @@ class BackendTest {
         productIDs,
         offeringIdentifier = "offering_a"
     )
-
+    private val fetchToken = "fetch_token"
 
     private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedCustomerInfoCreated: Boolean? = null
@@ -242,7 +242,7 @@ class BackendTest {
 
     @Test
     fun postReceiptCallsProperURL() {
-        val info = postReceipt(
+        val info = backend.postReceiptMockAndPost(
             responseCode = 200,
             isRestore = false,
             clientException = null,
@@ -258,7 +258,7 @@ class BackendTest {
 
     @Test
     fun postReceiptCallsFailsFor4XX() {
-        postReceipt(
+        backend.postReceiptMockAndPost(
             responseCode = 401,
             isRestore = false,
             clientException = null,
@@ -410,7 +410,7 @@ class BackendTest {
 
     @Test
     fun postReceiptObserverMode() {
-        val info = postReceipt(
+        val info = backend.postReceiptMockAndPost(
             responseCode = 200,
             isRestore = false,
             clientException = null,
@@ -426,7 +426,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes price and currency`() {
-        val info = postReceipt(
+        val info = backend.postReceiptMockAndPost(
             responseCode = 200,
             isRestore = false,
             clientException = null,
@@ -738,7 +738,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes durations`() {
-        val info = postReceipt(
+        val info = backend.postReceiptMockAndPost(
             responseCode = 200,
             isRestore = false,
             clientException = null,
@@ -819,7 +819,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt calls fail for multiple product ids errors`() {
-        postReceipt(
+        backend.postReceiptMockAndPost(
             responseCode = 400,
             isRestore = false,
             clientException = null,
@@ -842,7 +842,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes marketplace as header`() {
-        postReceipt(
+        backend.postReceiptMockAndPost(
             responseCode = 200,
             isRestore = false,
             clientException = null,
@@ -1320,7 +1320,7 @@ class BackendTest {
         return info
     }
 
-    private fun postReceipt(
+    private fun Backend.postReceiptMockAndPost(
         responseCode: Int,
         isRestore: Boolean,
         clientException: Exception?,
@@ -1340,7 +1340,7 @@ class BackendTest {
             storeAppUserID = storeAppUserID
         )
 
-        backend.postReceiptData(
+        this.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = isRestore,
@@ -1377,8 +1377,6 @@ class BackendTest {
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "normal_duration" to receiptInfo.duration,
-            "intro_duration" to receiptInfo.introDuration,
-            "trial_duration" to receiptInfo.trialDuration,
             "store_user_id" to storeAppUserID
         ).mapNotNull { entry: Map.Entry<String, Any?> ->
             entry.value?.let { entry.key to it }
