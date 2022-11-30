@@ -263,6 +263,30 @@ class BackendTest {
     // region postReceipt
 
     @Test
+    fun `postReceipt passes pricing phases as header`() {
+        val purchaseOption = storeProductNoOffers.purchaseOptions[0]
+        val receiptInfo = ReceiptInfo(
+            productIDs = productIDs,
+            storeProduct = storeProductNoOffers,
+            purchaseOptionId = purchaseOption.id
+        )
+
+        backend.mockResponseAndPost(
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = receiptInfo,
+            storeAppUserID = null,
+        )
+
+        assertThat(headersSlot.isCaptured).isTrue
+        assertThat(headersSlot.captured.keys).contains("pricing_phases")
+        assertThat(headersSlot.captured["pricing_phases"]).isEqualTo(purchaseOption.pricingPhases)
+    }
+
+    @Test
     fun `postReceipt calls fail for multiple product ids errors`() {
         backend.mockResponseAndPost(
             responseCode = 400,
@@ -393,6 +417,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
+            delayed = true,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -404,6 +429,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
+            delayed = true,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -627,6 +653,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             receiptInfo = receiptInfo,
+            delayed = true,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -638,6 +665,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             receiptInfo = receiptInfo,
+            delayed = true,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
