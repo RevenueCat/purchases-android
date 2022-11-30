@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.subscriptionBillingPeriod
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
@@ -21,6 +22,7 @@ import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
+import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
@@ -158,9 +160,7 @@ class PostingTransactionsTests {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
         val expectedSubscriptionPeriod = "P1M"
-        val expectedIntroPricePeriod = "P2M"
-        val expectedFreeTrialPeriod = "P3M"
-        val mockStoreProduct = createStoreProductWithoutOffers("product_id")
+        val mockStoreProduct = stubStoreProduct("product_id")
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
             storeProduct = mockStoreProduct,
@@ -172,8 +172,6 @@ class PostingTransactionsTests {
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue
         assertThat(postedProductInfoSlot.captured.duration).isEqualTo(expectedSubscriptionPeriod)
-        assertThat(postedProductInfoSlot.captured.introDuration).isEqualTo(expectedIntroPricePeriod)
-        assertThat(postedProductInfoSlot.captured.trialDuration).isEqualTo(expectedFreeTrialPeriod)
         verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
@@ -194,7 +192,7 @@ class PostingTransactionsTests {
     fun `inapps send null durations when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
-        val mockStoreProduct = createStoreProductWithoutOffers("product_id")
+        val mockStoreProduct = stubStoreProduct("product_id")
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
             storeProduct = mockStoreProduct,
@@ -206,8 +204,6 @@ class PostingTransactionsTests {
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue
         assertThat(postedProductInfoSlot.captured.duration).isNull()
-        assertThat(postedProductInfoSlot.captured.introDuration).isNull()
-        assertThat(postedProductInfoSlot.captured.trialDuration).isNull()
         verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
@@ -228,7 +224,7 @@ class PostingTransactionsTests {
     fun `store user id is sent when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
-        val mockStoreProduct = createStoreProductWithoutOffers("product_id")
+        val mockStoreProduct = stubStoreProduct("product_id")
         val purchase: StoreTransaction = mockk(relaxed = true)
         val expectedStoreUserID = "a_store_user_id"
         every {
@@ -246,8 +242,6 @@ class PostingTransactionsTests {
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue
         assertThat(postedProductInfoSlot.captured.duration).isNull()
-        assertThat(postedProductInfoSlot.captured.introDuration).isNull()
-        assertThat(postedProductInfoSlot.captured.trialDuration).isNull()
         verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
@@ -270,7 +264,7 @@ class PostingTransactionsTests {
         val productIds = listOf("uno", "dos")
         val purchase =
             stubGooglePurchase(productIds = productIds).toStoreTransaction(ProductType.SUBS, null)
-        val mockStoreProduct = createStoreProductWithoutOffers("uno")
+        val mockStoreProduct = stubStoreProduct("uno")
 
         underTest.postToBackend(
             purchase = purchase,
@@ -304,7 +298,7 @@ class PostingTransactionsTests {
         val productIds = listOf("uno", "dos")
         val purchase =
             stubGooglePurchase(productIds = productIds).toStoreTransaction(ProductType.SUBS, null)
-        val mockStoreProduct = createStoreProductWithoutOffers("uno")
+        val mockStoreProduct = stubStoreProduct("uno")
 
         underTest.postToBackend(
             purchase = purchase,
@@ -324,11 +318,4 @@ class PostingTransactionsTests {
         }
     }
 
-    private fun createStoreProductWithoutOffers(productId: String = "sample_product_id"): StoreProduct {
-        val productDetails = mockProductDetails(productId = productId)
-        return productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
-            productDetails.subscriptionOfferDetails!!
-        )
-    }
 }
