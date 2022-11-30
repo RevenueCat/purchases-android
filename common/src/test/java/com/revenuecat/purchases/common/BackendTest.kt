@@ -65,6 +65,11 @@ class BackendTest {
     )
     private val appUserID = "jerry"
     private val productIDs = listOf("product_id_0", "product_id_1")
+    private val basicReceiptInfo = ReceiptInfo(
+        productIDs,
+        offeringIdentifier = "offering_a"
+    )
+
 
     private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedCreated: Boolean? = null
@@ -129,7 +134,7 @@ class BackendTest {
         getCustomerInfo(404, null, "{'code': 7225, 'message': 'Dude not found'}")
 
         assertThat(receivedError).`as`("Received error is not null").isNotNull
-        assertThat(receivedError!!.underlyingErrorMessage).`as`("Received underlying message is not null").isNotNull()
+        assertThat(receivedError!!.underlyingErrorMessage).`as`("Received underlying message is not null").isNotNull
         assertThat(receivedError!!.underlyingErrorMessage!!).contains("Dude not found")
     }
 
@@ -225,8 +230,8 @@ class BackendTest {
         getCustomerInfo(200, clientException = null, resultBody = null, appInBackground = true)
 
         val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
-        assertThat(calledWithRandomDelay).isNotNull()
-        assertThat(calledWithRandomDelay).isTrue()
+        assertThat(calledWithRandomDelay).isNotNull
+        assertThat(calledWithRandomDelay).isTrue
     }
 
 
@@ -242,7 +247,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             observerMode = false,
-            receiptInfo = ReceiptInfo(productIDs),
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null
         )
 
@@ -258,7 +263,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             observerMode = false,
-            receiptInfo = ReceiptInfo(productIDs),
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null
         )
 
@@ -269,10 +274,6 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber, only one is triggered`() {
-        val receiptInfo = ReceiptInfo(
-            productIDs,
-            offeringIdentifier = "offering_a"
-        )
         val (fetchToken, _) = mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
@@ -280,10 +281,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                offeringIdentifier = "offering_a"
-            ),
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null
         )
         val lock = CountDownLatch(2)
@@ -294,24 +292,21 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo,
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
         )
-        val productInfo1 = ReceiptInfo(
-            productIDs,
-            offeringIdentifier = "offering_a"
-        )
+
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = productInfo1,
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -345,10 +340,7 @@ class BackendTest {
             true,
             shouldMockCustomerInfo = false
         )
-        val receiptInfo = ReceiptInfo(
-            productIDs,
-            offeringIdentifier = "offering_a"
-        )
+
         val (fetchToken, _) = mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
@@ -356,7 +348,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = receiptInfo,
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null
         )
         val lock = CountDownLatch(3)
@@ -373,7 +365,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo,
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 mockResponse(
@@ -461,10 +453,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                offeringIdentifier = "offering_a"
-            ),
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null
         )
 
@@ -475,7 +464,7 @@ class BackendTest {
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct
         )
-        val productInfo1 = ReceiptInfo(
+        val receiptInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct1
@@ -497,7 +486,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = productInfo1,
+            receiptInfo = receiptInfo1,
             storeAppUserID = null
         )
         val lock = CountDownLatch(2)
@@ -520,7 +509,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = productInfo1,
+            receiptInfo = receiptInfo1,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -547,10 +536,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                offeringIdentifier = "offering_a"
-            ),
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null
         )
 
@@ -562,7 +548,7 @@ class BackendTest {
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct
         )
-        val productInfo1 = ReceiptInfo(
+        val receiptInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct1
@@ -584,7 +570,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = productInfo1,
+            receiptInfo = receiptInfo1,
             storeAppUserID = null
         )
         val lock = CountDownLatch(2)
@@ -607,7 +593,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = productInfo1,
+            receiptInfo = receiptInfo1,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -634,24 +620,17 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                offeringIdentifier = "offering_a"
-            ),
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null
         )
         val lock = CountDownLatch(2)
-        val receiptInfo = ReceiptInfo(
-            productIDs,
-            offeringIdentifier = "offering_a"
-        )
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo,
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -665,10 +644,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                offeringIdentifier = "offering_b"
-            ),
+            receiptInfo = basicReceiptInfo,
             storeAppUserID = null
         )
         val productInfo1 = ReceiptInfo(
@@ -864,7 +840,7 @@ class BackendTest {
         assertThat(receivedError!!.code)
             .`as`("Received error code is the right one")
             .isEqualTo(PurchasesErrorCode.UnsupportedError)
-        assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse()
+        assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse
     }
 
     @Test
@@ -931,7 +907,7 @@ class BackendTest {
         )
 
         assertThat(receivedOfferingsJSON).`as`("Received offerings response is not null").isNotNull
-        assertThat(receivedOfferingsJSON!!.getJSONArray("offerings").length()).isZero()
+        assertThat(receivedOfferingsJSON!!.getJSONArray("offerings").length()).isZero
         assertThat(receivedOfferingsJSON!!.getNullableString("current_offering_id")).isNull()
     }
 
@@ -941,9 +917,6 @@ class BackendTest {
 
         val encodedUserID = "userid%20with%20spaces"
         val path = "/subscribers/$encodedUserID/offerings"
-
-        val `object` = JSONObject()
-        `object`.put("string", "value")
 
         backend.getOfferings(
             encodeableUserID,
@@ -1036,8 +1009,8 @@ class BackendTest {
         )
 
         val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
-        assertThat(calledWithRandomDelay).isNotNull()
-        assertThat(calledWithRandomDelay).isTrue()
+        assertThat(calledWithRandomDelay).isNotNull
+        assertThat(calledWithRandomDelay).isTrue
     }
 
     // endregion
@@ -1154,12 +1127,11 @@ class BackendTest {
         backend.logIn(
             appUserID,
             newAppUserID,
-            onLoginSuccessHandler,
-            {
-                fail("Should have called success")
-            }
-        )
-        assertThat(receivedCreated).isTrue()
+            onLoginSuccessHandler
+        ) {
+            fail("Should have called success")
+        }
+        assertThat(receivedCreated).isTrue
     }
 
     @Test
