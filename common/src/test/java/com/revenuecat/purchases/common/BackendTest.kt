@@ -11,9 +11,9 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
+import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -64,6 +64,7 @@ class BackendTest {
         mockClient
     )
     private val appUserID = "jerry"
+    val storeProduct = stubStoreProduct("productID")
     private val productIDs = listOf("product_id_0", "product_id_1")
     private val basicReceiptInfo = ReceiptInfo(
         productIDs,
@@ -425,8 +426,6 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes price and currency`() {
-        val storeProduct = mockStoreProduct()
-
         val info = postReceipt(
             responseCode = 200,
             isRestore = false,
@@ -457,17 +456,18 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        val storeProduct = mockStoreProduct()
-        val storeProduct1 = mockStoreProduct(price = 350000)
         val receiptInfo = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct
         )
+
+        // TODO make storeproduct with different price
+        val storeProduct2 = mockStoreProduct(price = 350000)
         val receiptInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            storeProduct = storeProduct1
+            storeProduct = storeProduct2
         )
         mockPostReceiptResponse(
             isRestore = false,
@@ -540,18 +540,19 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        val storeProduct = mockStoreProduct()
-        val storeProduct1 = mockStoreProduct(duration = "P2M")
 
         val receiptInfo = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct
         )
+
+        // TODO make storeproduct wit hdifferent price
+        val storeProduct2 = mockStoreProduct(duration = "P2M")
         val receiptInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            storeProduct = storeProduct1
+            storeProduct = storeProduct2
         )
         mockPostReceiptResponse(
             isRestore = false,
@@ -677,8 +678,6 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber same durations, only one is triggered`() {
-        val storeProduct = mockStoreProduct()
-
         val receiptInfo = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
@@ -735,6 +734,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes durations`() {
+        // TODO replace this
         val storeProduct = mockStoreProduct(
             duration = "P1M",
             introDuration = "P2M",
@@ -845,8 +845,6 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes formatted price as header`() {
-        val storeProduct = mockStoreProduct()
-
         postReceipt(
             responseCode = 200,
             isRestore = false,
@@ -867,8 +865,6 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes marketplace as header`() {
-        val storeProduct = mockStoreProduct()
-
         postReceipt(
             responseCode = 200,
             isRestore = false,
@@ -1309,23 +1305,6 @@ class BackendTest {
     }
 
     // region helpers
-
-    private fun mockStoreProduct(
-        price: Long = 25_000_000,
-        duration: String = "P1M",
-        introDuration: String = "P1M",
-        trialDuration: String = "P1M"
-    ): StoreProduct {
-        val storeProduct = mockk<StoreProduct>()
-        every { storeProduct.priceAmountMicros } returns price
-        every { storeProduct.priceCurrencyCode } returns "USD"
-        every { storeProduct.subscriptionPeriod } returns duration
-        every { storeProduct.introductoryPricePeriod } returns introDuration
-        every { storeProduct.freeTrialPeriod } returns trialDuration
-        every { storeProduct.price } returns "$25"
-        return storeProduct
-    }
-
 
     private fun mockResponse(
         path: String,
