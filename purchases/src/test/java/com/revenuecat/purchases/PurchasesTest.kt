@@ -64,12 +64,14 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkConstructor
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
 import org.junit.After
@@ -141,6 +143,15 @@ class PurchasesTest {
 
     @Before
     fun setup() {
+        mockkObject(LockedFeature.SyncPurchases)
+        every { LockedFeature.SyncPurchases.isLocked } returns false
+        mockkObject(LockedFeature.ObserverMode)
+        every { LockedFeature.ObserverMode.isLocked } returns false
+        mockkObject(LockedFeature.AmazonStore)
+        every { LockedFeature.AmazonStore.isLocked } returns false
+        mockkObject(LockedFeature.InappPurchasing)
+        every { LockedFeature.InappPurchasing.isLocked } returns false
+
         mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
         mockkStatic("com.revenuecat.purchases.common.OfferingFactoriesKt")
         mockkStatic(ProcessLifecycleOwner::class)
@@ -199,6 +210,71 @@ class PurchasesTest {
             jsonObject.createOfferings(any())
         } returns offerings
         return Pair(storeProduct, offerings)
+    }
+
+    @Test
+    fun `configure throws exception if using observer mode and observer mode disabled`() {
+        every { LockedFeature.ObserverMode.isLocked } returns true
+
+        val configuration = PurchasesConfiguration.Builder(mockContext, "api").apply {
+            observerMode = true
+        }
+
+        assertThatThrownBy {
+            Purchases.configure(configuration.build())
+        }.isInstanceOf(FeatureNotSupportedException::class.java)
+    }
+
+    @Test
+    fun `configure throws exception if using amazon store and amazon disabled`() {
+        every { LockedFeature.AmazonStore.isLocked } returns true
+
+        val configuration = PurchasesConfiguration.Builder(mockContext, "api").apply {
+            store = Store.AMAZON
+        }
+
+        assertThatThrownBy {
+            Purchases.configure(configuration.build())
+        }.isInstanceOf(FeatureNotSupportedException::class.java)
+    }
+
+    @Test
+    fun `syncObserverModeAmazonPurchase throws exception if amazon store is disabled`() {
+        every { LockedFeature.AmazonStore.isLocked } returns true
+
+        assertThatThrownBy {
+            purchases.syncObserverModeAmazonPurchase(
+                productID = "",
+                receiptID = "",
+                amazonUserID = "",
+                price = null,
+                isoCurrencyCode = null
+            )
+        }.isInstanceOf(FeatureNotSupportedException::class.java)
+    }
+
+    @Test
+    fun `syncObserverModeAmazonPurchase throws exception if observer mode feature is disabled`() {
+        every { LockedFeature.ObserverMode.isLocked } returns true
+
+        assertThatThrownBy {
+            purchases.syncObserverModeAmazonPurchase(
+                productID = "",
+                receiptID = "",
+                amazonUserID = "",
+                price = null,
+                isoCurrencyCode = null
+            )
+        }.isInstanceOf(FeatureNotSupportedException::class.java)
+    }
+
+    @Test
+    fun `syncPurchases throws exception if sync purchases feature is disabled`() {
+        every { LockedFeature.SyncPurchases.isLocked } returns true
+
+        assertThatThrownBy {
+            purchases.syncPurchases()
+        }.isInstanceOf(FeatureNotSupportedException::class.java)
     }
 
     @Test

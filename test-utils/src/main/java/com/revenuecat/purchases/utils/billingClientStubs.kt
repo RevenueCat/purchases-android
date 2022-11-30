@@ -56,10 +56,14 @@ fun mockOneTimePurchaseOfferDetails(
 fun mockSubscriptionOfferDetails(
     tags: List<String> = emptyList(),
     token: String = "mock-subscription-offer-token",
+    offerId: String = "mock-offer-id",
+    basePlanId: String = "mock-base-plan-id",
     pricingPhases: List<PricingPhase> = listOf(mockPricingPhase())
 ): SubscriptionOfferDetails = mockk<SubscriptionOfferDetails>().apply {
     every { offerTags } returns tags
     every { offerToken } returns token
+    every { getOfferId() } returns offerId
+    every { getBasePlanId() } returns basePlanId
     every { getPricingPhases() } returns mockk<ProductDetails.PricingPhases>().apply {
         every { pricingPhaseList } returns pricingPhases
     }
