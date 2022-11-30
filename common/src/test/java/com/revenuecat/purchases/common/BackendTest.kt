@@ -64,6 +64,7 @@ class BackendTest {
         mockClient
     )
     private val appUserID = "jerry"
+    private val productIDs = listOf("product_id_0", "product_id_1")
 
     private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedCreated: Boolean? = null
@@ -109,162 +110,10 @@ class BackendTest {
         this@BackendTest.receivedError = it
     }
 
+    // region general backend functionality
     @Test
     fun canBeCreated() {
         assertThat(backend).isNotNull
-    }
-
-    private fun mockResponse(
-        path: String,
-        body: Map<String, Any?>?,
-        responseCode: Int,
-        clientException: Exception?,
-        resultBody: String?,
-        delayed: Boolean = false,
-        shouldMockCustomerInfo: Boolean = true
-    ): CustomerInfo {
-        val info: CustomerInfo = mockk()
-
-        val result = HTTPResult(responseCode, resultBody ?: "{}")
-
-        if (shouldMockCustomerInfo) {
-            every {
-                result.body.buildCustomerInfo()
-            } returns info
-        }
-        val everyMockedCall = every {
-            mockClient.performRequest(
-                eq(path),
-                (if (body == null) any() else eq(body)),
-                capture(headersSlot)
-            )
-        }
-
-        if (clientException == null) {
-            everyMockedCall answers {
-                if (delayed) sleep(200)
-                result
-            }
-        } else {
-            everyMockedCall throws clientException
-        }
-
-        return info
-    }
-
-    private fun postReceipt(
-        responseCode: Int,
-        isRestore: Boolean,
-        clientException: Exception?,
-        resultBody: String?,
-        observerMode: Boolean,
-        receiptInfo: ReceiptInfo,
-        storeAppUserID: String?,
-        marketplace: String? = null
-    ): CustomerInfo {
-        val (fetchToken, info) = mockPostReceiptResponse(
-            isRestore,
-            responseCode,
-            clientException,
-            resultBody = resultBody,
-            observerMode = observerMode,
-            receiptInfo = receiptInfo,
-            storeAppUserID = storeAppUserID
-        )
-
-        backend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
-            isRestore = isRestore,
-            observerMode = observerMode,
-            subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo,
-            storeAppUserID = storeAppUserID,
-            marketplace = marketplace,
-            onSuccess = onReceivePostReceiptSuccessHandler,
-            onError = postReceiptErrorCallback
-        )
-
-        return info
-    }
-
-    private val productIDs = listOf("product_id_0", "product_id_1")
-
-    private fun mockPostReceiptResponse(
-        isRestore: Boolean,
-        responseCode: Int,
-        clientException: Exception?,
-        resultBody: String?,
-        delayed: Boolean = false,
-        observerMode: Boolean,
-        receiptInfo: ReceiptInfo,
-        storeAppUserID: String?
-    ): Pair<String, CustomerInfo> {
-        val fetchToken = "fetch_token"
-        val body = mapOf(
-            "fetch_token" to fetchToken,
-            "app_user_id" to appUserID,
-            "product_ids" to receiptInfo.productIDs,
-            "is_restore" to isRestore,
-            "presented_offering_identifier" to receiptInfo.offeringIdentifier,
-            "observer_mode" to observerMode,
-            "price" to receiptInfo.price,
-            "currency" to receiptInfo.currency,
-            "normal_duration" to receiptInfo.duration,
-            "intro_duration" to receiptInfo.introDuration,
-            "trial_duration" to receiptInfo.trialDuration,
-            "store_user_id" to storeAppUserID
-        ).mapNotNull { entry: Map.Entry<String, Any?> ->
-            entry.value?.let { entry.key to it }
-        }.toMap()
-
-        val info = mockResponse(
-            "/receipts",
-            body,
-            responseCode,
-            clientException,
-            resultBody,
-            delayed
-        )
-        return fetchToken to info
-    }
-
-    private fun getCustomerInfo(
-        responseCode: Int,
-        clientException: Exception?,
-        resultBody: String?,
-        appInBackground: Boolean = false
-    ): CustomerInfo {
-        val info =
-            mockResponse("/subscribers/$appUserID", null, responseCode, clientException, resultBody)
-
-        backend.getCustomerInfo(
-            appUserID,
-            appInBackground,
-            onReceiveCustomerInfoSuccessHandler,
-            onReceiveCustomerInfoErrorHandler
-        )
-
-        return info
-    }
-
-    @Test
-    fun getSubscriberInfoCallsProperURL() {
-
-        val info = getCustomerInfo(200, null, null)
-
-        assertThat(receivedCustomerInfo).isNotNull
-        assertThat(receivedCustomerInfo).isEqualTo(info)
-    }
-
-    @Test
-    fun getSubscriberInfoFailsIfNot20X() {
-        val failureCode = ThreadLocalRandom.current().nextInt(300, 500 + 1)
-
-        getCustomerInfo(failureCode, null, null)
-
-        assertThat(receivedCustomerInfo).isNull()
-        assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
@@ -289,6 +138,101 @@ class BackendTest {
         getCustomerInfo(404, null, "{'no_message': 'Dude not found'}")
         assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
+
+    @Test
+    fun doesntDispatchIfClosed() {
+        backend.getOfferings(
+            appUserID = "id",
+            appInBackground = false,
+            onSuccess = {},
+            onError = {}
+        )
+
+        backend.close()
+
+        backend.getOfferings(
+            appUserID = "id",
+            appInBackground = false,
+            onSuccess = {},
+            onError = {}
+        )
+    }
+
+    @Test
+    fun `clearing caches clears http caches`() {
+        backend.clearCaches()
+
+        verify {
+            mockClient.clearCaches()
+        }
+    }
+
+    // endregion
+
+    // region getCustomerInfo
+
+    @Test
+    fun getCustomerInfoCallsProperURL() {
+
+        val info = getCustomerInfo(200, null, null)
+
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo).isEqualTo(info)
+    }
+
+    @Test
+    fun getCustomerInfoFailsIfNot20X() {
+        val failureCode = ThreadLocalRandom.current().nextInt(300, 500 + 1)
+
+        getCustomerInfo(failureCode, null, null)
+
+        assertThat(receivedCustomerInfo).isNull()
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun `given multiple getCustomerInfo calls for same subscriber, only one is triggered`() {
+        mockResponse(
+            "/subscribers/$appUserID",
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveCustomerInfoErrorHandler)
+        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveCustomerInfoErrorHandler)
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/" + Uri.encode(appUserID),
+                null,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `customer info call is enqueued with delay if on background`() {
+        dispatcher.calledWithRandomDelay = null
+
+        getCustomerInfo(200, clientException = null, resultBody = null, appInBackground = true)
+
+        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
+        assertThat(calledWithRandomDelay).isNotNull()
+        assertThat(calledWithRandomDelay).isTrue()
+    }
+
+
+    // endregion
+
+    // region postReceipt
 
     @Test
     fun postReceiptCallsProperURL() {
@@ -322,96 +266,6 @@ class BackendTest {
         assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
-    private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
-    @Test
-    fun `given a no offerings response`() {
-
-        mockResponse("/subscribers/$appUserID/offerings", null, 200, null, noOfferingsResponse)
-
-        backend.getOfferings(
-            appUserID,
-            appInBackground = false,
-            onSuccess = onReceiveOfferingsResponseSuccessHandler,
-            onError = onReceiveOfferingsErrorHandler
-        )
-
-        assertThat(receivedOfferingsJSON).`as`("Received offerings response is not null").isNotNull
-        assertThat(receivedOfferingsJSON!!.getJSONArray("offerings").length()).isZero()
-        assertThat(receivedOfferingsJSON!!.getNullableString("current_offering_id")).isNull()
-    }
-
-    @Test
-    fun encodesAppUserId() {
-        val encodeableUserID = "userid with spaces"
-
-        val encodedUserID = "userid%20with%20spaces"
-        val path = "/subscribers/$encodedUserID/offerings"
-
-        val `object` = JSONObject()
-        `object`.put("string", "value")
-
-        backend.getOfferings(
-            encodeableUserID,
-            appInBackground = false,
-            onSuccess = {},
-            onError = {}
-        )
-
-        verify {
-            mockClient.performRequest(
-                eq(path),
-                any(),
-                any()
-            )
-        }
-    }
-
-    @Test
-    fun doesntDispatchIfClosed() {
-        backend.getOfferings(
-            appUserID = "id",
-            appInBackground = false,
-            onSuccess = {},
-            onError = {}
-        )
-
-        backend.close()
-
-        backend.getOfferings(
-            appUserID = "id",
-            appInBackground = false,
-            onSuccess = {},
-            onError = {}
-        )
-    }
-
-    @Test
-    fun `given multiple get calls for same subscriber, only one is triggered`() {
-        mockResponse(
-            "/subscribers/$appUserID",
-            null,
-            200,
-            null,
-            null,
-            true
-        )
-        val lock = CountDownLatch(2)
-        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
-            lock.countDown()
-        }, onError = onReceiveCustomerInfoErrorHandler)
-        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
-            lock.countDown()
-        }, onError = onReceiveCustomerInfoErrorHandler)
-        lock.await(2000, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
-        verify(exactly = 1) {
-            mockClient.performRequest(
-                "/subscribers/" + Uri.encode(appUserID),
-                null,
-                any()
-            )
-        }
-    }
 
     @Test
     fun `given multiple post calls for same subscriber, only one is triggered`() {
@@ -556,143 +410,6 @@ class BackendTest {
             mockClient.performRequest(
                 "/subscribers/$appUserID",
                 null,
-                any()
-            )
-        }
-    }
-
-    @Test
-    fun `given multiple get offerings calls for same user, only one is triggered`() {
-        mockResponse(
-            "/subscribers/$appUserID/offerings",
-            null,
-            200,
-            null,
-            noOfferingsResponse,
-            true
-        )
-        val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
-            lock.countDown()
-        }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
-            lock.countDown()
-        }, onError = onReceiveOfferingsErrorHandler)
-        lock.await(2000, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
-        verify(exactly = 1) {
-            mockClient.performRequest(
-                "/subscribers/$appUserID/offerings",
-                null,
-                any()
-            )
-        }
-    }
-
-    @Test
-    fun `given multiple offerings get calls for different user, both are triggered`() {
-        mockResponse(
-            "/subscribers/$appUserID/offerings",
-            null,
-            200,
-            null,
-            noOfferingsResponse,
-            true
-        )
-        val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
-            lock.countDown()
-        }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = {
-            lock.countDown()
-        }, onError = onReceiveOfferingsErrorHandler)
-        lock.await(2000, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
-        verify(exactly = 1) {
-            mockClient.performRequest(
-                "/subscribers/$appUserID/offerings",
-                null,
-                any()
-            )
-        }
-        verify(exactly = 1) {
-            mockClient.performRequest(
-                "/subscribers/anotherUser/offerings",
-                null,
-                any()
-            )
-        }
-    }
-
-    @Test
-    fun `given multiple post calls for same subscriber different offering, both are triggered`() {
-        val (fetchToken, _) = mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                offeringIdentifier = "offering_a"
-            ),
-            storeAppUserID = null
-        )
-        val lock = CountDownLatch(2)
-        val receiptInfo = ReceiptInfo(
-            productIDs,
-            offeringIdentifier = "offering_a"
-        )
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
-            isRestore = false,
-            observerMode = false,
-            subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo,
-            storeAppUserID = null,
-            onSuccess = { _, _ ->
-                lock.countDown()
-            },
-            onError = postReceiptErrorCallback
-        )
-        val (fetchToken1, _) = mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                offeringIdentifier = "offering_b"
-            ),
-            storeAppUserID = null
-        )
-        val productInfo1 = ReceiptInfo(
-            productIDs,
-            offeringIdentifier = "offering_b"
-        )
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken1,
-            appUserID = appUserID,
-            isRestore = false,
-            observerMode = false,
-            subscriberAttributes = emptyMap(),
-            receiptInfo = productInfo1,
-            storeAppUserID = null,
-            onSuccess = { _, _ ->
-                lock.countDown()
-            },
-            onError = postReceiptErrorCallback
-        )
-        lock.await()
-        assertThat(lock.count).isEqualTo(0)
-        verify(exactly = 2) {
-            mockClient.performRequest(
-                "/receipts",
-                any(),
                 any()
             )
         }
@@ -909,6 +626,80 @@ class BackendTest {
     }
 
     @Test
+    fun `given multiple post calls for same subscriber different offering, both are triggered`() {
+        val (fetchToken, _) = mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            observerMode = false,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                offeringIdentifier = "offering_a"
+            ),
+            storeAppUserID = null
+        )
+        val lock = CountDownLatch(2)
+        val receiptInfo = ReceiptInfo(
+            productIDs,
+            offeringIdentifier = "offering_a"
+        )
+        asyncBackend.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            isRestore = false,
+            observerMode = false,
+            subscriberAttributes = emptyMap(),
+            receiptInfo = receiptInfo,
+            storeAppUserID = null,
+            onSuccess = { _, _ ->
+                lock.countDown()
+            },
+            onError = postReceiptErrorCallback
+        )
+        val (fetchToken1, _) = mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            observerMode = false,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                offeringIdentifier = "offering_b"
+            ),
+            storeAppUserID = null
+        )
+        val productInfo1 = ReceiptInfo(
+            productIDs,
+            offeringIdentifier = "offering_b"
+        )
+        asyncBackend.postReceiptData(
+            purchaseToken = fetchToken1,
+            appUserID = appUserID,
+            isRestore = false,
+            observerMode = false,
+            subscriberAttributes = emptyMap(),
+            receiptInfo = productInfo1,
+            storeAppUserID = null,
+            onSuccess = { _, _ ->
+                lock.countDown()
+            },
+            onError = postReceiptErrorCallback
+        )
+        lock.await()
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 2) {
+            mockClient.performRequest(
+                "/receipts",
+                any(),
+                any()
+            )
+        }
+    }
+
+    @Test
     fun `given multiple post calls for same subscriber same durations, only one is triggered`() {
         val storeProduct = mockStoreProduct()
 
@@ -992,6 +783,248 @@ class BackendTest {
     }
 
     @Test
+    fun `given multiple post calls for same subscriber different store user ID, both are triggered`() {
+
+        val lock = CountDownLatch(2)
+        val receiptInfo = ReceiptInfo(productIDs)
+        val (fetchToken, _) = mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            observerMode = false,
+            receiptInfo = receiptInfo,
+            storeAppUserID = null
+        )
+        asyncBackend.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            isRestore = false,
+            observerMode = false,
+            subscriberAttributes = emptyMap(),
+            receiptInfo = receiptInfo,
+            storeAppUserID = null,
+            onSuccess = { _, _ ->
+                lock.countDown()
+            },
+            onError = postReceiptErrorCallback
+        )
+        val (fetchToken1, _) = mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            observerMode = false,
+            receiptInfo = receiptInfo,
+            storeAppUserID = "store_app_user_id"
+        )
+        asyncBackend.postReceiptData(
+            purchaseToken = fetchToken1,
+            appUserID = appUserID,
+            isRestore = false,
+            observerMode = false,
+            subscriberAttributes = emptyMap(),
+            receiptInfo = receiptInfo,
+            storeAppUserID = "store_app_user_id",
+            onSuccess = { _, _ ->
+                lock.countDown()
+            },
+            onError = postReceiptErrorCallback
+        )
+        lock.await()
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 2) {
+            mockClient.performRequest(
+                "/receipts",
+                any(),
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `postReceipt calls fail for multiple product ids errors`() {
+        postReceipt(
+            responseCode = 400,
+            isRestore = false,
+            clientException = null,
+            resultBody = """
+                {"code":7662,
+                "message":"The product IDs list provided is not an array or does not contain only a single element."
+                }""".trimIndent(),
+            observerMode = false,
+            receiptInfo = ReceiptInfo(productIDs),
+            storeAppUserID = null
+        )
+
+        assertThat(receivedCustomerInfo).`as`("Received info is null").isNull()
+        assertThat(receivedError).`as`("Received error is not null").isNotNull
+        assertThat(receivedError!!.code)
+            .`as`("Received error code is the right one")
+            .isEqualTo(PurchasesErrorCode.UnsupportedError)
+        assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse()
+    }
+
+    @Test
+    fun `postReceipt passes formatted price as header`() {
+        val storeProduct = mockStoreProduct()
+
+        postReceipt(
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null,
+        )
+
+        assertThat(headersSlot.isCaptured).isTrue
+        assertThat(headersSlot.captured.keys).contains("price_string")
+        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
+    }
+
+    @Test
+    fun `postReceipt passes marketplace as header`() {
+        val storeProduct = mockStoreProduct()
+
+        postReceipt(
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null,
+            marketplace = "DE"
+        )
+
+        assertThat(headersSlot.isCaptured).isTrue
+        assertThat(headersSlot.captured.keys).contains("price_string")
+        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
+        assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
+    }
+
+    // endregion
+
+    // region getOfferings
+
+    private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
+    @Test
+    fun `given a no offerings response`() {
+
+        mockResponse("/subscribers/$appUserID/offerings", null, 200, null, noOfferingsResponse)
+
+        backend.getOfferings(
+            appUserID,
+            appInBackground = false,
+            onSuccess = onReceiveOfferingsResponseSuccessHandler,
+            onError = onReceiveOfferingsErrorHandler
+        )
+
+        assertThat(receivedOfferingsJSON).`as`("Received offerings response is not null").isNotNull
+        assertThat(receivedOfferingsJSON!!.getJSONArray("offerings").length()).isZero()
+        assertThat(receivedOfferingsJSON!!.getNullableString("current_offering_id")).isNull()
+    }
+
+    @Test
+    fun encodesAppUserId() {
+        val encodeableUserID = "userid with spaces"
+
+        val encodedUserID = "userid%20with%20spaces"
+        val path = "/subscribers/$encodedUserID/offerings"
+
+        val `object` = JSONObject()
+        `object`.put("string", "value")
+
+        backend.getOfferings(
+            encodeableUserID,
+            appInBackground = false,
+            onSuccess = {},
+            onError = {}
+        )
+
+        verify {
+            mockClient.performRequest(
+                eq(path),
+                any(),
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple get offerings calls for same user, only one is triggered`() {
+        mockResponse(
+            "/subscribers/$appUserID/offerings",
+            null,
+            200,
+            null,
+            noOfferingsResponse,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveOfferingsErrorHandler)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveOfferingsErrorHandler)
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/$appUserID/offerings",
+                null,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple offerings get calls for different user, both are triggered`() {
+        mockResponse(
+            "/subscribers/$appUserID/offerings",
+            null,
+            200,
+            null,
+            noOfferingsResponse,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveOfferingsErrorHandler)
+        asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveOfferingsErrorHandler)
+        lock.await(2000, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/$appUserID/offerings",
+                null,
+                any()
+            )
+        }
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/subscribers/anotherUser/offerings",
+                null,
+                any()
+            )
+        }
+    }
+
+    @Test
     fun `offerings call is enqueued with delay if on background`() {
         mockResponse("/subscribers/$appUserID/offerings", null, 200, null, noOfferingsResponse)
         dispatcher.calledWithRandomDelay = null
@@ -1007,17 +1040,9 @@ class BackendTest {
         assertThat(calledWithRandomDelay).isTrue()
     }
 
-    @Test
-    fun `customer info call is enqueued with delay if on background`() {
-        dispatcher.calledWithRandomDelay = null
+    // endregion
 
-        getCustomerInfo(200, clientException = null, resultBody = null, appInBackground = true)
-
-        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
-        assertThat(calledWithRandomDelay).isNotNull()
-        assertThat(calledWithRandomDelay).isTrue()
-    }
-
+    // region identity
     @Test
     fun `logIn makes the right http call`() {
         val newAppUserID = "newId"
@@ -1311,145 +1336,7 @@ class BackendTest {
         }
     }
 
-    @Test
-    fun `given multiple post calls for same subscriber different store user ID, both are triggered`() {
-
-        val lock = CountDownLatch(2)
-        val receiptInfo = ReceiptInfo(productIDs)
-        val (fetchToken, _) = mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo,
-            storeAppUserID = null
-        )
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
-            isRestore = false,
-            observerMode = false,
-            subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo,
-            storeAppUserID = null,
-            onSuccess = { _, _ ->
-                lock.countDown()
-            },
-            onError = postReceiptErrorCallback
-        )
-        val (fetchToken1, _) = mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo,
-            storeAppUserID = "store_app_user_id"
-        )
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken1,
-            appUserID = appUserID,
-            isRestore = false,
-            observerMode = false,
-            subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo,
-            storeAppUserID = "store_app_user_id",
-            onSuccess = { _, _ ->
-                lock.countDown()
-            },
-            onError = postReceiptErrorCallback
-        )
-        lock.await()
-        assertThat(lock.count).isEqualTo(0)
-        verify(exactly = 2) {
-            mockClient.performRequest(
-                "/receipts",
-                any(),
-                any()
-            )
-        }
-    }
-
-    @Test
-    fun `clearing caches clears http caches`() {
-        backend.clearCaches()
-
-        verify {
-            mockClient.clearCaches()
-        }
-    }
-
-    @Test
-    fun `postReceipt calls fail for multiple product ids errors`() {
-        postReceipt(
-            responseCode = 400,
-            isRestore = false,
-            clientException = null,
-            resultBody = """
-                {"code":7662,
-                "message":"The product IDs list provided is not an array or does not contain only a single element."
-                }""".trimIndent(),
-            observerMode = false,
-            receiptInfo = ReceiptInfo(productIDs),
-            storeAppUserID = null
-        )
-
-        assertThat(receivedCustomerInfo).`as`("Received info is null").isNull()
-        assertThat(receivedError).`as`("Received error is not null").isNotNull
-        assertThat(receivedError!!.code)
-            .`as`("Received error code is the right one")
-            .isEqualTo(PurchasesErrorCode.UnsupportedError)
-        assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse()
-    }
-
-    @Test
-    fun `postReceipt passes formatted price as header`() {
-        val storeProduct = mockStoreProduct()
-
-        postReceipt(
-            responseCode = 200,
-            isRestore = false,
-            clientException = null,
-            resultBody = null,
-            observerMode = true,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                storeProduct = storeProduct
-            ),
-            storeAppUserID = null,
-        )
-
-        assertThat(headersSlot.isCaptured).isTrue
-        assertThat(headersSlot.captured.keys).contains("price_string")
-        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
-    }
-
-    @Test
-    fun `postReceipt passes marketplace as header`() {
-        val storeProduct = mockStoreProduct()
-
-        postReceipt(
-            responseCode = 200,
-            isRestore = false,
-            clientException = null,
-            resultBody = null,
-            observerMode = true,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                storeProduct = storeProduct
-            ),
-            storeAppUserID = null,
-            marketplace = "DE"
-        )
-
-        assertThat(headersSlot.isCaptured).isTrue
-        assertThat(headersSlot.captured.keys).contains("price_string")
-        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
-        assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
-    }
+    // region helpers
 
     private fun mockStoreProduct(
         price: Long = 25_000_000,
@@ -1467,4 +1354,138 @@ class BackendTest {
         return storeProduct
     }
 
+
+    private fun mockResponse(
+        path: String,
+        body: Map<String, Any?>?,
+        responseCode: Int,
+        clientException: Exception?,
+        resultBody: String?,
+        delayed: Boolean = false,
+        shouldMockCustomerInfo: Boolean = true
+    ): CustomerInfo {
+        val info: CustomerInfo = mockk()
+
+        val result = HTTPResult(responseCode, resultBody ?: "{}")
+
+        if (shouldMockCustomerInfo) {
+            every {
+                result.body.buildCustomerInfo()
+            } returns info
+        }
+        val everyMockedCall = every {
+            mockClient.performRequest(
+                eq(path),
+                (if (body == null) any() else eq(body)),
+                capture(headersSlot)
+            )
+        }
+
+        if (clientException == null) {
+            everyMockedCall answers {
+                if (delayed) sleep(200)
+                result
+            }
+        } else {
+            everyMockedCall throws clientException
+        }
+
+        return info
+    }
+
+    private fun postReceipt(
+        responseCode: Int,
+        isRestore: Boolean,
+        clientException: Exception?,
+        resultBody: String?,
+        observerMode: Boolean,
+        receiptInfo: ReceiptInfo,
+        storeAppUserID: String?,
+        marketplace: String? = null
+    ): CustomerInfo {
+        val (fetchToken, info) = mockPostReceiptResponse(
+            isRestore,
+            responseCode,
+            clientException,
+            resultBody = resultBody,
+            observerMode = observerMode,
+            receiptInfo = receiptInfo,
+            storeAppUserID = storeAppUserID
+        )
+
+        backend.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            isRestore = isRestore,
+            observerMode = observerMode,
+            subscriberAttributes = emptyMap(),
+            receiptInfo = receiptInfo,
+            storeAppUserID = storeAppUserID,
+            marketplace = marketplace,
+            onSuccess = onReceivePostReceiptSuccessHandler,
+            onError = postReceiptErrorCallback
+        )
+
+        return info
+    }
+
+    private fun mockPostReceiptResponse(
+        isRestore: Boolean,
+        responseCode: Int,
+        clientException: Exception?,
+        resultBody: String?,
+        delayed: Boolean = false,
+        observerMode: Boolean,
+        receiptInfo: ReceiptInfo,
+        storeAppUserID: String?
+    ): Pair<String, CustomerInfo> {
+        val fetchToken = "fetch_token"
+        val body = mapOf(
+            "fetch_token" to fetchToken,
+            "app_user_id" to appUserID,
+            "product_ids" to receiptInfo.productIDs,
+            "is_restore" to isRestore,
+            "presented_offering_identifier" to receiptInfo.offeringIdentifier,
+            "observer_mode" to observerMode,
+            "price" to receiptInfo.price,
+            "currency" to receiptInfo.currency,
+            "normal_duration" to receiptInfo.duration,
+            "intro_duration" to receiptInfo.introDuration,
+            "trial_duration" to receiptInfo.trialDuration,
+            "store_user_id" to storeAppUserID
+        ).mapNotNull { entry: Map.Entry<String, Any?> ->
+            entry.value?.let { entry.key to it }
+        }.toMap()
+
+        val info = mockResponse(
+            "/receipts",
+            body,
+            responseCode,
+            clientException,
+            resultBody,
+            delayed
+        )
+        return fetchToken to info
+    }
+
+    private fun getCustomerInfo(
+        responseCode: Int,
+        clientException: Exception?,
+        resultBody: String?,
+        appInBackground: Boolean = false
+    ): CustomerInfo {
+        val info =
+            mockResponse("/subscribers/$appUserID", null, responseCode, clientException, resultBody)
+
+        backend.getCustomerInfo(
+            appUserID,
+            appInBackground,
+            onReceiveCustomerInfoSuccessHandler,
+            onReceiveCustomerInfoErrorHandler
+        )
+
+        return info
+    }
+
+    // endregion
 }
