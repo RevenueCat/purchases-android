@@ -191,7 +191,7 @@ class Backend(
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() }
-        ).filterValues { value -> value != null }
+        ).filterNotNullValues()
 
         val extraHeaders = marketplace?.let {
             mapOf("marketplace" to it)
