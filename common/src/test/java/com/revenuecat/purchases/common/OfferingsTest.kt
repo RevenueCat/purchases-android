@@ -309,7 +309,7 @@ class OfferingsTest {
             billingPeriod = duration,
             recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING
         )
-        val basePlanPurchaseOption = stubPurchaseOption(basePlanId, "P1M", listOf(basePlanPricingPhase))
+        val basePlanPurchaseOption = stubPurchaseOption(basePlanId, listOf(basePlanPricingPhase))
 
         val offerPricingPhases = listOf(
             stubPricingPhase(
@@ -319,7 +319,7 @@ class OfferingsTest {
             ),
             basePlanPricingPhase
         )
-        val offerPurchaseOption = stubPurchaseOption(basePlanId, "P1M", offerPricingPhases)
+        val offerPurchaseOption = stubPurchaseOption(basePlanId, offerPricingPhases)
         return stubStoreProduct(productId, duration, listOf(basePlanPurchaseOption, offerPurchaseOption))
     }
 }

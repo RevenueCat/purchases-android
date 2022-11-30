@@ -14,7 +14,7 @@ import com.revenuecat.purchases.models.toRecurrenceMode
 fun stubStoreProduct(
     productId: String,
     duration: String = "P1M",
-    purchaseOptions: List<PurchaseOption> = listOf(stubPurchaseOption("monthly_base_plan", duration))
+    purchaseOptions: List<PurchaseOption> = listOf(stubPurchaseOption("monthly_base_plan"))
 ): StoreProduct = object : StoreProduct {
     override val productId: String
         get() = productId
@@ -41,8 +41,7 @@ fun stubStoreProduct(
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubPurchaseOption(
     id: String,
-    duration: String,
-    pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration))
+    pricingPhases: List<PricingPhase> = listOf(stubPricingPhase())
 ): PurchaseOption = object : PurchaseOption {
     override val id: String
         get() = id
