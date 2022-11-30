@@ -73,7 +73,7 @@ class BackendTest {
 
 
     private var receivedCustomerInfo: CustomerInfo? = null
-    private var receivedCreated: Boolean? = null
+    private var receivedCustomerInfoCreated: Boolean? = null
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
     private var receivedShouldConsumePurchase: Boolean? = null
@@ -109,7 +109,7 @@ class BackendTest {
 
     private val onLoginSuccessHandler: (CustomerInfo, Boolean) -> Unit = { customerInfo, created ->
         this@BackendTest.receivedCustomerInfo = customerInfo
-        this@BackendTest.receivedCreated = created
+        this@BackendTest.receivedCustomerInfoCreated = created
     }
 
     private val onReceiveLoginErrorHandler: (PurchasesError) -> Unit = {
@@ -197,7 +197,7 @@ class BackendTest {
     }
 
     @Test
-    fun `given multiple getCustomerInfo calls for same subscriber, only one is triggered`() {
+    fun `given multiple getCustomerInfo calls for same subscriber same body, only one is triggered`() {
         mockResponse(
             "/subscribers/$appUserID",
             null,
@@ -456,28 +456,18 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        val receiptInfo = ReceiptInfo(
-            productIDs,
-            offeringIdentifier = "offering_a",
-            storeProduct = storeProduct
-        )
-
-        // TODO make storeproduct with different price
-        val storeProduct2 = mockStoreProduct(price = 350000)
         val receiptInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
-            storeProduct = storeProduct2
+            storeProduct = storeProduct,
+            purchaseOptionId = "abc"
         )
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo,
-            storeAppUserID = null
+
+        val receiptInfo2 = ReceiptInfo(
+            productIDs,
+            offeringIdentifier = "offering_a",
+            storeProduct = storeProduct,
+            purchaseOptionId = "ef"
         )
         mockPostReceiptResponse(
             isRestore = false,
@@ -489,6 +479,16 @@ class BackendTest {
             receiptInfo = receiptInfo1,
             storeAppUserID = null
         )
+        mockPostReceiptResponse(
+            isRestore = false,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            observerMode = false,
+            receiptInfo = receiptInfo2,
+            storeAppUserID = null
+        )
         val lock = CountDownLatch(2)
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken,
@@ -496,7 +496,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo,
+            receiptInfo = receiptInfo1,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -509,7 +509,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo1,
+            receiptInfo = receiptInfo2,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -540,16 +540,18 @@ class BackendTest {
             storeAppUserID = null
         )
 
-
-        val receiptInfo = ReceiptInfo(
+        val receiptInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct
         )
 
-        // TODO make storeproduct wit hdifferent price
-        val storeProduct2 = mockStoreProduct(duration = "P2M")
-        val receiptInfo1 = ReceiptInfo(
+        val storeProduct2 = stubStoreProduct(
+            storeProduct.productId,
+            duration = storeProduct.subscriptionPeriod + "a"
+        )
+
+        val receiptInfo2 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct2
@@ -561,7 +563,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = receiptInfo,
+            receiptInfo = receiptInfo1,
             storeAppUserID = null
         )
         mockPostReceiptResponse(
@@ -571,7 +573,7 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = receiptInfo1,
+            receiptInfo = receiptInfo2,
             storeAppUserID = null
         )
         val lock = CountDownLatch(2)
@@ -581,7 +583,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo,
+            receiptInfo = receiptInfo1,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -594,7 +596,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo1,
+            receiptInfo = receiptInfo2,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -638,6 +640,11 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
+
+        val receiptInfo2 = ReceiptInfo(
+            basicReceiptInfo.productIDs,
+            basicReceiptInfo.offeringIdentifier + "a"
+        )
         val (fetchToken1, _) = mockPostReceiptResponse(
             isRestore = false,
             responseCode = 200,
@@ -645,20 +652,17 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             observerMode = false,
-            receiptInfo = basicReceiptInfo,
+            receiptInfo = receiptInfo2,
             storeAppUserID = null
         )
-        val productInfo1 = ReceiptInfo(
-            productIDs,
-            offeringIdentifier = "offering_b"
-        )
+
         asyncBackend.postReceiptData(
             purchaseToken = fetchToken1,
             appUserID = appUserID,
             isRestore = false,
             observerMode = false,
             subscriberAttributes = emptyMap(),
-            receiptInfo = productInfo1,
+            receiptInfo = receiptInfo2,
             storeAppUserID = null,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -734,13 +738,6 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes durations`() {
-        // TODO replace this
-        val storeProduct = mockStoreProduct(
-            duration = "P1M",
-            introDuration = "P2M",
-            trialDuration = "P3M"
-        )
-
         val info = postReceipt(
             responseCode = 200,
             isRestore = false,
@@ -844,26 +841,6 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt passes formatted price as header`() {
-        postReceipt(
-            responseCode = 200,
-            isRestore = false,
-            clientException = null,
-            resultBody = null,
-            observerMode = true,
-            receiptInfo = ReceiptInfo(
-                productIDs,
-                storeProduct = storeProduct
-            ),
-            storeAppUserID = null,
-        )
-
-        assertThat(headersSlot.isCaptured).isTrue
-        assertThat(headersSlot.captured.keys).contains("price_string")
-        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
-    }
-
-    @Test
     fun `postReceipt passes marketplace as header`() {
         postReceipt(
             responseCode = 200,
@@ -880,8 +857,7 @@ class BackendTest {
         )
 
         assertThat(headersSlot.isCaptured).isTrue
-        assertThat(headersSlot.captured.keys).contains("price_string")
-        assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
+        assertThat(headersSlot.captured.keys).contains("marketplace")
         assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
     }
 
@@ -1072,7 +1048,7 @@ class BackendTest {
             }
         )
         assertThat(receivedCustomerInfo).isEqualTo(expectedCustomerInfo)
-        assertThat(receivedCreated).isEqualTo(true)
+        assertThat(receivedCustomerInfoCreated).isEqualTo(true)
     }
 
     @Test
@@ -1127,7 +1103,7 @@ class BackendTest {
         ) {
             fail("Should have called success")
         }
-        assertThat(receivedCreated).isTrue
+        assertThat(receivedCustomerInfoCreated).isTrue
     }
 
     @Test
@@ -1154,7 +1130,7 @@ class BackendTest {
                 fail("Should have called success")
             }
         )
-        assertThat(receivedCreated).isFalse
+        assertThat(receivedCustomerInfoCreated).isFalse
     }
 
     @Test
