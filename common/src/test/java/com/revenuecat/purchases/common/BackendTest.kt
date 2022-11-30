@@ -758,46 +758,24 @@ class BackendTest {
     fun `given multiple post calls for same subscriber different store user ID, both are triggered`() {
         val lock = CountDownLatch(2)
         val receiptInfo = ReceiptInfo(productIDs)
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo,
-            storeAppUserID = null
-        )
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+
+        asyncBackend.postReceiptMockAndPost(
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             storeAppUserID = null,
+            delayed = true,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
         )
-        mockPostReceiptResponse(
+
+        asyncBackend.postReceiptMockAndPost(
             isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
+            observerMode = false,
+            receiptInfo = receiptInfo,
             delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo,
-            storeAppUserID = "store_app_user_id"
-        )
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
-            isRestore = false,
-            observerMode = false,
-            subscriberAttributes = emptyMap(),
-            receiptInfo = receiptInfo,
             storeAppUserID = "store_app_user_id",
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -1039,11 +1017,10 @@ class BackendTest {
         backend.logIn(
             appUserID,
             newAppUserID,
-            onLoginSuccessHandler,
-            {
-                fail("Should have called success")
-            }
-        )
+            onLoginSuccessHandler
+        ) {
+            fail("Should have called success")
+        }
         assertThat(receivedCustomerInfo).isEqualTo(expectedCustomerInfo)
         assertThat(receivedCustomerInfoCreated).isEqualTo(true)
     }
@@ -1318,15 +1295,17 @@ class BackendTest {
 
     private fun Backend.postReceiptMockAndPost(
         token: String = fetchToken,
-        responseCode: Int,
+        responseCode: Int = 200,
         isRestore: Boolean,
-        clientException: Exception?,
-        resultBody: String?,
+        clientException: Exception? = null,
+        resultBody: String? = null,
         observerMode: Boolean,
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
+        delayed: Boolean = false,
         marketplace: String? = null,
-
+        onSuccess: (CustomerInfo, JSONObject?) -> Unit = onReceivePostReceiptSuccessHandler,
+        onError: (PurchasesError, Boolean, JSONObject?) -> Unit = postReceiptErrorCallback
     ): CustomerInfo {
         val info = mockPostReceiptResponse(
             isRestore = isRestore,
@@ -1335,11 +1314,12 @@ class BackendTest {
             resultBody = resultBody,
             observerMode = observerMode,
             receiptInfo = receiptInfo,
-            storeAppUserID = storeAppUserID
+            storeAppUserID = storeAppUserID,
+            delayed = delayed
         )
 
         this.postReceiptData(
-            purchaseToken = fetchToken,
+            purchaseToken = token,
             appUserID = appUserID,
             isRestore = isRestore,
             observerMode = observerMode,
@@ -1347,8 +1327,8 @@ class BackendTest {
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
             marketplace = marketplace,
-            onSuccess = onReceivePostReceiptSuccessHandler,
-            onError = postReceiptErrorCallback
+            onSuccess = onSuccess,
+            onError = onError
         )
 
         return info
@@ -1380,7 +1360,7 @@ class BackendTest {
             entry.value?.let { entry.key to it }
         }.toMap()
 
-        val info = mockResponse(
+        return mockResponse(
             "/receipts",
             body,
             responseCode,
@@ -1388,7 +1368,6 @@ class BackendTest {
             resultBody,
             delayed
         )
-        return info
     }
 
     private fun getCustomerInfo(
