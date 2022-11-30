@@ -1004,11 +1004,10 @@ class BackendTest {
         backend.logIn(
             appUserID,
             newAppUserID,
-            onLoginSuccessHandler,
-            {
-                fail("Should have called success")
-            }
-        )
+            onLoginSuccessHandler
+        ) {
+            fail("Should have called success")
+        }
         verify(exactly = 1) {
             mockClient.performRequest(
                 "/subscribers/identify",
@@ -1123,11 +1122,10 @@ class BackendTest {
         backend.logIn(
             appUserID,
             newAppUserID,
-            onLoginSuccessHandler,
-            {
-                fail("Should have called success")
-            }
-        )
+            onLoginSuccessHandler
+        ) {
+            fail("Should have called success")
+        }
         assertThat(receivedCustomerInfoCreated).isFalse
     }
 
