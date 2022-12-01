@@ -77,6 +77,7 @@ class BackendTest {
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
     private var receivedShouldConsumePurchase: Boolean? = null
+    private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
 
     private val headersSlot = slot<Map<String, String>>()
 
@@ -235,14 +236,14 @@ class BackendTest {
         assertThat(calledWithRandomDelay).isTrue
     }
 
-
     // endregion
 
     // region postReceipt
 
     @Test
     fun postReceiptCallsProperURL() {
-        val info = backend.postReceiptMockAndPost(
+        val info = mockPostReceiptResponseAndPost(
+            backend,
             responseCode = 200,
             isRestore = false,
             clientException = null,
@@ -258,7 +259,8 @@ class BackendTest {
 
     @Test
     fun postReceiptCallsFailsFor4XX() {
-        backend.postReceiptMockAndPost(
+        mockPostReceiptResponseAndPost(
+            backend,
             responseCode = 401,
             isRestore = false,
             clientException = null,
@@ -274,24 +276,13 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber, only one is triggered`() {
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = basicReceiptInfo,
-            storeAppUserID = null
-        )
         val lock = CountDownLatch(2)
 
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
+            delayed = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -300,12 +291,11 @@ class BackendTest {
             onError = postReceiptErrorCallback
         )
 
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
+            delayed = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -313,6 +303,7 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
+
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
@@ -341,16 +332,6 @@ class BackendTest {
             shouldMockCustomerInfo = false
         )
 
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = basicReceiptInfo,
-            storeAppUserID = null
-        )
         val lock = CountDownLatch(3)
 
         // Given calls
@@ -359,12 +340,11 @@ class BackendTest {
             assertThat(it).isEqualTo(initialInfo)
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
+            delayed = true,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -409,7 +389,8 @@ class BackendTest {
 
     @Test
     fun postReceiptObserverMode() {
-        val info = backend.postReceiptMockAndPost(
+        val info = mockPostReceiptResponseAndPost(
+            backend,
             responseCode = 200,
             isRestore = false,
             clientException = null,
@@ -425,7 +406,8 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes price and currency`() {
-        val info = backend.postReceiptMockAndPost(
+        val info = mockPostReceiptResponseAndPost(
+            backend,
             responseCode = 200,
             isRestore = false,
             clientException = null,
@@ -468,33 +450,13 @@ class BackendTest {
             storeProduct = storeProduct,
             purchaseOptionId = "ef"
         )
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo1,
-            storeAppUserID = null
-        )
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo2,
-            storeAppUserID = null
-        )
+
         val lock = CountDownLatch(2)
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
+            delayed = true,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo1,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -502,12 +464,11 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
+            delayed = true,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -528,17 +489,6 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber different durations, both are triggered`() {
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = basicReceiptInfo,
-            storeAppUserID = null
-        )
-
         val receiptInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
@@ -555,33 +505,13 @@ class BackendTest {
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct2
         )
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo1,
-            storeAppUserID = null
-        )
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo2,
-            storeAppUserID = null
-        )
+
         val lock = CountDownLatch(2)
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
+            delayed = true,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo1,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -589,12 +519,11 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
+            delayed = true,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -626,12 +555,11 @@ class BackendTest {
             storeAppUserID = null
         )
         val lock = CountDownLatch(2)
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
+            delayed = true,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -644,23 +572,12 @@ class BackendTest {
             basicReceiptInfo.productIDs,
             basicReceiptInfo.offeringIdentifier + "a"
         )
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo2,
-            storeAppUserID = null
-        )
 
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
+            delayed = true,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -686,24 +603,13 @@ class BackendTest {
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct
         )
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = receiptInfo,
-            storeAppUserID = null
-        )
 
         val lock = CountDownLatch(2)
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
+            delayed = true,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -711,12 +617,12 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
-        asyncBackend.postReceiptData(
-            purchaseToken = fetchToken,
-            appUserID = appUserID,
+
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
+            delayed = true,
             isRestore = false,
             observerMode = false,
-            subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             onSuccess = { _, _ ->
@@ -737,7 +643,8 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes durations`() {
-        val info = backend.postReceiptMockAndPost(
+        val info = mockPostReceiptResponseAndPost(
+            backend,
             responseCode = 200,
             isRestore = false,
             clientException = null,
@@ -759,7 +666,8 @@ class BackendTest {
         val lock = CountDownLatch(2)
         val receiptInfo = ReceiptInfo(productIDs)
 
-        asyncBackend.postReceiptMockAndPost(
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
             isRestore = false,
             observerMode = false,
             receiptInfo = receiptInfo,
@@ -771,7 +679,8 @@ class BackendTest {
             onError = postReceiptErrorCallback
         )
 
-        asyncBackend.postReceiptMockAndPost(
+        mockPostReceiptResponseAndPost(
+            asyncBackend,
             isRestore = false,
             observerMode = false,
             receiptInfo = receiptInfo,
@@ -795,7 +704,8 @@ class BackendTest {
 
     @Test
     fun `postReceipt calls fail for multiple product ids errors`() {
-        backend.postReceiptMockAndPost(
+        mockPostReceiptResponseAndPost(
+            backend,
             responseCode = 400,
             isRestore = false,
             clientException = null,
@@ -818,7 +728,8 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes marketplace as header`() {
-        backend.postReceiptMockAndPost(
+        mockPostReceiptResponseAndPost(
+            backend,
             responseCode = 200,
             isRestore = false,
             clientException = null,
@@ -841,10 +752,8 @@ class BackendTest {
 
     // region getOfferings
 
-    private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
     @Test
     fun `given a no offerings response`() {
-
         mockResponse("/subscribers/$appUserID/offerings", null, 200, null, noOfferingsResponse)
 
         backend.getOfferings(
@@ -1293,7 +1202,8 @@ class BackendTest {
         return info
     }
 
-    private fun Backend.postReceiptMockAndPost(
+    private fun mockPostReceiptResponseAndPost(
+        backend: Backend,
         token: String = fetchToken,
         responseCode: Int = 200,
         isRestore: Boolean,
@@ -1318,7 +1228,7 @@ class BackendTest {
             delayed = delayed
         )
 
-        this.postReceiptData(
+        backend.postReceiptData(
             purchaseToken = token,
             appUserID = appUserID,
             isRestore = isRestore,
