@@ -17,7 +17,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -46,10 +45,8 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
-import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.AttributionStrings
@@ -1428,8 +1425,9 @@ class Purchases internal constructor(
 
     private fun getPurchaseCallback(productId: String): PurchaseCallback? {
         return state.purchaseCallbacksByProductId[productId].also {
-            state =
-                state.copy(purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId })
+            state = state.copy(
+                purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId }
+            )
         }
     }
 
@@ -1556,8 +1554,9 @@ class Purchases internal constructor(
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
             if (!state.purchaseCallbacksByProductId.containsKey(storeProduct.productId)) {
+                val mapOfProductIdToListener = mapOf(storeProduct.productId to listener)
                 state = state.copy(
-                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOf(storeProduct.productId to listener)
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
                 )
                 userPurchasing = identityManager.currentAppUserID
             }

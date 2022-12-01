@@ -10,4 +10,3 @@ fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(): GooglePurchaseOp
 
 private val ProductDetails.SubscriptionOfferDetails.purchaseOptionId
     get() = basePlanId + if (offerId.isNullOrBlank()) "" else ":$offerId"
-

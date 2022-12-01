@@ -39,6 +39,32 @@ fun stubStoreProduct(
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
+fun stubINAPPStoreProduct(
+    productId: String
+): StoreProduct = object : StoreProduct {
+    override val productId: String
+        get() = productId
+    override val type: ProductType
+        get() = ProductType.INAPP
+    override val oneTimeProductPrice: Price?
+        get() = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD")
+    override val title: String
+        get() = ""
+    override val description: String
+        get() = ""
+    override val subscriptionPeriod: String?
+        get() = null
+    override val purchaseOptions: List<PurchaseOption>
+        get() = listOf(stubPurchaseOption(productId, emptyList()))
+    override val sku: String
+        get() = productId
+
+    override fun describeContents(): Int = 0
+
+    override fun writeToParcel(dest: Parcel?, flags: Int) {}
+}
+
+@SuppressWarnings("EmptyFunctionBlock")
 fun stubPurchaseOption(
     id: String,
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase())

@@ -4,6 +4,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
 import org.json.JSONObject
@@ -54,17 +55,33 @@ fun JSONObject.createPackage(
     offeringIdentifier: String
 ): Package? {
     val packageIdentifier = getString("identifier")
-    // TODO handle INAPP products
     val productIdentifier = getString("platform_product_identifier")
-    val planIdentifier = optString("platform_product_plan_identifier") ?: return null // TODO do we want a crash/error
-    val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
+    val planIdentifier = optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
 
-    val matchingProduct = storeProducts?.firstOrNull { storeProduct ->
-        storeProduct.purchaseOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
-    }
+    val matchingProduct = getMatchingProduct(productsById, productIdentifier, planIdentifier)
+
     return matchingProduct?.let { product ->
         val packageType = packageIdentifier.toPackageType()
         return Package(packageIdentifier, packageType, product, offeringIdentifier)
+    }
+}
+
+private fun getMatchingProduct(
+    productsById: Map<String, List<StoreProduct>>,
+    productIdentifier: String,
+    planIdentifier: String?
+): StoreProduct? {
+    if (planIdentifier == null) {
+        // It could be an INAPP or a mis-configured subscription
+        // Try to find INAPP, otherwise null
+        return productsById[productIdentifier]
+            .takeIf { it?.size == 1 }
+            ?.takeIf { it[0].type == ProductType.INAPP }
+            ?.get(0)
+    }
+    val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
+    return storeProducts?.firstOrNull { storeProduct ->
+        storeProduct.purchaseOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
     }
 }
 

@@ -33,5 +33,4 @@ data class PricingPhase(
             "recurrenceMode" to this.recurrenceMode.identifier
         )
     }
-
 }

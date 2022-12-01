@@ -45,9 +45,9 @@ class ReceiptInfo(
         return "ReceiptInfo(" +
             "productIDs='${productIDs.joinToString()}', " +
             "offeringIdentifier=$offeringIdentifier, " +
-            "storeProduct=${storeProduct.toString()}, " +
-            "purchaseOptionId=${purchaseOptionId}, " +
-            "pricingPhases=${pricingPhases.toString()}, " +
+            "storeProduct=$storeProduct, " +
+            "purchaseOptionId=$purchaseOptionId, " +
+            "pricingPhases=$pricingPhases, " +
             "price=$price, " +
             "currency=$currency, " +
             "duration=$duration)"
