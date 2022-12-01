@@ -1224,7 +1224,6 @@ class Purchases internal constructor(
                 receiptInfo = receiptInfo,
                 storeAppUserID = purchase.storeUserID,
                 marketplace = purchase.marketplace,
-                storeVersion = 2,
                 onSuccess = { info, body ->
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
