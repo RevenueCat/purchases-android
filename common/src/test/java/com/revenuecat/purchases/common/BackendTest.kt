@@ -13,6 +13,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
+import com.revenuecat.purchases.utils.stubPurchaseOption
 import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.every
 import io.mockk.mockk
@@ -495,9 +496,16 @@ class BackendTest {
             storeProduct = storeProduct
         )
 
+        val originalPurchaseOption = storeProduct.purchaseOptions[0]
+        val originalDuration = originalPurchaseOption.pricingPhases[0].billingPeriod
         val storeProduct2 = stubStoreProduct(
             storeProduct.productId,
-            duration = storeProduct.subscriptionPeriod + "a"
+            listOf(
+                stubPurchaseOption(
+                    originalPurchaseOption.id,
+                    originalDuration + "a"
+                )
+            )
         )
 
         val receiptInfo2 = ReceiptInfo(
