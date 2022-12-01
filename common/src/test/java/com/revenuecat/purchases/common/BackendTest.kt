@@ -427,17 +427,6 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber different price, both are triggered`() {
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = basicReceiptInfo,
-            storeAppUserID = null
-        )
-
         val receiptInfo1 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
@@ -552,16 +541,6 @@ class BackendTest {
 
     @Test
     fun `given multiple post calls for same subscriber different offering, both are triggered`() {
-        mockPostReceiptResponse(
-            isRestore = false,
-            responseCode = 200,
-            clientException = null,
-            resultBody = null,
-            delayed = true,
-            observerMode = false,
-            receiptInfo = basicReceiptInfo,
-            storeAppUserID = null
-        )
         val lock = CountDownLatch(2)
         mockPostReceiptResponseAndPost(
             asyncBackend,
