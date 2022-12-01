@@ -47,7 +47,7 @@ fun stubINAPPStoreProduct(
     override val type: ProductType
         get() = ProductType.INAPP
     override val oneTimeProductPrice: Price?
-        get() = null
+        get() = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD")
     override val title: String
         get() = ""
     override val description: String
