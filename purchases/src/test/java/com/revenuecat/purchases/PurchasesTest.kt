@@ -131,6 +131,11 @@ class PurchasesTest {
         "'packages': []}]," +
         "'current_offering_id': '$stubOfferingIdentifier'}"
 
+    private val inAppProductId = "inapp"
+    private val inAppPurchaseToken = "token_inapp"
+    private val subProductId = "sub"
+    private val subPurchaseToken = "token_sub"
+
     private val mockLifecycle = mockk<Lifecycle>()
     private val mockLifecycleOwner = mockk<LifecycleOwner>()
 
@@ -384,11 +389,6 @@ class PurchasesTest {
 
     @Test
     fun postsSuccessfulPurchasesToBackend() {
-        val inAppProductId = "inapp"
-        val inAppPurchaseToken = "token_inapp"
-        val subProductId = "sub"
-        val subPurchaseToken = "token_sub"
-
         val productInfo = mockPostReceipt(
             inAppProductId,
             inAppPurchaseToken,
@@ -447,11 +447,6 @@ class PurchasesTest {
 
     @Test
     fun callsPostForEachUpdatedPurchase() {
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "sub"
-        val subPurchaseToken = "token_sub"
-
         val receiptInfos = listOf(
             mockQueryingProductDetails(subProductId, ProductType.SUBS, null),
             mockQueryingProductDetails(inAppProductId, ProductType.INAPP, null)
@@ -751,11 +746,6 @@ class PurchasesTest {
 
     @Test
     fun historicalPurchasesPassedToBackend() {
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "sub"
-        val subPurchaseToken = "token_sub"
-
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
@@ -1216,11 +1206,6 @@ class PurchasesTest {
 
     @Test
     fun `tries to consume purchases on 4xx`() {
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "sub"
-        val subPurchaseToken = "token_sub"
-
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
         mockPostReceiptError(
             inAppProductId,
@@ -1260,11 +1245,6 @@ class PurchasesTest {
 
     @Test
     fun `tries to consume restored purchases on 4xx`() {
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "sub"
-        val subPurchaseToken = "token_sub"
-
         var capturedPostReceiptLambda: (PostReceiptDataErrorCallback)? = null
         mockPostReceiptError(
             inAppProductId,
@@ -1323,11 +1303,6 @@ class PurchasesTest {
 
     @Test
     fun `does not consume purchases on 5xx`() {
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "sub"
-        val subPurchaseToken = "token_sub"
-
         mockPostReceiptError(
             inAppProductId,
             inAppPurchaseToken,
@@ -1363,11 +1338,6 @@ class PurchasesTest {
 
     @Test
     fun `does not consume restored purchases on 5xx`() {
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "sub"
-        val subPurchaseToken = "token_sub"
-
         val purchaseRecords = getMockedPurchaseHistoryList(inAppProductId, inAppPurchaseToken, ProductType.INAPP) +
             getMockedPurchaseHistoryList(subProductId, subPurchaseToken, ProductType.SUBS)
 
@@ -2066,10 +2036,6 @@ class PurchasesTest {
     @Test
     fun `when finishTransactions is set to false, do not consume transactions`() {
         purchases.finishTransactions = false
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "onemonth_freetrial_sub"
-        val subPurchaseToken = "crazy_purchase_token_sub"
 
         val productInfo = mockPostReceipt(
             inAppProductId,
@@ -2127,11 +2093,6 @@ class PurchasesTest {
 
     @Test
     fun `when finishTransactions is set to false, don't consume transactions on 4xx`() {
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "onemonth_freetrial_sub"
-        val subPurchaseToken = "crazy_purchase_token_sub"
-
         mockPostReceiptError(
             inAppProductId,
             inAppPurchaseToken,
@@ -2171,11 +2132,6 @@ class PurchasesTest {
 
     @Test
     fun `when finishTransactions is set to false, don't consume transactions on 5xx`() {
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "onemonth_freetrial_sub"
-        val subPurchaseToken = "crazy_purchase_token_sub"
-
         mockPostReceiptError(
             inAppProductId,
             inAppPurchaseToken,
@@ -2210,11 +2166,6 @@ class PurchasesTest {
     @Test
     fun `when finishTransactions is set to false, it shouldn't consume when restoring`() {
         purchases.finishTransactions = false
-
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "sub"
-        val subPurchaseToken = "token_sub"
 
         mockPostReceipt(
             inAppProductId,
@@ -2269,11 +2220,6 @@ class PurchasesTest {
     fun `syncing transactions gets whole history and posts it to backend`() {
         purchases.finishTransactions = false
 
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "onemonth_freetrial_sub"
-        val subPurchaseToken = "crazy_purchase_token_sub"
-
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
@@ -2325,13 +2271,7 @@ class PurchasesTest {
 
     @Test
     fun `syncing transactions respects allow sharing account settings`() {
-
         purchases.finishTransactions = false
-
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "onemonth_freetrial_sub"
-        val subPurchaseToken = "crazy_purchase_token_sub"
         purchases.allowSharingPlayStoreAccount = true
 
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
@@ -2926,11 +2866,6 @@ class PurchasesTest {
 
     @Test
     fun `when error posting receipts tokens are not saved in cache if error is not finishable`() {
-        val inAppProductId = "onemonth_freetrial"
-        val inAppPurchaseToken = "crazy_purchase_token"
-        val subProductId = "onemonth_freetrial_sub"
-        val subPurchaseToken = "crazy_purchase_token_sub"
-
         var capturedLambda: (PostReceiptDataErrorCallback)? = null
         mockPostReceiptError(
             inAppProductId,
@@ -4407,7 +4342,7 @@ class PurchasesTest {
     private fun createStoreProductWithoutOffers(productId: String = "sample_product_id"): StoreProduct {
         val productDetails = mockProductDetails(productId = productId)
         return productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!
         )
     }
