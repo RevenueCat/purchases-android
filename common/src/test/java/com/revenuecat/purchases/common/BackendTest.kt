@@ -64,7 +64,7 @@ class BackendTest {
         mockClient
     )
     private val appUserID = "jerry"
-    val storeProduct = stubStoreProduct("productID")
+    private val storeProduct = stubStoreProduct("productID")
     private val productIDs = listOf("product_id_0", "product_id_1")
     private val basicReceiptInfo = ReceiptInfo(
         productIDs,
@@ -603,7 +603,7 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
-        lock.await()
+        lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
