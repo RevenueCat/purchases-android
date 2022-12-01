@@ -10,8 +10,8 @@ import com.revenuecat.purchases.models.StoreProduct
 fun ProductDetails.toStoreProduct(): StoreProduct = this.toStoreProduct(null, emptyList())
 
 fun ProductDetails.toStoreProduct(
-    basePlan: ProductDetails.SubscriptionOfferDetails?,
-    offers: List<ProductDetails.SubscriptionOfferDetails>
+    billingPeriod: String?,
+    offerDetails: List<ProductDetails.SubscriptionOfferDetails>
 ) =
     GoogleStoreProduct(
         productId,
@@ -19,8 +19,8 @@ fun ProductDetails.toStoreProduct(
         createOneTimeProductPrice(),
         title,
         description,
-        basePlan?.pricingPhases?.pricingPhaseList?.get(0)?.billingPeriod,
-        offers.map { it.toPurchaseOption() },
+        billingPeriod,
+        offerDetails.map { it.toPurchaseOption() },
         this
     )
 
@@ -41,14 +41,14 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     forEach { productDetails ->
         val basePlans = productDetails.subscriptionOfferDetails?.filter { it.isBasePlan } ?: return emptyList()
 
-        val offersBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
+        val offerDetailsBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
             it.subscriptionBillingPeriod
         } ?: emptyMap()
 
         basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
             val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
-            val offersForBasePlan = offersBySubPeriod[basePlanBillingPeriod] ?: emptyList()
-            productDetails.toStoreProduct(basePlan, offersForBasePlan).let { storeProducts.add(it) }
+            val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
+            productDetails.toStoreProduct(basePlanBillingPeriod, offerDetailsForBasePlan).let { storeProducts.add(it) }
         } ?: productDetails.toStoreProduct().let { storeProducts.add(it) }
     }
     return storeProducts

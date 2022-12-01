@@ -271,6 +271,7 @@ class Purchases internal constructor(
             receiptID,
             amazonUserID,
             { normalizedProductID ->
+
                 val receiptInfo = ReceiptInfo(
                     productIDs = listOf(normalizedProductID),
                     price = price?.takeUnless { it == 0.0 },
@@ -718,7 +719,7 @@ class Purchases internal constructor(
             } else {
                 backend.clearCaches()
                 synchronized(this@Purchases) {
-                    state = state.copy(purchaseCallbacks = emptyMap())
+                    state = state.copy(purchaseCallbacksByProductId = emptyMap())
                 }
                 updateAllCaches(identityManager.currentAppUserID, callback)
             }
@@ -730,7 +731,7 @@ class Purchases internal constructor(
      */
     fun close() {
         synchronized(this@Purchases) {
-            state = state.copy(purchaseCallbacks = emptyMap())
+            state = state.copy(purchaseCallbacksByProductId = emptyMap())
         }
         this.backend.close()
 
@@ -1276,32 +1277,50 @@ class Purchases internal constructor(
     ) {
         purchases.forEach { purchase ->
             if (purchase.purchaseState != PurchaseState.PENDING) {
-                billing.queryProductDetailsAsync(
-                    productType = purchase.type,
-                    productIds = purchase.productIds.toSet(),
-                    onReceive = { storeProducts ->
-                        postToBackend(
-                            purchase = purchase,
-                            storeProduct = storeProducts.takeUnless { it.isEmpty() }?.get(0),
-                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                            consumeAllTransactions = consumeAllTransactions,
-                            appUserID = appUserID,
-                            onSuccess = onSuccess,
-                            onError = onError
-                        )
-                    },
-                    onError = {
-                        postToBackend(
-                            purchase = purchase,
-                            storeProduct = null,
-                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                            consumeAllTransactions = consumeAllTransactions,
-                            appUserID = appUserID,
-                            onSuccess = onSuccess,
-                            onError = onError
-                        )
-                    }
-                )
+                if (purchase.purchaseOptionId != null) {
+                    billing.queryProductDetailsAsync(
+                        productType = purchase.type,
+                        productIds = purchase.productIds.toSet(),
+                        onReceive = { storeProducts ->
+
+                            // TODO BC5 confirm multi line purchases
+                            val purchasedStoreProduct = storeProducts.firstOrNull { product ->
+                                product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
+                            }
+
+                            postToBackend(
+                                purchase = purchase,
+                                storeProduct = purchasedStoreProduct,
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                consumeAllTransactions = consumeAllTransactions,
+                                appUserID = appUserID,
+                                onSuccess = onSuccess,
+                                onError = onError
+                            )
+                        },
+                        onError = {
+                            postToBackend(
+                                purchase = purchase,
+                                storeProduct = null,
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                consumeAllTransactions = consumeAllTransactions,
+                                appUserID = appUserID,
+                                onSuccess = onSuccess,
+                                onError = onError
+                            )
+                        }
+                    )
+                } else {
+                    postToBackend(
+                        purchase = purchase,
+                        storeProduct = null,
+                        allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                        consumeAllTransactions = consumeAllTransactions,
+                        appUserID = appUserID,
+                        onSuccess = onSuccess,
+                        onError = onError
+                    )
+                }
             } else {
                 onError?.invoke(
                     purchase,
@@ -1325,7 +1344,8 @@ class Purchases internal constructor(
             val receiptInfo = ReceiptInfo(
                 productIDs = purchase.productIds,
                 offeringIdentifier = purchase.presentedOfferingIdentifier,
-                storeProduct = storeProduct
+                storeProduct = storeProduct,
+                purchaseOptionId = purchase.purchaseOptionId
             )
             backend.postReceiptData(
                 purchaseToken = purchase.purchaseToken,
@@ -1403,10 +1423,11 @@ class Purchases internal constructor(
         }
     }
 
-    private fun getPurchaseCallback(sku: String): PurchaseCallback? {
-        return state.purchaseCallbacks[sku].also {
-            state =
-                state.copy(purchaseCallbacks = state.purchaseCallbacks.filterNot { it.key == sku })
+    private fun getPurchaseCallback(productId: String): PurchaseCallback? {
+        return state.purchaseCallbacksByProductId[productId].also {
+            state = state.copy(
+                purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId }
+            )
         }
     }
 
@@ -1462,8 +1483,8 @@ class Purchases internal constructor(
                     state.productChangeCallback?.let { productChangeCallback ->
                         state = state.copy(productChangeCallback = null)
                         productChangeCallback.dispatch(purchasesError)
-                    } ?: state.purchaseCallbacks.let { purchaseCallbacks ->
-                        state = state.copy(purchaseCallbacks = emptyMap())
+                    } ?: state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
+                        state = state.copy(purchaseCallbacksByProductId = emptyMap())
                         purchaseCallbacks.values.forEach { it.dispatch(purchasesError) }
                     }
                 }
@@ -1532,9 +1553,10 @@ class Purchases internal constructor(
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
-            if (!state.purchaseCallbacks.containsKey(storeProduct.productId)) {
+            if (!state.purchaseCallbacksByProductId.containsKey(storeProduct.productId)) {
+                val mapOfProductIdToListener = mapOf(storeProduct.productId to listener)
                 state = state.copy(
-                    purchaseCallbacks = state.purchaseCallbacks + mapOf(storeProduct.productId to listener)
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
                 )
                 userPurchasing = identityManager.currentAppUserID
             }

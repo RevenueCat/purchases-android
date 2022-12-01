@@ -27,6 +27,7 @@ fun Receipt.toStoreTransaction(
         presentedOfferingIdentifier = presentedOfferingIdentifier,
         storeUserID = userData.userId,
         purchaseType = PurchaseType.AMAZON_PURCHASE,
-        marketplace = userData.marketplace
+        marketplace = userData.marketplace,
+        purchaseOptionId = null
     )
 }

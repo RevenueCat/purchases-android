@@ -189,14 +189,15 @@ class Backend(
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
             "normal_duration" to receiptInfo.duration,
-            "intro_duration" to receiptInfo.introDuration,
-            "trial_duration" to receiptInfo.trialDuration,
-            "store_user_id" to storeAppUserID
+            "store_user_id" to storeAppUserID,
+            "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() }
         ).filterValues { value -> value != null }
 
-        val extraHeaders = /*receiptInfo.storeProduct?.price?.let { priceString ->
-            mapOf("price_string" to priceString, "marketplace" to marketplace).filterNotNullValues()
-        } ?:*/mapOf<String, String>() // TODOBC5
+        // TODO BC5 we used to only pass this if storeProduct.price was non-null,
+        // is it okay to update the logic to pass it when it is non-null?
+        val extraHeaders = marketplace?.let {
+            mapOf("marketplace" to it)
+        } ?: emptyMap()
 
         val call = object : Dispatcher.AsyncCall() {
 

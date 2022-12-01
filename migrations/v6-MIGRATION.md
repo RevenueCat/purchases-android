@@ -42,6 +42,10 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 
 ### StoreTransaction updates
 
+| New              |
+|------------------|
+| purchaseOptionId |
+
 | Deprecated | New        |
 |------------|------------|
 | skus       | productIds |

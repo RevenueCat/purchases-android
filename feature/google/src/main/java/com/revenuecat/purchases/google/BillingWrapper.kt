@@ -72,6 +72,7 @@ class BillingWrapper(
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
+    private val purchaseOptionSelectedByProductIdentifier = mutableMapOf<String, String?>()
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
@@ -217,6 +218,7 @@ class BillingWrapper(
         synchronized(this@BillingWrapper) {
             productTypes[storeProduct.productId] = storeProduct.type
             presentedOfferingsByProductIdentifier[storeProduct.productId] = presentedOfferingIdentifier
+            purchaseOptionSelectedByProductIdentifier[storeProduct.productId] = purchaseOption?.id
         }
         executeRequestOnUIThread {
             val result = buildPurchaseParams(
@@ -462,7 +464,8 @@ class BillingWrapper(
             val hash = purchase.purchaseToken.sha1()
             hash to purchase.toStoreTransaction(
                 productType.toRevenueCatProductType(),
-                presentedOfferingIdentifier = null
+                presentedOfferingIdentifier = null,
+                purchaseOptionId = null
             )
         }
     }
@@ -701,11 +704,13 @@ class BillingWrapper(
 
         synchronized(this@BillingWrapper) {
             val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstProductId]
+            val purchaseOptionId = purchaseOptionSelectedByProductIdentifier[purchase.firstProductId]
             productTypes[purchase.firstProductId]?.let { productType ->
                 completion(
                     purchase.toStoreTransaction(
                         productType,
-                        presentedOffering
+                        presentedOffering,
+                        purchaseOptionId
                     )
                 )
                 return
