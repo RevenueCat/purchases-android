@@ -259,31 +259,6 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt passes pricing phases as header`() {
-        val purchaseOption = storeProduct.purchaseOptions[0]
-        val receiptInfo = ReceiptInfo(
-            productIDs = productIDs,
-            storeProduct = storeProduct,
-            purchaseOptionId = purchaseOption.id
-        )
-
-        mockPostReceiptResponseAndPost(
-            backend,
-            responseCode = 200,
-            isRestore = false,
-            clientException = null,
-            resultBody = null,
-            observerMode = true,
-            receiptInfo = receiptInfo,
-            storeAppUserID = null,
-        )
-
-        assertThat(headersSlot.isCaptured).isTrue
-        assertThat(headersSlot.captured.keys).contains("pricing_phases")
-        assertThat(headersSlot.captured["pricing_phases"]).isEqualTo(purchaseOption.pricingPhases)
-    }
-
-    @Test
     fun postReceiptCallsFailsFor4XX() {
         mockPostReceiptResponseAndPost(
             backend,
