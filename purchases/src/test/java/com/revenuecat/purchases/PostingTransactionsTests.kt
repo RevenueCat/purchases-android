@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.google.BillingWrapper
+import com.revenuecat.purchases.google.subscriptionBillingPeriod
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
@@ -35,6 +36,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@Suppress("LongMethod")
 @RunWith(AndroidJUnit4::class)
 class PostingTransactionsTests {
 
@@ -153,13 +155,12 @@ class PostingTransactionsTests {
         clearMocks(customerInfoHelperMock)
     }
 
+    // TODO BC5: Add tests to check trial and intro durations are sent if needed.
     @Test
-    fun `durations are sent when posting to backend`() {
+    fun `subscription duration is sent when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
         val expectedSubscriptionPeriod = "P1M"
-        val expectedIntroPricePeriod = "P2M"
-        val expectedFreeTrialPeriod = "P3M"
         val mockStoreProduct = createStoreProductWithoutOffers("product_id")
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
@@ -172,8 +173,6 @@ class PostingTransactionsTests {
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue
         assertThat(postedProductInfoSlot.captured.duration).isEqualTo(expectedSubscriptionPeriod)
-        assertThat(postedProductInfoSlot.captured.introDuration).isEqualTo(expectedIntroPricePeriod)
-        assertThat(postedProductInfoSlot.captured.trialDuration).isEqualTo(expectedFreeTrialPeriod)
         verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
@@ -194,7 +193,7 @@ class PostingTransactionsTests {
     fun `inapps send null durations when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
-        val mockStoreProduct = createStoreProductWithoutOffers("product_id")
+        val mockStoreProduct = mockProductDetails(productId = "product_id").toStoreProduct()
         underTest.postToBackend(
             purchase = mockk(relaxed = true),
             storeProduct = mockStoreProduct,
@@ -206,8 +205,6 @@ class PostingTransactionsTests {
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue
         assertThat(postedProductInfoSlot.captured.duration).isNull()
-        assertThat(postedProductInfoSlot.captured.introDuration).isNull()
-        assertThat(postedProductInfoSlot.captured.trialDuration).isNull()
         verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
@@ -228,7 +225,7 @@ class PostingTransactionsTests {
     fun `store user id is sent when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
-        val mockStoreProduct = createStoreProductWithoutOffers("product_id")
+        val mockStoreProduct = mockProductDetails(productId = "product_id").toStoreProduct()
         val purchase: StoreTransaction = mockk(relaxed = true)
         val expectedStoreUserID = "a_store_user_id"
         every {
@@ -246,8 +243,6 @@ class PostingTransactionsTests {
         )
         assertThat(postedProductInfoSlot.isCaptured).isTrue
         assertThat(postedProductInfoSlot.captured.duration).isNull()
-        assertThat(postedProductInfoSlot.captured.introDuration).isNull()
-        assertThat(postedProductInfoSlot.captured.trialDuration).isNull()
         verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
@@ -327,7 +322,7 @@ class PostingTransactionsTests {
     private fun createStoreProductWithoutOffers(productId: String = "sample_product_id"): StoreProduct {
         val productDetails = mockProductDetails(productId = productId)
         return productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!
         )
     }

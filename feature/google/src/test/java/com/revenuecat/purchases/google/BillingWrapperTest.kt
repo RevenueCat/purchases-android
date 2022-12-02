@@ -24,6 +24,7 @@ import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchaseHistoryParams
+import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -379,7 +380,7 @@ class BillingWrapperTest {
         val upgradeInfo = mockReplaceSkuInfo()
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!
         )
 
@@ -435,7 +436,7 @@ class BillingWrapperTest {
         val upgradeInfo = mockReplaceSkuInfo()
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!
         )
 
@@ -632,6 +633,7 @@ class BillingWrapperTest {
             description = "",
             subscriptionPeriod = null,
             purchaseOptions = listOf(GooglePurchaseOption(
+                id = "purchase-option-id",
                 pricingPhases = listOf(PricingPhase(
                     billingPeriod = "",
                     priceCurrencyCode = "",
@@ -653,6 +655,9 @@ class BillingWrapperTest {
         } just Runs
 
         val nonGooglePurchaseOption = object : PurchaseOption {
+            override val id: String
+                get() = "purchase-option-id"
+
             override val pricingPhases: List<PricingPhase>
                 get() = listOf(PricingPhase(
                     billingPeriod = "",
@@ -703,7 +708,10 @@ class BillingWrapperTest {
             override val subscriptionPeriod: String?
                 get() = null
             override val purchaseOptions: List<PurchaseOption>
-                get() = listOf(GooglePurchaseOption(emptyList(), emptyList(), "fake-token"))
+                get() = listOf(GooglePurchaseOption("purchase-option-id", emptyList(), emptyList(), "fake-token"))
+            @Deprecated("Replaced with productId", replaceWith = ReplaceWith("productId"))
+            override val sku: String
+                get() = "mock-sku"
 
             override fun describeContents(): Int = 0
 
@@ -1128,7 +1136,7 @@ class BillingWrapperTest {
 
         val productDetails = mockProductDetails(productId = "product_a")
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!
         )
 
@@ -1240,7 +1248,7 @@ class BillingWrapperTest {
         val querySubPurchasesListenerSlot = slot<PurchasesResponseListener>()
         every {
             mockClient.queryPurchasesAsync(
-                BillingClient.SkuType.SUBS,
+                any<QueryPurchasesParams>(),
                 capture(querySubPurchasesListenerSlot)
             )
         } answers {
@@ -2142,7 +2150,7 @@ class BillingWrapperTest {
     private fun createStoreProductWithoutOffers(): StoreProduct {
         val productDetails = createMockProductDetailsNoOffers()
         return productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!
         )
     }

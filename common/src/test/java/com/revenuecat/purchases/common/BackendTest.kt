@@ -1367,6 +1367,7 @@ class BackendTest {
         storeAppUserID: String?
     ): Pair<String, CustomerInfo> {
         val fetchToken = "fetch_token"
+        // TODO BC5 Check if we need to add new fields to response
         val body = mapOf(
             "fetch_token" to fetchToken,
             "app_user_id" to appUserID,
@@ -1377,8 +1378,6 @@ class BackendTest {
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "normal_duration" to receiptInfo.duration,
-            "intro_duration" to receiptInfo.introDuration,
-            "trial_duration" to receiptInfo.trialDuration,
             "store_user_id" to storeAppUserID
         ).mapNotNull { entry: Map.Entry<String, Any?> ->
             entry.value?.let { entry.key to it }

@@ -55,7 +55,7 @@ fun stubINAPPStoreProduct(
     override val subscriptionPeriod: String?
         get() = null
     override val purchaseOptions: List<PurchaseOption>
-        get() = listOf(stubPurchaseOption(productId, emptyList()))
+        get() = listOf(stubPurchaseOption(productId, "P1M", emptyList()))
     override val sku: String
         get() = productId
 
