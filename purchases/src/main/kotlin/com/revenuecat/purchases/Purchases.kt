@@ -204,6 +204,9 @@ class Purchases internal constructor(
      * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
      */
     fun syncPurchases() {
+        if (LockedFeature.SyncPurchases.isLocked) {
+            throw FeatureNotSupportedException(LockedFeature.SyncPurchases)
+        }
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
 
         val appUserID = identityManager.currentAppUserID
@@ -258,6 +261,12 @@ class Purchases internal constructor(
         isoCurrencyCode: String?,
         price: Double?
     ) {
+        if (LockedFeature.AmazonStore.isLocked) {
+            throw FeatureNotSupportedException(LockedFeature.AmazonStore)
+        }
+        if (LockedFeature.ObserverMode.isLocked) {
+            throw FeatureNotSupportedException(LockedFeature.ObserverMode)
+        }
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID))
 
         deviceCache.getPreviouslySentHashedTokens().takeIf { it.contains(receiptID.sha1()) }?.apply {
@@ -1539,6 +1548,9 @@ class Purchases internal constructor(
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
+        if (storeProduct.type == ProductType.INAPP && LockedFeature.InAppPurchasing.isLocked) {
+            throw FeatureNotSupportedException(LockedFeature.InAppPurchasing)
+        }
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
                 " $storeProduct ${
@@ -1581,6 +1593,9 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
+        if (storeProduct.type == ProductType.INAPP && LockedFeature.InAppPurchasing.isLocked) {
+            throw FeatureNotSupportedException(LockedFeature.InAppPurchasing)
+        }
         log(
             LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $storeProduct ${
@@ -1841,6 +1856,12 @@ class Purchases internal constructor(
         fun configure(
             configuration: PurchasesConfiguration
         ): Purchases {
+            if (configuration.store == Store.AMAZON && LockedFeature.AmazonStore.isLocked) {
+                throw FeatureNotSupportedException(LockedFeature.AmazonStore)
+            }
+            if (configuration.observerMode && LockedFeature.ObserverMode.isLocked) {
+                throw FeatureNotSupportedException(LockedFeature.ObserverMode)
+            }
             return PurchasesFactory().createPurchases(
                 configuration,
                 platformInfo,
