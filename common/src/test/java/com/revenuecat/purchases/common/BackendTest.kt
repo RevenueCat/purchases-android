@@ -267,7 +267,8 @@ class BackendTest {
             purchaseOptionId = purchaseOption.id
         )
 
-        backend.postReceiptMockAndPost(
+        mockPostReceiptResponseAndPost(
+            backend,
             responseCode = 200,
             isRestore = false,
             clientException = null,
