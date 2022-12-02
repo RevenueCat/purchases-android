@@ -379,7 +379,7 @@ class BillingWrapperTest {
         val upgradeInfo = mockReplaceSkuInfo()
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!
         )
 
@@ -435,7 +435,7 @@ class BillingWrapperTest {
         val upgradeInfo = mockReplaceSkuInfo()
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!
         )
 
@@ -632,6 +632,7 @@ class BillingWrapperTest {
             description = "",
             subscriptionPeriod = null,
             purchaseOptions = listOf(GooglePurchaseOption(
+                id = "purchaseOption",
                 pricingPhases = listOf(PricingPhase(
                     billingPeriod = "",
                     priceCurrencyCode = "",
@@ -653,6 +654,8 @@ class BillingWrapperTest {
         } just Runs
 
         val nonGooglePurchaseOption = object : PurchaseOption {
+            override val id: String
+                get() = "purchaseOption"
             override val pricingPhases: List<PricingPhase>
                 get() = listOf(PricingPhase(
                     billingPeriod = "",
@@ -703,7 +706,9 @@ class BillingWrapperTest {
             override val subscriptionPeriod: String?
                 get() = null
             override val purchaseOptions: List<PurchaseOption>
-                get() = listOf(GooglePurchaseOption(emptyList(), emptyList(), "fake-token"))
+                get() = listOf(GooglePurchaseOption("purchaseOption", emptyList(), emptyList(), "fake-token"))
+            override val sku: String
+                get() = productId
 
             override fun describeContents(): Int = 0
 
@@ -1128,7 +1133,7 @@ class BillingWrapperTest {
 
         val productDetails = mockProductDetails(productId = "product_a")
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!
         )
 
@@ -2142,7 +2147,7 @@ class BillingWrapperTest {
     private fun createStoreProductWithoutOffers(): StoreProduct {
         val productDetails = createMockProductDetailsNoOffers()
         return productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0],
+            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!
         )
     }
