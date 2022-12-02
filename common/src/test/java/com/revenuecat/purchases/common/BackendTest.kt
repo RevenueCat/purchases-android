@@ -81,6 +81,7 @@ class BackendTest {
     private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
 
     private val headersSlot = slot<Map<String, String>>()
+    private val requestBodySlot = slot<Map<String, Any?>>()
 
     private val onReceiveCustomerInfoSuccessHandler: (CustomerInfo) -> Unit = { info ->
         this@BackendTest.receivedCustomerInfo = info
@@ -275,6 +276,78 @@ class BackendTest {
                 any()
             )
         }
+    }
+
+    @Test
+    fun `postReceipt passes pricing phases in body`() {
+        val purchaseOption = storeProduct.purchaseOptions[0]
+        val receiptInfo = ReceiptInfo(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            purchaseOptionId = purchaseOption.id
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            isRestore = false,
+            observerMode = false,
+            receiptInfo = basicReceiptInfo,
+            storeAppUserID = null
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).contains("pricing_phases")
+        assertThat(requestBodySlot.captured["pricing_phases"]).isEqualTo(purchaseOption.pricingPhases.map { it.toMap() })
+    }
+
+    @Test
+    fun `postReceipt passes normal duration in body`() {
+        val receiptInfo = ReceiptInfo(
+            productIDs = productIDs,
+            storeProduct = storeProduct
+        )
+
+        val expectedDuration = receiptInfo.duration
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = receiptInfo,
+            storeAppUserID = null,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).contains("normal_duration")
+        assertThat(requestBodySlot.captured["normal_duration"]).isEqualTo(expectedDuration)
+    }
+
+    @Test
+    fun `postReceipt passes store user ID in body`() {
+        val receiptInfo = ReceiptInfo(
+            productIDs = productIDs,
+            storeProduct = storeProduct
+        )
+
+        val expectedStoreUserId = "id"
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = receiptInfo,
+            storeAppUserID = expectedStoreUserId,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).contains("store_user_id")
+        assertThat(requestBodySlot.captured["store_user_id"]).isEqualTo(expectedStoreUserId)
     }
 
     @Test
@@ -1168,7 +1241,7 @@ class BackendTest {
 
     private fun mockResponse(
         path: String,
-        body: Map<String, Any?>?,
+        requestBody: Map<String, Any?>?,
         responseCode: Int,
         clientException: Exception?,
         resultBody: String?,
@@ -1187,7 +1260,7 @@ class BackendTest {
         val everyMockedCall = every {
             mockClient.performRequest(
                 eq(path),
-                (if (body == null) any() else eq(body)),
+                (if (requestBody == null) any() else capture(requestBodySlot)),
                 capture(headersSlot)
             )
         }
