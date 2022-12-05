@@ -12,6 +12,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.strings.NetworkStrings
+import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -191,10 +192,8 @@ class Backend(
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() }
-        ).filterValues { value -> value != null }
+        ).filterNotNullValues()
 
-        // TODO BC5 we used to only pass this if storeProduct.price was non-null,
-        // is it okay to update the logic to pass it when it is non-null?
         val extraHeaders = marketplace?.let {
             mapOf("marketplace" to it)
         } ?: emptyMap()

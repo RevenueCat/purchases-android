@@ -56,6 +56,7 @@ import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
+import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.Call
 import io.mockk.CapturingSlot
 import io.mockk.MockKAnswerScope
@@ -195,7 +196,7 @@ class PurchasesTest {
     }
 
     private fun stubOfferings(productId: String): Pair<StoreProduct, Offerings> {
-        val storeProduct = createStoreProductWithoutOffers(productId)
+        val storeProduct = stubStoreProduct(productId)
         val jsonObject = JSONObject(oneOfferingsResponse)
         val packageObject = Package(
             "\$rc_monthly",
@@ -330,7 +331,7 @@ class PurchasesTest {
 
     @Test
     fun canMakePurchase() {
-        val storeProduct = createStoreProductWithoutOffers()
+        val storeProduct = stubStoreProduct("abc")
 
         purchases.purchaseProductOptionWith(
             mockActivity,
@@ -352,7 +353,7 @@ class PurchasesTest {
 
     @Test
     fun canMakePurchaseWithoutProvidingOption() {
-        val storeProduct = createStoreProductWithoutOffers()
+        val storeProduct = stubStoreProduct("productId")
 
         purchases.purchaseProductWith(
             mockActivity,
@@ -572,7 +573,7 @@ class PurchasesTest {
     @Test
     fun passesUpErrors() {
         var errorCalled = false
-        val storeProduct = createStoreProductWithoutOffers()
+        val storeProduct = stubStoreProduct("productId")
         purchases.purchaseProductOptionWith(
             mockk(),
             storeProduct,
@@ -1569,7 +1570,7 @@ class PurchasesTest {
     fun `when making another purchase for a product for a pending product, error is issued`() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
-        val storeProduct = createStoreProductWithoutOffers()
+        val storeProduct = stubStoreProduct("productId")
         purchases.purchaseProductOptionWith(
             mockk(),
             storeProduct,
@@ -1599,7 +1600,7 @@ class PurchasesTest {
 
         mockQueryingProductDetails(productId, ProductType.SUBS, null)
 
-        val storeProduct = createStoreProductWithoutOffers(productId)
+        val storeProduct = stubStoreProduct(productId)
 
         var callCount = 0
         purchases.purchaseProductOptionWith(
@@ -1627,7 +1628,7 @@ class PurchasesTest {
         val purchaseToken1 = "crazy_purchase_token_1"
         var callCount = 0
         mockQueryingProductDetails(productId1, ProductType.SUBS, null)
-        val storeProduct = createStoreProductWithoutOffers(productId)
+        val storeProduct = stubStoreProduct(productId)
         purchases.purchaseProductOptionWith(
             mockActivity,
             storeProduct,
@@ -1645,7 +1646,7 @@ class PurchasesTest {
 
     @Test
     fun `when multiple make purchase callbacks, a failure doesn't throw ConcurrentModificationException`() {
-        val storeProduct = createStoreProductWithoutOffers("productId")
+        val storeProduct = stubStoreProduct("productId")
         purchases.purchaseProductOptionWith(
             mockActivity,
             storeProduct,
@@ -4079,7 +4080,7 @@ class PurchasesTest {
         type: ProductType
     ): List<StoreProduct> {
         val storeProducts = productIdsSuccessfullyFetched.map { productId ->
-            if (type == ProductType.SUBS) createStoreProductWithoutOffers(productId)
+            if (type == ProductType.SUBS) stubStoreProduct(productId)
             else createMockOneTimeProductDetails(productId).toStoreProduct()
         }
 
