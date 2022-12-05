@@ -259,6 +259,25 @@ class BackendTest {
     }
 
     @Test
+    fun `postReceipt calls backend once`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            isRestore = false,
+            observerMode = false,
+            receiptInfo = basicReceiptInfo,
+            storeAppUserID = null
+        )
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                "/receipts",
+                any(),
+                any()
+            )
+        }
+    }
+
+    @Test
     fun postReceiptCallsFailsFor4XX() {
         mockPostReceiptResponseAndPost(
             backend,

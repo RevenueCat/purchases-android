@@ -632,7 +632,7 @@ class BillingWrapperTest {
             description = "",
             subscriptionPeriod = null,
             purchaseOptions = listOf(GooglePurchaseOption(
-                id = "purchaseOption",
+                id = "purchaseOptionId",
                 pricingPhases = listOf(PricingPhase(
                     billingPeriod = "",
                     priceCurrencyCode = "",
