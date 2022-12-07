@@ -133,7 +133,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/purchases-android/docs/5.7.0-SNAPSHOT s3://purchases-docs/android/5.7.0-SNAPSHOT --delete
+          command: aws s3 sync ~/purchases-android/docs/6.0.0-SNAPSHOT s3://purchases-docs/android/6.0.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/purchases-android/docs/index.html s3://purchases-docs/android/index.html
@@ -353,6 +353,7 @@ workflows:
             branches:
               only:
                 - main
+                - bc5-support
       - docs-deploy: *release-tags
       - publish-purchase-tester-release:
           requires:
