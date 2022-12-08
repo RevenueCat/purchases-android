@@ -214,7 +214,7 @@ class SubscriberAttributesManager(
         @Synchronized
         fun waitUntilIdle(completion: () -> Unit) {
             if (numberOfProcesses == 0) completion()
-            listeners.add { completion() }
+            else listeners.add { completion() }
         }
     }
 }
