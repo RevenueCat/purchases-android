@@ -33,12 +33,12 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 | oneTimeProductPrice |
 | purchaseOptions     |
 
-| Removed                   |
-|---------------------------|
-| originalPrice             |
-| originalPriceAmountMicros |
-| iconUrl                   |
-| originalJson              |
+| Removed                           |  | 
+|-----------------------------------|--|
+| product.originalPrice             | Accessible in basePlan's unique pricing phase `purchaseOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.first()?.formattedPrice` |
+| product.originalPriceAmountMicros | Accessible in basePlan's unique pricing phase `purchaseOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.first()?.priceAmountMicros` |
+| producct.iconUrl                  |  | 
+| product.originalJson              |(product as GoogleStoreProduct).productDetails |
 
 ### StoreTransaction updates
 
