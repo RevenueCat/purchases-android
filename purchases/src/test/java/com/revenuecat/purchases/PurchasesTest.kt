@@ -299,6 +299,17 @@ class PurchasesTest {
     }
 
     @Test
+    fun `isConfigured is true if there's an instance set`() {
+        assertThat(Purchases.isConfigured).isTrue
+    }
+
+    @Test
+    fun `isConfigured is false if there's no instance set`() {
+        Purchases.backingFieldSharedInstance = null
+        assertThat(Purchases.isConfigured).isFalse()
+    }
+
+    @Test
     fun `when setting listener, we set customer info helper listener`() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
@@ -359,7 +370,7 @@ class PurchasesTest {
 
     // endregion
 
-    // region other methods
+    // region get products
 
     @Test
     fun getsSubscriptionProducts() {
@@ -404,6 +415,59 @@ class PurchasesTest {
     // endregion
 
     // region purchasing
+
+    @Test
+    fun `when making purchase with upgrade info, completion block is called`() {
+        val productId = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+
+        val oldPurchase = mockPurchaseFound()
+
+        var callCount = 0
+
+        purchases.purchaseProductOptionWith(
+            mockActivity,
+            receiptInfo.storeProduct!!,
+            receiptInfo.storeProduct!!.purchaseOptions[0],
+            UpgradeInfo(oldPurchase.productIds[0]),
+            onError = { _, _ ->
+                fail("should be successful")
+            }, onSuccess = { _, _ ->
+                callCount++
+            })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
+        )
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `when making a deferred upgrade, completion is called with null purchase`() {
+        val productId = "onemonth_freetrial"
+
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+
+        val oldPurchase = mockPurchaseFound()
+
+        var callCount = 0
+        purchases.purchaseProductOptionWith(
+            mockActivity,
+            receiptInfo.storeProduct!!,
+            receiptInfo.storeProduct!!.purchaseOptions[0],
+            UpgradeInfo(oldPurchase.productIds[0]),
+            onError = { _, _ ->
+                fail("should be success")
+            }, onSuccess = { purchase, _ ->
+                callCount++
+                assertThat(purchase).isNull()
+            })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+        assertThat(callCount).isEqualTo(1)
+    }
 
     @Test
     fun canMakePurchase() {
@@ -3789,72 +3853,10 @@ class PurchasesTest {
 
     // endregion
 
-    // region Private Methods
-    private fun mockSynchronizeSubscriberAttributesForAllUsers() {
-        every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
-        } just Runs
-    }
-
-    private fun mockBillingWrapper() {
-        with(mockBillingAbstract) {
-            every {
-                makePurchaseAsync(any(), any(), any(), any(), any(), any())
-            } just Runs
-            every {
-                purchasesUpdatedListener = capture(capturedPurchasesUpdatedListener)
-            } just Runs
-            every {
-                consumeAndSave(capture(capturedShouldTryToConsume), capture(capturedConsumePurchaseWrapper))
-            } just Runs
-            every {
-                purchasesUpdatedListener = null
-            } just Runs
-            every {
-                stateListener = capture(capturedBillingWrapperStateListener)
-            } just Runs
-            every {
-                isConnected()
-            } returns true
-
-            every {
-                close()
-            } answers {
-                purchasesUpdatedListener = null
-            }
-        }
-    }
-
-    private fun mockCustomerInfoHelper(errorGettingCustomerInfo: PurchasesError? = null) {
-        with(mockCustomerInfoHelper) {
-            every {
-                retrieveCustomerInfo(any(), any(), false, any())
-            } answers {
-                val callback  = arg<ReceiveCustomerInfoCallback?>(3)
-                if (errorGettingCustomerInfo == null) {
-                    callback?.onReceived(mockInfo)
-                } else {
-                    callback?.onError(errorGettingCustomerInfo)
-                }
-            }
-            every {
-                cacheCustomerInfo(any())
-            } just runs
-            every {
-                sendUpdatedCustomerInfoToDelegateIfChanged(any())
-            } just runs
-            every {
-                updatedCustomerInfoListener = any()
-            } just runs
-            every {
-                updatedCustomerInfoListener
-            } returns null
-        }
-    }
+    // region app lifecycle
 
     @Test
     fun `state appInBackground is updated when app foregrounded`() {
-
         mockSuccessfulQueryPurchases(
             queriedSUBS = emptyMap(),
             queriedINAPP = emptyMap(),
@@ -3867,7 +3869,6 @@ class PurchasesTest {
 
     @Test
     fun `state appInBackground is updated when app backgrounded`() {
-
         purchases.state = purchases.state.copy(appInBackground = false)
         Purchases.sharedInstance.onAppBackgrounded()
         assertThat(purchases.state.appInBackground).isTrue()
@@ -3948,68 +3949,69 @@ class PurchasesTest {
         }
     }
 
-    @Test
-    fun `when making purchase with upgrade info, completion block is called`() {
-        val productId = "onemonth_freetrial"
-        val purchaseToken = "crazy_purchase_token"
+    // endregion
 
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
-
-        val oldPurchase = mockPurchaseFound()
-
-        var callCount = 0
-
-        purchases.purchaseProductOptionWith(
-            mockActivity,
-            receiptInfo.storeProduct!!,
-            receiptInfo.storeProduct!!.purchaseOptions[0],
-            UpgradeInfo(oldPurchase.productIds[0]),
-            onError = { _, _ ->
-                fail("should be successful")
-            }, onSuccess = { _, _ ->
-                callCount++
-            })
-
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
-            getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
-        )
-        assertThat(callCount).isEqualTo(1)
+    // region Private Methods
+    private fun mockSynchronizeSubscriberAttributesForAllUsers() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
+        } just Runs
     }
 
-    @Test
-    fun `when making a deferred upgrade, completion is called with null purchase`() {
-        val productId = "onemonth_freetrial"
+    private fun mockBillingWrapper() {
+        with(mockBillingAbstract) {
+            every {
+                makePurchaseAsync(any(), any(), any(), any(), any(), any())
+            } just Runs
+            every {
+                purchasesUpdatedListener = capture(capturedPurchasesUpdatedListener)
+            } just Runs
+            every {
+                consumeAndSave(capture(capturedShouldTryToConsume), capture(capturedConsumePurchaseWrapper))
+            } just Runs
+            every {
+                purchasesUpdatedListener = null
+            } just Runs
+            every {
+                stateListener = capture(capturedBillingWrapperStateListener)
+            } just Runs
+            every {
+                isConnected()
+            } returns true
 
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
-
-        val oldPurchase = mockPurchaseFound()
-
-        var callCount = 0
-        purchases.purchaseProductOptionWith(
-            mockActivity,
-            receiptInfo.storeProduct!!,
-            receiptInfo.storeProduct!!.purchaseOptions[0],
-            UpgradeInfo(oldPurchase.productIds[0]),
-            onError = { _, _ ->
-                fail("should be success")
-            }, onSuccess = { purchase, _ ->
-                callCount++
-                assertThat(purchase).isNull()
-            })
-
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
-        assertThat(callCount).isEqualTo(1)
+            every {
+                close()
+            } answers {
+                purchasesUpdatedListener = null
+            }
+        }
     }
 
-    @Test
-    fun `isConfigured is true if there's an instance set`() {
-        assertThat(Purchases.isConfigured).isTrue()
-    }
-
-    @Test
-    fun `isConfigured is false if there's no instance set`() {
-        Purchases.backingFieldSharedInstance = null
-        assertThat(Purchases.isConfigured).isFalse()
+    private fun mockCustomerInfoHelper(errorGettingCustomerInfo: PurchasesError? = null) {
+        with(mockCustomerInfoHelper) {
+            every {
+                retrieveCustomerInfo(any(), any(), false, any())
+            } answers {
+                val callback  = arg<ReceiveCustomerInfoCallback?>(3)
+                if (errorGettingCustomerInfo == null) {
+                    callback?.onReceived(mockInfo)
+                } else {
+                    callback?.onError(errorGettingCustomerInfo)
+                }
+            }
+            every {
+                cacheCustomerInfo(any())
+            } just runs
+            every {
+                sendUpdatedCustomerInfoToDelegateIfChanged(any())
+            } just runs
+            every {
+                updatedCustomerInfoListener = any()
+            } just runs
+            every {
+                updatedCustomerInfoListener
+            } returns null
+        }
     }
 
     private fun mockBackend() {
