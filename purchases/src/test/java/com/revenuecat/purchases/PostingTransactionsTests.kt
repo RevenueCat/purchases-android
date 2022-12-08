@@ -53,7 +53,7 @@ class PostingTransactionsTests {
     private val attributesToMarkAsSyncSlot = slot<Map<String, SubscriberAttribute>>()
     private val attributesErrorsSlot = slot<List<SubscriberAttributeError>>()
     private val postedReceiptInfoSlot = slot<ReceiptInfo>()
-    private val postedStoreUserIdSlot = slot<String>()
+    private val postedStoreUserIdSlot = mutableListOf<String?>()
 
     private val mockStoreProduct = stubStoreProduct("productId")
 
@@ -87,7 +87,7 @@ class PostingTransactionsTests {
                 observerMode = any(),
                 subscriberAttributes = any(),
                 receiptInfo = capture(postedReceiptInfoSlot),
-                storeAppUserID = capture(postedStoreUserIdSlot),
+                storeAppUserID = captureNullable(postedStoreUserIdSlot),
                 marketplace = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
@@ -246,7 +246,7 @@ class PostingTransactionsTests {
             onSuccess = { _, _ -> },
             onError = { _, _ -> }
         )
-        assertThat(postedStoreUserIdSlot.captured).isEqualTo(expectedStoreUserID)
+        assertThat(postedStoreUserIdSlot.first()).isEqualTo(expectedStoreUserID)
 
         verify(exactly = 1) {
             backendMock.postReceiptData(
