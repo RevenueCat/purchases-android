@@ -1,4 +1,4 @@
+### Bugfixes
+* Fix for AbstractMethodError DefaultLifecycleObserver.onCreate (#695) via Cesar de la Vega (@vegaro)
 ### Other Changes
-* Add navigation to logs fragment from different screens (#647) via Toni Rico (@tonidero)
-* Update Maven publish plugin (#646) via Cesar de la Vega (@vegaro)
-* Add cache amazon user data (#640) via Toni Rico (@tonidero)
+* Remove unnecessary appcompat dependency (#691) via Toni Rico (@tonidero)

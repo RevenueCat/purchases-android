@@ -12,7 +12,6 @@ dependencies {
     implementation project(":feature:subscriber-attributes")
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.core:core-ktx:$androidxCoreVersion"
-    implementation 'androidx.appcompat:appcompat:1.2.0'
     testImplementation "androidx.test:core:$testLibrariesVersion"
     testImplementation "androidx.test:runner:$testLibrariesVersion"
     testImplementation "androidx.test:rules:$testLibrariesVersion"
