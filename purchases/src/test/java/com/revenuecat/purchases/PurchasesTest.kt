@@ -56,6 +56,7 @@ import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
+import com.revenuecat.purchases.utils.stubPurchaseOption
 import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.Call
 import io.mockk.CapturingSlot
@@ -4103,7 +4104,7 @@ class PurchasesTest {
         type: ProductType
     ): List<StoreProduct> {
         val storeProducts = productIdsSuccessfullyFetched.map { productId ->
-            if (type == ProductType.SUBS) stubStoreProduct(productId)
+            if (type == ProductType.SUBS) stubStoreProduct(productId, listOf(stubPurchaseOption("p1m", "P1M")))
             else createMockOneTimeProductDetails(productId).toStoreProduct()
         }
 
