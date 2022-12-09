@@ -3,9 +3,9 @@ package com.revenuecat.purchases.google
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class StoreProductTest {
 //    TODOBC5: After using mocks for ProductDetails, these tests don't make much sense. Leaving for now.
+//@RunWith(AndroidJUnit4::class)
+//class StoreProductTest {
 //    @Test
 //    fun `Two StoreProducts with the same properties are equal`() {
 //        val storeProduct1 = GoogleStoreProduct(
@@ -91,4 +91,4 @@ class StoreProductTest {
 //        )
 //        Assertions.assertThat(storeProduct1.hashCode()).isEqualTo(storeProduct2.hashCode())
 //    }
-}
+//}
