@@ -2433,17 +2433,21 @@ class PurchasesTest {
 
         mockStoreProduct(listOf(productIdSub), emptyList(), ProductType.SUBS)
 
+        val offeringIdentifier = "offering_a"
+        val purchaseOptionId = "purchase_option"
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(
                 productIdSub,
                 purchaseTokenSub,
                 ProductType.SUBS,
-                "offering_a"
+                offeringIdentifier,
+                purchaseOptionId = purchaseOptionId
             )
         )
         val productInfo = ReceiptInfo(
             productIDs = listOf(productIdSub),
-            offeringIdentifier = "offering_a"
+            offeringIdentifier = offeringIdentifier,
+            purchaseOptionId = purchaseOptionId
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -4183,7 +4187,8 @@ class PurchasesTest {
         productType: ProductType,
         offeringIdentifier: String? = null,
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
-        acknowledged: Boolean = false
+        acknowledged: Boolean = false,
+        purchaseOptionId: String? = null
     ): List<StoreTransaction> {
         val p = stubGooglePurchase(
             productIds = listOf(productId),
@@ -4192,7 +4197,7 @@ class PurchasesTest {
             acknowledged = acknowledged
         )
 
-        return listOf(p.toStoreTransaction(productType, offeringIdentifier))
+        return listOf(p.toStoreTransaction(productType, offeringIdentifier, purchaseOptionId))
     }
 
     private fun mockSuccessfulQueryPurchases(
