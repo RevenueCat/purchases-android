@@ -94,6 +94,7 @@ class BillingWrapperTest {
     private var storeProducts: List<StoreProduct>? = null
 
     private val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
+    private val billingClientErrorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
     private val appUserId = "jerry"
     private var mockActivity = mockk<Activity>()
 
@@ -1241,33 +1242,14 @@ class BillingWrapperTest {
     @Test
     fun `getPurchaseType returns UNKNOWN if sub not found and inapp responses not OK`() {
         val subPurchaseToken = "subToken"
-
-        val querySubPurchasesListenerSlot = slot<PurchasesResponseListener>()
-        every {
-            mockClient.queryPurchasesAsync(
-                BillingClient.SkuType.SUBS,
-                capture(querySubPurchasesListenerSlot)
-            )
-        } answers {
-            querySubPurchasesListenerSlot.captured.onQueryPurchasesResponse(
-                billingClientOKResult,
-                getMockedPurchaseList(subPurchaseToken)
-            )
-        }
-        val errorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
         val inAppPurchaseToken = "inAppToken"
-        val queryInAppPurchasesListenerSlot = slot<PurchasesResponseListener>()
-        every {
-            mockClient.queryPurchasesAsync(
-                BillingClient.SkuType.INAPP,
-                capture(queryInAppPurchasesListenerSlot)
-            )
-        } answers {
-            queryInAppPurchasesListenerSlot.captured.onQueryPurchasesResponse(
-                errorResult,
-                getMockedPurchaseList(inAppPurchaseToken)
-            )
-        }
+
+        mockClient.mockQueryPurchasesAsync(
+            subsResult = billingClientOKResult,
+            inAppResult = billingClientErrorResult,
+            subPurchases = getMockedPurchaseList(subPurchaseToken),
+            inAppPurchases = getMockedPurchaseList(inAppPurchaseToken)
+        )
 
         wrapper.getPurchaseType(inAppPurchaseToken) { productType ->
             assertThat(productType).isEqualTo(ProductType.UNKNOWN)
