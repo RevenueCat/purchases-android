@@ -89,7 +89,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     handleSuccessfulPurchase(storeTransaction.orderId)
                 })
         }
-
     }
 
     override fun onPurchaseProductClicked(
@@ -126,8 +125,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     handleSuccessfulPurchase(storeTransaction.orderId)
                 })
         }
-
-
     }
 
     private fun handleSuccessfulPurchase(orderId: String?) {
