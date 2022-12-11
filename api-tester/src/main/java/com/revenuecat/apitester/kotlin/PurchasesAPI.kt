@@ -29,9 +29,8 @@ import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.purchasePackageWith
-import com.revenuecat.purchases.purchasePackageOptionWith
 import com.revenuecat.purchases.purchaseProductWith
-import com.revenuecat.purchases.purchaseProductOptionWith
+import com.revenuecat.purchases.purchaseSubscriptionOptionWith
 import com.revenuecat.purchases.restorePurchasesWith
 import java.net.URL
 import java.util.concurrent.ExecutorService
@@ -86,16 +85,14 @@ private class PurchasesAPI {
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
         purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
 
-        purchases.purchaseProductOption(activity, storeProduct, purchaseOption, upgradeInfo, purchaseChangeCallback)
-        purchases.purchaseProductOption(activity, storeProduct, purchaseOption, purchaseCallback)
-        purchases.purchasePackageOption(
+        purchases.purchaseSubscriptionOption(
             activity,
-            packageToPurchase,
+            storeProduct,
             purchaseOption,
             upgradeInfo,
             purchaseChangeCallback
         )
-        purchases.purchasePackageOption(activity, packageToPurchase, purchaseOption, purchaseCallback)
+        purchases.purchaseSubscriptionOption(activity, storeProduct, purchaseOption, purchaseCallback)
 
         purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.logIn("", logInCallback)
@@ -159,35 +156,20 @@ private class PurchasesAPI {
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
-        purchases.purchaseProductOptionWith(
+        purchases.purchaseSubscriptionOptionWith(
             activity,
             storeProduct,
             purchaseOption,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
-        purchases.purchaseProductOptionWith(
+        purchases.purchaseSubscriptionOptionWith(
             activity,
             storeProduct,
             purchaseOption,
             upgradeInfo,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
-        purchases.purchasePackageOptionWith(
-            activity,
-            packageToPurchase,
-            purchaseOption,
-            upgradeInfo,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
-        purchases.purchasePackageOptionWith(
-            activity,
-            packageToPurchase,
-            purchaseOption,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
         purchases.restorePurchasesWith(
             onError = { _: PurchasesError -> },
