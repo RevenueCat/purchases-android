@@ -379,7 +379,8 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase upgrading from a previous sku.
+     * Make a purchase upgrading from a previous sku. If purchasing a subscription,
+     * it will choose the default [PurchaseOption].
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
@@ -413,7 +414,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase.
+     * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [PurchaseOption].
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
@@ -477,7 +478,8 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase upgrading from a previous sku.
+     * Purchase a [Package] upgrading from a previous sku. If purchasing a subscription,
+     * it will choose the default [PurchaseOption].
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
@@ -511,7 +513,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase.
+     * Purchase a [Package]. If purchasing a subscription, it will choose the default [PurchaseOption].
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
