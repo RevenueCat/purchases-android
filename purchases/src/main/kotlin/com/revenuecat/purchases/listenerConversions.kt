@@ -136,10 +136,6 @@ fun Purchases.purchaseProductWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
-@Deprecated(
-    "Replaced with purchaseSubscriptionOptionWith",
-    ReplaceWith("purchaseSubscriptionOptionWith(activity, storeProduct, upgradeInfo, purchaseOption, onError, onSuccess)")
-)
 fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
@@ -212,12 +208,6 @@ fun Purchases.purchaseSubscriptionOptionWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called after the purchase has completed with error
  */
-@Deprecated(
-    "Replaced with purchaseSubscriptionOptionWith",
-    ReplaceWith(
-        "purchaseSubscriptionOptionWith(activity, storeProduct, upgradeInfo, purchaseOption, onError, onSuccess)"
-    )
-)
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,

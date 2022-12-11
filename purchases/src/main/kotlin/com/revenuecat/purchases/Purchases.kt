@@ -387,10 +387,6 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
-    @Deprecated(
-        "Replaced with purchaseSubscriptionOption",
-        ReplaceWith("purchaseSubscriptionOption(activity, storeProduct, purchaseOption, upgradeInfo, listener)")
-    )
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
@@ -486,10 +482,6 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
      */
-    @Deprecated(
-        "Replaced with purchaseSubscriptionOption",
-        ReplaceWith("purchaseSubscriptionOption(activity, storeProduct, purchaseOption, upgradeInfo, callback)")
-    )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
