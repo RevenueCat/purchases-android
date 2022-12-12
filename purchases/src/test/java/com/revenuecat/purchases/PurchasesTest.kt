@@ -2437,10 +2437,10 @@ class PurchasesTest {
         val purchaseOptionId = "purchase_option"
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(
-                productIdSub,
-                purchaseTokenSub,
-                ProductType.SUBS,
-                offeringIdentifier,
+                productId = productIdSub,
+                purchaseToken = purchaseTokenSub,
+                productType = ProductType.SUBS,
+                offeringIdentifier = offeringIdentifier,
                 purchaseOptionId = purchaseOptionId
             )
         )
