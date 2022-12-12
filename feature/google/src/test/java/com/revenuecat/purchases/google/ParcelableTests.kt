@@ -9,9 +9,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import com.revenuecat.purchases.Package as RevenueCatPackage
 
-@RunWith(AndroidJUnit4::class)
-class ParcelableTests {
 //    TODOBC5: After using mocks for ProductDetails, these tests don't make much sense. Leaving for now.
+//@RunWith(AndroidJUnit4::class)
+//class ParcelableTests {
 //    @Test
 //    fun `Package is Parcelable`() = testParcelization(
 //        RevenueCatPackage(
@@ -42,4 +42,4 @@ class ParcelableTests {
 //            )
 //        )
 //    }
-}
+//}

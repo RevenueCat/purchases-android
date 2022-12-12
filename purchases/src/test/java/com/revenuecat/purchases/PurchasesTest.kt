@@ -56,6 +56,7 @@ import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
+import com.revenuecat.purchases.utils.stubPurchaseOption
 import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.Call
 import io.mockk.CapturingSlot
@@ -2432,17 +2433,21 @@ class PurchasesTest {
 
         mockStoreProduct(listOf(productIdSub), emptyList(), ProductType.SUBS)
 
+        val offeringIdentifier = "offering_a"
+        val purchaseOptionId = "purchase_option"
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(
-                productIdSub,
-                purchaseTokenSub,
-                ProductType.SUBS,
-                "offering_a"
+                productId = productIdSub,
+                purchaseToken = purchaseTokenSub,
+                productType = ProductType.SUBS,
+                offeringIdentifier = offeringIdentifier,
+                purchaseOptionId = purchaseOptionId
             )
         )
         val productInfo = ReceiptInfo(
             productIDs = listOf(productIdSub),
-            offeringIdentifier = "offering_a"
+            offeringIdentifier = offeringIdentifier,
+            purchaseOptionId = purchaseOptionId
         )
         verify(exactly = 1) {
             mockBackend.postReceiptData(
@@ -4103,7 +4108,7 @@ class PurchasesTest {
         type: ProductType
     ): List<StoreProduct> {
         val storeProducts = productIdsSuccessfullyFetched.map { productId ->
-            if (type == ProductType.SUBS) stubStoreProduct(productId)
+            if (type == ProductType.SUBS) stubStoreProduct(productId, listOf(stubPurchaseOption("p1m", "P1M")))
             else createMockOneTimeProductDetails(productId).toStoreProduct()
         }
 
@@ -4182,7 +4187,8 @@ class PurchasesTest {
         productType: ProductType,
         offeringIdentifier: String? = null,
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
-        acknowledged: Boolean = false
+        acknowledged: Boolean = false,
+        purchaseOptionId: String? = null
     ): List<StoreTransaction> {
         val p = stubGooglePurchase(
             productIds = listOf(productId),
@@ -4191,7 +4197,7 @@ class PurchasesTest {
             acknowledged = acknowledged
         )
 
-        return listOf(p.toStoreTransaction(productType, offeringIdentifier))
+        return listOf(p.toStoreTransaction(productType, offeringIdentifier, purchaseOptionId))
     }
 
     private fun mockSuccessfulQueryPurchases(
