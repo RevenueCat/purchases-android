@@ -152,6 +152,7 @@ class PostingTransactionsTests {
     fun tearDown() {
         postReceiptError = null
         postReceiptSuccess = null
+        postedStoreUserIdSlot.clear()
         clearMocks(customerInfoHelperMock)
     }
 
@@ -361,7 +362,7 @@ class PostingTransactionsTests {
     }
 
     @Test
-    fun `!consumeAllTransactions is sent as observerMode when posting to backend`() {
+    fun `observerMode parameter is sent as false when transactions are consumed`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
         val expectedConsumeAllTransactions = true
