@@ -17,8 +17,9 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.purchasePackageOptionWith
-import com.revenuecat.purchases.purchaseProductOptionWith
+import com.revenuecat.purchases.purchasePackageWith
+import com.revenuecat.purchases.purchaseProductWith
+import com.revenuecat.purchases.purchaseSubscriptionOptionWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
@@ -39,7 +40,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         Purchases.sharedInstance.getCustomerInfoWith {
             activeSubscriptions = it.activeSubscriptions
         }
@@ -61,18 +62,33 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     override fun onPurchasePackageClicked(cardView: View, currentPackage: Package, purchaseOption: PurchaseOption?) {
         binding.purchaseProgress.visibility = View.VISIBLE
 
-        Purchases.sharedInstance.purchasePackageOptionWith(
-            requireActivity(),
-            currentPackage,
-            purchaseOption!!, // TODOBC5: Fix API for OTP
-            { error, userCancelled ->
-                if (!userCancelled) {
-                    showUserError(requireActivity(), error)
+        if (purchaseOption == null) {
+            Purchases.sharedInstance.purchasePackageWith(
+                requireActivity(),
+                currentPackage,
+                { error, userCancelled ->
+                    if (!userCancelled) {
+                        showUserError(requireActivity(), error)
+                    }
+                },
+                { storeTransaction, _ ->
+                    handleSuccessfulPurchase(storeTransaction.orderId)
                 }
-            },
-            { storeTransaction, _ ->
-                handleSuccessfulPurchase(storeTransaction.orderId)
-            })
+            )
+        } else {
+            Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+                requireActivity(),
+                currentPackage.product,
+                purchaseOption,
+                { error, userCancelled ->
+                    if (!userCancelled) {
+                        showUserError(requireActivity(), error)
+                    }
+                },
+                { storeTransaction, _ ->
+                    handleSuccessfulPurchase(storeTransaction.orderId)
+                })
+        }
     }
 
     override fun onPurchaseProductClicked(
@@ -82,18 +98,33 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     ) {
         binding.purchaseProgress.visibility = View.VISIBLE
 
-        Purchases.sharedInstance.purchaseProductOptionWith(
-            requireActivity(),
-            currentProduct,
-            purchaseOption!!, // TODOBC5: Fix API for OTP
-            { error, userCancelled ->
-                if (!userCancelled) {
-                    showUserError(requireActivity(), error)
+        if (purchaseOption == null) {
+            Purchases.sharedInstance.purchaseProductWith(
+                requireActivity(),
+                currentProduct,
+                { error, userCancelled ->
+                    if (!userCancelled) {
+                        showUserError(requireActivity(), error)
+                    }
+                },
+                { storeTransaction, _ ->
+                    handleSuccessfulPurchase(storeTransaction.orderId)
                 }
-            },
-            { storeTransaction, _ ->
-                handleSuccessfulPurchase(storeTransaction.orderId)
-            })
+            )
+        } else {
+            Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+                requireActivity(),
+                currentProduct,
+                purchaseOption,
+                { error, userCancelled ->
+                    if (!userCancelled) {
+                        showUserError(requireActivity(), error)
+                    }
+                },
+                { storeTransaction, _ ->
+                    handleSuccessfulPurchase(storeTransaction.orderId)
+                })
+        }
     }
 
     private fun handleSuccessfulPurchase(orderId: String?) {

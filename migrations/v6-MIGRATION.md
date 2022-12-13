@@ -50,26 +50,21 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 |------------|------------|
 | skus       | productIds |
 
-### Deprecated + New APIs
+### New purchasing APIs
 
-| Deprecated                                                                    | New                                                                                                 |
-|-------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
-| `purchaseProduct(Activity, StoreProduct, PurchaseCallback)`                   | `purchaseProductOption(Activity, StoreProduct, PurchaseOption, PurchaseCallback)`                   |
-| `purchaseProduct(Activity, StoreProduct, UpgradeInfo, ProductChangeCallback)` | `purchaseProductOption(Activity, StoreProduct, PurchaseOption, UpgradeInfo, ProductChangeCallback)` |
-| `purchasePackage(Activity, Package, PurchaseCallback)`                        | `purchasePackageOption(Activity, Package, PurchaseOption, PurchaseCallback)`                        |
-| `purchasePackage(Activity, Package, UpgradeInfo, ProductChangeCallback)`      | `purchasePackage(Activity, Package, PurchaseOption, UpgradeInfo, ProductChangeCallback)`            |
-
+| New              |
+|------------------|
+| `purchaseSubscriptionOption(Activity, StoreProduct, PurchaseOption, PurchaseCallback)` |
+| `purchaseSubscriptionOption(Activity, StoreProduct, PurchaseOption, UpgradeInfo, ProductChangeCallback)` |
 
 ### Kotlin Helpers Changes
 
-| Old signature                                                                                                                           | New signature                                                                                                                                                 |
-|-----------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `purchaseProductWith(Activity, StoreProduct, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              | `purchaseProductOptionWith(Activity, StoreProduct, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              |
-| `purchaseProductWith(Activity, StoreProduct, UpgradeInfo, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` | `purchaseProductOptionWith(Activity, StoreProduct, UpgradeInfo, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
-| `purchasePackageWith(Activity, Package, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                   | `purchasePackageOptionWith(Activity, Package, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                   |
-| `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`      | `purchasePackageOptionWith(Activity, Package, UpgradeInfo, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`      |
+| New              |
+|------------------|
+| `purchaseSubscriptionOptionWith(Activity, StoreProduct, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+| `purchaseSubscriptionOptionWith(Activity, StoreProduct, UpgradeInfo, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 
-| Removed|  
+| Removed |
 |----------------------------------------------------------------------------------------------------------------------|
 | `getPurchaserInfoWith((PurchasesError) -> Unit, (PurchaserInfo) -> Unit)`                                            |
 | `purchasePackageWith(Activity, Package, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)`                |
