@@ -112,7 +112,7 @@ fun Purchases.getOfferingsWith(
 }
 
 /**
- * Purchase product.
+ * Purchase product. If purchasing a subscription, it will choose the default [PurchaseOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
@@ -128,7 +128,8 @@ fun Purchases.purchaseProductWith(
 }
 
 /**
- * Make a purchase upgrading from a previous sku.
+ * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
+ * default [PurchaseOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
@@ -200,7 +201,8 @@ fun Purchases.purchaseSubscriptionOptionWith(
 }
 
 /**
- * Make a purchase upgrading from a previous sku.
+ * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
+ * default [PurchaseOption].
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
@@ -219,7 +221,7 @@ fun Purchases.purchasePackageWith(
 }
 
 /**
- * Make a purchase.
+ * Make a purchase. If purchasing a subscription, it will choose the default [PurchaseOption].
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
