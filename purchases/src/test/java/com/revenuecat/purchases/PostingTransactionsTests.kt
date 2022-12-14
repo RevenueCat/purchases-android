@@ -53,7 +53,6 @@ class PostingTransactionsTests {
     private val attributesToMarkAsSyncSlot = slot<Map<String, SubscriberAttribute>>()
     private val attributesErrorsSlot = slot<List<SubscriberAttributeError>>()
     private val postedReceiptInfoSlot = slot<ReceiptInfo>()
-    private val postedStoreUserIdSlot = mutableListOf<String?>()
 
     private val purchaseOptionId = "purchaseOptionId"
     private val mockStoreProduct = stubStoreProduct("productId")
@@ -96,7 +95,7 @@ class PostingTransactionsTests {
                 observerMode = any(),
                 subscriberAttributes = any(),
                 receiptInfo = capture(postedReceiptInfoSlot),
-                storeAppUserID = captureNullable(postedStoreUserIdSlot),
+                storeAppUserID = any(),
                 marketplace = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
@@ -161,7 +160,6 @@ class PostingTransactionsTests {
     fun tearDown() {
         postReceiptError = null
         postReceiptSuccess = null
-        postedStoreUserIdSlot.clear()
         clearMocks(customerInfoHelperMock)
     }
 
@@ -224,42 +222,6 @@ class PostingTransactionsTests {
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
                 storeAppUserID = any(),
-                marketplace = any(),
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-    }
-
-    @Test
-    fun `store user id is sent when posting to backend`() {
-        postReceiptSuccess = PostReceiptCompletionContainer()
-
-        val expectedStoreUserID = "a_store_user_id"
-        every {
-            mockStoreTransaction.storeUserID
-        } returns expectedStoreUserID
-
-        underTest.postToBackend(
-            purchase = mockStoreTransaction,
-            storeProduct = mockStoreProduct,
-            allowSharingPlayStoreAccount = true,
-            consumeAllTransactions = true,
-            appUserID = appUserId,
-            onSuccess = { _, _ -> },
-            onError = { _, _ -> }
-        )
-        assertThat(postedStoreUserIdSlot.first()).isEqualTo(expectedStoreUserID)
-
-        verify(exactly = 1) {
-            backendMock.postReceiptData(
-                purchaseToken = any(),
-                appUserID = appUserId,
-                isRestore = any(),
-                observerMode = any(),
-                subscriberAttributes = expectedAttributes.toBackendMap(),
-                receiptInfo = any(),
-                storeAppUserID = expectedStoreUserID,
                 marketplace = any(),
                 onSuccess = any(),
                 onError = any()
