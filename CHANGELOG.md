@@ -1,3 +1,7 @@
+## 5.6.6
+### Bugfixes
+* Added androidx.lifecycle.DefaultLifecycleObserver to consumer-rules.pro (#714) via Cesar de la Vega (@vegaro)
+
 ## 5.6.5
 ### Bugfixes
 * Fix for AbstractMethodError DefaultLifecycleObserver.onCreate (#695) via Cesar de la Vega (@vegaro)
