@@ -877,14 +877,14 @@ class PurchasesTest {
         val productId = "onemonth_freetrial"
 
         val basePlanPurchaseOption = stubPurchaseOption("base-plan-purchase-option")
-        val freeTrialPurchaseOption = stubPurchaseOption(
+        val expectedDefaultPurchaseOption = stubPurchaseOption(
             "free-trial-purchase-option",
             pricingPhases = listOf(stubFreeTrialPricingPhase(), stubPricingPhase())
         )
         val storeProduct = stubStoreProduct(
             productId = productId,
-            defaultOption = freeTrialPurchaseOption,
-            purchaseOptions = listOf(freeTrialPurchaseOption, basePlanPurchaseOption)
+            defaultOption = expectedDefaultPurchaseOption,
+            purchaseOptions = listOf(expectedDefaultPurchaseOption, basePlanPurchaseOption)
         )
 
         mockQueryingProductDetails(storeProduct, null)
@@ -901,7 +901,7 @@ class PurchasesTest {
                 mockActivity,
                 appUserId,
                 storeProduct,
-                freeTrialPurchaseOption,
+                expectedDefaultPurchaseOption,
                 null,
                 null
             )
@@ -913,14 +913,14 @@ class PurchasesTest {
         val productId = "onemonth_freetrial"
 
         val basePlanPurchaseOption = stubPurchaseOption("base-plan-purchase-option")
-        val freeTrialPurchaseOption = stubPurchaseOption(
+        val expectedDefaultPurchaseOption = stubPurchaseOption(
             "free-trial-purchase-option",
             pricingPhases = listOf(stubFreeTrialPricingPhase(), stubPricingPhase())
         )
         val storeProduct = stubStoreProduct(
             productId = productId,
-            defaultOption = freeTrialPurchaseOption,
-            purchaseOptions = listOf(freeTrialPurchaseOption, basePlanPurchaseOption)
+            defaultOption = expectedDefaultPurchaseOption,
+            purchaseOptions = listOf(expectedDefaultPurchaseOption, basePlanPurchaseOption)
         )
         val (_, offerings) = stubOfferings(storeProduct)
 
@@ -938,7 +938,7 @@ class PurchasesTest {
                 mockActivity,
                 appUserId,
                 storeProduct,
-                freeTrialPurchaseOption,
+                expectedDefaultPurchaseOption,
                 null,
                 stubOfferingIdentifier
             )
