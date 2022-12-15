@@ -393,16 +393,10 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        val purchaseOption = storeProduct.bestPurchaseOption
-        if (purchaseOption == null) {
-            // TODOBC5: Improve and move error message
-            errorLog("PurchaseProduct with upgrade: Product does not have any purchase option")
-            return
-        }
         startProductChange(
             activity,
             storeProduct,
-            purchaseOption,
+            storeProduct.defaultOption,
             null,
             upgradeInfo,
             listener
@@ -420,13 +414,7 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        val purchaseOption = storeProduct.bestPurchaseOption
-        if (purchaseOption == null) {
-            // TODOBC5: Improve and move error message
-            errorLog("PurchaseProduct: Product does not have any purchase option")
-            return
-        }
-        startPurchase(activity, storeProduct, purchaseOption, null, callback)
+        startPurchase(activity, storeProduct, storeProduct.defaultOption, null, callback)
     }
 
     // TODOBC5: remove storeProduct parameter
@@ -488,16 +476,10 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         callback: ProductChangeCallback
     ) {
-        val purchaseOption = packageToPurchase.product.bestPurchaseOption
-        if (purchaseOption == null) {
-            // TODOBC5: Improve and move error message
-            errorLog("PurchasePackage with upgrade: Product does not have any purchase option")
-            return
-        }
         startProductChange(
             activity,
             packageToPurchase.product,
-            purchaseOption,
+            packageToPurchase.product.defaultOption,
             packageToPurchase.offering,
             upgradeInfo,
             callback
@@ -515,16 +497,10 @@ class Purchases internal constructor(
         packageToPurchase: Package,
         listener: PurchaseCallback
     ) {
-        val purchaseOption = packageToPurchase.product.bestPurchaseOption
-        if (purchaseOption == null) {
-            // TODOBC5: Improve and move error message
-            errorLog("PurchasePackage: Product does not have any purchase option")
-            return
-        }
         startPurchase(
             activity,
             packageToPurchase.product,
-            purchaseOption,
+            packageToPurchase.product.defaultOption,
             packageToPurchase.offering,
             listener
         )
@@ -1484,7 +1460,7 @@ class Purchases internal constructor(
     private fun startPurchase(
         activity: Activity,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
@@ -1528,7 +1504,7 @@ class Purchases internal constructor(
     private fun startProductChange(
         activity: Activity,
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
@@ -1571,7 +1547,7 @@ class Purchases internal constructor(
 
     private fun replaceOldPurchaseWithNewProduct(
         storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption,
+        purchaseOption: PurchaseOption?,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,

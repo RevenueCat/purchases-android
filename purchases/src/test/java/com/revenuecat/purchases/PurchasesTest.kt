@@ -4074,7 +4074,7 @@ class PurchasesTest {
         type: ProductType
     ): List<StoreProduct> {
         val storeProducts = productIdsSuccessfullyFetched.map { productId ->
-            if (type == ProductType.SUBS) stubStoreProduct(productId, listOf(stubPurchaseOption("p1m", "P1M")))
+            if (type == ProductType.SUBS) stubStoreProduct(productId, stubPurchaseOption("p1m", "P1M"))
             else createMockOneTimeProductDetails(productId).toStoreProduct()
         }
 
@@ -4282,9 +4282,11 @@ class PurchasesTest {
             if (type == ProductType.SUBS) createMockProductDetailsFreeTrial(productId, 2.00)
             else createMockOneTimeProductDetails(productId, 2.00)
 
+        val defaultOfferDetails = productDetails.subscriptionOfferDetails?.first { it.isBasePlan }
         val storeProduct = if (type == ProductType.SUBS) productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!!.first { it.isBasePlan }.subscriptionBillingPeriod,
-            productDetails.subscriptionOfferDetails!!
+            defaultOfferDetails!!.subscriptionBillingPeriod,
+            productDetails.subscriptionOfferDetails!!,
+            defaultOfferDetails
         ) else productDetails.toStoreProduct()
 
         val receiptInfo = ReceiptInfo(

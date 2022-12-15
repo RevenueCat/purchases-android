@@ -386,6 +386,6 @@ class OfferingsTest {
             basePlanPricingPhase
         )
         val offerPurchaseOption = stubPurchaseOption(basePlanId, duration, offerPricingPhases)
-        return stubStoreProduct(productId, listOf(basePlanPurchaseOption, offerPurchaseOption))
+        return stubStoreProduct(productId, basePlanPurchaseOption, listOf(basePlanPurchaseOption, offerPurchaseOption))
     }
 }

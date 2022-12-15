@@ -379,9 +379,11 @@ class BillingWrapperTest {
 
         val upgradeInfo = mockReplaceSkuInfo()
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
+        val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
-            productDetails.subscriptionOfferDetails!!
+            defaultOfferDetails.subscriptionBillingPeriod,
+            productDetails.subscriptionOfferDetails!!,
+            defaultOfferDetails
         )
 
         val slot = slot<BillingFlowParams>()
@@ -435,9 +437,11 @@ class BillingWrapperTest {
 
         val upgradeInfo = mockReplaceSkuInfo()
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
+        val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
-            productDetails.subscriptionOfferDetails!!
+            defaultOfferDetails.subscriptionBillingPeriod,
+            productDetails.subscriptionOfferDetails!!,
+            defaultOfferDetails
         )
 
         every {
@@ -625,6 +629,19 @@ class BillingWrapperTest {
 
     @Test
     fun `subscription purchase fails if purchase option is not GooglePurchaseOption`() {
+        val purchaseOption = GooglePurchaseOption(
+            id = "purchaseOptionId",
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = "",
+                priceCurrencyCode = "",
+                formattedPrice = "",
+                priceAmountMicros = 0L,
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0
+            )),
+            tags = emptyList(),
+            token = "mock-token"
+        )
         val storeProduct = GoogleStoreProduct(
             productId = "mock-sku",
             type = ProductType.SUBS,
@@ -632,19 +649,8 @@ class BillingWrapperTest {
             title = "",
             description = "",
             subscriptionPeriod = null,
-            purchaseOptions = listOf(GooglePurchaseOption(
-                id = "purchaseOptionId",
-                pricingPhases = listOf(PricingPhase(
-                    billingPeriod = "",
-                    priceCurrencyCode = "",
-                    formattedPrice = "",
-                    priceAmountMicros = 0L,
-                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
-                    billingCycleCount = 0
-                )),
-                tags = emptyList(),
-                token = "mock-token"
-            )),
+            purchaseOptions = listOf(purchaseOption),
+            defaultOption = purchaseOption,
             productDetails = mockProductDetails()
         )
 
@@ -707,7 +713,9 @@ class BillingWrapperTest {
             override val subscriptionPeriod: String?
                 get() = null
             override val purchaseOptions: List<PurchaseOption>
-                get() = listOf(GooglePurchaseOption("purchaseOption", emptyList(), emptyList(), "fake-token"))
+                get() = listOf(defaultOption)
+            override val defaultOption: PurchaseOption
+                get() = GooglePurchaseOption("purchaseOption", emptyList(), emptyList(), "fake-token")
             override val sku: String
                 get() = productId
 
@@ -1133,9 +1141,11 @@ class BillingWrapperTest {
         } returns billingClientOKResult
 
         val productDetails = mockProductDetails(productId = "product_a")
+        val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
-            productDetails.subscriptionOfferDetails!!
+            defaultOfferDetails.subscriptionBillingPeriod,
+            productDetails.subscriptionOfferDetails!!,
+            defaultOfferDetails
         )
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
@@ -2128,9 +2138,11 @@ class BillingWrapperTest {
 
     private fun createStoreProductWithoutOffers(): StoreProduct {
         val productDetails = createMockProductDetailsNoOffers()
+        val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         return productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
-            productDetails.subscriptionOfferDetails!!
+            defaultOfferDetails.subscriptionBillingPeriod,
+            productDetails.subscriptionOfferDetails!!,
+            defaultOfferDetails
         )
     }
 

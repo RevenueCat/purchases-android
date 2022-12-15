@@ -2,7 +2,6 @@ package com.revenuecat.apitester.java;
 
 import com.android.billingclient.api.ProductDetails;
 import com.revenuecat.purchases.ProductType;
-import com.revenuecat.purchases.StoreProductExtensionsKt;
 import com.revenuecat.purchases.models.GooglePurchaseOption;
 import com.revenuecat.purchases.models.GoogleStoreProduct;
 import com.revenuecat.purchases.models.GoogleStoreProductKt;
@@ -23,6 +22,7 @@ final class StoreProductAPI {
         final String description = product.getDescription();
         final String subscriptionPeriod = product.getSubscriptionPeriod();
         List<PurchaseOption> purchaseOptions = product.getPurchaseOptions();
+        PurchaseOption defaultOption = product.getDefaultOption();
 
         // TODOBC5 can we find an easier way to do this in java?
         GoogleStoreProduct underlyingProduct = GoogleStoreProductKt.getGoogleProduct(product);
@@ -48,6 +48,7 @@ final class StoreProductAPI {
                 googleStoreProduct.getDescription(),
                 googleStoreProduct.getSubscriptionPeriod(),
                 googleStoreProduct.getPurchaseOptions(),
+                googleStoreProduct.getDefaultOption(),
                 googleStoreProduct.getProductDetails()
         );
     }
