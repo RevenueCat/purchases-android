@@ -85,6 +85,17 @@ fun stubPurchaseOption(
     override fun writeToParcel(dest: Parcel?, flags: Int) {}
 }
 
+fun stubFreeTrialPricingPhase(
+    billingPeriod: String = "P1M",
+    priceCurrencyCodeValue: String = "USD",
+) = stubPricingPhase(
+    billingPeriod = billingPeriod,
+    priceCurrencyCodeValue = priceCurrencyCodeValue,
+    price = 0.0,
+    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+    billingCycleCount = 1
+)
+
 fun stubPricingPhase(
     billingPeriod: String = "P1M",
     priceCurrencyCodeValue: String = "USD",
@@ -94,7 +105,7 @@ fun stubPricingPhase(
 ): PricingPhase = PricingPhase(
     billingPeriod,
     priceCurrencyCodeValue,
-    formattedPrice = "${'$'}$price",
+    formattedPrice = if (price == 0.0) "Free" else "${'$'}$price",
     priceAmountMicros = price.times(MICROS_MULTIPLIER).toLong(),
     recurrenceMode.toRecurrenceMode(),
     billingCycleCount

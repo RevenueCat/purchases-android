@@ -53,7 +53,9 @@ import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
+import com.revenuecat.purchases.utils.stubFreeTrialPricingPhase
 import com.revenuecat.purchases.utils.stubGooglePurchase
+import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubPurchaseOption
 import com.revenuecat.purchases.utils.stubStoreProduct
@@ -868,6 +870,79 @@ class PurchasesTest {
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
         assertThat(receivedUserCancelled).isFalse()
+    }
+
+    @Test
+    fun `when purchasing a product with multiple purchase options, we choose the default`() {
+        val productId = "onemonth_freetrial"
+
+        val basePlanPurchaseOption = stubPurchaseOption("base-plan-purchase-option")
+        val freeTrialPurchaseOption = stubPurchaseOption(
+            "free-trial-purchase-option",
+            pricingPhases = listOf(stubFreeTrialPricingPhase(), stubPricingPhase())
+        )
+        val storeProduct = stubStoreProduct(
+            productId = productId,
+            defaultOption = freeTrialPurchaseOption,
+            purchaseOptions = listOf(freeTrialPurchaseOption, basePlanPurchaseOption)
+        )
+
+        mockQueryingProductDetails(storeProduct, null)
+
+        purchases.purchaseProductWith(
+            mockActivity,
+            storeProduct,
+            onError = { _, _ -> },
+            onSuccess = { _, _ -> }
+        )
+
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                mockActivity,
+                appUserId,
+                storeProduct,
+                freeTrialPurchaseOption,
+                null,
+                null
+            )
+        }
+    }
+
+    @Test
+    fun `when purchasing a package with multiple purchase options, we choose the default`() {
+        val productId = "onemonth_freetrial"
+
+        val basePlanPurchaseOption = stubPurchaseOption("base-plan-purchase-option")
+        val freeTrialPurchaseOption = stubPurchaseOption(
+            "free-trial-purchase-option",
+            pricingPhases = listOf(stubFreeTrialPricingPhase(), stubPricingPhase())
+        )
+        val storeProduct = stubStoreProduct(
+            productId = productId,
+            defaultOption = freeTrialPurchaseOption,
+            purchaseOptions = listOf(freeTrialPurchaseOption, basePlanPurchaseOption)
+        )
+        val (_, offerings) = stubOfferings(storeProduct)
+
+        mockQueryingProductDetails(storeProduct, null)
+
+        purchases.purchasePackageWith(
+            mockActivity,
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            onError = { _, _ -> },
+            onSuccess = { _, _ -> }
+        )
+
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                mockActivity,
+                appUserId,
+                storeProduct,
+                freeTrialPurchaseOption,
+                null,
+                stubOfferingIdentifier
+            )
+        }
     }
 
     @Test
@@ -4288,16 +4363,23 @@ class PurchasesTest {
             defaultOfferDetails
         ) else productDetails.toInAppStoreProduct()
 
+        return mockQueryingProductDetails(storeProduct, offeringIdentifier)
+    }
+
+    private fun mockQueryingProductDetails(
+        storeProduct: StoreProduct,
+        offeringIdentifier: String?
+    ): ReceiptInfo {
         val receiptInfo = ReceiptInfo(
-            productIDs = listOf(productId),
+            productIDs = listOf(storeProduct.productId),
             offeringIdentifier = offeringIdentifier,
             storeProduct = storeProduct
         )
 
         every {
             mockBillingAbstract.queryProductDetailsAsync(
-                type,
-                setOf(productId),
+                storeProduct.type,
+                setOf(storeProduct.productId),
                 captureLambda(),
                 any()
             )
@@ -4427,8 +4509,7 @@ class PurchasesTest {
         mockSubscriberAttributesManager(userIdToUse)
     }
 
-    private fun stubOfferings(productId: String): Pair<StoreProduct, Offerings> {
-        val storeProduct = stubStoreProduct(productId)
+    private fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
         val jsonObject = JSONObject(oneOfferingsResponse)
         val packageObject = Package(
             "\$rc_monthly",
@@ -4449,6 +4530,11 @@ class PurchasesTest {
             jsonObject.createOfferings(any())
         } returns offerings
         return Pair(storeProduct, offerings)
+    }
+
+    private fun stubOfferings(productId: String): Pair<StoreProduct, Offerings> {
+        val storeProduct = stubStoreProduct(productId)
+        return stubOfferings(storeProduct)
     }
 
 // endregion
