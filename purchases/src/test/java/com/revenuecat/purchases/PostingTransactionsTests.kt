@@ -52,10 +52,18 @@ class PostingTransactionsTests {
 
     private val attributesToMarkAsSyncSlot = slot<Map<String, SubscriberAttribute>>()
     private val attributesErrorsSlot = slot<List<SubscriberAttributeError>>()
-    private val postedProductInfoSlot = slot<ReceiptInfo>()
-    private val postedStoreUserIdSlot = slot<String>()
+    private val postedReceiptInfoSlot = slot<ReceiptInfo>()
 
+    private val purchaseOptionId = "purchaseOptionId"
     private val mockStoreProduct = stubStoreProduct("productId")
+    private val mockGooglePurchase = stubGooglePurchase(
+        productIds = listOf("uno", "dos")
+    )
+    private val mockStoreTransaction = mockGooglePurchase.toStoreTransaction(
+        ProductType.SUBS,
+        null,
+        purchaseOptionId
+    )
 
     internal data class PostReceiptErrorContainer(
         val error: PurchasesError,
@@ -86,8 +94,8 @@ class PostingTransactionsTests {
                 isRestore = any(),
                 observerMode = any(),
                 subscriberAttributes = any(),
-                receiptInfo = capture(postedProductInfoSlot),
-                storeAppUserID = capture(postedStoreUserIdSlot),
+                receiptInfo = capture(postedReceiptInfoSlot),
+                storeAppUserID = any(),
                 marketplace = any(),
                 onSuccess = capture(successSlot),
                 onError = capture(errorSlot)
@@ -160,7 +168,7 @@ class PostingTransactionsTests {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
         underTest.postToBackend(
-            purchase = mockk(relaxed = true),
+            purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
@@ -168,22 +176,16 @@ class PostingTransactionsTests {
             onSuccess = { _, _ -> },
             onError = { _, _ -> }
         )
-        assertThat(postedProductInfoSlot.isCaptured).isTrue
-        assertThat(postedProductInfoSlot.captured.duration).isEqualTo(mockStoreProduct.subscriptionPeriod)
+        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
+        assertThat(postedReceiptInfoSlot.captured.duration).isEqualTo(mockStoreProduct.subscriptionPeriod)
     }
 
     @Test
     fun `purchaseOptionId is sent when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
-        val purchase: StoreTransaction = mockk(relaxed = true)
-        val expectedPurchaseOptionId = "purchase_option_a"
-        every {
-            purchase.purchaseOptionId
-        } returns expectedPurchaseOptionId
-
         underTest.postToBackend(
-            purchase = mockk(relaxed = true),
+            purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
@@ -191,8 +193,8 @@ class PostingTransactionsTests {
             onSuccess = { _, _ -> },
             onError = { _, _ -> }
         )
-        assertThat(postedProductInfoSlot.isCaptured).isTrue
-        assertThat(postedProductInfoSlot.captured.purchaseOptionId).isEqualTo(expectedPurchaseOptionId)
+        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
+        assertThat(postedReceiptInfoSlot.captured.purchaseOptionId).isEqualTo(purchaseOptionId)
     }
 
     @Test
@@ -201,7 +203,7 @@ class PostingTransactionsTests {
 
         val mockInAppProduct = stubINAPPStoreProduct("productId")
         underTest.postToBackend(
-            purchase = mockk(relaxed = true),
+            purchase = mockStoreTransaction,
             storeProduct = mockInAppProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
@@ -209,8 +211,8 @@ class PostingTransactionsTests {
             onSuccess = { _, _ -> },
             onError = { _, _ -> }
         )
-        assertThat(postedProductInfoSlot.isCaptured).isTrue
-        assertThat(postedProductInfoSlot.captured.duration).isNull()
+        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
+        assertThat(postedReceiptInfoSlot.captured.duration).isNull()
         verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
@@ -228,17 +230,11 @@ class PostingTransactionsTests {
     }
 
     @Test
-    fun `store user id is sent when posting to backend`() {
+    fun `productIds are sent when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
-        val purchase: StoreTransaction = mockk(relaxed = true)
-        val expectedStoreUserID = "a_store_user_id"
-        every {
-            purchase.storeUserID
-        } returns expectedStoreUserID
-
         underTest.postToBackend(
-            purchase = purchase,
+            purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
@@ -246,53 +242,19 @@ class PostingTransactionsTests {
             onSuccess = { _, _ -> },
             onError = { _, _ -> }
         )
-        assertThat(postedStoreUserIdSlot).isEqualTo(expectedStoreUserID)
-
-        verify(exactly = 1) {
-            backendMock.postReceiptData(
-                purchaseToken = any(),
-                appUserID = appUserId,
-                isRestore = any(),
-                observerMode = any(),
-                subscriberAttributes = expectedAttributes.toBackendMap(),
-                receiptInfo = any(),
-                storeAppUserID = expectedStoreUserID,
-                marketplace = any(),
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-    }
-
-    @Test
-    fun `product_ids are sent when posting to backend`() {
-        postReceiptSuccess = PostReceiptCompletionContainer()
-        val productIds = listOf("uno", "dos")
-        val purchase =
-            stubGooglePurchase(productIds = productIds).toStoreTransaction(ProductType.SUBS, null)
-
-        underTest.postToBackend(
-            purchase = purchase,
-            storeProduct = mockStoreProduct,
-            allowSharingPlayStoreAccount = true,
-            consumeAllTransactions = true,
-            appUserID = appUserId,
-            onSuccess = { _, _ -> },
-            onError = { _, _ -> }
-        )
-        assertThat(postedProductInfoSlot.isCaptured).isTrue
-        assertThat(postedProductInfoSlot.captured.productIDs).isEqualTo(productIds)
+        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
+        assertThat(postedReceiptInfoSlot.captured.productIDs).isEqualTo(mockStoreTransaction.productIds)
     }
 
     @Test
     fun `presentedOfferingIdentifier is sent when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
-        val purchase =
-            stubGooglePurchase(productIds = listOf("abc")).toStoreTransaction(ProductType.SUBS, null)
+
         val expectedPresentedOfferingIdentifier = "offering_a"
-        every {
-            purchase.presentedOfferingIdentifier
-        } returns expectedPresentedOfferingIdentifier
+        val purchase = mockGooglePurchase.toStoreTransaction(
+            ProductType.SUBS,
+            expectedPresentedOfferingIdentifier
+        )
 
         underTest.postToBackend(
             purchase = purchase,
@@ -303,8 +265,8 @@ class PostingTransactionsTests {
             onSuccess = { _, _ -> },
             onError = { _, _ -> }
         )
-        assertThat(postedProductInfoSlot.isCaptured).isTrue
-        assertThat(postedProductInfoSlot.captured.offeringIdentifier).isEqualTo(expectedPresentedOfferingIdentifier)
+        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
+        assertThat(postedReceiptInfoSlot.captured.offeringIdentifier).isEqualTo(expectedPresentedOfferingIdentifier)
     }
 
     @Test
@@ -312,7 +274,7 @@ class PostingTransactionsTests {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
         underTest.postToBackend(
-            purchase = mockk(relaxed = true),
+            purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
@@ -320,8 +282,8 @@ class PostingTransactionsTests {
             onSuccess = { _, _ -> },
             onError = { _, _ -> }
         )
-        assertThat(postedProductInfoSlot.isCaptured).isTrue
-        assertThat(postedProductInfoSlot.captured.storeProduct).isEqualTo(mockStoreProduct)
+        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
+        assertThat(postedReceiptInfoSlot.captured.storeProduct).isEqualTo(mockStoreProduct)
     }
 
     @Test
@@ -330,7 +292,7 @@ class PostingTransactionsTests {
 
         val expectedAllowSharingPlayStoreAccount = true
         underTest.postToBackend(
-            purchase = mockk(relaxed = true),
+            purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = expectedAllowSharingPlayStoreAccount,
             consumeAllTransactions = true,
@@ -355,12 +317,12 @@ class PostingTransactionsTests {
     }
 
     @Test
-    fun `consumeAllTransactions is sent as observerMode when posting to backend`() {
+    fun `observerMode parameter is sent as false when transactions are consumed`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
         val expectedConsumeAllTransactions = true
         underTest.postToBackend(
-            purchase = mockk(relaxed = true),
+            purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = expectedConsumeAllTransactions,
@@ -368,12 +330,13 @@ class PostingTransactionsTests {
             onSuccess = { _, _ -> },
             onError = { _, _ -> }
         )
+
         verify(exactly = 1) {
             backendMock.postReceiptData(
                 purchaseToken = any(),
-                appUserID = appUserId,
+                appUserID = any(),
                 isRestore = any(),
-                observerMode = expectedConsumeAllTransactions,
+                observerMode = !expectedConsumeAllTransactions,
                 subscriberAttributes = expectedAttributes.toBackendMap(),
                 receiptInfo = any(),
                 storeAppUserID = any(),
@@ -387,12 +350,9 @@ class PostingTransactionsTests {
     @Test
     fun `customer info cache is updated when purchasing`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
-        val productIds = listOf("uno", "dos")
-        val purchase =
-            stubGooglePurchase(productIds = productIds).toStoreTransaction(ProductType.SUBS, null)
 
         underTest.postToBackend(
-            purchase = purchase,
+            purchase = mockStoreTransaction,
             storeProduct = mockStoreProduct,
             allowSharingPlayStoreAccount = true,
             consumeAllTransactions = true,
