@@ -20,7 +20,6 @@ import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
-import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchaseHistoryParams
@@ -381,7 +380,6 @@ class BillingWrapperTest {
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
         val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         val storeProduct = productDetails.toStoreProduct(
-            defaultOfferDetails.subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!,
             defaultOfferDetails
         )
@@ -439,7 +437,6 @@ class BillingWrapperTest {
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
         val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         val storeProduct = productDetails.toStoreProduct(
-            defaultOfferDetails.subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!,
             defaultOfferDetails
         )
@@ -491,7 +488,7 @@ class BillingWrapperTest {
             oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(),
             subscriptionOfferDetails = null
         )
-        val storeProduct = productDetails.toStoreProduct()
+        val storeProduct = productDetails.toInAppStoreProduct()
 
         every {
             mockClient.launchBillingFlow(eq(mockActivity), any())
@@ -1143,7 +1140,6 @@ class BillingWrapperTest {
         val productDetails = mockProductDetails(productId = "product_a")
         val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         val storeProduct = productDetails.toStoreProduct(
-            defaultOfferDetails.subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!,
             defaultOfferDetails
         )
@@ -2140,7 +2136,6 @@ class BillingWrapperTest {
         val productDetails = createMockProductDetailsNoOffers()
         val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         return productDetails.toStoreProduct(
-            defaultOfferDetails.subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!,
             defaultOfferDetails
         )

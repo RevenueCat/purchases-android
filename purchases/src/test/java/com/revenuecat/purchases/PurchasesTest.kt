@@ -32,9 +32,9 @@ import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.isBasePlan
-import com.revenuecat.purchases.google.subscriptionBillingPeriod
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toStoreProduct
+import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
@@ -4075,7 +4075,7 @@ class PurchasesTest {
     ): List<StoreProduct> {
         val storeProducts = productIdsSuccessfullyFetched.map { productId ->
             if (type == ProductType.SUBS) stubStoreProduct(productId, stubPurchaseOption("p1m", "P1M"))
-            else createMockOneTimeProductDetails(productId).toStoreProduct()
+            else createMockOneTimeProductDetails(productId).toInAppStoreProduct()
         }
 
         every {
@@ -4284,10 +4284,9 @@ class PurchasesTest {
 
         val defaultOfferDetails = productDetails.subscriptionOfferDetails?.first { it.isBasePlan }
         val storeProduct = if (type == ProductType.SUBS) productDetails.toStoreProduct(
-            defaultOfferDetails!!.subscriptionBillingPeriod,
             productDetails.subscriptionOfferDetails!!,
             defaultOfferDetails
-        ) else productDetails.toStoreProduct()
+        ) else productDetails.toInAppStoreProduct()
 
         val receiptInfo = ReceiptInfo(
             productIDs = listOf(productId),

@@ -10,17 +10,13 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.google.BillingWrapper
-import com.revenuecat.purchases.google.subscriptionBillingPeriod
-import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
-import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubStoreProduct

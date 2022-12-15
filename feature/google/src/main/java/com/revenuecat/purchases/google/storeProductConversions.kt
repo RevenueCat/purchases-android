@@ -7,10 +7,9 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 
 // In-apps don't have base plan nor offers
-fun ProductDetails.toStoreProduct(): StoreProduct = this.toStoreProduct(null, emptyList(), null)
+fun ProductDetails.toInAppStoreProduct(): StoreProduct = this.toStoreProduct(emptyList(), null)
 
 fun ProductDetails.toStoreProduct(
-    billingPeriod: String?,
     offerDetails: List<ProductDetails.SubscriptionOfferDetails>,
     defaultOffer: ProductDetails.SubscriptionOfferDetails?
 ) =
@@ -20,7 +19,7 @@ fun ProductDetails.toStoreProduct(
         createOneTimeProductPrice(),
         title,
         description,
-        billingPeriod,
+        offerDetails.firstOrNull { it.isBasePlan }?.subscriptionBillingPeriod,
         offerDetails.map { it.toPurchaseOption() },
         defaultOffer?.toPurchaseOption(),
         this
@@ -51,10 +50,10 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
             val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
             val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
             val defaultOfferDetails = basePlan // TODOBC5: Change logic here for default offer.
-            productDetails.toStoreProduct(basePlanBillingPeriod, offerDetailsForBasePlan, defaultOfferDetails).let {
+            productDetails.toStoreProduct(offerDetailsForBasePlan, defaultOfferDetails).let {
                 storeProducts.add(it)
             }
-        } ?: productDetails.toStoreProduct().let { storeProducts.add(it) }
+        } ?: productDetails.toInAppStoreProduct().let { storeProducts.add(it) }
     }
     return storeProducts
 }
