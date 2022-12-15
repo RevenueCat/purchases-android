@@ -296,13 +296,13 @@ class BackendTest {
         )
 
         val expectedPricingPhases = receiptInfo.pricingPhases
-        val expectedPricingPhasesMap = expectedPricingPhases?.map { it.toMap() }
+        val mappedExpectedPricingPhases = expectedPricingPhases?.map { it.toMap() }
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured.keys).contains("pricing_phases")
-        assertThat(requestBodySlot.captured["pricing_phases"]).isEqualTo(expectedPricingPhasesMap)
+        assertThat(requestBodySlot.captured["pricing_phases"]).isEqualTo(mappedExpectedPricingPhases)
 
         expectedPricingPhases?.forEachIndexed { index, pricingPhase ->
-            val mappedPricingPhase = expectedPricingPhasesMap?.get(index)
+            val mappedPricingPhase = mappedExpectedPricingPhases?.get(index)
             assertThat(mappedPricingPhase).isNotNull.withFailMessage(
                 "there should be a mapped version for every pricingPhase"
             )
