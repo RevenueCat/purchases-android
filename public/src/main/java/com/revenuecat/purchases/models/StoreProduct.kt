@@ -49,6 +49,12 @@ interface StoreProduct : Parcelable {
     val purchaseOptions: List<PurchaseOption>
 
     /**
+     * The default [PurchaseOption] that will be used when purchasing and not specifying a different option.
+     * Null for INAPP products.
+     */
+    val defaultOption: PurchaseOption?
+
+    /**
      * The sku of the StoreProduct
      */
     @IgnoredOnParcel

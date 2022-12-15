@@ -21,6 +21,7 @@ private class StoreProductAPI {
             val description: String = description
             val subscriptionPeriod: String? = subscriptionPeriod
             val purchaseOptions: List<PurchaseOption> = purchaseOptions
+            val defaultOption: PurchaseOption? = defaultOption
             val underlyingProduct: GoogleStoreProduct? = googleProduct
         }
     }
@@ -46,6 +47,7 @@ private class StoreProductAPI {
             googleStoreProduct.description,
             googleStoreProduct.subscriptionPeriod,
             googleStoreProduct.purchaseOptions,
+            googleStoreProduct.defaultOption,
             googleStoreProduct.productDetails
         )
     }

@@ -13,7 +13,8 @@ import com.revenuecat.purchases.models.toRecurrenceMode
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
-    purchaseOptions: List<PurchaseOption> = listOf(stubPurchaseOption("monthly_base_plan", "P1M"))
+    defaultOption: PurchaseOption = stubPurchaseOption("monthly_base_plan", "P1M"),
+    purchaseOptions: List<PurchaseOption> = listOf(defaultOption)
 ): StoreProduct = object : StoreProduct {
     override val productId: String
         get() = productId
@@ -29,6 +30,8 @@ fun stubStoreProduct(
         get() = purchaseOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.get(0)?.billingPeriod
     override val purchaseOptions: List<PurchaseOption>
         get() = purchaseOptions
+    override val defaultOption: PurchaseOption
+        get() = defaultOption
     override val sku: String
         get() = productId
 
@@ -54,7 +57,9 @@ fun stubINAPPStoreProduct(
     override val subscriptionPeriod: String?
         get() = null
     override val purchaseOptions: List<PurchaseOption>
-        get() = listOf(stubPurchaseOption(productId))
+        get() = listOf(defaultOption)
+    override val defaultOption: PurchaseOption
+        get() = stubPurchaseOption(productId)
     override val sku: String
         get() = productId
 
@@ -80,6 +85,17 @@ fun stubPurchaseOption(
     override fun writeToParcel(dest: Parcel?, flags: Int) {}
 }
 
+fun stubFreeTrialPricingPhase(
+    billingPeriod: String = "P1M",
+    priceCurrencyCodeValue: String = "USD",
+) = stubPricingPhase(
+    billingPeriod = billingPeriod,
+    priceCurrencyCodeValue = priceCurrencyCodeValue,
+    price = 0.0,
+    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+    billingCycleCount = 1
+)
+
 fun stubPricingPhase(
     billingPeriod: String = "P1M",
     priceCurrencyCodeValue: String = "USD",
@@ -89,7 +105,7 @@ fun stubPricingPhase(
 ): PricingPhase = PricingPhase(
     billingPeriod,
     priceCurrencyCodeValue,
-    formattedPrice = "${'$'}$price",
+    formattedPrice = if (price == 0.0) "Free" else "${'$'}$price",
     priceAmountMicros = price.times(MICROS_MULTIPLIER).toLong(),
     recurrenceMode.toRecurrenceMode(),
     billingCycleCount

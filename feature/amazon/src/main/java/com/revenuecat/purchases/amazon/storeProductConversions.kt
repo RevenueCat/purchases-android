@@ -27,6 +27,7 @@ data class AmazonStoreProduct(
     // TODOBC5
     override val oneTimeProductPrice: com.revenuecat.purchases.models.Price?,
     override val purchaseOptions: List<PurchaseOption>,
+    override val defaultOption: PurchaseOption?,
     val price: String,
     val priceAmountMicros: Long,
     val priceCurrencyCode: String,
@@ -60,6 +61,7 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         subscriptionPeriod = null,
         null,
         emptyList(),
+        defaultOption = null,
         price,
         priceAmountMicros = priceAmountMicros,
         priceCurrencyCode = currencyCode,

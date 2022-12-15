@@ -506,14 +506,10 @@ class BackendTest {
 
         val originalPurchaseOption = storeProduct.purchaseOptions[0]
         val originalDuration = originalPurchaseOption.pricingPhases[0].billingPeriod
+        val purchaseOption = stubPurchaseOption(originalPurchaseOption.id, originalDuration + "a")
         val storeProduct2 = stubStoreProduct(
             storeProduct.productId,
-            listOf(
-                stubPurchaseOption(
-                    originalPurchaseOption.id,
-                    originalDuration + "a"
-                )
-            )
+            purchaseOption
         )
 
         val receiptInfo2 = ReceiptInfo(

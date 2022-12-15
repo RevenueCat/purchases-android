@@ -7,11 +7,11 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 
 // In-apps don't have base plan nor offers
-fun ProductDetails.toStoreProduct(): StoreProduct = this.toStoreProduct(null, emptyList())
+fun ProductDetails.toInAppStoreProduct(): StoreProduct = this.toStoreProduct(emptyList(), null)
 
 fun ProductDetails.toStoreProduct(
-    billingPeriod: String?,
-    offerDetails: List<ProductDetails.SubscriptionOfferDetails>
+    offerDetails: List<ProductDetails.SubscriptionOfferDetails>,
+    defaultOffer: ProductDetails.SubscriptionOfferDetails?
 ) =
     GoogleStoreProduct(
         productId,
@@ -19,8 +19,9 @@ fun ProductDetails.toStoreProduct(
         createOneTimeProductPrice(),
         title,
         description,
-        billingPeriod,
+        offerDetails.firstOrNull { it.isBasePlan }?.subscriptionBillingPeriod,
         offerDetails.map { it.toPurchaseOption() },
+        defaultOffer?.toPurchaseOption(),
         this
     )
 
@@ -48,8 +49,11 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
         basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
             val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
             val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
-            productDetails.toStoreProduct(basePlanBillingPeriod, offerDetailsForBasePlan).let { storeProducts.add(it) }
-        } ?: productDetails.toStoreProduct().let { storeProducts.add(it) }
+            val defaultOfferDetails = basePlan // TODOBC5: Change logic here for default offer.
+            productDetails.toStoreProduct(offerDetailsForBasePlan, defaultOfferDetails).let {
+                storeProducts.add(it)
+            }
+        } ?: productDetails.toInAppStoreProduct().let { storeProducts.add(it) }
     }
     return storeProducts
 }
