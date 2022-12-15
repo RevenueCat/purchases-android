@@ -279,7 +279,7 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt passes pricing phases in body`() {
+    fun `postReceipt passes pricing phases as maps in body`() {
         val purchaseOption = storeProduct.purchaseOptions[0]
         val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
@@ -291,13 +291,27 @@ class BackendTest {
             backend,
             isRestore = false,
             observerMode = false,
-            receiptInfo = basicReceiptInfo,
+            receiptInfo = receiptInfo,
             storeAppUserID = null
         )
 
+        val expectedPricingPhases = receiptInfo.pricingPhases
+        val expectedPricingPhasesMap = expectedPricingPhases?.map { it.toMap() }
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured.keys).contains("pricing_phases")
-        assertThat(requestBodySlot.captured["pricing_phases"]).isEqualTo(purchaseOption.pricingPhases.map { it.toMap() })
+        assertThat(requestBodySlot.captured["pricing_phases"]).isEqualTo(expectedPricingPhasesMap)
+
+        expectedPricingPhases?.forEachIndexed { index, pricingPhase ->
+            val mappedPricingPhase = expectedPricingPhasesMap?.get(index)
+            assertThat(mappedPricingPhase).isNotNull.withFailMessage(
+                "there should be a mapped version for every pricingPhase"
+            )
+            assertThat(mappedPricingPhase?.get("billingPeriod")).isEqualTo(pricingPhase.billingPeriod)
+            assertThat(mappedPricingPhase?.get("billingCycleCount")).isEqualTo(pricingPhase.billingCycleCount)
+            assertThat(mappedPricingPhase?.get("formattedPrice")).isEqualTo(pricingPhase.formattedPrice)
+            assertThat(mappedPricingPhase?.get("priceCurrencyCode")).isEqualTo(pricingPhase.priceCurrencyCode)
+            assertThat(mappedPricingPhase?.get("recurrenceMode")).isEqualTo(pricingPhase.recurrenceMode.identifier)
+        }
     }
 
     @Test
