@@ -1175,8 +1175,8 @@ class BillingWrapperTest {
 
         val productDetails = mockProductDetails(productId = "product_a")
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!![0].subscriptionBillingPeriod,
-            productDetails.subscriptionOfferDetails!!
+            productDetails.subscriptionOfferDetails!!,
+            productDetails.subscriptionOfferDetails!![0]
         )
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
