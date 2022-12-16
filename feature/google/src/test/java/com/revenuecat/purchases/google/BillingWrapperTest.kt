@@ -1168,6 +1168,42 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `purchaseOptionId is properly forwarded`() {
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns billingClientOKResult
+
+        val productDetails = mockProductDetails(productId = "product_a")
+        val storeProduct = productDetails.toStoreProduct(
+            productDetails.subscriptionOfferDetails!!,
+            productDetails.subscriptionOfferDetails!![0]
+        )
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        val purchaseOption = storeProduct.purchaseOptions[0]
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct,
+            purchaseOption,
+            null,
+            "offering_a"
+        )
+
+        val purchases = listOf(stubGooglePurchase(productIds = listOf("product_a")))
+
+        val slot = slot<List<StoreTransaction>>()
+        every {
+            mockPurchasesListener.onPurchasesUpdated(capture(slot))
+        } just Runs
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, purchases)
+
+        assertThat(slot.captured.size).isOne
+        assertThat(slot.captured[0].purchaseOptionId).isEqualTo(purchaseOption.id)
+    }
+
+    @Test
     fun `When building the BillingClient enabledPendingPurchases is called`() {
         val context = mockk<Context>()
         mockkStatic(BillingClient::class)
