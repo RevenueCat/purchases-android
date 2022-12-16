@@ -30,10 +30,12 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.common.currentVerboseLogHandler
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.verboseLogHandlerToLogHandler
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.google.toRevenueCatProductType
 import com.revenuecat.purchases.google.toStoreProduct
@@ -52,6 +54,7 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
 import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.logging.VerboseLogHandler
 import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.interfaces.toGetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.toProductChangeCallback
@@ -1966,6 +1969,17 @@ class Purchases internal constructor(
             }
 
         /**
+         * Setting this to `true` adds additional information to the default log handler: Filename, line, and method
+         * data. You can also access that information for your own logging system by using [verboseLogHandler].
+         */
+        @JvmStatic
+        var verboseLogs
+            get() = Config.verboseLogs
+            set(value) {
+                Config.verboseLogs = value
+            }
+
+        /**
          * Set a custom log handler for redirecting logs to your own logging system.
          * Defaults to [android.util.Log].
          *
@@ -1976,7 +1990,22 @@ class Purchases internal constructor(
         var logHandler: LogHandler
             @Synchronized get() = currentLogHandler
             @Synchronized set(value) {
+                verboseLogHandler = verboseLogHandlerToLogHandler(value)
                 currentLogHandler = value
+            }
+
+        /**
+         * Set a custom log handler for redirecting logs to your own logging system.
+         * Defaults to [android.util.Log].
+         *
+         * By default, this sends info, warning, and error messages.
+         * If you wish to receive Debug level messages, see [debugLogsEnabled].
+         */
+        @JvmStatic
+        var verboseLogHandler: VerboseLogHandler
+            @Synchronized get() = currentVerboseLogHandler
+            @Synchronized set(value) {
+                currentVerboseLogHandler = value
             }
 
         @JvmSynthetic

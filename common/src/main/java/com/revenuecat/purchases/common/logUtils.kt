@@ -2,24 +2,31 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.logging.LogLevel
 
-fun debugLog(message: String) {
+fun debugLog(message: String, elements: Array<StackTraceElement>? = null) {
     if (Config.debugLogsEnabled) {
-        currentLogHandler.d("[Purchases] - DEBUG", message)
+        currentVerboseLogHandler.log(LogLevel.DEBUG, LogLevel.DEBUG.createTag(), message, null, elements)
     }
 }
 
-fun infoLog(message: String) {
-    currentLogHandler.i("[Purchases] - INFO", message)
+fun infoLog(message: String, elements: Array<StackTraceElement>? = null) {
+    currentVerboseLogHandler.log(LogLevel.INFO, LogLevel.INFO.createTag(), message, null, elements)
 }
 
-fun warnLog(message: String) {
-    currentLogHandler.w("[Purchases] - WARN", message)
+fun warnLog(message: String, elements: Array<StackTraceElement>? = null) {
+    currentVerboseLogHandler.log(LogLevel.WARN, LogLevel.WARN.createTag(), message, null, elements)
 }
 
-fun errorLog(message: String, throwable: Throwable? = null) {
-    currentLogHandler.e("[Purchases] - ERROR", message, throwable)
+fun errorLog(message: String, throwable: Throwable? = null, elements: Array<StackTraceElement>? = null) {
+    currentVerboseLogHandler.log(LogLevel.ERROR, LogLevel.ERROR.createTag(), message, throwable, elements)
 }
+
+fun verboseLog(message: String, throwable: Throwable? = null, elements: Array<StackTraceElement>? = null) {
+    currentVerboseLogHandler.log(LogLevel.VERBOSE, LogLevel.VERBOSE.createTag(), message, throwable, elements)
+}
+
+fun LogLevel.createTag() = "[Purchases] - ${this.name}"
 
 fun errorLog(error: PurchasesError) {
     when (error.code) {

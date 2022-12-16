@@ -45,13 +45,13 @@ class LogHandlerTest {
 
     @Before
     fun setUp() {
-        previousHandler = currentLogHandler
-        currentLogHandler = handler
+        previousHandler = currentVerboseLogHandler
+        currentVerboseLogHandler = handler
     }
 
     @After
     fun tearDown() {
-        currentLogHandler = previousHandler
+        currentVerboseLogHandler = previousHandler
     }
 
     @Test
