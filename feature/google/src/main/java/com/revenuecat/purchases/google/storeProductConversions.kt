@@ -46,6 +46,8 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
             it.subscriptionBillingPeriod
         } ?: emptyMap()
 
+        // Maps basePlans to StoreProducts, if any
+        // Otherwise, maps productDetail to StoreProduct
         basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
             val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
             val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
