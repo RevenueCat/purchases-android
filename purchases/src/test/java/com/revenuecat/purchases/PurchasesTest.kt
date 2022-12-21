@@ -158,8 +158,6 @@ class PurchasesTest {
         every { LockedFeature.ObserverMode.isLocked } returns false
         mockkObject(LockedFeature.AmazonStore)
         every { LockedFeature.AmazonStore.isLocked } returns false
-        mockkObject(LockedFeature.InAppPurchasing)
-        every { LockedFeature.InAppPurchasing.isLocked } returns false
 
         mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
         mockkStatic("com.revenuecat.purchases.common.OfferingFactoriesKt")

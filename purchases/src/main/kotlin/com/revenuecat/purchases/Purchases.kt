@@ -1477,9 +1477,6 @@ class Purchases internal constructor(
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
-        if (storeProduct.type == ProductType.INAPP && LockedFeature.InAppPurchasing.isLocked) {
-            throw FeatureNotSupportedException(LockedFeature.InAppPurchasing)
-        }
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
                 " $storeProduct ${
@@ -1522,9 +1519,6 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        if (storeProduct.type == ProductType.INAPP && LockedFeature.InAppPurchasing.isLocked) {
-            throw FeatureNotSupportedException(LockedFeature.InAppPurchasing)
-        }
         log(
             LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $storeProduct ${
