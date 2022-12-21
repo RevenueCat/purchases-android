@@ -13,4 +13,6 @@
     <string name="google_store_is_unavailable">Google Store is unavailable in this build. Download a version from the Play Store or build locally to enable it.</string>
     <string name="amazon_store_is_unavailable">Amazon Store is unavailable in this build. Download a version from LAT or build locally to enable it.</string>
     <string name="purchase_options">Purchase Options:</string>
+    <string name="buy_package">Buy Package</string>
+    <string name="switch_package">Switch Package</string>
 </resources>

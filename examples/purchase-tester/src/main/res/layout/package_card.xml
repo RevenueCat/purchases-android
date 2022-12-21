@@ -137,8 +137,7 @@
                     android:id="@+id/package_buy_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:enabled="@{!isActive}"
-                    android:text="Buy package"
+                    android:text="@{isActive ? @string/buy_package : @string/switch_package}"
                     app:layout_constraintBottom_toTopOf="@+id/product_buy_button"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />

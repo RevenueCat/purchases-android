@@ -20,8 +20,8 @@ import java.util.Date
  * Class containing all information regarding the purchaser
  * @property entitlements Entitlements attached to this purchaser info
  * @property purchasedNonSubscriptionSkus Set of non-subscription, non-consumed skus
- * @property allExpirationDatesByProduct Map of skus to expiration dates
- * @property allPurchaseDatesByProduct Map of skus to purchase dates
+ * @property allExpirationDatesByProduct Map of productIds to expiration dates
+ * @property allPurchaseDatesByProduct Map of productIds to purchase dates
  * @property requestDate Date when this info was requested
  * @property firstSeen The date this user was first seen in RevenueCat.
  * @property originalAppUserId The original App User Id recorded for this user.
@@ -48,23 +48,25 @@ data class CustomerInfo constructor(
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     /**
-     * @return Set of active subscription skus
+     * @return Set of active subscription product IDs
      */
+    // TODO add active purchaseoptions? right now, no way to know which purchaseOption was purchased from customerinfo
     @IgnoredOnParcel
     val activeSubscriptions: Set<String> by lazy {
         activeIdentifiers(allExpirationDatesByProduct)
     }
 
     /**
-     * @return Set of purchased skus, active and inactive
+     * @return Set of purchased product IDs, active and inactive
      */
     @IgnoredOnParcel
+    // TODO deprecate and replace with subscription Ids
     val allPurchasedSkus: Set<String> by lazy {
         this.nonSubscriptionTransactions.map { it.productIdentifier }.toSet() + allExpirationDatesByProduct.keys
     }
 
     /**
-     * @return The latest expiration date of all purchased skus
+     * @return The latest expiration date of all purchased productIds
      */
     @IgnoredOnParcel
     val latestExpirationDate: Date? by lazy {
@@ -96,6 +98,7 @@ data class CustomerInfo constructor(
      * @param sku Sku for which to retrieve expiration date
      * @return Expiration date for given sku
      */
+    // TODO deprecate and replace with productId
     fun getExpirationDateForSku(sku: String): Date? {
         return allExpirationDatesByProduct[sku]
     }
@@ -105,6 +108,7 @@ data class CustomerInfo constructor(
      * @param sku Sku for which to retrieve expiration date
      * @return Purchase date for given sku
      */
+    // TODO deprecate and replace with productId
     fun getPurchaseDateForSku(sku: String): Date? {
         return allPurchaseDatesByProduct[sku]
     }

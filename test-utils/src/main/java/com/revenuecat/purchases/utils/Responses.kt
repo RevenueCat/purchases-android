@@ -3,6 +3,7 @@ package com.revenuecat.purchases.utils
 import org.json.JSONObject
 
 object Responses {
+    // TODO rename to customerinfo
     val validFullPurchaserResponse = """
                 {
                   "request_date": "2019-08-16T10:30:42Z",

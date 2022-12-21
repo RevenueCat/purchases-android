@@ -2,6 +2,7 @@ package com.revenuecat.purchasetester
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,7 +14,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
@@ -23,6 +26,7 @@ import com.revenuecat.purchases.purchaseSubscriptionOptionWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
+@Suppress("LongMethod")
 class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
 
     lateinit var binding: FragmentOfferingBinding
@@ -62,32 +66,77 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     override fun onPurchasePackageClicked(cardView: View, currentPackage: Package, purchaseOption: PurchaseOption?) {
         binding.purchaseProgress.visibility = View.VISIBLE
 
-        if (purchaseOption == null) {
-            Purchases.sharedInstance.purchasePackageWith(
-                requireActivity(),
-                currentPackage,
-                { error, userCancelled ->
-                    if (!userCancelled) {
-                        showUserError(requireActivity(), error)
+        // TODO is this true? is it possible to have multiple subs to one app at once,
+        //  in which case we don't do an update but simply purchase again?
+        val isUpgrade = currentPackage.product.type == ProductType.SUBS && activeSubscriptions.isNotEmpty()
+
+        if (isUpgrade) {
+            // TODO how do we know which one to upgrade from if theres <1?
+            val currentSubId = activeSubscriptions.first()
+            val upgradeInfo = UpgradeInfo(currentSubId)
+
+            Log.e("maddietest", "upgrading from $currentSubId to ${currentPackage.product.productId} with " +
+                "proration ${upgradeInfo.prorationMode}")
+
+            // TODO should we just make upgradeinfo default to null in the purchasePackage method
+            //  to avoid this duplicate code?
+            if (purchaseOption == null) {
+                Purchases.sharedInstance.purchasePackageWith(
+                    requireActivity(),
+                    currentPackage,
+                    upgradeInfo,
+                    { error, userCancelled ->
+                        if (!userCancelled) {
+                            showUserError(requireActivity(), error)
+                        }
+                    },
+                    { storeTransaction, _ ->
+                        handleSuccessfulPurchase(storeTransaction?.orderId)
                     }
-                },
-                { storeTransaction, _ ->
-                    handleSuccessfulPurchase(storeTransaction.orderId)
-                }
-            )
+                )
+            } else {
+                Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+                    requireActivity(),
+                    currentPackage.product,
+                    purchaseOption,
+                    upgradeInfo,
+                    { error, userCancelled ->
+                        if (!userCancelled) {
+                            showUserError(requireActivity(), error)
+                        }
+                    },
+                    { storeTransaction, _ ->
+                        handleSuccessfulPurchase(storeTransaction?.orderId)
+                    })
+            }
         } else {
-            Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                requireActivity(),
-                currentPackage.product,
-                purchaseOption,
-                { error, userCancelled ->
-                    if (!userCancelled) {
-                        showUserError(requireActivity(), error)
+            if (purchaseOption == null) {
+                Purchases.sharedInstance.purchasePackageWith(
+                    requireActivity(),
+                    currentPackage,
+                    { error, userCancelled ->
+                        if (!userCancelled) {
+                            showUserError(requireActivity(), error)
+                        }
+                    },
+                    { storeTransaction, _ ->
+                        handleSuccessfulPurchase(storeTransaction.orderId)
                     }
-                },
-                { storeTransaction, _ ->
-                    handleSuccessfulPurchase(storeTransaction.orderId)
-                })
+                )
+            } else {
+                Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+                    requireActivity(),
+                    currentPackage.product,
+                    purchaseOption,
+                    { error, userCancelled ->
+                        if (!userCancelled) {
+                            showUserError(requireActivity(), error)
+                        }
+                    },
+                    { storeTransaction, _ ->
+                        handleSuccessfulPurchase(storeTransaction.orderId)
+                    })
+            }
         }
     }
 

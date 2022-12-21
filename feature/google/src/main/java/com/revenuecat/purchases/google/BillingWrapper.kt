@@ -15,6 +15,9 @@ import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
+import com.android.billingclient.api.BillingFlowParams.ProrationMode
+import com.android.billingclient.api.BillingFlowParams.SubscriptionUpdateParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ProductDetailsResponseListener
@@ -849,7 +852,11 @@ class BillingWrapper(
                     // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
                     // https://issuetracker.google.com/issues/155005449
                     replaceSkuInfo?.let {
-                        setUpgradeInfo(it)
+                        setSubscriptionUpdateParams(
+                            SubscriptionUpdateParams.newBuilder()
+                            .setOldPurchaseToken(replaceSkuInfo.oldPurchase.purchaseToken)
+                            .setReplaceProrationMode(ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE)
+                            .build())
                     } ?: setObfuscatedAccountId(appUserID.sha256())
                 }
                 .build()

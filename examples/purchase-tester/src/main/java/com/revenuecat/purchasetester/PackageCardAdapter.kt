@@ -15,6 +15,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
 
+@Suppress("LongMethod")
 class PackageCardAdapter(
     private val packages: List<Package>,
     private val activeSubscriptions: Set<String>,
