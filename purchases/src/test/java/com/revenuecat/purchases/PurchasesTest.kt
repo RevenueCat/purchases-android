@@ -2441,7 +2441,7 @@ class PurchasesTest {
         val productId = "productId"
         val purchaseToken = "token"
 
-        val productInfo = mockQueryingProductDetails(productId, ProductType.INAPP, offeringIdentifier = "offering_a")
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.INAPP, offeringIdentifier = "offering_a")
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(
@@ -2459,7 +2459,7 @@ class PurchasesTest {
                 isRestore = false,
                 observerMode = false,
                 subscriberAttributes = emptyMap(),
-                receiptInfo = productInfo,
+                receiptInfo = receiptInfo,
                 storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
@@ -4353,17 +4353,22 @@ class PurchasesTest {
         type: ProductType,
         offeringIdentifier: String?
     ): ReceiptInfo {
-        val productDetails =
-            if (type == ProductType.SUBS) createMockProductDetailsFreeTrial(productId, 2.00)
-            else createMockOneTimeProductDetails(productId, 2.00)
+        if (type == ProductType.SUBS) {
+            val productDetails = createMockProductDetailsFreeTrial(productId, 2.00)
 
-        val defaultOfferDetails = productDetails.subscriptionOfferDetails?.first { it.isBasePlan }
-        val storeProduct = if (type == ProductType.SUBS) productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!!,
-            defaultOfferDetails
-        ) else productDetails.toInAppStoreProduct()
+            val defaultOfferDetails = productDetails.subscriptionOfferDetails?.first { it.isBasePlan }
+            val storeProduct = productDetails.toStoreProduct(
+                productDetails.subscriptionOfferDetails!!,
+                defaultOfferDetails
+            )
 
-        return mockQueryingProductDetails(storeProduct, offeringIdentifier)
+            return mockQueryingProductDetails(storeProduct, offeringIdentifier)
+        } else {
+            val productDetails = createMockOneTimeProductDetails(productId, 2.00)
+            val storeProduct = productDetails.toInAppStoreProduct()
+
+            return mockQueryingProductDetails(storeProduct, offeringIdentifier)
+        }
     }
 
     private fun mockQueryingProductDetails(

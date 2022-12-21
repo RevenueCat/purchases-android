@@ -1202,26 +1202,44 @@ class Purchases internal constructor(
     ) {
         purchases.forEach { purchase ->
             if (purchase.purchaseState != PurchaseState.PENDING) {
-                if (purchase.purchaseOptionId != null) {
+                purchase.productIds.firstOrNull()?.let { productId ->
                     billing.queryProductDetailsAsync(
                         productType = purchase.type,
-                        productIds = purchase.productIds.toSet(),
+                        productIds = setOf(productId),
                         onReceive = { storeProducts ->
 
                             // TODO BC5 confirm multi line purchases
-                            val purchasedStoreProduct = storeProducts.firstOrNull { product ->
-                                product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
+                            if (purchase.type == ProductType.SUBS) {
+                                val purchasedStoreProduct = storeProducts.firstOrNull { product ->
+                                    product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
+                                }
+
+                                postToBackend(
+                                    purchase = purchase,
+                                    storeProduct = purchasedStoreProduct,
+                                    allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                    consumeAllTransactions = consumeAllTransactions,
+                                    appUserID = appUserID,
+                                    onSuccess = onSuccess,
+                                    onError = onError
+                                )
+                            } else {
+                                val purchasedStoreProduct = storeProducts.firstOrNull() { product ->
+                                    product.productId == productId
+                                }
+
+                                postToBackend(
+                                    purchase = purchase,
+                                    storeProduct = purchasedStoreProduct,
+                                    allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                    consumeAllTransactions = consumeAllTransactions,
+                                    appUserID = appUserID,
+                                    onSuccess = onSuccess,
+                                    onError = onError
+                                )
                             }
 
-                            postToBackend(
-                                purchase = purchase,
-                                storeProduct = purchasedStoreProduct,
-                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                                consumeAllTransactions = consumeAllTransactions,
-                                appUserID = appUserID,
-                                onSuccess = onSuccess,
-                                onError = onError
-                            )
+
                         },
                         onError = {
                             postToBackend(
@@ -1235,15 +1253,10 @@ class Purchases internal constructor(
                             )
                         }
                     )
-                } else {
-                    postToBackend(
-                        purchase = purchase,
-                        storeProduct = null,
-                        allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                        consumeAllTransactions = consumeAllTransactions,
-                        appUserID = appUserID,
-                        onSuccess = onSuccess,
-                        onError = onError
+                } ?: run {
+                    onError?.invoke(
+                        purchase,
+                        PurchasesError(PurchasesErrorCode.PurchaseHasNoProducts).also { errorLog(it) }
                     )
                 }
             } else {
