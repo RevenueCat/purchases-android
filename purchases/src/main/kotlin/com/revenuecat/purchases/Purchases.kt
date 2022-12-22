@@ -1242,9 +1242,14 @@ class Purchases internal constructor(
                         }
                     )
                 } ?: run {
-                    onError?.invoke(
-                        purchase,
-                        PurchasesError(PurchasesErrorCode.PurchaseHasNoProducts).also { errorLog(it) }
+                    postToBackend(
+                        purchase = purchase,
+                        storeProduct = null,
+                        allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                        consumeAllTransactions = consumeAllTransactions,
+                        appUserID = appUserID,
+                        onSuccess = onSuccess,
+                        onError = onError
                     )
                 }
             } else {
