@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.googleProduct
 
 class ReceiptInfo(
     val productIDs: List<String>,

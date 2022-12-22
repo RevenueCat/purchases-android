@@ -1209,37 +1209,25 @@ class Purchases internal constructor(
                         onReceive = { storeProducts ->
 
                             // TODO BC5 confirm multi line purchases
-                            if (purchase.type == ProductType.SUBS) {
-                                val purchasedStoreProduct = storeProducts.firstOrNull { product ->
+                            val purchasedStoreProduct = if (purchase.type == ProductType.SUBS) {
+                                storeProducts.firstOrNull { product ->
                                     product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
                                 }
-
-                                postToBackend(
-                                    purchase = purchase,
-                                    storeProduct = purchasedStoreProduct,
-                                    allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                                    consumeAllTransactions = consumeAllTransactions,
-                                    appUserID = appUserID,
-                                    onSuccess = onSuccess,
-                                    onError = onError
-                                )
                             } else {
-                                val purchasedStoreProduct = storeProducts.firstOrNull() { product ->
+                                storeProducts.firstOrNull() { product ->
                                     product.productId == productId
                                 }
-
-                                postToBackend(
-                                    purchase = purchase,
-                                    storeProduct = purchasedStoreProduct,
-                                    allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                                    consumeAllTransactions = consumeAllTransactions,
-                                    appUserID = appUserID,
-                                    onSuccess = onSuccess,
-                                    onError = onError
-                                )
                             }
 
-
+                            postToBackend(
+                                purchase = purchase,
+                                storeProduct = purchasedStoreProduct,
+                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                                consumeAllTransactions = consumeAllTransactions,
+                                appUserID = appUserID,
+                                onSuccess = onSuccess,
+                                onError = onError
+                            )
                         },
                         onError = {
                             postToBackend(
