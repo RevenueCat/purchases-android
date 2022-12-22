@@ -204,7 +204,8 @@ class BillingWrapper(
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption?,
         replaceSkuInfo: ReplaceSkuInfo?,
-        presentedOfferingIdentifier: String?
+        presentedOfferingIdentifier: String?,
+        isPersonalizedPrice: Boolean
     ) {
         if (replaceSkuInfo != null) {
             log(
@@ -225,7 +226,8 @@ class BillingWrapper(
                 storeProduct,
                 purchaseOption,
                 replaceSkuInfo,
-                appUserID
+                appUserID,
+                isPersonalizedPrice
             )
             when (result) {
                 is Result.Success -> launchBillingFlow(activity, result.value)
@@ -779,7 +781,8 @@ class BillingWrapper(
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption?,
         replaceSkuInfo: ReplaceSkuInfo?,
-        appUserID: String
+        appUserID: String,
+        isPersonalizedPrice: Boolean
     ): Result<BillingFlowParams, PurchasesError> {
         val googleProduct = storeProduct.googleProduct
 
@@ -796,7 +799,12 @@ class BillingWrapper(
         }
 
         return if (googleProduct.type == ProductType.SUBS) {
-            buildSubscriptionPurchaseParams(googleProduct, purchaseOption, replaceSkuInfo, appUserID)
+            buildSubscriptionPurchaseParams(
+                googleProduct,
+                purchaseOption,
+                replaceSkuInfo, appUserID,
+                isPersonalizedPrice
+            )
         } else {
             buildOneTimePurchaseParams(googleProduct, appUserID)
         }
@@ -822,7 +830,8 @@ class BillingWrapper(
         googleProduct: GoogleStoreProduct,
         purchaseOption: PurchaseOption?,
         replaceSkuInfo: ReplaceSkuInfo?,
-        appUserID: String
+        appUserID: String,
+        isPersonalizedPrice: Boolean
     ): Result<BillingFlowParams, PurchasesError> {
         val googlePurchaseOption = purchaseOption as? GooglePurchaseOption
         if (googlePurchaseOption == null) {
@@ -852,6 +861,7 @@ class BillingWrapper(
                         setUpgradeInfo(it)
                     } ?: setObfuscatedAccountId(appUserID.sha256())
                 }
+                .setIsOfferPersonalized(isPersonalizedPrice)
                 .build()
         )
     }

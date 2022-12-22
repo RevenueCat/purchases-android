@@ -80,7 +80,8 @@ abstract class BillingAbstract {
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption?,
         replaceSkuInfo: ReplaceSkuInfo?,
-        presentedOfferingIdentifier: String?
+        presentedOfferingIdentifier: String?,
+        isPersonalizedPrice: Boolean = false
     )
 
     abstract fun isConnected(): Boolean

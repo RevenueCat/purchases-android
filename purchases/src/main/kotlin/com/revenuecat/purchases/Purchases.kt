@@ -426,13 +426,17 @@ class Purchases internal constructor(
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     * @param [isPersonalizedPrice] Set this parameter to true if the [PurchaseOption] is a developer-determined offer
+     * available for purchase in the EU. Default is false.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
     fun purchaseSubscriptionOption(
         activity: Activity,
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
+        listener: ProductChangeCallback,
+        isPersonalizedPrice: Boolean = false
     ) {
         startProductChange(
             activity,
@@ -440,7 +444,8 @@ class Purchases internal constructor(
             purchaseOption,
             null,
             upgradeInfo,
-            listener
+            listener,
+            isPersonalizedPrice
         )
     }
 
@@ -451,14 +456,18 @@ class Purchases internal constructor(
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [purchaseOption] Your choice of purchase options available for the subscription StoreProduct
      * @param [callback] The PurchaseCallback that will be called when purchase completes
+     * @param [isPersonalizedPrice] Set this parameter to true if the [PurchaseOption] is a developer-determined offer
+     * available for purchase in the EU. Default is false.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
-    fun purchaseSubscriptionOption(
+     fun purchaseSubscriptionOption(
         activity: Activity,
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption,
-        callback: PurchaseCallback
+        callback: PurchaseCallback,
+        isPersonalizedPrice: Boolean = false
     ) {
-        startPurchase(activity, storeProduct, purchaseOption, null, callback)
+        startPurchase(activity, storeProduct, purchaseOption, null, callback, isPersonalizedPrice)
     }
 
     /**
@@ -1462,7 +1471,8 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption?,
         presentedOfferingIdentifier: String?,
-        listener: PurchaseCallback
+        listener: PurchaseCallback,
+        isPersonalizedPrice: Boolean = false
     ) {
         if (storeProduct.type == ProductType.INAPP && LockedFeature.InAppPurchasing.isLocked) {
             throw FeatureNotSupportedException(LockedFeature.InAppPurchasing)
@@ -1496,7 +1506,8 @@ class Purchases internal constructor(
                 storeProduct,
                 purchaseOption,
                 null,
-                presentedOfferingIdentifier
+                presentedOfferingIdentifier,
+                isPersonalizedPrice
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
@@ -1507,7 +1518,8 @@ class Purchases internal constructor(
         purchaseOption: PurchaseOption?,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
+        listener: ProductChangeCallback,
+        isPersonalizedPrice: Boolean = false
     ) {
         if (storeProduct.type == ProductType.INAPP && LockedFeature.InAppPurchasing.isLocked) {
             throw FeatureNotSupportedException(LockedFeature.InAppPurchasing)
@@ -1540,7 +1552,8 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 offeringIdentifier,
-                listener
+                listener,
+                isPersonalizedPrice
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
@@ -1552,7 +1565,8 @@ class Purchases internal constructor(
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
-        listener: PurchaseErrorCallback
+        listener: PurchaseErrorCallback,
+        isPersonalizedPrice: Boolean
     ) {
         billing.findPurchaseInPurchaseHistory(
             appUserID,
@@ -1567,7 +1581,8 @@ class Purchases internal constructor(
                     storeProduct,
                     purchaseOption,
                     ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
-                    presentedOfferingIdentifier
+                    presentedOfferingIdentifier,
+                    isPersonalizedPrice
                 )
             },
             onError = { error ->
