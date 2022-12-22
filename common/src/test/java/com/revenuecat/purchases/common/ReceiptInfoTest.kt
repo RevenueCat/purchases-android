@@ -15,6 +15,7 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.mockPricingPhase
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubPricingPhase
@@ -58,6 +59,53 @@ class ReceiptInfoTest {
             offeringIdentifier = mockStoreTransaction.presentedOfferingIdentifier,
             storeProduct = mockStoreProduct,
             purchaseOptionId = mockStoreTransaction.purchaseOptionId
+        )
+
+        assertThat(receiptInfo.price).isEqualTo(0.99)
+        assertThat(receiptInfo.currency).isEqualTo("USD")
+        assertThat(receiptInfo.duration).isNull()
+        assertThat(receiptInfo.pricingPhases).isNull()
+    }
+
+    @Test
+    fun `ReceiptInfo sets duration and pricingPhases from a StoreProduct with a subscription period and purchase options`() {
+        val purchaseOptionId = "option-id"
+
+        val mockStoreTransaction = makeMockStoreTransaction(
+            purchaseState = PurchaseState.PURCHASED,
+            purchaseOptionId = purchaseOptionId
+        )
+
+        val purchaseOption = stubPurchaseOption(purchaseOptionId)
+
+        val mockStoreProduct = stubStoreProduct(
+            productId = productIdentifier,
+            defaultOption = purchaseOption,
+            purchaseOptions = listOf(purchaseOption)
+        )
+
+        val receiptInfo = ReceiptInfo(
+            productIDs = mockStoreTransaction.productIds,
+            offeringIdentifier = mockStoreTransaction.presentedOfferingIdentifier,
+            storeProduct = mockStoreProduct,
+            purchaseOptionId = mockStoreTransaction.purchaseOptionId
+        )
+
+        assertThat(receiptInfo.price).isNull()
+        assertThat(receiptInfo.currency).isNull()
+        assertThat(receiptInfo.duration).isEqualTo("P1M")
+        assertThat(receiptInfo.pricingPhases?.size).isEqualTo(1)
+    }
+
+    @Test
+    fun `ReceiptInfo allows price and currency to be set manually`() {
+        val price = 0.99
+        val currency = "USD"
+
+        val receiptInfo = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            price = price,
+            currency = currency
         )
 
         assertThat(receiptInfo.price).isEqualTo(0.99)
