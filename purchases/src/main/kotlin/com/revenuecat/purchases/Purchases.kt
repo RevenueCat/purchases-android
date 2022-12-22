@@ -1554,6 +1554,10 @@ class Purchases internal constructor(
         presentedOfferingIdentifier: String?,
         listener: PurchaseErrorCallback
     ) {
+        // TODO why do we use findPurchaseInPurchaseHistory instead of queryPurchases?
+        // i think we could use queryPurchases (because that only returns ACTIVE purchases)
+        // then we can error if a Purchase with that sub id doesn't exist, because they can't upgrade from na inactive
+        // sub, right?
         billing.findPurchaseInPurchaseHistory(
             appUserID,
             storeProduct.type,
