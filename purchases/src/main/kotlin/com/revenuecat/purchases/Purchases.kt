@@ -1202,56 +1202,44 @@ class Purchases internal constructor(
     ) {
         purchases.forEach { purchase ->
             if (purchase.purchaseState != PurchaseState.PENDING) {
-                purchase.productIds.firstOrNull()?.let { productId ->
-                    billing.queryProductDetailsAsync(
-                        productType = purchase.type,
-                        productIds = setOf(productId),
-                        onReceive = { storeProducts ->
+                billing.queryProductDetailsAsync(
+                    productType = purchase.type,
+                    productIds = purchase.productIds.toSet(),
+                    onReceive = { storeProducts ->
 
-                            // TODO BC5 confirm multi line purchases
-                            val purchasedStoreProduct = if (purchase.type == ProductType.SUBS) {
-                                storeProducts.firstOrNull { product ->
-                                    product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
-                                }
-                            } else {
-                                storeProducts.firstOrNull() { product ->
-                                    product.productId == productId
-                                }
+                        // TODO BC5 confirm multi line purchases
+                        val purchasedStoreProduct = if (purchase.type == ProductType.SUBS) {
+                            storeProducts.firstOrNull { product ->
+                                product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
                             }
-
-                            postToBackend(
-                                purchase = purchase,
-                                storeProduct = purchasedStoreProduct,
-                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                                consumeAllTransactions = consumeAllTransactions,
-                                appUserID = appUserID,
-                                onSuccess = onSuccess,
-                                onError = onError
-                            )
-                        },
-                        onError = {
-                            postToBackend(
-                                purchase = purchase,
-                                storeProduct = null,
-                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                                consumeAllTransactions = consumeAllTransactions,
-                                appUserID = appUserID,
-                                onSuccess = onSuccess,
-                                onError = onError
-                            )
+                        } else {
+                            storeProducts.firstOrNull() { product ->
+                                product.productId == purchase.productIds.firstOrNull()
+                            }
                         }
-                    )
-                } ?: run {
-                    postToBackend(
-                        purchase = purchase,
-                        storeProduct = null,
-                        allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                        consumeAllTransactions = consumeAllTransactions,
-                        appUserID = appUserID,
-                        onSuccess = onSuccess,
-                        onError = onError
-                    )
-                }
+
+                        postToBackend(
+                            purchase = purchase,
+                            storeProduct = purchasedStoreProduct,
+                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                            consumeAllTransactions = consumeAllTransactions,
+                            appUserID = appUserID,
+                            onSuccess = onSuccess,
+                            onError = onError
+                        )
+                    },
+                    onError = {
+                        postToBackend(
+                            purchase = purchase,
+                            storeProduct = null,
+                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                            consumeAllTransactions = consumeAllTransactions,
+                            appUserID = appUserID,
+                            onSuccess = onSuccess,
+                            onError = onError
+                        )
+                    }
+                )
             } else {
                 onError?.invoke(
                     purchase,
