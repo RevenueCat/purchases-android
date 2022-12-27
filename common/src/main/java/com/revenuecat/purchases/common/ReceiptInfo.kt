@@ -9,9 +9,8 @@ class ReceiptInfo(
     val purchaseOptionId: String? = null,
     val storeProduct: StoreProduct? = null,
 
-    // TODO BC5 - replace price/currency with making a single PricingPhase for amazon observermode products?
-    val price: Double? = null, // only passed for amazon observer mode
-    val currency: String? = null // only passed for amazon observer mode
+    val price: Double? = storeProduct?.oneTimeProductPrice?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble()),
+    val currency: String? = storeProduct?.oneTimeProductPrice?.currencyCode
 ) {
 
     val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }

@@ -1202,50 +1202,44 @@ class Purchases internal constructor(
     ) {
         purchases.forEach { purchase ->
             if (purchase.purchaseState != PurchaseState.PENDING) {
-                if (purchase.purchaseOptionId != null) {
-                    billing.queryProductDetailsAsync(
-                        productType = purchase.type,
-                        productIds = purchase.productIds.toSet(),
-                        onReceive = { storeProducts ->
+                billing.queryProductDetailsAsync(
+                    productType = purchase.type,
+                    productIds = purchase.productIds.toSet(),
+                    onReceive = { storeProducts ->
 
-                            // TODO BC5 confirm multi line purchases
-                            val purchasedStoreProduct = storeProducts.firstOrNull { product ->
+                        // TODO BC5 confirm multi line purchases
+                        val purchasedStoreProduct = if (purchase.type == ProductType.SUBS) {
+                            storeProducts.firstOrNull { product ->
                                 product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
                             }
-
-                            postToBackend(
-                                purchase = purchase,
-                                storeProduct = purchasedStoreProduct,
-                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                                consumeAllTransactions = consumeAllTransactions,
-                                appUserID = appUserID,
-                                onSuccess = onSuccess,
-                                onError = onError
-                            )
-                        },
-                        onError = {
-                            postToBackend(
-                                purchase = purchase,
-                                storeProduct = null,
-                                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                                consumeAllTransactions = consumeAllTransactions,
-                                appUserID = appUserID,
-                                onSuccess = onSuccess,
-                                onError = onError
-                            )
+                        } else {
+                            storeProducts.firstOrNull() { product ->
+                                product.productId == purchase.productIds.firstOrNull()
+                            }
                         }
-                    )
-                } else {
-                    postToBackend(
-                        purchase = purchase,
-                        storeProduct = null,
-                        allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                        consumeAllTransactions = consumeAllTransactions,
-                        appUserID = appUserID,
-                        onSuccess = onSuccess,
-                        onError = onError
-                    )
-                }
+
+                        postToBackend(
+                            purchase = purchase,
+                            storeProduct = purchasedStoreProduct,
+                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                            consumeAllTransactions = consumeAllTransactions,
+                            appUserID = appUserID,
+                            onSuccess = onSuccess,
+                            onError = onError
+                        )
+                    },
+                    onError = {
+                        postToBackend(
+                            purchase = purchase,
+                            storeProduct = null,
+                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                            consumeAllTransactions = consumeAllTransactions,
+                            appUserID = appUserID,
+                            onSuccess = onSuccess,
+                            onError = onError
+                        )
+                    }
+                )
             } else {
                 onError?.invoke(
                     purchase,
@@ -1464,9 +1458,6 @@ class Purchases internal constructor(
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
-        if (storeProduct.type == ProductType.INAPP && LockedFeature.InAppPurchasing.isLocked) {
-            throw FeatureNotSupportedException(LockedFeature.InAppPurchasing)
-        }
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
                 " $storeProduct ${
@@ -1509,9 +1500,6 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        if (storeProduct.type == ProductType.INAPP && LockedFeature.InAppPurchasing.isLocked) {
-            throw FeatureNotSupportedException(LockedFeature.InAppPurchasing)
-        }
         log(
             LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $storeProduct ${

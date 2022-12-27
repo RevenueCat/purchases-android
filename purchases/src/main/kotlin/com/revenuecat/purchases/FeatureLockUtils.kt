@@ -7,8 +7,6 @@ internal enum class LockedFeature(val isLocked: Boolean, val lockedMessage: Stri
     AmazonStore(true, "Amazon store is not supported in this version. " +
         "Please use the Google store or use the latest stable version to use this."),
     SyncPurchases(true, "Syncing purchases is not supported in this version. " +
-        "Please use the latest stable version to use this."),
-    InAppPurchasing(true, "Purchasing INAPP products is not supported in this version. " +
         "Please use the latest stable version to use this.")
 }
 
