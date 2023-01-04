@@ -7,8 +7,12 @@ import com.android.billingclient.api.BillingFlowParams
  * @property oldProductId The old product ID to upgrade from.
  * @property prorationMode The [BillingFlowParams.ProrationMode] to use when upgrading the given oldSku.
  */
-data class UpgradeInfo(
-    // TODO deprecate oldSku
-    val oldSku: String, // TODOBC5 rename?
+data class UpgradeInfo @JvmOverloads constructor(
+    val oldProductId: String,
+    @Deprecated(
+        "Replaced with oldProductId",
+        ReplaceWith("oldProductId")
+    )
+    val oldSku: String = oldProductId,
     @BillingFlowParams.ProrationMode val prorationMode: Int? = null
 )
