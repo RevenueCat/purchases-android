@@ -13,6 +13,7 @@ private class CustomerInfoAPI {
             val entitlementInfo: EntitlementInfos = entitlements
             val asubs = activeSubscriptions
             val skus: Set<String> = allPurchasedSkus
+            val productIds: Set<String> = allPurchasedProductIds
             val led: Date? = latestExpirationDate
             val nst: List<Transaction> = nonSubscriptionTransactions
             val opd: Date? = originalPurchaseDate
@@ -21,7 +22,9 @@ private class CustomerInfoAPI {
             val oaui: String = originalAppUserId
             val mu: Uri? = managementURL
             val eds: Date? = getExpirationDateForSku("")
+            val edpi: Date? = getExpirationDateForProductId("")
             val pds: Date? = getPurchaseDateForSku("")
+            val pdpi: Date? = getPurchaseDateForProductId("")
             val ede: Date? = getExpirationDateForEntitlement("")
             val pde: Date? = getPurchaseDateForEntitlement("")
             val allExpirationDatesByProduct: Map<String, Date?> = allExpirationDatesByProduct
