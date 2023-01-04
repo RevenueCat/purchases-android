@@ -5,9 +5,9 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 
 fun BillingFlowParams.Builder.setUpgradeInfo(replaceSkuInfo: ReplaceSkuInfo) {
     val subscriptionUpdateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder().apply {
-        setOldSkuPurchaseToken(replaceSkuInfo.oldPurchase.purchaseToken)
+        setOldPurchaseToken(replaceSkuInfo.oldPurchase.purchaseToken)
         replaceSkuInfo.prorationMode?.let { prorationMode ->
-            setReplaceSkusProrationMode(prorationMode)
+            setReplaceProrationMode(prorationMode)
         }
     }
     setSubscriptionUpdateParams(subscriptionUpdateParams.build())
