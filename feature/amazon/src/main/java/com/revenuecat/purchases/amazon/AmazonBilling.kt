@@ -26,7 +26,7 @@ import com.revenuecat.purchases.amazon.listener.UserDataResponseListener
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
@@ -224,12 +224,12 @@ internal class AmazonBilling constructor(
         appUserID: String,
         storeProduct: StoreProduct,
         purchaseOption: PurchaseOption?,
-        replaceSkuInfo: ReplaceSkuInfo?,
+        replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     ) {
         if (checkObserverMode()) return
 
-        if (replaceSkuInfo != null) {
+        if (replaceProductInfo != null) {
             log(LogIntent.AMAZON_WARNING, AmazonStrings.PRODUCT_CHANGES_NOT_SUPPORTED)
             return
         }

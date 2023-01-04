@@ -27,7 +27,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
-import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
@@ -2090,9 +2090,9 @@ class BillingWrapperTest {
         return oldPurchase.toStoreTransaction(type = ProductType.SUBS)
     }
 
-    private fun mockReplaceSkuInfo(): ReplaceSkuInfo {
+    private fun mockReplaceSkuInfo(): ReplaceProductInfo {
         val oldPurchase = mockPurchaseHistoryRecordWrapper()
-        return ReplaceSkuInfo(oldPurchase, BillingFlowParams.ProrationMode.DEFERRED)
+        return ReplaceProductInfo(oldPurchase, BillingFlowParams.ProrationMode.DEFERRED)
     }
 
     private fun getMockedPurchaseWrapper(

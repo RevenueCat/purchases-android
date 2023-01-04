@@ -25,7 +25,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
-import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
@@ -572,7 +572,7 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct,
                 storeProduct.purchaseOptions[0],
-                ReplaceSkuInfo(oldPurchase),
+                ReplaceProductInfo(oldPurchase),
                 stubOfferingIdentifier
             )
         }
@@ -1091,7 +1091,7 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct,
                 storeProduct.purchaseOptions[0],
-                ReplaceSkuInfo(oldPurchase),
+                ReplaceProductInfo(oldPurchase),
                 stubOfferingIdentifier
             )
         }
@@ -1148,7 +1148,7 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct,
                 storeProduct.purchaseOptions[0],
-                ReplaceSkuInfo(oldPurchase),
+                ReplaceProductInfo(oldPurchase),
                 stubOfferingIdentifier
             )
         }
