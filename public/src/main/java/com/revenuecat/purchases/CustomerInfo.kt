@@ -19,7 +19,6 @@ import java.util.Date
 /**
  * Class containing all information regarding the purchaser
  * @property entitlements Entitlements attached to this purchaser info
- * @property purchasedNonSubscriptionProductIds Set of non-subscription, non-consumed productIds
  * @property allExpirationDatesByProduct Map of productIds to expiration dates
  * @property allPurchaseDatesByProduct Map of productIds to purchase dates
  * @property requestDate Date when this info was requested
