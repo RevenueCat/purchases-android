@@ -327,7 +327,7 @@ fun Purchases.getSubscriptionSkusWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getSubscriptionSkus(skus, getStoreProductsCallback(onReceiveSkus, onError))
+    getSubscriptionProducts(skus, getStoreProductsCallback(onReceiveSkus, onError))
 }
 
 /**
@@ -341,5 +341,5 @@ fun Purchases.getNonSubscriptionSkusWith(
     onError: (error: PurchasesError) -> Unit,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getNonSubscriptionSkus(skus, getStoreProductsCallback(onReceiveSkus, onError))
+    getNonSubscriptionProducts(skus, getStoreProductsCallback(onReceiveSkus, onError))
 }

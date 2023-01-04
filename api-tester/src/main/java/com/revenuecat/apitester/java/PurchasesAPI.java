@@ -44,7 +44,7 @@ final class PurchasesAPI {
                       final Package packageToPurchase,
                       final PurchaseOption purchaseOption,
                       final UpgradeInfo upgradeInfo) {
-        final ArrayList<String> skus = new ArrayList<>();
+        final ArrayList<String> productIds = new ArrayList<>();
 
         final ReceiveOfferingsCallback receiveOfferingsListener = new ReceiveOfferingsCallback() {
             @Override public void onReceived(@NonNull Offerings offerings) {}
@@ -73,8 +73,8 @@ final class PurchasesAPI {
 
         purchases.syncPurchases();
         purchases.getOfferings(receiveOfferingsListener);
-        purchases.getSubscriptionSkus(skus, skusResponseListener);
-        purchases.getNonSubscriptionSkus(skus, skusResponseListener);
+        purchases.getSubscriptionProducts(productIds, skusResponseListener);
+        purchases.getNonSubscriptionProducts(productIds, skusResponseListener);
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeListener);
         purchases.purchaseProduct(activity, storeProduct, makePurchaseListener);
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeListener);

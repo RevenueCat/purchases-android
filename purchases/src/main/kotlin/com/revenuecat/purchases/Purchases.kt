@@ -353,29 +353,29 @@ class Purchases internal constructor(
     }
 
     /**
-     * Gets the StoreProduct for the given list of subscription skus.
-     * @param [skus] List of skus
+     * Gets the StoreProduct for the given list of subscription products.
+     * @param [productIds] List of productIds
      * @param [callback] Response callback
      */
     // TODO deprecate, replaced with getProducts
-    fun getSubscriptionSkus(
-        skus: List<String>,
+    fun getSubscriptionProducts(
+        productIds: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getSkus(skus.toSet(), ProductType.SUBS, callback)
+        getProducts(productIds.toSet(), ProductType.SUBS, callback)
     }
 
     /**
-     * Gets the SKUDetails for the given list of non-subscription skus.
-     * @param [skus] List of skus
+     * Gets the SKUDetails for the given list of non-subscription products.
+     * @param [productIds] List of productIds
      * @param [callback] Response callback
      */
     // TODO deprecate, replaced with getProducts
-    fun getNonSubscriptionSkus(
-        skus: List<String>,
+    fun getNonSubscriptionProducts(
+        productIds: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getSkus(skus.toSet(), ProductType.INAPP, callback)
+        getProducts(productIds.toSet(), ProductType.INAPP, callback)
     }
 
     /**
@@ -1158,14 +1158,14 @@ class Purchases internal constructor(
             )
         }
 
-    private fun getSkus(
-        skus: Set<String>,
+    private fun getProducts(
+        productIds: Set<String>,
         productType: ProductType,
         callback: GetStoreProductsCallback
     ) {
         billing.queryProductDetailsAsync(
             productType,
-            skus,
+            productIds,
             { storeProducts ->
                 dispatch {
                     callback.onReceived(storeProducts)

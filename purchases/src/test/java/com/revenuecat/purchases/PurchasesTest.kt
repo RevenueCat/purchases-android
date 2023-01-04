@@ -378,7 +378,7 @@ class PurchasesTest {
 
         val productDetails = mockStoreProduct(productIds, listOf(), ProductType.SUBS)
 
-        purchases.getSubscriptionSkus(productIds,
+        purchases.getSubscriptionProducts(productIds,
             object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
                     receivedProducts = storeProducts
@@ -398,7 +398,7 @@ class PurchasesTest {
 
         val storeProducts = mockStoreProduct(productIds, listOf(), ProductType.INAPP)
 
-        purchases.getNonSubscriptionSkus(productIds,
+        purchases.getNonSubscriptionProducts(productIds,
             object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
                     receivedProducts = storeProducts
