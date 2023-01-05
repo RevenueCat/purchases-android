@@ -1555,6 +1555,9 @@ class Purchases internal constructor(
         presentedOfferingIdentifier: String?,
         listener: PurchaseErrorCallback
     ) {
+        if (storeProduct.type != ProductType.SUBS) {
+            log(LogIntent.WARNING, PurchaseStrings.UPGRADING_INVALID_TYPE)
+        }
         billing.findPurchaseInPurchaseHistory(
             appUserID,
             ProductType.SUBS,
