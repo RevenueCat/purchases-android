@@ -1689,7 +1689,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Gets the SKUDetails for the given list of non-subscription products.
+     * Gets the StoreProduct for the given list of non-subscription products.
      * @param [productIds] List of productIds
      * @param [callback] Response callback
      */

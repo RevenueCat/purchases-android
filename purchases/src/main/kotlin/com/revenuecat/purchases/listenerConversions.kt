@@ -350,9 +350,9 @@ fun Purchases.getSubscriptionSkusWith(
 }
 
 /**
- * Gets the SKUDetails for the given list of non-subscription skus.
+ * Gets the StoreProduct for the given list of non-subscription skus.
  * @param [skus] List of skus
- * @param [onReceiveSkus] Will be called after fetching SkuDetails
+ * @param [onReceiveSkus] Will be called after fetching StoreProduct
  */
 @Deprecated(
     "Replaced with getProductsWith() which returns both subscriptions and non-subscriptions",
