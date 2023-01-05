@@ -58,6 +58,14 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 | oldSku  | oldProductId |
 
 
+### CustomerInfo updates
+
+| Deprecated              | New                           |
+|-------------------------|-------------------------------|
+| allPurchasedSkus        | allPurchasedProductIds        |
+| getExpirationDateForSku | getExpirationDateForProductId |
+| getPurchaseDateForSku   | getPurchaseDateForProductId   |
+
 ### New purchasing APIs
 
 | New              |
