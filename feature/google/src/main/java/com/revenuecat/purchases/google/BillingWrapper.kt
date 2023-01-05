@@ -852,11 +852,7 @@ class BillingWrapper(
                     // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
                     // https://issuetracker.google.com/issues/155005449
                     replaceSkuInfo?.let {
-                        setSubscriptionUpdateParams(
-                            SubscriptionUpdateParams.newBuilder()
-                            .setOldPurchaseToken(replaceSkuInfo.oldPurchase.purchaseToken)
-                            .setReplaceProrationMode(ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE)
-                            .build())
+                        setUpgradeInfo(it)
                     } ?: setObfuscatedAccountId(appUserID.sha256())
                 }
                 .build()
