@@ -364,14 +364,14 @@ class BillingWrapperTest {
             BillingFlowParams.SubscriptionUpdateParams.newBuilder()
         } returns mockSubscriptionUpdateParamsBuilder
 
-        val oldSkuPurchaseTokenSlot = slot<String>()
+        val oldPurchaseTokenSlot = slot<String>()
         every {
-            mockSubscriptionUpdateParamsBuilder.setOldSkuPurchaseToken(capture(oldSkuPurchaseTokenSlot))
+            mockSubscriptionUpdateParamsBuilder.setOldPurchaseToken(capture(oldPurchaseTokenSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
         val prorationModeSlot = slot<Int>()
         every {
-            mockSubscriptionUpdateParamsBuilder.setReplaceSkusProrationMode(capture(prorationModeSlot))
+            mockSubscriptionUpdateParamsBuilder.setReplaceProrationMode(capture(prorationModeSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
         val productId = "product_a"
@@ -394,7 +394,7 @@ class BillingWrapperTest {
             assertThat(productId).isEqualTo(capturedProductDetailsParams[0].zza().productId)
             assertThat(subsGoogleProductType).isEqualTo(capturedProductDetailsParams[0].zza().productType)
 
-            assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldSkuPurchaseTokenSlot.captured)
+            assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
             assertThat(upgradeInfo.prorationMode).isEqualTo(prorationModeSlot.captured)
             billingClientOKResult
         }
