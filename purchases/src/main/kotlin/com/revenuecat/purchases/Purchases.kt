@@ -379,8 +379,12 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase upgrading from a previous subscription. If purchasing a subscription,
-     * it will choose the default [PurchaseOption].
+     * Purchases [storeProduct].
+     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
+     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [PurchaseOption].
+     *
+     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
+     *
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
@@ -419,7 +423,12 @@ class Purchases internal constructor(
 
     // TODOBC5: remove storeProduct parameter
     /**
-     * Purchase a subscription [StoreProduct]'s [PurchaseOption] upgrading from a previous product.
+     * Purchases [storeProduct].
+     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
+     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [PurchaseOption].
+     *
+     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
+     *
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [purchaseOption] Your choice of purchase options available for the subscription StoreProduct
@@ -462,8 +471,12 @@ class Purchases internal constructor(
     }
 
     /**
-     * Purchase a [Package] upgrading from a previous subscription. If purchasing a subscription,
-     * it will choose the default [PurchaseOption].
+     * Purchases a [Package].
+     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
+     * [oldProductId]and chooses the default [PurchaseOption] from [packageToPurchase].
+     *
+     * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
+     *
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
