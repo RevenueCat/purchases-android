@@ -317,17 +317,36 @@ fun Purchases.getCustomerInfoWith(
 }
 
 /**
+ * Gets the StoreProduct for the given list of subscription and non-subscription productIds.
+ * @param [productIds] List of productIds
+ * @param [onGetStoreProducts] Will be called after fetching StoreProducts
+ */
+@Suppress("unused")
+fun Purchases.getProductsWith(
+    productIds: List<String>,
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onGetStoreProducts: (storeProducts: List<StoreProduct>) -> Unit
+) {
+    getProducts(productIds, getStoreProductsCallback(onGetStoreProducts, onError))
+}
+
+// region Deprecated
+
+/**
  * Gets the SKUDetails for the given list of subscription skus.
  * @param [skus] List of skus
  * @param [onReceiveSkus] Will be called after fetching subscriptions
  */
-@Suppress("unused")
+@Deprecated(
+    "Replaced with getProductsWith() which returns both subscriptions and non-subscriptions",
+    ReplaceWith("getProductsWith()")
+)
 fun Purchases.getSubscriptionSkusWith(
     skus: List<String>,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getSubscriptionProducts(skus, getStoreProductsCallback(onReceiveSkus, onError))
+    getProducts(skus, getStoreProductsCallback(onReceiveSkus, onError))
 }
 
 /**
@@ -335,11 +354,16 @@ fun Purchases.getSubscriptionSkusWith(
  * @param [skus] List of skus
  * @param [onReceiveSkus] Will be called after fetching SkuDetails
  */
-@Suppress("unused")
+@Deprecated(
+    "Replaced with getProductsWith() which returns both subscriptions and non-subscriptions",
+    ReplaceWith("getProductsWith()")
+)
 fun Purchases.getNonSubscriptionSkusWith(
     skus: List<String>,
     onError: (error: PurchasesError) -> Unit,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getNonSubscriptionProducts(skus, getStoreProductsCallback(onReceiveSkus, onError))
+    getProducts(skus, getStoreProductsCallback(onReceiveSkus, onError))
 }
+
+// endregion

@@ -50,7 +50,7 @@ final class PurchasesAPI {
             @Override public void onReceived(@NonNull Offerings offerings) {}
             @Override public void onError(@NonNull PurchasesError error) {}
         };
-        final GetStoreProductsCallback skusResponseListener = new GetStoreProductsCallback() {
+        final GetStoreProductsCallback productResponseListener = new GetStoreProductsCallback() {
             @Override public void onReceived(@NonNull List<StoreProduct> storeProducts) { }
             @Override public void onError(@NonNull PurchasesError error) {}
         };
@@ -73,8 +73,7 @@ final class PurchasesAPI {
 
         purchases.syncPurchases();
         purchases.getOfferings(receiveOfferingsListener);
-        purchases.getSubscriptionProducts(productIds, skusResponseListener);
-        purchases.getNonSubscriptionProducts(productIds, skusResponseListener);
+        purchases.getProducts(productIds, productResponseListener);
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeListener);
         purchases.purchaseProduct(activity, storeProduct, makePurchaseListener);
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeListener);

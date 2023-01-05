@@ -353,29 +353,29 @@ class Purchases internal constructor(
     }
 
     /**
-     * Gets the StoreProduct for the given list of subscription products.
+     * Gets the StoreProduct for the given list of subscription and non-subscription productIds.
      * @param [productIds] List of productIds
      * @param [callback] Response callback
      */
-    // TODO deprecate, replaced with getProducts
-    fun getSubscriptionProducts(
+    fun getProducts(
         productIds: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getProducts(productIds.toSet(), ProductType.SUBS, callback)
-    }
-
-    /**
-     * Gets the SKUDetails for the given list of non-subscription products.
-     * @param [productIds] List of productIds
-     * @param [callback] Response callback
-     */
-    // TODO deprecate, replaced with getProducts
-    fun getNonSubscriptionProducts(
-        productIds: List<String>,
-        callback: GetStoreProductsCallback
-    ) {
-        getProducts(productIds.toSet(), ProductType.INAPP, callback)
+        getProducts(productIds.toSet(), ProductType.SUBS, object : GetStoreProductsCallback {
+            override fun onReceived(subStoreProducts: List<StoreProduct>) {
+                getProducts(productIds.toSet(), ProductType.INAPP, object : GetStoreProductsCallback {
+                    override fun onReceived(inappStoreProducts: List<StoreProduct>) {
+                        callback.onReceived(subStoreProducts + inappStoreProducts)
+                    }
+                    override fun onError(error: PurchasesError) {
+                        callback.onError(error)
+                    }
+                })
+            }
+            override fun onError(error: PurchasesError) {
+                callback.onError(error)
+            }
+        })
     }
 
     /**
@@ -1671,6 +1671,38 @@ class Purchases internal constructor(
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
+
+    /**
+     * Gets the StoreProduct for the given list of subscription products.
+     * @param [productIds] List of productIds
+     * @param [callback] Response callback
+     */
+    @Deprecated(
+        "Replaced with getProducts() which returns both subscriptions and non-subscriptions",
+        ReplaceWith("getProducts()")
+    )
+    fun getSubscriptionSkus(
+        productIds: List<String>,
+        callback: GetStoreProductsCallback
+    ) {
+        getProducts(productIds.toSet(), ProductType.SUBS, callback)
+    }
+
+    /**
+     * Gets the SKUDetails for the given list of non-subscription products.
+     * @param [productIds] List of productIds
+     * @param [callback] Response callback
+     */
+    @Deprecated(
+        "Replaced with getProducts() which returns both subscriptions and non-subscriptions",
+        ReplaceWith("getProducts()")
+    )
+    fun getNonSubscriptionSkus(
+        productIds: List<String>,
+        callback: GetStoreProductsCallback
+    ) {
+        getProducts(productIds.toSet(), ProductType.INAPP, callback)
+    }
 
     // endregion
 

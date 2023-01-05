@@ -74,10 +74,7 @@ private class PurchasesAPI {
         purchases.syncPurchases()
         purchases.getOfferings(receiveOfferingsCallback)
 
-        // TODO deprecate, replaced with getProducts
-        purchases.getSubscriptionProducts(productIds, productsResponseCallback)
-        purchases.getNonSubscriptionProducts(productIds, productsResponseCallback)
-//        purchases.getProducts(productIds, productsResponseCallback)
+        purchases.getProducts(productIds, productsResponseCallback)
 
         // we need these for hybrids... these all fall back on some "best offer" or just purchase the base plan
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
