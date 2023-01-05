@@ -50,6 +50,14 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 |------------|------------|
 | skus       | productIds |
 
+### UpgradeInfo updates
+
+
+| Removed | New          |
+|---------|--------------|
+| oldSku  | oldProductId |
+
+
 ### New purchasing APIs
 
 | New              |

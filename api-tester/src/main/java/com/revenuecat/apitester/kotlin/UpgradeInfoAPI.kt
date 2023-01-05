@@ -7,19 +7,17 @@ import com.revenuecat.purchases.UpgradeInfo
 private class UpgradeInfoAPI {
     fun check(upgradeInfo: UpgradeInfo) {
         with(upgradeInfo) {
-            val oldSku: String = oldSku
             val oldProductId: String = oldProductId
             @BillingFlowParams.ProrationMode val prorationMode: Int? = prorationMode
 
             val constructedUpgradeInfo =
                 UpgradeInfo(
-                    oldSku,
                     oldProductId,
                     prorationMode
                 )
 
             val constructedUpgradeInfoProductIdOnly = UpgradeInfo(oldProductId)
-            val constructedUpgradeInfoProductIdAndOldSkuOnly = UpgradeInfo(oldProductId, oldSku)
+            val constructedUpgradeInfoNullProrationMode = UpgradeInfo(oldProductId, null)
         }
     }
 }
