@@ -1560,6 +1560,7 @@ class Purchases internal constructor(
         // sub, right?
         billing.findPurchaseInPurchaseHistory(
             appUserID,
+            // TODO why do we pass type? shouldn't this just be subs? can you "upgrade" from an OTP?
             storeProduct.type,
             upgradeInfo.oldSku,
             onCompletion = { purchaseRecord ->
