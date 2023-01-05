@@ -360,7 +360,15 @@ workflows:
     jobs:
       - test
       - assemble-sample-app
-
+  
+  firebase-tests:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+    jobs:
+      - integration-tests-build
+      - run-firebase-tests-latest-dependencies
+  
   deploy:
     when:
       not:
