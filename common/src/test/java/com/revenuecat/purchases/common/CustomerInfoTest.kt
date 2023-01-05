@@ -39,7 +39,7 @@ class CustomerInfoTest {
 
         assertThat(info).isNotNull
         assertThat(info.activeSubscriptions).isEmpty()
-        assertThat(info.allPurchasedSkus).isEmpty()
+        assertThat(info.allPurchasedProductIds).isEmpty()
         assertThat(info.nonSubscriptionTransactions).isEmpty()
         assertThat(info.latestExpirationDate).isNull()
     }
@@ -76,7 +76,7 @@ class CustomerInfoTest {
     @Throws(JSONException::class)
     fun `Given a full response, all purchased SKUs are retrieved properly`() {
         val info = fullCustomerInfo
-        val purchasedSkus = info.allPurchasedSkus
+        val purchasedSkus = info.allPurchasedProductIds
 
         assertThat(purchasedSkus.size).isEqualTo(5)
         assertThat(purchasedSkus).contains("onemonth_freetrial")
@@ -102,11 +102,11 @@ class CustomerInfoTest {
     fun `Given a full purchase info, expiration date is de-serialized properly`() {
         val info = fullCustomerInfo
 
-        val oneMonthDate = info.getExpirationDateForSku("onemonth_freetrial")
-        val threeMonthDate = info.getExpirationDateForSku("threemonth_freetrial")
+        val oneMonthDate = info.getExpirationDateForProductId("onemonth_freetrial")
+        val threeMonthDate = info.getExpirationDateForProductId("threemonth_freetrial")
 
         assertThat(oneMonthDate!!.after(threeMonthDate)).`as`("$oneMonthDate is after $threeMonthDate")
-            .isTrue()
+            .isTrue
     }
 
     @Test
