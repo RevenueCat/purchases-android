@@ -1557,7 +1557,7 @@ class Purchases internal constructor(
     ) {
         billing.findPurchaseInPurchaseHistory(
             appUserID,
-            storeProduct.type,
+            ProductType.SUBS,
             upgradeInfo.oldProductId,
             onCompletion = { purchaseRecord ->
                 log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldProductId))
