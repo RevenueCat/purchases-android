@@ -367,7 +367,9 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - integration-tests-build
-      - run-firebase-tests-latest-dependencies
+      - run-firebase-tests-latest-dependencies:
+          requires:
+            - integration-tests-build
   
   deploy:
     when:
