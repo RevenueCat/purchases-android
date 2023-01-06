@@ -4,11 +4,17 @@ import android.os.Parcel
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
+import com.revenuecat.purchases.models.GooglePurchaseInfo
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.PurchaseInfo
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.toRecurrenceMode
+
+sealed class StubPurchaseInfo: PurchaseInfo {
+    object Subscription : StubPurchaseInfo()
+}
 
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
@@ -33,6 +39,8 @@ fun stubStoreProduct(
         get() = purchaseOptions
     override val defaultOption: PurchaseOption?
         get() = defaultOption
+    override val purchaseInfo: PurchaseInfo
+        get() = StubPurchaseInfo.Subscription
     override val sku: String
         get() = productId
 
@@ -61,6 +69,8 @@ fun stubINAPPStoreProduct(
         get() = listOf(defaultOption)
     override val defaultOption: PurchaseOption
         get() = stubPurchaseOption(productId)
+    override val purchaseInfo: PurchaseInfo
+        get() = StubPurchaseInfo.Subscription
     override val sku: String
         get() = productId
 
@@ -81,6 +91,8 @@ fun stubPurchaseOption(
         get() = pricingPhases
     override val tags: List<String>
         get() = listOf("tag")
+    override val purchaseInfo: PurchaseInfo
+        get() = StubPurchaseInfo.Subscription
 
     override fun describeContents(): Int = 0
     override fun writeToParcel(dest: Parcel?, flags: Int) {}

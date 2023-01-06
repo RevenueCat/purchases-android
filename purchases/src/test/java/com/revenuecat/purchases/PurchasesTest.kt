@@ -514,8 +514,8 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+//                storeProduct,
+                storeProduct.purchaseOptions[0].purchaseInfo,
                 null,
                 null
             )

@@ -32,6 +32,8 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.models.GooglePurchaseInfo
+import com.revenuecat.purchases.models.PurchaseInfo
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -222,11 +224,19 @@ internal class AmazonBilling constructor(
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchaseInfo: PurchaseInfo,
+//        storeProduct: StoreProduct,
+//        purchaseOption: PurchaseOption?,
         replaceSkuInfo: ReplaceSkuInfo?,
         presentedOfferingIdentifier: String?
     ) {
+        val amazonPurchaseInfo = purchaseInfo as? AmazonPurchaseInfo.TheOnlyOne
+        if (amazonPurchaseInfo == null) {
+            // TODO: DO ERROR THING
+            return
+        }
+        val storeProduct = amazonPurchaseInfo.storeProduct
+
         if (checkObserverMode()) return
 
         if (replaceSkuInfo != null) {

@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
 
 /**
  * Defines an option for purchasing a Google subscription
@@ -15,5 +17,7 @@ data class GooglePurchaseOption(
     /**
      * Token used to purchase
      */
-    val token: String
+    val token: String,
+
+    override val purchaseInfo: @RawValue GooglePurchaseInfo
 ) : PurchaseOption, Parcelable

@@ -45,6 +45,8 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GooglePurchaseInfo
+import com.revenuecat.purchases.models.PurchaseInfo
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -414,7 +416,7 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, storeProduct, storeProduct.defaultOption, null, callback)
+        startPurchase(activity, storeProduct.purchaseInfo, null, callback)
     }
 
     // TODOBC5: remove storeProduct parameter
@@ -454,11 +456,11 @@ class Purchases internal constructor(
      */
     fun purchaseSubscriptionOption(
         activity: Activity,
-        storeProduct: StoreProduct,
+        storeProduct: StoreProduct, // TODO: need to remove
         purchaseOption: PurchaseOption,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, storeProduct, purchaseOption, null, callback)
+        startPurchase(activity, purchaseOption.purchaseInfo, null, callback)
     }
 
     /**
@@ -499,8 +501,8 @@ class Purchases internal constructor(
     ) {
         startPurchase(
             activity,
-            packageToPurchase.product,
-            packageToPurchase.product.defaultOption,
+//            packageToPurchase.product,
+            packageToPurchase.product.defaultOption?.purchaseInfo ?: packageToPurchase.product.purchaseInfo,
             packageToPurchase.offering,
             listener
         )
@@ -1453,18 +1455,36 @@ class Purchases internal constructor(
 
     private fun startPurchase(
         activity: Activity,
-        storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchaseInfo: PurchaseInfo,
+//        storeProduct: StoreProduct,
+//        purchaseOption: PurchaseOption?,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
+        val googlePurchaseInfo = purchaseInfo as? GooglePurchaseInfo
+        if (googlePurchaseInfo == null) {
+            // TODO: DO ERROR THING
+            return
+        }
+
+        val productId: String
+        when (googlePurchaseInfo) {
+            is GooglePurchaseInfo.NotSubscription -> {
+                productId = googlePurchaseInfo.productId
+            }
+            is GooglePurchaseInfo.Subscription -> {
+                productId = googlePurchaseInfo.productId
+            }
+        }
+
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
-                " $storeProduct ${
-                    presentedOfferingIdentifier?.let {
-                        PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
-                    }
-                }"
+                // TODO: FIX THIS
+//                " $storeProduct ${
+//                    presentedOfferingIdentifier?.let {
+//                        PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
+//                    }
+//                }"
             )
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
@@ -1472,8 +1492,8 @@ class Purchases internal constructor(
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
-            if (!state.purchaseCallbacksByProductId.containsKey(storeProduct.productId)) {
-                val mapOfProductIdToListener = mapOf(storeProduct.productId to listener)
+            if (!state.purchaseCallbacksByProductId.containsKey(productId)) {
+                val mapOfProductIdToListener = mapOf(productId to listener)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
                 )
@@ -1484,8 +1504,9 @@ class Purchases internal constructor(
             billing.makePurchaseAsync(
                 activity,
                 appUserID,
-                storeProduct,
-                purchaseOption,
+                purchaseInfo,
+//                storeProduct,
+//                purchaseOption,
                 null,
                 presentedOfferingIdentifier
             )
@@ -1552,8 +1573,8 @@ class Purchases internal constructor(
                 billing.makePurchaseAsync(
                     activity,
                     appUserID,
-                    storeProduct,
-                    purchaseOption,
+//                    storeProduct,
+                    purchaseOption?.purchaseInfo ?: storeProduct.purchaseInfo,
                     ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier
                 )

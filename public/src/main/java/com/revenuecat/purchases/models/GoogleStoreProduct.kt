@@ -20,6 +20,13 @@ data class GoogleStoreProduct(
     val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable {
 
+    override val purchaseInfo: GooglePurchaseInfo
+        get() = GooglePurchaseInfo.NotSubscription(
+                    productId,
+                    type,
+                    productDetails
+                )
+
     /**
      * The sku of the StoreProduct
      */

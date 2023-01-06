@@ -2,10 +2,12 @@ package com.revenuecat.purchases.amazon
 
 import android.os.Parcelable
 import com.amazon.device.iap.model.Product
+import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.PurchaseInfo
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.parceler.JSONObjectParceler
@@ -14,6 +16,12 @@ import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.regex.Pattern
+
+sealed class AmazonPurchaseInfo: PurchaseInfo {
+    data class TheOnlyOne(
+        val storeProduct: AmazonStoreProduct,
+    ) : AmazonPurchaseInfo()
+}
 
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
@@ -35,6 +43,9 @@ data class AmazonStoreProduct(
     val originalJson: JSONObject,
     val amazonProduct: Product,
 ) : StoreProduct, Parcelable {
+
+    override val purchaseInfo: AmazonPurchaseInfo
+        get() = AmazonPurchaseInfo.TheOnlyOne(this)
 
     override val sku: String
         get() = productId
