@@ -1,4 +1,4 @@
-## V6 API Changes
+## v6 API Changes
 
 ### Classes
 
