@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -72,8 +73,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         if (isUpgrade) {
             // TODO how do we know which one to upgrade from if theres <1?
-            val currentSubId = activeSubscriptions.first()
-            val upgradeInfo = UpgradeInfo(currentSubId)
+            val currentSubIdBAD = activeSubscriptions.first()
+            val currentSubId = currentSubIdBAD.split(":").first()
+            val upgradeInfo = UpgradeInfo(currentSubId, ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE)
 
             Log.e("maddietest", "upgrading from $currentSubId to ${currentPackage.product.productId} with " +
                 "proration ${upgradeInfo.prorationMode}")
