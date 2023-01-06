@@ -1,8 +1,8 @@
-## v6 API changes
+## V6 API Changes
 
-### New
+### Classes
 
-| Name                   |
+| New                    |
 |------------------------|
 | `PurchaseOption`       |
 | `GooglePurchaseOption` |
@@ -12,7 +12,11 @@
 | `PricingPhase`         |
 | `RecurrenceMode`       |
 
-### StoreProduct updates
+| Old Location                            | New Location                                   |
+|-----------------------------------------|------------------------------------------------|
+| com.revenuecat.purchases.BillingFeature | com.revenuecat.purchases.models.BillingFeature |
+
+### StoreProduct
 
 StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonStoreProduct` implement.
 
@@ -40,7 +44,7 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 | producct.iconUrl                  |  | 
 | product.originalJson              |(product as GoogleStoreProduct).productDetails |
 
-### StoreTransaction updates
+### StoreTransaction
 
 | New              |
 |------------------|
@@ -50,33 +54,29 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 |------------|------------|
 | skus       | productIds |
 
-### New purchasing APIs
+### Purchasing APIs
 
-| New              |
-|------------------|
-| `purchaseSubscriptionOption(Activity, StoreProduct, PurchaseOption, PurchaseCallback)` |
+| New                                                                                                      |
+|----------------------------------------------------------------------------------------------------------|
+| `purchaseSubscriptionOption(Activity, StoreProduct, PurchaseOption, PurchaseCallback)`                   |
 | `purchaseSubscriptionOption(Activity, StoreProduct, PurchaseOption, UpgradeInfo, ProductChangeCallback)` |
 
-### Kotlin Helpers Changes
+| Deprecated                                                       | New                                                   |
+|------------------------------------------------------------------|-------------------------------------------------------|
+| `getSubscriptionSkus(List<String>, GetStoreProductsCallback)`    | `getProducts(List<String>, GetStoreProductsCallback)` |
+| `getNonSubscriptionSkus(List<String>, GetStoreProductsCallback)` | `getProducts(List<String>, GetStoreProductsCallback)` |
 
-| New              |
-|------------------|
-| `purchaseSubscriptionOptionWith(Activity, StoreProduct, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+### Kotlin Helpers
+
+| New                                                                                                                                                                |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `purchaseSubscriptionOptionWith(Activity, StoreProduct, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              |
 | `purchaseSubscriptionOptionWith(Activity, StoreProduct, UpgradeInfo, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 
-| Removed |
-|----------------------------------------------------------------------------------------------------------------------|
-| `getPurchaserInfoWith((PurchasesError) -> Unit, (PurchaserInfo) -> Unit)`                                            |
-| `purchasePackageWith(Activity, Package, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)`                |
-| `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)`   |
-| `purchaseProductWith(Activity, SkuDetails, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)`             |
-| `purchaseProductWith(Activity, SkuDetails, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` |
-
-### Moved
-
-| Old location                            | New location                                   |
-|-----------------------------------------|------------------------------------------------|
-| com.revenuecat.purchases.BillingFeature | com.revenuecat.purchases.models.BillingFeature |
+| Deprecated                                                                                         | New                                                                                     |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| `getSubscriptionSkusWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)`    | `getProductsWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` |
+| `getNonSubscriptionSkusWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` | `getProductsWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` |
 
 ### Removed APIs
 
@@ -101,6 +101,8 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 | `removeUpdatedPurchaserInfoListener()`                                                                                |
 | `setUpdatedPurchaserInfoListener(UpdatedPurchaserInfoListener)`                                                       |
 | `getPurchaserInfoWith((PurchasesError) -> Unit, (PurchaserInfo) -> Unit)`                                             |
+| `purchasePackageWith(Activity, Package, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)`                 |
+| `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)`    |
 | `purchaseProductWith(Activity, SkuDetails, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)`              |
 | `purchaseProductWith(Activity, SkuDetails, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` |
 
