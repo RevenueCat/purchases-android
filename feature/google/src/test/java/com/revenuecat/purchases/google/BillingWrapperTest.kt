@@ -32,10 +32,12 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
+import com.revenuecat.purchases.models.GooglePurchaseInfo
 import com.revenuecat.purchases.models.GooglePurchaseOption
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.PurchaseInfo
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
@@ -329,8 +331,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            storeProduct.purchaseOptions[0],
+//            storeProduct,
+            storeProduct.purchaseOptions[0].purchaseInfo,
             mockReplaceSkuInfo(),
             "offering_a"
         )
@@ -403,8 +405,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            storeProduct.purchaseOptions[0],
+//            storeProduct,
+            storeProduct.purchaseOptions[0].purchaseInfo,
             upgradeInfo,
             null
         )
@@ -451,8 +453,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            storeProduct.purchaseOptions[0],
+//            storeProduct,
+            storeProduct.purchaseOptions[0].purchaseInfo,
             upgradeInfo,
             null
         )
@@ -500,8 +502,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            null,
+            storeProduct.purchaseInfo,
             upgradeInfo,
             null
         )
@@ -522,8 +523,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            storeProduct.purchaseOptions[0],
+//            storeProduct,
+            storeProduct.purchaseOptions[0].purchaseInfo,
             null,
             null
         )
@@ -545,8 +546,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            storeProduct.purchaseOptions[0],
+//            storeProduct,
+            storeProduct.purchaseOptions[0].purchaseInfo,
             mockReplaceSkuInfo(),
             null
         )
@@ -571,8 +572,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            storeProduct.purchaseOptions[0],
+//            storeProduct,
+            storeProduct.purchaseOptions[0].purchaseInfo,
             mockReplaceSkuInfo(),
             null
         )
@@ -603,8 +604,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            storeProduct.purchaseOptions[0],
+//            storeProduct,
+            storeProduct.purchaseOptions[0].purchaseInfo,
             mockReplaceSkuInfo(),
             null
         )
@@ -680,8 +681,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            nonGooglePurchaseOption,
+//            storeProduct,
+            nonGooglePurchaseOption.purchaseInfo,
             mockReplaceSkuInfo(),
             null
         )
@@ -713,6 +714,12 @@ class BillingWrapperTest {
                 get() = listOf(defaultOption)
             override val defaultOption: PurchaseOption
                 get() = GooglePurchaseOption("purchaseOption", emptyList(), emptyList(), "fake-token")
+            override val purchaseInfo: PurchaseInfo
+                get() = GooglePurchaseInfo.Subscription(
+                    productId,
+                    type,
+
+                )
             override val sku: String
                 get() = productId
 
@@ -730,8 +737,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            storeProduct.purchaseOptions[0],
+//            storeProduct,
+            storeProduct.purchaseOptions[0].purchaseInfo,
             mockReplaceSkuInfo(),
             null
         )
@@ -1148,8 +1155,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            storeProduct.purchaseOptions[0],
+//            storeProduct,
+            storeProduct.purchaseOptions[0].purchaseInfo,
             null,
             "offering_a"
         )
@@ -1184,8 +1191,8 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct,
-            purchaseOption,
+//            storeProduct,
+            purchaseOption.purchaseInfo,
             null,
             "offering_a"
         )

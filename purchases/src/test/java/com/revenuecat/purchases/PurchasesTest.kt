@@ -535,8 +535,8 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+//                storeProduct,
+                storeProduct.purchaseOptions[0].purchaseInfo,
                 null,
                 null
             )
@@ -556,8 +556,8 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+//                storeProduct,
+                storeProduct.purchaseOptions[0].purchaseInfo,
                 null,
                 stubOfferingIdentifier
             )
@@ -577,8 +577,8 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+//                storeProduct,
+                storeProduct.purchaseOptions[0].purchaseInfo,
                 null,
                 stubOfferingIdentifier
             )
@@ -601,8 +601,8 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+//                storeProduct,
+                storeProduct.purchaseOptions[0].purchaseInfo,
                 ReplaceSkuInfo(oldPurchase),
                 stubOfferingIdentifier
             )
@@ -929,8 +929,8 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 mockActivity,
                 appUserId,
-                storeProduct,
-                expectedDefaultPurchaseOption,
+//                storeProduct,
+                expectedDefaultPurchaseOption.purchaseInfo,
                 null,
                 null
             )
@@ -966,8 +966,8 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 mockActivity,
                 appUserId,
-                storeProduct,
-                expectedDefaultPurchaseOption,
+//                storeProduct,
+                expectedDefaultPurchaseOption.purchaseInfo,
                 null,
                 stubOfferingIdentifier
             )
@@ -1120,8 +1120,8 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+//                storeProduct,
+                storeProduct.purchaseOptions[0].purchaseInfo,
                 ReplaceSkuInfo(oldPurchase),
                 stubOfferingIdentifier
             )
@@ -1177,8 +1177,8 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+//                storeProduct,
+                storeProduct.purchaseOptions[0].purchaseInfo,
                 ReplaceSkuInfo(oldPurchase),
                 stubOfferingIdentifier
             )
@@ -4036,7 +4036,7 @@ class PurchasesTest {
     private fun mockBillingWrapper() {
         with(mockBillingAbstract) {
             every {
-                makePurchaseAsync(any(), any(), any(), any(), any(), any())
+                makePurchaseAsync(any(), any(), any(), any(), any())
             } just Runs
             every {
                 purchasesUpdatedListener = capture(capturedPurchasesUpdatedListener)
