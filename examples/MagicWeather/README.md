@@ -18,7 +18,7 @@ See minimum platform version requirements for RevenueCat's *Purchases* SDK [here
 
 | Feature                          | Sample Project Location                   |
 | -------------------------------- | ----------------------------------------- |
-| 🕹 Configuring the *Purchases* SDK  | [MainActivity.kt](app/src/main/java/com/revenuecat/sample/MainApplication.kt) |
+| 🕹 Configuring the *Purchases* SDK  | [MainApplication.kt](app/src/main/java/com/revenuecat/sample/MainApplication.kt) |
 | 💰 Building a basic paywall         | [paywall/PaywallFragment.kt](app/src/main/java/com/revenuecat/sample/ui/paywall/PaywallFragment.kt) |
 | 🔐 Checking subscription status     | [weather/WeatherFragment.kt](app/src/main/java/com/revenuecat/sample/ui/weather/WeatherFragment.kt#L69) |
 | 🤑 Restoring transactions           | [user/UserFragment.kt](app/src/main/java/com/revenuecat/sample/ui/user/UserFragment.kt#L81) |
