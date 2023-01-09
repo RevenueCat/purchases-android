@@ -28,7 +28,6 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
             StrictMode.setVmPolicy(
                 VmPolicy.Builder()
                     .detectLeakedClosableObjects()
-                    .penaltyLog()
 //                    .penaltyDeath()
                     .build()
             )

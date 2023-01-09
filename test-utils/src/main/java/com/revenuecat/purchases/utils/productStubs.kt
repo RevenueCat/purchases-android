@@ -13,15 +13,16 @@ import com.revenuecat.purchases.models.toRecurrenceMode
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
-    defaultOption: PurchaseOption = stubPurchaseOption("monthly_base_plan", "P1M"),
-    purchaseOptions: List<PurchaseOption> = listOf(defaultOption)
+    defaultOption: PurchaseOption? = stubPurchaseOption("monthly_base_plan", "P1M"),
+    purchaseOptions: List<PurchaseOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
+    oneTimeProductPrice: Price? = null
 ): StoreProduct = object : StoreProduct {
     override val productId: String
         get() = productId
     override val type: ProductType
         get() = ProductType.SUBS
     override val oneTimeProductPrice: Price?
-        get() = null
+        get() = oneTimeProductPrice
     override val title: String
         get() = ""
     override val description: String
@@ -30,7 +31,7 @@ fun stubStoreProduct(
         get() = purchaseOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.get(0)?.billingPeriod
     override val purchaseOptions: List<PurchaseOption>
         get() = purchaseOptions
-    override val defaultOption: PurchaseOption
+    override val defaultOption: PurchaseOption?
         get() = defaultOption
     override val sku: String
         get() = productId
