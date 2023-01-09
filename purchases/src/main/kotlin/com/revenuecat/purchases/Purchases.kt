@@ -1556,8 +1556,13 @@ class Purchases internal constructor(
         listener: PurchaseErrorCallback
     ) {
         if (storeProduct.type != ProductType.SUBS) {
-            log(LogIntent.WARNING, PurchaseStrings.UPGRADING_INVALID_TYPE)
+            dispatch {
+                listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
+                    PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) }, false)
+            }
+            return
         }
+
         billing.findPurchaseInPurchaseHistory(
             appUserID,
             ProductType.SUBS,

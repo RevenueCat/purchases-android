@@ -470,6 +470,26 @@ class PurchasesTest {
     }
 
     @Test
+    fun `when attempting upgrade to OTP, error block is called`() {
+        val productId = "coins"
+
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.INAPP, null)
+
+        var errorCallCount = 0
+        purchases.purchaseProductWith(
+            mockActivity,
+            receiptInfo.storeProduct!!,
+            UpgradeInfo("oldSubID"),
+            onError = { _, _ ->
+                errorCallCount++
+            }, onSuccess = { _, _ ->
+                fail("should be error")
+            })
+
+        assertThat(errorCallCount).isEqualTo(1)
+    }
+
+    @Test
     fun canMakePurchase() {
         val storeProduct = stubStoreProduct("abc")
 
