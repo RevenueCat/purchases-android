@@ -106,58 +106,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun showOldSubIdPicker() {
-        val activeSubIds = activeSubscriptions.map { it.split(":").first() } // TODOBC5 remove sub Id parsing
-        if (activeSubIds.isEmpty()) {
-            Toast.makeText(
-                requireContext(),
-                "Cannot ugprade without an existing active subscription.",
-                Toast.LENGTH_LONG
-            ).show()
-            toggleLoadingIndicator(false)
-            return
-        }
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Switch from which currently active subscription?")
-            .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { dialog_, which ->
-                selectedUpgradeSubId = activeSubIds[which]
-            }
-            .setPositiveButton("Continue") { dialog, _ ->
-                Log.e("maddietest", "upgrading from $selectedUpgradeSubId ")
-                dialog.dismiss()
-                showProrationModePicker()
-            }
-            .setNegativeButton("Cancel purchase") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
-    }
-
-    private fun showProrationModePicker() {
-        val prorationModeOptions = mapOf(
-            0 to "None",
-            ProrationMode.IMMEDIATE_WITH_TIME_PRORATION to "IMMEDIATE_WITH_TIME_PRORATION",
-            ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE to "IMMEDIATE_AND_CHARGE_PRORATED_PRICE",
-            ProrationMode.IMMEDIATE_WITHOUT_PRORATION to "IMMEDIATE_WITHOUT_PRORATION",
-            ProrationMode.DEFERRED to "DEFERRED",
-            ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE to "IMMEDIATE_AND_CHARGE_FULL_PRICE"
-        )
-
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Switch with which ProrationMode?")
-            .setSingleChoiceItems(prorationModeOptions.values.toTypedArray(), 0) { _, selectedIndex ->
-                selectedProrationMode = prorationModeOptions.keys.elementAt(selectedIndex)
-            }
-            .setPositiveButton("Start purchase") { dialog, _ ->
-                Log.e("maddietest", "upgrading with proration mode $selectedProrationMode")
-                // todo start purchase
-            }
-            .setNegativeButton("Cancel purchase") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
-    }
-
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
@@ -211,5 +159,57 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun toggleLoadingIndicator(isLoading: Boolean) {
         binding.purchaseProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
+    }
+
+    private fun showOldSubIdPicker() {
+        val activeSubIds = activeSubscriptions.map { it.split(":").first() } // TODOBC5 remove sub Id parsing
+        if (activeSubIds.isEmpty()) {
+            Toast.makeText(
+                requireContext(),
+                "Cannot ugprade without an existing active subscription.",
+                Toast.LENGTH_LONG
+            ).show()
+            toggleLoadingIndicator(false)
+            return
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Switch from which currently active subscription?")
+            .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { dialog_, which ->
+                selectedUpgradeSubId = activeSubIds[which]
+            }
+            .setPositiveButton("Continue") { dialog, _ ->
+                Log.e("maddietest", "upgrading from $selectedUpgradeSubId ")
+                dialog.dismiss()
+                showProrationModePicker()
+            }
+            .setNegativeButton("Cancel purchase") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun showProrationModePicker() {
+        val prorationModeOptions = mapOf(
+            0 to "None",
+            ProrationMode.IMMEDIATE_WITH_TIME_PRORATION to "IMMEDIATE_WITH_TIME_PRORATION",
+            ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE to "IMMEDIATE_AND_CHARGE_PRORATED_PRICE",
+            ProrationMode.IMMEDIATE_WITHOUT_PRORATION to "IMMEDIATE_WITHOUT_PRORATION",
+            ProrationMode.DEFERRED to "DEFERRED",
+            ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE to "IMMEDIATE_AND_CHARGE_FULL_PRICE"
+        )
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Switch with which ProrationMode?")
+            .setSingleChoiceItems(prorationModeOptions.values.toTypedArray(), 0) { _, selectedIndex ->
+                selectedProrationMode = prorationModeOptions.keys.elementAt(selectedIndex)
+            }
+            .setPositiveButton("Start purchase") { dialog, _ ->
+                Log.e("maddietest", "upgrading with proration mode $selectedProrationMode")
+                // todo start purchase
+            }
+            .setNegativeButton("Cancel purchase") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 }
