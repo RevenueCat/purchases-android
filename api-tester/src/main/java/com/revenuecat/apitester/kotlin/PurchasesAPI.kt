@@ -46,7 +46,7 @@ private class PurchasesAPI {
         purchaseOption: PurchaseOption,
         upgradeInfo: UpgradeInfo
     ) {
-        val skus = ArrayList<String>()
+        val productIds = ArrayList<String>()
         val receiveOfferingsCallback = object : ReceiveOfferingsCallback {
             override fun onReceived(offerings: Offerings) {}
             override fun onError(error: PurchasesError) {}
@@ -74,10 +74,7 @@ private class PurchasesAPI {
         purchases.syncPurchases()
         purchases.getOfferings(receiveOfferingsCallback)
 
-        // TODO deprecate, replaced with getProducts
-        purchases.getSubscriptionSkus(skus, productsResponseCallback)
-        purchases.getNonSubscriptionSkus(skus, productsResponseCallback)
-//        purchases.getProducts(productIds, productsResponseCallback)
+        purchases.getProducts(productIds, productsResponseCallback)
 
         // we need these for hybrids... these all fall back on some "best offer" or just purchase the base plan
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
