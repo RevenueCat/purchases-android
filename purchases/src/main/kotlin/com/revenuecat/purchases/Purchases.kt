@@ -1551,7 +1551,10 @@ class Purchases internal constructor(
                 offeringIdentifier,
                 listener
             )
-        } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
+        }?.run {
+            listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
+            getAndClearProductChangeCallback()
+        }
     }
 
     private fun replaceOldPurchaseWithNewProduct(
@@ -1584,6 +1587,7 @@ class Purchases internal constructor(
                 dispatch {
                     listener.onError(error, false)
                 }
+                getAndClearProductChangeCallback()
             })
     }
 
