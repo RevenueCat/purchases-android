@@ -8,6 +8,7 @@ private class UpgradeInfoAPI {
     fun check(upgradeInfo: UpgradeInfo) {
         with(upgradeInfo) {
             val oldProductId: String = oldProductId
+            val oldSku: String = oldSku
             @BillingFlowParams.ProrationMode val prorationMode: Int? = prorationMode
 
             val constructedUpgradeInfo =
@@ -17,7 +18,6 @@ private class UpgradeInfoAPI {
                 )
 
             val constructedUpgradeInfoProductIdOnly = UpgradeInfo(oldProductId)
-            val constructedUpgradeInfoNullProrationMode = UpgradeInfo(oldProductId, null)
         }
     }
 }

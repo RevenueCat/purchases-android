@@ -10,4 +10,10 @@ import com.android.billingclient.api.BillingFlowParams
 data class UpgradeInfo @JvmOverloads constructor(
     val oldProductId: String,
     @BillingFlowParams.ProrationMode val prorationMode: Int? = null
-)
+) {
+    @Deprecated(
+        "Use oldProductId instead",
+        ReplaceWith("oldProductId")
+    )
+    val oldSku get() = oldProductId
+}
