@@ -5,7 +5,9 @@
         xmlns:tools="http://schemas.android.com/tools">
 
     <data>
-        <import type="android.view.View"/>
+
+        <import type="android.view.View" />
+
         <variable
                 name="currentPackage"
                 type="com.revenuecat.purchases.Package" />
@@ -97,21 +99,21 @@
                     app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_type"
-                    bind:header="@{`One Time Price:`}"
                     bind:detail="@{currentPackage.product.oneTimeProductPrice.formattedPrice}"
+                    bind:header="@{`One Time Price:`}"
                     tools:text="$1.99" />
 
             <androidx.appcompat.widget.AppCompatTextView
                     android:id="@+id/package_purchase_option_title"
-                    android:textStyle="bold"
-                    android:text="@string/purchase_options"
-                    android:paddingHorizontal="4dp"
-                    android:layout_marginHorizontal="@dimen/padding_tiny"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="@dimen/padding_tiny"
+                    android:paddingHorizontal="4dp"
+                    android:text="@string/purchase_options"
+                    android:textStyle="bold"
                     android:visibility="@{isSubscription ? View.VISIBLE : View.GONE}"
-                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/package_one_time_price" />
 
             <RadioGroup
@@ -121,10 +123,9 @@
                     android:divider="?android:attr/dividerHorizontal"
                     android:showDividers="middle"
                     android:visibility="@{isSubscription ? View.VISIBLE : View.GONE}"
-                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/package_purchase_option_title">
-            </RadioGroup>
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/package_purchase_option_title"></RadioGroup>
 
             <androidx.constraintlayout.widget.Barrier
                     android:id="@+id/package_card_barrier"
@@ -132,6 +133,15 @@
                     android:layout_height="wrap_content"
                     app:barrierDirection="start"
                     app:constraint_referenced_ids="package_buy_button, product_buy_button" />
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/is_upgrade_checkbox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Is upgrade?"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toTopOf="@+id/package_buy_button"/>
 
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/package_buy_button"
@@ -141,7 +151,7 @@
                     android:text="Buy package"
                     app:layout_constraintBottom_toTopOf="@+id/product_buy_button"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintTop_toBottomOf="@+id/is_upgrade_checkbox" />
 
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/product_buy_button"
@@ -173,7 +183,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        bind:header="@{`Product JSON`}"/>
+                        bind:header="@{`Product JSON`}" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

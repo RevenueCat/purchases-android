@@ -2,6 +2,7 @@ package com.revenuecat.purchasetester
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +11,8 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.android.billingclient.api.BillingFlowParams.ProrationMode
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -30,6 +33,8 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private val args: OfferingFragmentArgs by navArgs()
     private val offering: Offering by lazy { args.offering }
     private var activeSubscriptions: Set<String> = setOf()
+    private var selectedUpgradeSubId: String? = null
+    @ProrationMode private var selectedProrationMode: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,42 +64,96 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         return binding.root
     }
 
-    override fun onPurchasePackageClicked(cardView: View, currentPackage: Package, purchaseOption: PurchaseOption?) {
+    override fun onPurchasePackageClicked(
+        cardView: View,
+        currentPackage: Package,
+        purchaseOption: PurchaseOption?,
+        isUpgrade: Boolean
+    ) {
         binding.purchaseProgress.visibility = View.VISIBLE
 
-        if (purchaseOption == null) {
-            Purchases.sharedInstance.purchasePackageWith(
-                requireActivity(),
-                currentPackage,
-                { error, userCancelled ->
-                    if (!userCancelled) {
-                        showUserError(requireActivity(), error)
-                    }
-                },
-                { storeTransaction, _ ->
-                    handleSuccessfulPurchase(storeTransaction.orderId)
-                }
-            )
+        if (isUpgrade) {
+            // TODO if no active subs, fail
+            // TODO fix infinite spinner
+            showOldSubIdPicker()
         } else {
-            Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                requireActivity(),
-                currentPackage.product,
-                purchaseOption,
-                { error, userCancelled ->
-                    if (!userCancelled) {
-                        showUserError(requireActivity(), error)
+            if (purchaseOption == null) {
+                Purchases.sharedInstance.purchasePackageWith(
+                    requireActivity(),
+                    currentPackage,
+                    { error, userCancelled ->
+                        if (!userCancelled) {
+                            showUserError(requireActivity(), error)
+                        }
+                    },
+                    { storeTransaction, _ ->
+                        handleSuccessfulPurchase(storeTransaction.orderId)
                     }
-                },
-                { storeTransaction, _ ->
-                    handleSuccessfulPurchase(storeTransaction.orderId)
-                })
+                )
+            } else {
+                Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+                    requireActivity(),
+                    currentPackage.product,
+                    purchaseOption,
+                    { error, userCancelled ->
+                        if (!userCancelled) {
+                            showUserError(requireActivity(), error)
+                        }
+                    },
+                    { storeTransaction, _ ->
+                        handleSuccessfulPurchase(storeTransaction.orderId)
+                    })
+            }
         }
+    }
+
+    private fun showOldSubIdPicker() {
+        val activeSubIds = activeSubscriptions.map { it.split(":").first() } // TODOBC5 remove sub Id parsing
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Switch from which currently active subscription?")
+            .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { dialog_, which ->
+                selectedUpgradeSubId = activeSubIds[which]
+            }
+            .setPositiveButton("Ok") { dialog, _ ->
+                Log.e("maddietest", "upgrading from $selectedUpgradeSubId ")
+                dialog.dismiss()
+                showProrationModePicker()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun showProrationModePicker() {
+        val prorationModeOptions = mapOf(
+            0 to "None",
+            ProrationMode.IMMEDIATE_WITH_TIME_PRORATION to "IMMEDIATE_WITH_TIME_PRORATION",
+            ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE to "IMMEDIATE_AND_CHARGE_PRORATED_PRICE",
+            ProrationMode.IMMEDIATE_WITHOUT_PRORATION to "IMMEDIATE_WITHOUT_PRORATION",
+            ProrationMode.DEFERRED to "DEFERRED",
+            ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE to "IMMEDIATE_AND_CHARGE_FULL_PRICE"
+        )
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Switch from which currently active subscription?")
+            .setSingleChoiceItems(prorationModeOptions.values.toTypedArray(), 0) { _, selectedIndex ->
+                selectedProrationMode = prorationModeOptions.keys.elementAt(selectedIndex)
+            }
+            .setPositiveButton("Ok") { dialog, _ ->
+                Log.e("maddietest", "upgrading with proration mode $selectedProrationMode")
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
-        purchaseOption: PurchaseOption?
+        purchaseOption: PurchaseOption?,
+        isUpgrade: Boolean
     ) {
         binding.purchaseProgress.visibility = View.VISIBLE
 
