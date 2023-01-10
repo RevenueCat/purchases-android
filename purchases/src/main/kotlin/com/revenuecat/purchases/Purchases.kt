@@ -1580,7 +1580,7 @@ class Purchases internal constructor(
                 )
             },
             onError = { error ->
-                log(LogIntent.GOOGLE_ERROR, error.message)
+                log(LogIntent.GOOGLE_ERROR, error.toString())
                 dispatch {
                     listener.onError(error, false)
                 }
@@ -1615,7 +1615,7 @@ class Purchases internal constructor(
                             )
                         },
                         onError = { error ->
-                            log(LogIntent.GOOGLE_ERROR, error.message)
+                            log(LogIntent.GOOGLE_ERROR, error.toString())
                         })
                 }
             })
