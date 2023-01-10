@@ -2,7 +2,6 @@ package com.revenuecat.purchasetester
 
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,12 +13,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
 import com.revenuecat.purchases.purchaseSubscriptionOptionWith
@@ -33,9 +36,23 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private val args: OfferingFragmentArgs by navArgs()
     private val offering: Offering by lazy { args.offering }
     private var activeSubscriptions: Set<String> = setOf()
-    private var selectedUpgradeSubId: String? = null
-    @ProrationMode
-    private var selectedProrationMode: Int? = null
+
+    private val purchaseErrorCallback: (error: PurchasesError, userCancelled: Boolean) -> Unit =
+        { error, userCancelled ->
+            if (!userCancelled) {
+                showUserError(requireActivity(), error)
+            }
+        }
+
+    private val successfulPurchaseCallback: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit =
+        { storeTransaction, _ ->
+            handleSuccessfulPurchase(storeTransaction.orderId)
+        }
+
+    private val successfulUpgradeCallback: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit =
+        { storeTransaction, _ ->
+            handleSuccessfulPurchase(storeTransaction?.orderId)
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,34 +91,64 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         toggleLoadingIndicator(true)
 
         if (isUpgrade) {
-            showOldSubIdPicker()
+            showOldSubIdPicker { subId ->
+                subId?.let {
+                    showProrationModePicker { prorationMode ->
+                        prorationMode?.let {
+                            val upgradeInfo = UpgradeInfo(
+                                subId,
+                                prorationMode
+                            )
+                            startPurchasePackage(purchaseOption, currentPackage, upgradeInfo)
+                        }
+                    }
+                }
+            }
         } else {
+            startPurchasePackage(purchaseOption, currentPackage, null)
+        }
+    }
+
+    private fun startPurchasePackage(
+        purchaseOption: PurchaseOption?,
+        currentPackage: Package,
+        upgradeInfo: UpgradeInfo?
+    ) {
+        if (upgradeInfo == null) {
             if (purchaseOption == null) {
                 Purchases.sharedInstance.purchasePackageWith(
                     requireActivity(),
                     currentPackage,
-                    { error, userCancelled ->
-                        if (!userCancelled) {
-                            showUserError(requireActivity(), error)
-                        }
-                    },
-                    { storeTransaction, _ ->
-                        handleSuccessfulPurchase(storeTransaction.orderId)
-                    }
+                    purchaseErrorCallback,
+                    successfulPurchaseCallback
                 )
             } else {
                 Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                     requireActivity(),
                     currentPackage.product,
                     purchaseOption,
-                    { error, userCancelled ->
-                        if (!userCancelled) {
-                            showUserError(requireActivity(), error)
-                        }
-                    },
-                    { storeTransaction, _ ->
-                        handleSuccessfulPurchase(storeTransaction.orderId)
-                    })
+                    purchaseErrorCallback,
+                    successfulPurchaseCallback
+                )
+            }
+        } else {
+            if (purchaseOption == null) {
+                Purchases.sharedInstance.purchasePackageWith(
+                    requireActivity(),
+                    currentPackage,
+                    upgradeInfo,
+                    purchaseErrorCallback,
+                    successfulUpgradeCallback
+                )
+            } else {
+                Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+                    requireActivity(),
+                    currentPackage.product,
+                    purchaseOption,
+                    upgradeInfo,
+                    purchaseErrorCallback,
+                    successfulUpgradeCallback
+                )
             }
         }
     }
@@ -161,7 +208,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         binding.purchaseProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 
-    private fun showOldSubIdPicker() {
+    private fun showOldSubIdPicker(callback: (String?) -> Unit) {
         val activeSubIds = activeSubscriptions.map { it.split(":").first() } // TODOBC5 remove sub Id parsing
         if (activeSubIds.isEmpty()) {
             Toast.makeText(
@@ -170,25 +217,29 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 Toast.LENGTH_LONG
             ).show()
             toggleLoadingIndicator(false)
+            callback(null)
             return
         }
+
+        var selectedUpgradeSubId: String? = null
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Switch from which currently active subscription?")
-            .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { dialog_, which ->
+            .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { _, which ->
                 selectedUpgradeSubId = activeSubIds[which]
             }
             .setPositiveButton("Continue") { dialog, _ ->
-                Log.e("maddietest", "upgrading from $selectedUpgradeSubId ")
                 dialog.dismiss()
-                showProrationModePicker()
+                callback(selectedUpgradeSubId ?: activeSubIds[0])
             }
             .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()
+                toggleLoadingIndicator(false)
+                callback(null)
             }
             .show()
     }
 
-    private fun showProrationModePicker() {
+    private fun showProrationModePicker(callback: (Int?) -> Unit) {
         val prorationModeOptions = mapOf(
             0 to "None",
             ProrationMode.IMMEDIATE_WITH_TIME_PRORATION to "IMMEDIATE_WITH_TIME_PRORATION",
@@ -197,18 +248,20 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             ProrationMode.DEFERRED to "DEFERRED",
             ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE to "IMMEDIATE_AND_CHARGE_FULL_PRICE"
         )
-
+        @ProrationMode var selectedProrationMode: Int? = null
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Switch with which ProrationMode?")
             .setSingleChoiceItems(prorationModeOptions.values.toTypedArray(), 0) { _, selectedIndex ->
                 selectedProrationMode = prorationModeOptions.keys.elementAt(selectedIndex)
             }
             .setPositiveButton("Start purchase") { dialog, _ ->
-                Log.e("maddietest", "upgrading with proration mode $selectedProrationMode")
-                // todo start purchase
+                dialog.dismiss()
+                callback(selectedProrationMode)
             }
             .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()
+                toggleLoadingIndicator(false)
+                callback(null)
             }
             .show()
     }
