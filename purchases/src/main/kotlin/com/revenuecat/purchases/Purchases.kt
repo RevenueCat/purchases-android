@@ -1412,13 +1412,11 @@ class Purchases internal constructor(
 
             override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
                 synchronized(this@Purchases) {
-                    state.productChangeCallback?.let { productChangeCallback ->
-                        state = state.copy(productChangeCallback = null)
-                        productChangeCallback.dispatch(purchasesError)
-                    } ?: state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
-                        state = state.copy(purchaseCallbacksByProductId = emptyMap())
-                        purchaseCallbacks.values.forEach { it.dispatch(purchasesError) }
-                    }
+                    getAndClearProductChangeCallback()?.dispatch(purchasesError)
+                        ?: state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
+                            state = state.copy(purchaseCallbacksByProductId = emptyMap())
+                            purchaseCallbacks.values.forEach { it.dispatch(purchasesError) }
+                        }
                 }
             }
         }
