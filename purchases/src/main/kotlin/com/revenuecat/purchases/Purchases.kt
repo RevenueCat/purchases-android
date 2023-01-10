@@ -353,7 +353,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Gets the StoreProduct for the given list of subscription and non-subscription productIds.
+     * Gets the StoreProduct(s) for the given list of product ids.
      * @param [productIds] List of productIds
      * @param [callback] Response callback
      */

@@ -319,6 +319,7 @@ fun Purchases.getCustomerInfoWith(
 /**
  * Gets the StoreProduct for the given list of subscription and non-subscription productIds.
  * @param [productIds] List of productIds
+ * @param [onError] Will be called after the purchase has completed with error
  * @param [onGetStoreProducts] Will be called after fetching StoreProducts
  */
 @Suppress("unused")
@@ -335,6 +336,7 @@ fun Purchases.getProductsWith(
 /**
  * Gets the SKUDetails for the given list of subscription skus.
  * @param [skus] List of skus
+ * @param [onError] Will be called after the purchase has completed with error
  * @param [onReceiveSkus] Will be called after fetching subscriptions
  */
 @Deprecated(
@@ -352,6 +354,7 @@ fun Purchases.getSubscriptionSkusWith(
 /**
  * Gets the StoreProduct for the given list of non-subscription skus.
  * @param [skus] List of skus
+ * @param [onError] Will be called after the purchase has completed with error
  * @param [onReceiveSkus] Will be called after fetching StoreProduct
  */
 @Deprecated(
