@@ -17,7 +17,6 @@ private class UpgradeInfoAPI {
                 )
 
             val constructedUpgradeInfoProductIdOnly = UpgradeInfo(oldProductId)
-            val constructedUpgradeInfoNullProrationMode = UpgradeInfo(oldProductId, null)
         }
     }
 }
