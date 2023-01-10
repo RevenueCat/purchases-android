@@ -34,7 +34,8 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private val offering: Offering by lazy { args.offering }
     private var activeSubscriptions: Set<String> = setOf()
     private var selectedUpgradeSubId: String? = null
-    @ProrationMode private var selectedProrationMode: Int? = null
+    @ProrationMode
+    private var selectedProrationMode: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,7 +74,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         binding.purchaseProgress.visibility = View.VISIBLE
 
         if (isUpgrade) {
-            // TODO if no active subs, fail
             // TODO fix infinite spinner
             showOldSubIdPicker()
         } else {
@@ -109,6 +109,14 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun showOldSubIdPicker() {
         val activeSubIds = activeSubscriptions.map { it.split(":").first() } // TODOBC5 remove sub Id parsing
+        if (activeSubIds.isEmpty()) {
+            Toast.makeText(
+                requireContext(),
+                "Cannot ugprade without an existing active subscription.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Switch from which currently active subscription?")
             .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { dialog_, which ->
@@ -142,6 +150,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             }
             .setPositiveButton("Ok") { dialog, _ ->
                 Log.e("maddietest", "upgrading with proration mode $selectedProrationMode")
+                // todo start purchase
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
