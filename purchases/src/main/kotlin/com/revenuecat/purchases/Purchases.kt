@@ -1513,6 +1513,14 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
+        if (storeProduct.type != ProductType.SUBS) {
+            dispatch {
+                listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
+                    PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) }, false)
+            }
+            return
+        }
+
         log(
             LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $storeProduct ${
@@ -1555,14 +1563,6 @@ class Purchases internal constructor(
         presentedOfferingIdentifier: String?,
         listener: PurchaseErrorCallback
     ) {
-        if (storeProduct.type != ProductType.SUBS) {
-            dispatch {
-                listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
-                    PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) }, false)
-            }
-            return
-        }
-
         billing.findPurchaseInPurchaseHistory(
             appUserID,
             ProductType.SUBS,
