@@ -71,10 +71,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         purchaseOption: PurchaseOption?,
         isUpgrade: Boolean
     ) {
-        binding.purchaseProgress.visibility = View.VISIBLE
+        toggleLoadingIndicator(true)
 
         if (isUpgrade) {
-            // TODO fix infinite spinner
             showOldSubIdPicker()
         } else {
             if (purchaseOption == null) {
@@ -115,6 +114,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 "Cannot ugprade without an existing active subscription.",
                 Toast.LENGTH_LONG
             ).show()
+            toggleLoadingIndicator(false)
             return
         }
         MaterialAlertDialogBuilder(requireContext())
@@ -122,12 +122,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { dialog_, which ->
                 selectedUpgradeSubId = activeSubIds[which]
             }
-            .setPositiveButton("Ok") { dialog, _ ->
+            .setPositiveButton("Continue") { dialog, _ ->
                 Log.e("maddietest", "upgrading from $selectedUpgradeSubId ")
                 dialog.dismiss()
                 showProrationModePicker()
             }
-            .setNegativeButton("Cancel") { dialog, _ ->
+            .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()
             }
             .show()
@@ -144,15 +144,15 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         )
 
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Switch from which currently active subscription?")
+            .setTitle("Switch with which ProrationMode?")
             .setSingleChoiceItems(prorationModeOptions.values.toTypedArray(), 0) { _, selectedIndex ->
                 selectedProrationMode = prorationModeOptions.keys.elementAt(selectedIndex)
             }
-            .setPositiveButton("Ok") { dialog, _ ->
+            .setPositiveButton("Start purchase") { dialog, _ ->
                 Log.e("maddietest", "upgrading with proration mode $selectedProrationMode")
                 // todo start purchase
             }
-            .setNegativeButton("Cancel") { dialog, _ ->
+            .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()
             }
             .show()
@@ -164,13 +164,14 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         purchaseOption: PurchaseOption?,
         isUpgrade: Boolean
     ) {
-        binding.purchaseProgress.visibility = View.VISIBLE
+        toggleLoadingIndicator(true)
 
         if (purchaseOption == null) {
             Purchases.sharedInstance.purchaseProductWith(
                 requireActivity(),
                 currentProduct,
                 { error, userCancelled ->
+                    toggleLoadingIndicator(false)
                     if (!userCancelled) {
                         showUserError(requireActivity(), error)
                     }
@@ -185,6 +186,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 currentProduct,
                 purchaseOption,
                 { error, userCancelled ->
+                    toggleLoadingIndicator(false)
                     if (!userCancelled) {
                         showUserError(requireActivity(), error)
                     }
@@ -196,7 +198,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     private fun handleSuccessfulPurchase(orderId: String?) {
-        binding.purchaseProgress.visibility = View.GONE
+        toggleLoadingIndicator(false)
         context?.let {
             Toast.makeText(
                 it,
@@ -205,5 +207,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             ).show()
             findNavController().navigateUp()
         }
+    }
+
+    private fun toggleLoadingIndicator(isLoading: Boolean) {
+        binding.purchaseProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
 }
