@@ -41,7 +41,7 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 |-----------------------------------|--|
 | product.originalPrice             | Accessible in basePlan's unique pricing phase `purchaseOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.first()?.formattedPrice` |
 | product.originalPriceAmountMicros | Accessible in basePlan's unique pricing phase `purchaseOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.first()?.priceAmountMicros` |
-| producct.iconUrl                  |  | 
+| product.iconUrl                  |  | 
 | product.originalJson              |(product as GoogleStoreProduct).productDetails |
 
 ### StoreTransaction
@@ -53,6 +53,14 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 | Deprecated | New        |
 |------------|------------|
 | skus       | productIds |
+
+### UpgradeInfo updates
+
+
+| Removed | New          |
+|---------|--------------|
+| oldSku  | oldProductId |
+
 
 ### CustomerInfo updates
 

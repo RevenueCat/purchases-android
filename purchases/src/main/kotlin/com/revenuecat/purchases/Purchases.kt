@@ -25,7 +25,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
-import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.currentLogHandler
@@ -379,11 +379,15 @@ class Purchases internal constructor(
     }
 
     /**
-     * Make a purchase upgrading from a previous sku. If purchasing a subscription,
-     * it will choose the default [PurchaseOption].
+     * Purchases [storeProduct].
+     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
+     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [PurchaseOption].
+     *
+     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
+     *
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
@@ -419,11 +423,16 @@ class Purchases internal constructor(
 
     // TODOBC5: remove storeProduct parameter
     /**
-     * Purchase a subscription [StoreProduct]'s [PurchaseOption] upgrading from a previous product.
+     * Purchases [storeProduct].
+     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
+     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [PurchaseOption].
+     *
+     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
+     *
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [purchaseOption] Your choice of purchase options available for the subscription StoreProduct
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
@@ -462,11 +471,15 @@ class Purchases internal constructor(
     }
 
     /**
-     * Purchase a [Package] upgrading from a previous sku. If purchasing a subscription,
-     * it will choose the default [PurchaseOption].
+     * Purchases a [Package].
+     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
+     * [oldProductId]and chooses the default [PurchaseOption] from [packageToPurchase].
+     *
+     * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
+     *
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
      */
@@ -1542,19 +1555,27 @@ class Purchases internal constructor(
         presentedOfferingIdentifier: String?,
         listener: PurchaseErrorCallback
     ) {
+        if (storeProduct.type != ProductType.SUBS) {
+            dispatch {
+                listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
+                    PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) }, false)
+            }
+            return
+        }
+
         billing.findPurchaseInPurchaseHistory(
             appUserID,
-            storeProduct.type,
-            upgradeInfo.oldSku,
+            ProductType.SUBS,
+            upgradeInfo.oldProductId,
             onCompletion = { purchaseRecord ->
-                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldSku))
+                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldProductId))
 
                 billing.makePurchaseAsync(
                     activity,
                     appUserID,
                     storeProduct,
                     purchaseOption,
-                    ReplaceSkuInfo(purchaseRecord, upgradeInfo.prorationMode),
+                    ReplaceProductInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier
                 )
             },
