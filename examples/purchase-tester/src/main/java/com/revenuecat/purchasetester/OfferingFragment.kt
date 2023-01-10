@@ -39,6 +39,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private val purchaseErrorCallback: (error: PurchasesError, userCancelled: Boolean) -> Unit =
         { error, userCancelled ->
+            toggleLoadingIndicator(false)
             if (!userCancelled) {
                 showUserError(requireActivity(), error)
             }
@@ -46,11 +47,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private val successfulPurchaseCallback: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit =
         { storeTransaction, _ ->
+            toggleLoadingIndicator(false)
             handleSuccessfulPurchase(storeTransaction.orderId)
         }
 
     private val successfulUpgradeCallback: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit =
         { storeTransaction, _ ->
+            toggleLoadingIndicator(false)
             handleSuccessfulPurchase(storeTransaction?.orderId)
         }
 
@@ -109,6 +112,87 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
+    override fun onPurchaseProductClicked(
+        cardView: View,
+        currentProduct: StoreProduct,
+        purchaseOption: PurchaseOption?,
+        isUpgrade: Boolean
+    ) {
+        toggleLoadingIndicator(true)
+
+        if (isUpgrade) {
+            showOldSubIdPicker { subId ->
+                subId?.let {
+                    showProrationModePicker { prorationMode ->
+                        prorationMode?.let {
+                            val upgradeInfo = UpgradeInfo(
+                                subId,
+                                prorationMode
+                            )
+                            startPurchaseProduct(purchaseOption, currentProduct, upgradeInfo)
+                        }
+                    }
+                }
+            }
+        } else {
+            startPurchaseProduct(purchaseOption, currentProduct, null)
+        }
+    }
+
+    private fun startPurchaseProduct(
+        purchaseOption: PurchaseOption?,
+        currentProduct: StoreProduct,
+        upgradeInfo: UpgradeInfo?
+    ) {
+        if (upgradeInfo == null) {
+            if (purchaseOption == null) {
+                Purchases.sharedInstance.purchaseProductWith(
+                    requireActivity(),
+                    currentProduct,
+                    purchaseErrorCallback,
+                    successfulPurchaseCallback
+                )
+            } else {
+                Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+                    requireActivity(),
+                    currentProduct,
+                    purchaseOption,
+                    purchaseErrorCallback,
+                    successfulPurchaseCallback)
+            }
+        } else {
+            if (purchaseOption == null) {
+                Purchases.sharedInstance.purchaseProductWith(
+                    requireActivity(),
+                    currentProduct,
+                    upgradeInfo,
+                    purchaseErrorCallback,
+                    successfulUpgradeCallback
+                )
+            } else {
+                Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+                    requireActivity(),
+                    currentProduct,
+                    purchaseOption,
+                    upgradeInfo,
+                    purchaseErrorCallback,
+                    successfulUpgradeCallback
+                )
+            }
+        }
+    }
+
+    private fun handleSuccessfulPurchase(orderId: String?) {
+        context?.let {
+            Toast.makeText(
+                it,
+                "Successful purchase, order id: $orderId",
+                Toast.LENGTH_LONG
+            ).show()
+            findNavController().navigateUp()
+        }
+    }
+
     private fun startPurchasePackage(
         purchaseOption: PurchaseOption?,
         currentPackage: Package,
@@ -153,57 +237,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    override fun onPurchaseProductClicked(
-        cardView: View,
-        currentProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
-        isUpgrade: Boolean
-    ) {
-        toggleLoadingIndicator(true)
-
-        if (purchaseOption == null) {
-            Purchases.sharedInstance.purchaseProductWith(
-                requireActivity(),
-                currentProduct,
-                { error, userCancelled ->
-                    toggleLoadingIndicator(false)
-                    if (!userCancelled) {
-                        showUserError(requireActivity(), error)
-                    }
-                },
-                { storeTransaction, _ ->
-                    handleSuccessfulPurchase(storeTransaction.orderId)
-                }
-            )
-        } else {
-            Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                requireActivity(),
-                currentProduct,
-                purchaseOption,
-                { error, userCancelled ->
-                    toggleLoadingIndicator(false)
-                    if (!userCancelled) {
-                        showUserError(requireActivity(), error)
-                    }
-                },
-                { storeTransaction, _ ->
-                    handleSuccessfulPurchase(storeTransaction.orderId)
-                })
-        }
-    }
-
-    private fun handleSuccessfulPurchase(orderId: String?) {
-        toggleLoadingIndicator(false)
-        context?.let {
-            Toast.makeText(
-                it,
-                "Successful purchase, order id: $orderId",
-                Toast.LENGTH_LONG
-            ).show()
-            findNavController().navigateUp()
-        }
-    }
-
     private fun toggleLoadingIndicator(isLoading: Boolean) {
         binding.purchaseProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
     }
@@ -213,7 +246,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (activeSubIds.isEmpty()) {
             Toast.makeText(
                 requireContext(),
-                "Cannot ugprade without an existing active subscription.",
+                "Cannot upgrade without an existing active subscription.",
                 Toast.LENGTH_LONG
             ).show()
             toggleLoadingIndicator(false)
@@ -223,7 +256,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         var selectedUpgradeSubId: String? = null
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Switch from which currently active subscription?")
+            .setTitle("Choose which active sub to switch from")
             .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { _, which ->
                 selectedUpgradeSubId = activeSubIds[which]
             }
@@ -248,9 +281,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             ProrationMode.DEFERRED to "DEFERRED",
             ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE to "IMMEDIATE_AND_CHARGE_FULL_PRICE"
         )
-        @ProrationMode var selectedProrationMode: Int? = null
+        @ProrationMode var selectedProrationMode = 0
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Switch with which ProrationMode?")
+            .setTitle("Choose ProrationMode")
             .setSingleChoiceItems(prorationModeOptions.values.toTypedArray(), 0) { _, selectedIndex ->
                 selectedProrationMode = prorationModeOptions.keys.elementAt(selectedIndex)
             }

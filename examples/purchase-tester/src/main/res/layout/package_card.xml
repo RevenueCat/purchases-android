@@ -136,10 +136,11 @@
 
             <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/is_upgrade_checkbox"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Is upgrade?"
-                    app:layout_constraintEnd_toEndOf="parent"
+                    android:text="Is product change?"
+                    app:layout_constraintStart_toStartOf="@+id/package_buy_button"
+                    app:layout_constraintEnd_toEndOf="@id/package_buy_button"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toTopOf="@+id/package_buy_button"/>
 
