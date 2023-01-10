@@ -7,7 +7,6 @@ import com.revenuecat.purchases.UpgradeInfo;
 final class UpgradeInfoAPI {
     static void check(final UpgradeInfo upgradeInfo) {
         final String oldProductId = upgradeInfo.getOldProductId();
-        final String oldSku = upgradeInfo.getOldSku();
         @BillingFlowParams.ProrationMode final Integer prorationMode = upgradeInfo.getProrationMode();
 
         UpgradeInfo constructedUpgradeInfo = new UpgradeInfo(
