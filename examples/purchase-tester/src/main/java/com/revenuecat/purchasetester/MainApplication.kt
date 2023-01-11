@@ -42,7 +42,7 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
         val message = "CustomerInfoListener received update at ${customerInfo.requestDate}"
         Toast.makeText(this,
             message,
-            Toast.LENGTH_LONG
+            Toast.LENGTH_SHORT
         ).show()
         Log.d("CustomerInfoListener", "$message: $customerInfo")
     }

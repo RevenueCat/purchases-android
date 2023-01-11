@@ -50,7 +50,8 @@ class PackageCardAdapter(
                     listener.onPurchasePackageClicked(
                         binding.root,
                         currentPackage,
-                        getSelectedSubscriptionOption()
+                        getSelectedSubscriptionOption(),
+                        binding.isUpgradeCheckbox.isChecked
                     )
                 } else {
                     showErrorMessage(errorStartingPurchase)
@@ -63,7 +64,8 @@ class PackageCardAdapter(
                     listener.onPurchaseProductClicked(
                         binding.root,
                         product,
-                        getSelectedSubscriptionOption()
+                        getSelectedSubscriptionOption(),
+                        binding.isUpgradeCheckbox.isChecked
                     )
                 } else {
                     showErrorMessage(errorStartingPurchase)
@@ -126,11 +128,17 @@ class PackageCardAdapter(
     }
 
     interface PackageCardAdapterListener {
-        fun onPurchasePackageClicked(cardView: View, currentPackage: Package, subscriptionOption: SubscriptionOption?)
+        fun onPurchasePackageClicked(
+            cardView: View,
+            currentPackage: Package,
+            subscriptionOption: SubscriptionOption?,
+            isUpgrade: Boolean
+        )
         fun onPurchaseProductClicked(
             cardView: View,
             currentProduct: StoreProduct,
-            subscriptionOption: SubscriptionOption?
+            subscriptionOption: SubscriptionOption?,
+            isUpgrade: Boolean
         )
     }
 }
