@@ -231,7 +231,6 @@ class BillingWrapperTest {
 
     @Test
     fun `queryPurchaseHistoryAsync fails if sent invalid type`() {
-        // TODO pull to common once refactoring queryPurchaseHistoryAsync to take RCProductType
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
         mockClient.mockQueryPurchaseHistory(
