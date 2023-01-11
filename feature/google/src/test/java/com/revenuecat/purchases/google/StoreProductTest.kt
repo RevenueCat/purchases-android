@@ -2,7 +2,7 @@ package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GooglePurchaseOption
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -28,8 +28,8 @@ class StoreProductTest {
             currencyCode = "USD"
         )
 
-        val purchaseOption1 = GooglePurchaseOption(
-            id = "purchaseOptionId",
+        val subscriptionOption1 = GoogleSubscriptionOption(
+            id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
                 priceCurrencyCode = "",
@@ -41,8 +41,8 @@ class StoreProductTest {
             tags = emptyList(),
             token = "mock-token"
         )
-        val purchaseOption2 = GooglePurchaseOption(
-            id = "purchaseOptionId",
+        val subscriptionOption2 = GoogleSubscriptionOption(
+            id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
                 priceCurrencyCode = "",
@@ -62,7 +62,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
-            purchaseOptions = listOf(purchaseOption1),
+            subscriptionOptions = listOf(subscriptionOption1),
             defaultOption = null,
             productDetails = productDetails
         )
@@ -74,7 +74,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
-            purchaseOptions = listOf(purchaseOption2),
+            subscriptionOptions = listOf(subscriptionOption2),
             defaultOption = null,
             productDetails = productDetails
         )
@@ -96,8 +96,8 @@ class StoreProductTest {
             currencyCode = "USD"
         )
 
-        val purchaseOption1 = GooglePurchaseOption(
-            id = "purchaseOptionId",
+        val subscriptionOption1 = GoogleSubscriptionOption(
+            id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
                 priceCurrencyCode = "",
@@ -109,8 +109,8 @@ class StoreProductTest {
             tags = emptyList(),
             token = "mock-token"
         )
-        val purchaseOption2 = GooglePurchaseOption(
-            id = "purchaseOptionId",
+        val subscriptionOption2 = GoogleSubscriptionOption(
+            id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
                 priceCurrencyCode = "",
@@ -130,7 +130,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
-            purchaseOptions = listOf(purchaseOption1),
+            subscriptionOptions = listOf(subscriptionOption1),
             defaultOption = null,
             productDetails = productDetails
         )
@@ -142,7 +142,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
-            purchaseOptions = listOf(purchaseOption2),
+            subscriptionOptions = listOf(subscriptionOption2),
             defaultOption = null,
             productDetails = productDetails
         )

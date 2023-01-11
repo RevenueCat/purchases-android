@@ -15,7 +15,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
-import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
@@ -59,10 +59,14 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         return binding.root
     }
 
-    override fun onPurchasePackageClicked(cardView: View, currentPackage: Package, purchaseOption: PurchaseOption?) {
+    override fun onPurchasePackageClicked(
+        cardView: View,
+        currentPackage: Package,
+        subscriptionOption: SubscriptionOption?
+    ) {
         binding.purchaseProgress.visibility = View.VISIBLE
 
-        if (purchaseOption == null) {
+        if (subscriptionOption == null) {
             Purchases.sharedInstance.purchasePackageWith(
                 requireActivity(),
                 currentPackage,
@@ -79,7 +83,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                 requireActivity(),
                 currentPackage.product,
-                purchaseOption,
+                subscriptionOption,
                 { error, userCancelled ->
                     if (!userCancelled) {
                         showUserError(requireActivity(), error)
@@ -94,11 +98,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
-        purchaseOption: PurchaseOption?
+        subscriptionOption: SubscriptionOption?
     ) {
         binding.purchaseProgress.visibility = View.VISIBLE
 
-        if (purchaseOption == null) {
+        if (subscriptionOption == null) {
             Purchases.sharedInstance.purchaseProductWith(
                 requireActivity(),
                 currentProduct,
@@ -115,7 +119,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                 requireActivity(),
                 currentProduct,
-                purchaseOption,
+                subscriptionOption,
                 { error, userCancelled ->
                     if (!userCancelled) {
                         showUserError(requireActivity(), error)
