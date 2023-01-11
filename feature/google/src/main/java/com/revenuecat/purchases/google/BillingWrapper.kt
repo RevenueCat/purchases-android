@@ -824,8 +824,8 @@ class BillingWrapper(
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String
     ): Result<BillingFlowParams, PurchasesError> {
-        val googlesubscriptionOption = subscriptionOption as? GoogleSubscriptionOption
-        if (googlesubscriptionOption == null) {
+        val googleSubscriptionOption = subscriptionOption as? GoogleSubscriptionOption
+        if (googleSubscriptionOption == null) {
             val error = PurchasesError(
                 PurchasesErrorCode.UnknownError,
                 PurchaseStrings.INVALID_SUBSCRIPTION_OPTION_TYPE.format(
@@ -838,7 +838,7 @@ class BillingWrapper(
         }
 
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(googlesubscriptionOption.token)
+            setOfferToken(googleSubscriptionOption.token)
             setProductDetails(googleProduct.productDetails)
         }.build()
 
