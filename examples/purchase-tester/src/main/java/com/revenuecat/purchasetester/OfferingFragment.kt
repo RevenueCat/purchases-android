@@ -147,33 +147,33 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     ) {
         when {
             upgradeInfo == null && purchaseOption == null -> Purchases.sharedInstance.purchaseProductWith(
-                    requireActivity(),
-                    currentProduct,
-                    purchaseErrorCallback,
-                    successfulPurchaseCallback
-                )
+                requireActivity(),
+                currentProduct,
+                purchaseErrorCallback,
+                successfulPurchaseCallback
+            )
             upgradeInfo == null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                    requireActivity(),
-                    currentProduct,
-                    purchaseOption,
-                    purchaseErrorCallback,
-                    successfulPurchaseCallback
-                )
+                requireActivity(),
+                currentProduct,
+                purchaseOption,
+                purchaseErrorCallback,
+                successfulPurchaseCallback
+            )
             upgradeInfo != null && purchaseOption == null -> Purchases.sharedInstance.purchaseProductWith(
-                    requireActivity(),
-                    currentProduct,
-                    upgradeInfo,
-                    purchaseErrorCallback,
-                    successfulUpgradeCallback
-                )
+                requireActivity(),
+                currentProduct,
+                upgradeInfo,
+                purchaseErrorCallback,
+                successfulUpgradeCallback
+            )
             upgradeInfo != null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                    requireActivity(),
-                    currentProduct,
-                    purchaseOption,
-                    upgradeInfo,
-                    purchaseErrorCallback,
-                    successfulUpgradeCallback
-                )
+                requireActivity(),
+                currentProduct,
+                purchaseOption,
+                upgradeInfo,
+                purchaseErrorCallback,
+                successfulUpgradeCallback
+            )
         }
     }
 
@@ -195,33 +195,33 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     ) {
         when {
             upgradeInfo == null && purchaseOption == null -> Purchases.sharedInstance.purchasePackageWith(
-                    requireActivity(),
-                    currentPackage,
-                    purchaseErrorCallback,
-                    successfulPurchaseCallback
-                )
+                requireActivity(),
+                currentPackage,
+                purchaseErrorCallback,
+                successfulPurchaseCallback
+            )
             upgradeInfo == null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                    requireActivity(),
-                    currentPackage.product,
-                    purchaseOption,
-                    purchaseErrorCallback,
-                    successfulPurchaseCallback
-                )
+                requireActivity(),
+                currentPackage.product,
+                purchaseOption,
+                purchaseErrorCallback,
+                successfulPurchaseCallback
+            )
             upgradeInfo != null && purchaseOption == null -> Purchases.sharedInstance.purchasePackageWith(
-                    requireActivity(),
-                    currentPackage,
-                    upgradeInfo,
-                    purchaseErrorCallback,
-                    successfulUpgradeCallback
-                )
+                requireActivity(),
+                currentPackage,
+                upgradeInfo,
+                purchaseErrorCallback,
+                successfulUpgradeCallback
+            )
             upgradeInfo != null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                    requireActivity(),
-                    currentPackage.product,
-                    purchaseOption,
-                    upgradeInfo,
-                    purchaseErrorCallback,
-                    successfulUpgradeCallback
-                )
+                requireActivity(),
+                currentPackage.product,
+                purchaseOption,
+                upgradeInfo,
+                purchaseErrorCallback,
+                successfulUpgradeCallback
+            )
         }
     }
 
@@ -263,11 +263,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private fun showProrationModePicker(callback: (Int?) -> Unit) {
         val prorationModeOptions = mapOf(
             0 to "None",
-            ProrationMode.IMMEDIATE_WITH_TIME_PRORATION to "IMMEDIATE_WITH_TIME_PRORATION",
-            ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE to "IMMEDIATE_AND_CHARGE_PRORATED_PRICE",
-            ProrationMode.IMMEDIATE_WITHOUT_PRORATION to "IMMEDIATE_WITHOUT_PRORATION",
-            ProrationMode.DEFERRED to "DEFERRED",
-            ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE to "IMMEDIATE_AND_CHARGE_FULL_PRICE"
+            ProrationMode.IMMEDIATE_WITH_TIME_PRORATION to ProrationMode::IMMEDIATE_WITH_TIME_PRORATION.name,
+            ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE to
+                ProrationMode::IMMEDIATE_AND_CHARGE_PRORATED_PRICE.name,
+            ProrationMode.IMMEDIATE_WITHOUT_PRORATION to ProrationMode::IMMEDIATE_WITHOUT_PRORATION.name,
+            ProrationMode.DEFERRED to ProrationMode::DEFERRED.name,
+            ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE to ProrationMode::IMMEDIATE_AND_CHARGE_FULL_PRICE.name
         )
         @ProrationMode var selectedProrationMode = 0
         MaterialAlertDialogBuilder(requireContext())
