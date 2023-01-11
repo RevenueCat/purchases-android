@@ -145,34 +145,28 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         currentProduct: StoreProduct,
         upgradeInfo: UpgradeInfo?
     ) {
-        if (upgradeInfo == null) {
-            if (purchaseOption == null) {
-                Purchases.sharedInstance.purchaseProductWith(
+        when {
+            upgradeInfo == null && purchaseOption == null -> Purchases.sharedInstance.purchaseProductWith(
                     requireActivity(),
                     currentProduct,
                     purchaseErrorCallback,
                     successfulPurchaseCallback
                 )
-            } else {
-                Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+            upgradeInfo == null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                     requireActivity(),
                     currentProduct,
                     purchaseOption,
                     purchaseErrorCallback,
                     successfulPurchaseCallback
                 )
-            }
-        } else {
-            if (purchaseOption == null) {
-                Purchases.sharedInstance.purchaseProductWith(
+            upgradeInfo != null && purchaseOption == null -> Purchases.sharedInstance.purchaseProductWith(
                     requireActivity(),
                     currentProduct,
                     upgradeInfo,
                     purchaseErrorCallback,
                     successfulUpgradeCallback
                 )
-            } else {
-                Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+            upgradeInfo != null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                     requireActivity(),
                     currentProduct,
                     purchaseOption,
@@ -180,7 +174,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     purchaseErrorCallback,
                     successfulUpgradeCallback
                 )
-            }
         }
     }
 
@@ -200,34 +193,28 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         currentPackage: Package,
         upgradeInfo: UpgradeInfo?
     ) {
-        if (upgradeInfo == null) {
-            if (purchaseOption == null) {
-                Purchases.sharedInstance.purchasePackageWith(
+        when {
+            upgradeInfo == null && purchaseOption == null -> Purchases.sharedInstance.purchasePackageWith(
                     requireActivity(),
                     currentPackage,
                     purchaseErrorCallback,
                     successfulPurchaseCallback
                 )
-            } else {
-                Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+            upgradeInfo == null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                     requireActivity(),
                     currentPackage.product,
                     purchaseOption,
                     purchaseErrorCallback,
                     successfulPurchaseCallback
                 )
-            }
-        } else {
-            if (purchaseOption == null) {
-                Purchases.sharedInstance.purchasePackageWith(
+            upgradeInfo != null && purchaseOption == null -> Purchases.sharedInstance.purchasePackageWith(
                     requireActivity(),
                     currentPackage,
                     upgradeInfo,
                     purchaseErrorCallback,
                     successfulUpgradeCallback
                 )
-            } else {
-                Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+            upgradeInfo != null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                     requireActivity(),
                     currentPackage.product,
                     purchaseOption,
@@ -235,7 +222,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     purchaseErrorCallback,
                     successfulUpgradeCallback
                 )
-            }
         }
     }
 
