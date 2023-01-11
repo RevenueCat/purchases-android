@@ -1,13 +1,9 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
-import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
-import kotlinx.parcelize.TypeParceler
-import org.json.JSONObject
 
 @Parcelize
-@TypeParceler<JSONObject, JSONObjectParceler>()
 // TODO javadocs
 data class PricingPhase(
     val billingPeriod: String,
