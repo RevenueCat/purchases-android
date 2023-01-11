@@ -29,6 +29,7 @@ import com.revenuecat.purchases.purchaseSubscriptionOptionWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
+@SuppressWarnings("TooManyFunctions")
 class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
 
     lateinit var binding: FragmentOfferingBinding
@@ -94,17 +95,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         toggleLoadingIndicator(true)
 
         if (isUpgrade) {
-            showOldSubIdPicker { subId ->
-                subId?.let {
-                    showProrationModePicker { prorationMode ->
-                        prorationMode?.let {
-                            val upgradeInfo = UpgradeInfo(
-                                subId,
-                                prorationMode
-                            )
-                            startPurchasePackage(purchaseOption, currentPackage, upgradeInfo)
-                        }
-                    }
+            promptForUpgradeInfo { upgradeInfo ->
+                upgradeInfo?.let {
+                    startPurchasePackage(purchaseOption, currentPackage, upgradeInfo)
                 }
             }
         } else {
@@ -121,21 +114,29 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         toggleLoadingIndicator(true)
 
         if (isUpgrade) {
-            showOldSubIdPicker { subId ->
-                subId?.let {
-                    showProrationModePicker { prorationMode ->
-                        prorationMode?.let {
-                            val upgradeInfo = UpgradeInfo(
-                                subId,
-                                prorationMode
-                            )
-                            startPurchaseProduct(purchaseOption, currentProduct, upgradeInfo)
-                        }
-                    }
+            promptForUpgradeInfo { upgradeInfo ->
+                upgradeInfo?.let {
+                    startPurchaseProduct(purchaseOption, currentProduct, upgradeInfo)
                 }
             }
         } else {
             startPurchaseProduct(purchaseOption, currentProduct, null)
+        }
+    }
+
+    private fun promptForUpgradeInfo(callback: (UpgradeInfo?) -> Unit) {
+        showOldSubIdPicker { subId ->
+            subId?.let {
+                showProrationModePicker { prorationMode ->
+                    prorationMode?.let {
+                        val upgradeInfo = UpgradeInfo(
+                            subId,
+                            prorationMode
+                        )
+                        callback(upgradeInfo)
+                    } ?: callback(null)
+                }
+            } ?: callback(null)
         }
     }
 
@@ -158,7 +159,8 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     currentProduct,
                     purchaseOption,
                     purchaseErrorCallback,
-                    successfulPurchaseCallback)
+                    successfulPurchaseCallback
+                )
             }
         } else {
             if (purchaseOption == null) {
@@ -187,7 +189,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             Toast.makeText(
                 it,
                 "Successful purchase, order id: $orderId",
-                Toast.LENGTH_LONG
+                Toast.LENGTH_SHORT
             ).show()
             findNavController().navigateUp()
         }
@@ -254,7 +256,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             return
         }
 
-        var selectedUpgradeSubId: String? = null
+        var selectedUpgradeSubId: String = activeSubIds[0]
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Choose which active sub to switch from")
             .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { _, which ->
@@ -262,7 +264,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             }
             .setPositiveButton("Continue") { dialog, _ ->
                 dialog.dismiss()
-                callback(selectedUpgradeSubId ?: activeSubIds[0])
+                callback(selectedUpgradeSubId)
             }
             .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()
