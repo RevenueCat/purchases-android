@@ -257,6 +257,10 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 toggleLoadingIndicator(false)
                 callback(null)
             }
+            .setOnDismissListener {
+                toggleLoadingIndicator(false)
+                callback(null)
+            }
             .show()
     }
 
@@ -282,6 +286,10 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             }
             .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()
+                toggleLoadingIndicator(false)
+                callback(null)
+            }
+            .setOnDismissListener {
                 toggleLoadingIndicator(false)
                 callback(null)
             }
