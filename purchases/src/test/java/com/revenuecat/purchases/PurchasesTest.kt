@@ -15,6 +15,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
@@ -501,23 +502,48 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when attempting upgrade to OTP, error block is called`() {
-        val productId = "coins"
+    fun `upgrade defaults to ProrationMode IMMEDIATE_WITHOUT_PRORATION`() {
+        val productId = "gold"
+        val oldSubId = "oldSubID"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
 
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.INAPP, null)
+        val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                oldSubId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
+        }
 
-        var errorCallCount = 0
         purchases.purchaseProductWith(
             mockActivity,
             receiptInfo.storeProduct!!,
-            UpgradeInfo("oldSubID"),
+            UpgradeInfo(oldSubId),
             onError = { _, _ ->
-                errorCallCount++
             }, onSuccess = { _, _ ->
-                fail("should be error")
+
             })
 
-        assertThat(errorCallCount).isEqualTo(1)
+        val expectedReplaceProductInfo = ReplaceProductInfo(
+            oldTransaction,
+            ProrationMode.IMMEDIATE_WITHOUT_PRORATION
+        )
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                any(),
+                any(),
+                receiptInfo.storeProduct!!,
+                any(),
+                expectedReplaceProductInfo,
+                any()
+
+            )
+        }
     }
 
     @Test
