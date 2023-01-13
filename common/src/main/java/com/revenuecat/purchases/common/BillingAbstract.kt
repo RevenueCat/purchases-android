@@ -79,8 +79,6 @@ abstract class BillingAbstract {
         activity: Activity,
         appUserID: String,
         purchaseInfo: PurchaseInfo,
-//        storeProduct: StoreProduct,
-//        purchaseOption: PurchaseOption?,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     )

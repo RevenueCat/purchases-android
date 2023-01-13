@@ -2,7 +2,6 @@ package com.revenuecat.purchases.amazon
 
 import android.os.Parcelable
 import com.amazon.device.iap.model.Product
-import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
@@ -18,8 +17,7 @@ import java.math.BigDecimal
 import java.util.regex.Pattern
 
 sealed class AmazonPurchaseInfo: PurchaseInfo {
-    // TODO: Still don't love this one right now
-    data class TheOnlyOne(
+    data class Product(
         val storeProduct: AmazonStoreProduct,
     ) : AmazonPurchaseInfo() {
         override val productId: String
@@ -51,7 +49,7 @@ data class AmazonStoreProduct(
 ) : StoreProduct, Parcelable {
 
     override val purchaseInfo: AmazonPurchaseInfo
-        get() = AmazonPurchaseInfo.TheOnlyOne(this)
+        get() = AmazonPurchaseInfo.Product(this)
 
     override val sku: String
         get() = productId

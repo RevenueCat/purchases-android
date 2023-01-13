@@ -32,9 +32,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.models.GooglePurchaseInfo
 import com.revenuecat.purchases.models.PurchaseInfo
-import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -230,7 +228,7 @@ internal class AmazonBilling constructor(
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     ) {
-        val amazonPurchaseInfo = purchaseInfo as? AmazonPurchaseInfo.TheOnlyOne
+        val amazonPurchaseInfo = purchaseInfo as? AmazonPurchaseInfo.Product
         if (amazonPurchaseInfo == null) {
             // TODO: DO ERROR THING
             return
