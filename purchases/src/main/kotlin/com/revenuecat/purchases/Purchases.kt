@@ -1463,8 +1463,6 @@ class Purchases internal constructor(
     private fun startPurchase(
         activity: Activity,
         purchaseInfo: PurchaseInfo,
-//        storeProduct: StoreProduct,
-//        purchaseOption: PurchaseOption?,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
@@ -1496,8 +1494,6 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 purchaseInfo,
-//                storeProduct,
-//                purchaseOption,
                 null,
                 presentedOfferingIdentifier
             )
@@ -1570,7 +1566,6 @@ class Purchases internal constructor(
                 billing.makePurchaseAsync(
                     activity,
                     appUserID,
-//                    storeProduct,
                     purchaseInfo,
                     ReplaceProductInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier

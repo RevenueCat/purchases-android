@@ -16,7 +16,7 @@ sealed class GooglePurchaseInfo: PurchaseInfo {
         val productDetails: ProductDetails,
 
         val optionId: String?,
-        val token: String?
+        val token: String
     ) : GooglePurchaseInfo()
 
     override val productType: ProductType
