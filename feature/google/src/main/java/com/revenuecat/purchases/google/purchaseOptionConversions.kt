@@ -5,12 +5,11 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.GooglePurchaseInfo
 import com.revenuecat.purchases.models.GooglePurchaseOption
 
-fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(productId: String, productType: ProductType, productDetails: ProductDetails): GooglePurchaseOption {
+fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(productId: String, productDetails: ProductDetails): GooglePurchaseOption {
     val pricingPhases = pricingPhases.pricingPhaseList.map { it.toRevenueCatPricingPhase() }
 
     val purchaseInfo = GooglePurchaseInfo.Subscription(
         productId,
-        productType,
         productDetails,
         purchaseOptionId,
         offerToken

@@ -19,5 +19,5 @@ data class GooglePurchaseOption(
      */
     val token: String,
 
-    override val purchaseInfo: @RawValue GooglePurchaseInfo
+    override val purchaseInfo: @RawValue PurchaseInfo
 ) : PurchaseOption, Parcelable

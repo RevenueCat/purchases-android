@@ -132,7 +132,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:barrierDirection="start"
-                    app:constraint_referenced_ids="package_buy_button, product_buy_button" />
+                    app:constraint_referenced_ids="package_buy_button, product_buy_button, option_buy_button" />
 
             <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/is_upgrade_checkbox"
@@ -160,9 +160,17 @@
                     android:layout_height="wrap_content"
                     android:enabled="@{!isActive}"
                     android:text="Buy product"
-                    app:layout_constraintBottom_toTopOf="@+id/package_purchase_option_title"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_buy_button" />
+
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/option_buy_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:enabled="@{!isActive}"
+                    android:text="Buy option"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/product_buy_button" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/package_details_container"

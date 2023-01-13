@@ -89,7 +89,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     override fun onPurchasePackageClicked(
         cardView: View,
         currentPackage: Package,
-        purchaseOption: PurchaseOption?,
         isUpgrade: Boolean
     ) {
         toggleLoadingIndicator(true)
@@ -97,18 +96,17 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (isUpgrade) {
             promptForUpgradeInfo { upgradeInfo ->
                 upgradeInfo?.let {
-                    startPurchasePackage(purchaseOption, currentPackage, upgradeInfo)
+                    startPurchasePackage(currentPackage, upgradeInfo)
                 }
             }
         } else {
-            startPurchasePackage(purchaseOption, currentPackage, null)
+            startPurchasePackage(currentPackage, null)
         }
     }
 
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
         isUpgrade: Boolean
     ) {
         toggleLoadingIndicator(true)
@@ -116,11 +114,29 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (isUpgrade) {
             promptForUpgradeInfo { upgradeInfo ->
                 upgradeInfo?.let {
-                    startPurchaseProduct(purchaseOption, currentProduct, upgradeInfo)
+                    startPurchaseProduct(currentProduct, upgradeInfo)
                 }
             }
         } else {
-            startPurchaseProduct(purchaseOption, currentProduct, null)
+            startPurchaseProduct(currentProduct, null)
+        }
+    }
+
+    override fun onPurchaseOptionClicked(
+        cardView: View,
+        purchaseOption: PurchaseOption,
+        isUpgrade: Boolean
+    ) {
+        toggleLoadingIndicator(true)
+
+        if (isUpgrade) {
+            promptForUpgradeInfo { upgradeInfo ->
+                upgradeInfo?.let {
+                    startPurchaseOption(purchaseOption, upgradeInfo)
+                }
+            }
+        } else {
+            startPurchaseOption(purchaseOption, null)
         }
     }
 
@@ -141,31 +157,38 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     private fun startPurchaseProduct(
-        purchaseOption: PurchaseOption?,
         currentProduct: StoreProduct,
         upgradeInfo: UpgradeInfo?
     ) {
         when {
-            upgradeInfo == null && purchaseOption == null -> Purchases.sharedInstance.purchaseProductWith(
+            upgradeInfo == null -> Purchases.sharedInstance.purchaseProductWith(
                 requireActivity(),
                 currentProduct,
                 purchaseErrorCallback,
                 successfulPurchaseCallback
             )
-            upgradeInfo == null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                requireActivity(),
-                purchaseOption,
-                purchaseErrorCallback,
-                successfulPurchaseCallback
-            )
-            upgradeInfo != null && purchaseOption == null -> Purchases.sharedInstance.purchaseProductWith(
+            upgradeInfo != null -> Purchases.sharedInstance.purchaseProductWith(
                 requireActivity(),
                 currentProduct,
                 upgradeInfo,
                 purchaseErrorCallback,
                 successfulUpgradeCallback
             )
-            upgradeInfo != null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+        }
+    }
+
+    private fun startPurchaseOption(
+        purchaseOption: PurchaseOption,
+        upgradeInfo: UpgradeInfo?
+    ) {
+        when {
+            upgradeInfo == null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+                requireActivity(),
+                purchaseOption,
+                purchaseErrorCallback,
+                successfulPurchaseCallback
+            )
+            upgradeInfo != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                 requireActivity(),
                 purchaseOption,
                 upgradeInfo,
@@ -187,33 +210,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     private fun startPurchasePackage(
-        purchaseOption: PurchaseOption?,
         currentPackage: Package,
         upgradeInfo: UpgradeInfo?
     ) {
         when {
-            upgradeInfo == null && purchaseOption == null -> Purchases.sharedInstance.purchasePackageWith(
+            upgradeInfo == null -> Purchases.sharedInstance.purchasePackageWith(
                 requireActivity(),
                 currentPackage,
                 purchaseErrorCallback,
                 successfulPurchaseCallback
             )
-            upgradeInfo == null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                requireActivity(),
-                purchaseOption,
-                purchaseErrorCallback,
-                successfulPurchaseCallback
-            )
-            upgradeInfo != null && purchaseOption == null -> Purchases.sharedInstance.purchasePackageWith(
+            upgradeInfo != null -> Purchases.sharedInstance.purchasePackageWith(
                 requireActivity(),
                 currentPackage,
-                upgradeInfo,
-                purchaseErrorCallback,
-                successfulUpgradeCallback
-            )
-            upgradeInfo != null && purchaseOption != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                requireActivity(),
-                purchaseOption,
                 upgradeInfo,
                 purchaseErrorCallback,
                 successfulUpgradeCallback

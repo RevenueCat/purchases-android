@@ -45,26 +45,31 @@ class PackageCardAdapter(
             binding.isActive = activeSubscriptions.contains(product.productId)
 
             binding.packageBuyButton.setOnClickListener {
-                val errorStartingPurchase = validateStartPurchase(product)
-                if (errorStartingPurchase == null) {
-                    listener.onPurchasePackageClicked(
-                        binding.root,
-                        currentPackage,
-                        getSelectedPurchaseOption(),
-                        binding.isUpgradeCheckbox.isChecked
-                    )
-                } else {
-                    showErrorMessage(errorStartingPurchase)
-                }
+                listener.onPurchasePackageClicked(
+                    binding.root,
+                    currentPackage,
+                    binding.isUpgradeCheckbox.isChecked
+                )
             }
 
             binding.productBuyButton.setOnClickListener {
+                listener.onPurchaseProductClicked(
+                    binding.root,
+                    product,
+                    binding.isUpgradeCheckbox.isChecked
+                )
+            }
+
+            binding.optionBuyButton.setOnClickListener {
                 val errorStartingPurchase = validateStartPurchase(product)
-                if (errorStartingPurchase == null) {
-                    listener.onPurchaseProductClicked(
+                var purchaseOption = getSelectedPurchaseOption()
+                if (purchaseOption == null) {
+                    showErrorMessage("ERROR STUFF")
+                    // TODO: SHOW ERROR
+                } else if (errorStartingPurchase == null) {
+                    listener.onPurchaseOptionClicked(
                         binding.root,
-                        product,
-                        getSelectedPurchaseOption(),
+                        purchaseOption,
                         binding.isUpgradeCheckbox.isChecked
                     )
                 } else {
@@ -130,13 +135,16 @@ class PackageCardAdapter(
         fun onPurchasePackageClicked(
             cardView: View,
             currentPackage: Package,
-            purchaseOption: PurchaseOption?,
             isUpgrade: Boolean
         )
         fun onPurchaseProductClicked(
             cardView: View,
             currentProduct: StoreProduct,
-            purchaseOption: PurchaseOption?,
+            isUpgrade: Boolean
+        )
+        fun onPurchaseOptionClicked(
+            cardView: View,
+            purchaseOption: PurchaseOption,
             isUpgrade: Boolean
         )
     }

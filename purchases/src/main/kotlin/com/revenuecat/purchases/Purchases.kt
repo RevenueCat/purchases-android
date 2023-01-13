@@ -508,7 +508,6 @@ class Purchases internal constructor(
     ) {
         startPurchase(
             activity,
-//            packageToPurchase.product,
             packageToPurchase.product.defaultOption?.purchaseInfo ?: packageToPurchase.product.purchaseInfo,
             packageToPurchase.offering,
             listener
