@@ -223,14 +223,20 @@ internal class AmazonBilling constructor(
         activity: Activity,
         appUserID: String,
         purchaseInfo: PurchaseInfo,
-//        storeProduct: StoreProduct,
-//        purchaseOption: PurchaseOption?,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     ) {
         val amazonPurchaseInfo = purchaseInfo as? AmazonPurchaseInfo.Product
         if (amazonPurchaseInfo == null) {
-            // TODO: DO ERROR THING
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                PurchaseStrings.INVALID_PURCHASE_TYPE.format(
+                    "Amazon",
+                    "AmazonPurchaseInfo"
+                )
+            )
+            errorLog(error)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
             return
         }
         val storeProduct = amazonPurchaseInfo.storeProduct

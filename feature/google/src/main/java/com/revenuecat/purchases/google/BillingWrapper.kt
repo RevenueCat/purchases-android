@@ -211,9 +211,9 @@ class BillingWrapper(
         if (googlePurchaseInfo == null) {
             val error = PurchasesError(
                 PurchasesErrorCode.UnknownError,
-                PurchaseStrings.INVALID_PURCHASE_OPTION_TYPE.format(
+                PurchaseStrings.INVALID_PURCHASE_TYPE.format(
                     "Play",
-                    "GooglePurchaseOption"
+                    "GooglePurchaseInfo"
                 )
             )
             errorLog(error)
