@@ -204,7 +204,7 @@ class BillingWrapper(
         activity: Activity,
         appUserID: String,
         purchaseInfo: PurchaseInfo,
-    replaceProductInfo: ReplaceProductInfo?,
+        replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     ) {
         val googlePurchaseInfo = purchaseInfo as? GooglePurchaseInfo
