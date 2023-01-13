@@ -29,6 +29,8 @@ object PurchaseStrings {
         "It has already been posted"
     const val UPDATING_PENDING_PURCHASE_QUEUE = "Updating pending purchase queue"
     const val UPGRADING_SKU = "Moving from old SKU %s to sku %s"
+    const val UPGRADING_INVALID_TYPE = "UpgradeInfo passed to purchase for non-sub product type. No upgrade will " +
+        "occur. Consider using non-upgrade purchase flows for this product."
     const val UPGRADING_SKU_ERROR = "There was an error trying to upgrade. BillingResponseCode: %s"
     const val NOT_RECOGNIZED_PRODUCT_TYPE = "Type of product not recognized."
     const val SKIPPING_AUTOMATIC_SYNC = "Skipping automatic synchronization."

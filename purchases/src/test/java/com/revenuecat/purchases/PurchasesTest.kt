@@ -25,7 +25,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
-import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
@@ -501,6 +501,26 @@ class PurchasesTest {
     }
 
     @Test
+    fun `when attempting upgrade to OTP, error block is called`() {
+        val productId = "coins"
+
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.INAPP, null)
+
+        var errorCallCount = 0
+        purchases.purchaseProductWith(
+            mockActivity,
+            receiptInfo.storeProduct!!,
+            UpgradeInfo("oldSubID"),
+            onError = { _, _ ->
+                errorCallCount++
+            }, onSuccess = { _, _ ->
+                fail("should be error")
+            })
+
+        assertThat(errorCallCount).isEqualTo(1)
+    }
+
+    @Test
     fun canMakePurchase() {
         val storeProduct = stubStoreProduct("abc")
 
@@ -603,7 +623,7 @@ class PurchasesTest {
                 eq(appUserId),
 //                storeProduct,
                 storeProduct.purchaseOptions[0].purchaseInfo,
-                ReplaceSkuInfo(oldPurchase),
+                ReplaceProductInfo(oldPurchase),
                 stubOfferingIdentifier
             )
         }
@@ -1122,7 +1142,7 @@ class PurchasesTest {
                 eq(appUserId),
 //                storeProduct,
                 storeProduct.purchaseOptions[0].purchaseInfo,
-                ReplaceSkuInfo(oldPurchase),
+                ReplaceProductInfo(oldPurchase),
                 stubOfferingIdentifier
             )
         }
@@ -1179,7 +1199,7 @@ class PurchasesTest {
                 eq(appUserId),
 //                storeProduct,
                 storeProduct.purchaseOptions[0].purchaseInfo,
-                ReplaceSkuInfo(oldPurchase),
+                ReplaceProductInfo(oldPurchase),
                 stubOfferingIdentifier
             )
         }

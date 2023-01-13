@@ -27,7 +27,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
-import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
@@ -366,14 +366,14 @@ class BillingWrapperTest {
             BillingFlowParams.SubscriptionUpdateParams.newBuilder()
         } returns mockSubscriptionUpdateParamsBuilder
 
-        val oldSkuPurchaseTokenSlot = slot<String>()
+        val oldPurchaseTokenSlot = slot<String>()
         every {
-            mockSubscriptionUpdateParamsBuilder.setOldSkuPurchaseToken(capture(oldSkuPurchaseTokenSlot))
+            mockSubscriptionUpdateParamsBuilder.setOldPurchaseToken(capture(oldPurchaseTokenSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
         val prorationModeSlot = slot<Int>()
         every {
-            mockSubscriptionUpdateParamsBuilder.setReplaceSkusProrationMode(capture(prorationModeSlot))
+            mockSubscriptionUpdateParamsBuilder.setReplaceProrationMode(capture(prorationModeSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
         val productId = "product_a"
@@ -396,7 +396,7 @@ class BillingWrapperTest {
             assertThat(productId).isEqualTo(capturedProductDetailsParams[0].zza().productId)
             assertThat(subsGoogleProductType).isEqualTo(capturedProductDetailsParams[0].zza().productType)
 
-            assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldSkuPurchaseTokenSlot.captured)
+            assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
             assertThat(upgradeInfo.prorationMode).isEqualTo(prorationModeSlot.captured)
             billingClientOKResult
         }
@@ -2097,9 +2097,9 @@ class BillingWrapperTest {
         return oldPurchase.toStoreTransaction(type = ProductType.SUBS)
     }
 
-    private fun mockReplaceSkuInfo(): ReplaceSkuInfo {
+    private fun mockReplaceSkuInfo(): ReplaceProductInfo {
         val oldPurchase = mockPurchaseHistoryRecordWrapper()
-        return ReplaceSkuInfo(oldPurchase, BillingFlowParams.ProrationMode.DEFERRED)
+        return ReplaceProductInfo(oldPurchase, BillingFlowParams.ProrationMode.DEFERRED)
     }
 
     private fun getMockedPurchaseWrapper(

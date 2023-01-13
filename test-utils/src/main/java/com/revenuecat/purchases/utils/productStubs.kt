@@ -13,7 +13,14 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.toRecurrenceMode
 
 sealed class StubPurchaseInfo: PurchaseInfo {
-    object Subscription : StubPurchaseInfo()
+    object Subscription : StubPurchaseInfo() {
+        override val productId: String
+            get() = TODO("Not yet implemented")
+
+        // TODO: I don't love this
+        override val productType: ProductType
+            get() = TODO("Not yet implemented")
+    }
 }
 
 @SuppressWarnings("EmptyFunctionBlock")

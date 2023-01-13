@@ -30,7 +30,7 @@ import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
@@ -206,7 +206,7 @@ class BillingWrapper(
         purchaseInfo: PurchaseInfo,
 //        storeProduct: StoreProduct,
 //        purchaseOption: PurchaseOption?,
-        replaceSkuInfo: ReplaceSkuInfo?,
+    replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     ) {
         val googlePurchaseInfo = purchaseInfo as? GooglePurchaseInfo
@@ -240,10 +240,10 @@ class BillingWrapper(
             }
         }
 
-        if (replaceSkuInfo != null) {
+        if (replaceProductInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
-                    .format(replaceSkuInfo.oldPurchase.productIds[0], productId)
+                    .format(replaceProductInfo.oldPurchase.productIds[0], productId)
             )
         } else {
             log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(productId))
@@ -259,7 +259,7 @@ class BillingWrapper(
                 purchaseInfo,
 //                storeProduct,
 //                purchaseOption,
-                replaceSkuInfo,
+                replaceProductInfo,
                 appUserID
             )
             when (result) {
@@ -814,7 +814,7 @@ class BillingWrapper(
         purchaseInfo: GooglePurchaseInfo,
 //        storeProduct: StoreProduct,
 //        purchaseOption: PurchaseOption?,
-        replaceSkuInfo: ReplaceSkuInfo?,
+        replaceProductInfo: ReplaceProductInfo?,
         appUserID: String
     ): Result<BillingFlowParams, PurchasesError> {
 //        val googleProduct = storeProduct.googleProduct
@@ -836,7 +836,7 @@ class BillingWrapper(
                 buildOneTimePurchaseParams(purchaseInfo, appUserID)
             }
             is GooglePurchaseInfo.Subscription -> {
-                buildSubscriptionPurchaseParams(purchaseInfo, replaceSkuInfo, appUserID)
+                buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID)
             }
         }
     }
@@ -862,7 +862,7 @@ class BillingWrapper(
         purchaseInfo: GooglePurchaseInfo.Subscription,
 //        googleProduct: GoogleStoreProduct,
 //        purchaseOption: PurchaseOption?,
-        replaceSkuInfo: ReplaceSkuInfo?,
+        replaceProductInfo: ReplaceProductInfo?,
         appUserID: String
     ): Result<BillingFlowParams, PurchasesError> {
 //        val googlePurchaseOption = purchaseOption as? GooglePurchaseOption
@@ -903,7 +903,7 @@ class BillingWrapper(
                 .apply {
                     // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
                     // https://issuetracker.google.com/issues/155005449
-                    replaceSkuInfo?.let {
+                    replaceProductInfo?.let {
                         setUpgradeInfo(it)
                     } ?: setObfuscatedAccountId(appUserID.sha256())
                 }

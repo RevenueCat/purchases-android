@@ -81,7 +81,7 @@ abstract class BillingAbstract {
         purchaseInfo: PurchaseInfo,
 //        storeProduct: StoreProduct,
 //        purchaseOption: PurchaseOption?,
-        replaceSkuInfo: ReplaceSkuInfo?,
+        replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     )
 

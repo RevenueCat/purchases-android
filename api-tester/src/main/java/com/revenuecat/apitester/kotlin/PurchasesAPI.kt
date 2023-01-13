@@ -84,12 +84,11 @@ private class PurchasesAPI {
 
         purchases.purchaseSubscriptionOption(
             activity,
-            storeProduct,
             purchaseOption,
             upgradeInfo,
             purchaseChangeCallback
         )
-        purchases.purchaseSubscriptionOption(activity, storeProduct, purchaseOption, purchaseCallback)
+        purchases.purchaseSubscriptionOption(activity, purchaseOption, purchaseCallback)
 
         purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.logIn("", logInCallback)
@@ -155,14 +154,12 @@ private class PurchasesAPI {
         )
         purchases.purchaseSubscriptionOptionWith(
             activity,
-            storeProduct,
             purchaseOption,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
         purchases.purchaseSubscriptionOptionWith(
             activity,
-            storeProduct,
             purchaseOption,
             upgradeInfo,
             onError = { _: PurchasesError, _: Boolean -> },

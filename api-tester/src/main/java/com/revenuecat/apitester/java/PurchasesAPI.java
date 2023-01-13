@@ -78,8 +78,8 @@ final class PurchasesAPI {
         purchases.purchaseProduct(activity, storeProduct, makePurchaseListener);
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeListener);
         purchases.purchasePackage(activity, packageToPurchase, makePurchaseListener);
-        purchases.purchaseSubscriptionOption(activity, storeProduct, purchaseOption, upgradeInfo, purchaseChangeListener);
-        purchases.purchaseSubscriptionOption(activity, storeProduct, purchaseOption, makePurchaseListener);
+        purchases.purchaseSubscriptionOption(activity, purchaseOption, upgradeInfo, purchaseChangeListener);
+        purchases.purchaseSubscriptionOption(activity, purchaseOption, makePurchaseListener);
         purchases.restorePurchases(receiveCustomerInfoListener);
 
         purchases.logIn("", logInCallback);

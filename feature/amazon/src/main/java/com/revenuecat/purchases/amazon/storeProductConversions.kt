@@ -18,9 +18,15 @@ import java.math.BigDecimal
 import java.util.regex.Pattern
 
 sealed class AmazonPurchaseInfo: PurchaseInfo {
+    // TODO: Still don't love this one right now
     data class TheOnlyOne(
         val storeProduct: AmazonStoreProduct,
-    ) : AmazonPurchaseInfo()
+    ) : AmazonPurchaseInfo() {
+        override val productId: String
+            get() = storeProduct.productId
+        override val productType: ProductType
+            get() = storeProduct.type
+    }
 }
 
 @Parcelize
