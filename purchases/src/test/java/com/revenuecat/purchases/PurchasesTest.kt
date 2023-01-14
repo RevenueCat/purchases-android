@@ -541,7 +541,6 @@ class PurchasesTest {
                 any(),
                 expectedReplaceProductInfo,
                 any()
-
             )
         }
     }
@@ -649,7 +648,7 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct,
                 storeProduct.purchaseOptions[0],
-                ReplaceProductInfo(oldPurchase),
+                ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
                 stubOfferingIdentifier
             )
         }
@@ -1168,7 +1167,7 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct,
                 storeProduct.purchaseOptions[0],
-                ReplaceProductInfo(oldPurchase),
+                ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
                 stubOfferingIdentifier
             )
         }
@@ -1225,7 +1224,7 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct,
                 storeProduct.purchaseOptions[0],
-                ReplaceProductInfo(oldPurchase),
+                ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
                 stubOfferingIdentifier
             )
         }

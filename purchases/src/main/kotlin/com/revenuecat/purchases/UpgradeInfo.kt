@@ -10,6 +10,6 @@ import com.android.billingclient.api.BillingFlowParams
  */
 data class UpgradeInfo @JvmOverloads constructor(
     val oldProductId: String,
-    @BillingFlowParams.ProrationMode val prorationMode: Int? =
+    @BillingFlowParams.ProrationMode val prorationMode: Int =
         BillingFlowParams.ProrationMode.IMMEDIATE_WITHOUT_PRORATION
 )
