@@ -5,7 +5,7 @@ import com.android.billingclient.api.ProductDetails
 fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(productId: String, productDetails: ProductDetails): GooglePurchaseOption {
     val pricingPhases = pricingPhases.pricingPhaseList.map { it.toRevenueCatPricingPhase() }
 
-    val purchaseInfo = GooglePurchaseInfo.Subscription(
+    val purchaseInfo = GooglePurchasingData.Subscription(
         productId,
         productDetails,
         purchaseOptionId,

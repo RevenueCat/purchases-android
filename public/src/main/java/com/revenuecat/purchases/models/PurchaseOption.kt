@@ -32,5 +32,5 @@ interface PurchaseOption : Parcelable {
     val isBasePlan: Boolean
         get() = pricingPhases.size == 1
 
-    val purchaseInfo: PurchaseInfo
+    val purchasingData: PurchasingData
 }

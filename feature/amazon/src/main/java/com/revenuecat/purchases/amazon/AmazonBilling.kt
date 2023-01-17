@@ -32,7 +32,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.models.PurchaseInfo
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -222,11 +222,11 @@ internal class AmazonBilling constructor(
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        purchaseInfo: PurchaseInfo,
+        purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     ) {
-        val amazonPurchaseInfo = purchaseInfo as? AmazonPurchaseInfo.Product
+        val amazonPurchaseInfo = purchasingData as? AmazonPurchasingData.Product
         if (amazonPurchaseInfo == null) {
             val error = PurchasesError(
                 PurchasesErrorCode.UnknownError,

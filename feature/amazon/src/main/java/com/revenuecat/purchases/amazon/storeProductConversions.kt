@@ -6,7 +6,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.models.PurchaseInfo
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.parceler.JSONObjectParceler
@@ -16,10 +16,10 @@ import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.regex.Pattern
 
-sealed class AmazonPurchaseInfo: PurchaseInfo {
+sealed class AmazonPurchasingData: PurchasingData {
     data class Product(
         val storeProduct: AmazonStoreProduct,
-    ) : AmazonPurchaseInfo() {
+    ) : AmazonPurchasingData() {
         override val productId: String
             get() = storeProduct.productId
         override val productType: ProductType
@@ -48,8 +48,8 @@ data class AmazonStoreProduct(
     val amazonProduct: Product,
 ) : StoreProduct, Parcelable {
 
-    override val purchaseInfo: AmazonPurchaseInfo
-        get() = AmazonPurchaseInfo.Product(this)
+    override val purchasingData: AmazonPurchasingData
+        get() = AmazonPurchasingData.Product(this)
 
     override val sku: String
         get() = productId

@@ -2,7 +2,7 @@ package com.revenuecat.purchases.google
 
 import android.os.Parcelable
 import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.models.PurchaseInfo
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseOption
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
@@ -21,5 +21,5 @@ data class GooglePurchaseOption(
      */
     val token: String,
 
-    override val purchaseInfo: @RawValue PurchaseInfo
+    override val purchasingData: @RawValue PurchasingData
 ) : PurchaseOption, Parcelable

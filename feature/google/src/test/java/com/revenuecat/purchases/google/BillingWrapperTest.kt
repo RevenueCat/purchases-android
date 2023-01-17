@@ -34,7 +34,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.models.PurchaseInfo
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
@@ -329,7 +329,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            storeProduct.purchaseOptions[0].purchaseInfo,
+            storeProduct.purchaseOptions[0].purchasingData,
             mockReplaceSkuInfo(),
             "offering_a"
         )
@@ -403,7 +403,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            storeProduct.purchaseOptions[0].purchaseInfo,
+            storeProduct.purchaseOptions[0].purchasingData,
             upgradeInfo,
             null
         )
@@ -451,7 +451,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            storeProduct.purchaseOptions[0].purchaseInfo,
+            storeProduct.purchaseOptions[0].purchasingData,
             upgradeInfo,
             null
         )
@@ -499,7 +499,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.purchaseInfo,
+            storeProduct.purchasingData,
             upgradeInfo,
             null
         )
@@ -521,7 +521,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            storeProduct.purchaseOptions[0].purchaseInfo,
+            storeProduct.purchaseOptions[0].purchasingData,
             null,
             null
         )
@@ -544,7 +544,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            storeProduct.purchaseOptions[0].purchaseInfo,
+            storeProduct.purchaseOptions[0].purchasingData,
             mockReplaceSkuInfo(),
             null
         )
@@ -570,7 +570,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            storeProduct.purchaseOptions[0].purchaseInfo,
+            storeProduct.purchaseOptions[0].purchasingData,
             mockReplaceSkuInfo(),
             null
         )
@@ -602,7 +602,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            storeProduct.purchaseOptions[0].purchaseInfo,
+            storeProduct.purchaseOptions[0].purchasingData,
             mockReplaceSkuInfo(),
             null
         )
@@ -679,7 +679,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            nonGooglePurchaseOption.purchaseInfo,
+            nonGooglePurchaseOption.purchasingData,
             mockReplaceSkuInfo(),
             null
         )
@@ -711,8 +711,8 @@ class BillingWrapperTest {
                 get() = listOf(defaultOption)
             override val defaultOption: PurchaseOption
                 get() = GooglePurchaseOption("purchaseOption", emptyList(), emptyList(), "fake-token")
-            override val purchaseInfo: PurchaseInfo
-                get() = GooglePurchaseInfo.Subscription(
+            override val purchasingData: PurchasingData
+                get() = GooglePurchasingData.Subscription(
                     productId,
                     type,
 
@@ -735,7 +735,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            storeProduct.purchaseOptions[0].purchaseInfo,
+            storeProduct.purchaseOptions[0].purchasingData,
             mockReplaceSkuInfo(),
             null
         )
@@ -1153,7 +1153,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            storeProduct.purchaseOptions[0].purchaseInfo,
+            storeProduct.purchaseOptions[0].purchasingData,
             null,
             "offering_a"
         )
@@ -1189,7 +1189,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
 //            storeProduct,
-            purchaseOption.purchaseInfo,
+            purchaseOption.purchasingData,
             null,
             "offering_a"
         )

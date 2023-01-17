@@ -45,7 +45,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.PurchaseInfo
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -400,7 +400,7 @@ class Purchases internal constructor(
     ) {
         startProductChange(
             activity,
-            storeProduct.defaultOption?.purchaseInfo ?: storeProduct.purchaseInfo,
+            storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
             null,
             upgradeInfo,
             listener
@@ -418,7 +418,7 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, storeProduct.purchaseInfo, null, callback)
+        startPurchase(activity, storeProduct.purchasingData, null, callback)
     }
 
     // TODOBC5: remove storeProduct parameter
@@ -444,7 +444,7 @@ class Purchases internal constructor(
     ) {
         startProductChange(
             activity,
-            purchaseOption.purchaseInfo,
+            purchaseOption.purchasingData,
             null,
             upgradeInfo,
             listener
@@ -464,7 +464,7 @@ class Purchases internal constructor(
         purchaseOption: PurchaseOption,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, purchaseOption.purchaseInfo, null, callback)
+        startPurchase(activity, purchaseOption.purchasingData, null, callback)
     }
 
     /**
@@ -488,7 +488,7 @@ class Purchases internal constructor(
     ) {
         startProductChange(
             activity,
-            packageToPurchase.product.defaultOption?.purchaseInfo ?: packageToPurchase.product.purchaseInfo,
+            packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo,
             callback
@@ -508,7 +508,7 @@ class Purchases internal constructor(
     ) {
         startPurchase(
             activity,
-            packageToPurchase.product.defaultOption?.purchaseInfo ?: packageToPurchase.product.purchaseInfo,
+            packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             listener
         )
@@ -1461,14 +1461,14 @@ class Purchases internal constructor(
 
     private fun startPurchase(
         activity: Activity,
-        purchaseInfo: PurchaseInfo,
+        purchasingData: PurchasingData,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
                 // TODO: FIX THIS
-                " $purchaseInfo ${
+                " $purchasingData ${
                     presentedOfferingIdentifier?.let {
                         PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
                     }
@@ -1480,8 +1480,8 @@ class Purchases internal constructor(
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
-            if (!state.purchaseCallbacksByProductId.containsKey(purchaseInfo.productId)) {
-                val mapOfProductIdToListener = mapOf(purchaseInfo.productId to listener)
+            if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
+                val mapOfProductIdToListener = mapOf(purchasingData.productId to listener)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
                 )
@@ -1492,7 +1492,7 @@ class Purchases internal constructor(
             billing.makePurchaseAsync(
                 activity,
                 appUserID,
-                purchaseInfo,
+                purchasingData,
                 null,
                 presentedOfferingIdentifier
             )
@@ -1501,7 +1501,7 @@ class Purchases internal constructor(
 
     private fun startProductChange(
         activity: Activity,
-        purchaseInfo: PurchaseInfo,
+        purchasingData: PurchasingData,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
@@ -1509,7 +1509,7 @@ class Purchases internal constructor(
         log(
             // TODO: Not sure what $purchaseInfo prints here. This used to be $storeProduct but trying to not use that now
             LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $purchaseInfo ${
+                " $purchasingData ${
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
@@ -1529,7 +1529,7 @@ class Purchases internal constructor(
         }
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
-                purchaseInfo,
+                purchasingData,
                 upgradeInfo,
                 activity,
                 appUserID,
@@ -1540,14 +1540,14 @@ class Purchases internal constructor(
     }
 
     private fun replaceOldPurchaseWithNewProduct(
-        purchaseInfo: PurchaseInfo,
+        purchasingData: PurchasingData,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
         listener: PurchaseErrorCallback
     ) {
-        if (purchaseInfo.productType != ProductType.SUBS) {
+        if (purchasingData.productType != ProductType.SUBS) {
             dispatch {
                 listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
                     PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) }, false)
@@ -1565,7 +1565,7 @@ class Purchases internal constructor(
                 billing.makePurchaseAsync(
                     activity,
                     appUserID,
-                    purchaseInfo,
+                    purchasingData,
                     ReplaceProductInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier
                 )

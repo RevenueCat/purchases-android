@@ -2,13 +2,13 @@ package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.PurchaseInfo
+import com.revenuecat.purchases.models.PurchasingData
 
-internal sealed class GooglePurchaseInfo: PurchaseInfo {
+internal sealed class GooglePurchasingData: PurchasingData {
     data class InAppProduct(
         override val productId: String,
         val productDetails: ProductDetails
-    ) : GooglePurchaseInfo()
+    ) : GooglePurchasingData()
 
     data class Subscription(
         override val productId: String,
@@ -16,7 +16,7 @@ internal sealed class GooglePurchaseInfo: PurchaseInfo {
 
         val optionId: String,
         val token: String
-    ) : GooglePurchaseInfo()
+    ) : GooglePurchasingData()
 
     override val productType: ProductType
         get() = when (this) {

@@ -535,7 +535,7 @@ class PurchasesTest {
                 eq(mockActivity),
                 eq(appUserId),
 //                storeProduct,
-                storeProduct.purchaseOptions[0].purchaseInfo,
+                storeProduct.purchaseOptions[0].purchasingData,
                 null,
                 null
             )
@@ -556,7 +556,7 @@ class PurchasesTest {
                 eq(mockActivity),
                 eq(appUserId),
 //                storeProduct,
-                storeProduct.purchaseOptions[0].purchaseInfo,
+                storeProduct.purchaseOptions[0].purchasingData,
                 null,
                 null
             )
@@ -577,7 +577,7 @@ class PurchasesTest {
                 eq(mockActivity),
                 eq(appUserId),
 //                storeProduct,
-                storeProduct.purchaseOptions[0].purchaseInfo,
+                storeProduct.purchaseOptions[0].purchasingData,
                 null,
                 stubOfferingIdentifier
             )
@@ -598,7 +598,7 @@ class PurchasesTest {
                 eq(mockActivity),
                 eq(appUserId),
 //                storeProduct,
-                storeProduct.purchaseOptions[0].purchaseInfo,
+                storeProduct.purchaseOptions[0].purchasingData,
                 null,
                 stubOfferingIdentifier
             )
@@ -622,7 +622,7 @@ class PurchasesTest {
                 eq(mockActivity),
                 eq(appUserId),
 //                storeProduct,
-                storeProduct.purchaseOptions[0].purchaseInfo,
+                storeProduct.purchaseOptions[0].purchasingData,
                 ReplaceProductInfo(oldPurchase),
                 stubOfferingIdentifier
             )
@@ -950,7 +950,7 @@ class PurchasesTest {
                 mockActivity,
                 appUserId,
 //                storeProduct,
-                expectedDefaultPurchaseOption.purchaseInfo,
+                expectedDefaultPurchaseOption.purchasingData,
                 null,
                 null
             )
@@ -987,7 +987,7 @@ class PurchasesTest {
                 mockActivity,
                 appUserId,
 //                storeProduct,
-                expectedDefaultPurchaseOption.purchaseInfo,
+                expectedDefaultPurchaseOption.purchasingData,
                 null,
                 stubOfferingIdentifier
             )
@@ -1141,7 +1141,7 @@ class PurchasesTest {
                 eq(mockActivity),
                 eq(appUserId),
 //                storeProduct,
-                storeProduct.purchaseOptions[0].purchaseInfo,
+                storeProduct.purchaseOptions[0].purchasingData,
                 ReplaceProductInfo(oldPurchase),
                 stubOfferingIdentifier
             )
@@ -1198,7 +1198,7 @@ class PurchasesTest {
                 eq(mockActivity),
                 eq(appUserId),
 //                storeProduct,
-                storeProduct.purchaseOptions[0].purchaseInfo,
+                storeProduct.purchaseOptions[0].purchasingData,
                 ReplaceProductInfo(oldPurchase),
                 stubOfferingIdentifier
             )

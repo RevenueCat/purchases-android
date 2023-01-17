@@ -4,7 +4,7 @@ import android.os.Parcelable
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.models.PurchaseInfo
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import kotlinx.parcelize.IgnoredOnParcel
@@ -24,11 +24,11 @@ data class GoogleStoreProduct(
     val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable {
 
-    override val purchaseInfo: PurchaseInfo
+    override val purchasingData: PurchasingData
         get() = if (type == ProductType.SUBS && defaultOption != null) {
-            defaultOption.purchaseInfo
+            defaultOption.purchasingData
         } else {
-            com.revenuecat.purchases.google.GooglePurchaseInfo.InAppProduct(
+            com.revenuecat.purchases.google.GooglePurchasingData.InAppProduct(
                 productId,
                 productDetails
             )

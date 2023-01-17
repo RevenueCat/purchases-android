@@ -54,7 +54,7 @@ interface StoreProduct : Parcelable {
      */
     val defaultOption: PurchaseOption?
 
-    val purchaseInfo: PurchaseInfo
+    val purchasingData: PurchasingData
 
     /**
      * The sku of the StoreProduct
