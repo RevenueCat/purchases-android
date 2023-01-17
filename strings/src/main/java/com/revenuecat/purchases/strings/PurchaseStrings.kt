@@ -35,6 +35,6 @@ object PurchaseStrings {
     const val NOT_RECOGNIZED_PRODUCT_TYPE = "Type of product not recognized."
     const val SKIPPING_AUTOMATIC_SYNC = "Skipping automatic synchronization."
     const val INVALID_PRODUCT_TYPE = "Invalid product type passed to %s."
-    const val INVALID_PURCHASE_OPTION_TYPE = "PurchaseOption for a %s purchase must be a %s."
+    const val INVALID_SUBSCRIPTION_OPTION_TYPE = "SubscriptionOption for a %s purchase must be a %s."
     const val INVALID_STORE_PRODUCT_TYPE = "StoreProduct for a %s purchase must be a %s."
 }

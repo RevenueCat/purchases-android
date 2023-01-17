@@ -104,12 +104,12 @@
                     tools:text="$1.99" />
 
             <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/package_purchase_option_title"
+                    android:id="@+id/package_subscription_option_title"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="@dimen/padding_tiny"
                     android:paddingHorizontal="4dp"
-                    android:text="@string/purchase_options"
+                    android:text="@string/subscription_options"
                     android:textStyle="bold"
                     android:visibility="@{isSubscription ? View.VISIBLE : View.GONE}"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -117,7 +117,7 @@
                     app:layout_constraintTop_toBottomOf="@id/package_one_time_price" />
 
             <RadioGroup
-                    android:id="@+id/package_purchase_option_group"
+                    android:id="@+id/package_subscription_option_group"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:divider="?android:attr/dividerHorizontal"
@@ -125,7 +125,7 @@
                     android:visibility="@{isSubscription ? View.VISIBLE : View.GONE}"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/package_purchase_option_title"></RadioGroup>
+                    app:layout_constraintTop_toBottomOf="@id/package_subscription_option_title"></RadioGroup>
 
             <androidx.constraintlayout.widget.Barrier
                     android:id="@+id/package_card_barrier"
@@ -160,7 +160,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Buy product"
-                    app:layout_constraintBottom_toTopOf="@+id/package_purchase_option_title"
+                    app:layout_constraintBottom_toTopOf="@+id/package_subscription_option_title"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_buy_button" />
 
@@ -173,7 +173,7 @@
                     android:visibility="gone"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/package_purchase_option_group"
+                    app:layout_constraintTop_toBottomOf="@+id/package_subscription_option_group"
                     app:layout_constraintVertical_bias="0">
 
                 <include
