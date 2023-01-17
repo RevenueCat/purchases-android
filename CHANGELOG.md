@@ -1,3 +1,6 @@
+## 6.0.0-alpha.1
+Initial v6.0.0 alpha release
+
 ## 5.6.5
 ### Bugfixes
 * Fix for AbstractMethodError DefaultLifecycleObserver.onCreate (#695) via Cesar de la Vega (@vegaro)
