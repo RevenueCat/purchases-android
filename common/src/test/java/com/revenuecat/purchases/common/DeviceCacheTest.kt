@@ -467,6 +467,26 @@ class DeviceCacheTest {
         verify (exactly = 1) { mockEditor.apply() }
     }
 
+    @Test
+    fun `cleanupOldAttributionData doesn't crash if a null key is stored in SharedPreferences`() {
+        val stubPreferences = mapOf(
+            null to "random-value",
+            "${cache.attributionCacheKey}.cesar.tenjin" to "tenjinid",
+            "${cache.attributionCacheKey}.pedro.mixpanel" to "mixpanelid",
+        )
+        every {
+            mockPrefs.all
+        } returns stubPreferences
+
+        cache.cleanupOldAttributionData()
+
+        verify (exactly = 1) { mockEditor.remove("${cache.attributionCacheKey}.cesar.tenjin") }
+        verify (exactly = 1) { mockEditor.remove("${cache.attributionCacheKey}.pedro.mixpanel") }
+        verify (exactly = 2) { mockEditor.remove(any()) }
+
+        verify (exactly = 1) { mockEditor.apply() }
+    }
+
     private fun mockString(key: String, value: String?) {
         every {
             mockPrefs.getString(eq(key), isNull())
