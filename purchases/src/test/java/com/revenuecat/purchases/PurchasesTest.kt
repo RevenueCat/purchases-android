@@ -539,6 +539,7 @@ class PurchasesTest {
         }
     }
 
+    // TODO: Josh Fix
     @Test
     fun canMakePurchaseWithoutProvidingOption() {
         val storeProduct = stubStoreProduct("productId")
@@ -573,7 +574,6 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-//                storeProduct,
                 storeProduct.purchaseOptions[0].purchasingData,
                 null,
                 stubOfferingIdentifier
@@ -774,6 +774,7 @@ class PurchasesTest {
         assertThat(errorCalled!!.code).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
     }
 
+    // TODO: Josh Fix
     @Test
     fun `when making purchase, completion block is called once`() {
         val productId = "onemonth_freetrial"
@@ -909,6 +910,7 @@ class PurchasesTest {
         assertThat(receivedUserCancelled).isFalse()
     }
 
+    // TODO: Josh Fix
     @Test
     fun `when purchasing a product with multiple purchase options, we choose the default`() {
         val productId = "onemonth_freetrial"

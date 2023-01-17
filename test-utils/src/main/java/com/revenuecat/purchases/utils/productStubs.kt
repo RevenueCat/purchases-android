@@ -12,14 +12,28 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.toRecurrenceMode
 
 sealed class StubPurchasingData: PurchasingData {
-    object Subscription : StubPurchasingData() {
-        override val productId: String
-            get() = TODO("Not yet implemented")
-
-        // TODO: I don't love this
+    data class Subscription(
+        override val productId: String,
+    ) : StubPurchasingData() {
         override val productType: ProductType
-            get() = TODO("Not yet implemented")
+            get() = ProductType.SUBS
     }
+
+    data class InApp(
+        override val productId: String,
+    ) : StubPurchasingData() {
+        override val productType: ProductType
+            get() = ProductType.INAPP
+    }
+
+//    object Subscription : StubPurchasingData() {
+//        override val productId: String
+//            get() = TODO("Not yet implemented")
+//
+//        // TODO: I don't love this
+//        override val productType: ProductType
+//            get() = TODO("Not yet implemented")
+//    }
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
@@ -46,7 +60,9 @@ fun stubStoreProduct(
     override val defaultOption: PurchaseOption?
         get() = defaultOption
     override val purchasingData: PurchasingData
-        get() = StubPurchasingData.Subscription
+        get() = StubPurchasingData.Subscription(
+            productId = productId
+        )
     override val sku: String
         get() = productId
 
@@ -76,7 +92,9 @@ fun stubINAPPStoreProduct(
     override val defaultOption: PurchaseOption
         get() = stubPurchaseOption(productId)
     override val purchasingData: PurchasingData
-        get() = StubPurchasingData.Subscription
+        get() = StubPurchasingData.Subscription(
+            productId = productId
+        )
     override val sku: String
         get() = productId
 
@@ -98,7 +116,9 @@ fun stubPurchaseOption(
     override val tags: List<String>
         get() = listOf("tag")
     override val purchasingData: PurchasingData
-        get() = StubPurchasingData.Subscription
+        get() = StubPurchasingData.Subscription(
+            productId = id // TODO: this might be wrong
+        )
 
     override fun describeContents(): Int = 0
     override fun writeToParcel(dest: Parcel?, flags: Int) {}
