@@ -2,12 +2,12 @@ package com.revenuecat.apitester.kotlin
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GooglePurchaseOption
-import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.google.GooglePurchaseOption
+import com.revenuecat.purchases.google.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.googleProduct
+import com.revenuecat.purchases.google.googleProduct
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class StoreProductAPI {
@@ -22,7 +22,7 @@ private class StoreProductAPI {
             val subscriptionPeriod: String? = subscriptionPeriod
             val purchaseOptions: List<PurchaseOption> = purchaseOptions
             val defaultOption: PurchaseOption? = defaultOption
-            val underlyingProduct: GoogleStoreProduct? = googleProduct
+            val underlyingProduct: com.revenuecat.purchases.google.GoogleStoreProduct? = googleProduct
         }
     }
 
@@ -35,11 +35,11 @@ private class StoreProductAPI {
         }.exhaustive
     }
 
-    fun checkGoogleStoreProduct(googleStoreProduct: GoogleStoreProduct) {
+    fun checkGoogleStoreProduct(googleStoreProduct: com.revenuecat.purchases.google.GoogleStoreProduct) {
         check(googleStoreProduct)
         val productDetails: ProductDetails = googleStoreProduct.productDetails
-        val purchaseOptions: List<GooglePurchaseOption> = googleStoreProduct.purchaseOptions
-        val constructedGoogleStoreProduct = GoogleStoreProduct(
+        val purchaseOptions: List<com.revenuecat.purchases.google.GooglePurchaseOption> = googleStoreProduct.purchaseOptions
+        val constructedGoogleStoreProduct = com.revenuecat.purchases.google.GoogleStoreProduct(
             googleStoreProduct.productId,
             googleStoreProduct.type,
             googleStoreProduct.oneTimeProductPrice,

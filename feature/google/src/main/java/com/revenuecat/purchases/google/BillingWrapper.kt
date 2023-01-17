@@ -17,7 +17,6 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
-import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
@@ -39,14 +38,9 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
-import com.revenuecat.purchases.models.GooglePurchaseInfo
-import com.revenuecat.purchases.models.GooglePurchaseOption
 import com.revenuecat.purchases.models.PurchaseInfo
-import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -222,7 +216,7 @@ class BillingWrapper(
         }
 
         val purchaseOptionId = when (googlePurchaseInfo) {
-            is GooglePurchaseInfo.NotSubscription -> {
+            is GooglePurchaseInfo.InAppProduct -> {
                 null
             }
             is GooglePurchaseInfo.Subscription -> {
@@ -804,7 +798,7 @@ class BillingWrapper(
         appUserID: String
     ): Result<BillingFlowParams, PurchasesError> {
         return when (purchaseInfo) {
-            is GooglePurchaseInfo.NotSubscription -> {
+            is GooglePurchaseInfo.InAppProduct -> {
                 buildOneTimePurchaseParams(purchaseInfo, appUserID)
             }
             is GooglePurchaseInfo.Subscription -> {
@@ -814,7 +808,7 @@ class BillingWrapper(
     }
 
     private fun buildOneTimePurchaseParams(
-        purchaseInfo: GooglePurchaseInfo.NotSubscription,
+        purchaseInfo: GooglePurchaseInfo.InAppProduct,
         appUserID: String
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {

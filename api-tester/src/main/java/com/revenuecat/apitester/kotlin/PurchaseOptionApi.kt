@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.kotlin
 
-import com.revenuecat.purchases.models.GooglePurchaseOption
+import com.revenuecat.purchases.google.GooglePurchaseOption
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchaseOption
 
@@ -13,7 +13,7 @@ private class PurchaseOptionApi {
         val isBasePlan: Boolean = purchaseOption.isBasePlan
     }
 
-    fun checkGooglePurchaseOption(googlePurchaseOption: GooglePurchaseOption) {
+    fun checkGooglePurchaseOption(googlePurchaseOption: com.revenuecat.purchases.google.GooglePurchaseOption) {
         checkPurchaseOption(googlePurchaseOption)
         val token: String = googlePurchaseOption.token
     }

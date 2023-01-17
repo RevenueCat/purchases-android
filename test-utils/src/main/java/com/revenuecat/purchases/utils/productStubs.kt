@@ -4,7 +4,6 @@ import android.os.Parcel
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
-import com.revenuecat.purchases.models.GooglePurchaseInfo
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchaseInfo

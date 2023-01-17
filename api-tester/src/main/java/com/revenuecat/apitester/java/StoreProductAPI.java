@@ -2,9 +2,9 @@ package com.revenuecat.apitester.java;
 
 import com.android.billingclient.api.ProductDetails;
 import com.revenuecat.purchases.ProductType;
-import com.revenuecat.purchases.models.GooglePurchaseOption;
-import com.revenuecat.purchases.models.GoogleStoreProduct;
-import com.revenuecat.purchases.models.GoogleStoreProductKt;
+import com.revenuecat.purchases.google.GooglePurchaseOption;
+import com.revenuecat.purchases.google.GoogleStoreProduct;
+import com.revenuecat.purchases.google.GoogleStoreProductKt;
 import com.revenuecat.purchases.models.Price;
 import com.revenuecat.purchases.models.PurchaseOption;
 import com.revenuecat.purchases.models.StoreProduct;

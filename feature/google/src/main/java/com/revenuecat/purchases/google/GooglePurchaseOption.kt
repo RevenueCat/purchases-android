@@ -1,7 +1,9 @@
-package com.revenuecat.purchases.models
+package com.revenuecat.purchases.google
 
 import android.os.Parcelable
-import kotlinx.parcelize.IgnoredOnParcel
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.PurchaseInfo
+import com.revenuecat.purchases.models.PurchaseOption
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 

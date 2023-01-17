@@ -2,8 +2,6 @@ package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GooglePurchaseOption
-import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode

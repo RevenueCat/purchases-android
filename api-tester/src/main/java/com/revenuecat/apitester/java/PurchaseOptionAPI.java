@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.java;
 
-import com.revenuecat.purchases.models.GooglePurchaseOption;
+import com.revenuecat.purchases.google.GooglePurchaseOption;
 import com.revenuecat.purchases.models.PricingPhase;
 import com.revenuecat.purchases.models.PurchaseOption;
 

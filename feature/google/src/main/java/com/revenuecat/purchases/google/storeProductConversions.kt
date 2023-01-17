@@ -2,7 +2,6 @@ package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 
