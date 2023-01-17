@@ -468,7 +468,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `cleanupOldAttributionData works with null keys`() {
+    fun `cleanupOldAttributionData doesn't crash if a null key is stored in SharedPreferences`() {
         val stubPreferences = mapOf(
             null to "random-value",
             "${cache.attributionCacheKey}.cesar.tenjin" to "tenjinid",
