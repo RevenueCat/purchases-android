@@ -460,7 +460,6 @@ class PurchasesTest {
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
@@ -486,7 +485,6 @@ class PurchasesTest {
         var callCount = 0
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
@@ -526,7 +524,6 @@ class PurchasesTest {
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            storeProduct,
             storeProduct.purchaseOptions[0]
         ) { _, _ -> }
 
@@ -741,7 +738,6 @@ class PurchasesTest {
         val storeProduct = stubStoreProduct("productId")
         purchases.purchaseSubscriptionOptionWith(
             mockk(),
-            storeProduct,
             storeProduct.purchaseOptions[0],
             onError = { error, _ ->
                 errorCalled = true
@@ -760,7 +756,6 @@ class PurchasesTest {
         val storeProduct = stubStoreProduct("productId")
         purchases.purchaseSubscriptionOptionWith(
             mockk(),
-            storeProduct,
             storeProduct.purchaseOptions[0],
             onError = { _, _ -> fail("Should be success") }) { _, _ ->
             // First one works
@@ -769,7 +764,6 @@ class PurchasesTest {
         var errorCalled: PurchasesError? = null
         purchases.purchaseSubscriptionOptionWith(
             mockk(),
-            storeProduct,
             storeProduct.purchaseOptions[0],
             onError = { error, _ ->
                 errorCalled = error
@@ -792,7 +786,6 @@ class PurchasesTest {
         var callCount = 0
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            storeProduct,
             storeProduct.purchaseOptions[0],
             onSuccess = { _, _ ->
                 callCount++
@@ -818,7 +811,6 @@ class PurchasesTest {
         val storeProduct = stubStoreProduct(productId)
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            storeProduct,
             storeProduct.purchaseOptions[0],
             onSuccess = { _, _ ->
                 callCount++
@@ -836,13 +828,11 @@ class PurchasesTest {
         val storeProduct = stubStoreProduct("productId")
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            storeProduct,
             storeProduct.purchaseOptions[0]
         ) { _, _ -> }
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            storeProduct,
             storeProduct.purchaseOptions[0]
         ) { _, _ -> }
 
@@ -874,7 +864,6 @@ class PurchasesTest {
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { purchaseError, userCancelled ->
@@ -902,7 +891,6 @@ class PurchasesTest {
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { error, userCancelled ->
