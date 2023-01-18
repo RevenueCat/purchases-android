@@ -14,14 +14,9 @@ final class UpgradeInfoAPI {
                 upgradeInfo.getProrationMode()
         );
 
-        UpgradeInfo constructedUpgradeInfoNullProrationMode = new UpgradeInfo(
-                upgradeInfo.getOldProductId(),
-                null
-        );
+        UpgradeInfo constructedUpgradeInfoNullProrationMode = new UpgradeInfo(upgradeInfo.getOldProductId());
 
         UpgradeInfo constructedUpgradeInfoProductIdOnly = new UpgradeInfo(upgradeInfo.getOldProductId());
-        UpgradeInfo constructedUpgradeInfoProductIdAndOldSkuOnly = new UpgradeInfo(
-                upgradeInfo.getOldProductId()
-        );
+        UpgradeInfo constructedUpgradeInfoProductIdAndOldSkuOnly = new UpgradeInfo(upgradeInfo.getOldProductId());
     }
 }

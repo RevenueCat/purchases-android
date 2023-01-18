@@ -76,7 +76,7 @@ class ReceiptInfoTest {
             purchaseOptionId = purchaseOptionId
         )
 
-        val purchaseOption = stubPurchaseOption(purchaseOptionId)
+        val purchaseOption = stubPurchaseOption(purchaseOptionId, productIdentifier)
 
         val mockStoreProduct = stubStoreProduct(
             productId = productIdentifier,

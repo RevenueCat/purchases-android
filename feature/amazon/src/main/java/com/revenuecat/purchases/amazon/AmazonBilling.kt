@@ -223,7 +223,6 @@ internal class AmazonBilling constructor(
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        e
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?

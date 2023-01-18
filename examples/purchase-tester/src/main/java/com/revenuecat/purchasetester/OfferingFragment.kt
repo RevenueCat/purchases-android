@@ -145,10 +145,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             subId?.let {
                 showProrationModePicker { prorationMode ->
                     prorationMode?.let {
-                        val upgradeInfo = UpgradeInfo(
-                            subId,
-                            prorationMode
-                        )
+                        val upgradeInfo = if (prorationMode == 0) {
+                            UpgradeInfo(subId)
+                        } else {
+                            UpgradeInfo(subId, prorationMode)
+                        }
                         callback(upgradeInfo)
                     } ?: callback(null)
                 }
@@ -262,6 +263,10 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 toggleLoadingIndicator(false)
                 callback(null)
             }
+            .setOnDismissListener {
+                toggleLoadingIndicator(false)
+                callback(null)
+            }
             .show()
     }
 
@@ -287,6 +292,10 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             }
             .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()
+                toggleLoadingIndicator(false)
+                callback(null)
+            }
+            .setOnDismissListener {
                 toggleLoadingIndicator(false)
                 callback(null)
             }

@@ -12,7 +12,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.toRecurrenceMode
 
 @SuppressWarnings("MatchingDeclarationName")
-data class StubPurchasingData(
+private data class StubPurchasingData(
     override val productId: String,
 ) : PurchasingData {
     override val productType: ProductType
