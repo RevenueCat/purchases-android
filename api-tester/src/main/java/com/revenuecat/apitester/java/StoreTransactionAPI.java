@@ -26,7 +26,7 @@ final class StoreTransactionAPI {
         final String su1 = transaction.getStoreUserID();
         final PurchaseType purchaseType = transaction.getPurchaseType();
         final String marketplace = transaction.getMarketplace();
-        final String subscriptionOptionId = transaction.getSubscriptionOptionId();
+        final String purchaseOptionId = transaction.getPurchaseOptionId();
 
         StoreTransaction constructedStoreTransaction = new StoreTransaction(
                 transaction.getOrderId(),
@@ -42,7 +42,7 @@ final class StoreTransactionAPI {
                 transaction.getStoreUserID(),
                 transaction.getPurchaseType(),
                 transaction.getMarketplace(),
-                transaction.getSubscriptionOptionId()
+                transaction.getPurchaseOptionId()
         );
     }
 

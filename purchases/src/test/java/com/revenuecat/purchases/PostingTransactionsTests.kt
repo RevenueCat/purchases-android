@@ -54,7 +54,7 @@ class PostingTransactionsTests {
     private val attributesErrorsSlot = slot<List<SubscriberAttributeError>>()
     private val postedReceiptInfoSlot = slot<ReceiptInfo>()
 
-    private val subscriptionOptionId = "subscriptionOptionId"
+    private val purchaseOptionId = "purchaseOptionId"
     private val mockStoreProduct = stubStoreProduct("productId")
     private val mockGooglePurchase = stubGooglePurchase(
         productIds = listOf("uno", "dos")
@@ -62,7 +62,7 @@ class PostingTransactionsTests {
     private val mockStoreTransaction = mockGooglePurchase.toStoreTransaction(
         ProductType.SUBS,
         null,
-        subscriptionOptionId
+        purchaseOptionId
     )
 
     internal data class PostReceiptErrorContainer(
@@ -181,7 +181,7 @@ class PostingTransactionsTests {
     }
 
     @Test
-    fun `subscriptionOptionId is sent when posting to backend`() {
+    fun `purchaseOptionId is sent when posting to backend`() {
         postReceiptSuccess = PostReceiptCompletionContainer()
 
         underTest.postToBackend(
@@ -194,7 +194,7 @@ class PostingTransactionsTests {
             onError = { _, _ -> }
         )
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.subscriptionOptionId).isEqualTo(subscriptionOptionId)
+        assertThat(postedReceiptInfoSlot.captured.purchaseOptionId).isEqualTo(purchaseOptionId)
     }
 
     @Test

@@ -7,7 +7,7 @@ import kotlinx.parcelize.Parcelize
  * Defines an option for purchasing a Google subscription
  */
 @Parcelize
-data class GoogleSubscriptionOption(
+data class GooglePurchaseOption(
     override val id: String,
     override val pricingPhases: List<PricingPhase>,
     override val tags: List<String>,
@@ -16,4 +16,4 @@ data class GoogleSubscriptionOption(
      * Token used to purchase
      */
     val token: String
-) : SubscriptionOption, Parcelable
+) : PurchaseOption, Parcelable

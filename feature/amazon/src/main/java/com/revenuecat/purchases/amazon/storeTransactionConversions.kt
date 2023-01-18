@@ -28,6 +28,6 @@ fun Receipt.toStoreTransaction(
         storeUserID = userData.userId,
         purchaseType = PurchaseType.AMAZON_PURCHASE,
         marketplace = userData.marketplace,
-        subscriptionOptionId = null
+        purchaseOptionId = null
     )
 }

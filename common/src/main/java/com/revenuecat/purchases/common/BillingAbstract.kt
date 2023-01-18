@@ -4,7 +4,7 @@ import android.app.Activity
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -78,7 +78,7 @@ abstract class BillingAbstract {
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        subscriptionOption: SubscriptionOption?,
+        purchaseOption: PurchaseOption?,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     )

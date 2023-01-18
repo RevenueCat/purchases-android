@@ -6,15 +6,15 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.toRecurrenceMode
 
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
-    defaultOption: SubscriptionOption? = stubSubscriptionOption("monthly_base_plan", "P1M"),
-    subscriptionOptions: List<SubscriptionOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
+    defaultOption: PurchaseOption? = stubPurchaseOption("monthly_base_plan", "P1M"),
+    purchaseOptions: List<PurchaseOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
     oneTimeProductPrice: Price? = null
 ): StoreProduct = object : StoreProduct {
     override val productId: String
@@ -28,10 +28,10 @@ fun stubStoreProduct(
     override val description: String
         get() = ""
     override val subscriptionPeriod: String?
-        get() = subscriptionOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.get(0)?.billingPeriod
-    override val subscriptionOptions: List<SubscriptionOption>
-        get() = subscriptionOptions
-    override val defaultOption: SubscriptionOption?
+        get() = purchaseOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.get(0)?.billingPeriod
+    override val purchaseOptions: List<PurchaseOption>
+        get() = purchaseOptions
+    override val defaultOption: PurchaseOption?
         get() = defaultOption
     override val sku: String
         get() = productId
@@ -57,10 +57,10 @@ fun stubINAPPStoreProduct(
         get() = ""
     override val subscriptionPeriod: String?
         get() = null
-    override val subscriptionOptions: List<SubscriptionOption>
+    override val purchaseOptions: List<PurchaseOption>
         get() = listOf(defaultOption)
-    override val defaultOption: SubscriptionOption
-        get() = stubSubscriptionOption(productId)
+    override val defaultOption: PurchaseOption
+        get() = stubPurchaseOption(productId)
     override val sku: String
         get() = productId
 
@@ -70,11 +70,11 @@ fun stubINAPPStoreProduct(
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
-fun stubSubscriptionOption(
+fun stubPurchaseOption(
     id: String,
     duration: String = "P1M",
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration))
-): SubscriptionOption = object : SubscriptionOption {
+): PurchaseOption = object : PurchaseOption {
     override val id: String
         get() = id
     override val pricingPhases: List<PricingPhase>

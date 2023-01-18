@@ -38,9 +38,9 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
-import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.GooglePurchaseOption
 import com.revenuecat.purchases.models.GoogleStoreProduct
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -72,7 +72,7 @@ class BillingWrapper(
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
-    private val subscriptionOptionSelectedByProductIdentifier = mutableMapOf<String, String?>()
+    private val purchaseOptionSelectedByProductIdentifier = mutableMapOf<String, String?>()
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
@@ -202,7 +202,7 @@ class BillingWrapper(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        subscriptionOption: SubscriptionOption?,
+        purchaseOption: PurchaseOption?,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     ) {
@@ -218,12 +218,12 @@ class BillingWrapper(
         synchronized(this@BillingWrapper) {
             productTypes[storeProduct.productId] = storeProduct.type
             presentedOfferingsByProductIdentifier[storeProduct.productId] = presentedOfferingIdentifier
-            subscriptionOptionSelectedByProductIdentifier[storeProduct.productId] = subscriptionOption?.id
+            purchaseOptionSelectedByProductIdentifier[storeProduct.productId] = purchaseOption?.id
         }
         executeRequestOnUIThread {
             val result = buildPurchaseParams(
                 storeProduct,
-                subscriptionOption,
+                purchaseOption,
                 replaceProductInfo,
                 appUserID
             )
@@ -465,7 +465,7 @@ class BillingWrapper(
             hash to purchase.toStoreTransaction(
                 productType.toRevenueCatProductType(),
                 presentedOfferingIdentifier = null,
-                subscriptionOptionId = null
+                purchaseOptionId = null
             )
         }
     }
@@ -704,13 +704,13 @@ class BillingWrapper(
 
         synchronized(this@BillingWrapper) {
             val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstProductId]
-            val subscriptionOptionId = subscriptionOptionSelectedByProductIdentifier[purchase.firstProductId]
+            val purchaseOptionId = purchaseOptionSelectedByProductIdentifier[purchase.firstProductId]
             productTypes[purchase.firstProductId]?.let { productType ->
                 completion(
                     purchase.toStoreTransaction(
                         productType,
                         presentedOffering,
-                        subscriptionOptionId
+                        purchaseOptionId
                     )
                 )
                 return
@@ -777,7 +777,7 @@ class BillingWrapper(
 
     private fun buildPurchaseParams(
         storeProduct: StoreProduct,
-        subscriptionOption: SubscriptionOption?,
+        purchaseOption: PurchaseOption?,
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String
     ): Result<BillingFlowParams, PurchasesError> {
@@ -796,7 +796,7 @@ class BillingWrapper(
         }
 
         return if (googleProduct.type == ProductType.SUBS) {
-            buildSubscriptionPurchaseParams(googleProduct, subscriptionOption, replaceProductInfo, appUserID)
+            buildSubscriptionPurchaseParams(googleProduct, purchaseOption, replaceProductInfo, appUserID)
         } else {
             buildOneTimePurchaseParams(googleProduct, appUserID)
         }
@@ -820,17 +820,17 @@ class BillingWrapper(
 
     private fun buildSubscriptionPurchaseParams(
         googleProduct: GoogleStoreProduct,
-        subscriptionOption: SubscriptionOption?,
+        purchaseOption: PurchaseOption?,
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String
     ): Result<BillingFlowParams, PurchasesError> {
-        val googleSubscriptionOption = subscriptionOption as? GoogleSubscriptionOption
-        if (googleSubscriptionOption == null) {
+        val googlePurchaseOption = purchaseOption as? GooglePurchaseOption
+        if (googlePurchaseOption == null) {
             val error = PurchasesError(
                 PurchasesErrorCode.UnknownError,
-                PurchaseStrings.INVALID_SUBSCRIPTION_OPTION_TYPE.format(
+                PurchaseStrings.INVALID_PURCHASE_OPTION_TYPE.format(
                     "Play",
-                    "GoogleSubscriptionOption"
+                    "GooglePurchaseOption"
                 )
             )
             errorLog(error)
@@ -838,7 +838,7 @@ class BillingWrapper(
         }
 
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(googleSubscriptionOption.token)
+            setOfferToken(googlePurchaseOption.token)
             setProductDetails(googleProduct.productDetails)
         }.build()
 
