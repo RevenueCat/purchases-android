@@ -64,8 +64,7 @@ class PackageCardAdapter(
                 val errorStartingPurchase = validateStartPurchase(product)
                 val purchaseOption = getSelectedPurchaseOption()
                 if (purchaseOption == null) {
-                    showErrorMessage("ERROR STUFF")
-                    // TODO: SHOW ERROR
+                    showErrorMessage("Select a purchase option")
                 } else if (errorStartingPurchase == null) {
                     listener.onPurchaseOptionClicked(
                         binding.root,

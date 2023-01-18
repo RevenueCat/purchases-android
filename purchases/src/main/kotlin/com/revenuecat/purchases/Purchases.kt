@@ -1463,7 +1463,6 @@ class Purchases internal constructor(
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
-                // TODO: FIX THIS
                 " $purchasingData ${
                     presentedOfferingIdentifier?.let {
                         PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
@@ -1506,7 +1505,6 @@ class Purchases internal constructor(
         listener: ProductChangeCallback
     ) {
         log(
-            // TODO: Not sure what $purchaseInfo prints here. This used to be $storeProduct but trying to not use that now
             LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
                     offeringIdentifier?.let {
