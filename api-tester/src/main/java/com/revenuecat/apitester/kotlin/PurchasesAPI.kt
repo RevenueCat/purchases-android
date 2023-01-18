@@ -25,7 +25,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.purchasePackageWith
@@ -43,7 +43,7 @@ private class PurchasesAPI {
         activity: Activity,
         storeProduct: StoreProduct,
         packageToPurchase: Package,
-        subscriptionOption: SubscriptionOption,
+        purchaseOption: PurchaseOption,
         upgradeInfo: UpgradeInfo
     ) {
         val productIds = ArrayList<String>()
@@ -85,11 +85,11 @@ private class PurchasesAPI {
         purchases.purchaseSubscriptionOption(
             activity,
             storeProduct,
-            subscriptionOption,
+            purchaseOption,
             upgradeInfo,
             purchaseChangeCallback
         )
-        purchases.purchaseSubscriptionOption(activity, storeProduct, subscriptionOption, purchaseCallback)
+        purchases.purchaseSubscriptionOption(activity, storeProduct, purchaseOption, purchaseCallback)
 
         purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.logIn("", logInCallback)
@@ -120,7 +120,7 @@ private class PurchasesAPI {
         activity: Activity,
         packageToPurchase: Package,
         storeProduct: StoreProduct,
-        subscriptionOption: SubscriptionOption,
+        purchaseOption: PurchaseOption,
         upgradeInfo: UpgradeInfo
     ) {
         purchases.getOfferingsWith(
@@ -156,14 +156,14 @@ private class PurchasesAPI {
         purchases.purchaseSubscriptionOptionWith(
             activity,
             storeProduct,
-            subscriptionOption,
+            purchaseOption,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
         purchases.purchaseSubscriptionOptionWith(
             activity,
             storeProduct,
-            subscriptionOption,
+            purchaseOption,
             upgradeInfo,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }

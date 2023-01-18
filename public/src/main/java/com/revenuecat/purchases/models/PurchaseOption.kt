@@ -5,10 +5,10 @@ import android.os.Parcelable
 /**
  * A purchase-able entity for a subscription product.
  */
-interface SubscriptionOption : Parcelable {
+interface PurchaseOption : Parcelable {
     /**
      * For Google subscriptions:
-     * If this SubscriptionOption represents a base plan, this will be the basePlanId.
+     * If this PurchaseOption represents a base plan, this will be the basePlanId.
      * If it represents an offer, it will be {basePlanId}:{offerId}
      *
      * Not applicable for Amazon subscriptions.
@@ -26,7 +26,7 @@ interface SubscriptionOption : Parcelable {
     val tags: List<String>
 
     /**
-     * True if this SubscriptionOption represents a Google subscription base plan (rather than an offer).
+     * True if this PurchaseOption represents a Google subscription base plan (rather than an offer).
      * Not applicable for Amazon subscriptions.
      */
     val isBasePlan: Boolean

@@ -45,7 +45,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -381,7 +381,7 @@ class Purchases internal constructor(
     /**
      * Purchases [storeProduct].
      * If [storeProduct] represents a subscription, upgrades from the subscription specified by
-     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
+     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [PurchaseOption].
      *
      * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
      *
@@ -408,7 +408,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+     * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [PurchaseOption].
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
@@ -425,13 +425,13 @@ class Purchases internal constructor(
     /**
      * Purchases [storeProduct].
      * If [storeProduct] represents a subscription, upgrades from the subscription specified by
-     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
+     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [PurchaseOption].
      *
      * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
      *
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for the subscription StoreProduct
+     * @param [purchaseOption] Your choice of purchase options available for the subscription StoreProduct
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
@@ -439,14 +439,14 @@ class Purchases internal constructor(
     fun purchaseSubscriptionOption(
         activity: Activity,
         storeProduct: StoreProduct,
-        subscriptionOption: SubscriptionOption,
+        purchaseOption: PurchaseOption,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
         startProductChange(
             activity,
             storeProduct,
-            subscriptionOption,
+            purchaseOption,
             null,
             upgradeInfo,
             listener
@@ -455,25 +455,25 @@ class Purchases internal constructor(
 
     // TODOBC5: Remove storeProduct parameter
     /**
-     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
+     * Purchase a subscription [StoreProduct]'s [PurchaseOption].
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for the subscription StoreProduct
+     * @param [purchaseOption] Your choice of purchase options available for the subscription StoreProduct
      * @param [callback] The PurchaseCallback that will be called when purchase completes
      */
     fun purchaseSubscriptionOption(
         activity: Activity,
         storeProduct: StoreProduct,
-        subscriptionOption: SubscriptionOption,
+        purchaseOption: PurchaseOption,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, storeProduct, subscriptionOption, null, callback)
+        startPurchase(activity, storeProduct, purchaseOption, null, callback)
     }
 
     /**
      * Purchases a [Package].
      * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
-     * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
+     * [oldProductId]and chooses the default [PurchaseOption] from [packageToPurchase].
      *
      * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
      *
@@ -500,7 +500,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+     * Purchase a [Package]. If purchasing a subscription, it will choose the default [PurchaseOption].
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
@@ -1223,7 +1223,7 @@ class Purchases internal constructor(
                         // TODO BC5 confirm multi line purchases
                         val purchasedStoreProduct = if (purchase.type == ProductType.SUBS) {
                             storeProducts.firstOrNull { product ->
-                                product.subscriptionOptions.any { it.id == purchase.subscriptionOptionId }
+                                product.purchaseOptions.any { it.id == purchase.purchaseOptionId }
                             }
                         } else {
                             storeProducts.firstOrNull() { product ->
@@ -1277,7 +1277,7 @@ class Purchases internal constructor(
                 productIDs = purchase.productIds,
                 offeringIdentifier = purchase.presentedOfferingIdentifier,
                 storeProduct = storeProduct,
-                subscriptionOptionId = purchase.subscriptionOptionId
+                purchaseOptionId = purchase.purchaseOptionId
             )
             backend.postReceiptData(
                 purchaseToken = purchase.purchaseToken,
@@ -1467,7 +1467,7 @@ class Purchases internal constructor(
     private fun startPurchase(
         activity: Activity,
         storeProduct: StoreProduct,
-        subscriptionOption: SubscriptionOption?,
+        purchaseOption: PurchaseOption?,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
@@ -1498,7 +1498,7 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 storeProduct,
-                subscriptionOption,
+                purchaseOption,
                 null,
                 presentedOfferingIdentifier
             )
@@ -1508,7 +1508,7 @@ class Purchases internal constructor(
     private fun startProductChange(
         activity: Activity,
         storeProduct: StoreProduct,
-        subscriptionOption: SubscriptionOption?,
+        purchaseOption: PurchaseOption?,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
@@ -1536,7 +1536,7 @@ class Purchases internal constructor(
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
                 storeProduct,
-                subscriptionOption,
+                purchaseOption,
                 upgradeInfo,
                 activity,
                 appUserID,
@@ -1548,7 +1548,7 @@ class Purchases internal constructor(
 
     private fun replaceOldPurchaseWithNewProduct(
         storeProduct: StoreProduct,
-        subscriptionOption: SubscriptionOption?,
+        purchaseOption: PurchaseOption?,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
@@ -1574,7 +1574,7 @@ class Purchases internal constructor(
                     activity,
                     appUserID,
                     storeProduct,
-                    subscriptionOption,
+                    purchaseOption,
                     ReplaceProductInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier
                 )

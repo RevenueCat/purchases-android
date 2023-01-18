@@ -10,7 +10,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
@@ -50,7 +50,7 @@ class PackageCardAdapter(
                     listener.onPurchasePackageClicked(
                         binding.root,
                         currentPackage,
-                        getSelectedSubscriptionOption(),
+                        getSelectedPurchaseOption(),
                         binding.isUpgradeCheckbox.isChecked
                     )
                 } else {
@@ -64,7 +64,7 @@ class PackageCardAdapter(
                     listener.onPurchaseProductClicked(
                         binding.root,
                         product,
-                        getSelectedSubscriptionOption(),
+                        getSelectedPurchaseOption(),
                         binding.isUpgradeCheckbox.isChecked
                     )
                 } else {
@@ -80,7 +80,7 @@ class PackageCardAdapter(
 
             binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString() ?: "TODO Amazon"
 
-            bindSubscriptionOptions(product)
+            bindPurchaseOptions(product)
 
             binding.root.setOnClickListener {
                 with(binding.packageDetailsContainer) {
@@ -89,32 +89,31 @@ class PackageCardAdapter(
             }
         }
 
-        private fun bindSubscriptionOptions(product: StoreProduct) {
-            binding.packageSubscriptionOptionGroup.removeAllViews()
-            val numberOfSubscriptionOptions = product.subscriptionOptions.size
-            product.subscriptionOptions.forEach { subscriptionOption ->
+        private fun bindPurchaseOptions(product: StoreProduct) {
+            binding.packagePurchaseOptionGroup.removeAllViews()
+            val numberOfPurchaseOptions = product.purchaseOptions.size
+            product.purchaseOptions.forEach { purchaseOption ->
                 val radioButton = RadioButton(binding.root.context).apply {
-                    text = subscriptionOption.toButtonString()
-                    tag = subscriptionOption
+                    text = purchaseOption.toButtonString()
+                    tag = purchaseOption
                 }
-                binding.packageSubscriptionOptionGroup.addView(radioButton)
-                if (numberOfSubscriptionOptions == 1) binding.packageSubscriptionOptionGroup.check(radioButton.id)
+                binding.packagePurchaseOptionGroup.addView(radioButton)
+                if (numberOfPurchaseOptions == 1) binding.packagePurchaseOptionGroup.check(radioButton.id)
             }
         }
 
-        private fun getSelectedSubscriptionOption(): SubscriptionOption? {
-            val selectedButtonId = binding.packageSubscriptionOptionGroup.checkedRadioButtonId
-            return binding.packageSubscriptionOptionGroup.children
+        private fun getSelectedPurchaseOption(): PurchaseOption? {
+            val selectedButtonId = binding.packagePurchaseOptionGroup.checkedRadioButtonId
+            return binding.packagePurchaseOptionGroup.children
                 .filter { it.id == selectedButtonId }
                 .firstOrNull()
-                ?.tag as? SubscriptionOption
+                ?.tag as? PurchaseOption
         }
 
         private fun validateStartPurchase(product: StoreProduct): String? {
             if (product.type == ProductType.SUBS &&
-                binding.packageSubscriptionOptionGroup.checkedRadioButtonId == nothingCheckedIndex
-            ) {
-                return "Please choose subscription option first"
+                binding.packagePurchaseOptionGroup.checkedRadioButtonId == nothingCheckedIndex) {
+                return "Please choose purchase option first"
             }
             return null
         }
@@ -131,13 +130,13 @@ class PackageCardAdapter(
         fun onPurchasePackageClicked(
             cardView: View,
             currentPackage: Package,
-            subscriptionOption: SubscriptionOption?,
+            purchaseOption: PurchaseOption?,
             isUpgrade: Boolean
         )
         fun onPurchaseProductClicked(
             cardView: View,
             currentProduct: StoreProduct,
-            subscriptionOption: SubscriptionOption?,
+            purchaseOption: PurchaseOption?,
             isUpgrade: Boolean
         )
     }

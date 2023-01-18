@@ -6,7 +6,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
@@ -26,8 +26,8 @@ data class AmazonStoreProduct(
 
     // TODOBC5
     override val oneTimeProductPrice: com.revenuecat.purchases.models.Price?,
-    override val subscriptionOptions: List<SubscriptionOption>,
-    override val defaultOption: SubscriptionOption?,
+    override val purchaseOptions: List<PurchaseOption>,
+    override val defaultOption: PurchaseOption?,
     val price: String,
     val priceAmountMicros: Long,
     val priceCurrencyCode: String,

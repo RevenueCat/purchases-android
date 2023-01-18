@@ -23,7 +23,7 @@ private class StoreTransactionAPI {
             val presentedOfferingIdentifier: String? = presentedOfferingIdentifier
             val su1: String? = storeUserID
             val purchaseType: PurchaseType = purchaseType
-            val subscriptionOptionId = subscriptionOptionId
+            val purchaseOptionId = purchaseOptionId
 
             val constructedStoreTransaction = StoreTransaction(
                 orderId,
@@ -39,7 +39,7 @@ private class StoreTransactionAPI {
                 storeUserID,
                 purchaseType,
                 marketplace,
-                subscriptionOptionId
+                purchaseOptionId
             )
         }
     }

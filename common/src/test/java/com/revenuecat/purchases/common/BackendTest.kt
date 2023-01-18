@@ -13,7 +13,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
-import com.revenuecat.purchases.utils.stubSubscriptionOption
+import com.revenuecat.purchases.utils.stubPurchaseOption
 import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.every
 import io.mockk.mockk
@@ -280,11 +280,11 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes pricing phases as maps in body`() {
-        val subscriptionOption = storeProduct.subscriptionOptions[0]
+        val purchaseOption = storeProduct.purchaseOptions[0]
         val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
             storeProduct = storeProduct,
-            subscriptionOptionId = subscriptionOption.id
+            purchaseOptionId = purchaseOption.id
         )
 
         mockPostReceiptResponseAndPost(
@@ -537,14 +537,14 @@ class BackendTest {
             productIDs,
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct,
-            subscriptionOptionId = "abc"
+            purchaseOptionId = "abc"
         )
 
         val receiptInfo2 = ReceiptInfo(
             productIDs,
             offeringIdentifier = "offering_a",
             storeProduct = storeProduct,
-            subscriptionOptionId = "ef"
+            purchaseOptionId = "ef"
         )
 
         val lock = CountDownLatch(2)
@@ -591,12 +591,12 @@ class BackendTest {
             storeProduct = storeProduct
         )
 
-        val originalSubscriptionOption = storeProduct.subscriptionOptions[0]
-        val originalDuration = originalSubscriptionOption.pricingPhases[0].billingPeriod
-        val subscriptionOption = stubSubscriptionOption(originalSubscriptionOption.id, originalDuration + "a")
+        val originalPurchaseOption = storeProduct.purchaseOptions[0]
+        val originalDuration = originalPurchaseOption.pricingPhases[0].billingPeriod
+        val purchaseOption = stubPurchaseOption(originalPurchaseOption.id, originalDuration + "a")
         val storeProduct2 = stubStoreProduct(
             storeProduct.productId,
-            subscriptionOption
+            purchaseOption
         )
 
         val receiptInfo2 = ReceiptInfo(

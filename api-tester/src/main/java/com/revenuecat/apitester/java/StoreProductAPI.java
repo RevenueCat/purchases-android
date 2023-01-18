@@ -2,11 +2,11 @@ package com.revenuecat.apitester.java;
 
 import com.android.billingclient.api.ProductDetails;
 import com.revenuecat.purchases.ProductType;
-import com.revenuecat.purchases.models.GoogleSubscriptionOption;
+import com.revenuecat.purchases.models.GooglePurchaseOption;
 import com.revenuecat.purchases.models.GoogleStoreProduct;
 import com.revenuecat.purchases.models.GoogleStoreProductKt;
 import com.revenuecat.purchases.models.Price;
-import com.revenuecat.purchases.models.SubscriptionOption;
+import com.revenuecat.purchases.models.PurchaseOption;
 import com.revenuecat.purchases.models.StoreProduct;
 
 import java.util.List;
@@ -21,8 +21,8 @@ final class StoreProductAPI {
         final String title = product.getTitle();
         final String description = product.getDescription();
         final String subscriptionPeriod = product.getSubscriptionPeriod();
-        List<SubscriptionOption> subscriptionOptions = product.getSubscriptionOptions();
-        SubscriptionOption defaultOption = product.getDefaultOption();
+        List<PurchaseOption> purchaseOptions = product.getPurchaseOptions();
+        PurchaseOption defaultOption = product.getDefaultOption();
 
         // TODOBC5 can we find an easier way to do this in java?
         GoogleStoreProduct underlyingProduct = GoogleStoreProductKt.getGoogleProduct(product);
@@ -39,7 +39,7 @@ final class StoreProductAPI {
     static void checkGoogleStoreProduct(GoogleStoreProduct googleStoreProduct) {
         check(googleStoreProduct);
         ProductDetails productDetails = googleStoreProduct.getProductDetails();
-        List<GoogleSubscriptionOption> subscriptionOptions = googleStoreProduct.getSubscriptionOptions();
+        List<GooglePurchaseOption> purchaseOptions = googleStoreProduct.getPurchaseOptions();
         GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
                 googleStoreProduct.getProductId(),
                 googleStoreProduct.getType(),
@@ -47,7 +47,7 @@ final class StoreProductAPI {
                 googleStoreProduct.getTitle(),
                 googleStoreProduct.getDescription(),
                 googleStoreProduct.getSubscriptionPeriod(),
-                googleStoreProduct.getSubscriptionOptions(),
+                googleStoreProduct.getPurchaseOptions(),
                 googleStoreProduct.getDefaultOption(),
                 googleStoreProduct.getProductDetails()
         );

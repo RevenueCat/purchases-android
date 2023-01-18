@@ -81,7 +81,7 @@ private fun getMatchingProduct(
     }
     val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
     return storeProducts?.firstOrNull { storeProduct ->
-        storeProduct.subscriptionOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
+        storeProduct.purchaseOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
     }
 }
 
