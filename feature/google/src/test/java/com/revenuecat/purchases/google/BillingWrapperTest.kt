@@ -712,7 +712,6 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-//            storeProduct,
             storeProduct.purchaseOptions[0].purchasingData,
             mockReplaceSkuInfo(),
             null
@@ -1130,7 +1129,6 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-//            storeProduct,
             storeProduct.purchaseOptions[0].purchasingData,
             null,
             "offering_a"
@@ -1166,7 +1164,6 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-//            storeProduct,
             purchaseOption.purchasingData,
             null,
             "offering_a"

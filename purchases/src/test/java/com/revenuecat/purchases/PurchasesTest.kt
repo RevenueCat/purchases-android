@@ -555,7 +555,6 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-//                storeProduct,
                 storeProduct.purchaseOptions[0].purchasingData,
                 null,
                 null
@@ -616,7 +615,6 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-//                storeProduct,
                 storeProduct.purchaseOptions[0].purchasingData,
                 null,
                 stubOfferingIdentifier
@@ -996,7 +994,6 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 mockActivity,
                 appUserId,
-//                storeProduct,
                 expectedDefaultPurchaseOption.purchasingData,
                 null,
                 stubOfferingIdentifier
