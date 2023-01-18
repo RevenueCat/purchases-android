@@ -22,7 +22,7 @@ private class StoreProductAPI {
             val subscriptionPeriod: String? = subscriptionPeriod
             val purchaseOptions: List<PurchaseOption> = purchaseOptions
             val defaultOption: PurchaseOption? = defaultOption
-            val underlyingProduct: com.revenuecat.purchases.google.GoogleStoreProduct? = googleProduct
+            val underlyingProduct: GoogleStoreProduct? = googleProduct
         }
     }
 
@@ -35,11 +35,11 @@ private class StoreProductAPI {
         }.exhaustive
     }
 
-    fun checkGoogleStoreProduct(googleStoreProduct: com.revenuecat.purchases.google.GoogleStoreProduct) {
+    fun checkGoogleStoreProduct(googleStoreProduct: GoogleStoreProduct) {
         check(googleStoreProduct)
         val productDetails: ProductDetails = googleStoreProduct.productDetails
-        val purchaseOptions: List<com.revenuecat.purchases.google.GooglePurchaseOption> = googleStoreProduct.purchaseOptions
-        val constructedGoogleStoreProduct = com.revenuecat.purchases.google.GoogleStoreProduct(
+        val purchaseOptions: List<GooglePurchaseOption> = googleStoreProduct.purchaseOptions
+        val constructedGoogleStoreProduct = GoogleStoreProduct(
             googleStoreProduct.productId,
             googleStoreProduct.type,
             googleStoreProduct.oneTimeProductPrice,

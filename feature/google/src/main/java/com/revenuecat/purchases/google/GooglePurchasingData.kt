@@ -4,7 +4,7 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.PurchasingData
 
-internal sealed class GooglePurchasingData: PurchasingData {
+internal sealed class GooglePurchasingData : PurchasingData {
     data class InAppProduct(
         override val productId: String,
         val productDetails: ProductDetails

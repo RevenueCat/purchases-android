@@ -418,7 +418,12 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, storeProduct.purchasingData, null, callback)
+        startPurchase(
+            activity,
+            storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
+            null,
+            callback
+        )
     }
 
     // TODOBC5: remove storeProduct parameter
@@ -1486,8 +1491,11 @@ class Purchases internal constructor(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
                 )
                 userPurchasing = identityManager.currentAppUserID
+            } else {
+                log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
         }
+        print("🍕🍕🍕🍕")
         userPurchasing?.let { appUserID ->
             billing.makePurchaseAsync(
                 activity,

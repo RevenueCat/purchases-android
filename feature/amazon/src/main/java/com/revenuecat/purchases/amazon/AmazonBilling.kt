@@ -219,9 +219,11 @@ internal class AmazonBilling constructor(
         )
     }
 
+    @Suppress("ReturnCount")
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
+        e
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?

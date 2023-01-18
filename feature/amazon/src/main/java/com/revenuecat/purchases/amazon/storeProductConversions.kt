@@ -16,7 +16,7 @@ import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.regex.Pattern
 
-sealed class AmazonPurchasingData: PurchasingData {
+sealed class AmazonPurchasingData : PurchasingData {
     data class Product(
         val storeProduct: AmazonStoreProduct,
     ) : AmazonPurchasingData() {
