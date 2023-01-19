@@ -1515,6 +1515,7 @@ class Purchases internal constructor(
             dispatch {
                 listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
                     PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) }, false)
+                getAndClearProductChangeCallback()
             }
             return
         }
@@ -1549,7 +1550,7 @@ class Purchases internal constructor(
                 offeringIdentifier,
                 listener
             )
-        }?.run {
+        } ?: run {
             listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
             getAndClearProductChangeCallback()
         }
@@ -1583,9 +1584,9 @@ class Purchases internal constructor(
             onError = { error ->
                 log(LogIntent.GOOGLE_ERROR, error.toString())
                 dispatch {
+                    getAndClearProductChangeCallback()
                     listener.onError(error, false)
                 }
-                getAndClearProductChangeCallback()
             })
     }
 
