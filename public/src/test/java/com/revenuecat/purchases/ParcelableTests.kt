@@ -3,7 +3,8 @@ package com.revenuecat.purchases
 import android.net.Uri
 import android.os.Parcel
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.parceler.JSONObjectParceler.write
+import com.revenuecat.purchases.utils.JSONObjectParceler
+import com.revenuecat.purchases.utils.JSONObjectParceler.write
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.testParcelization
 import org.assertj.core.api.Assertions
