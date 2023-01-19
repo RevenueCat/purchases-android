@@ -129,10 +129,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             subId?.let {
                 showProrationModePicker { prorationMode ->
                     prorationMode?.let {
-                        val upgradeInfo = UpgradeInfo(
-                            subId,
-                            if (prorationMode == 0) null else prorationMode
-                        )
+                        val upgradeInfo = if (prorationMode == 0) {
+                            UpgradeInfo(subId)
+                        } else {
+                            UpgradeInfo(subId, prorationMode)
+                        }
                         callback(upgradeInfo)
                     } ?: callback(null)
                 }
