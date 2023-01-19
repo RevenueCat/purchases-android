@@ -915,6 +915,42 @@ class PurchasesTest {
     }
 
     @Test
+    fun `no OperationAlreadyInProgress error if first purchase already returned error`() {
+        val productId = "onemonth_freetrial"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+
+        val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, PurchaseStrings.NO_EXISTING_PURCHASE)
+
+        // force failure before starting purchase with store by ensuring old purchase not found
+        val oldPurchase = mockPurchaseFound(error)
+
+        var receivedError: PurchasesError? = null
+        purchases.purchaseSubscriptionOptionWith(
+            mockActivity,
+            receiptInfo.storeProduct!!,
+            receiptInfo.storeProduct!!.purchaseOptions[0],
+            UpgradeInfo(oldPurchase.productIds[0]),
+            onError = { _, _ -> },
+            onSuccess = { _, _ ->
+                fail("should be error")
+            }
+        )
+
+        purchases.purchaseSubscriptionOptionWith(
+            mockActivity,
+            receiptInfo.storeProduct!!,
+            receiptInfo.storeProduct!!.purchaseOptions[0],
+            UpgradeInfo(oldPurchase.productIds[0]),
+            onError = { error, _ ->
+                receivedError = error
+            },
+            onSuccess = { _, _ -> }
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isNotEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+     }
+
+    @Test
     fun `when making purchase with upgrade info, failures purchasing are forwarded`() {
         val productId = "onemonth_freetrial"
 
@@ -943,7 +979,7 @@ class PurchasesTest {
 
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
-        assertThat(receivedUserCancelled).isFalse()
+        assertThat(receivedUserCancelled).isFalse
     }
 
     @Test
@@ -1107,7 +1143,7 @@ class PurchasesTest {
         )
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
-        assertThat(receivedUserCancelled).isFalse()
+        assertThat(receivedUserCancelled).isFalse
     }
 
     @Test
@@ -1136,7 +1172,7 @@ class PurchasesTest {
 
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
-        assertThat(receivedUserCancelled).isFalse()
+        assertThat(receivedUserCancelled).isFalse
     }
 
     @Test
@@ -1173,7 +1209,7 @@ class PurchasesTest {
         }
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-        assertThat(receivedUserCancelled).isFalse()
+        assertThat(receivedUserCancelled).isFalse
     }
 
     @Test
@@ -1296,7 +1332,6 @@ class PurchasesTest {
             )
         }
     }
-
 
     // endregion
 
@@ -1492,7 +1527,6 @@ class PurchasesTest {
             mockCache.isOfferingsCacheStale(appInBackground = false)
         }
     }
-
 
     @Test
     fun `if no cached offerings, backend is hit when getting offerings`() {
@@ -1729,8 +1763,6 @@ class PurchasesTest {
             mockCache.cacheOfferings(any())
         }
     }
-
-
 
     @Test
     fun getOfferingsErrorIsCalledIfNoBackendResponse() {
@@ -2799,7 +2831,8 @@ class PurchasesTest {
                 appUserId,
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
-                null)
+                null
+            )
         }
     }
 
@@ -2993,8 +3026,10 @@ class PurchasesTest {
 
         Purchases.canMakePayments(
             mockContext,
-            listOf(BillingFeature.SUBSCRIPTIONS,
-                BillingFeature.SUBSCRIPTIONS_UPDATE)
+            listOf(
+                BillingFeature.SUBSCRIPTIONS,
+                BillingFeature.SUBSCRIPTIONS_UPDATE
+            )
         ) {
             receivedCanMakePayments = it
         }
@@ -3873,9 +3908,11 @@ class PurchasesTest {
         val activeUnspecifiedPurchase = unspecifiedPurchase.toStoreTransaction(ProductType.SUBS, null)
 
         mockSuccessfulQueryPurchases(
-            queriedSUBS = mapOf(purchasedPurchase.purchaseToken.sha1() to activePurchasedPurchase,
+            queriedSUBS = mapOf(
+                purchasedPurchase.purchaseToken.sha1() to activePurchasedPurchase,
                 pendingPurchase.purchaseToken.sha1() to activePendingPurchase,
-                unspecifiedPurchase.purchaseToken.sha1() to activeUnspecifiedPurchase),
+                unspecifiedPurchase.purchaseToken.sha1() to activeUnspecifiedPurchase
+            ),
             queriedINAPP = emptyMap(),
             notInCache = listOf(activePurchasedPurchase, activePendingPurchase, activeUnspecifiedPurchase)
         )
@@ -4112,7 +4149,7 @@ class PurchasesTest {
             every {
                 retrieveCustomerInfo(any(), any(), false, any())
             } answers {
-                val callback  = arg<ReceiveCustomerInfoCallback?>(3)
+                val callback = arg<ReceiveCustomerInfoCallback?>(3)
                 if (errorGettingCustomerInfo == null) {
                     callback?.onReceived(mockInfo)
                 } else {
