@@ -110,6 +110,12 @@ jobs:
       - run:
           name: Detekt
           command: ./gradlew detektAll
+      - run:
+          name: Kover HTML
+          command: ./gradlew koverMergedHtmlReport
+      - run:
+          name: Kover XML
+          command: ./gradlew koverMergedXmlReport
       - android/save-build-cache
       - store_artifacts:
           path: build/reports
