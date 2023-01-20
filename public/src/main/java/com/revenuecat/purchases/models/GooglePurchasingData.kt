@@ -1,10 +1,9 @@
-package com.revenuecat.purchases.google
+package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.PurchasingData
 
-internal sealed class GooglePurchasingData : PurchasingData {
+sealed class GooglePurchasingData : PurchasingData {
     data class InAppProduct(
         override val productId: String,
         val productDetails: ProductDetails

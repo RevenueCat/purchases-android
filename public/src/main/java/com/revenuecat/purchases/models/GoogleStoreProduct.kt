@@ -1,12 +1,8 @@
-package com.revenuecat.purchases.google
+package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.models.PurchasingData
-import com.revenuecat.purchases.models.PurchaseOption
-import com.revenuecat.purchases.models.StoreProduct
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
@@ -28,7 +24,7 @@ data class GoogleStoreProduct(
         get() = if (type == ProductType.SUBS && defaultOption != null) {
             defaultOption.purchasingData
         } else {
-            com.revenuecat.purchases.google.GooglePurchasingData.InAppProduct(
+            GooglePurchasingData.InAppProduct(
                 productId,
                 productDetails
             )

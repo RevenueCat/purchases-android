@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.models.GooglePurchaseOption
+import com.revenuecat.purchases.models.GooglePurchasingData
 
 fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(
     productId: String,

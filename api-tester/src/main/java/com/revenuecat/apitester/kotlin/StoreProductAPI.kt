@@ -2,12 +2,12 @@ package com.revenuecat.apitester.kotlin
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.google.GooglePurchaseOption
-import com.revenuecat.purchases.google.GoogleStoreProduct
+import com.revenuecat.purchases.models.GooglePurchaseOption
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.google.googleProduct
+import com.revenuecat.purchases.models.googleProduct
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class StoreProductAPI {
