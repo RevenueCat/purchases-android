@@ -400,6 +400,7 @@ class Purchases internal constructor(
     ) {
         startProductChange(
             activity,
+            // TODOBC5 Move this logic to StoreProduct
             storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
             null,
             upgradeInfo,
@@ -420,6 +421,7 @@ class Purchases internal constructor(
     ) {
         startPurchase(
             activity,
+            // TODOBC5 Move this logic to StoreProduct
             storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
             null,
             callback
@@ -484,6 +486,7 @@ class Purchases internal constructor(
     ) {
         startProductChange(
             activity,
+            // TODOBC5 Move this logic to StoreProduct
             packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo,
@@ -504,6 +507,7 @@ class Purchases internal constructor(
     ) {
         startPurchase(
             activity,
+            // TODOBC5 Move this logic to StoreProduct
             packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             listener
