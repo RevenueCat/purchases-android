@@ -152,7 +152,7 @@ fun Purchases.purchaseProductWith(
  * Purchase a subscription [StoreProduct]'s [PurchaseOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
- * @param [purchaseOption] Your choice of purchase options available for the subscription StoreProduct
+ * @param [purchaseOption] Your choice of purchase options available for a subscription StoreProduct
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
  */
@@ -173,7 +173,7 @@ fun Purchases.purchaseSubscriptionOptionWith(
 /**
  * Purchase a subscription [StoreProduct]'s [PurchaseOption], upgrading from an old product.
  * @param [activity] Current activity
- * @param [purchaseOption] Your choice of purchase options available for the subscription StoreProduct
+ * @param [purchaseOption] Your choice of purchase options available for a subscription StoreProduct
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed

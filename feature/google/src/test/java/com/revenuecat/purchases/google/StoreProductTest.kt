@@ -37,7 +37,6 @@ class StoreProductTest {
                 billingCycleCount = 0
             )),
             tags = emptyList(),
-            token = "mock-token",
             purchasingData = GooglePurchasingData.Subscription(
                 productId = "product_id",
                 productDetails = productDetails,
@@ -56,7 +55,6 @@ class StoreProductTest {
                 billingCycleCount = 0
             )),
             tags = emptyList(),
-            token = "mock-token",
             purchasingData = GooglePurchasingData.Subscription(
                 productId = "product_id",
                 productDetails = productDetails,
@@ -117,7 +115,6 @@ class StoreProductTest {
                 billingCycleCount = 0
             )),
             tags = emptyList(),
-            token = "mock-token",
             purchasingData = GooglePurchasingData.Subscription(
                 productId = "product_id",
                 productDetails = productDetails,
@@ -136,7 +133,6 @@ class StoreProductTest {
                 billingCycleCount = 0
             )),
             tags = emptyList(),
-            token = "mock-token",
             purchasingData = GooglePurchasingData.Subscription(
                 productId = "product_id",
                 productDetails = productDetails,

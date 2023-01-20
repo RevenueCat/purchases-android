@@ -15,7 +15,7 @@ fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(
         offerToken
     )
 
-    return GooglePurchaseOption(purchaseOptionId, pricingPhases, offerTags, offerToken, purchaseInfo)
+    return GooglePurchaseOption(purchaseOptionId, pricingPhases, offerTags, purchaseInfo)
 }
 
 private val ProductDetails.SubscriptionOfferDetails.purchaseOptionId

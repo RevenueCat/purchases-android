@@ -15,9 +15,4 @@ final class PurchaseOptionAPI {
         Boolean isBasePlan = purchaseOption.isBasePlan();
     }
 
-    static void checkGooglePurchaseOption(GooglePurchaseOption googlePurchaseOption) {
-        checkPurchaseOption(googlePurchaseOption);
-        String token = googlePurchaseOption.getToken();
-    }
-
 }

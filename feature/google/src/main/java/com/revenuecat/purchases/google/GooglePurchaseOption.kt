@@ -16,10 +16,5 @@ data class GooglePurchaseOption(
     override val pricingPhases: List<PricingPhase>,
     override val tags: List<String>,
 
-    /**
-     * Token used to purchase
-     */
-    val token: String,
-
     override val purchasingData: @RawValue PurchasingData
 ) : PurchaseOption, Parcelable

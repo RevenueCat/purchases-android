@@ -66,5 +66,3 @@ interface StoreProduct : Parcelable {
     )
     val sku: String
 }
-
-internal fun StoreProduct.getPurchaseInfo2() = Unit

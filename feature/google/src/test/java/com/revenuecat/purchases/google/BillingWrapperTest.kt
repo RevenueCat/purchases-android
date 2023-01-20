@@ -692,7 +692,7 @@ class BillingWrapperTest {
             override val purchaseOptions: List<PurchaseOption>
                 get() = listOf(defaultOption)
             override val defaultOption: PurchaseOption
-                get() = GooglePurchaseOption("purchaseOption", emptyList(), emptyList(), "fake-token", purchasingInfo)
+                get() = GooglePurchaseOption("purchaseOption", emptyList(), emptyList(), purchasingInfo)
             override val purchasingData: PurchasingData
                 get() = purchasingInfo
             override val sku: String

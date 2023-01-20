@@ -13,6 +13,7 @@ import java.util.List;
 final class StoreTransactionAPI {
     static void check(final StoreTransaction transaction) {
         final String orderId = transaction.getOrderId();
+        final List<String> skus = transaction.getSkus();
         final List<String> productIds = transaction.getProductIds();
         final ProductType type = transaction.getType();
         final long purchaseTime = transaction.getPurchaseTime();

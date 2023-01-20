@@ -201,13 +201,13 @@ class BillingWrapper(
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     ) {
-        val googlePurchaseInfo = purchasingData as? GooglePurchasingData
-        if (googlePurchaseInfo == null) {
+        val googlePurchasingData = purchasingData as? GooglePurchasingData
+        if (googlePurchasingData == null) {
             val error = PurchasesError(
                 PurchasesErrorCode.UnknownError,
                 PurchaseStrings.INVALID_PURCHASE_TYPE.format(
                     "Play",
-                    "GooglePurchaseInfo"
+                    "GooglePurchasingData"
                 )
             )
             errorLog(error)
@@ -215,28 +215,28 @@ class BillingWrapper(
             return
         }
 
-        val purchaseOptionId = when (googlePurchaseInfo) {
+        val purchaseOptionId = when (googlePurchasingData) {
             is GooglePurchasingData.InAppProduct -> {
                 null
             }
             is GooglePurchasingData.Subscription -> {
-                googlePurchaseInfo.optionId
+                googlePurchasingData.optionId
             }
         }
 
         if (replaceProductInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
-                    .format(replaceProductInfo.oldPurchase.productIds[0], googlePurchaseInfo.productId)
+                    .format(replaceProductInfo.oldPurchase.productIds[0], googlePurchasingData.productId)
             )
         } else {
-            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(googlePurchaseInfo.productId))
+            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(googlePurchasingData.productId))
         }
 
         synchronized(this@BillingWrapper) {
-            productTypes[googlePurchaseInfo.productId] = googlePurchaseInfo.productType
-            presentedOfferingsByProductIdentifier[googlePurchaseInfo.productId] = presentedOfferingIdentifier
-            purchaseOptionSelectedByProductIdentifier[googlePurchaseInfo.productId] = purchaseOptionId
+            productTypes[googlePurchasingData.productId] = googlePurchasingData.productType
+            presentedOfferingsByProductIdentifier[googlePurchasingData.productId] = presentedOfferingIdentifier
+            purchaseOptionSelectedByProductIdentifier[googlePurchasingData.productId] = purchaseOptionId
         }
         executeRequestOnUIThread {
             val result = buildPurchaseParams(
