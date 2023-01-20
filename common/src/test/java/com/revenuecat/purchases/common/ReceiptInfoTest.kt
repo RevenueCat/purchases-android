@@ -12,7 +12,7 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.stubPurchaseOption
+import com.revenuecat.purchases.utils.stubSubscriptionOption
 import com.revenuecat.purchases.utils.stubStoreProduct
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -34,7 +34,7 @@ class ReceiptInfoTest {
     fun `ReceiptInfo defaults price and currency from a INAPP StoreProduct`() {
         val mockStoreTransaction = makeMockStoreTransaction(
             purchaseState = PurchaseState.PURCHASED,
-            purchaseOptionId = null
+            subscriptionOptionId = null
         )
         val mockStoreProduct = stubStoreProduct(
             productId = productIdentifier,
@@ -51,7 +51,7 @@ class ReceiptInfoTest {
             productIDs = mockStoreTransaction.productIds,
             offeringIdentifier = mockStoreTransaction.presentedOfferingIdentifier,
             storeProduct = mockStoreProduct,
-            purchaseOptionId = mockStoreTransaction.subscriptionOptionId
+            subscriptionOptionId = mockStoreTransaction.subscriptionOptionId
         )
 
         assertThat(receiptInfo.price).isEqualTo(0.99)
@@ -61,27 +61,27 @@ class ReceiptInfoTest {
     }
 
     @Test
-    fun `ReceiptInfo sets duration and pricingPhases from a StoreProduct with a subscription period and purchase options`() {
-        val purchaseOptionId = "option-id"
+    fun `ReceiptInfo sets duration and pricingPhases from a StoreProduct with a subscription period and subscription options`() {
+        val subscriptionOptionId = "option-id"
 
         val mockStoreTransaction = makeMockStoreTransaction(
             purchaseState = PurchaseState.PURCHASED,
-            purchaseOptionId = purchaseOptionId
+            subscriptionOptionId = subscriptionOptionId
         )
 
-        val purchaseOption = stubPurchaseOption(purchaseOptionId, productIdentifier)
+        val subscriptionOption = stubSubscriptionOption(subscriptionOptionId, productIdentifier)
 
         val mockStoreProduct = stubStoreProduct(
             productId = productIdentifier,
-            defaultOption = purchaseOption,
-            subscriptionOptions = listOf(purchaseOption)
+            defaultOption = subscriptionOption,
+            subscriptionOptions = listOf(subscriptionOption)
         )
 
         val receiptInfo = ReceiptInfo(
             productIDs = mockStoreTransaction.productIds,
             offeringIdentifier = mockStoreTransaction.presentedOfferingIdentifier,
             storeProduct = mockStoreProduct,
-            purchaseOptionId = mockStoreTransaction.subscriptionOptionId
+            subscriptionOptionId = mockStoreTransaction.subscriptionOptionId
         )
 
         assertThat(receiptInfo.price).isNull()
@@ -107,7 +107,7 @@ class ReceiptInfoTest {
         assertThat(receiptInfo.pricingPhases).isNull()
     }
 
-    private fun makeMockStoreTransaction(purchaseState: PurchaseState, purchaseOptionId: String?): StoreTransaction {
+    private fun makeMockStoreTransaction(purchaseState: PurchaseState, subscriptionOptionId: String?): StoreTransaction {
         return StoreTransaction(
             orderId = mockGooglePurchase.orderId,
             productIds =  mockGooglePurchase.products,
@@ -122,7 +122,7 @@ class ReceiptInfoTest {
             storeUserID = null,
             purchaseType = PurchaseType.GOOGLE_PURCHASE,
             marketplace = null,
-            subscriptionOptionId = purchaseOptionId
+            subscriptionOptionId = subscriptionOptionId
         )
     }
 }

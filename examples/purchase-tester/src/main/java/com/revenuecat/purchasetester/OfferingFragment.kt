@@ -122,7 +122,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    override fun onPurchaseOptionClicked(
+    override fun onSubscriptionOptionClicked(
         cardView: View,
         subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean
@@ -132,11 +132,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (isUpgrade) {
             promptForUpgradeInfo { upgradeInfo ->
                 upgradeInfo?.let {
-                    startPurchaseOption(subscriptionOption, upgradeInfo)
+                    startSubscriptionOption(subscriptionOption, upgradeInfo)
                 }
             }
         } else {
-            startPurchaseOption(subscriptionOption, null)
+            startSubscriptionOption(subscriptionOption, null)
         }
     }
 
@@ -178,7 +178,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun startPurchaseOption(
+    private fun startSubscriptionOption(
         subscriptionOption: SubscriptionOption,
         upgradeInfo: UpgradeInfo?
     ) {

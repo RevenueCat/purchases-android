@@ -4,7 +4,7 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.GooglePurchasingData
 
-fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(
+fun ProductDetails.SubscriptionOfferDetails.toSubscriptionOption(
     productId: String,
     productDetails: ProductDetails
 ): GoogleSubscriptionOption {
@@ -13,12 +13,12 @@ fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(
     val purchaseInfo = GooglePurchasingData.Subscription(
         productId,
         productDetails,
-        purchaseOptionId,
+        subscriptionOptionId,
         offerToken
     )
 
-    return GoogleSubscriptionOption(purchaseOptionId, pricingPhases, offerTags, purchaseInfo)
+    return GoogleSubscriptionOption(subscriptionOptionId, pricingPhases, offerTags, purchaseInfo)
 }
 
-private val ProductDetails.SubscriptionOfferDetails.purchaseOptionId
+private val ProductDetails.SubscriptionOfferDetails.subscriptionOptionId
     get() = basePlanId + if (offerId.isNullOrBlank()) "" else ":$offerId"

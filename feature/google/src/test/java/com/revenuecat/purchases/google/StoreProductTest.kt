@@ -29,7 +29,7 @@ class StoreProductTest {
             currencyCode = "USD"
         )
 
-        val purchaseOption1 = GoogleSubscriptionOption(
+        val subscriptionOption1 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
@@ -47,7 +47,7 @@ class StoreProductTest {
                 token = "mock-token"
             )
         )
-        val purchaseOption2 = GoogleSubscriptionOption(
+        val subscriptionOption2 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
@@ -73,7 +73,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
-            subscriptionOptions = listOf(purchaseOption1),
+            subscriptionOptions = listOf(subscriptionOption1),
             defaultOption = null,
             productDetails = productDetails
         )
@@ -85,7 +85,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
-            subscriptionOptions = listOf(purchaseOption2),
+            subscriptionOptions = listOf(subscriptionOption2),
             defaultOption = null,
             productDetails = productDetails
         )
@@ -107,7 +107,7 @@ class StoreProductTest {
             currencyCode = "USD"
         )
 
-        val purchaseOption1 = GoogleSubscriptionOption(
+        val subscriptionOption1 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
@@ -125,7 +125,7 @@ class StoreProductTest {
                 token = "mock-token"
             )
         )
-        val purchaseOption2 = GoogleSubscriptionOption(
+        val subscriptionOption2 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
@@ -151,7 +151,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
-            subscriptionOptions = listOf(purchaseOption1),
+            subscriptionOptions = listOf(subscriptionOption1),
             defaultOption = null,
             productDetails = productDetails
         )
@@ -163,7 +163,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
-            subscriptionOptions = listOf(purchaseOption2),
+            subscriptionOptions = listOf(subscriptionOption2),
             defaultOption = null,
             productDetails = productDetails
         )

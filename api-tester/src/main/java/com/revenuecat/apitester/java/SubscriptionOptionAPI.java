@@ -6,9 +6,9 @@ import com.revenuecat.purchases.models.SubscriptionOption;
 import java.util.List;
 
 @SuppressWarnings({"unused"})
-final class PurchaseOptionAPI {
+final class SubscriptionOptionAPI {
 
-    static void checkPurchaseOption(SubscriptionOption subscriptionOption) {
+    static void checkSubscriptionOption(SubscriptionOption subscriptionOption) {
         List<PricingPhase> pricingPhases = subscriptionOption.getPricingPhases();
         List<String> tags = subscriptionOption.getTags();
         Boolean isBasePlan = subscriptionOption.isBasePlan();

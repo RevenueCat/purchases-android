@@ -431,7 +431,7 @@ class Purchases internal constructor(
     /**
      * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
      * @param [activity] Current activity
-     * @param [subscriptionOption] Your choice of purchase options available for a subscription StoreProduct
+     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
@@ -454,7 +454,7 @@ class Purchases internal constructor(
     /**
      * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
      * @param [activity] Current activity
-     * @param [subscriptionOption] Your choice of purchase options available for a subscription StoreProduct
+     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
      * @param [callback] The PurchaseCallback that will be called when purchase completes
      */
     fun purchaseSubscriptionOption(
@@ -1272,7 +1272,7 @@ class Purchases internal constructor(
                 productIDs = purchase.productIds,
                 offeringIdentifier = purchase.presentedOfferingIdentifier,
                 storeProduct = storeProduct,
-                purchaseOptionId = purchase.subscriptionOptionId
+                subscriptionOptionId = purchase.subscriptionOptionId
             )
             backend.postReceiptData(
                 purchaseToken = purchase.purchaseToken,

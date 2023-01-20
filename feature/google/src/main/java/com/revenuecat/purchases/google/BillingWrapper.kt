@@ -69,7 +69,7 @@ class BillingWrapper(
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
-    private val purchaseOptionSelectedByProductIdentifier = mutableMapOf<String, String?>()
+    private val subscriptionOptionSelectedByProductIdentifier = mutableMapOf<String, String?>()
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
@@ -216,7 +216,7 @@ class BillingWrapper(
             return
         }
 
-        val purchaseOptionId = when (googlePurchasingData) {
+        val subscriptionOptionId = when (googlePurchasingData) {
             is GooglePurchasingData.InAppProduct -> {
                 null
             }
@@ -237,7 +237,7 @@ class BillingWrapper(
         synchronized(this@BillingWrapper) {
             productTypes[googlePurchasingData.productId] = googlePurchasingData.productType
             presentedOfferingsByProductIdentifier[googlePurchasingData.productId] = presentedOfferingIdentifier
-            purchaseOptionSelectedByProductIdentifier[googlePurchasingData.productId] = purchaseOptionId
+            subscriptionOptionSelectedByProductIdentifier[googlePurchasingData.productId] = subscriptionOptionId
         }
         executeRequestOnUIThread {
             val result = buildPurchaseParams(
@@ -483,7 +483,7 @@ class BillingWrapper(
             hash to purchase.toStoreTransaction(
                 productType.toRevenueCatProductType(),
                 presentedOfferingIdentifier = null,
-                purchaseOptionId = null
+                subscriptionOptionId = null
             )
         }
     }
@@ -722,13 +722,13 @@ class BillingWrapper(
 
         synchronized(this@BillingWrapper) {
             val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstProductId]
-            val purchaseOptionId = purchaseOptionSelectedByProductIdentifier[purchase.firstProductId]
+            val subscriptionOptionId = subscriptionOptionSelectedByProductIdentifier[purchase.firstProductId]
             productTypes[purchase.firstProductId]?.let { productType ->
                 completion(
                     purchase.toStoreTransaction(
                         productType,
                         presentedOffering,
-                        purchaseOptionId
+                        subscriptionOptionId
                     )
                 )
                 return

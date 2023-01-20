@@ -4,9 +4,8 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.SubscriptionOption
 
 @Suppress("unused", "UNUSED_VARIABLE", "RemoveExplicitTypeArguments")
-private class PurchaseOptionApi {
-
-    fun checkPurchaseOption(subscriptionOption: SubscriptionOption) {
+private class SubscriptionOptionAPI {
+    fun checkSubscriptionOption(subscriptionOption: SubscriptionOption) {
         val phases: List<PricingPhase> = subscriptionOption.pricingPhases
         val tags: List<String> = subscriptionOption.tags
         val isBasePlan: Boolean = subscriptionOption.isBasePlan

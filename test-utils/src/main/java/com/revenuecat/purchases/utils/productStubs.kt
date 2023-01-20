@@ -22,7 +22,7 @@ private data class StubPurchasingData(
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
-    defaultOption: SubscriptionOption? = stubPurchaseOption("monthly_base_plan", productId, "P1M",),
+    defaultOption: SubscriptionOption? = stubSubscriptionOption("monthly_base_plan", productId, "P1M",),
     subscriptionOptions: List<SubscriptionOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
     oneTimeProductPrice: Price? = null
 ): StoreProduct = object : StoreProduct {
@@ -73,7 +73,7 @@ fun stubINAPPStoreProduct(
     override val subscriptionOptions: List<SubscriptionOption>
         get() = listOf(defaultOption)
     override val defaultOption: SubscriptionOption
-        get() = stubPurchaseOption(productId, productId)
+        get() = stubSubscriptionOption(productId, productId)
     override val purchasingData: PurchasingData
         get() = StubPurchasingData(
             productId = productId
@@ -87,7 +87,7 @@ fun stubINAPPStoreProduct(
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
-fun stubPurchaseOption(
+fun stubSubscriptionOption(
     id: String,
     productId: String,
     duration: String = "P1M",

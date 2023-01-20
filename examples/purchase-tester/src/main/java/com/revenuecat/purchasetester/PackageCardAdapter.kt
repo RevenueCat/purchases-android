@@ -62,13 +62,13 @@ class PackageCardAdapter(
 
             binding.optionBuyButton.setOnClickListener {
                 val errorStartingPurchase = validateStartPurchase(product)
-                val purchaseOption = getSelectedPurchaseOption()
-                if (purchaseOption == null) {
-                    showErrorMessage("Select a purchase option")
+                val subscriptionOption = getSelectedSubscriptionOption()
+                if (subscriptionOption == null) {
+                    showErrorMessage("Select a subscription option")
                 } else if (errorStartingPurchase == null) {
-                    listener.onPurchaseOptionClicked(
+                    listener.onSubscriptionOptionClicked(
                         binding.root,
-                        purchaseOption,
+                        subscriptionOption,
                         binding.isUpgradeCheckbox.isChecked
                     )
                 } else {
@@ -84,7 +84,7 @@ class PackageCardAdapter(
 
             binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString() ?: "TODO Amazon"
 
-            bindPurchaseOptions(product)
+            bindSubscriptionOptions(product)
 
             binding.root.setOnClickListener {
                 with(binding.packageDetailsContainer) {
@@ -93,22 +93,22 @@ class PackageCardAdapter(
             }
         }
 
-        private fun bindPurchaseOptions(product: StoreProduct) {
-            binding.packagePurchaseOptionGroup.removeAllViews()
-            val numberOfPurchaseOptions = product.subscriptionOptions.size
-            product.subscriptionOptions.forEach { purchaseOption ->
+        private fun bindSubscriptionOptions(product: StoreProduct) {
+            binding.packageSubscriptionOptionGroup.removeAllViews()
+            val numberOfSubscriptionOptions = product.subscriptionOptions.size
+            product.subscriptionOptions.forEach { subscriptionOption ->
                 val radioButton = RadioButton(binding.root.context).apply {
-                    text = purchaseOption.toButtonString()
-                    tag = purchaseOption
+                    text = subscriptionOption.toButtonString()
+                    tag = subscriptionOption
                 }
-                binding.packagePurchaseOptionGroup.addView(radioButton)
-                if (numberOfPurchaseOptions == 1) binding.packagePurchaseOptionGroup.check(radioButton.id)
+                binding.packageSubscriptionOptionGroup.addView(radioButton)
+                if (numberOfSubscriptionOptions == 1) binding.packageSubscriptionOptionGroup.check(radioButton.id)
             }
         }
 
-        private fun getSelectedPurchaseOption(): SubscriptionOption? {
-            val selectedButtonId = binding.packagePurchaseOptionGroup.checkedRadioButtonId
-            return binding.packagePurchaseOptionGroup.children
+        private fun getSelectedSubscriptionOption(): SubscriptionOption? {
+            val selectedButtonId = binding.packageSubscriptionOptionGroup.checkedRadioButtonId
+            return binding.packageSubscriptionOptionGroup.children
                 .filter { it.id == selectedButtonId }
                 .firstOrNull()
                 ?.tag as? SubscriptionOption
@@ -116,8 +116,8 @@ class PackageCardAdapter(
 
         private fun validateStartPurchase(product: StoreProduct): String? {
             if (product.type == ProductType.SUBS &&
-                binding.packagePurchaseOptionGroup.checkedRadioButtonId == nothingCheckedIndex) {
-                return "Please choose purchase option first"
+                binding.packageSubscriptionOptionGroup.checkedRadioButtonId == nothingCheckedIndex) {
+                return "Please choose subscription option first"
             }
             return null
         }
@@ -141,7 +141,7 @@ class PackageCardAdapter(
             currentProduct: StoreProduct,
             isUpgrade: Boolean
         )
-        fun onPurchaseOptionClicked(
+        fun onSubscriptionOptionClicked(
             cardView: View,
             subscriptionOption: SubscriptionOption,
             isUpgrade: Boolean

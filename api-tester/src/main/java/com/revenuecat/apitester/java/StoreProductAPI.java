@@ -39,7 +39,7 @@ final class StoreProductAPI {
     static void checkGoogleStoreProduct(GoogleStoreProduct googleStoreProduct) {
         check(googleStoreProduct);
         ProductDetails productDetails = googleStoreProduct.getProductDetails();
-        List<GoogleSubscriptionOption> purchaseOptions = googleStoreProduct.getSubscriptionOptions();
+        List<GoogleSubscriptionOption> subscriptionOptions = googleStoreProduct.getSubscriptionOptions();
         GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
                 googleStoreProduct.getProductId(),
                 googleStoreProduct.getType(),

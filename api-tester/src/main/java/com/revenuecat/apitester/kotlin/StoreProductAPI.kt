@@ -38,7 +38,7 @@ private class StoreProductAPI {
     fun checkGoogleStoreProduct(googleStoreProduct: GoogleStoreProduct) {
         check(googleStoreProduct)
         val productDetails: ProductDetails = googleStoreProduct.productDetails
-        val purchaseOptions: List<GoogleSubscriptionOption> = googleStoreProduct.subscriptionOptions
+        val subscriptionOptions: List<GoogleSubscriptionOption> = googleStoreProduct.subscriptionOptions
         val constructedGoogleStoreProduct = GoogleStoreProduct(
             googleStoreProduct.productId,
             googleStoreProduct.type,
