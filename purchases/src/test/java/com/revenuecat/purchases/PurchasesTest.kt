@@ -461,7 +461,6 @@ class PurchasesTest {
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
@@ -487,7 +486,6 @@ class PurchasesTest {
         var callCount = 0
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
@@ -537,8 +535,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 any(),
                 any(),
-                receiptInfo.storeProduct!!,
-                any(),
+                receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
                 expectedReplaceProductInfo,
                 any()
             )
@@ -551,7 +548,6 @@ class PurchasesTest {
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            storeProduct,
             storeProduct.purchaseOptions[0]
         ) { _, _ -> }
 
@@ -559,8 +555,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+                storeProduct.purchaseOptions[0].purchasingData,
                 null,
                 null
             )
@@ -580,8 +575,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+                storeProduct.purchasingData,
                 null,
                 null
             )
@@ -601,8 +595,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+                storeProduct.purchaseOptions[0].purchasingData,
                 null,
                 stubOfferingIdentifier
             )
@@ -622,8 +615,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+                storeProduct.purchaseOptions[0].purchasingData,
                 null,
                 stubOfferingIdentifier
             )
@@ -646,9 +638,8 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
-                ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
+                storeProduct.purchaseOptions[0].purchasingData,
+            ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
                 stubOfferingIdentifier
             )
         }
@@ -766,7 +757,6 @@ class PurchasesTest {
         val storeProduct = stubStoreProduct("productId")
         purchases.purchaseSubscriptionOptionWith(
             mockk(),
-            storeProduct,
             storeProduct.purchaseOptions[0],
             onError = { error, _ ->
                 errorCalled = true
@@ -785,7 +775,6 @@ class PurchasesTest {
         val storeProduct = stubStoreProduct("productId")
         purchases.purchaseSubscriptionOptionWith(
             mockk(),
-            storeProduct,
             storeProduct.purchaseOptions[0],
             onError = { _, _ -> fail("Should be success") }) { _, _ ->
             // First one works
@@ -794,7 +783,6 @@ class PurchasesTest {
         var errorCalled: PurchasesError? = null
         purchases.purchaseSubscriptionOptionWith(
             mockk(),
-            storeProduct,
             storeProduct.purchaseOptions[0],
             onError = { error, _ ->
                 errorCalled = error
@@ -817,7 +805,6 @@ class PurchasesTest {
         var callCount = 0
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            storeProduct,
             storeProduct.purchaseOptions[0],
             onSuccess = { _, _ ->
                 callCount++
@@ -843,7 +830,6 @@ class PurchasesTest {
         val storeProduct = stubStoreProduct(productId)
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            storeProduct,
             storeProduct.purchaseOptions[0],
             onSuccess = { _, _ ->
                 callCount++
@@ -861,13 +847,11 @@ class PurchasesTest {
         val storeProduct = stubStoreProduct("productId")
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            storeProduct,
             storeProduct.purchaseOptions[0]
         ) { _, _ -> }
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            storeProduct,
             storeProduct.purchaseOptions[0]
         ) { _, _ -> }
 
@@ -899,7 +883,6 @@ class PurchasesTest {
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { purchaseError, userCancelled ->
@@ -927,7 +910,6 @@ class PurchasesTest {
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
             receiptInfo.storeProduct!!.purchaseOptions[0],
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { error, userCancelled ->
@@ -950,10 +932,11 @@ class PurchasesTest {
     fun `when purchasing a product with multiple purchase options, we choose the default`() {
         val productId = "onemonth_freetrial"
 
-        val basePlanPurchaseOption = stubPurchaseOption("base-plan-purchase-option")
+        val basePlanPurchaseOption = stubPurchaseOption("base-plan-purchase-option", productId)
         val expectedDefaultPurchaseOption = stubPurchaseOption(
             "free-trial-purchase-option",
-            pricingPhases = listOf(stubFreeTrialPricingPhase(), stubPricingPhase())
+            pricingPhases = listOf(stubFreeTrialPricingPhase(), stubPricingPhase()),
+            productId = productId
         )
         val storeProduct = stubStoreProduct(
             productId = productId,
@@ -974,8 +957,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 mockActivity,
                 appUserId,
-                storeProduct,
-                expectedDefaultPurchaseOption,
+                expectedDefaultPurchaseOption.purchasingData,
                 null,
                 null
             )
@@ -986,10 +968,11 @@ class PurchasesTest {
     fun `when purchasing a package with multiple purchase options, we choose the default`() {
         val productId = "onemonth_freetrial"
 
-        val basePlanPurchaseOption = stubPurchaseOption("base-plan-purchase-option")
+        val basePlanPurchaseOption = stubPurchaseOption("base-plan-purchase-option", productId)
         val expectedDefaultPurchaseOption = stubPurchaseOption(
             "free-trial-purchase-option",
-            pricingPhases = listOf(stubFreeTrialPricingPhase(), stubPricingPhase())
+            pricingPhases = listOf(stubFreeTrialPricingPhase(), stubPricingPhase()),
+            productId = productId
         )
         val storeProduct = stubStoreProduct(
             productId = productId,
@@ -1011,8 +994,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 mockActivity,
                 appUserId,
-                storeProduct,
-                expectedDefaultPurchaseOption,
+                expectedDefaultPurchaseOption.purchasingData,
                 null,
                 stubOfferingIdentifier
             )
@@ -1165,8 +1147,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+                storeProduct.purchaseOptions[0].purchasingData,
                 ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
                 stubOfferingIdentifier
             )
@@ -1222,8 +1203,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct,
-                storeProduct.purchaseOptions[0],
+                storeProduct.purchaseOptions[0].purchasingData,
                 ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
                 stubOfferingIdentifier
             )
@@ -4081,7 +4061,7 @@ class PurchasesTest {
     private fun mockBillingWrapper() {
         with(mockBillingAbstract) {
             every {
-                makePurchaseAsync(any(), any(), any(), any(), any(), any())
+                makePurchaseAsync(any(), any(), any(), any(), any())
             } just Runs
             every {
                 purchasesUpdatedListener = capture(capturedPurchasesUpdatedListener)

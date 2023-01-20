@@ -20,6 +20,16 @@ data class GoogleStoreProduct(
     val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable {
 
+    override val purchasingData: PurchasingData
+        get() = if (type == ProductType.SUBS && defaultOption != null) {
+            defaultOption.purchasingData
+        } else {
+            GooglePurchasingData.InAppProduct(
+                productId,
+                productDetails
+            )
+        }
+
     /**
      * The sku of the StoreProduct
      */

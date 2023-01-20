@@ -20,8 +20,14 @@ fun ProductDetails.toStoreProduct(
         title,
         description,
         offerDetails.firstOrNull { it.isBasePlan }?.subscriptionBillingPeriod,
-        offerDetails.map { it.toPurchaseOption() },
-        defaultOffer?.toPurchaseOption(),
+        offerDetails.map { it.toPurchaseOption(
+            productId,
+            this
+        ) },
+        defaultOffer?.toPurchaseOption(
+            productId,
+            this
+        ),
         this
     )
 

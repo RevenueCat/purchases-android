@@ -45,6 +45,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -399,8 +400,8 @@ class Purchases internal constructor(
     ) {
         startProductChange(
             activity,
-            storeProduct,
-            storeProduct.defaultOption,
+            // TODOBC5 Move this logic to StoreProduct
+            storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
             null,
             upgradeInfo,
             listener
@@ -418,56 +419,50 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, storeProduct, storeProduct.defaultOption, null, callback)
+        startPurchase(
+            activity,
+            // TODOBC5 Move this logic to StoreProduct
+            storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
+            null,
+            callback
+        )
     }
 
-    // TODOBC5: remove storeProduct parameter
     /**
-     * Purchases [storeProduct].
-     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
-     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [PurchaseOption].
-     *
-     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
-     *
+     * Purchase a subscription [StoreProduct]'s [PurchaseOption].
      * @param [activity] Current activity
-     * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [purchaseOption] Your choice of purchase options available for the subscription StoreProduct
+     * @param [purchaseOption] Your choice of purchase options available for a subscription StoreProduct
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
     fun purchaseSubscriptionOption(
         activity: Activity,
-        storeProduct: StoreProduct,
         purchaseOption: PurchaseOption,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
         startProductChange(
             activity,
-            storeProduct,
-            purchaseOption,
+            purchaseOption.purchasingData,
             null,
             upgradeInfo,
             listener
         )
     }
 
-    // TODOBC5: Remove storeProduct parameter
     /**
      * Purchase a subscription [StoreProduct]'s [PurchaseOption].
      * @param [activity] Current activity
-     * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [purchaseOption] Your choice of purchase options available for the subscription StoreProduct
+     * @param [purchaseOption] Your choice of purchase options available for a subscription StoreProduct
      * @param [callback] The PurchaseCallback that will be called when purchase completes
      */
     fun purchaseSubscriptionOption(
         activity: Activity,
-        storeProduct: StoreProduct,
         purchaseOption: PurchaseOption,
         callback: PurchaseCallback
     ) {
-        startPurchase(activity, storeProduct, purchaseOption, null, callback)
+        startPurchase(activity, purchaseOption.purchasingData, null, callback)
     }
 
     /**
@@ -491,8 +486,8 @@ class Purchases internal constructor(
     ) {
         startProductChange(
             activity,
-            packageToPurchase.product,
-            packageToPurchase.product.defaultOption,
+            // TODOBC5 Move this logic to StoreProduct
+            packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo,
             callback
@@ -512,8 +507,8 @@ class Purchases internal constructor(
     ) {
         startPurchase(
             activity,
-            packageToPurchase.product,
-            packageToPurchase.product.defaultOption,
+            // TODOBC5 Move this logic to StoreProduct
+            packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             listener
         )
@@ -1466,14 +1461,13 @@ class Purchases internal constructor(
 
     private fun startPurchase(
         activity: Activity,
-        storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchasingData: PurchasingData,
         presentedOfferingIdentifier: String?,
         listener: PurchaseCallback
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
-                " $storeProduct ${
+                " $purchasingData ${
                     presentedOfferingIdentifier?.let {
                         PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
                     }
@@ -1485,20 +1479,20 @@ class Purchases internal constructor(
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
-            if (!state.purchaseCallbacksByProductId.containsKey(storeProduct.productId)) {
-                val mapOfProductIdToListener = mapOf(storeProduct.productId to listener)
+            if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
+                val mapOfProductIdToListener = mapOf(purchasingData.productId to listener)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
                 )
                 userPurchasing = identityManager.currentAppUserID
             }
         }
+
         userPurchasing?.let { appUserID ->
             billing.makePurchaseAsync(
                 activity,
                 appUserID,
-                storeProduct,
-                purchaseOption,
+                purchasingData,
                 null,
                 presentedOfferingIdentifier
             )
@@ -1507,15 +1501,14 @@ class Purchases internal constructor(
 
     private fun startProductChange(
         activity: Activity,
-        storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchasingData: PurchasingData,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
-                " $storeProduct ${
+                " $purchasingData ${
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
@@ -1535,8 +1528,7 @@ class Purchases internal constructor(
         }
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
-                storeProduct,
-                purchaseOption,
+                purchasingData,
                 upgradeInfo,
                 activity,
                 appUserID,
@@ -1547,15 +1539,14 @@ class Purchases internal constructor(
     }
 
     private fun replaceOldPurchaseWithNewProduct(
-        storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchasingData: PurchasingData,
         upgradeInfo: UpgradeInfo,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
         listener: PurchaseErrorCallback
     ) {
-        if (storeProduct.type != ProductType.SUBS) {
+        if (purchasingData.productType != ProductType.SUBS) {
             dispatch {
                 listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
                     PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) }, false)
@@ -1573,8 +1564,7 @@ class Purchases internal constructor(
                 billing.makePurchaseAsync(
                     activity,
                     appUserID,
-                    storeProduct,
-                    purchaseOption,
+                    purchasingData,
                     ReplaceProductInfo(purchaseRecord, upgradeInfo.prorationMode),
                     presentedOfferingIdentifier
                 )

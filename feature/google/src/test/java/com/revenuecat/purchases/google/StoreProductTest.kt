@@ -3,6 +3,7 @@ package com.revenuecat.purchases.google
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.GooglePurchaseOption
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -39,7 +40,12 @@ class StoreProductTest {
                 billingCycleCount = 0
             )),
             tags = emptyList(),
-            token = "mock-token"
+            purchasingData = GooglePurchasingData.Subscription(
+                productId = "product_id",
+                productDetails = productDetails,
+                optionId = "purchaseOptionId",
+                token = "mock-token"
+            )
         )
         val purchaseOption2 = GooglePurchaseOption(
             id = "purchaseOptionId",
@@ -52,12 +58,17 @@ class StoreProductTest {
                 billingCycleCount = 0
             )),
             tags = emptyList(),
-            token = "mock-token"
+            purchasingData = GooglePurchasingData.Subscription(
+                productId = "product_id",
+                productDetails = productDetails,
+                optionId = "purchaseOptionId",
+                token = "mock-token"
+            )
         )
 
         val storeProduct1 = GoogleStoreProduct(
             productId = "product_id",
-            type = ProductType.INAPP,
+            type = ProductType.SUBS,
             oneTimeProductPrice = price1,
             title = "TITLE",
             description = "DESCRIPTION",
@@ -69,7 +80,7 @@ class StoreProductTest {
 
         val storeProduct2 = GoogleStoreProduct(
             productId = "product_id",
-            type = ProductType.INAPP,
+            type = ProductType.SUBS,
             oneTimeProductPrice = price2,
             title = "TITLE",
             description = "DESCRIPTION",
@@ -107,7 +118,12 @@ class StoreProductTest {
                 billingCycleCount = 0
             )),
             tags = emptyList(),
-            token = "mock-token"
+            purchasingData = GooglePurchasingData.Subscription(
+                productId = "product_id",
+                productDetails = productDetails,
+                optionId = "purchaseOptionId",
+                token = "mock-token"
+            )
         )
         val purchaseOption2 = GooglePurchaseOption(
             id = "purchaseOptionId",
@@ -120,12 +136,17 @@ class StoreProductTest {
                 billingCycleCount = 0
             )),
             tags = emptyList(),
-            token = "mock-token"
+            purchasingData = GooglePurchasingData.Subscription(
+                productId = "product_id",
+                productDetails = productDetails,
+                optionId = "purchaseOptionId",
+                token = "mock-token"
+            )
         )
 
         val storeProduct1 = GoogleStoreProduct(
             productId = "product_id",
-            type = ProductType.INAPP,
+            type = ProductType.SUBS,
             oneTimeProductPrice = price1,
             title = "TITLE",
             description = "DESCRIPTION",
@@ -137,7 +158,7 @@ class StoreProductTest {
 
         val storeProduct2 = GoogleStoreProduct(
             productId = "product_id",
-            type = ProductType.INAPP,
+            type = ProductType.SUBS,
             oneTimeProductPrice = price2,
             title = "TITLE",
             description = "DESCRIPTION",

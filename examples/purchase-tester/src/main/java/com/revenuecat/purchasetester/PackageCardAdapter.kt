@@ -10,9 +10,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
 
 class PackageCardAdapter(
@@ -45,26 +45,30 @@ class PackageCardAdapter(
             binding.isActive = activeSubscriptions.contains(product.productId)
 
             binding.packageBuyButton.setOnClickListener {
-                val errorStartingPurchase = validateStartPurchase(product)
-                if (errorStartingPurchase == null) {
-                    listener.onPurchasePackageClicked(
-                        binding.root,
-                        currentPackage,
-                        getSelectedPurchaseOption(),
-                        binding.isUpgradeCheckbox.isChecked
-                    )
-                } else {
-                    showErrorMessage(errorStartingPurchase)
-                }
+                listener.onPurchasePackageClicked(
+                    binding.root,
+                    currentPackage,
+                    binding.isUpgradeCheckbox.isChecked
+                )
             }
 
             binding.productBuyButton.setOnClickListener {
+                listener.onPurchaseProductClicked(
+                    binding.root,
+                    product,
+                    binding.isUpgradeCheckbox.isChecked
+                )
+            }
+
+            binding.optionBuyButton.setOnClickListener {
                 val errorStartingPurchase = validateStartPurchase(product)
-                if (errorStartingPurchase == null) {
-                    listener.onPurchaseProductClicked(
+                val purchaseOption = getSelectedPurchaseOption()
+                if (purchaseOption == null) {
+                    showErrorMessage("Select a purchase option")
+                } else if (errorStartingPurchase == null) {
+                    listener.onPurchaseOptionClicked(
                         binding.root,
-                        product,
-                        getSelectedPurchaseOption(),
+                        purchaseOption,
                         binding.isUpgradeCheckbox.isChecked
                     )
                 } else {
@@ -130,13 +134,16 @@ class PackageCardAdapter(
         fun onPurchasePackageClicked(
             cardView: View,
             currentPackage: Package,
-            purchaseOption: PurchaseOption?,
             isUpgrade: Boolean
         )
         fun onPurchaseProductClicked(
             cardView: View,
             currentProduct: StoreProduct,
-            purchaseOption: PurchaseOption?,
+            isUpgrade: Boolean
+        )
+        fun onPurchaseOptionClicked(
+            cardView: View,
+            purchaseOption: PurchaseOption,
             isUpgrade: Boolean
         )
     }

@@ -6,14 +6,23 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.toRecurrenceMode
 
+@SuppressWarnings("MatchingDeclarationName")
+private data class StubPurchasingData(
+    override val productId: String,
+) : PurchasingData {
+    override val productType: ProductType
+        get() = ProductType.SUBS
+}
+
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
-    defaultOption: PurchaseOption? = stubPurchaseOption("monthly_base_plan", "P1M"),
+    defaultOption: PurchaseOption? = stubPurchaseOption("monthly_base_plan", productId, "P1M",),
     purchaseOptions: List<PurchaseOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
     oneTimeProductPrice: Price? = null
 ): StoreProduct = object : StoreProduct {
@@ -33,6 +42,10 @@ fun stubStoreProduct(
         get() = purchaseOptions
     override val defaultOption: PurchaseOption?
         get() = defaultOption
+    override val purchasingData: PurchasingData
+        get() = StubPurchasingData(
+            productId = productId
+        )
     override val sku: String
         get() = productId
 
@@ -60,7 +73,11 @@ fun stubINAPPStoreProduct(
     override val purchaseOptions: List<PurchaseOption>
         get() = listOf(defaultOption)
     override val defaultOption: PurchaseOption
-        get() = stubPurchaseOption(productId)
+        get() = stubPurchaseOption(productId, productId)
+    override val purchasingData: PurchasingData
+        get() = StubPurchasingData(
+            productId = productId
+        )
     override val sku: String
         get() = productId
 
@@ -72,6 +89,7 @@ fun stubINAPPStoreProduct(
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubPurchaseOption(
     id: String,
+    productId: String,
     duration: String = "P1M",
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration))
 ): PurchaseOption = object : PurchaseOption {
@@ -81,6 +99,10 @@ fun stubPurchaseOption(
         get() = pricingPhases
     override val tags: List<String>
         get() = listOf("tag")
+    override val purchasingData: PurchasingData
+        get() = StubPurchasingData(
+            productId = productId
+        )
 
     override fun describeContents(): Int = 0
     override fun writeToParcel(dest: Parcel?, flags: Int) {}
