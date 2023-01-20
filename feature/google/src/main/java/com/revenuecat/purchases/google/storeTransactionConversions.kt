@@ -26,7 +26,7 @@ fun Purchase.toStoreTransaction(
     storeUserID = null,
     purchaseType = PurchaseType.GOOGLE_PURCHASE,
     marketplace = null,
-    purchaseOptionId = purchaseOptionId
+    subscriptionOptionId = purchaseOptionId
 )
 
 val StoreTransaction.originalGooglePurchase: Purchase?
@@ -52,6 +52,6 @@ fun PurchaseHistoryRecord.toStoreTransaction(
         storeUserID = null,
         purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE,
         marketplace = null,
-        purchaseOptionId = null
+        subscriptionOptionId = null
     )
 }

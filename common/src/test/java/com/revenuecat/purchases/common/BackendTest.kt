@@ -280,7 +280,7 @@ class BackendTest {
 
     @Test
     fun `postReceipt passes pricing phases as maps in body`() {
-        val purchaseOption = storeProduct.purchaseOptions[0]
+        val purchaseOption = storeProduct.subscriptionOptions[0]
         val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
             storeProduct = storeProduct,
@@ -591,7 +591,7 @@ class BackendTest {
             storeProduct = storeProduct
         )
 
-        val originalPurchaseOption = storeProduct.purchaseOptions[0]
+        val originalPurchaseOption = storeProduct.subscriptionOptions[0]
         val originalDuration = originalPurchaseOption.pricingPhases[0].billingPeriod
         val purchaseOption = stubPurchaseOption(originalPurchaseOption.id, originalDuration + "a")
         val storeProduct2 = stubStoreProduct(

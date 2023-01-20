@@ -1,13 +1,13 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.ProductDetails
-import com.revenuecat.purchases.models.GooglePurchaseOption
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.GooglePurchasingData
 
 fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(
     productId: String,
     productDetails: ProductDetails
-): GooglePurchaseOption {
+): GoogleSubscriptionOption {
     val pricingPhases = pricingPhases.pricingPhaseList.map { it.toRevenueCatPricingPhase() }
 
     val purchaseInfo = GooglePurchasingData.Subscription(
@@ -17,7 +17,7 @@ fun ProductDetails.SubscriptionOfferDetails.toPurchaseOption(
         offerToken
     )
 
-    return GooglePurchaseOption(purchaseOptionId, pricingPhases, offerTags, purchaseInfo)
+    return GoogleSubscriptionOption(purchaseOptionId, pricingPhases, offerTags, purchaseInfo)
 }
 
 private val ProductDetails.SubscriptionOfferDetails.purchaseOptionId

@@ -2,10 +2,10 @@ package com.revenuecat.apitester.kotlin
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GooglePurchaseOption
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 
@@ -20,8 +20,8 @@ private class StoreProductAPI {
             val title: String = title
             val description: String = description
             val subscriptionPeriod: String? = subscriptionPeriod
-            val purchaseOptions: List<PurchaseOption> = purchaseOptions
-            val defaultOption: PurchaseOption? = defaultOption
+            val subscriptionOptions: List<SubscriptionOption> = subscriptionOptions
+            val defaultOption: SubscriptionOption? = defaultOption
             val underlyingProduct: GoogleStoreProduct? = googleProduct
         }
     }
@@ -38,7 +38,7 @@ private class StoreProductAPI {
     fun checkGoogleStoreProduct(googleStoreProduct: GoogleStoreProduct) {
         check(googleStoreProduct)
         val productDetails: ProductDetails = googleStoreProduct.productDetails
-        val purchaseOptions: List<GooglePurchaseOption> = googleStoreProduct.purchaseOptions
+        val purchaseOptions: List<GoogleSubscriptionOption> = googleStoreProduct.subscriptionOptions
         val constructedGoogleStoreProduct = GoogleStoreProduct(
             googleStoreProduct.productId,
             googleStoreProduct.type,
@@ -46,7 +46,7 @@ private class StoreProductAPI {
             googleStoreProduct.title,
             googleStoreProduct.description,
             googleStoreProduct.subscriptionPeriod,
-            googleStoreProduct.purchaseOptions,
+            googleStoreProduct.subscriptionOptions,
             googleStoreProduct.defaultOption,
             googleStoreProduct.productDetails
         )

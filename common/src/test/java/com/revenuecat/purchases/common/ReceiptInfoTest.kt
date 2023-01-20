@@ -6,19 +6,12 @@
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.ProductDetails
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.utils.mockPricingPhase
 import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.stubINAPPStoreProduct
-import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubPurchaseOption
 import com.revenuecat.purchases.utils.stubStoreProduct
 import org.assertj.core.api.Assertions.assertThat
@@ -46,7 +39,7 @@ class ReceiptInfoTest {
         val mockStoreProduct = stubStoreProduct(
             productId = productIdentifier,
             defaultOption = null,
-            purchaseOptions = emptyList(),
+            subscriptionOptions = emptyList(),
             oneTimeProductPrice = Price(
                 formattedPrice = "$0.99",
                 priceAmountMicros = 990000,
@@ -58,7 +51,7 @@ class ReceiptInfoTest {
             productIDs = mockStoreTransaction.productIds,
             offeringIdentifier = mockStoreTransaction.presentedOfferingIdentifier,
             storeProduct = mockStoreProduct,
-            purchaseOptionId = mockStoreTransaction.purchaseOptionId
+            purchaseOptionId = mockStoreTransaction.subscriptionOptionId
         )
 
         assertThat(receiptInfo.price).isEqualTo(0.99)
@@ -81,14 +74,14 @@ class ReceiptInfoTest {
         val mockStoreProduct = stubStoreProduct(
             productId = productIdentifier,
             defaultOption = purchaseOption,
-            purchaseOptions = listOf(purchaseOption)
+            subscriptionOptions = listOf(purchaseOption)
         )
 
         val receiptInfo = ReceiptInfo(
             productIDs = mockStoreTransaction.productIds,
             offeringIdentifier = mockStoreTransaction.presentedOfferingIdentifier,
             storeProduct = mockStoreProduct,
-            purchaseOptionId = mockStoreTransaction.purchaseOptionId
+            purchaseOptionId = mockStoreTransaction.subscriptionOptionId
         )
 
         assertThat(receiptInfo.price).isNull()
@@ -129,7 +122,7 @@ class ReceiptInfoTest {
             storeUserID = null,
             purchaseType = PurchaseType.GOOGLE_PURCHASE,
             marketplace = null,
-            purchaseOptionId = purchaseOptionId
+            subscriptionOptionId = purchaseOptionId
         )
     }
 }

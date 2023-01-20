@@ -1,14 +1,14 @@
 package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.SubscriptionOption
 
 @Suppress("unused", "UNUSED_VARIABLE", "RemoveExplicitTypeArguments")
 private class PurchaseOptionApi {
 
-    fun checkPurchaseOption(purchaseOption: PurchaseOption) {
-        val phases: List<PricingPhase> = purchaseOption.pricingPhases
-        val tags: List<String> = purchaseOption.tags
-        val isBasePlan: Boolean = purchaseOption.isBasePlan
+    fun checkPurchaseOption(subscriptionOption: SubscriptionOption) {
+        val phases: List<PricingPhase> = subscriptionOption.pricingPhases
+        val tags: List<String> = subscriptionOption.tags
+        val isBasePlan: Boolean = subscriptionOption.isBasePlan
     }
 }

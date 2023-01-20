@@ -20,7 +20,7 @@ interface StoreProduct : Parcelable {
 
     /**
      * Price information for a non-subscription product. Null for subscriptions.
-     * For subscriptions, use PurchaseOption's pricing phases.
+     * For subscriptions, use SubscriptionOption's pricing phases.
      */
     val oneTimeProductPrice: Price?
 
@@ -46,13 +46,13 @@ interface StoreProduct : Parcelable {
     /**
      * List of PurchaseOptions. Empty list for INAPP products.
      */
-    val purchaseOptions: List<PurchaseOption>
+    val subscriptionOptions: List<SubscriptionOption>
 
     /**
-     * The default [PurchaseOption] that will be used when purchasing and not specifying a different option.
+     * The default [SubscriptionOption] that will be used when purchasing and not specifying a different option.
      * Null for INAPP products.
      */
-    val defaultOption: PurchaseOption?
+    val defaultOption: SubscriptionOption?
 
     val purchasingData: PurchasingData
 

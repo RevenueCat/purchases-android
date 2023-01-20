@@ -11,7 +11,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.googleProduct
-import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
 
@@ -95,8 +95,8 @@ class PackageCardAdapter(
 
         private fun bindPurchaseOptions(product: StoreProduct) {
             binding.packagePurchaseOptionGroup.removeAllViews()
-            val numberOfPurchaseOptions = product.purchaseOptions.size
-            product.purchaseOptions.forEach { purchaseOption ->
+            val numberOfPurchaseOptions = product.subscriptionOptions.size
+            product.subscriptionOptions.forEach { purchaseOption ->
                 val radioButton = RadioButton(binding.root.context).apply {
                     text = purchaseOption.toButtonString()
                     tag = purchaseOption
@@ -106,12 +106,12 @@ class PackageCardAdapter(
             }
         }
 
-        private fun getSelectedPurchaseOption(): PurchaseOption? {
+        private fun getSelectedPurchaseOption(): SubscriptionOption? {
             val selectedButtonId = binding.packagePurchaseOptionGroup.checkedRadioButtonId
             return binding.packagePurchaseOptionGroup.children
                 .filter { it.id == selectedButtonId }
                 .firstOrNull()
-                ?.tag as? PurchaseOption
+                ?.tag as? SubscriptionOption
         }
 
         private fun validateStartPurchase(product: StoreProduct): String? {
@@ -143,7 +143,7 @@ class PackageCardAdapter(
         )
         fun onPurchaseOptionClicked(
             cardView: View,
-            purchaseOption: PurchaseOption,
+            subscriptionOption: SubscriptionOption,
             isUpgrade: Boolean
         )
     }
