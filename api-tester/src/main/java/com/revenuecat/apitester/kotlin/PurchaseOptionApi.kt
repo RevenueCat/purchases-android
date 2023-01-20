@@ -1,5 +1,6 @@
 package com.revenuecat.apitester.kotlin
 
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchaseOption
 
 @Suppress("unused", "UNUSED_VARIABLE", "RemoveExplicitTypeArguments")
