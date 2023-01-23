@@ -6,6 +6,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 
 // In-apps don't have base plan nor offers
@@ -37,12 +38,12 @@ fun ProductDetails.toStoreProduct(
 }
 
 private fun findBestOffer(subscriptionOptions: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
-    Log.d("JOSH", "STARTING BEST OPTION")
+    val basePlan = subscriptionOptions.firstOrNull { it.isBasePlan } ?: return null
+    val basePlanPricingPhase = basePlan.pricingPhases.firstOrNull() ?: return null
 
     val validOffers = subscriptionOptions
         .filter { !it.isBasePlan }
         .filter { !it.tags.contains("rc-ignore-best-offer") }
-
 
     // Option 1 - Find longest free pricing phase
     val offerWithLongestFreePricingPhase = validOffers.mapNotNull { offer ->
@@ -50,7 +51,7 @@ private fun findBestOffer(subscriptionOptions: List<GoogleSubscriptionOption>): 
         offer.pricingPhases.filter { pricingPhase ->
             pricingPhase.priceAmountMicros == 0L
         }.map {
-            Pair(offer, parseBillPeriodToDays(it.billingPeriod))
+            Pair(offer, parseBillPeriodToDays(it.billingPeriod)) // putting offer in pair here works but feels weird
         }.maxByOrNull { it.second }
     }.maxByOrNull { it.second }?.first
 
@@ -59,10 +60,85 @@ private fun findBestOffer(subscriptionOptions: List<GoogleSubscriptionOption>): 
     }
 
     // Option 2 - Find cheapest pricing phase
+    //    ex: for $10 per month subscription = $0.35 per day
+    //    P1W for $3 for 1 cycle =
+    //      $0.42 per day for 7 days is $2.94
+    //      $0.35 per day for 49 days is $12.25
+    //      TOTAL = $15.19
+    //    P1M for $5 for 2 cycle =
+    //      $0.17 per day for 56 days is $9.52
+    //      TOTAL = 9.52 (BEST OFFER)
+    //    P1M for $4 for 1 cycle =
+    //      $0.14 per day for 28 days is $3.92
+    //      $0.35 per day for 28 days is $9.80
+    //      TOTAL = $13.72
+
+    val periodDays = parseBillPeriodToDays(basePlanPricingPhase.billingPeriod)
+    val basePlanCostPerDay = basePlanPricingPhase.priceAmountMicros / periodDays
+
+    val offersWithCheapestPriceByDay = validOffers.mapNotNull { offer ->
+        // Get longest
+        val longestPricingTotalDays = offer.pricingPhases.mapNotNull {
+            it.totalNumberOfDays()
+        }.maxByOrNull { it } ?: return@mapNotNull null
+
+
+        // Get normalized pricing for each phase
+        val pricePerDayPerPhase = offer.pricingPhases.mapNotNull { pricingPhase ->
+            pricingPhase.priceAmountMicros == 0L
+
+            val periodDays = parseBillPeriodToDays(pricingPhase.billingPeriod)
+            val cycleCount = pricingPhase.billingCycleCount ?: 0
+
+            if (periodDays > 0) {
+                val pricePerDay = pricingPhase.priceAmountMicros / periodDays
+                val totalDaysOfPhase = pricingPhase.totalNumberOfDays() ?: 0
+
+                val numberOfDaysOnBasePlan = longestPricingTotalDays - totalDaysOfPhase
+                val totes = (totalDaysOfPhase * pricePerDay) + (numberOfDaysOnBasePlan * basePlanCostPerDay)
+
+                Pair(pricingPhase, totes)
+            } else {
+                null
+            }
+        }
+
+        // Totals normalized pricing
+        var totalPricePerDay = 0L
+        pricePerDayPerPhase.forEach { totalPricePerDay += it.second }
+
+        Pair(offer, totalPricePerDay)
+    }.sortedBy { it.second }
+
+    Log.d("JOSH", "Best Normalized Price")
+    offersWithCheapestPriceByDay.forEach {
+        Log.d("JOSH", "\t${it.first.id} ${it.second.toFloat() / 1000000}")
+    }
 
     // Option 3 - Return base plan because none
 
-    return subscriptionOptions.firstOrNull { it.isBasePlan }
+    return basePlan
+}
+
+private fun PricingPhase.totalPricePerDayIsh(): Long? {
+    val periodDays = parseBillPeriodToDays(billingPeriod)
+
+    return if (periodDays > 0) {
+        priceAmountMicros / periodDays
+    } else {
+        0L
+    }
+}
+
+private fun PricingPhase.totalNumberOfDays(): Int? {
+    val periodDays = parseBillPeriodToDays(billingPeriod)
+    val count = billingCycleCount ?: 0
+
+    return if (periodDays > 0 && count > 0) {
+        periodDays * count
+    } else {
+        0
+    }
 }
 
 // Would use Duration.parse but only available API 26 and up
@@ -73,7 +149,6 @@ private fun parseBillPeriodToDays(period: String): Int {
 
     regex?.let { periodResult ->
         val toInt = fun(part: String): Int {
-            Log.d("JOSH", "PART=$part")
             return part.dropLast(1).toIntOrNull() ?: 0
         }
 
