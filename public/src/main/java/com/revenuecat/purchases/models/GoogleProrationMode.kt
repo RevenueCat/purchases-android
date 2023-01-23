@@ -11,7 +11,7 @@ import com.android.billingclient.api.BillingFlowParams
 enum class GoogleProrationMode(@BillingFlowParams.ProrationMode val playBillingClientName: Int) {
     /**
      * New subscription benefits take effect immediately.
-     * User is charged for the full price of the new subscription once the old subscription expires.
+     * User is charged for the full price of the new subscription on the old subscription's expiration date.
      *
      * This is the default behavior.
      */
@@ -19,8 +19,10 @@ enum class GoogleProrationMode(@BillingFlowParams.ProrationMode val playBillingC
 
     /**
      * New subscription benefits take effect immediately.
-     * Any time remaining on the old subscription is used to push out payment date for the new subscription.
+     * Any time remaining on the old subscription is used to push out the first payment date for the new subscription.
      * User is charged the full price of new subscription once that prorated time has passed.
+     *
+     * The purchase will fail if this mode is used when switching between [PurchaseOption]s of the same [StoreProduct].
      */
     IMMEDIATE_WITH_TIME_PRORATION(BillingFlowParams.ProrationMode.IMMEDIATE_WITH_TIME_PRORATION)
 }
