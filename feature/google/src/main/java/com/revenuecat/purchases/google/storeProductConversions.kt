@@ -73,50 +73,65 @@ private fun findBestOffer(subscriptionOptions: List<GoogleSubscriptionOption>): 
     //      $0.35 per day for 28 days is $9.80
     //      TOTAL = $13.72
 
-    val periodDays = parseBillPeriodToDays(basePlanPricingPhase.billingPeriod)
-    val basePlanCostPerDay = basePlanPricingPhase.priceAmountMicros / periodDays
+    val longestOfferTotalDays = validOffers
+        .mapNotNull { subscriptionOption ->
+            subscriptionOption.pricingPhases.sumOf { it.totalNumberOfDays() ?: 0 }
+        }.maxByOrNull { it } ?: 0
 
-    val offersWithCheapestPriceByDay = validOffers.mapNotNull { offer ->
-        // Get longest
-        val longestPricingTotalDays = offer.pricingPhases.mapNotNull {
-            it.totalNumberOfDays()
-        }.maxByOrNull { it } ?: return@mapNotNull null
+    // Early
+    if (longestOfferTotalDays > 0) {
+        val periodDays = parseBillPeriodToDays(basePlanPricingPhase.billingPeriod)
+        val basePlanCostPerDay = basePlanPricingPhase.priceAmountMicros / periodDays
 
+        Log.d("JOSH", "Offer Details")
+        val offersWithCheapestPriceByDay = validOffers.mapNotNull { offer ->
+            Log.d("JOSH", "\toffer ${offer.id} ")
 
-        // Get normalized pricing for each phase
-        val pricePerDayPerPhase = offer.pricingPhases.mapNotNull { pricingPhase ->
-            pricingPhase.priceAmountMicros == 0L
+            // Get normalized pricing for each phase
+            val pricePerDayPerPhase = offer.pricingPhases.mapNotNull { pricingPhase ->
+                val periodDays = parseBillPeriodToDays(pricingPhase.billingPeriod)
 
-            val periodDays = parseBillPeriodToDays(pricingPhase.billingPeriod)
-            val cycleCount = pricingPhase.billingCycleCount ?: 0
+                if (periodDays > 0) {
+                    val pricePerDay = pricingPhase.priceAmountMicros / periodDays
+                    val totalDaysOfPhase = pricingPhase.totalNumberOfDays() ?: 0
 
-            if (periodDays > 0) {
-                val pricePerDay = pricingPhase.priceAmountMicros / periodDays
-                val totalDaysOfPhase = pricingPhase.totalNumberOfDays() ?: 0
+                    val numberOfDaysOnBasePlan = longestOfferTotalDays - totalDaysOfPhase
 
-                val numberOfDaysOnBasePlan = longestPricingTotalDays - totalDaysOfPhase
-                val totes = (totalDaysOfPhase * pricePerDay) + (numberOfDaysOnBasePlan * basePlanCostPerDay)
+                    val costOfPricingPhase = totalDaysOfPhase * pricePerDay
+                    val costOfBasePlan = numberOfDaysOnBasePlan * basePlanCostPerDay
 
-                Pair(pricingPhase, totes)
-            } else {
-                null
+                    Log.d("JOSH", "\t\tcostOfPricingPhase=${costOfPricingPhase/1000000.0} for $totalDaysOfPhase days")
+                    Log.d("JOSH", "\t\tcostOfBasePlan=${costOfBasePlan/1000000.0} for $numberOfDaysOnBasePlan days")
+
+                    val totes = costOfPricingPhase + costOfBasePlan
+
+                    Pair(pricingPhase, totes)
+                } else {
+                    null
+                }
             }
+
+            // Totals normalized pricing
+            var totalPricePerDay = 0L
+            pricePerDayPerPhase.forEach { totalPricePerDay += it.second }
+
+            Log.d("JOSH", "\t\tTOTAL=${totalPricePerDay/1000000.0}")
+
+            Pair(offer, totalPricePerDay)
+        }.sortedBy { it.second }
+
+        Log.d("JOSH", "Best Normalized Price - $longestOfferTotalDays days")
+        offersWithCheapestPriceByDay.forEach {
+            Log.d("JOSH", "\t${it.first.id} ${it.second.toFloat() / 1000000}")
         }
 
-        // Totals normalized pricing
-        var totalPricePerDay = 0L
-        pricePerDayPerPhase.forEach { totalPricePerDay += it.second }
-
-        Pair(offer, totalPricePerDay)
-    }.sortedBy { it.second }
-
-    Log.d("JOSH", "Best Normalized Price")
-    offersWithCheapestPriceByDay.forEach {
-        Log.d("JOSH", "\t${it.first.id} ${it.second.toFloat() / 1000000}")
+        val bestSavingsOffer = offersWithCheapestPriceByDay.firstOrNull()
+        if (bestSavingsOffer != null) {
+            return bestSavingsOffer.first
+        }
     }
 
     // Option 3 - Return base plan because none
-
     return basePlan
 }
 
