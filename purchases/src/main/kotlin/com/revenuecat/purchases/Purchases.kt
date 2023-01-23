@@ -1565,7 +1565,7 @@ class Purchases internal constructor(
                     activity,
                     appUserID,
                     purchasingData,
-                    ReplaceProductInfo(purchaseRecord, upgradeInfo.prorationMode),
+                    ReplaceProductInfo(purchaseRecord, upgradeInfo.googleProrationMode.playBillingClientName),
                     presentedOfferingIdentifier
                 )
             },
