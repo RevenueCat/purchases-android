@@ -16,7 +16,6 @@ fun ProductDetails.toStoreProduct(
     defaultOffer: ProductDetails.SubscriptionOfferDetails?
 ): GoogleStoreProduct {
     val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
-
     val bestOffer = findBestOffer(subscriptionOptions)
 
     return GoogleStoreProduct(
@@ -32,10 +31,7 @@ fun ProductDetails.toStoreProduct(
                 this
             )
         },
-        defaultOffer?.toSubscriptionOption(
-            productId,
-            this
-        ),
+        bestOffer,
         this
     )
 }
@@ -63,6 +59,8 @@ private fun findBestOffer(subscriptionOptions: List<GoogleSubscriptionOption>): 
     }
 
     // Option 2 - Find cheapest pricing phase
+
+    // Option 3 - Return base plan because none
 
     return subscriptionOptions.firstOrNull { it.isBasePlan }
 }
