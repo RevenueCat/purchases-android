@@ -21,8 +21,6 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.lang.Exception
-import java.lang.RuntimeException
 import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
@@ -189,6 +187,9 @@ class PurchaseUpdatesHandlerTest {
         var receivedException: Throwable? = null
         var receivedLoggedException: Throwable? = null
         Purchases.logHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) {
+            }
+
             override fun d(tag: String, msg: String) {
             }
 
