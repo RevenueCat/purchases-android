@@ -6,6 +6,7 @@ import com.revenuecat.purchases.BillingFeature
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
@@ -216,6 +217,9 @@ private class PurchasesAPI {
         Purchases.debugLogsEnabled = false
         val debugLogs: Boolean = Purchases.debugLogsEnabled
 
+        Purchases.logLevel = LogLevel.INFO
+        val logLevel: LogLevel = Purchases.logLevel
+
         Purchases.proxyURL = URL("")
         val url: URL? = Purchases.proxyURL
 
@@ -224,11 +228,23 @@ private class PurchasesAPI {
 
     fun checkLogHandler() {
         Purchases.logHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) {}
             override fun d(tag: String, msg: String) {}
             override fun i(tag: String, msg: String) {}
             override fun w(tag: String, msg: String) {}
             override fun e(tag: String, msg: String, throwable: Throwable?) {}
         }
         val handler = Purchases.logHandler
+    }
+
+    fun checkLogLevel(level: LogLevel) {
+        when (level) {
+            LogLevel.VERBOSE,
+            LogLevel.DEBUG,
+            LogLevel.INFO,
+            LogLevel.WARN,
+            LogLevel.ERROR
+            -> {}
+        }.exhaustive
     }
 }
