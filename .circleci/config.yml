@@ -29,6 +29,7 @@ orbs:
   android-wordpress-orb: wordpress-mobile/android@1.0.15
   gcp-cli: circleci/gcp-cli@2.1.0
   revenuecat: revenuecat/sdks-common-config@2.0.0
+  codecov: codecov/codecov@3.2.4
 
 parameters:
   action:
@@ -110,6 +111,14 @@ jobs:
       - run:
           name: Detekt
           command: ./gradlew detektAll
+      - run:
+          name: Kover HTML
+          command: ./gradlew koverMergedHtmlReport
+      - run:
+          name: Kover XML
+          command: ./gradlew koverMergedXmlReport
+      - codecov/upload:
+          file: build/reports/kover/merged/xml/report.xml
       - android/save-build-cache
       - store_artifacts:
           path: build/reports
