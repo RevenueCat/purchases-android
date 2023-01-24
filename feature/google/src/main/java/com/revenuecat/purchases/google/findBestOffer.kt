@@ -17,11 +17,10 @@ fun List<GoogleSubscriptionOption>.findBestOffer(): GoogleSubscriptionOption? {
 
 private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
     return offers.mapNotNull { offer ->
-        // Finds longest free pricing phase for an offer
         offer.pricingPhases.filter { pricingPhase ->
             pricingPhase.priceAmountMicros == 0L
         }.map {
-            Pair(offer, parseBillPeriodToDays(it.billingPeriod)) // putting offer in pair here works but feels weird
+            Pair(offer, parseBillPeriodToDays(it.billingPeriod))
         }.maxByOrNull { it.second }
     }.maxByOrNull { it.second }?.first
 }
@@ -45,9 +44,8 @@ private fun findBestSavingsOffer(
     val periodDays = parseBillPeriodToDays(basePlanPricingPhase.billingPeriod)
     val basePlanCostPerDay = basePlanPricingPhase.priceAmountMicros / periodDays
 
-    val offersWithCheapestPriceByDay = offers.map { offer ->
-
-        // Get normalized pricing for each phase
+    return offers.map { offer ->
+        // Maps each phase for total cost up to longest offer duration
         val pricePerDayPerPhase = offer.pricingPhases
             .filter { it.recurrenceMode == RecurrenceMode.FINITE_RECURRING }
             .mapNotNull { pricingPhase ->
@@ -70,14 +68,9 @@ private fun findBestSavingsOffer(
                 }
             }
 
-        // Totals normalized pricing
-        var totalPricePerPhase = 0L
-        pricePerDayPerPhase.forEach { totalPricePerPhase += it.second }
-
+        val totalPricePerPhase = pricePerDayPerPhase.sumOf { it.second }
         Pair(offer, totalPricePerPhase)
-    }.sortedBy { it.second }
-
-    return offersWithCheapestPriceByDay.firstOrNull()?.first
+    }.minByOrNull { it.second }?.first
 }
 
 private fun PricingPhase.totalNumberOfDays(): Int? {
