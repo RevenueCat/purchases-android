@@ -16,6 +16,11 @@ fun ProductDetails.toStoreProduct(
     val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
     val bestOffer = subscriptionOptions.findBestOffer()
 
+//    val bestOffer = defaultOffer?.toSubscriptionOption(
+//        productId,
+//        this
+//    )
+
     return GoogleStoreProduct(
         productId,
         productType.toRevenueCatProductType(),

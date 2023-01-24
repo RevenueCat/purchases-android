@@ -3,6 +3,7 @@ package com.revenuecat.purchases.google
 import android.util.Log
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 
 fun List<GoogleSubscriptionOption>.findBestOffer(): GoogleSubscriptionOption? {
     val basePlan = this.firstOrNull { it.isBasePlan } ?: return null
@@ -11,7 +12,7 @@ fun List<GoogleSubscriptionOption>.findBestOffer(): GoogleSubscriptionOption? {
         .filter { !it.isBasePlan }
         .filter { !it.tags.contains("rc-ignore-best-offer") }
 
-    return findLongestFreeTrial(validOffers) ?: findBestSavingsOffer(validOffers) ?: basePlan
+    return findLongestFreeTrial(validOffers) ?: findBestSavingsOffer(basePlan, validOffers) ?: basePlan
 }
 
 private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption?  {
@@ -25,7 +26,7 @@ private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): Google
     }.maxByOrNull { it.second }?.first
 }
 
-private fun findBestSavingsOffer(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption?  {
+private fun findBestSavingsOffer(basePlan: GoogleSubscriptionOption, offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption?  {
     //    ex: for $10 per month subscription = $0.35 per day
     //    P1W for $3 for 1 cycle =
     //      $0.42 per day for 7 days is $2.94
@@ -39,7 +40,6 @@ private fun findBestSavingsOffer(offers: List<GoogleSubscriptionOption>): Google
     //      $0.35 per day for 28 days is $9.80
     //      TOTAL = $13.72
 
-    val basePlan = offers.firstOrNull { it.isBasePlan } ?: return null
     val basePlanPricingPhase = basePlan.pricingPhases.firstOrNull() ?: return null
 
     val longestOfferTotalDays = offers
@@ -48,7 +48,7 @@ private fun findBestSavingsOffer(offers: List<GoogleSubscriptionOption>): Google
         }.maxByOrNull { it } ?: 0
 
     // Early
-    if (longestOfferTotalDays > 0) {
+    if (longestOfferTotalDays < 0) {
         return null
     }
 
@@ -60,36 +60,38 @@ private fun findBestSavingsOffer(offers: List<GoogleSubscriptionOption>): Google
         Log.d("JOSH", "\toffer ${offer.id} ")
 
         // Get normalized pricing for each phase
-        val pricePerDayPerPhase = offer.pricingPhases.mapNotNull { pricingPhase ->
-            val periodDays = parseBillPeriodToDays(pricingPhase.billingPeriod)
+        val pricePerDayPerPhase = offer.pricingPhases
+            .filter { it.recurrenceMode == RecurrenceMode.FINITE_RECURRING }
+            .mapNotNull { pricingPhase ->
+                val periodDays = parseBillPeriodToDays(pricingPhase.billingPeriod)
 
-            if (periodDays > 0) {
-                val pricePerDay = pricingPhase.priceAmountMicros / periodDays
-                val totalDaysOfPhase = pricingPhase.totalNumberOfDays() ?: 0
+                if (periodDays > 0) {
+                    val pricePerDay = pricingPhase.priceAmountMicros / periodDays
+                    val totalDaysOfPhase = pricingPhase.totalNumberOfDays() ?: 0
 
-                val numberOfDaysOnBasePlan = longestOfferTotalDays - totalDaysOfPhase
+                    val numberOfDaysOnBasePlan = longestOfferTotalDays - totalDaysOfPhase
 
-                val costOfPricingPhase = totalDaysOfPhase * pricePerDay
-                val costOfBasePlan = numberOfDaysOnBasePlan * basePlanCostPerDay
+                    val costOfPricingPhase = totalDaysOfPhase * pricePerDay
+                    val costOfBasePlan = numberOfDaysOnBasePlan * basePlanCostPerDay
 
-                Log.d("JOSH", "\t\tcostOfPricingPhase=${costOfPricingPhase/1000000.0} for $totalDaysOfPhase days")
-                Log.d("JOSH", "\t\tcostOfBasePlan=${costOfBasePlan/1000000.0} for $numberOfDaysOnBasePlan days")
+                    Log.d("JOSH", "\t\tcostOfPricingPhase=${costOfPricingPhase/1000000.0} for $totalDaysOfPhase days")
+                    Log.d("JOSH", "\t\tcostOfBasePlan=${costOfBasePlan/1000000.0} for $numberOfDaysOnBasePlan days")
 
-                val totes = costOfPricingPhase + costOfBasePlan
+                    val totes = costOfPricingPhase + costOfBasePlan
 
-                Pair(pricingPhase, totes)
-            } else {
-                null
+                    Pair(pricingPhase, totes)
+                } else {
+                    null
+                }
             }
-        }
 
         // Totals normalized pricing
-        var totalPricePerDay = 0L
-        pricePerDayPerPhase.forEach { totalPricePerDay += it.second }
+        var totalPricePerPhase = 0L
+        pricePerDayPerPhase.forEach { totalPricePerPhase += it.second }
 
-        Log.d("JOSH", "\t\tTOTAL=${totalPricePerDay/1000000.0}")
+        Log.d("JOSH", "\t\tTOTAL=${totalPricePerPhase/1000000.0}")
 
-        Pair(offer, totalPricePerDay)
+        Pair(offer, totalPricePerPhase)
     }.sortedBy { it.second }
 
     Log.d("JOSH", "Best Normalized Price - $longestOfferTotalDays days")
@@ -102,17 +104,17 @@ private fun findBestSavingsOffer(offers: List<GoogleSubscriptionOption>): Google
 
 private fun PricingPhase.totalNumberOfDays(): Int? {
     val periodDays = parseBillPeriodToDays(billingPeriod)
-    val count = billingCycleCount ?: 0
+    val cycleCount = billingCycleCount ?: 0
 
-    return if (periodDays > 0 && count > 0) {
-        periodDays * count
+    return if (periodDays > 0 && cycleCount > 0) {
+        periodDays * cycleCount
     } else {
         0
     }
 }
 
 // Would use Duration.parse but only available API 26 and up
-private fun parseBillPeriodToDays(period: String): Int {
+internal fun parseBillPeriodToDays(period: String): Int {
     val regex = "^P(?!\$)(\\d+(?:\\.\\d+)?Y)?(\\d+(?:\\.\\d+)?M)?(\\d+(?:\\.\\d+)?W)?(\\d+(?:\\.\\d+)?D)?(T(?=\\d)(\\d+(?:\\.\\d+)?H)?(\\d+(?:\\.\\d+)?M)?(\\d+(?:\\.\\d+)?S)?)?\$"
         .toRegex()
         .matchEntire(period)
@@ -123,7 +125,7 @@ private fun parseBillPeriodToDays(period: String): Int {
         }
 
         val (year, month, week, day) = periodResult.destructured
-        return (toInt(year) * 365) + (toInt(month) * 28) + (toInt(week) * 7) + toInt(day)
+        return (toInt(year) * 365) + (toInt(month) * 30) + (toInt(week) * 7) + toInt(day)
     }
 
     return 0

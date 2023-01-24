@@ -14,6 +14,30 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FindBestOfferTest {
     @Test
+    fun `parses period for P1Y`() {
+        val days = parseBillPeriodToDays("P1Y")
+        assertThat(days).isEqualTo(365)
+    }
+
+    @Test
+    fun `parses period for P1M`() {
+        val days = parseBillPeriodToDays("P1M")
+        assertThat(days).isEqualTo(30)
+    }
+
+    @Test
+    fun `parses period for P1W`() {
+        val days = parseBillPeriodToDays("P1W")
+        assertThat(days).isEqualTo(7)
+    }
+
+    @Test
+    fun `parses period for P1D`() {
+        val days = parseBillPeriodToDays("P1D")
+        assertThat(days).isEqualTo(1)
+    }
+
+    @Test
     fun `default offer is base plan when no offers`() {
         /*
          * sub_1
@@ -51,7 +75,7 @@ class FindBestOfferTest {
          *   |
          *   |-> monthly (P1M, $4.99)
          *         |
-         *         |-> monthly-offer-free
+         *         |-> month-free
          *               |-> (P1M, free) - BEST OFFER
          */
 
@@ -66,17 +90,17 @@ class FindBestOfferTest {
             pricingPhases = listOf(monthlyBasePlanPricingPhase)
         )
 
-        // monthly-offer-free (P1M, free)
-        val freeMonthPhase = mockPricingPhase(
+        // month-free (P1M, free)
+        val monthFreeOffer = mockPricingPhase(
             price = 0.0,
             billingPeriod = "P1M",
             billingCycleCount = 1,
             recurrenceMode = ProductDetails.RecurrenceMode.NON_RECURRING
         )
         val freeOffer = mockSubscriptionOfferDetails(
-            offerId = "monthly-offer-free",
+            offerId = "month-free",
             basePlanId = "monthly",
-            pricingPhases = listOf(freeMonthPhase, monthlyBasePlanPricingPhase)
+            pricingPhases = listOf(monthFreeOffer, monthlyBasePlanPricingPhase)
         )
 
         // Product details
@@ -89,7 +113,7 @@ class FindBestOfferTest {
         val storeProducts = productDetails.toStoreProducts()
 
         val defaultOption = storeProducts.first().defaultOption as GoogleSubscriptionOption
-        assertThat(defaultOption.id).isEqualTo("monthly:monthly-offer-free")
+        assertThat(defaultOption.id).isEqualTo("monthly:month-free")
     }
 
     @Test
@@ -99,16 +123,14 @@ class FindBestOfferTest {
          *   |
          *   |-> monthly (P1M, $4.99)
          *   |     |
-         *   |     |-> weekly-offer-free
+         *   |     |-> week-free
          *   |     |     |-> (P1W, free)
-         *   |     |-> two-week-offer-free
+         *   |     |-> two-week-free
          *   |     |     |-> (P2W, free)
-         *   |     |-> monthly-offer-free (BEST OFFER)
+         *   |     |-> monthly-free (BEST OFFER)
          *   |     |     |-> (P1M, free)
-         *   |     |-> nine-day-offer-free
+         *   |     |-> nine-day-free
          *   |           |-> (P1W, free
-         *   |
-         *   |-> yearly (P1M, $4.99)
          */
 
         // Base plan
@@ -122,9 +144,9 @@ class FindBestOfferTest {
             pricingPhases = listOf(monthlyBasePlanPricingPhase)
         )
 
-        // weekly-offer-free (P1M, free)
-        val weeklyOfferFree = mockSubscriptionOfferDetails(
-            offerId = "weeekly-offer-free",
+        // week-free (P1M, free)
+        val weekFreeOffer = mockSubscriptionOfferDetails(
+            offerId = "week-free",
             basePlanId = "monthly",
             pricingPhases = listOf(mockPricingPhase(
                 price = 0.0,
@@ -134,9 +156,9 @@ class FindBestOfferTest {
             )) + monthlyBasePlanPricingPhase
         )
 
-        // two-week-offer-free (P2W, free)
-        val twoWeekOfferFree = mockSubscriptionOfferDetails(
-            offerId = "two-week-offer-free",
+        // two-week-free (P2W, free)
+        val twoWeekFreeOffer = mockSubscriptionOfferDetails(
+            offerId = "two-week-free",
             basePlanId = "monthly",
             pricingPhases = listOf(mockPricingPhase(
                 price = 0.0,
@@ -146,25 +168,25 @@ class FindBestOfferTest {
             )) + monthlyBasePlanPricingPhase
         )
 
-        // nine-day-offer-free (P2W, free)
-        val nineDayOfferFree = mockSubscriptionOfferDetails(
-            offerId = "nine-da-offer-free",
+        // monthly-free (P1M, free)
+        val monthlyFreeOffer = mockSubscriptionOfferDetails(
+            offerId = "month-free",
             basePlanId = "monthly",
             pricingPhases = listOf(mockPricingPhase(
                 price = 0.0,
-                billingPeriod = "P9D",
+                billingPeriod = "P1M",
                 billingCycleCount = 1,
                 recurrenceMode = ProductDetails.RecurrenceMode.NON_RECURRING
             )) + monthlyBasePlanPricingPhase
         )
 
-        // monthly-offer-free (P1M, free)
-        val monthlyFreeOffer = mockSubscriptionOfferDetails(
-            offerId = "monthly-offer-free",
+        // nine-day-free (P2W, free)
+        val nineDayFreeOffer = mockSubscriptionOfferDetails(
+            offerId = "nine-day-free",
             basePlanId = "monthly",
             pricingPhases = listOf(mockPricingPhase(
                 price = 0.0,
-                billingPeriod = "P1M",
+                billingPeriod = "P9D",
                 billingCycleCount = 1,
                 recurrenceMode = ProductDetails.RecurrenceMode.NON_RECURRING
             )) + monthlyBasePlanPricingPhase
@@ -175,13 +197,90 @@ class FindBestOfferTest {
             productId = "sub_1",
             type = BillingClient.ProductType.SUBS,
             subscriptionOfferDetails = listOf(
-                monthlyBasePlan, weeklyOfferFree, twoWeekOfferFree, monthlyFreeOffer, nineDayOfferFree
+                monthlyBasePlan, weekFreeOffer, twoWeekFreeOffer, monthlyFreeOffer, nineDayFreeOffer
             ))
         val productDetails = listOf(productDetail1)
 
         val storeProducts = productDetails.toStoreProducts()
 
         val defaultOption = storeProducts.first().defaultOption as GoogleSubscriptionOption
-        assertThat(defaultOption.id).isEqualTo("monthly:monthly-offer-free")
+        assertThat(defaultOption.id).isEqualTo("monthly:month-free")
+    }
+
+    @Test
+    fun `default offer is biggest savings`() {
+        /*
+         * sub_1
+         *   |
+         *   |-> yearly (P1Y, $100)
+         *   |     |
+         *   |     |-> one-month-fifty
+         *   |     |     |-> (P1M, $50)
+         *   |     |-> three-months-at-twenty-five (BEST OFFER)
+         *   |     |     |-> (P1M, $25, 3)
+         *   |     |-> two-months-at-ninety
+         *   |           |-> (P1M, $90, 2)
+         */
+
+        // Base plan
+        var yearlyBasePlanPricingPhase = mockPricingPhase(
+            price = 1000.0,
+            billingPeriod = "P1Y"
+        )
+        val yearlyBasePlan = mockSubscriptionOfferDetails(
+            offerId = "",
+            basePlanId = "yearly",
+            pricingPhases = listOf(yearlyBasePlanPricingPhase)
+        )
+
+        // one-month-fifty (P1M, $50)
+        val oneMonthAtFiftyOffer = mockSubscriptionOfferDetails(
+            offerId = "one-month-fifty",
+            basePlanId = "yearly",
+            pricingPhases = listOf(mockPricingPhase(
+                price = 50.0,
+                billingPeriod = "P1M",
+                billingCycleCount = 1,
+                recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING
+            )) + yearlyBasePlanPricingPhase
+        )
+
+        // three-months-at-twenty-five (P1M, $25, 3)
+        val threeMonthsAtTwentyFiveOffer = mockSubscriptionOfferDetails(
+            offerId = "three-months-at-twenty-five",
+            basePlanId = "yearly",
+            pricingPhases = listOf(mockPricingPhase(
+                price = 25.0,
+                billingPeriod = "P1M",
+                billingCycleCount = 3,
+                recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING
+            )) + yearlyBasePlanPricingPhase
+        )
+
+        // two-months-at-ninety (P1M, $90, 2)
+        val twoMonthsAtNinetyOffer = mockSubscriptionOfferDetails(
+            offerId = "two-months-at-ninety",
+            basePlanId = "yearly",
+            pricingPhases = listOf(mockPricingPhase(
+                price = 90.0,
+                billingPeriod = "P1M",
+                billingCycleCount = 2,
+                recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING
+            )) + yearlyBasePlanPricingPhase
+        )
+
+        // Product details
+        val productDetail1 = mockProductDetails(
+            productId = "sub_1",
+            type = BillingClient.ProductType.SUBS,
+            subscriptionOfferDetails = listOf(
+                yearlyBasePlan, oneMonthAtFiftyOffer, threeMonthsAtTwentyFiveOffer, twoMonthsAtNinetyOffer
+            ))
+        val productDetails = listOf(productDetail1)
+
+        val storeProducts = productDetails.toStoreProducts()
+
+        val defaultOption = storeProducts.first().defaultOption as GoogleSubscriptionOption
+        assertThat(defaultOption.id).isEqualTo("yearly:three-months-at-twenty-five")
     }
 }
