@@ -20,7 +20,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
-import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.purchasePackageWith
@@ -122,9 +122,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    override fun onPurchaseOptionClicked(
+    override fun onSubscriptionOptionClicked(
         cardView: View,
-        purchaseOption: PurchaseOption,
+        subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean
     ) {
         toggleLoadingIndicator(true)
@@ -132,11 +132,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (isUpgrade) {
             promptForUpgradeInfo { upgradeInfo ->
                 upgradeInfo?.let {
-                    startPurchaseOption(purchaseOption, upgradeInfo)
+                    startSubscriptionOption(subscriptionOption, upgradeInfo)
                 }
             }
         } else {
-            startPurchaseOption(purchaseOption, null)
+            startSubscriptionOption(subscriptionOption, null)
         }
     }
 
@@ -178,20 +178,20 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun startPurchaseOption(
-        purchaseOption: PurchaseOption,
+    private fun startSubscriptionOption(
+        subscriptionOption: SubscriptionOption,
         upgradeInfo: UpgradeInfo?
     ) {
         when {
             upgradeInfo == null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                 requireActivity(),
-                purchaseOption,
+                subscriptionOption,
                 purchaseErrorCallback,
                 successfulPurchaseCallback
             )
             upgradeInfo != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                 requireActivity(),
-                purchaseOption,
+                subscriptionOption,
                 upgradeInfo,
                 purchaseErrorCallback,
                 successfulUpgradeCallback

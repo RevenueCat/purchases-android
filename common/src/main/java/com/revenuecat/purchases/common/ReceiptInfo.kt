@@ -6,7 +6,7 @@ import com.revenuecat.purchases.models.StoreProduct
 class ReceiptInfo(
     val productIDs: List<String>,
     val offeringIdentifier: String? = null,
-    val purchaseOptionId: String? = null,
+    val subscriptionOptionId: String? = null,
     val storeProduct: StoreProduct? = null,
 
     val price: Double? = storeProduct?.oneTimeProductPrice?.priceAmountMicros?.div(MICROS_MULTIPLIER.toDouble()),
@@ -15,7 +15,7 @@ class ReceiptInfo(
 
     val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }
     val pricingPhases: List<PricingPhase>? =
-        storeProduct?.purchaseOptions?.firstOrNull { it.id == purchaseOptionId }?.pricingPhases
+        storeProduct?.subscriptionOptions?.firstOrNull { it.id == subscriptionOptionId }?.pricingPhases
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -27,7 +27,7 @@ class ReceiptInfo(
         if (offeringIdentifier != other.offeringIdentifier) return false
         if (price != other.price) return false
         if (currency != other.currency) return false
-        if (purchaseOptionId != other.purchaseOptionId) return false
+        if (subscriptionOptionId != other.subscriptionOptionId) return false
 
         return true
     }
@@ -36,7 +36,7 @@ class ReceiptInfo(
         var result = productIDs.hashCode()
         result = 31 * result + (offeringIdentifier?.hashCode() ?: 0)
         result = 31 * result + (storeProduct?.hashCode() ?: 0)
-        result = 31 * result + (purchaseOptionId?.hashCode() ?: 0)
+        result = 31 * result + (subscriptionOptionId?.hashCode() ?: 0)
         return result
     }
 
@@ -45,7 +45,7 @@ class ReceiptInfo(
             "productIDs='${productIDs.joinToString()}', " +
             "offeringIdentifier=$offeringIdentifier, " +
             "storeProduct=$storeProduct, " +
-            "purchaseOptionId=$purchaseOptionId, " +
+            "subscriptionOptionId=$subscriptionOptionId, " +
             "pricingPhases=$pricingPhases, " +
             "price=$price, " +
             "currency=$currency, " +

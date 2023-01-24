@@ -7,7 +7,7 @@ import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
-import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -112,7 +112,7 @@ fun Purchases.getOfferingsWith(
 }
 
 /**
- * Purchase product. If purchasing a subscription, it will choose the default [PurchaseOption].
+ * Purchase product. If purchasing a subscription, it will choose the default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
@@ -129,7 +129,7 @@ fun Purchases.purchaseProductWith(
 
 /**
  * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
- * default [PurchaseOption].
+ * default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
@@ -149,31 +149,31 @@ fun Purchases.purchaseProductWith(
 
 // TODOBC5: Remove storeProduct parameter
 /**
- * Purchase a subscription [StoreProduct]'s [PurchaseOption].
+ * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
- * @param [purchaseOption] Your choice of purchase options available for a subscription StoreProduct
+ * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
  */
 fun Purchases.purchaseSubscriptionOptionWith(
     activity: Activity,
-    purchaseOption: PurchaseOption,
+    subscriptionOption: SubscriptionOption,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
 ) {
     purchaseSubscriptionOption(
         activity,
-        purchaseOption,
+        subscriptionOption,
         purchaseCompletedCallback(onSuccess, onError)
     )
 }
 
 // TODOBC5: Remove storeProduct parameter
 /**
- * Purchase a subscription [StoreProduct]'s [PurchaseOption], upgrading from an old product.
+ * Purchase a subscription [StoreProduct]'s [SubscriptionOption], upgrading from an old product.
  * @param [activity] Current activity
- * @param [purchaseOption] Your choice of purchase options available for a subscription StoreProduct
+ * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
@@ -182,14 +182,14 @@ fun Purchases.purchaseSubscriptionOptionWith(
 @Suppress("LongParameterList")
 fun Purchases.purchaseSubscriptionOptionWith(
     activity: Activity,
-    purchaseOption: PurchaseOption,
+    subscriptionOption: SubscriptionOption,
     upgradeInfo: UpgradeInfo,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 ) {
     purchaseSubscriptionOption(
         activity,
-        purchaseOption,
+        subscriptionOption,
         upgradeInfo,
         productChangeCompletedListener(onSuccess, onError)
     )
@@ -197,7 +197,7 @@ fun Purchases.purchaseSubscriptionOptionWith(
 
 /**
  * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
- * default [PurchaseOption].
+ * default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
@@ -216,7 +216,7 @@ fun Purchases.purchasePackageWith(
 }
 
 /**
- * Make a purchase. If purchasing a subscription, it will choose the default [PurchaseOption].
+ * Make a purchase. If purchasing a subscription, it will choose the default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
