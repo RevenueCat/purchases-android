@@ -4410,10 +4410,8 @@ class PurchasesTest {
         if (type == ProductType.SUBS) {
             val productDetails = createMockProductDetailsFreeTrial(productId, 2.00)
 
-            val defaultOfferDetails = productDetails.subscriptionOfferDetails?.first { it.isBasePlan }
             val storeProduct = productDetails.toStoreProduct(
-                productDetails.subscriptionOfferDetails!!,
-                defaultOfferDetails
+                productDetails.subscriptionOfferDetails!!
             )
 
             return mockQueryingProductDetails(storeProduct, offeringIdentifier)

@@ -15,7 +15,7 @@ fun List<GoogleSubscriptionOption>.findBestOffer(): GoogleSubscriptionOption? {
     return findLongestFreeTrial(validOffers) ?: findBestSavingsOffer(basePlan, validOffers) ?: basePlan
 }
 
-private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption?  {
+private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
     return offers.mapNotNull { offer ->
         // Finds longest free pricing phase for an offer
         offer.pricingPhases.filter { pricingPhase ->
@@ -26,7 +26,7 @@ private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): Google
     }.maxByOrNull { it.second }?.first
 }
 
-private fun findBestSavingsOffer(basePlan: GoogleSubscriptionOption, offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption?  {
+private fun findBestSavingsOffer(basePlan: GoogleSubscriptionOption, offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
     //    ex: for $10 per month subscription = $0.35 per day
     //    P1W for $3 for 1 cycle =
     //      $0.42 per day for 7 days is $2.94
@@ -74,8 +74,8 @@ private fun findBestSavingsOffer(basePlan: GoogleSubscriptionOption, offers: Lis
                     val costOfPricingPhase = totalDaysOfPhase * pricePerDay
                     val costOfBasePlan = numberOfDaysOnBasePlan * basePlanCostPerDay
 
-                    Log.d("JOSH", "\t\tcostOfPricingPhase=${costOfPricingPhase/1000000.0} for $totalDaysOfPhase days")
-                    Log.d("JOSH", "\t\tcostOfBasePlan=${costOfBasePlan/1000000.0} for $numberOfDaysOnBasePlan days")
+                    Log.d("JOSH", "\t\tcostOfPricingPhase=${costOfPricingPhase / 1000000.0} for $totalDaysOfPhase days")
+                    Log.d("JOSH", "\t\tcostOfBasePlan=${costOfBasePlan / 1000000.0} for $numberOfDaysOnBasePlan days")
 
                     val totes = costOfPricingPhase + costOfBasePlan
 
@@ -89,7 +89,7 @@ private fun findBestSavingsOffer(basePlan: GoogleSubscriptionOption, offers: Lis
         var totalPricePerPhase = 0L
         pricePerDayPerPhase.forEach { totalPricePerPhase += it.second }
 
-        Log.d("JOSH", "\t\tTOTAL=${totalPricePerPhase/1000000.0}")
+        Log.d("JOSH", "\t\tTOTAL=${totalPricePerPhase / 1000000.0}")
 
         Pair(offer, totalPricePerPhase)
     }.sortedBy { it.second }
@@ -115,6 +115,7 @@ private fun PricingPhase.totalNumberOfDays(): Int? {
 
 // Would use Duration.parse but only available API 26 and up
 internal fun parseBillPeriodToDays(period: String): Int {
+    // Takes from https://stackoverflow.com/a/32045167
     val regex = "^P(?!\$)(\\d+(?:\\.\\d+)?Y)?(\\d+(?:\\.\\d+)?M)?(\\d+(?:\\.\\d+)?W)?(\\d+(?:\\.\\d+)?D)?(T(?=\\d)(\\d+(?:\\.\\d+)?H)?(\\d+(?:\\.\\d+)?M)?(\\d+(?:\\.\\d+)?S)?)?\$"
         .toRegex()
         .matchEntire(period)
