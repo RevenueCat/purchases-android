@@ -1,19 +1,19 @@
 package com.revenuecat.apitester.kotlin
 
-import com.android.billingclient.api.BillingFlowParams
 import com.revenuecat.purchases.UpgradeInfo
+import com.revenuecat.purchases.models.GoogleProrationMode
 
 @Suppress("unused", "UNUSED_VARIABLE", "RemoveExplicitTypeArguments")
 private class UpgradeInfoAPI {
     fun check(upgradeInfo: UpgradeInfo) {
         with(upgradeInfo) {
             val oldProductId: String = oldProductId
-            @BillingFlowParams.ProrationMode val prorationMode: Int = prorationMode
+            val prorationMode: GoogleProrationMode = googleProrationMode
 
             val constructedUpgradeInfo =
                 UpgradeInfo(
                     oldProductId,
-                    prorationMode
+                    googleProrationMode
                 )
 
             val constructedUpgradeInfoProductIdOnly = UpgradeInfo(oldProductId)

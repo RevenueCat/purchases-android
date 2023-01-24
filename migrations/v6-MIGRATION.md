@@ -58,9 +58,10 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 ### UpgradeInfo updates
 
 
-| Removed | New          |
-|---------|--------------|
-| oldSku  | oldProductId |
+| Removed       | New                 |
+|---------------|---------------------|
+| oldSku        | oldProductId        |
+| prorationMode | googleProrationMode |
 
 
 ### CustomerInfo updates
