@@ -23,7 +23,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
-import com.revenuecat.purchases.models.PurchaseOption;
+import com.revenuecat.purchases.models.SubscriptionOption;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
 
@@ -42,7 +42,7 @@ final class PurchasesAPI {
                       final Activity activity,
                       final StoreProduct storeProduct,
                       final Package packageToPurchase,
-                      final PurchaseOption purchaseOption,
+                      final SubscriptionOption subscriptionOption,
                       final UpgradeInfo upgradeInfo) {
         final ArrayList<String> productIds = new ArrayList<>();
 
@@ -78,8 +78,8 @@ final class PurchasesAPI {
         purchases.purchaseProduct(activity, storeProduct, makePurchaseListener);
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeListener);
         purchases.purchasePackage(activity, packageToPurchase, makePurchaseListener);
-        purchases.purchaseSubscriptionOption(activity, purchaseOption, upgradeInfo, purchaseChangeListener);
-        purchases.purchaseSubscriptionOption(activity, purchaseOption, makePurchaseListener);
+        purchases.purchaseSubscriptionOption(activity, subscriptionOption, upgradeInfo, purchaseChangeListener);
+        purchases.purchaseSubscriptionOption(activity, subscriptionOption, makePurchaseListener);
         purchases.restorePurchases(receiveCustomerInfoListener);
 
         purchases.logIn("", logInCallback);
