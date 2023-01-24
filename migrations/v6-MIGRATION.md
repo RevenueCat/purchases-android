@@ -4,8 +4,8 @@
 
 | New                    |
 |------------------------|
-| `PurchaseOption`       |
-| `GooglePurchaseOption` |
+| `SubscriptionOption`       |
+| `GoogleSubscriptionOption` |
 | `GoogleStoreProduct`   |
 | `AmazonStoreProduct`   |
 | `Price`                |
@@ -36,12 +36,12 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 | New                 |
 |---------------------|
 | oneTimeProductPrice |
-| purchaseOptions     |
+| subscriptionOptions     |
 
 | Removed                           |  | 
 |-----------------------------------|--|
-| product.originalPrice             | Accessible in basePlan's unique pricing phase `purchaseOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.first()?.formattedPrice` |
-| product.originalPriceAmountMicros | Accessible in basePlan's unique pricing phase `purchaseOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.first()?.priceAmountMicros` |
+| product.originalPrice             | Accessible in basePlan's unique pricing phase `subscriptionOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.first()?.formattedPrice` |
+| product.originalPriceAmountMicros | Accessible in basePlan's unique pricing phase `subscriptionOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.first()?.priceAmountMicros` |
 | product.iconUrl                  |  | 
 | product.originalJson              |(product as GoogleStoreProduct).productDetails |
 
@@ -49,7 +49,7 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 
 | New              |
 |------------------|
-| purchaseOptionId |
+| subscriptionOptionId |
 
 | Deprecated | New        |
 |------------|------------|
@@ -75,8 +75,8 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 
 | New                                                                                                      |
 |----------------------------------------------------------------------------------------------------------|
-| `purchaseSubscriptionOption(Activity, StoreProduct, PurchaseOption, PurchaseCallback)`                   |
-| `purchaseSubscriptionOption(Activity, StoreProduct, PurchaseOption, UpgradeInfo, ProductChangeCallback)` |
+| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, PurchaseCallback)`                   |
+| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, UpgradeInfo, ProductChangeCallback)` |
 
 | Deprecated                                                       | New                                                   |
 |------------------------------------------------------------------|-------------------------------------------------------|
@@ -87,8 +87,8 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 
 | New                                                                                                                                                                |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `purchaseSubscriptionOptionWith(Activity, StoreProduct, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              |
-| `purchaseSubscriptionOptionWith(Activity, StoreProduct, UpgradeInfo, PurchaseOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+| `purchaseSubscriptionOptionWith(Activity, StoreProduct, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              |
+| `purchaseSubscriptionOptionWith(Activity, StoreProduct, UpgradeInfo, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 
 | Deprecated                                                                                         | New                                                                                     |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|

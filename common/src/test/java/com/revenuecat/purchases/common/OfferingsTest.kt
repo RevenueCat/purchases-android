@@ -12,7 +12,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubPricingPhase
-import com.revenuecat.purchases.utils.stubPurchaseOption
+import com.revenuecat.purchases.utils.stubSubscriptionOption
 import com.revenuecat.purchases.utils.stubStoreProduct
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -375,7 +375,7 @@ class OfferingsTest {
             billingPeriod = duration,
             recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING
         )
-        val basePlanPurchaseOption = stubPurchaseOption(basePlanId, duration, pricingPhases = listOf(basePlanPricingPhase))
+        val basePlanSubscriptionOption = stubSubscriptionOption(basePlanId, duration, pricingPhases = listOf(basePlanPricingPhase))
 
         val offerPricingPhases = listOf(
             stubPricingPhase(
@@ -385,7 +385,7 @@ class OfferingsTest {
             ),
             basePlanPricingPhase
         )
-        val offerPurchaseOption = stubPurchaseOption(basePlanId, productId, duration, offerPricingPhases)
-        return stubStoreProduct(productId, basePlanPurchaseOption, listOf(basePlanPurchaseOption, offerPurchaseOption))
+        val offerSubscriptionOption = stubSubscriptionOption(basePlanId, productId, duration, offerPricingPhases)
+        return stubStoreProduct(productId, basePlanSubscriptionOption, listOf(basePlanSubscriptionOption, offerSubscriptionOption))
     }
 }
