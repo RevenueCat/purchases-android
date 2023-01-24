@@ -6,32 +6,12 @@ import com.revenuecat.purchases.models.PricingPhase
 
 fun List<GoogleSubscriptionOption>.findBestOffer(): GoogleSubscriptionOption? {
     val basePlan = this.firstOrNull { it.isBasePlan } ?: return null
-    val basePlanPricingPhase = basePlan.pricingPhases.firstOrNull() ?: return null
 
     val validOffers = this
         .filter { !it.isBasePlan }
         .filter { !it.tags.contains("rc-ignore-best-offer") }
 
-    // Option 1 - Find longest free pricing phase
-    findLongestFreeTrial(validOffers)?.let { return it }
-
-    // Option 2 - Find cheapest pricing phase
-    //    ex: for $10 per month subscription = $0.35 per day
-    //    P1W for $3 for 1 cycle =
-    //      $0.42 per day for 7 days is $2.94
-    //      $0.35 per day for 49 days is $12.25
-    //      TOTAL = $15.19
-    //    P1M for $5 for 2 cycle =
-    //      $0.17 per day for 56 days is $9.52
-    //      TOTAL = 9.52 (BEST OFFER)
-    //    P1M for $4 for 1 cycle =
-    //      $0.14 per day for 28 days is $3.92
-    //      $0.35 per day for 28 days is $9.80
-    //      TOTAL = $13.72
-    findBestSavingsOffer(validOffers)?.let { return it }
-
-    // Option 3 - Return base plan because none
-    return basePlan
+    return findLongestFreeTrial(validOffers) ?: findBestSavingsOffer(validOffers) ?: basePlan
 }
 
 private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption?  {
@@ -46,6 +26,19 @@ private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): Google
 }
 
 private fun findBestSavingsOffer(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption?  {
+    //    ex: for $10 per month subscription = $0.35 per day
+    //    P1W for $3 for 1 cycle =
+    //      $0.42 per day for 7 days is $2.94
+    //      $0.35 per day for 49 days is $12.25
+    //      TOTAL = $15.19
+    //    P1M for $5 for 2 cycle =
+    //      $0.17 per day for 56 days is $9.52
+    //      TOTAL = 9.52 (BEST OFFER)
+    //    P1M for $4 for 1 cycle =
+    //      $0.14 per day for 28 days is $3.92
+    //      $0.35 per day for 28 days is $9.80
+    //      TOTAL = $13.72
+
     val basePlan = offers.firstOrNull { it.isBasePlan } ?: return null
     val basePlanPricingPhase = basePlan.pricingPhases.firstOrNull() ?: return null
 
