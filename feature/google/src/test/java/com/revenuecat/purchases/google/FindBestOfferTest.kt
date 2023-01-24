@@ -232,7 +232,7 @@ class FindBestOfferTest {
     }
 
     @Test
-    fun `default offer is biggest savings`() {
+    fun `default offer is lowest first phase`() {
         /*
          * sub_1
          *   |

@@ -3,7 +3,6 @@ package com.revenuecat.purchases.google
 
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.models.RecurrenceMode
 
 fun List<GoogleSubscriptionOption>.findBestOffer(): GoogleSubscriptionOption? {
     val basePlan = this.firstOrNull { it.isBasePlan } ?: return null
@@ -12,76 +11,31 @@ fun List<GoogleSubscriptionOption>.findBestOffer(): GoogleSubscriptionOption? {
         .filter { !it.isBasePlan }
         .filter { !it.tags.contains("rc-ignore-best-offer") }
 
-    return findLongestFreeTrial(validOffers) ?: findBestSavingsOffer(basePlan, validOffers) ?: basePlan
+    return findLongestFreeTrial(validOffers) ?: findLowestNoneFreeOffer(validOffers) ?: basePlan
 }
 
 private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
     return offers.mapNotNull { offer ->
-        offer.pricingPhases.filter { pricingPhase ->
-            pricingPhase.priceAmountMicros == 0L
-        }.map {
-            Pair(offer, parseBillPeriodToDays(it.billingPeriod))
-        }.maxByOrNull { it.second }
+        offer.freePricingPhase()?.let { pricingPhase ->
+            Pair(offer, parseBillPeriodToDays(pricingPhase.billingPeriod))
+        }
     }.maxByOrNull { it.second }?.first
 }
 
-@Suppress("ReturnCount")
-private fun findBestSavingsOffer(
-    basePlan: GoogleSubscriptionOption,
-    offers: List<GoogleSubscriptionOption>
-): GoogleSubscriptionOption? {
-    val basePlanPricingPhase = basePlan.pricingPhases.firstOrNull() ?: return null
-
-    val longestOfferTotalDays = offers
-        .mapNotNull { subscriptionOption ->
-            subscriptionOption.pricingPhases.sumOf { it.totalNumberOfDays() ?: 0 }
-        }.maxByOrNull { it } ?: 0
-
-    if (longestOfferTotalDays < 0) {
-        return null
-    }
-
-    val periodDays = parseBillPeriodToDays(basePlanPricingPhase.billingPeriod)
-    val basePlanCostPerDay = basePlanPricingPhase.priceAmountMicros / periodDays
-
-    return offers.map { offer ->
-        // Maps each phase for total cost up to longest offer duration
-        val pricePerDayPerPhase = offer.pricingPhases
-            .filter { it.recurrenceMode == RecurrenceMode.FINITE_RECURRING }
-            .mapNotNull { pricingPhase ->
-                val periodDays = parseBillPeriodToDays(pricingPhase.billingPeriod)
-
-                if (periodDays > 0) {
-                    val pricePerDay = pricingPhase.priceAmountMicros / periodDays
-                    val totalDaysOfPhase = pricingPhase.totalNumberOfDays() ?: 0
-
-                    val numberOfDaysOnBasePlan = longestOfferTotalDays - totalDaysOfPhase
-
-                    val costOfPricingPhase = totalDaysOfPhase * pricePerDay
-                    val costOfBasePlan = numberOfDaysOnBasePlan * basePlanCostPerDay
-
-                    val totes = costOfPricingPhase + costOfBasePlan
-
-                    Pair(pricingPhase, totes)
-                } else {
-                    null
-                }
-            }
-
-        val totalPricePerPhase = pricePerDayPerPhase.sumOf { it.second }
-        Pair(offer, totalPricePerPhase)
+private fun findLowestNoneFreeOffer(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
+    return offers.mapNotNull { offer ->
+        offer.nonFreePricingPhase()?.let { pricingPhase ->
+            Pair(offer, pricingPhase.priceAmountMicros)
+        }
     }.minByOrNull { it.second }?.first
 }
 
-private fun PricingPhase.totalNumberOfDays(): Int? {
-    val periodDays = parseBillPeriodToDays(billingPeriod)
-    val cycleCount = billingCycleCount ?: 0
+private fun GoogleSubscriptionOption.freePricingPhase(): PricingPhase? {
+    return pricingPhases.firstOrNull()?.takeIf { it.priceAmountMicros == 0L }
+}
 
-    return if (periodDays > 0 && cycleCount > 0) {
-        periodDays * cycleCount
-    } else {
-        0
-    }
+private fun GoogleSubscriptionOption.nonFreePricingPhase(): PricingPhase? {
+    return pricingPhases.firstOrNull()?.takeIf { it.priceAmountMicros > 0L }
 }
 
 private const val DAYS_IN_YEAR = 365
