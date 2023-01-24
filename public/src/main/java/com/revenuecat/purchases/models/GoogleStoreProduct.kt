@@ -15,8 +15,7 @@ data class GoogleStoreProduct(
     override val description: String,
     override val subscriptionPeriod: String?,
     override val subscriptionOptions: List<GoogleSubscriptionOption>,
-    override val defaultOption: SubscriptionOption?,
-    val productDetails: @RawValue ProductDetails // TODO parcelize?
+    override val defaultOption: SubscriptionOption?
 ) : StoreProduct, Parcelable {
 
     override val purchasingData: PurchasingData
@@ -40,8 +39,8 @@ data class GoogleStoreProduct(
         title: String,
         description: String,
         subscriptionPeriod: String?,
-        purchaseOptions: List<PurchaseOption>,
-        defaultOption: PurchaseOption?,
+        subscriptionOptions: List<GoogleSubscriptionOption>,
+        defaultOption: SubscriptionOption?,
         productDetails: ProductDetails
     ) :
         this(
@@ -51,7 +50,7 @@ data class GoogleStoreProduct(
             title,
             description,
             subscriptionPeriod,
-            purchaseOptions,
+            subscriptionOptions,
             defaultOption
         ) {
         this.productDetails = productDetails
