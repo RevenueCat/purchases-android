@@ -11,6 +11,7 @@
 | `Price`                |
 | `PricingPhase`         |
 | `RecurrenceMode`       |
+| `GoogleProrationMode`  |
 
 | Old Location                            | New Location                                   |
 |-----------------------------------------|------------------------------------------------|
