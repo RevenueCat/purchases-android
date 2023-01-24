@@ -60,6 +60,7 @@ class PackageCardAdapter(
                 )
             }
 
+            // TODO add label to default option, update package/product buttons to indicate it will use default
             binding.optionBuyButton.setOnClickListener {
                 val errorStartingPurchase = validateStartPurchase(product)
                 val subscriptionOption = getSelectedSubscriptionOption()
