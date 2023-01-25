@@ -7,7 +7,7 @@
 * Fixed Readme.MD (#727) via AristiDevs (@ArisGuimera)
 * Add codecov (#750) via Cesar de la Vega (@vegaro)
 * Update AGP to 7.4.0 (#747) via Cesar de la Vega (@vegaro)
-* Update AGP to 7.4.0 (#747) via Cesar de la Vega (@vegaro)
+* Add test coverage using Kover (#748) via Cesar de la Vega (@vegaro)
 
 ## 5.6.7
 ### Bugfixes
