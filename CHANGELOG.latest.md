@@ -1,7 +1,7 @@
 ### Bugfixes
-* Fix crash when cleaning old attribution data if SharedPreferences has a null key (#742) via Toni Rico (@tonidero)
+* Avoid syncing attributes for users with blank user ids (#755) via Toni Rico (@tonidero)
 ### Other Changes
-* Update Gemfile.lock (#734) via Cesar de la Vega (@vegaro)
-* remove stalebot in favor of SLAs in Zendesk (#725) via Andy Boedo (@aboedo)
-* Update fastlane-plugin-revenuecat_internal to latest version (#724) via Cesar de la Vega (@vegaro)
-* Bumps AGP to 7.3.1 (#718) via Cesar de la Vega (@vegaro)
+* Fixed Readme.MD (#727) via AristiDevs (@ArisGuimera)
+* Add codecov (#750) via Cesar de la Vega (@vegaro)
+* Update AGP to 7.4.0 (#747) via Cesar de la Vega (@vegaro)
+* Update AGP to 7.4.0 (#747) via Cesar de la Vega (@vegaro)

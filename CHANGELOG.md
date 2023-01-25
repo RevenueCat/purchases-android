@@ -1,3 +1,12 @@
+## 5.6.8
+### Bugfixes
+* Avoid syncing attributes for users with blank user ids (#755) via Toni Rico (@tonidero)
+### Other Changes
+* Fixed Readme.MD (#727) via AristiDevs (@ArisGuimera)
+* Add codecov (#750) via Cesar de la Vega (@vegaro)
+* Update AGP to 7.4.0 (#747) via Cesar de la Vega (@vegaro)
+* Update AGP to 7.4.0 (#747) via Cesar de la Vega (@vegaro)
+
 ## 5.6.7
 ### Bugfixes
 * Fix crash when cleaning old attribution data if SharedPreferences has a null key (#742) via Toni Rico (@tonidero)
