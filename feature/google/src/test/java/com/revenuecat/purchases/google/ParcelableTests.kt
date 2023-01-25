@@ -3,11 +3,7 @@ package com.revenuecat.purchases.google
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GooglePurchaseOption
-import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.utils.mockProductDetails
-import com.revenuecat.purchases.utils.stubPurchaseOption
 import com.revenuecat.purchases.utils.testParcelization
 import org.junit.Test
 import org.junit.runner.RunWith
