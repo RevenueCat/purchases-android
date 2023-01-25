@@ -13,7 +13,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.helpers.PurchasingServiceProviderForTest
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.utils.MockTimestampProvider
-import com.revenuecat.purchases.utils.TimestampProvider
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -22,8 +21,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.lang.Exception
-import java.lang.RuntimeException
 
 @RunWith(AndroidJUnit4::class)
 class UserDataHandlerTest {
@@ -133,6 +130,9 @@ class UserDataHandlerTest {
         var receivedException: Throwable? = null
         var receivedLoggedException: Throwable? = null
         Purchases.logHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) {
+            }
+
             override fun d(tag: String, msg: String) {
             }
 

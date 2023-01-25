@@ -7,6 +7,10 @@ import com.revenuecat.purchases.strings.Emojis
 var currentLogHandler: LogHandler = DefaultLogHandler()
 
 private class DefaultLogHandler : LogHandler {
+    override fun v(tag: String, msg: String) {
+        Log.v(tag, msg)
+    }
+
     override fun d(tag: String, msg: String) {
         Log.d(tag, msg)
     }

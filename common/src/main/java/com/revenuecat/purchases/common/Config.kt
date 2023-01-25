@@ -1,8 +1,9 @@
 package com.revenuecat.purchases.common
 
-object Config {
+import com.revenuecat.purchases.LogLevel
 
-    var debugLogsEnabled = BuildConfig.DEBUG
+object Config {
+    var logLevel = LogLevel.debugLogsEnabled(BuildConfig.DEBUG)
 
     const val frameworkVersion = "5.7.0-SNAPSHOT"
 }
