@@ -594,6 +594,58 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
+    fun `When syncing all users attributes, does not sync attributes for empty user IDs`() {
+        every {
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+        } just Runs
+
+        val attributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L"),
+            "removeThis" to SubscriberAttribute("tshirtsize", null)
+        )
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes()
+        } returns mapOf(
+            appUserID to attributes,
+            "" to attributes
+        )
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        verify(exactly = 1) {
+            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), appUserID, any(), any())
+        }
+        verify(exactly = 0) {
+            mockBackend.postSubscriberAttributes(any(), "", any(), any())
+        }
+    }
+
+    @Test
+    fun `When syncing all users attributes, does not sync attributes for whitespaces user IDs`() {
+        every {
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+        } just Runs
+
+        val whitespacesUserId = "   "
+
+        val attributes = mapOf(
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L"),
+            "removeThis" to SubscriberAttribute("tshirtsize", null)
+        )
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes()
+        } returns mapOf(
+            appUserID to attributes,
+            whitespacesUserId to attributes
+        )
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        verify(exactly = 1) {
+            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), appUserID, any(), any())
+        }
+        verify(exactly = 0) {
+            mockBackend.postSubscriberAttributes(any(), eq(whitespacesUserId), any(), any())
+        }
+    }
+
+    @Test
     fun `When syncing another user attributes, clear them when posted`() {
         val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
         val subscriberAttribute2 = SubscriberAttribute("key2", "value2", isSynced = true)
