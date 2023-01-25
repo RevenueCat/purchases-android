@@ -60,14 +60,13 @@ class PackageCardAdapter(
                 )
             }
 
-            // TODO add label to default option, update package/product buttons to indicate it will use default
             binding.optionBuyButton.setOnClickListener {
                 val errorStartingPurchase = validateStartPurchase(product)
                 val subscriptionOption = getSelectedSubscriptionOption()
                 if (subscriptionOption == null) {
                     showErrorMessage("Select a subscription option")
                 } else if (errorStartingPurchase == null) {
-                    listener.onSubscriptionOptionClicked(
+                    listener.onPurchaseSubscriptionOptionClicked(
                         binding.root,
                         subscriptionOption,
                         binding.isUpgradeCheckbox.isChecked
@@ -97,9 +96,10 @@ class PackageCardAdapter(
         private fun bindSubscriptionOptions(product: StoreProduct) {
             binding.packageSubscriptionOptionGroup.removeAllViews()
             val numberOfSubscriptionOptions = product.subscriptionOptions.size
+            val defaultOption = product.defaultOption
             product.subscriptionOptions.forEach { subscriptionOption ->
                 val radioButton = RadioButton(binding.root.context).apply {
-                    text = subscriptionOption.toButtonString()
+                    text = subscriptionOption.toButtonString(subscriptionOption == defaultOption)
                     tag = subscriptionOption
                 }
                 binding.packageSubscriptionOptionGroup.addView(radioButton)
@@ -142,7 +142,7 @@ class PackageCardAdapter(
             currentProduct: StoreProduct,
             isUpgrade: Boolean
         )
-        fun onSubscriptionOptionClicked(
+        fun onPurchaseSubscriptionOptionClicked(
             cardView: View,
             subscriptionOption: SubscriptionOption,
             isUpgrade: Boolean

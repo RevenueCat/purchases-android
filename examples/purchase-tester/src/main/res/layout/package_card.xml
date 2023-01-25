@@ -125,7 +125,7 @@
                     android:visibility="@{isSubscription ? View.VISIBLE : View.GONE}"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/package_subscription_option_title"></RadioGroup>
+                    app:layout_constraintTop_toBottomOf="@id/package_subscription_option_title"/>
 
             <androidx.constraintlayout.widget.Barrier
                     android:id="@+id/package_card_barrier"
@@ -147,21 +147,25 @@
             <!-- TODO BC5 enable based on whether current base plan is active -->
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/package_buy_button"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Buy package"
+                    android:text="Buy package (default option)"
+                    android:textSize="10dp"
                     app:layout_constraintBottom_toTopOf="@+id/product_buy_button"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/is_upgrade_checkbox" />
+                    app:layout_constraintTop_toBottomOf="@+id/is_upgrade_checkbox"
+                    app:layout_constraintStart_toStartOf="@+id/option_buy_button"/>
 
             <!-- TODO BC5 enable based on whether current base plan is active -->
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/product_buy_button"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Buy product"
+                    android:textSize="10dp"
+                    android:text="Buy product (default option)"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/package_buy_button" />
+                    app:layout_constraintTop_toBottomOf="@+id/package_buy_button"
+                    app:layout_constraintStart_toStartOf="@+id/option_buy_button" />
 
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/option_buy_button"
