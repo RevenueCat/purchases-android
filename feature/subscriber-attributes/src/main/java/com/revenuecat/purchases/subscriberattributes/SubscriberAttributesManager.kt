@@ -3,7 +3,6 @@ package com.revenuecat.purchases.subscriberattributes
 import android.app.Application
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
