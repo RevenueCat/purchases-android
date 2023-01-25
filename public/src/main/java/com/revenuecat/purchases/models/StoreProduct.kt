@@ -54,6 +54,7 @@ interface StoreProduct : Parcelable {
      */
     val defaultOption: SubscriptionOption?
 
+    // TODO javadocs
     val purchasingData: PurchasingData
 
     /**

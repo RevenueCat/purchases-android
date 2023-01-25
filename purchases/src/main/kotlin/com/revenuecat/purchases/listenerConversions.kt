@@ -147,11 +147,9 @@ fun Purchases.purchaseProductWith(
     purchaseProduct(activity, storeProduct, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
 }
 
-// TODOBC5: Remove storeProduct parameter
 /**
  * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
  * @param [activity] Current activity
- * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
@@ -169,7 +167,6 @@ fun Purchases.purchaseSubscriptionOptionWith(
     )
 }
 
-// TODOBC5: Remove storeProduct parameter
 /**
  * Purchase a subscription [StoreProduct]'s [SubscriptionOption], upgrading from an old product.
  * @param [activity] Current activity
