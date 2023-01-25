@@ -74,9 +74,7 @@ class SubscriberAttributesManager(
             unsyncedStoredAttributesForAllUsers.forEach { (syncingAppUserID, unsyncedAttributesForUser) ->
                 if (syncingAppUserID.isBlank()) {
                     infoLog(AttributionStrings.SKIP_ATTRIBUTES_SYNC.format(syncingAppUserID))
-                    if (completion != null) {
-                        completion()
-                    }
+                    currentSyncedAttributeCount++
                     return@forEach
                 }
                 backend.postSubscriberAttributes(
