@@ -1,4 +1,3 @@
-@file:Suppress("MaximumLineLength", "MaxLineLength")
 package com.revenuecat.purchases.google
 
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
@@ -9,7 +8,7 @@ fun List<GoogleSubscriptionOption>.findBestOffer(): GoogleSubscriptionOption? {
 
     val validOffers = this
         .filter { !it.isBasePlan }
-        .filter { !it.tags.contains("rc-ignore-best-offer") }
+        .filter { !it.tags.contains("rc-ignore-default-offer") }
 
     return findLongestFreeTrial(validOffers) ?: findLowestNonFreeOffer(validOffers) ?: basePlan
 }
@@ -43,7 +42,7 @@ private const val DAYS_IN_WEEK = 7
 // Would use Duration.parse but only available API 26 and up
 internal fun parseBillPeriodToDays(period: String): Int {
     // Takes from https://stackoverflow.com/a/32045167
-    val regex = "^P(?!\$)(\\d+(?:\\.\\d+)?Y)?(\\d+(?:\\.\\d+)?M)?(\\d+(?:\\.\\d+)?W)?(\\d+(?:\\.\\d+)?D)?(T(?=\\d)(\\d+(?:\\.\\d+)?H)?(\\d+(?:\\.\\d+)?M)?(\\d+(?:\\.\\d+)?S)?)?\$"
+    val regex = "^P(?!\$)(\\d+(?:\\.\\d+)?Y)?(\\d+(?:\\.\\d+)?M)?(\\d+(?:\\.\\d+)?W)?(\\d+(?:\\.\\d+)?D)?\$"
         .toRegex()
         .matchEntire(period)
 
