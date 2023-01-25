@@ -12,7 +12,6 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before

@@ -4,6 +4,20 @@ import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 
+/**
+ * Whether debug logs are enabled
+ */
+val LogLevel.debugLogsEnabled: Boolean
+    get() = this <= LogLevel.DEBUG
+
+fun LogLevel.Companion.debugLogsEnabled(enabled: Boolean): LogLevel {
+    return if (enabled) {
+        LogLevel.DEBUG
+    } else {
+        LogLevel.INFO
+    }
+}
+
 fun verboseLog(message: String) {
     logIfEnabled(LogLevel.VERBOSE, currentLogHandler::v, message)
 }
