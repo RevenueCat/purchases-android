@@ -1,9 +1,18 @@
-package com.revenuecat.purchases.common
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
+package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.LogHandler
-import com.revenuecat.purchases.LogLevel
-import com.revenuecat.purchases.common.Config.logLevel
+import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.infoLog
+import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -13,7 +22,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class LogHandlerTest {
+class PurchasesLoggerTest {
     private class Handler : LogHandler {
         var verboseMessage: String? = null
         var debugMessage: String? = null
@@ -139,40 +148,12 @@ class LogHandlerTest {
         }
     }
 
-    @Test
-    fun logLevelWithDebugLogsEnabled() {
-        assertThat(LogLevel.debugLogsEnabled(true)).isEqualTo(LogLevel.DEBUG)
-        assertThat(LogLevel.debugLogsEnabled(false)).isEqualTo(LogLevel.INFO)
-    }
-
-    @Test
-    fun logLevelDebugLogsEnabled() {
-        assertThat(LogLevel.VERBOSE.debugLogsEnabled).isEqualTo(true)
-        assertThat(LogLevel.DEBUG.debugLogsEnabled).isEqualTo(true)
-        assertThat(LogLevel.INFO.debugLogsEnabled).isEqualTo(false)
-        assertThat(LogLevel.WARN.debugLogsEnabled).isEqualTo(false)
-        assertThat(LogLevel.ERROR.debugLogsEnabled).isEqualTo(false)
-    }
-
-    @Test
-    fun testLogLevelComparable() {
-        assertThat(LogLevel.VERBOSE).isLessThan(LogLevel.DEBUG)
-        assertThat(LogLevel.DEBUG).isLessThan(LogLevel.INFO)
-        assertThat(LogLevel.INFO).isLessThan(LogLevel.WARN)
-        assertThat(LogLevel.WARN).isLessThan(LogLevel.ERROR)
-
-        assertThat(LogLevel.DEBUG).isGreaterThanOrEqualTo(LogLevel.VERBOSE)
-        assertThat(LogLevel.INFO).isGreaterThanOrEqualTo(LogLevel.DEBUG)
-        assertThat(LogLevel.WARN).isGreaterThanOrEqualTo(LogLevel.INFO)
-        assertThat(LogLevel.ERROR).isGreaterThanOrEqualTo(LogLevel.WARN)
-    }
-
     private fun withChangedLevel(newLevel: LogLevel, test: () -> Unit) {
-        val level = logLevel
-        logLevel = newLevel
+        val level = Purchases.logLevel
+        Purchases.logLevel = newLevel
 
         test.invoke()
 
-        logLevel = level
+        Purchases.logLevel = level
     }
 }
