@@ -8,21 +8,6 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
  class LogLevelTest {
     @Test
-    fun logLevelWithDebugLogsEnabled() {
-        assertThat(LogLevel.debugLogsEnabled(true)).isEqualTo(LogLevel.DEBUG)
-        assertThat(LogLevel.debugLogsEnabled(false)).isEqualTo(LogLevel.INFO)
-    }
-
-    @Test
-    fun logLevelDebugLogsEnabled() {
-        assertThat(LogLevel.VERBOSE.debugLogsEnabled).isEqualTo(true)
-        assertThat(LogLevel.DEBUG.debugLogsEnabled).isEqualTo(true)
-        assertThat(LogLevel.INFO.debugLogsEnabled).isEqualTo(false)
-        assertThat(LogLevel.WARN.debugLogsEnabled).isEqualTo(false)
-        assertThat(LogLevel.ERROR.debugLogsEnabled).isEqualTo(false)
-    }
-
-    @Test
     fun testLogLevelComparable() {
         assertThat(LogLevel.VERBOSE).isLessThan(LogLevel.DEBUG)
         assertThat(LogLevel.DEBUG).isLessThan(LogLevel.INFO)
