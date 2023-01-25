@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.ProductDetails.SubscriptionOfferDetails
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.QueryPurchasesParams
@@ -34,10 +33,3 @@ fun @receiver:BillingClient.ProductType String.buildQueryProductDetailsParams(
     return QueryProductDetailsParams.newBuilder()
         .setProductList(productList).build()
 }
-
-// TODO move somewhere
-val SubscriptionOfferDetails.subscriptionBillingPeriod: String?
-    get() = this.pricingPhases.pricingPhaseList.lastOrNull()?.billingPeriod
-
-val SubscriptionOfferDetails.isBasePlan: Boolean
-    get() = this.pricingPhases.pricingPhaseList.size == 1

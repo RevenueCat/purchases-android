@@ -22,3 +22,9 @@ fun ProductDetails.SubscriptionOfferDetails.toSubscriptionOption(
 
 private val ProductDetails.SubscriptionOfferDetails.subscriptionOptionId
     get() = basePlanId + if (offerId.isNullOrBlank()) "" else ":$offerId"
+
+val ProductDetails.SubscriptionOfferDetails.subscriptionBillingPeriod: String?
+    get() = this.pricingPhases.pricingPhaseList.lastOrNull()?.billingPeriod
+
+val ProductDetails.SubscriptionOfferDetails.isBasePlan: Boolean
+    get() = this.pricingPhases.pricingPhaseList.size == 1
