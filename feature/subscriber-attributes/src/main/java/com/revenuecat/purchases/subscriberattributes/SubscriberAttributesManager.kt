@@ -3,7 +3,6 @@ package com.revenuecat.purchases.subscriberattributes
 import android.app.Application
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
@@ -59,7 +58,7 @@ class SubscriberAttributesManager(
     ) {
         obtainingDeviceIdentifiersObservable.waitUntilIdle {
             val unsyncedStoredAttributesForAllUsers =
-                deviceCache.getUnsyncedSubscriberAttributes()
+                deviceCache.getUnsyncedSubscriberAttributes().filterKeys { it.isNotBlank() }
             if (unsyncedStoredAttributesForAllUsers.isEmpty()) {
                 log(LogIntent.DEBUG, AttributionStrings.NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE)
                 if (completion != null) {
@@ -72,11 +71,6 @@ class SubscriberAttributesManager(
             var currentSyncedAttributeCount = 0
 
             unsyncedStoredAttributesForAllUsers.forEach { (syncingAppUserID, unsyncedAttributesForUser) ->
-                if (syncingAppUserID.isBlank()) {
-                    infoLog(AttributionStrings.SKIP_ATTRIBUTES_SYNC.format(syncingAppUserID))
-                    currentSyncedAttributeCount++
-                    return@forEach
-                }
                 backend.postSubscriberAttributes(
                     unsyncedAttributesForUser.toBackendMap(),
                     syncingAppUserID,

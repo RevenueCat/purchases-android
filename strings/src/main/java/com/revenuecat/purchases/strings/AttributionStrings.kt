@@ -2,7 +2,6 @@ package com.revenuecat.purchases.strings
 
 object AttributionStrings {
     const val ATTRIBUTES_SYNC_ERROR = "Error when syncing subscriber attributes. App User ID: %s, Error: %s"
-    const val SKIP_ATTRIBUTES_SYNC = "Skipping attributes sync for user id: \"%s\". Empty User IDs are not allowed."
     const val ATTRIBUTES_SYNC_SUCCESS = "Subscriber attributes synced successfully for App User ID: %s"
     const val DELETING_ATTRIBUTES = "Deleting subscriber attributes for %s from cache"
     const val DELETING_ATTRIBUTES_OTHER_USERS = "Deleting old synced subscriber attributes that don't belong to %s"
