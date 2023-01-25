@@ -57,6 +57,8 @@ class SubscriberAttributesManager(
         completion: (() -> Unit)? = null
     ) {
         obtainingDeviceIdentifiersObservable.waitUntilIdle {
+            // We are filtering out blank user IDs to guard against old users that could potentially have
+            // stored attributes as a blank user ID. See https://github.com/RevenueCat/purchases-android/pull/755
             val unsyncedStoredAttributesForAllUsers =
                 deviceCache.getUnsyncedSubscriberAttributes().filterKeys { it.isNotBlank() }
             if (unsyncedStoredAttributesForAllUsers.isEmpty()) {
