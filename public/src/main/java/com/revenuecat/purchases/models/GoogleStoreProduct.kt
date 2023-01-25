@@ -5,6 +5,7 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
 
 @Parcelize
 data class GoogleStoreProduct(
@@ -15,7 +16,8 @@ data class GoogleStoreProduct(
     override val description: String,
     override val subscriptionPeriod: String?,
     override val subscriptionOptions: List<GoogleSubscriptionOption>,
-    override val defaultOption: GoogleSubscriptionOption?
+    override val defaultOption: SubscriptionOption?,
+    val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable {
 
     override val purchasingData: PurchasingData
@@ -27,37 +29,6 @@ data class GoogleStoreProduct(
                 productDetails
             )
         }
-
-    // @IgnoredOnParcel isn't allowed in primary constructor without default value
-    // so to avoid having to provide a default value, productDetails lives outside of the constructor
-    // TODO maddie this works, but as a public class it is bug-prone. users cuold use the primary constructor
-    // and then try to access productDetails
-    constructor(
-        productId: String,
-        type: ProductType,
-        oneTimeProductPrice: Price?,
-        title: String,
-        description: String,
-        subscriptionPeriod: String?,
-        subscriptionOptions: List<GoogleSubscriptionOption>,
-        defaultOption: GoogleSubscriptionOption?,
-        productDetails: ProductDetails
-    ) :
-        this(
-            productId,
-            type,
-            oneTimeProductPrice,
-            title,
-            description,
-            subscriptionPeriod,
-            subscriptionOptions,
-            defaultOption
-        ) {
-        this.productDetails = productDetails
-    }
-
-    @IgnoredOnParcel
-    lateinit var productDetails: ProductDetails
 
     /**
      * The sku of the StoreProduct
