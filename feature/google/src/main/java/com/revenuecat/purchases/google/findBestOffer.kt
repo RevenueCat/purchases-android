@@ -11,32 +11,30 @@ fun List<GoogleSubscriptionOption>.findBestOffer(): GoogleSubscriptionOption? {
         .filter { !it.isBasePlan }
         .filter { !it.tags.contains("rc-ignore-best-offer") }
 
-    return findLongestFreeTrial(validOffers) ?: findLowestNoneFreeOffer(validOffers) ?: basePlan
+    return findLongestFreeTrial(validOffers) ?: findLowestNonFreeOffer(validOffers) ?: basePlan
 }
 
 private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
     return offers.mapNotNull { offer ->
-        offer.freePricingPhase()?.let { pricingPhase ->
+        offer.freePricingPhase?.let { pricingPhase ->
             Pair(offer, parseBillPeriodToDays(pricingPhase.billingPeriod))
         }
     }.maxByOrNull { it.second }?.first
 }
 
-private fun findLowestNoneFreeOffer(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
+private fun findLowestNonFreeOffer(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
     return offers.mapNotNull { offer ->
-        offer.nonFreePricingPhase()?.let { pricingPhase ->
+        offer.nonFreePricingPhase?.let { pricingPhase ->
             Pair(offer, pricingPhase.priceAmountMicros)
         }
     }.minByOrNull { it.second }?.first
 }
 
-private fun GoogleSubscriptionOption.freePricingPhase(): PricingPhase? {
-    return pricingPhases.firstOrNull()?.takeIf { it.priceAmountMicros == 0L }
-}
+private val GoogleSubscriptionOption.freePricingPhase: PricingPhase?
+    get() = pricingPhases.firstOrNull()?.takeIf { it.priceAmountMicros == 0L }
 
-private fun GoogleSubscriptionOption.nonFreePricingPhase(): PricingPhase? {
-    return pricingPhases.firstOrNull()?.takeIf { it.priceAmountMicros > 0L }
-}
+private val GoogleSubscriptionOption.nonFreePricingPhase: PricingPhase?
+    get() = pricingPhases.firstOrNull()?.takeIf { it.priceAmountMicros > 0L }
 
 private const val DAYS_IN_YEAR = 365
 private const val DAYS_IN_MONTH = 30
