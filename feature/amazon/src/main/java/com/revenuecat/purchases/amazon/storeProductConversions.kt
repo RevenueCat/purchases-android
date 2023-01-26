@@ -6,11 +6,15 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.parceler.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
 import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 import java.math.BigDecimal
@@ -18,13 +22,9 @@ import java.util.regex.Pattern
 
 sealed class AmazonPurchasingData : PurchasingData {
     data class Product(
-        val storeProduct: AmazonStoreProduct,
-    ) : AmazonPurchasingData() {
-        override val productId: String
-            get() = storeProduct.productId
+        override val productId: String,
         override val productType: ProductType
-            get() = storeProduct.type
-    }
+    ) : AmazonPurchasingData()
 }
 
 @Parcelize
@@ -37,19 +37,16 @@ data class AmazonStoreProduct(
     override val subscriptionPeriod: String?,
 
     // TODOBC5
-    override val oneTimeProductPrice: com.revenuecat.purchases.models.Price?,
-    override val subscriptionOptions: List<SubscriptionOption>,
-    override val defaultOption: SubscriptionOption?,
-    val price: String,
-    val priceAmountMicros: Long,
-    val priceCurrencyCode: String,
+    override val oneTimeProductPrice: Price?,
+    override val subscriptionOptions: List<AmazonSubscriptionOption>,
+    override val defaultOption: AmazonSubscriptionOption?,
     val iconUrl: String,
     val originalJson: JSONObject,
     val amazonProduct: Product,
 ) : StoreProduct, Parcelable {
 
     override val purchasingData: AmazonPurchasingData
-        get() = AmazonPurchasingData.Product(this)
+        get() = AmazonPurchasingData.Product(productId, type)
 
     override val sku: String
         get() = productId
@@ -66,20 +63,35 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     }
     // By default, Amazon automatically converts the base list price of your IAP items into
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
-    val (currencyCode, priceAmountMicros) = price.extractPrice(marketplace)
+    val priceObject = price.extractPrice(marketplace)
+    val rcProductType = productType.toRevenueCatProductType()
 
+    val option: AmazonSubscriptionOption? = if (rcProductType == ProductType.SUBS) {
+        val pricingPhase = PricingPhase(
+            subscriptionPeriod,
+            priceObject.currencyCode,
+            price,
+            priceObject.priceAmountMicros,
+            RecurrenceMode.INFINITE_RECURRING,
+            null
+        )
+        AmazonSubscriptionOption(
+            sku,
+            listOf(pricingPhase),
+            listOf(),
+            AmazonPurchasingData.Product(sku, rcProductType)
+        )
+    } else null
+    // TODObc5 -- should price just go into a single subOption, or into oneTimeProductPrice if type is not SUB
     return AmazonStoreProduct(
         sku,
-        productType.toRevenueCatProductType(),
+        rcProductType,
         title,
         description,
-        subscriptionPeriod = null,
-        null,
-        emptyList(),
-        defaultOption = null,
-        price,
-        priceAmountMicros = priceAmountMicros,
-        priceCurrencyCode = currencyCode,
+        subscriptionPeriod = null, // TODO we always set this to null before but it is returned from amazon...
+        if (rcProductType == ProductType.INAPP) priceObject else null,
+        option?.let { listOf(it) } ?: emptyList(),
+        defaultOption = option,
         iconUrl = smallIconUrl,
         originalJson = toJSON(),
         amazonProduct = this
@@ -92,15 +104,11 @@ internal fun String.extractPrice(marketplace: String): Price {
     val currencyCode = ISO3166Alpha2ToISO42170Converter.convertOrEmpty(marketplace)
 
     return Price(
-        currencyCode,
-        priceAmountMicros
+        this,
+        priceAmountMicros,
+        currencyCode
     )
 }
-
-internal data class Price(
-    val currencyCode: String,
-    val priceAmountMicros: Long
-)
 
 // Explanations about the regexp:
 // \\d+: match the first(s) number(s)
@@ -110,6 +118,7 @@ internal data class Price(
 private val pattern: Pattern = Pattern.compile("(\\d+[[\\.,\\s]\\d+]*)")
 
 internal fun String.parsePriceUsingRegex(): BigDecimal? {
+    // TODO amazon is this original String what we could pass into Price as formattedPrice?
     val matcher = pattern.matcher(this)
     return matcher.takeIf { it.find() }?.let {
         val dirtyPrice = matcher.group()
@@ -136,3 +145,14 @@ internal fun String.parsePriceUsingRegex(): BigDecimal? {
         BigDecimal(price)
     }
 }
+
+/**
+ * Defines an option for purchasing a Google subscription
+ */
+@Parcelize
+data class AmazonSubscriptionOption(
+    override val id: String,
+    override val pricingPhases: List<PricingPhase>,
+    override val tags: List<String>,
+    override val purchasingData: @RawValue PurchasingData
+) : SubscriptionOption, Parcelable

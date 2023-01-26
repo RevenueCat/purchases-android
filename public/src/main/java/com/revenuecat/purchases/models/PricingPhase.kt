@@ -11,6 +11,7 @@ import org.json.JSONObject
 // TODO javadocs
 data class PricingPhase(
     val billingPeriod: String,
+    // TODO use Price class instead
     val priceCurrencyCode: String,
     val formattedPrice: String,
     val priceAmountMicros: Long,
