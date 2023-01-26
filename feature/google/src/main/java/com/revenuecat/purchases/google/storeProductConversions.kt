@@ -7,13 +7,15 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 
 // In-apps don't have base plan nor offers
-fun ProductDetails.toInAppStoreProduct(): StoreProduct = this.toStoreProduct(emptyList(), null)
+fun ProductDetails.toInAppStoreProduct(): StoreProduct = this.toStoreProduct(emptyList())
 
 fun ProductDetails.toStoreProduct(
-    offerDetails: List<ProductDetails.SubscriptionOfferDetails>,
-    defaultOffer: ProductDetails.SubscriptionOfferDetails?
-) =
-    GoogleStoreProduct(
+    offerDetails: List<ProductDetails.SubscriptionOfferDetails>
+): GoogleStoreProduct {
+    val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
+    val bestOffer = subscriptionOptions.findBestOffer()
+
+    return GoogleStoreProduct(
         productId,
         productType.toRevenueCatProductType(),
         createOneTimeProductPrice(),
@@ -24,12 +26,10 @@ fun ProductDetails.toStoreProduct(
             productId,
             this
         ) },
-        defaultOffer?.toSubscriptionOption(
-            productId,
-            this
-        ),
+        bestOffer,
         this
     )
+}
 
 private fun ProductDetails.createOneTimeProductPrice(): Price? {
     return if (productType.toRevenueCatProductType() == ProductType.INAPP) {
@@ -57,8 +57,8 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
         basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
             val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
             val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
-            val defaultOfferDetails = basePlan // TODOBC5: Change logic here for default offer.
-            productDetails.toStoreProduct(offerDetailsForBasePlan, defaultOfferDetails).let {
+
+            productDetails.toStoreProduct(offerDetailsForBasePlan).let {
                 storeProducts.add(it)
             }
         } ?: productDetails.toInAppStoreProduct().let { storeProducts.add(it) }

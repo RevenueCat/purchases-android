@@ -11,9 +11,8 @@ sealed class GooglePurchasingData : PurchasingData {
 
     data class Subscription(
         override val productId: String,
-        val productDetails: ProductDetails,
-
         val optionId: String,
+        val productDetails: ProductDetails,
         val token: String
     ) : GooglePurchasingData()
 
