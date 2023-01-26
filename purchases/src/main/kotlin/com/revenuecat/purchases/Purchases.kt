@@ -384,6 +384,12 @@ class Purchases internal constructor(
      * If [storeProduct] represents a subscription, upgrades from the subscription specified by
      * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
      *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc_ignore_default_offer" tag
+     *   - Uses longest free trial (if one exists)
+     *   - Uses first phase with lowest price (if one exists)
+     *   - Falls back to use base plan
+     *
      * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
      *
      * @param [activity] Current activity
@@ -410,6 +416,13 @@ class Purchases internal constructor(
 
     /**
      * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc_ignore_default_offer" tag
+     *   - Uses longest free trial (if one exists)
+     *   - Uses first phase with lowest price (if one exists)
+     *   - Falls back to use base plan
+     *
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
@@ -470,6 +483,12 @@ class Purchases internal constructor(
      * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
      * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
      *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc_ignore_default_offer" tag
+     *   - Uses longest free trial (if one exists)
+     *   - Uses first phase with lowest price (if one exists)
+     *   - Falls back to use base plan
+     *
      * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
      *
      * @param [activity] Current activity
@@ -496,6 +515,13 @@ class Purchases internal constructor(
 
     /**
      * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc_ignore_default_offer" tag
+     *   - Uses longest free trial (if one exists)
+     *   - Uses first phase with lowest price (if one exists)
+     *   - Falls back to use base plan
+     *
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
