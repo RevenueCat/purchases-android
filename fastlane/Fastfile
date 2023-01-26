@@ -122,13 +122,13 @@ platform :android do
       "mavenCentralPassword" => ENV['SONATYPE_NEXUS_TOKEN_PASSWORD'],
       "RELEASE_SIGNING_ENABLED" => true
     }
-    UI.verbose("Deploying #{version}")
-    gradle(
-      tasks: [
-        "publish --no-daemon --no-parallel"
-      ],
-      properties: gradleProperties
-    )
+    # UI.verbose("Deploying #{version}")
+    # gradle(
+      # tasks: [
+        # "publish --no-daemon --no-parallel"
+      # ],
+      # properties: gradleProperties
+    # )
 
     UI.verbose("Creating special version for Unity IAP with BillingClient 4 and Amazon 2 for version: #{version}")
     gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "unityIAPRelease"
@@ -142,7 +142,7 @@ platform :android do
       properties: gradleProperties
     )
 
-    github_release(version: version) unless is_snapshot_version?(version)
+    # github_release(version: version) unless is_snapshot_version?(version)
   end
 
   desc "Upload a snapshot release"

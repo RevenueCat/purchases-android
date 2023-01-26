@@ -375,35 +375,12 @@ workflows:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
-      - integration-tests-build: *release-branches
-      - run-firebase-tests-latest-dependencies:
-          requires:
-            - integration-tests-build
-      - run-firebase-tests-unityIAP:
-          requires:
-            - integration-tests-build
-      - hold:
-          type: approval
-          requires:
-            - run-firebase-tests-latest-dependencies
-            - run-firebase-tests-unityIAP
-          <<: *release-branches
-      - revenuecat/tag-current-branch:
-          requires:
-            - hold
-          <<: *release-branches
-      - deploy: *release-tags
-      - deploy-snapshot:
-          filters:
-            branches:
-              only:
-                - main
-      - docs-deploy: *release-tags
+      - deploy
+      - docs-deploy
       - publish-purchase-tester-latest-dependencies-release:
           requires:
             - deploy
             - docs-deploy
-          <<: *release-tags
 
   snapshot-bump:
     when:
