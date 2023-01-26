@@ -385,7 +385,7 @@ class Purchases internal constructor(
      * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc_ignore_default_offer" tag
+     *   - Filters out offers with "rc-ignore-default-offer" tag
      *   - Uses longest free trial (if one exists)
      *   - Uses first phase with lowest price (if one exists)
      *   - Falls back to use base plan
@@ -418,7 +418,7 @@ class Purchases internal constructor(
      * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc_ignore_default_offer" tag
+     *   - Filters out offers with "rc-ignore-default-offer" tag
      *   - Uses longest free trial (if one exists)
      *   - Uses first phase with lowest price (if one exists)
      *   - Falls back to use base plan
@@ -484,7 +484,7 @@ class Purchases internal constructor(
      * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc_ignore_default_offer" tag
+     *   - Filters out offers with "rc-ignore-default-offer" tag
      *   - Uses longest free trial (if one exists)
      *   - Uses first phase with lowest price (if one exists)
      *   - Falls back to use base plan
@@ -517,7 +517,7 @@ class Purchases internal constructor(
      * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc_ignore_default_offer" tag
+     *   - Filters out offers with "rc-ignore-default-offer" tag
      *   - Uses longest free trial (if one exists)
      *   - Uses first phase with lowest price (if one exists)
      *   - Falls back to use base plan

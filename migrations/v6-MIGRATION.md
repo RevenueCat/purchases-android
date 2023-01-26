@@ -77,7 +77,7 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 The `purchasePackage()` and `purchaseProduct()` APIs have a new behavior for selecting which offer is used when
 purchasing a `Package` or `StoreProduct`. These functions use the following logic to choose
 a [SubscriptionOption] to purchase:
-*   - Filters out offers with "rc_ignore_default_offer" tag
+*   - Filters out offers with "rc-ignore-default-offer" tag
 *   - Uses longest free trial (if one exists)
 *   - Uses first phase with lowest price (if one exists)
 *   - Falls back to use base plan
