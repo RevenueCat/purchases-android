@@ -377,10 +377,8 @@ class BillingWrapperTest {
 
         val upgradeInfo = mockReplaceSkuInfo()
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
-        val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!!,
-            defaultOfferDetails
+            productDetails.subscriptionOfferDetails!!
         )
 
         val slot = slot<BillingFlowParams>()
@@ -433,10 +431,8 @@ class BillingWrapperTest {
 
         val upgradeInfo = mockReplaceSkuInfo()
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
-        val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         val storeProduct = productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!,
-            defaultOfferDetails
         )
 
         every {
@@ -1120,10 +1116,8 @@ class BillingWrapperTest {
         } returns billingClientOKResult
 
         val productDetails = mockProductDetails(productId = "product_a")
-        val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!!,
-            defaultOfferDetails
+            productDetails.subscriptionOfferDetails!!
         )
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
@@ -1156,8 +1150,7 @@ class BillingWrapperTest {
 
         val productDetails = mockProductDetails(productId = "product_a")
         val storeProduct = productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!!,
-            productDetails.subscriptionOfferDetails!![0]
+            productDetails.subscriptionOfferDetails!!
         )
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
@@ -2150,10 +2143,8 @@ class BillingWrapperTest {
 
     private fun createStoreProductWithoutOffers(): StoreProduct {
         val productDetails = createMockProductDetailsNoOffers()
-        val defaultOfferDetails = productDetails.subscriptionOfferDetails!![0]
         return productDetails.toStoreProduct(
-            productDetails.subscriptionOfferDetails!!,
-            defaultOfferDetails
+            productDetails.subscriptionOfferDetails!!
         )
     }
 

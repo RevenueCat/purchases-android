@@ -12,8 +12,8 @@ fun ProductDetails.SubscriptionOfferDetails.toSubscriptionOption(
 
     val purchaseInfo = GooglePurchasingData.Subscription(
         productId,
-        productDetails,
         subscriptionOptionId,
+        productDetails,
         offerToken
     )
 
