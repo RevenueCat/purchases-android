@@ -9,7 +9,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.parceler.JSONObjectParceler
+import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject

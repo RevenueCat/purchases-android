@@ -16,7 +16,7 @@ data class GoogleStoreProduct(
     override val description: String,
     override val subscriptionPeriod: String?,
     override val subscriptionOptions: List<GoogleSubscriptionOption>,
-    override val defaultOption: SubscriptionOption?,
+    override val defaultOption: GoogleSubscriptionOption?,
     val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable {
 
