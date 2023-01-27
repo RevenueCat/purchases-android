@@ -56,7 +56,8 @@ fun JSONObject.createPackage(
 ): Package? {
     val packageIdentifier = getString("identifier")
     val productIdentifier = getString("platform_product_identifier")
-    val planIdentifier = optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
+    // TODO remove ?: productIdentifier once figured out offerings for amazon
+    val planIdentifier = optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() } ?: productIdentifier
 
     val matchingProduct = getMatchingProduct(productsById, productIdentifier, planIdentifier)
 
@@ -71,6 +72,8 @@ private fun getMatchingProduct(
     productIdentifier: String,
     planIdentifier: String?
 ): StoreProduct? {
+    // TODO amazon planIdentifier is always null -- either need backend to also send it,
+    //  or have special sdk treatment for amazon
     if (planIdentifier == null) {
         // It could be an INAPP or a mis-configured subscription
         // Try to find INAPP, otherwise null
