@@ -1083,7 +1083,9 @@ class Purchases internal constructor(
                                 handleErrorFetchingOfferings(
                                     PurchasesError(
                                         PurchasesErrorCode.ConfigurationError,
-                                        OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+                                        OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND.format(
+                                            appConfig.store.name
+                                        )
                                     ),
                                     completion
                                 )
