@@ -11,7 +11,7 @@ final class PackageAPI {
         final String identifier = p.getIdentifier();
         final PackageType packageType = p.getPackageType();
         final StoreProduct product = p.getProduct();
-        final String offering = p.getOffering(); //TODOBC5 change type?
+        final String offering = p.getOffering();
     }
 
     static void check(final PackageType type) {

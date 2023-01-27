@@ -1,11 +1,11 @@
-package com.revenuecat.purchases.parceler
+package com.revenuecat.purchases.utils
 
 import android.os.Parcel
 import kotlinx.parcelize.Parceler
 import org.json.JSONObject
 
 /** @suppress */
-object JSONObjectParceler : Parceler<JSONObject> { // TODOBC5 fix to internal?
+object JSONObjectParceler : Parceler<JSONObject> {
 
     override fun create(parcel: Parcel): JSONObject {
         return JSONObject(parcel.readString())

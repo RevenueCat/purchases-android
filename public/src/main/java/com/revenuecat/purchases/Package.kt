@@ -16,7 +16,7 @@ data class Package(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,
-    val offering: String // TODOBC5 change type?
+    val offering: String
 ) : Parcelable
 
 /**
