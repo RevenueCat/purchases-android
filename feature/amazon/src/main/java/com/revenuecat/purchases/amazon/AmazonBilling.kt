@@ -34,7 +34,6 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
@@ -240,7 +239,6 @@ internal class AmazonBilling constructor(
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
             return
         }
-        val storeProduct = amazonPurchaseInfo.storeProduct
 
         if (checkObserverMode()) return
 
@@ -254,10 +252,10 @@ internal class AmazonBilling constructor(
                     mainHandler,
                     activity,
                     appUserID,
-                    storeProduct,
+                    purchasingData,
                     presentedOfferingIdentifier,
                     onSuccess = { receipt, userData ->
-                        handleReceipt(receipt, userData, storeProduct, presentedOfferingIdentifier)
+                        handleReceipt(receipt, userData, purchasingData.productId, presentedOfferingIdentifier)
                     },
                     onError = {
                         onPurchaseError(it)
@@ -434,7 +432,7 @@ internal class AmazonBilling constructor(
     private fun handleReceipt(
         receipt: Receipt,
         userData: UserData,
-        storeProduct: StoreProduct,
+        storeProductId: String,
         presentedOfferingIdentifier: String?
     ) {
         if (receipt.productType != ProductType.SUBSCRIPTION) {
@@ -445,7 +443,7 @@ internal class AmazonBilling constructor(
              * since there's no terms and we can just use the sku
              */
             val amazonPurchaseWrapper = receipt.toStoreTransaction(
-                productId = storeProduct.productId,
+                productId = storeProductId,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
                 purchaseState = PurchaseState.PURCHASED,
                 userData

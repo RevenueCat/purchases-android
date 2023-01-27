@@ -12,6 +12,7 @@ import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.amazon.AmazonPurchasingData
 import com.revenuecat.purchases.amazon.AmazonStrings
 import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivity
 import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivityBroadcastReceiver
@@ -20,7 +21,6 @@ import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 class PurchaseHandler(
@@ -37,31 +37,31 @@ class PurchaseHandler(
         mainHandler: Handler,
         activity: Activity,
         appUserID: String,
-        storeProduct: StoreProduct,
+        purchasingData: AmazonPurchasingData,
         presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.productId))
+        log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(purchasingData.productId))
 
-        startProxyActivity(mainHandler, activity, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
+        startProxyActivity(mainHandler, activity, purchasingData, presentedOfferingIdentifier, onSuccess, onError)
     }
 
     @SuppressWarnings("LongParameterList")
     private fun startProxyActivity(
         mainHandler: Handler,
         activity: Activity,
-        storeProduct: StoreProduct,
+        purchasingData: AmazonPurchasingData,
         presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
         val resultReceiver =
-            createRequestIdResultReceiver(mainHandler, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
+            createRequestIdResultReceiver(mainHandler, purchasingData, presentedOfferingIdentifier, onSuccess, onError)
         val intent = ProxyAmazonBillingActivity.newStartIntent(
             activity,
             resultReceiver,
-            storeProduct.productId,
+            purchasingData.productId,
             purchasingServiceProvider
         )
         // ProxyAmazonBillingActivity will initiate the purchase
@@ -70,7 +70,7 @@ class PurchaseHandler(
 
     private fun createRequestIdResultReceiver(
         mainHandler: Handler,
-        storeProduct: StoreProduct,
+        purchasingData: AmazonPurchasingData,
         presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit
@@ -80,8 +80,8 @@ class PurchaseHandler(
                 val requestId = resultData?.get(ProxyAmazonBillingActivity.EXTRAS_REQUEST_ID) as? RequestId
                 if (requestId != null) {
                     purchaseCallbacks[requestId] = onSuccess to onError
-                    productTypes[storeProduct.productId] = storeProduct.type
-                    presentedOfferingsByProductIdentifier[storeProduct.productId] = presentedOfferingIdentifier
+                    productTypes[purchasingData.productId] = purchasingData.productType
+                    presentedOfferingsByProductIdentifier[purchasingData.productId] = presentedOfferingIdentifier
                 } else {
                     errorLog("No RequestId coming from ProxyAmazonBillingActivity")
                 }
