@@ -46,7 +46,7 @@ class PaywallAdapter(
             val price = item.product.defaultOption?.pricingPhases?.lastOrNull()?.formattedPrice ?: item.product.oneTimeProductPrice?.formattedPrice ?: "???"
 
             viewHolder.view.findViewById<TextView>(R.id.paywall_item_title).text = item.product.title
-            viewHolder.view.findViewById<TextView>(R.id.paywall_item_description).text = item.product.description
+            viewHolder.view.findViewById<TextView>(R.id.paywall_item_description).text = item.product.productId
             viewHolder.view.findViewById<TextView>(R.id.paywall_item_price).text = price
         }
     }
