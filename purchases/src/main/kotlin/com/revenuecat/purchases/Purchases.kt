@@ -386,8 +386,7 @@ class Purchases internal constructor(
      *
      * The default [SubscriptionOption] logic:
      *   - Filters out offers with "rc-ignore-default-offer" tag
-     *   - Uses longest free trial (if one exists)
-     *   - Uses first phase with lowest price (if one exists)
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
      * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
@@ -419,8 +418,7 @@ class Purchases internal constructor(
      *
      * The default [SubscriptionOption] logic:
      *   - Filters out offers with "rc-ignore-default-offer" tag
-     *   - Uses longest free trial (if one exists)
-     *   - Uses first phase with lowest price (if one exists)
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
      * @param [activity] Current activity
@@ -485,8 +483,7 @@ class Purchases internal constructor(
      *
      * The default [SubscriptionOption] logic:
      *   - Filters out offers with "rc-ignore-default-offer" tag
-     *   - Uses longest free trial (if one exists)
-     *   - Uses first phase with lowest price (if one exists)
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
      * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
@@ -518,8 +515,7 @@ class Purchases internal constructor(
      *
      * The default [SubscriptionOption] logic:
      *   - Filters out offers with "rc-ignore-default-offer" tag
-     *   - Uses longest free trial (if one exists)
-     *   - Uses first phase with lowest price (if one exists)
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
      * @param [activity] Current activity
