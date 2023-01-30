@@ -78,8 +78,7 @@ The `purchasePackage()` and `purchaseProduct()` APIs have a new behavior for sel
 purchasing a `Package` or `StoreProduct`. These functions use the following logic to choose
 a [SubscriptionOption] to purchase:
 *   - Filters out offers with "rc-ignore-default-offer" tag
-*   - Uses longest free trial (if one exists)
-*   - Uses first phase with lowest price (if one exists)
+*   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
 *   - Falls back to use base plan
 
 For more control, the `purchaseSubscriptionOption()` API can be used to manually choose which offer to purchase.
