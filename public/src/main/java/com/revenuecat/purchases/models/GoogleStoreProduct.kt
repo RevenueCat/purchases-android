@@ -15,10 +15,20 @@ data class GoogleStoreProduct(
     override val title: String,
     override val description: String,
     override val subscriptionPeriod: String?,
-    override val purchaseOptions: List<GooglePurchaseOption>,
-    override val defaultOption: PurchaseOption?,
+    override val subscriptionOptions: List<GoogleSubscriptionOption>,
+    override val defaultOption: GoogleSubscriptionOption?,
     val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable {
+
+    override val purchasingData: PurchasingData
+        get() = if (type == ProductType.SUBS && defaultOption != null) {
+            defaultOption.purchasingData
+        } else {
+            GooglePurchasingData.InAppProduct(
+                productId,
+                productDetails
+            )
+        }
 
     /**
      * The sku of the StoreProduct

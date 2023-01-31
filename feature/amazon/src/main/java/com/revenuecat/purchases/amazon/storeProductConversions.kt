@@ -6,14 +6,26 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.parceler.JSONObjectParceler
+import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.regex.Pattern
+
+sealed class AmazonPurchasingData : PurchasingData {
+    data class Product(
+        val storeProduct: AmazonStoreProduct,
+    ) : AmazonPurchasingData() {
+        override val productId: String
+            get() = storeProduct.productId
+        override val productType: ProductType
+            get() = storeProduct.type
+    }
+}
 
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
@@ -26,8 +38,8 @@ data class AmazonStoreProduct(
 
     // TODOBC5
     override val oneTimeProductPrice: com.revenuecat.purchases.models.Price?,
-    override val purchaseOptions: List<PurchaseOption>,
-    override val defaultOption: PurchaseOption?,
+    override val subscriptionOptions: List<SubscriptionOption>,
+    override val defaultOption: SubscriptionOption?,
     val price: String,
     val priceAmountMicros: Long,
     val priceCurrencyCode: String,
@@ -35,6 +47,9 @@ data class AmazonStoreProduct(
     val originalJson: JSONObject,
     val amazonProduct: Product,
 ) : StoreProduct, Parcelable {
+
+    override val purchasingData: AmazonPurchasingData
+        get() = AmazonPurchasingData.Product(this)
 
     override val sku: String
         get() = productId

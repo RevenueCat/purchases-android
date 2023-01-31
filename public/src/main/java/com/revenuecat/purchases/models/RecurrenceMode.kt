@@ -3,7 +3,8 @@ package com.revenuecat.purchases.models
 /**
  * Recurrence mode for a pricing phase
  */
-// TODO should this be in the PricingPhase class
+// TODO if google-only, rename and annotate identifier with @ProductDetails.RecurrenceMode
+// TODO add api testers
 enum class RecurrenceMode(val identifier: Int?) {
 
     // Pricing phase does not repeat

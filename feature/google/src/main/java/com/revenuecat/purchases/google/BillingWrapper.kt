@@ -38,13 +38,10 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
-import com.revenuecat.purchases.models.GooglePurchaseOption
-import com.revenuecat.purchases.models.GoogleStoreProduct
-import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -72,7 +69,7 @@ class BillingWrapper(
 
     private val productTypes = mutableMapOf<String, ProductType>()
     private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
-    private val purchaseOptionSelectedByProductIdentifier = mutableMapOf<String, String?>()
+    private val subscriptionOptionSelectedByProductIdentifier = mutableMapOf<String, String?>()
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
@@ -201,29 +198,50 @@ class BillingWrapper(
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     ) {
+        val googlePurchasingData = purchasingData as? GooglePurchasingData
+        if (googlePurchasingData == null) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                PurchaseStrings.INVALID_PURCHASE_TYPE.format(
+                    "Play",
+                    "GooglePurchasingData"
+                )
+            )
+            errorLog(error)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+            return
+        }
+
+        val subscriptionOptionId = when (googlePurchasingData) {
+            is GooglePurchasingData.InAppProduct -> {
+                null
+            }
+            is GooglePurchasingData.Subscription -> {
+                googlePurchasingData.optionId
+            }
+        }
+
         if (replaceProductInfo != null) {
             log(
                 LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
-                    .format(replaceProductInfo.oldPurchase.productIds[0], storeProduct.productId)
+                    .format(replaceProductInfo.oldPurchase.productIds[0], googlePurchasingData.productId)
             )
         } else {
-            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.productId))
+            log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(googlePurchasingData.productId))
         }
 
         synchronized(this@BillingWrapper) {
-            productTypes[storeProduct.productId] = storeProduct.type
-            presentedOfferingsByProductIdentifier[storeProduct.productId] = presentedOfferingIdentifier
-            purchaseOptionSelectedByProductIdentifier[storeProduct.productId] = purchaseOption?.id
+            productTypes[googlePurchasingData.productId] = googlePurchasingData.productType
+            presentedOfferingsByProductIdentifier[googlePurchasingData.productId] = presentedOfferingIdentifier
+            subscriptionOptionSelectedByProductIdentifier[googlePurchasingData.productId] = subscriptionOptionId
         }
         executeRequestOnUIThread {
             val result = buildPurchaseParams(
-                storeProduct,
-                purchaseOption,
+                purchasingData,
                 replaceProductInfo,
                 appUserID
             )
@@ -465,7 +483,7 @@ class BillingWrapper(
             hash to purchase.toStoreTransaction(
                 productType.toRevenueCatProductType(),
                 presentedOfferingIdentifier = null,
-                purchaseOptionId = null
+                subscriptionOptionId = null
             )
         }
     }
@@ -704,13 +722,13 @@ class BillingWrapper(
 
         synchronized(this@BillingWrapper) {
             val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstProductId]
-            val purchaseOptionId = purchaseOptionSelectedByProductIdentifier[purchase.firstProductId]
+            val subscriptionOptionId = subscriptionOptionSelectedByProductIdentifier[purchase.firstProductId]
             productTypes[purchase.firstProductId]?.let { productType ->
                 completion(
                     purchase.toStoreTransaction(
                         productType,
                         presentedOffering,
-                        purchaseOptionId
+                        subscriptionOptionId
                     )
                 )
                 return
@@ -776,38 +794,26 @@ class BillingWrapper(
     }
 
     private fun buildPurchaseParams(
-        storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchaseInfo: GooglePurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String
     ): Result<BillingFlowParams, PurchasesError> {
-        val googleProduct = storeProduct.googleProduct
-
-        if (googleProduct == null) {
-            val error = PurchasesError(
-                PurchasesErrorCode.UnknownError,
-                PurchaseStrings.INVALID_STORE_PRODUCT_TYPE.format(
-                    "Play",
-                    "GoogleStoreProduct"
-                )
-            )
-            errorLog(error)
-            return Result.Error(error)
-        }
-
-        return if (googleProduct.type == ProductType.SUBS) {
-            buildSubscriptionPurchaseParams(googleProduct, purchaseOption, replaceProductInfo, appUserID)
-        } else {
-            buildOneTimePurchaseParams(googleProduct, appUserID)
+        return when (purchaseInfo) {
+            is GooglePurchasingData.InAppProduct -> {
+                buildOneTimePurchaseParams(purchaseInfo, appUserID)
+            }
+            is GooglePurchasingData.Subscription -> {
+                buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID)
+            }
         }
     }
 
     private fun buildOneTimePurchaseParams(
-        googleProduct: GoogleStoreProduct,
+        purchaseInfo: GooglePurchasingData.InAppProduct,
         appUserID: String
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setProductDetails(googleProduct.productDetails)
+            setProductDetails(purchaseInfo.productDetails)
         }.build()
 
         return Result.Success(
@@ -819,27 +825,13 @@ class BillingWrapper(
     }
 
     private fun buildSubscriptionPurchaseParams(
-        googleProduct: GoogleStoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchaseInfo: GooglePurchasingData.Subscription,
         replaceProductInfo: ReplaceProductInfo?,
         appUserID: String
     ): Result<BillingFlowParams, PurchasesError> {
-        val googlePurchaseOption = purchaseOption as? GooglePurchaseOption
-        if (googlePurchaseOption == null) {
-            val error = PurchasesError(
-                PurchasesErrorCode.UnknownError,
-                PurchaseStrings.INVALID_PURCHASE_OPTION_TYPE.format(
-                    "Play",
-                    "GooglePurchaseOption"
-                )
-            )
-            errorLog(error)
-            return Result.Error(error)
-        }
-
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(googlePurchaseOption.token)
-            setProductDetails(googleProduct.productDetails)
+            setOfferToken(purchaseInfo.token)
+            setProductDetails(purchaseInfo.productDetails)
         }.build()
 
         return Result.Success(

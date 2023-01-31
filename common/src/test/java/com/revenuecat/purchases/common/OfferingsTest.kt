@@ -12,7 +12,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubPricingPhase
-import com.revenuecat.purchases.utils.stubPurchaseOption
+import com.revenuecat.purchases.utils.stubSubscriptionOption
 import com.revenuecat.purchases.utils.stubStoreProduct
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -247,7 +247,41 @@ class OfferingsTest {
 
     @Test
     fun `multiple offerings with packages of the same duration`() {
-        // TODOBC5 https://github.com/RevenueCat/purchases-android/pull/674#discussion_r1013951751
+        val monthlyProduct2ID = productIdentifier + "monthly2"
+        val annualProductID = productIdentifier + "annual"
+
+        val monthlyProduct = getStoreProduct(productIdentifier, monthlyDuration, monthlyBasePlan)
+        val monthlyProduct2 = getStoreProduct(monthlyProduct2ID, monthlyDuration, monthlyBasePlan)
+        val annualProduct = getStoreProduct(annualProductID, annualDuration, annualBasePlan)
+
+        val products = mapOf(productIdentifier to listOf(monthlyProduct, monthlyProduct2, annualProduct))
+
+        val monthlyPackageID = "monthly"
+        val monthlyPackage2ID = "monthly_@"
+        val annualPackageID = "annual"
+        val offeringID = "offering_a"
+
+        val offering = getOfferingJSON(
+            offeringID,
+            listOf(
+                getPackageJSON(monthlyPackageID, productIdentifier),
+                getPackageJSON(monthlyPackage2ID, monthlyProduct2ID),
+                getPackageJSON(annualPackageID, annualProductID)
+            )
+        ).createOffering(products)
+
+        val packages = offering!!.availablePackages
+        val monthlyPackages = packages.filter { it.packageType == PackageType.MONTHLY }
+        val yearlyPackages = packages.filter { it.packageType == PackageType.ANNUAL }
+
+        assertThat(offering).isNotNull
+        assertThat(offering.identifier).isEqualTo(offeringID)
+        assertThat(packages.size == 3)
+        assertThat(monthlyPackages.size == 2)
+        assertThat(yearlyPackages.size == 1)
+        assertThat(monthlyPackages.filter { it.identifier == monthlyPackageID }).isNotNull
+        assertThat(monthlyPackages.filter { it.identifier == monthlyPackage2ID }).isNotNull
+        assertThat(yearlyPackages.filter { it.identifier == annualPackageID }).isNotNull
     }
 
     private fun testPackageType(packageType: PackageType) {
@@ -308,11 +342,13 @@ class OfferingsTest {
                 "${
                     getOfferingJSON(
                         offeringIdentifier = "offering_a",
-                        packagesJSON = listOf(getPackageJSON(
-                            PackageType.ANNUAL.identifier!!,
-                            productIdentifier,
-                            annualBasePlan
-                        ))
+                        packagesJSON = listOf(
+                            getPackageJSON(
+                                PackageType.ANNUAL.identifier!!,
+                                productIdentifier,
+                                annualBasePlan
+                            )
+                        )
                     )
                 }, " +
                 "${
@@ -335,7 +371,7 @@ class OfferingsTest {
             {
                 'description': 'This is the base offering',
                 'identifier': '$offeringIdentifier',
-                'packages': ${packagesJSON}
+                'packages': $packagesJSON
             }
         """.trimIndent()
     )
@@ -375,7 +411,8 @@ class OfferingsTest {
             billingPeriod = duration,
             recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING
         )
-        val basePlanPurchaseOption = stubPurchaseOption(basePlanId, duration, listOf(basePlanPricingPhase))
+        val basePlanSubscriptionOption =
+            stubSubscriptionOption(basePlanId, duration, pricingPhases = listOf(basePlanPricingPhase))
 
         val offerPricingPhases = listOf(
             stubPricingPhase(
@@ -385,7 +422,11 @@ class OfferingsTest {
             ),
             basePlanPricingPhase
         )
-        val offerPurchaseOption = stubPurchaseOption(basePlanId, duration, offerPricingPhases)
-        return stubStoreProduct(productId, basePlanPurchaseOption, listOf(basePlanPurchaseOption, offerPurchaseOption))
+        val offerSubscriptionOption = stubSubscriptionOption(basePlanId, productId, duration, offerPricingPhases)
+        return stubStoreProduct(
+            productId,
+            basePlanSubscriptionOption,
+            listOf(basePlanSubscriptionOption, offerSubscriptionOption)
+        )
     }
 }

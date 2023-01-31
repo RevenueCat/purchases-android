@@ -11,7 +11,7 @@ private class PackageAPI {
             val identifier: String = identifier
             val packageType: PackageType = packageType
             val product: StoreProduct = product
-            val offering: String = offering // TODOBC5 change to offering?
+            val offering: String = offering
         }
     }
 

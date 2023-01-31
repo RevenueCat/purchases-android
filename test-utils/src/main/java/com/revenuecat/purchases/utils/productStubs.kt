@@ -6,15 +6,24 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.toRecurrenceMode
+
+@SuppressWarnings("MatchingDeclarationName")
+private data class StubPurchasingData(
+    override val productId: String,
+) : PurchasingData {
+    override val productType: ProductType
+        get() = ProductType.SUBS
+}
 
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
-    defaultOption: PurchaseOption? = stubPurchaseOption("monthly_base_plan", "P1M"),
-    purchaseOptions: List<PurchaseOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
+    defaultOption: SubscriptionOption? = stubSubscriptionOption("monthly_base_plan", productId, "P1M",),
+    subscriptionOptions: List<SubscriptionOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
     oneTimeProductPrice: Price? = null
 ): StoreProduct = object : StoreProduct {
     override val productId: String
@@ -28,11 +37,15 @@ fun stubStoreProduct(
     override val description: String
         get() = ""
     override val subscriptionPeriod: String?
-        get() = purchaseOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.get(0)?.billingPeriod
-    override val purchaseOptions: List<PurchaseOption>
-        get() = purchaseOptions
-    override val defaultOption: PurchaseOption?
+        get() = subscriptionOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.get(0)?.billingPeriod
+    override val subscriptionOptions: List<SubscriptionOption>
+        get() = subscriptionOptions
+    override val defaultOption: SubscriptionOption?
         get() = defaultOption
+    override val purchasingData: PurchasingData
+        get() = StubPurchasingData(
+            productId = productId
+        )
     override val sku: String
         get() = productId
 
@@ -57,10 +70,14 @@ fun stubINAPPStoreProduct(
         get() = ""
     override val subscriptionPeriod: String?
         get() = null
-    override val purchaseOptions: List<PurchaseOption>
+    override val subscriptionOptions: List<SubscriptionOption>
         get() = listOf(defaultOption)
-    override val defaultOption: PurchaseOption
-        get() = stubPurchaseOption(productId)
+    override val defaultOption: SubscriptionOption
+        get() = stubSubscriptionOption(productId, productId)
+    override val purchasingData: PurchasingData
+        get() = StubPurchasingData(
+            productId = productId
+        )
     override val sku: String
         get() = productId
 
@@ -70,17 +87,22 @@ fun stubINAPPStoreProduct(
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
-fun stubPurchaseOption(
+fun stubSubscriptionOption(
     id: String,
+    productId: String,
     duration: String = "P1M",
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration))
-): PurchaseOption = object : PurchaseOption {
+): SubscriptionOption = object : SubscriptionOption {
     override val id: String
         get() = id
     override val pricingPhases: List<PricingPhase>
         get() = pricingPhases
     override val tags: List<String>
         get() = listOf("tag")
+    override val purchasingData: PurchasingData
+        get() = StubPurchasingData(
+            productId = productId
+        )
 
     override fun describeContents(): Int = 0
     override fun writeToParcel(dest: Parcel?, flags: Int) {}

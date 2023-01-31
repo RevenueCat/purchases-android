@@ -2,7 +2,7 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.parceler.JSONObjectParceler
+import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -88,11 +88,11 @@ data class StoreTransaction(
     val marketplace: String?,
 
     /**
-     * The id of the PurchaseOption purchased.
+     * The id of the SubscriptionOption purchased.
      * In Google, this will be calculated from the basePlanId and offerId
      * Null for restored transactions and purchases initiated outside of the app.
      */
-    val purchaseOptionId: String?
+    val subscriptionOptionId: String?
 ) : Parcelable {
 
     /**

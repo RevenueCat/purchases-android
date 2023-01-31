@@ -32,7 +32,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.models.PurchaseOption
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -219,14 +219,29 @@ internal class AmazonBilling constructor(
         )
     }
 
+    @Suppress("ReturnCount")
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        storeProduct: StoreProduct,
-        purchaseOption: PurchaseOption?,
+        purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?
     ) {
+        val amazonPurchaseInfo = purchasingData as? AmazonPurchasingData.Product
+        if (amazonPurchaseInfo == null) {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                PurchaseStrings.INVALID_PURCHASE_TYPE.format(
+                    "Amazon",
+                    "AmazonPurchaseInfo"
+                )
+            )
+            errorLog(error)
+            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
+            return
+        }
+        val storeProduct = amazonPurchaseInfo.storeProduct
+
         if (checkObserverMode()) return
 
         if (replaceProductInfo != null) {

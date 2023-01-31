@@ -1,17 +1,17 @@
 package com.revenuecat.apitester.java;
 
-import com.android.billingclient.api.BillingFlowParams;
 import com.revenuecat.purchases.UpgradeInfo;
+import com.revenuecat.purchases.models.GoogleProrationMode;
 
 @SuppressWarnings({"unused"})
 final class UpgradeInfoAPI {
     static void check(final UpgradeInfo upgradeInfo) {
         final String oldProductId = upgradeInfo.getOldProductId();
-        @BillingFlowParams.ProrationMode final Integer prorationMode = upgradeInfo.getProrationMode();
+        GoogleProrationMode prorationMode = upgradeInfo.getGoogleProrationMode();
 
         UpgradeInfo constructedUpgradeInfo = new UpgradeInfo(
                 upgradeInfo.getOldProductId(),
-                upgradeInfo.getProrationMode()
+                upgradeInfo.getGoogleProrationMode()
         );
 
         UpgradeInfo constructedUpgradeInfoNullProrationMode = new UpgradeInfo(upgradeInfo.getOldProductId());
