@@ -27,7 +27,8 @@ class AmazonBackendTest {
     private var backend: Backend = Backend(
         API_KEY,
         SyncDispatcher(),
-        mockClient
+        mockClient,
+        mockk()
     )
 
     private var receivedOnSuccess: JSONObject? = null

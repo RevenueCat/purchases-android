@@ -33,7 +33,8 @@ class SubscriberAttributesPosterTests {
     private var backend: Backend = Backend(
         API_KEY,
         SyncDispatcher(),
-        mockClient
+        mockClient,
+        mockk()
     )
     private var subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 

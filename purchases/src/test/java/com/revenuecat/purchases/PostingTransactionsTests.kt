@@ -140,7 +140,8 @@ class PostingTransactionsTests {
                 proxyURL = null,
                 store = Store.PLAY_STORE
             ),
-            customerInfoHelper = customerInfoHelperMock
+            customerInfoHelper = customerInfoHelperMock,
+            telemetrySyncingManager = mockk(relaxed = true)
         )
     }
 
