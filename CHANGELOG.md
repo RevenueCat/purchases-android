@@ -1,3 +1,7 @@
+## 5.7.1
+### Dependency Updates
+* Update gems (#765) via Cesar de la Vega (@vegaro)
+
 ## 5.7.0
 ### New Features
 * Add `Purchases.logLevel` and deprecate `Purchases.debugLogsEnabled` (#753) via NachoSoto (@NachoSoto)
