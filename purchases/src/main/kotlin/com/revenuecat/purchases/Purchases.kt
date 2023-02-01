@@ -1526,7 +1526,7 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        if (storeProduct.type != ProductType.SUBS) {
+        if (purchasingData.productType != ProductType.SUBS) {
             dispatch {
                 getAndClearProductChangeCallback()
                 listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
