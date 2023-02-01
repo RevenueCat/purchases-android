@@ -9,6 +9,7 @@ import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.telemetry.TelemetryEventManager
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -38,7 +39,8 @@ typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesErr
 class Backend(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
-    private val httpClient: HTTPClient
+    private val httpClient: HTTPClient,
+    private val telemetryEventManager: TelemetryEventManager
 ) {
 
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
@@ -348,6 +350,14 @@ class Backend(
         synchronized(this@Backend) {
             identifyCallbacks.addCallback(call, cacheKey, onSuccessHandler to onErrorHandler)
         }
+    }
+
+    fun postTelemetry(
+        telemetryList: List<JSONObject>,
+        onSuccessHandler: (JSONObject) -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit
+    ) {
+
     }
 
     fun clearCaches() {

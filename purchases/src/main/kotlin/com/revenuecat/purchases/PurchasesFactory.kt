@@ -10,9 +10,14 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.telemetry.TelemetryAnonymizer
+import com.revenuecat.purchases.common.telemetry.TelemetryEventManager
+import com.revenuecat.purchases.common.telemetry.TelemetryFileHelper
+import com.revenuecat.purchases.common.telemetry.TelemetrySyncingManager
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -21,6 +26,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
 
 internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
@@ -49,11 +55,23 @@ internal class PurchasesFactory(
             val sharedPreferencesForETags = ETagManager.initializeSharedPreferences(context)
             val eTagManager = ETagManager(sharedPreferencesForETags)
 
+            val fileHelper = FileHelper(context)
+            val telemetryFileHelper = TelemetryFileHelper(fileHelper)
+            val telemetryDispatcher = Dispatcher(createTelemetryExecutor())
+            val telemetryAnonymizer = TelemetryAnonymizer()
+            val telemetryEventManager = TelemetryEventManager(
+                telemetryFileHelper,
+                telemetryAnonymizer,
+                telemetryDispatcher,
+                telemetryEnabled
+            )
+
             val dispatcher = Dispatcher(service ?: createDefaultExecutor())
             val backend = Backend(
                 apiKey,
                 dispatcher,
-                HTTPClient(appConfig, eTagManager)
+                HTTPClient(appConfig, eTagManager),
+                telemetryEventManager
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
@@ -85,6 +103,13 @@ internal class PurchasesFactory(
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
 
+            val telemetrySyncingManager = TelemetrySyncingManager(
+                telemetryFileHelper,
+                backend,
+                telemetryDispatcher,
+                telemetryEnabled
+            )
+
             return Purchases(
                 application,
                 appUserID,
@@ -95,7 +120,8 @@ internal class PurchasesFactory(
                 identityManager,
                 subscriberAttributesManager,
                 appConfig,
-                customerInfoHelper
+                customerInfoHelper,
+                telemetrySyncingManager
             )
         }
     }
@@ -123,5 +149,19 @@ internal class PurchasesFactory(
 
     private fun createDefaultExecutor(): ExecutorService {
         return Executors.newSingleThreadScheduledExecutor()
+    }
+
+    private fun createTelemetryExecutor(): ExecutorService {
+        return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("telemetry-thread"))
+    }
+
+    private class LowPriorityThreadFactory(private val threadName: String): ThreadFactory {
+        override fun newThread(r: Runnable?): Thread {
+            val wrapperRunnable = Runnable {
+                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_LOWEST)
+                r?.run()
+            }
+            return Thread(wrapperRunnable, threadName)
+        }
     }
 }
