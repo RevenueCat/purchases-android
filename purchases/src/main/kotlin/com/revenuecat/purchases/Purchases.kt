@@ -1527,11 +1527,9 @@ class Purchases internal constructor(
         listener: ProductChangeCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
-            dispatch {
-                getAndClearProductChangeCallback()
-                listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
-                    PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) }, false)
-            }
+            getAndClearProductChangeCallback()
+            listener.dispatch(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) })
             return
         }
 
@@ -1579,10 +1577,8 @@ class Purchases internal constructor(
         listener: PurchaseErrorCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
-            dispatch {
-                listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
-                    PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) }, false)
-            }
+            listener.dispatch(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) })
             return
         }
 
