@@ -116,6 +116,7 @@ class Backend(
                 listOf(path) + "${callbacks.count()}"
             }
         }
+        // TODO add back price_string header for amazon
         val call = object : Dispatcher.AsyncCall() {
 
             override fun call(): HTTPResult {
