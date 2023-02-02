@@ -134,6 +134,7 @@ final class PurchasesAPI {
                 .observerMode(true)
                 .observerMode(false)
                 .service(executorService)
+                .telemetryEnabled(true)
                 .build();
 
         Purchases.configure(build);
