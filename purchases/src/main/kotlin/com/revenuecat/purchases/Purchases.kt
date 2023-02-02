@@ -33,9 +33,9 @@ import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.debugLogsEnabled
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.telemetry.TelemetrySyncingManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.telemetry.TelemetryManager
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.google.toRevenueCatProductType
 import com.revenuecat.purchases.google.toStoreProduct
@@ -104,7 +104,7 @@ class Purchases internal constructor(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
-    telemetrySyncingManager: TelemetrySyncingManager,
+    telemetryManager: TelemetryManager,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
@@ -175,7 +175,7 @@ class Purchases internal constructor(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
         }
-        telemetrySyncingManager.syncTelemetryFileIfNeeded()
+        telemetryManager.syncTelemetryFileIfNeeded()
     }
 
     /** @suppress */

@@ -15,9 +15,8 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.telemetry.TelemetryAnonymizer
-import com.revenuecat.purchases.common.telemetry.TelemetryEventManager
 import com.revenuecat.purchases.common.telemetry.TelemetryFileHelper
-import com.revenuecat.purchases.common.telemetry.TelemetrySyncingManager
+import com.revenuecat.purchases.common.telemetry.TelemetryManager
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -32,6 +31,7 @@ internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
+    @Suppress("LongMethod")
     fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
@@ -55,23 +55,14 @@ internal class PurchasesFactory(
             val sharedPreferencesForETags = ETagManager.initializeSharedPreferences(context)
             val eTagManager = ETagManager(sharedPreferencesForETags)
 
-            val fileHelper = FileHelper(context)
-            val telemetryFileHelper = TelemetryFileHelper(fileHelper)
             val telemetryDispatcher = Dispatcher(createTelemetryExecutor())
-            val telemetryAnonymizer = TelemetryAnonymizer()
-            val telemetryEventManager = TelemetryEventManager(
-                telemetryFileHelper,
-                telemetryAnonymizer,
-                telemetryDispatcher,
-                telemetryEnabled
-            )
 
             val dispatcher = Dispatcher(service ?: createDefaultExecutor())
             val backend = Backend(
                 apiKey,
                 dispatcher,
-                HTTPClient(appConfig, eTagManager),
-                telemetryEventManager
+                telemetryDispatcher,
+                HTTPClient(appConfig, eTagManager)
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
@@ -103,12 +94,7 @@ internal class PurchasesFactory(
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
 
-            val telemetrySyncingManager = TelemetrySyncingManager(
-                telemetryFileHelper,
-                backend,
-                telemetryDispatcher,
-                telemetryEnabled
-            )
+            val telemetryManager = createTelemetryManager(context, backend, telemetryDispatcher, telemetryEnabled)
 
             return Purchases(
                 application,
@@ -121,7 +107,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper,
-                telemetrySyncingManager
+                telemetryManager
             )
         }
     }
@@ -147,6 +133,21 @@ internal class PurchasesFactory(
         return checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 
+    private fun createTelemetryManager(
+        context: Context,
+        backend: Backend,
+        dispatcher: Dispatcher,
+        telemetryEnabled: Boolean
+    ): TelemetryManager {
+        return TelemetryManager(
+            TelemetryFileHelper(FileHelper(context)),
+            TelemetryAnonymizer(),
+            backend,
+            dispatcher,
+            telemetryEnabled
+        )
+    }
+
     private fun createDefaultExecutor(): ExecutorService {
         return Executors.newSingleThreadScheduledExecutor()
     }
@@ -155,7 +156,7 @@ internal class PurchasesFactory(
         return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("telemetry-thread"))
     }
 
-    private class LowPriorityThreadFactory(private val threadName: String): ThreadFactory {
+    private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {
         override fun newThread(r: Runnable?): Thread {
             val wrapperRunnable = Runnable {
                 android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_LOWEST)

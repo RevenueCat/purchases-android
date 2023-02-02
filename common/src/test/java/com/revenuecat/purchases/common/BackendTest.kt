@@ -11,7 +11,6 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
-import com.revenuecat.purchases.common.telemetry.TelemetryEventManager
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
@@ -46,12 +45,11 @@ class BackendTest {
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val dispatcher = SyncDispatcher()
-    private val mockTelemetryEventManager: TelemetryEventManager = mockk()
     private var backend: Backend = Backend(
         API_KEY,
         dispatcher,
-        mockClient,
-        mockTelemetryEventManager
+        dispatcher,
+        mockClient
     )
     private var asyncBackend: Backend = Backend(
         API_KEY,
@@ -64,8 +62,16 @@ class BackendTest {
                 LinkedBlockingQueue()
             )
         ),
-        mockClient,
-        mockTelemetryEventManager
+        Dispatcher(
+            ThreadPoolExecutor(
+                1,
+                2,
+                0,
+                TimeUnit.MILLISECONDS,
+                LinkedBlockingQueue()
+            )
+        ),
+        mockClient
     )
     private val appUserID = "jerry"
 

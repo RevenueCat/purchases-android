@@ -15,7 +15,7 @@ sealed class TelemetryEvent(val telemetryType: String) {
         val name: MetricEventName,
         val tags: List<String>,
         val value: Int
-    ): TelemetryEvent("metric") {
+    ) : TelemetryEvent("metric") {
         companion object {
             private const val NAME_KEY = "name"
             private const val TAGS_KEY = "tags"
@@ -39,7 +39,7 @@ sealed class TelemetryEvent(val telemetryType: String) {
         val message: String,
         val location: String,
         val timestamp: String
-    ): TelemetryEvent("exception") {
+    ) : TelemetryEvent("exception") {
         companion object {
             private const val EXCEPTION_CLASS_KEY = "exc_class"
             private const val MESSAGE_KEY = "message"

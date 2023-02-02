@@ -30,11 +30,12 @@ private const val API_KEY = "TEST_API_KEY"
 class SubscriberAttributesPosterTests {
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val appUserID = "jerry"
+    private val syncDispatcher = SyncDispatcher()
     private var backend: Backend = Backend(
         API_KEY,
-        SyncDispatcher(),
+        syncDispatcher,
+        syncDispatcher,
         mockClient,
-        mockk()
     )
     private var subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 

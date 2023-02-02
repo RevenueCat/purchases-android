@@ -30,7 +30,7 @@ import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.common.telemetry.TelemetrySyncingManager
+import com.revenuecat.purchases.common.telemetry.TelemetryManager
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toStoreProduct
@@ -99,7 +99,7 @@ class PurchasesTest {
     private val mockIdentityManager = mockk<IdentityManager>()
     private val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     private val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
-    private val mockTelemetrySyncingManager = mockk<TelemetrySyncingManager>()
+    private val mockTelemetryManager = mockk<TelemetryManager>()
 
     private var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -157,7 +157,7 @@ class PurchasesTest {
             mockIdentityManager.configure(any())
         } just Runs
         every {
-            mockTelemetrySyncingManager.syncTelemetryFileIfNeeded()
+            mockTelemetryManager.syncTelemetryFileIfNeeded()
         } just Runs
 
         anonymousSetup(false)
@@ -212,7 +212,7 @@ class PurchasesTest {
 
     @Test
     fun `telemetry is synced if needed on constructor`() {
-        verify(exactly = 1) { mockTelemetrySyncingManager.syncTelemetryFileIfNeeded() }
+        verify(exactly = 1) { mockTelemetryManager.syncTelemetryFileIfNeeded() }
     }
 
     @Test
@@ -4146,7 +4146,7 @@ class PurchasesTest {
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
             customerInfoHelper = mockCustomerInfoHelper,
-            telemetrySyncingManager = mockTelemetrySyncingManager
+            telemetryManager = mockTelemetryManager
         )
         Purchases.sharedInstance = purchases
         purchases.state = purchases.state.copy(appInBackground = false)

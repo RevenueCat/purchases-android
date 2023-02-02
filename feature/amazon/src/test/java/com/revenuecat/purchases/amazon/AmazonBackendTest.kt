@@ -24,11 +24,13 @@ class AmazonBackendTest {
 
     private var mockClient = mockk<HTTPClient>()
 
+    private val syncDispatcher = SyncDispatcher()
+
     private var backend: Backend = Backend(
         API_KEY,
-        SyncDispatcher(),
-        mockClient,
-        mockk()
+        syncDispatcher,
+        syncDispatcher,
+        mockClient
     )
 
     private var receivedOnSuccess: JSONObject? = null
