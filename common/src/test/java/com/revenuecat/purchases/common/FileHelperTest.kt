@@ -107,6 +107,13 @@ class FileHelperTest {
         assertThat(fileIsEmpty).isTrue
     }
 
+    @Test
+    fun `readFilePerLines returns correct content`() {
+        createTestFileWithContents(testFilePath, "first line\nsecond line\nthird line\nfourth line")
+        val filePerLines = fileHelper.readFilePerLines(testFilePath)
+        assertThat(filePerLines).isEqualTo(listOf("first line", "second line", "third line", "fourth line"))
+    }
+
     private fun verifyFileDoesNotExist(filePath: String) {
         val file = File(testFolder, filePath)
         if (file.exists()) {

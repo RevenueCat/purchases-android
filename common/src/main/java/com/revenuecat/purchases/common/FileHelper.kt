@@ -31,7 +31,7 @@ class FileHelper(
         try {
             inputStreamReader = InputStreamReader(fileInputStream)
             bufferedReader = BufferedReader(inputStreamReader)
-            bufferedReader.readLines()
+            readLines.addAll(bufferedReader.readLines())
         } finally {
             bufferedReader?.close()
             inputStreamReader?.close()
