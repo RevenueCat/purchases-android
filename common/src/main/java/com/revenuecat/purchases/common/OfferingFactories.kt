@@ -84,7 +84,8 @@ private fun getMatchingProduct(
     }
     val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
     return storeProducts?.firstOrNull { storeProduct ->
-        storeProduct.subscriptionOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
+        if (storeProduct.type == ProductType.INAPP) true // TODO remove once backend sends planID for amazon
+        else storeProduct.subscriptionOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
     }
 }
 
