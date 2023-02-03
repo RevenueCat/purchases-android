@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -34,11 +35,13 @@ typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> U
 typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, body: JSONObject?) -> Unit
 /** @suppress */
 typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
+/** @suppress */
+typealias TelemetryCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
 
 class Backend(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
-    @Suppress("UnusedPrivateMember") private val diagnosticsDispatcher: Dispatcher, // WIP: Remove suppress
+    private val diagnosticsDispatcher: Dispatcher,
     private val httpClient: HTTPClient
 ) {
 
@@ -55,6 +58,9 @@ class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var telemetryCallbacks = mutableMapOf<CallbackCacheKey, MutableList<TelemetryCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -87,16 +93,7 @@ class Backend(
                 }
                 onCompleted(error, result.responseCode, result.body)
             }
-        })
-    }
-
-    private fun enqueue(
-        call: Dispatcher.AsyncCall,
-        randomDelay: Boolean = false
-    ) {
-        if (!dispatcher.isClosed()) {
-            dispatcher.enqueue(call, randomDelay)
-        }
+        }, dispatcher)
     }
 
     fun getCustomerInfo(
@@ -152,7 +149,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            callbacks.addCallback(call, cacheKey, onSuccess to onError, randomDelay = appInBackground)
+            callbacks.addCallback(call, dispatcher, cacheKey, onSuccess to onError, randomDelay = appInBackground)
         }
     }
 
@@ -244,7 +241,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            postReceiptCallbacks.addCallback(call, cacheKey, onSuccess to onError)
+            postReceiptCallbacks.addCallback(call, dispatcher, cacheKey, onSuccess to onError)
         }
     }
 
@@ -289,7 +286,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            offeringsCallbacks.addCallback(call, path, onSuccess to onError, randomDelay = appInBackground)
+            offeringsCallbacks.addCallback(call, dispatcher, path, onSuccess to onError, randomDelay = appInBackground)
         }
     }
 
@@ -347,17 +344,55 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            identifyCallbacks.addCallback(call, cacheKey, onSuccessHandler to onErrorHandler)
+            identifyCallbacks.addCallback(call, dispatcher, cacheKey, onSuccessHandler to onErrorHandler)
         }
     }
 
-    @Suppress("UnusedPrivateMember") // WIP: Remove suppress
     fun postDiagnostics(
         diagnosticsList: List<JSONObject>,
         onSuccessHandler: (JSONObject) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit
     ) {
-        // WIP: Perform request
+        val cacheKey = diagnosticsList.map { it.hashCode().toString() }
+
+        val body = mapOf("entries" to JSONArray(diagnosticsList))
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    "/telemetry",
+                    body,
+                    authenticationHeaders,
+                    gzipRequest = true
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    telemetryCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                if (result.isSuccessful()) {
+                    synchronized(this@Backend) {
+                        telemetryCallbacks.remove(cacheKey)
+                    }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                        try {
+                            onSuccessHandler(result.body)
+                        } catch (e: JSONException) {
+                            onErrorHandler(e.toPurchasesError())
+                        }
+                    }
+                } else {
+                    onError(result.toPurchasesError())
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            telemetryCallbacks.addCallback(call, diagnosticsDispatcher, cacheKey, onSuccessHandler to onErrorHandler)
+        }
     }
 
     fun clearCaches() {
@@ -368,15 +403,26 @@ class Backend(
         return responseCode < RCHTTPStatusCodes.UNSUCCESSFUL
     }
 
+    private fun enqueue(
+        call: Dispatcher.AsyncCall,
+        dispatcher: Dispatcher,
+        randomDelay: Boolean = false
+    ) {
+        if (!dispatcher.isClosed()) {
+            dispatcher.enqueue(call, randomDelay)
+        }
+    }
+
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
         call: Dispatcher.AsyncCall,
+        dispatcher: Dispatcher,
         cacheKey: K,
         functions: Pair<S, E>,
         randomDelay: Boolean = false
     ) {
         if (!containsKey(cacheKey)) {
             this[cacheKey] = mutableListOf(functions)
-            enqueue(call, randomDelay)
+            enqueue(call, dispatcher, randomDelay)
         } else {
             debugLog(String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey))
             this[cacheKey]!!.add(functions)

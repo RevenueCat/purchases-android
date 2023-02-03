@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+import java.util.zip.GZIPOutputStream
 
 class HTTPClient(
     private val appConfig: AppConfig,
@@ -89,7 +90,8 @@ class HTTPClient(
         path: String,
         body: Map<String, Any?>?,
         requestHeaders: Map<String, String>,
-        refreshETag: Boolean = false
+        refreshETag: Boolean = false,
+        gzipRequest: Boolean = false
     ): HTTPResult {
         val jsonBody = body?.convert()
 
@@ -100,8 +102,8 @@ class HTTPClient(
         try {
             fullURL = URL(appConfig.baseURL, urlPathWithVersion)
 
-            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag)
-            httpRequest = HTTPRequest(fullURL, headers, jsonBody)
+            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, gzipRequest)
+            httpRequest = HTTPRequest(fullURL, headers, jsonBody, gzipRequest)
 
             connection = getConnection(httpRequest)
         } catch (e: MalformedURLException) {
@@ -147,10 +149,13 @@ class HTTPClient(
     private fun getHeaders(
         authenticationHeaders: Map<String, String>,
         urlPath: String,
-        refreshETag: Boolean
+        refreshETag: Boolean,
+        gzipRequest: Boolean
     ): Map<String, String> {
+        val contentEncoding = if (gzipRequest) "gzip" else null
         return mapOf(
             "Content-Type" to "application/json",
+            "Content-Encoding" to contentEncoding,
             "X-Platform" to getXPlatformHeader(),
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
@@ -199,7 +204,8 @@ class HTTPClient(
                 doOutput = true
                 requestMethod = "POST"
                 val os = outputStream
-                writeFully(buffer(os), body.toString())
+                val outputStream = if (request.gzipRequest) GZIPOutputStream(os) else os
+                writeFully(buffer(outputStream), body.toString())
             }
         }
     }

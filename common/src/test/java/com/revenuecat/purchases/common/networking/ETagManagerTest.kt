@@ -330,7 +330,7 @@ class ETagManagerTest {
             "Authorization" to "Bearer apiKey",
             ETAG_HEADER_NAME to eTag
         ).filterNotNullValues()
-        return HTTPRequest(fullURL, headers, body = null)
+        return HTTPRequest(fullURL, headers, body = null, false)
     }
 
     private fun assertStoredResponse(
