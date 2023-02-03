@@ -18,6 +18,7 @@ import com.revenuecat.purchases.common.telemetry.TelemetryAnonymizer
 import com.revenuecat.purchases.common.telemetry.TelemetryFileHelper
 import com.revenuecat.purchases.common.telemetry.TelemetryManager
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
@@ -94,7 +95,12 @@ internal class PurchasesFactory(
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
 
-            val telemetryManager = createTelemetryManager(context, backend, telemetryDispatcher, telemetryEnabled)
+            val telemetryManager = if (telemetryEnabled) {
+                createTelemetryManager(context, backend, telemetryDispatcher)
+            } else {
+                verboseLog("Telemetry disabled.")
+                null
+            }
 
             return Purchases(
                 application,
@@ -136,15 +142,13 @@ internal class PurchasesFactory(
     private fun createTelemetryManager(
         context: Context,
         backend: Backend,
-        dispatcher: Dispatcher,
-        telemetryEnabled: Boolean
+        dispatcher: Dispatcher
     ): TelemetryManager {
         return TelemetryManager(
             TelemetryFileHelper(FileHelper(context)),
             TelemetryAnonymizer(),
             backend,
-            dispatcher,
-            telemetryEnabled
+            dispatcher
         )
     }
 

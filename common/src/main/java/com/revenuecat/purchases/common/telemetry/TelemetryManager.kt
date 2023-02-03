@@ -8,14 +8,9 @@ class TelemetryManager(
     private val telemetryFileHelper: TelemetryFileHelper,
     private val telemetryAnonymizer: TelemetryAnonymizer,
     private val backend: Backend,
-    private val telemetryDispatcher: Dispatcher,
-    private val telemetryEnabled: Boolean
+    private val telemetryDispatcher: Dispatcher
 ) {
     fun syncTelemetryFileIfNeeded() {
-        if (!telemetryEnabled) {
-            verboseLog("Telemetry disabled. Skipping syncing events.")
-            return
-        }
         telemetryDispatcher.enqueue(
             command = {
                 if (telemetryFileHelper.telemetryFileIsEmpty()) return@enqueue
@@ -37,10 +32,6 @@ class TelemetryManager(
     }
 
     fun trackEvent(telemetryEvent: TelemetryEvent) {
-        if (!telemetryEnabled) {
-            verboseLog("Telemetry disabled. Skipping tracking events.")
-            return
-        }
         telemetryDispatcher.enqueue(
             command = {
                 val anonymizedEvent = telemetryAnonymizer.anonymizeEventIfNeeded(telemetryEvent)

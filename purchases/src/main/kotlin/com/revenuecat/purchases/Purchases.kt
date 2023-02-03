@@ -104,7 +104,7 @@ class Purchases internal constructor(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
-    telemetryManager: TelemetryManager,
+    telemetryManager: TelemetryManager?,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
@@ -175,7 +175,7 @@ class Purchases internal constructor(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
         }
-        telemetryManager.syncTelemetryFileIfNeeded()
+        telemetryManager?.syncTelemetryFileIfNeeded()
     }
 
     /** @suppress */

@@ -42,21 +42,15 @@ class TelemetryManagerTest {
         backend = mockk()
         dispatcher = SyncDispatcher()
 
-        telemetryManager = createTelemetryManager()
+        telemetryManager = TelemetryManager(
+            telemetryFileHelper,
+            telemetryAnonymizer,
+            backend,
+            dispatcher
+        )
     }
 
     // region syncTelemetryFileIfNeeded
-
-    @Test
-    fun `syncTelemetryFileIfNeeded does not do anything if telemetry disabled`() {
-        telemetryManager = createTelemetryManager(false)
-
-        telemetryManager.syncTelemetryFileIfNeeded()
-
-        verify(exactly = 0) { telemetryFileHelper.telemetryFileIsEmpty() }
-        verify(exactly = 0) { telemetryFileHelper.readTelemetryFile() }
-        verify(exactly = 0) { backend.postTelemetry(any(), any(), any()) }
-    }
 
     @Test
     fun `syncTelemetryFileIfNeeded does not do anything if telemetry file is empty`() {
@@ -121,14 +115,6 @@ class TelemetryManagerTest {
     // region trackEvent
 
     @Test
-    fun `trackEvent does nothing if telemetry disabled`() {
-        telemetryManager = createTelemetryManager(false)
-        telemetryManager.trackEvent(testTelemetryEvent)
-        verify(exactly = 0) { telemetryFileHelper.appendEventToTelemetryFile(any()) }
-        verify(exactly = 0) { telemetryAnonymizer.anonymizeEventIfNeeded(any()) }
-    }
-
-    @Test
     fun `trackEvent performs correct calls`() {
         every { telemetryFileHelper.appendEventToTelemetryFile(testTelemetryEvent) } just Runs
         every { telemetryAnonymizer.anonymizeEventIfNeeded(testTelemetryEvent) } returns testTelemetryEvent
@@ -157,15 +143,5 @@ class TelemetryManagerTest {
                 errorCallbackSlot.captured(errorReturn)
             }
         }
-    }
-
-    private fun createTelemetryManager(telemetryEnabled: Boolean = true): TelemetryManager {
-        return TelemetryManager(
-            telemetryFileHelper,
-            telemetryAnonymizer,
-            backend,
-            dispatcher,
-            telemetryEnabled
-        )
     }
 }
