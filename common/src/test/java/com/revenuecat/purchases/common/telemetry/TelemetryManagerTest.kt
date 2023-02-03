@@ -115,6 +115,7 @@ class TelemetryManagerTest {
     fun `syncTelemetryFileIfNeeded deletes file if IOException happens`() {
         every { telemetryFileHelper.telemetryFileIsEmpty() } returns false
         every { telemetryFileHelper.readTelemetryFile() } throws IOException()
+        every { telemetryFileHelper.deleteTelemetryFile() } just Runs
         telemetryManager.syncTelemetryFileIfNeeded()
         verify(exactly = 1) { telemetryFileHelper.deleteTelemetryFile()  }
     }
@@ -134,6 +135,7 @@ class TelemetryManagerTest {
 
     @Test
     fun `trackEvent handles IOException`() {
+        every { telemetryAnonymizer.anonymizeEventIfNeeded(testTelemetryEvent) } returns testTelemetryEvent
         every { telemetryFileHelper.appendEventToTelemetryFile(any()) } throws IOException()
         telemetryManager.trackEvent(testTelemetryEvent)
     }
