@@ -1143,6 +1143,7 @@ class Purchases internal constructor(
             .contains(error.code)
 
         log(
+            // TODO make error type store-specific
             if (errorCausedByPurchases) LogIntent.RC_ERROR else LogIntent.GOOGLE_ERROR,
             OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error)
         )
@@ -1163,6 +1164,7 @@ class Purchases internal constructor(
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
             log(
+                // TODO either google OR amazon error
                 LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
                     .format(missingProducts.joinToString(", "))
             )
@@ -1572,6 +1574,7 @@ class Purchases internal constructor(
                 )
             },
             onError = { error ->
+                // TODO make error type store-specific
                 log(LogIntent.GOOGLE_ERROR, error.toString())
                 dispatch {
                     listener.onError(error, false)
@@ -1607,6 +1610,7 @@ class Purchases internal constructor(
                             )
                         },
                         onError = { error ->
+                            // TODO make error type store-specific
                             log(LogIntent.GOOGLE_ERROR, error.toString())
                         })
                 }
