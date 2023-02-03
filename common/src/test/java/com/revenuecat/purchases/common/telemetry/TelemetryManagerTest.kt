@@ -17,6 +17,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -110,6 +111,14 @@ class TelemetryManagerTest {
         verify(exactly = 1) { telemetryFileHelper.deleteTelemetryFile()  }
     }
 
+    @Test
+    fun `syncTelemetryFileIfNeeded deletes file if IOException happens`() {
+        every { telemetryFileHelper.telemetryFileIsEmpty() } returns false
+        every { telemetryFileHelper.readTelemetryFile() } throws IOException()
+        telemetryManager.syncTelemetryFileIfNeeded()
+        verify(exactly = 1) { telemetryFileHelper.deleteTelemetryFile()  }
+    }
+
     // endregion
 
     // region trackEvent
@@ -121,6 +130,12 @@ class TelemetryManagerTest {
         telemetryManager.trackEvent(testTelemetryEvent)
         verify(exactly = 1) { telemetryFileHelper.appendEventToTelemetryFile(testTelemetryEvent) }
         verify(exactly = 1) { telemetryAnonymizer.anonymizeEventIfNeeded(testTelemetryEvent) }
+    }
+
+    @Test
+    fun `trackEvent handles IOException`() {
+        every { telemetryFileHelper.appendEventToTelemetryFile(any()) } throws IOException()
+        telemetryManager.trackEvent(testTelemetryEvent)
     }
 
     // endregion
