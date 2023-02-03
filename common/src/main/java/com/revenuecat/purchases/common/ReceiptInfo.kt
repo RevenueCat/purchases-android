@@ -25,6 +25,7 @@ class ReceiptInfo(
 
         if (productIDs != other.productIDs) return false
         if (offeringIdentifier != other.offeringIdentifier) return false
+        if (storeProduct?.productId != other.storeProduct?.productId) return false
         if (price != other.price) return false
         if (currency != other.currency) return false
         if (subscriptionOptionId != other.subscriptionOptionId) return false

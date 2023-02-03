@@ -645,6 +645,7 @@ class PurchasesTest {
         }
     }
 
+    // JOSH
     @Test
     fun postsSuccessfulPurchasesToBackend() {
         val productInfo = mockPostReceipt(
@@ -661,10 +662,11 @@ class PurchasesTest {
             observerMode = false,
             mockInfo = mockInfo,
             offeringIdentifier = "offering_a",
-            type = ProductType.SUBS
+            type = ProductType.SUBS,
+            subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
         )
         val mockedInApps = getMockedPurchaseList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
-        val mockedSubs = getMockedPurchaseList(subProductId, subPurchaseToken, ProductType.SUBS, "offering_a")
+        val mockedSubs = getMockedPurchaseList(subProductId, subPurchaseToken, ProductType.SUBS, "offering_a", subscriptionOptionId = "mock-base-plan-id:mock-offer-id")
         val allPurchases = mockedInApps + mockedSubs
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(allPurchases)
 
@@ -4376,9 +4378,10 @@ class PurchasesTest {
         mockInfo: CustomerInfo,
         offeringIdentifier: String?,
         type: ProductType,
-        restore: Boolean = false
+        restore: Boolean = false,
+        subscriptionOptionId: String? = null
     ): ReceiptInfo {
-        val receiptInfo = mockQueryingProductDetails(productId, type, offeringIdentifier)
+        val receiptInfo = mockQueryingProductDetails(productId, type, offeringIdentifier, subscriptionOptionId)
 
         every {
             mockBackend.postReceiptData(
@@ -4405,7 +4408,8 @@ class PurchasesTest {
     private fun mockQueryingProductDetails(
         productId: String,
         type: ProductType,
-        offeringIdentifier: String?
+        offeringIdentifier: String?,
+        subscriptionOptionId: String? = null
     ): ReceiptInfo {
         if (type == ProductType.SUBS) {
             val productDetails = createMockProductDetailsFreeTrial(productId, 2.00)
@@ -4414,23 +4418,25 @@ class PurchasesTest {
                 productDetails.subscriptionOfferDetails!!
             )
 
-            return mockQueryingProductDetails(storeProduct, offeringIdentifier)
+            return mockQueryingProductDetails(storeProduct, offeringIdentifier, subscriptionOptionId)
         } else {
             val productDetails = createMockOneTimeProductDetails(productId, 2.00)
             val storeProduct = productDetails.toInAppStoreProduct()
 
-            return mockQueryingProductDetails(storeProduct, offeringIdentifier)
+            return mockQueryingProductDetails(storeProduct, offeringIdentifier, null)
         }
     }
 
     private fun mockQueryingProductDetails(
         storeProduct: StoreProduct,
-        offeringIdentifier: String?
+        offeringIdentifier: String?,
+        subscriptionOptionId: String? = null
     ): ReceiptInfo {
         val receiptInfo = ReceiptInfo(
             productIDs = listOf(storeProduct.productId),
             offeringIdentifier = offeringIdentifier,
-            storeProduct = storeProduct
+            storeProduct = storeProduct,
+            subscriptionOptionId = subscriptionOptionId
         )
 
         every {
