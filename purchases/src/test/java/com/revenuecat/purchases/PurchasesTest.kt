@@ -910,8 +910,7 @@ class PurchasesTest {
         var receivedError: PurchasesError? = null
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
-            receiptInfo.storeProduct!!.purchaseOptions[0],
+            receiptInfo.storeProduct!!.subscriptionOptions[0],
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { _, _ -> },
             onSuccess = { _, _ ->
@@ -921,8 +920,7 @@ class PurchasesTest {
 
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
-            receiptInfo.storeProduct!!.purchaseOptions[0],
+            receiptInfo.storeProduct!!.subscriptionOptions[0],
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { error, _ ->
                 receivedError = error
