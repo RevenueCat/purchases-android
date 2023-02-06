@@ -30,7 +30,6 @@ orbs:
   gcp-cli: circleci/gcp-cli@2.1.0
   revenuecat: revenuecat/sdks-common-config@2.0.0
   codecov: codecov/codecov@3.2.4
-  ruby: circleci/ruby@2.0.0
 
 parameters:
   action:
