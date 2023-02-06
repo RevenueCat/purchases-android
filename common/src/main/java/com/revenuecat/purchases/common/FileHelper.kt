@@ -15,6 +15,7 @@ class FileHelper(
         file.parentFile?.mkdirs()
         val outputStream = FileOutputStream(file, true)
         outputStream.write(contentToAppend.toByteArray())
+        outputStream.close()
     }
 
     fun deleteFile(filePath: String): Boolean {
