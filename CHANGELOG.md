@@ -34,7 +34,6 @@ Initial v6.0.0 alpha release
 ## 5.6.6
 ### Bugfixes
 * Added androidx.lifecycle.DefaultLifecycleObserver to consumer-rules.pro (#714) via Cesar de la Vega (@vegaro)
->>>>>>> origin/main
 
 ## 5.6.5
 ### Bugfixes
