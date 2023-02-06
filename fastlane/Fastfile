@@ -45,7 +45,8 @@ platform :android do
       github_rate_limit: options[:github_rate_limit],
       editor: options[:editor],
       next_version: options[:next_version],
-      automatic_release: options[:automatic_release]
+      automatic_release: options[:automatic_release],
+      is_prerelease: options[:is_prerelease]
     )
   end
 
