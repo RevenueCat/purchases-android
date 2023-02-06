@@ -9,6 +9,7 @@ import androidx.annotation.Nullable;
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.LogHandler;
+import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.Purchases;
@@ -146,6 +147,9 @@ final class PurchasesAPI {
         Purchases.setDebugLogsEnabled(false);
         final boolean debugLogs = Purchases.getDebugLogsEnabled();
 
+        Purchases.setLogLevel(LogLevel.DEBUG);
+        final LogLevel logLevel = Purchases.getLogLevel();
+
         Purchases.setProxyURL(new URL(""));
         final URL proxyURL = Purchases.getProxyURL();
 
@@ -155,6 +159,7 @@ final class PurchasesAPI {
     static void checkLogHandler() {
         Purchases.setLogHandler(
                 new LogHandler() {
+                    @Override public void v(@NonNull String tag, @NonNull String msg) {}
                     @Override public void d(@NonNull String tag, @NonNull String msg) {}
                     @Override public void i(@NonNull String tag, @NonNull String msg) {}
                     @Override public void w(@NonNull String tag, @NonNull String msg) {}
@@ -164,4 +169,14 @@ final class PurchasesAPI {
         final LogHandler handler = Purchases.getLogHandler();
     }
 
+    static void checkLogLevel(final LogLevel level) {
+        switch (level) {
+            case VERBOSE:
+            case ERROR:
+            case WARN:
+            case INFO:
+            case DEBUG:
+                break;
+        }
+    }
 }

@@ -11,6 +11,31 @@
 ## 6.0.0-alpha.1
 Initial v6.0.0 alpha release
 
+## 5.7.0
+### New Features
+* Add `Purchases.logLevel` and deprecate `Purchases.debugLogsEnabled` (#753) via NachoSoto (@NachoSoto)
+### Bugfixes
+* Avoid syncing attributes for users with blank user ids (#755) via Toni Rico (@tonidero)
+### Other Changes
+* Fixed Readme.MD (#727) via AristiDevs (@ArisGuimera)
+* Add codecov (#750) via Cesar de la Vega (@vegaro)
+* Update AGP to 7.4.0 (#747) via Cesar de la Vega (@vegaro)
+* Add test coverage using Kover (#748) via Cesar de la Vega (@vegaro)
+
+## 5.6.7
+### Bugfixes
+* Fix crash when cleaning old attribution data if SharedPreferences has a null key (#742) via Toni Rico (@tonidero)
+### Other Changes
+* Update Gemfile.lock (#734) via Cesar de la Vega (@vegaro)
+* remove stalebot in favor of SLAs in Zendesk (#725) via Andy Boedo (@aboedo)
+* Update fastlane-plugin-revenuecat_internal to latest version (#724) via Cesar de la Vega (@vegaro)
+* Bumps AGP to 7.3.1 (#718) via Cesar de la Vega (@vegaro)
+
+## 5.6.6
+### Bugfixes
+* Added androidx.lifecycle.DefaultLifecycleObserver to consumer-rules.pro (#714) via Cesar de la Vega (@vegaro)
+>>>>>>> origin/main
+
 ## 5.6.5
 ### Bugfixes
 * Fix for AbstractMethodError DefaultLifecycleObserver.onCreate (#695) via Cesar de la Vega (@vegaro)
