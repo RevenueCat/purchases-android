@@ -52,6 +52,8 @@ commands:
   install-ruby:
     description: Install Ruby
     steps:
+      - ruby/install:
+          version: '2.7'
       - run:
           name: Disable rvm autolibs
           command: |
