@@ -141,6 +141,7 @@ class PurchasesTest {
     private val inAppPurchaseToken = "token_inapp"
     private val subProductId = "sub"
     private val subPurchaseToken = "token_sub"
+    private val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
 
     private val mockLifecycle = mockk<Lifecycle>()
     private val mockLifecycleOwner = mockk<LifecycleOwner>()
@@ -2458,14 +2459,13 @@ class PurchasesTest {
 
     @Test
     fun `reposted receipts are sent using allowSharingAccount`() {
-
         purchases.allowSharingPlayStoreAccount = true
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
             productIds = listOf("product"),
             purchaseState = Purchase.PurchaseState.PURCHASED
         )
-        val activePurchase = purchase.toStoreTransaction(ProductType.SUBS, null)
+        val activePurchase = purchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(purchase.purchaseToken.sha1() to activePurchase),
             queriedINAPP = emptyMap(),
@@ -2529,14 +2529,12 @@ class PurchasesTest {
         mockStoreProduct(listOf(productIdSub), emptyList(), ProductType.SUBS)
 
         val offeringIdentifier = "offering_a"
-        val subscriptionOptionId = "subscription_option"
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(
                 productId = productIdSub,
                 purchaseToken = purchaseTokenSub,
                 productType = ProductType.SUBS,
-                offeringIdentifier = offeringIdentifier,
-                subscriptionOptionId = subscriptionOptionId
+                offeringIdentifier = offeringIdentifier
             )
         )
         val productInfo = ReceiptInfo(
@@ -3716,12 +3714,13 @@ class PurchasesTest {
     @Test
     fun `post pending purchases if autosync is on`() {
         buildPurchases(anonymous = true, autoSync = true)
+
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
             productIds = listOf("product"),
             purchaseState = Purchase.PurchaseState.PURCHASED
         )
-        val activePurchase = purchase.toStoreTransaction(ProductType.SUBS, null)
+        val activePurchase = purchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(purchase.purchaseToken.sha1() to activePurchase),
             queriedINAPP = emptyMap(),
@@ -3754,7 +3753,7 @@ class PurchasesTest {
             purchaseState = Purchase.PurchaseState.PURCHASED
         )
 
-        val purchaseWrapper = purchase.toStoreTransaction(ProductType.SUBS, null)
+        val purchaseWrapper = purchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(purchase.purchaseToken.sha1() to purchaseWrapper),
             queriedINAPP = emptyMap(),
@@ -3836,21 +3835,21 @@ class PurchasesTest {
             productIds = listOf("product"),
             purchaseState = Purchase.PurchaseState.PURCHASED
         )
-        val activePurchasedPurchase = purchasedPurchase.toStoreTransaction(ProductType.SUBS, null)
+        val activePurchasedPurchase = purchasedPurchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
 
         val pendingPurchase = stubGooglePurchase(
             purchaseToken = "pendingToken",
             productIds = listOf("product"),
             purchaseState = Purchase.PurchaseState.PENDING
         )
-        val activePendingPurchase = pendingPurchase.toStoreTransaction(ProductType.SUBS, null)
+        val activePendingPurchase = pendingPurchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
 
         val unspecifiedPurchase = stubGooglePurchase(
             purchaseToken = "unspecifiedToken",
             productIds = listOf("product"),
             purchaseState = Purchase.PurchaseState.UNSPECIFIED_STATE
         )
-        val activeUnspecifiedPurchase = unspecifiedPurchase.toStoreTransaction(ProductType.SUBS, null)
+        val activeUnspecifiedPurchase = unspecifiedPurchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
 
         mockSuccessfulQueryPurchases(
             queriedSUBS = mapOf(purchasedPurchase.purchaseToken.sha1() to activePurchasedPurchase,
@@ -4283,7 +4282,7 @@ class PurchasesTest {
         offeringIdentifier: String? = null,
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
         acknowledged: Boolean = false,
-        subscriptionOptionId: String? = null
+        subscriptionOptionId: String? = this.subscriptionOptionId
     ): List<StoreTransaction> {
         val p = stubGooglePurchase(
             productIds = listOf(productId),
@@ -4292,7 +4291,11 @@ class PurchasesTest {
             acknowledged = acknowledged
         )
 
-        return listOf(p.toStoreTransaction(productType, offeringIdentifier, subscriptionOptionId))
+        return listOf(p.toStoreTransaction(
+            productType,
+            offeringIdentifier,
+            if (productType == ProductType.SUBS) subscriptionOptionId else null
+        ))
     }
 
     private fun mockSuccessfulQueryPurchases(
@@ -4350,9 +4353,15 @@ class PurchasesTest {
         offeringIdentifier: String?,
         type: ProductType,
         answer: MockKAnswerScope<Unit, Unit>.(Call) -> Unit,
-        isRestore: Boolean = false
+        isRestore: Boolean = false,
+        subscriptionOptionId: String? = this.subscriptionOptionId
     ) {
-        val receiptInfo = mockQueryingProductDetails(productId, type, offeringIdentifier)
+        val receiptInfo = mockQueryingProductDetails(
+            productId,
+            type,
+            offeringIdentifier,
+            if (type == ProductType.SUBS) subscriptionOptionId else null
+        )
 
         every {
             mockBackend.postReceiptData(
@@ -4376,9 +4385,10 @@ class PurchasesTest {
         mockInfo: CustomerInfo,
         offeringIdentifier: String?,
         type: ProductType,
-        restore: Boolean = false
+        restore: Boolean = false,
+        subscriptionOptionId: String? = this.subscriptionOptionId
     ): ReceiptInfo {
-        val receiptInfo = mockQueryingProductDetails(productId, type, offeringIdentifier)
+        val receiptInfo = mockQueryingProductDetails(productId, type, offeringIdentifier, subscriptionOptionId)
 
         every {
             mockBackend.postReceiptData(
@@ -4405,7 +4415,8 @@ class PurchasesTest {
     private fun mockQueryingProductDetails(
         productId: String,
         type: ProductType,
-        offeringIdentifier: String?
+        offeringIdentifier: String?,
+        subscriptionOptionId: String? = this.subscriptionOptionId
     ): ReceiptInfo {
         if (type == ProductType.SUBS) {
             val productDetails = createMockProductDetailsFreeTrial(productId, 2.00)
@@ -4414,23 +4425,25 @@ class PurchasesTest {
                 productDetails.subscriptionOfferDetails!!
             )
 
-            return mockQueryingProductDetails(storeProduct, offeringIdentifier)
+            return mockQueryingProductDetails(storeProduct, offeringIdentifier, subscriptionOptionId)
         } else {
             val productDetails = createMockOneTimeProductDetails(productId, 2.00)
             val storeProduct = productDetails.toInAppStoreProduct()
 
-            return mockQueryingProductDetails(storeProduct, offeringIdentifier)
+            return mockQueryingProductDetails(storeProduct, offeringIdentifier, null)
         }
     }
 
     private fun mockQueryingProductDetails(
         storeProduct: StoreProduct,
-        offeringIdentifier: String?
+        offeringIdentifier: String?,
+        subscriptionOptionId: String? = this.subscriptionOptionId
     ): ReceiptInfo {
         val receiptInfo = ReceiptInfo(
             productIDs = listOf(storeProduct.productId),
             offeringIdentifier = offeringIdentifier,
-            storeProduct = storeProduct
+            storeProduct = storeProduct,
+            subscriptionOptionId = if (storeProduct.type == ProductType.SUBS) subscriptionOptionId else null
         )
 
         every {
