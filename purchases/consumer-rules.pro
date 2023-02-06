@@ -1,1 +1,2 @@
 -keep class com.revenuecat.** { *; }
+-keep class androidx.lifecycle.DefaultLifecycleObserver

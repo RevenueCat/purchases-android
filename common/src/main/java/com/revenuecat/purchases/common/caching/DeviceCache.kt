@@ -162,7 +162,7 @@ open class DeviceCache(
     fun cleanupOldAttributionData() {
         val editor = preferences.edit()
         for (key in preferences.all.keys) {
-            if (key.startsWith(attributionCacheKey)) {
+            if (key != null && key.startsWith(attributionCacheKey)) {
                 editor.remove(key)
             }
         }

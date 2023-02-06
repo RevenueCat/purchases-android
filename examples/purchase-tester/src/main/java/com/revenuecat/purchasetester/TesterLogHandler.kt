@@ -6,6 +6,7 @@ import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.LogLevel
 
 class TesterLogHandler(
     private val applicationContext: Context,
@@ -16,6 +17,12 @@ class TesterLogHandler(
         get() = mutableStoredLogs
 
     private val mutableStoredLogs: MutableList<LogMessage> = mutableListOf()
+
+    @Synchronized
+    override fun v(tag: String, msg: String) {
+        Log.v(tag, msg)
+        mutableStoredLogs.add(LogMessage(LogLevel.VERBOSE, "$tag: $msg"))
+    }
 
     @Synchronized
     override fun d(tag: String, msg: String) {
@@ -32,7 +39,7 @@ class TesterLogHandler(
     @Synchronized
     override fun w(tag: String, msg: String) {
         Log.w(tag, msg)
-        mutableStoredLogs.add(LogMessage(LogLevel.WARNING, "$tag: $msg"))
+        mutableStoredLogs.add(LogMessage(LogLevel.WARN, "$tag: $msg"))
     }
 
     @Synchronized

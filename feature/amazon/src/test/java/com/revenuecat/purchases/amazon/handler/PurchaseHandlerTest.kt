@@ -254,6 +254,9 @@ class PurchaseHandlerTest {
         var receivedException: Throwable? = null
         var receivedLoggedException: Throwable? = null
         Purchases.logHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) {
+            }
+
             override fun d(tag: String, msg: String) {
             }
 

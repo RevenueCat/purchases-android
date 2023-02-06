@@ -29,6 +29,7 @@ import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.common.debugLogsEnabled
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
@@ -1756,11 +1757,19 @@ class Purchases internal constructor(
          * Enable debug logging. Useful for debugging issues with the lovely team @RevenueCat
          */
         @JvmStatic
+        @Deprecated(message = "Use logLevel instead")
         var debugLogsEnabled
-            get() = Config.debugLogsEnabled
-            set(value) {
-                Config.debugLogsEnabled = value
-            }
+            get() = logLevel.debugLogsEnabled
+            set(value) { logLevel = LogLevel.debugLogsEnabled(value) }
+
+        /**
+         * Configure log level. Useful for debugging issues with the lovely team @RevenueCat
+         * By default, LogLevel.DEBUG in debug builds, and LogLevel.INFO in release builds.
+         */
+        @JvmStatic
+        var logLevel: LogLevel
+            get() = Config.logLevel
+            set(value) { Config.logLevel = value }
 
         /**
          * Set a custom log handler for redirecting logs to your own logging system.
