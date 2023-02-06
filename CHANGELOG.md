@@ -1,3 +1,8 @@
+## 6.0.0-alpha.3
+* [BC5] Merge changes from 5.7.0 (#772) via Josh Holtz (@joshdholtz)
+### Bugfixes
+* [BC5]  Add `storeProduct` to `ReceiptInfo`'s equals method (and fix broken tests because of this) (#770) via Josh Holtz (@joshdholtz)
+
 ## 6.0.0-alpha.2
 ### New Features
 * [CF-1119] Default offer now uses best offer logic (longest free, best savings, base plan) (#754) via Josh Holtz (@joshdholtz)
