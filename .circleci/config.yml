@@ -30,6 +30,7 @@ orbs:
   gcp-cli: circleci/gcp-cli@2.1.0
   revenuecat: revenuecat/sdks-common-config@2.0.0
   codecov: codecov/codecov@3.2.4
+  ruby: circleci/ruby@2.0.0
 
 parameters:
   action:
@@ -48,6 +49,12 @@ executors:
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
 
 commands:
+  install-ruby:
+    description: Install Ruby
+    steps:
+      - ruby/install:
+          version: '3.0'
+
   install-sdkman:
     description: Install SDKMAN
     steps:
@@ -96,6 +103,7 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - install-ruby
       - install-sdkman
       - android/accept-licenses
       - android-dependencies
@@ -129,6 +137,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-ruby
       - install-sdkman
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
@@ -154,6 +163,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-ruby
       - install-sdkman
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
@@ -173,6 +183,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-ruby
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
@@ -186,6 +197,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-ruby
       - install-sdkman
       - restore_cache:
           key: 1-gems-{{ checksum "Gemfile.lock" }}
@@ -206,6 +218,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-ruby
       - install-sdkman
       - android/accept-licenses
       - android-wordpress-orb/restore-gradle-cache
@@ -232,6 +245,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-ruby
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
@@ -259,6 +273,7 @@ jobs:
     executor: android-executor
     steps:
       - checkout
+      - install-ruby
       - install-sdkman
       - run:
           name: Replace API_KEY
