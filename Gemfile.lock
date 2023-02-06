@@ -1,7 +1,7 @@
 GIT
   remote: https://github.com/RevenueCat/fastlane-plugin-revenuecat_internal
-  revision: 42cc016b03647d5d95e7a153d175590fe520e88d
-  branch: improve-prerelease-changelog-generation
+  revision: 92553666e4619634ddc661eacfe1734d0716e909
+  branch: main
   specs:
     fastlane-plugin-revenuecat_internal (0.1.0)
 
@@ -265,4 +265,4 @@ DEPENDENCIES
   fastlane-plugin-versioning_android
 
 BUNDLED WITH
-   2.4.6
+   2.3.14
