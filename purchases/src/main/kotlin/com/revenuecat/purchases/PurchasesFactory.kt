@@ -61,6 +61,7 @@ internal class PurchasesFactory(
             val dispatcher = Dispatcher(service ?: createDefaultExecutor())
             val backend = Backend(
                 apiKey,
+                appConfig,
                 dispatcher,
                 diagnosticsDispatcher,
                 HTTPClient(appConfig, eTagManager)

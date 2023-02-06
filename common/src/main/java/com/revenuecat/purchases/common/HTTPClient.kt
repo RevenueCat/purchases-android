@@ -85,8 +85,10 @@ class HTTPClient(
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
      */
+    @SuppressWarnings("LongParameterList")
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
+        baseURL: URL,
         path: String,
         body: Map<String, Any?>?,
         requestHeaders: Map<String, String>,
@@ -100,7 +102,7 @@ class HTTPClient(
         val httpRequest: HTTPRequest
         val urlPathWithVersion = "/v1$path"
         try {
-            fullURL = URL(appConfig.baseURL, urlPathWithVersion)
+            fullURL = URL(baseURL, urlPathWithVersion)
 
             val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, gzipRequest)
             httpRequest = HTTPRequest(fullURL, headers, jsonBody, gzipRequest)
@@ -137,7 +139,7 @@ class HTTPClient(
         )
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-            return performRequest(path, body, requestHeaders, refreshETag = true)
+            return performRequest(baseURL, path, body, requestHeaders, refreshETag = true)
         }
         return callResult
     }
@@ -152,10 +154,9 @@ class HTTPClient(
         refreshETag: Boolean,
         gzipRequest: Boolean
     ): Map<String, String> {
-        val contentEncoding = if (gzipRequest) "gzip" else null
         return mapOf(
             "Content-Type" to "application/json",
-            "Content-Encoding" to contentEncoding,
+            "Content-Encoding" to if (gzipRequest) "gzip" else null,
             "X-Platform" to getXPlatformHeader(),
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,

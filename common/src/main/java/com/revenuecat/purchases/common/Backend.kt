@@ -16,6 +16,7 @@ import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.net.URL
 
 const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
@@ -40,6 +41,7 @@ typealias TelemetryCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Uni
 
 class Backend(
     private val apiKey: String,
+    private val appConfig: AppConfig,
     private val dispatcher: Dispatcher,
     private val diagnosticsDispatcher: Dispatcher,
     private val httpClient: HTTPClient
@@ -75,6 +77,7 @@ class Backend(
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    appConfig.baseURL,
                     path,
                     body,
                     authenticationHeaders
@@ -118,6 +121,7 @@ class Backend(
 
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    appConfig.baseURL,
                     path,
                     null,
                     authenticationHeaders
@@ -200,6 +204,7 @@ class Backend(
 
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    appConfig.baseURL,
                     "/receipts",
                     body,
                     authenticationHeaders + extraHeaders
@@ -255,6 +260,7 @@ class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    appConfig.baseURL,
                     path,
                     null,
                     authenticationHeaders
@@ -307,6 +313,7 @@ class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    appConfig.baseURL,
                     "/subscribers/identify",
                     mapOf(
                         "new_app_user_id" to newAppUserID,
@@ -359,6 +366,7 @@ class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    URL("https://api-telemetry.revenuecat.com/"),
                     "/telemetry",
                     body,
                     authenticationHeaders,

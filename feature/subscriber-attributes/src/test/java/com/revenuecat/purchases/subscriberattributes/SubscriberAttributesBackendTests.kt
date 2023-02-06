@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -23,16 +24,23 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.IOException
+import java.net.URL
 
 private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
 class SubscriberAttributesPosterTests {
     private var mockClient: HTTPClient = mockk(relaxed = true)
+    private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
+    private val mockAppConfig = mockk<AppConfig>().apply {
+        every { baseURL } returns mockBaseURL
+    }
     private val appUserID = "jerry"
     private val syncDispatcher = SyncDispatcher()
+
     private var backend: Backend = Backend(
         API_KEY,
+        mockAppConfig,
         syncDispatcher,
         syncDispatcher,
         mockClient,
@@ -386,6 +394,7 @@ class SubscriberAttributesPosterTests {
     ) {
         val everyMockedCall = every {
             mockClient.performRequest(
+                mockBaseURL,
                 path,
                 (expectedBody ?: any()),
                 mapOf("Authorization" to "Bearer $API_KEY")
@@ -408,6 +417,7 @@ class SubscriberAttributesPosterTests {
     ) {
         every {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 capture(actualPostReceiptBodySlot),
                 mapOf("Authorization" to "Bearer $API_KEY")

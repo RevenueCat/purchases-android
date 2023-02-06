@@ -28,6 +28,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
 import java.lang.Thread.sleep
+import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadLocalRandom
@@ -40,19 +41,22 @@ private const val API_KEY = "TEST_API_KEY"
 @Config(manifest = Config.NONE)
 class BackendTest {
 
-    @Before
-    fun setup() = mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
-
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val dispatcher = SyncDispatcher()
+    private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
+    private val mockAppConfig: AppConfig = mockk<AppConfig>().apply {
+        every { baseURL } returns mockBaseURL
+    }
     private var backend: Backend = Backend(
         API_KEY,
+        mockAppConfig,
         dispatcher,
         dispatcher,
         mockClient
     )
     private var asyncBackend: Backend = Backend(
         API_KEY,
+        mockAppConfig,
         Dispatcher(
             ThreadPoolExecutor(
                 1,
@@ -119,6 +123,12 @@ class BackendTest {
         this@BackendTest.receivedError = it
     }
 
+    @Before
+    fun setup() {
+        mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
+
+    }
+
     @Test
     fun canBeCreated() {
         assertThat(backend).isNotNull
@@ -144,6 +154,7 @@ class BackendTest {
         }
         val everyMockedCall = every {
             mockClient.performRequest(
+                mockBaseURL,
                 eq(path),
                 (if (body == null) any() else eq(body)),
                 capture(headersSlot)
@@ -369,6 +380,7 @@ class BackendTest {
 
         verify {
             mockClient.performRequest(
+                mockBaseURL,
                 eq(path),
                 any(),
                 any()
@@ -416,6 +428,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/" + Uri.encode(appUserID),
                 null,
                 any()
@@ -478,6 +491,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any(),
                 any()
@@ -557,6 +571,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any(),
                 any()
@@ -564,6 +579,7 @@ class BackendTest {
         }
         verify(exactly = 2) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/$appUserID",
                 null,
                 any()
@@ -592,6 +608,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/$appUserID/offerings",
                 null,
                 any()
@@ -620,6 +637,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/$appUserID/offerings",
                 null,
                 any()
@@ -627,6 +645,7 @@ class BackendTest {
         }
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/anotherUser/offerings",
                 null,
                 any()
@@ -701,6 +720,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any(),
                 any()
@@ -824,6 +844,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any() as Map<String, Any?>,
                 any()
@@ -911,6 +932,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any() as Map<String, Any?>,
                 any()
@@ -969,6 +991,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any() as Map<String, Any?>,
                 any()
@@ -1053,6 +1076,7 @@ class BackendTest {
         )
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/identify",
                 body,
                 any()
@@ -1216,6 +1240,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/identify",
                 requestBody,
                 any()
@@ -1265,6 +1290,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/identify",
                 requestBody,
                 any()
@@ -1314,6 +1340,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/identify",
                 requestBody,
                 any()
@@ -1376,6 +1403,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any(),
                 any()
