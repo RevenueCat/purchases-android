@@ -14,8 +14,9 @@ class FileHelper(
         val file = getFileInFilesDir(filePath)
         file.parentFile?.mkdirs()
         val outputStream = FileOutputStream(file, true)
-        outputStream.write(contentToAppend.toByteArray())
-        outputStream.close()
+        outputStream.use {
+            outputStream.write(contentToAppend.toByteArray())
+        }
     }
 
     fun deleteFile(filePath: String): Boolean {
@@ -24,51 +25,27 @@ class FileHelper(
     }
 
     fun readFilePerLines(filePath: String): List<String> {
-        val file = getFileInFilesDir(filePath)
-        val fileInputStream = FileInputStream(file)
-        var inputStreamReader: InputStreamReader? = null
-        var bufferedReader: BufferedReader? = null
         val readLines = mutableListOf<String>()
-        try {
-            inputStreamReader = InputStreamReader(fileInputStream)
-            bufferedReader = BufferedReader(inputStreamReader)
-            readLines.addAll(bufferedReader.readLines())
-        } finally {
-            bufferedReader?.close()
-            inputStreamReader?.close()
-            fileInputStream.close()
+        val file = getFileInFilesDir(filePath)
+        FileInputStream(file).use { fileInputStream ->
+            InputStreamReader(fileInputStream).use { inputStreamReader ->
+                BufferedReader(inputStreamReader).use { bufferedReader ->
+                    readLines.addAll(bufferedReader.readLines())
+                }
+            }
         }
-
         return readLines
     }
 
     fun removeFirstLinesFromFile(filePath: String, numberOfLinesToRemove: Int) {
-        val linesToKeep = mutableListOf<String>()
-
-        val file = getFileInFilesDir(filePath)
-        val fileInputStream = FileInputStream(file)
-        var inputStreamReader: InputStreamReader? = null
-        var bufferedReader: BufferedReader? = null
-        try {
-            inputStreamReader = InputStreamReader(fileInputStream)
-            bufferedReader = BufferedReader(inputStreamReader)
-            var line: String? = bufferedReader.readLine()
-            var lineNumber = 0
-
-            while (line != null) {
-                if (lineNumber++ >= numberOfLinesToRemove) {
-                    linesToKeep.add(line)
-                }
-                line = bufferedReader.readLine()
-            }
-        } finally {
-            bufferedReader?.close()
-            inputStreamReader?.close()
-            fileInputStream.close()
-        }
-
+        val readLines = readFilePerLines(filePath)
         deleteFile(filePath)
-        appendToFile(filePath, linesToKeep.joinToString(separator = ""))
+        val textToAppend = if (readLines.isEmpty() || numberOfLinesToRemove >= readLines.size) {
+            ""
+        } else {
+            readLines.subList(numberOfLinesToRemove, readLines.size).joinToString(separator = "")
+        }
+        appendToFile(filePath, textToAppend)
     }
 
     fun fileIsEmpty(filePath: String): Boolean {
