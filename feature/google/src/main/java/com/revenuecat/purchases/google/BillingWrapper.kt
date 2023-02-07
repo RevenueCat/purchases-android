@@ -200,7 +200,8 @@ class BillingWrapper(
         appUserID: String,
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
-        presentedOfferingIdentifier: String?
+        presentedOfferingIdentifier: String?,
+        isPersonalizedPrice: Boolean
     ) {
         val googlePurchasingData = purchasingData as? GooglePurchasingData
         if (googlePurchasingData == null) {

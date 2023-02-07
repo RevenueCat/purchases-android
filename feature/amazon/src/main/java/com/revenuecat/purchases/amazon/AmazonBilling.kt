@@ -225,7 +225,8 @@ internal class AmazonBilling constructor(
         appUserID: String,
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
-        presentedOfferingIdentifier: String?
+        presentedOfferingIdentifier: String?,
+        isPersonalizedPrice: Boolean
     ) {
         val amazonPurchaseInfo = purchasingData as? AmazonPurchasingData.Product
         if (amazonPurchaseInfo == null) {

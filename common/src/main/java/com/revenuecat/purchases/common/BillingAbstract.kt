@@ -79,7 +79,8 @@ abstract class BillingAbstract {
         appUserID: String,
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
-        presentedOfferingIdentifier: String?
+        presentedOfferingIdentifier: String?,
+        isPersonalizedPrice: Boolean = false
     )
 
     abstract fun isConnected(): Boolean

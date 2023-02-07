@@ -410,7 +410,8 @@ class Purchases internal constructor(
             storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
             null,
             upgradeInfo,
-            listener
+            listener,
+            false // TODO bc5 think about personalized price for products
         )
     }
 
@@ -447,19 +448,25 @@ class Purchases internal constructor(
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a developer-determined
+     * offer available for purchase in the EU. Default is false.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
+
      */
     fun purchaseSubscriptionOption(
         activity: Activity,
         subscriptionOption: SubscriptionOption,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
+        listener: ProductChangeCallback,
+        isPersonalizedPrice: Boolean = false
     ) {
         startProductChange(
             activity,
             subscriptionOption.purchasingData,
             null,
             upgradeInfo,
-            listener
+            listener,
+            isPersonalizedPrice
         )
     }
 
@@ -507,7 +514,8 @@ class Purchases internal constructor(
             packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo,
-            callback
+            callback,
+            false // TODO BC5 think about personalized price for packages
         )
     }
 
@@ -1527,7 +1535,8 @@ class Purchases internal constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
+        listener: ProductChangeCallback,
+        isPersonalizedPrice: Boolean
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
@@ -1556,7 +1565,8 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 offeringIdentifier,
-                listener
+                listener,
+                isPersonalizedPrice
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
@@ -1567,7 +1577,8 @@ class Purchases internal constructor(
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
-        listener: PurchaseErrorCallback
+        listener: PurchaseErrorCallback,
+        isPersonalizedPrice: Boolean
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
             dispatch {
@@ -1589,7 +1600,8 @@ class Purchases internal constructor(
                     appUserID,
                     purchasingData,
                     ReplaceProductInfo(purchaseRecord, upgradeInfo.googleProrationMode.playBillingClientMode),
-                    presentedOfferingIdentifier
+                    presentedOfferingIdentifier,
+                    isPersonalizedPrice
                 )
             },
             onError = { error ->
