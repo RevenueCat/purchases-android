@@ -89,7 +89,17 @@ private class PurchasesAPI {
             upgradeInfo,
             purchaseChangeCallback
         )
+
+        purchases.purchaseSubscriptionOption(
+            activity,
+            subscriptionOption,
+            upgradeInfo,
+            purchaseChangeCallback,
+            false
+        )
+
         purchases.purchaseSubscriptionOption(activity, subscriptionOption, purchaseCallback)
+        purchases.purchaseSubscriptionOption(activity, subscriptionOption, purchaseCallback, false)
 
         purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.logIn("", logInCallback)

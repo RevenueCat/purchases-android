@@ -430,14 +430,16 @@ class Purchases internal constructor(
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
-        callback: PurchaseCallback
+        callback: PurchaseCallback,
+        isPersonalizedPrice: Boolean = false
     ) {
         startPurchase(
             activity,
             // TODOBC5 Move this logic to StoreProduct
             storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
             null,
-            callback
+            callback,
+            isPersonalizedPrice
         )
     }
 
@@ -448,11 +450,11 @@ class Purchases internal constructor(
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
-     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a developer-determined
-     * offer available for purchase in the EU. Default is false.
+     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+     * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
-
      */
+    @JvmOverloads
     fun purchaseSubscriptionOption(
         activity: Activity,
         subscriptionOption: SubscriptionOption,
@@ -475,13 +477,23 @@ class Purchases internal constructor(
      * @param [activity] Current activity
      * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
      * @param [callback] The PurchaseCallback that will be called when purchase completes
+     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+     * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
+    @JvmOverloads
     fun purchaseSubscriptionOption(
         activity: Activity,
         subscriptionOption: SubscriptionOption,
-        callback: PurchaseCallback
+        callback: PurchaseCallback,
+        isPersonalizedPrice: Boolean = false
     ) {
-        startPurchase(activity, subscriptionOption.purchasingData, null, callback)
+        startPurchase(activity,
+            subscriptionOption.purchasingData,
+            null,
+            callback,
+            isPersonalizedPrice
+        )
     }
 
     /**
@@ -541,7 +553,8 @@ class Purchases internal constructor(
             // TODOBC5 Move this logic to StoreProduct
             packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
-            listener
+            listener,
+            false // TODOC5 figure out isPersonalizedPrice with package
         )
     }
 
@@ -1494,7 +1507,8 @@ class Purchases internal constructor(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingIdentifier: String?,
-        listener: PurchaseCallback
+        listener: PurchaseCallback,
+        isPersonalizedPrice: Boolean
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
@@ -1525,7 +1539,8 @@ class Purchases internal constructor(
                 appUserID,
                 purchasingData,
                 null,
-                presentedOfferingIdentifier
+                presentedOfferingIdentifier,
+                isPersonalizedPrice
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
