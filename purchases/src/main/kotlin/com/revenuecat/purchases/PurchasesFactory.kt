@@ -145,11 +145,13 @@ internal class PurchasesFactory(
         backend: Backend,
         dispatcher: Dispatcher
     ): DiagnosticsManager {
+        val sharedPreferences = DiagnosticsManager.initializeSharedPreferences(context)
         return DiagnosticsManager(
             DiagnosticsFileHelper(FileHelper(context)),
             DiagnosticsAnonymizer(),
             backend,
-            dispatcher
+            dispatcher,
+            sharedPreferences
         )
     }
 

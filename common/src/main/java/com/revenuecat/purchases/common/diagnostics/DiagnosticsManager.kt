@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.verboseLog
@@ -9,12 +12,25 @@ class DiagnosticsManager(
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
     private val backend: Backend,
-    private val diagnosticsDispatcher: Dispatcher
+    private val diagnosticsDispatcher: Dispatcher,
+    private val sharedPreferences: SharedPreferences
 ) {
+    companion object {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val CONSECUTIVE_FAILURES_COUNT_KEY = "consecutive_failures_count"
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val MAX_NUMBER_RETRIES = 3
+
+        fun initializeSharedPreferences(context: Context): SharedPreferences =
+            context.getSharedPreferences(
+                "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
+                Context.MODE_PRIVATE
+            )
+    }
+
     fun syncDiagnosticsFileIfNeeded() {
         enqueue {
             try {
-                if (diagnosticsFileHelper.diagnosticsFileIsEmpty()) return@enqueue
                 val diagnosticsList = diagnosticsFileHelper.readDiagnosticsFile()
                 val diagnosticsCount = diagnosticsList.size
                 if (diagnosticsCount == 0) {
@@ -25,16 +41,28 @@ class DiagnosticsManager(
                     diagnosticsList = diagnosticsList,
                     onSuccessHandler = {
                         verboseLog("Synced diagnostics file successfully.")
+                        clearConsecutiveNumberOfErrors()
                         diagnosticsFileHelper.cleanSentDiagnostics(diagnosticsCount)
                     },
-                    onErrorHandler = { error ->
-                        verboseLog("Error syncing diagnostics file: $error")
-                        diagnosticsFileHelper.deleteDiagnosticsFile()
+                    onErrorHandler = { error, shouldRetry ->
+                        verboseLog("Error syncing diagnostics file: $error. Should retry: $shouldRetry")
+                        if (shouldRetry) {
+                            val currentRetryCount = increaseConsecutiveNumberOfErrors()
+                            if (currentRetryCount >= MAX_NUMBER_RETRIES) {
+                                resetDiagnosticsStatus()
+                            }
+                        } else {
+                            resetDiagnosticsStatus()
+                        }
                     }
                 )
             } catch (e: IOException) {
-                verboseLog("Error syncing diagnostics: $e")
-                diagnosticsFileHelper.deleteDiagnosticsFile()
+                verboseLog("Error syncing diagnostics file: $e")
+                try {
+                    resetDiagnosticsStatus()
+                } catch (e: IOException) {
+                    verboseLog("Error deleting diagnostics file: $e")
+                }
             }
         }
     }
@@ -54,5 +82,20 @@ class DiagnosticsManager(
 
     private fun enqueue(command: () -> Unit) {
         diagnosticsDispatcher.enqueue(command = command)
+    }
+
+    private fun clearConsecutiveNumberOfErrors() {
+        sharedPreferences.edit().remove(CONSECUTIVE_FAILURES_COUNT_KEY).apply()
+    }
+
+    private fun increaseConsecutiveNumberOfErrors(): Int {
+        var count = sharedPreferences.getInt(CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+        sharedPreferences.edit().putInt(CONSECUTIVE_FAILURES_COUNT_KEY, ++count).apply()
+        return count
+    }
+
+    private fun resetDiagnosticsStatus() {
+        clearConsecutiveNumberOfErrors()
+        diagnosticsFileHelper.deleteDiagnosticsFile()
     }
 }

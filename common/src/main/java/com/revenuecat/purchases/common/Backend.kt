@@ -37,7 +37,7 @@ typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase:
 /** @suppress */
 typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
 /** @suppress */
-typealias TelemetryCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
+typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 
 class Backend(
     private val apiKey: String,
@@ -62,7 +62,7 @@ class Backend(
     @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var telemetryCallbacks = mutableMapOf<CallbackCacheKey, MutableList<TelemetryCallback>>()
+    @Volatile var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -358,7 +358,7 @@ class Backend(
     fun postDiagnostics(
         diagnosticsList: List<JSONObject>,
         onSuccessHandler: (JSONObject) -> Unit,
-        onErrorHandler: (PurchasesError) -> Unit
+        onErrorHandler: (PurchasesError, Boolean) -> Unit
     ) {
         val cacheKey = diagnosticsList.map { it.hashCode().toString() }
 
@@ -366,7 +366,7 @@ class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
-                    URL("https://api-telemetry.revenuecat.com/"),
+                    URL("https://api-telemetry.revenuecat.com/"), // WIP: Update URL and path
                     "/telemetry",
                     body,
                     authenticationHeaders,
@@ -376,30 +376,33 @@ class Backend(
 
             override fun onError(error: PurchasesError) {
                 synchronized(this@Backend) {
-                    telemetryCallbacks.remove(cacheKey)
+                    diagnosticsCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
+                    onErrorHandler(error, error.code == PurchasesErrorCode.NetworkError)
                 }
             }
 
             override fun onCompletion(result: HTTPResult) {
-                if (result.isSuccessful()) {
-                    synchronized(this@Backend) {
-                        telemetryCallbacks.remove(cacheKey)
-                    }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                synchronized(this@Backend) {
+                    diagnosticsCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
                         try {
                             onSuccessHandler(result.body)
                         } catch (e: JSONException) {
-                            onErrorHandler(e.toPurchasesError())
+                            onErrorHandler(e.toPurchasesError(), true)
                         }
+                    } else {
+                        val error = result.toPurchasesError()
+                        val shouldRetry = result.responseCode >= RCHTTPStatusCodes.ERROR ||
+                            error.code == PurchasesErrorCode.NetworkError
+                        onErrorHandler(error, shouldRetry)
                     }
-                } else {
-                    onError(result.toPurchasesError())
                 }
             }
         }
         synchronized(this@Backend) {
-            telemetryCallbacks.addCallback(call, diagnosticsDispatcher, cacheKey, onSuccessHandler to onErrorHandler)
+            diagnosticsCallbacks.addCallback(call, diagnosticsDispatcher, cacheKey, onSuccessHandler to onErrorHandler)
         }
     }
 

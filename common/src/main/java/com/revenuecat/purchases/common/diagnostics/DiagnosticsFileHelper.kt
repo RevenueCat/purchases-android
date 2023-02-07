@@ -32,12 +32,11 @@ class DiagnosticsFileHelper(
     }
 
     @Synchronized
-    fun diagnosticsFileIsEmpty(): Boolean {
-        return fileHelper.fileIsEmpty(DIAGNOSTICS_FILE_PATH)
-    }
-
-    @Synchronized
     fun readDiagnosticsFile(): List<JSONObject> {
-        return fileHelper.readFilePerLines(DIAGNOSTICS_FILE_PATH).map { JSONObject(it) }
+        return if (fileHelper.fileIsEmpty(DIAGNOSTICS_FILE_PATH)) {
+            emptyList()
+        } else {
+            fileHelper.readFilePerLines(DIAGNOSTICS_FILE_PATH).map { JSONObject(it) }
+        }
     }
 }

@@ -8,6 +8,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -58,14 +59,16 @@ class DiagnosticsFileHelperTest {
     }
 
     @Test
-    fun `diagnosticsFileIsEmpty calls are correct`() {
+    fun `readDiagnosticsFile returns empty list if file is empty`() {
         every { fileHelper.fileIsEmpty(diagnosticsFilePath) } returns true
-        assertTrue(diagnosticsFileHelper.diagnosticsFileIsEmpty())
+        assertThat(diagnosticsFileHelper.readDiagnosticsFile()).isEqualTo(emptyList<JSONObject>())
         verify(exactly = 1) { fileHelper.fileIsEmpty(diagnosticsFilePath) }
+        verify(exactly = 0) { fileHelper.readFilePerLines(diagnosticsFilePath) }
     }
 
     @Test
     fun `readDiagnosticsFile reads content as json`() {
+        every { fileHelper.fileIsEmpty(diagnosticsFilePath) } returns false
         every { fileHelper.readFilePerLines(diagnosticsFilePath) } returns listOf(
             "{}", "{\"test_key\": \"test_value\"}"
         )
