@@ -397,12 +397,17 @@ class Purchases internal constructor(
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+     * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
+    @JvmOverloads
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
+        listener: ProductChangeCallback,
+        isPersonalizedPrice: Boolean = false
     ) {
         startProductChange(
             activity,
@@ -410,8 +415,8 @@ class Purchases internal constructor(
             storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
             null,
             upgradeInfo,
-            listener,
-            false // TODO bc5 think about personalized price for products
+            isPersonalizedPrice, // TODOBC5 think about personalized price for products
+            listener
         )
     }
 
@@ -426,20 +431,24 @@ class Purchases internal constructor(
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
+     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+     * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
+    @JvmOverloads
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         callback: PurchaseCallback,
-        isPersonalizedPrice: Boolean = false
+        isPersonalizedPrice: Boolean = false,
     ) {
         startPurchase(
             activity,
             // TODOBC5 Move this logic to StoreProduct
             storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
             null,
-            callback,
-            isPersonalizedPrice
+            isPersonalizedPrice,
+            callback
         )
     }
 
@@ -467,8 +476,8 @@ class Purchases internal constructor(
             subscriptionOption.purchasingData,
             null,
             upgradeInfo,
-            listener,
-            isPersonalizedPrice
+            isPersonalizedPrice,
+            listener
         )
     }
 
@@ -488,11 +497,12 @@ class Purchases internal constructor(
         callback: PurchaseCallback,
         isPersonalizedPrice: Boolean = false
     ) {
-        startPurchase(activity,
+        startPurchase(
+            activity,
             subscriptionOption.purchasingData,
             null,
-            callback,
-            isPersonalizedPrice
+            isPersonalizedPrice,
+            callback
         )
     }
 
@@ -513,12 +523,16 @@ class Purchases internal constructor(
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
+     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+     * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         upgradeInfo: UpgradeInfo,
-        callback: ProductChangeCallback
+        callback: ProductChangeCallback,
+        isPersonalizedPrice: Boolean = false
     ) {
         startProductChange(
             activity,
@@ -526,8 +540,8 @@ class Purchases internal constructor(
             packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo,
-            callback,
-            false // TODO BC5 think about personalized price for packages
+            isPersonalizedPrice, // TODO BC5 think about personalized price for packages
+            callback
         )
     }
 
@@ -546,15 +560,16 @@ class Purchases internal constructor(
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
-        listener: PurchaseCallback
+        listener: PurchaseCallback,
+        isPersonalizedPrice: Boolean = false
     ) {
         startPurchase(
             activity,
             // TODOBC5 Move this logic to StoreProduct
             packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
-            listener,
-            false // TODOC5 figure out isPersonalizedPrice with package
+            isPersonalizedPrice, // TODOC5 figure out isPersonalizedPrice with package
+            listener
         )
     }
 
@@ -1507,8 +1522,8 @@ class Purchases internal constructor(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingIdentifier: String?,
-        listener: PurchaseCallback,
-        isPersonalizedPrice: Boolean
+        isPersonalizedPrice: Boolean,
+        listener: PurchaseCallback
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
@@ -1550,8 +1565,8 @@ class Purchases internal constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback,
-        isPersonalizedPrice: Boolean
+        isPersonalizedPrice: Boolean,
+        listener: ProductChangeCallback
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(

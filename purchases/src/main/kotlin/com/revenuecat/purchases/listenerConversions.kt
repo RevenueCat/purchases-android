@@ -1,3 +1,4 @@
+@file:SuppressWarnings("LongParameterList")
 package com.revenuecat.purchases
 
 import android.app.Activity
@@ -117,14 +118,18 @@ fun Purchases.getOfferingsWith(
  * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
+ * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+ * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+ * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
  */
 fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
+    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit,
+    isPersonalizedPrice: Boolean = false
 ) {
-    purchaseProduct(activity, storeProduct, purchaseCompletedCallback(onSuccess, onError))
+    purchaseProduct(activity, storeProduct, purchaseCompletedCallback(onSuccess, onError), isPersonalizedPrice)
 }
 
 /**
@@ -136,15 +141,25 @@ fun Purchases.purchaseProductWith(
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
+ * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+ * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+ * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
  */
 fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
     upgradeInfo: UpgradeInfo,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
+    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
+    isPersonalizedPrice: Boolean = false
 ) {
-    purchaseProduct(activity, storeProduct, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
+    purchaseProduct(
+        activity,
+        storeProduct,
+        upgradeInfo,
+        productChangeCompletedListener(onSuccess, onError),
+        isPersonalizedPrice
+    )
 }
 
 /**
@@ -153,17 +168,22 @@ fun Purchases.purchaseProductWith(
  * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
+ * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+ * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+ * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
  */
 fun Purchases.purchaseSubscriptionOptionWith(
     activity: Activity,
     subscriptionOption: SubscriptionOption,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
+    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit,
+    isPersonalizedPrice: Boolean = false
 ) {
     purchaseSubscriptionOption(
         activity,
         subscriptionOption,
-        purchaseCompletedCallback(onSuccess, onError)
+        purchaseCompletedCallback(onSuccess, onError),
+        isPersonalizedPrice
     )
 }
 
@@ -175,6 +195,9 @@ fun Purchases.purchaseSubscriptionOptionWith(
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
+ * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+ * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+ * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
  */
 @Suppress("LongParameterList")
 fun Purchases.purchaseSubscriptionOptionWith(
@@ -182,13 +205,15 @@ fun Purchases.purchaseSubscriptionOptionWith(
     subscriptionOption: SubscriptionOption,
     upgradeInfo: UpgradeInfo,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
+    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
+    isPersonalizedPrice: Boolean = false,
 ) {
     purchaseSubscriptionOption(
         activity,
         subscriptionOption,
         upgradeInfo,
-        productChangeCompletedListener(onSuccess, onError)
+        productChangeCompletedListener(onSuccess, onError),
+        isPersonalizedPrice
     )
 }
 
@@ -201,15 +226,25 @@ fun Purchases.purchaseSubscriptionOptionWith(
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
+ * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+ * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+ * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
  */
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
     upgradeInfo: UpgradeInfo,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
+    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
+    isPersonalizedPrice: Boolean = false
 ) {
-    purchasePackage(activity, packageToPurchase, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
+    purchasePackage(
+        activity,
+        packageToPurchase,
+        upgradeInfo,
+        productChangeCompletedListener(onSuccess, onError),
+        isPersonalizedPrice
+    )
 }
 
 /**
@@ -218,14 +253,18 @@ fun Purchases.purchasePackageWith(
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
+ * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
+ * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+ * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
  */
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
+    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit,
+    isPersonalizedPrice: Boolean = false
 ) {
-    purchasePackage(activity, packageToPurchase, purchaseCompletedCallback(onSuccess, onError))
+    purchasePackage(activity, packageToPurchase, purchaseCompletedCallback(onSuccess, onError), isPersonalizedPrice)
 }
 
 /**
