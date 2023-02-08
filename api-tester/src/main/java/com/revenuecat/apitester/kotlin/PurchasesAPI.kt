@@ -150,11 +150,23 @@ private class PurchasesAPI {
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
+        purchases.purchaseProductWith(
+            activity,
+            storeProduct,
+            upgradeInfo,
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
+        )
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
             upgradeInfo,
             onError = { _: PurchasesError, _: Boolean -> },
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
+        )
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase,
+            upgradeInfo,
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
         purchases.purchasePackageWith(
@@ -168,6 +180,17 @@ private class PurchasesAPI {
             subscriptionOption,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
+        )
+        purchases.purchaseSubscriptionOptionWith(
+            activity,
+            subscriptionOption,
+            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
+        )
+        purchases.purchaseSubscriptionOptionWith(
+            activity,
+            subscriptionOption,
+            upgradeInfo,
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
         purchases.purchaseSubscriptionOptionWith(
             activity,
