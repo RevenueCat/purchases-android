@@ -213,8 +213,7 @@ class Purchases internal constructor(
 
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
-     * for subscriptions anytime a sync is needed, like after a successful purchase, or when migrating existing
-     * users to RevenueCat
+     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat
      *
      * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
      */
