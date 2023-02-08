@@ -1,9 +1,9 @@
-### New Features
-* Add `Purchases.logLevel` and deprecate `Purchases.debugLogsEnabled` (#753) via NachoSoto (@NachoSoto)
 ### Bugfixes
-* Avoid syncing attributes for users with blank user ids (#755) via Toni Rico (@tonidero)
+* Revert "Update gems" (#774) via Josh Holtz (@joshdholtz)
+### Dependency Updates
+* Bump git from 1.12.0 to 1.13.2 (#777) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.210.1 to 2.211.0 (#779) via dependabot[bot] (@dependabot[bot])
+* Update gems (#765) via Cesar de la Vega (@vegaro)
 ### Other Changes
-* Fixed Readme.MD (#727) via AristiDevs (@ArisGuimera)
-* Add codecov (#750) via Cesar de la Vega (@vegaro)
-* Update AGP to 7.4.0 (#747) via Cesar de la Vega (@vegaro)
-* Add test coverage using Kover (#748) via Cesar de la Vega (@vegaro)
+* Adds dependabot (#769) via Cesar de la Vega (@vegaro)
+* Updating comment for syncPurchases (#763) via HaleyRevcat (@HaleyRevcat)
