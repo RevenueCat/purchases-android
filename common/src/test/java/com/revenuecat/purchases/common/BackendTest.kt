@@ -47,7 +47,7 @@ class BackendTest {
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val dispatcher = SyncDispatcher()
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
-    private val mockTelemetryBaseURL = URL("https://api-telemetry.revenuecat.com/")
+    private val mockDiagnosticsBaseURL = URL("https://api-telemetry.revenuecat.com/")
     private val mockAppConfig: AppConfig = mockk<AppConfig>().apply {
         every { baseURL } returns mockBaseURL
     }
@@ -1496,17 +1496,17 @@ class BackendTest {
         assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
     }
 
-    // region postTelemetry
+    // region postDiagnostics
 
     @Test
-    fun `postTelemetry makes call with correct parameters`() {
-        val telemetryList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
-        backend.postTelemetry(telemetryList, {}, { _, _ -> })
+    fun `postDiagnostics makes call with correct parameters`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+        backend.postDiagnostics(diagnosticsList, {}, { _, _ -> })
         verify(exactly = 1) {
             mockClient.performRequest(
-                baseURL = mockTelemetryBaseURL,
+                baseURL = mockDiagnosticsBaseURL,
                 path = "/telemetry",
-                body = mapOf("entries" to JSONArray(telemetryList)),
+                body = mapOf("entries" to JSONArray(diagnosticsList)),
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
                 gzipRequest = true
             )
@@ -1514,8 +1514,8 @@ class BackendTest {
     }
 
     @Test
-    fun `postTelemetry only executes once same request if one in progress`() {
-        val telemetryList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+    fun `postDiagnostics only executes once same request if one in progress`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
             path = "/telemetry",
             body = null,
@@ -1524,19 +1524,19 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             shouldGzipRequest = true,
-            baseURL = mockTelemetryBaseURL
+            baseURL = mockDiagnosticsBaseURL
         )
         val lock = CountDownLatch(3)
-        asyncBackend.postTelemetry(telemetryList, { lock.countDown() }, { _, _ -> fail("expected success") })
-        asyncBackend.postTelemetry(telemetryList, { lock.countDown() }, { _, _ -> fail("expected success") })
-        asyncBackend.postTelemetry(telemetryList, { lock.countDown() }, { _, _ -> fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
-                baseURL = mockTelemetryBaseURL,
+                baseURL = mockDiagnosticsBaseURL,
                 path = "/telemetry",
-                body = mapOf("entries" to JSONArray(telemetryList)),
+                body = mapOf("entries" to JSONArray(diagnosticsList)),
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
                 gzipRequest = true
             )
@@ -1544,8 +1544,8 @@ class BackendTest {
     }
 
     @Test
-    fun `postTelemetry executes same request if done after first one finishes`() {
-        val telemetryList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+    fun `postDiagnostics executes same request if done after first one finishes`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
             path = "/telemetry",
             body = null,
@@ -1554,21 +1554,21 @@ class BackendTest {
             resultBody = null,
             delayed = true,
             shouldGzipRequest = true,
-            baseURL = mockTelemetryBaseURL
+            baseURL = mockDiagnosticsBaseURL
         )
         val lock = CountDownLatch(1)
-        asyncBackend.postTelemetry(telemetryList, { lock.countDown() }, { _, _ -> fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
         lock.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         val lock2 = CountDownLatch(1)
-        asyncBackend.postTelemetry(telemetryList, { lock2.countDown() }, { _, _ -> fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock2.countDown() }, { _, _ -> fail("expected success") })
         lock2.await(2000, TimeUnit.MILLISECONDS)
         assertThat(lock2.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
-                baseURL = mockTelemetryBaseURL,
+                baseURL = mockDiagnosticsBaseURL,
                 path = "/telemetry",
-                body = mapOf("entries" to JSONArray(telemetryList)),
+                body = mapOf("entries" to JSONArray(diagnosticsList)),
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY"),
                 gzipRequest = true
             )
@@ -1576,8 +1576,8 @@ class BackendTest {
     }
 
     @Test
-    fun `postTelemetry calls error handler without retry when InsufficientPermissionsError`() {
-        val telemetryList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+    fun `postDiagnostics calls error handler without retry when InsufficientPermissionsError`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
             path = "/telemetry",
             body = null,
@@ -1585,11 +1585,11 @@ class BackendTest {
             clientException = SecurityException(),
             resultBody = null,
             shouldGzipRequest = true,
-            baseURL = mockTelemetryBaseURL
+            baseURL = mockDiagnosticsBaseURL
         )
         var errorCalled = false
-        backend.postTelemetry(
-            telemetryList,
+        backend.postDiagnostics(
+            diagnosticsList,
             { fail("expected error") },
             { error, shouldRetry ->
                 errorCalled = true
@@ -1601,8 +1601,8 @@ class BackendTest {
     }
 
     @Test
-    fun `postTelemetry calls error handler with retry when Network error`() {
-        val telemetryList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+    fun `postDiagnostics calls error handler with retry when Network error`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
             path = "/telemetry",
             body = null,
@@ -1610,11 +1610,11 @@ class BackendTest {
             clientException = IOException(),
             resultBody = null,
             shouldGzipRequest = true,
-            baseURL = mockTelemetryBaseURL
+            baseURL = mockDiagnosticsBaseURL
         )
         var errorCalled = false
-        backend.postTelemetry(
-            telemetryList,
+        backend.postDiagnostics(
+            diagnosticsList,
             { fail("expected error") },
             { error, shouldRetry ->
                 errorCalled = true
@@ -1626,8 +1626,8 @@ class BackendTest {
     }
 
     @Test
-    fun `postTelemetry calls error handler with retry if status code is 500`() {
-        val telemetryList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+    fun `postDiagnostics calls error handler with retry if status code is 500`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
             path = "/telemetry",
             body = null,
@@ -1635,11 +1635,11 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             shouldGzipRequest = true,
-            baseURL = mockTelemetryBaseURL
+            baseURL = mockDiagnosticsBaseURL
         )
         var errorCalled = false
-        backend.postTelemetry(
-            telemetryList,
+        backend.postDiagnostics(
+            diagnosticsList,
             { fail("expected error") },
             { error, shouldRetry ->
                 errorCalled = true
@@ -1651,8 +1651,8 @@ class BackendTest {
     }
 
     @Test
-    fun `postTelemetry calls error handler without retry if status code is 400`() {
-        val telemetryList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+    fun `postDiagnostics calls error handler without retry if status code is 400`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
             path = "/telemetry",
             body = null,
@@ -1660,11 +1660,11 @@ class BackendTest {
             clientException = null,
             resultBody = "{\"code\":7101}", // BackendStoreProblem
             shouldGzipRequest = true,
-            baseURL = mockTelemetryBaseURL
+            baseURL = mockDiagnosticsBaseURL
         )
         var errorCalled = false
-        backend.postTelemetry(
-            telemetryList,
+        backend.postDiagnostics(
+            diagnosticsList,
             { fail("expected error") },
             { error, shouldRetry ->
                 errorCalled = true
@@ -1676,8 +1676,8 @@ class BackendTest {
     }
 
     @Test
-    fun `postTelemetry calls success handler`() {
-        val telemetryList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+    fun `postDiagnostics calls success handler`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         val resultBody = "{\"test-response-key\":1234}"
         mockResponse(
             path = "/telemetry",
@@ -1686,11 +1686,11 @@ class BackendTest {
             clientException = null,
             resultBody = resultBody,
             shouldGzipRequest = true,
-            baseURL = mockTelemetryBaseURL
+            baseURL = mockDiagnosticsBaseURL
         )
         var successCalled = false
-        backend.postTelemetry(
-            telemetryList,
+        backend.postDiagnostics(
+            diagnosticsList,
             {
                 successCalled = true
                 assertThat(it.toString()).isEqualTo(resultBody)
