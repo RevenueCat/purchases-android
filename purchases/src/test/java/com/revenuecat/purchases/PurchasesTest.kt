@@ -450,6 +450,16 @@ class PurchasesTest {
     // region purchasing
 
     @Test
+    fun `isPersonalizedPrice value is passed through to purchase`() {
+        // TODO
+    }
+
+    @Test
+    fun `isPersonazlizedPrice defaults to false`() {
+        // TODO
+    }
+
+    @Test
     fun `when making purchase with upgrade info, completion block is called`() {
         val productId = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"

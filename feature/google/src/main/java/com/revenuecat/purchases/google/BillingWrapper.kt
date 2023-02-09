@@ -244,7 +244,8 @@ class BillingWrapper(
             val result = buildPurchaseParams(
                 purchasingData,
                 replaceProductInfo,
-                appUserID
+                appUserID,
+                isPersonalizedPrice
             )
             when (result) {
                 is Result.Success -> launchBillingFlow(activity, result.value)
@@ -797,21 +798,23 @@ class BillingWrapper(
     private fun buildPurchaseParams(
         purchaseInfo: GooglePurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
-        appUserID: String
+        appUserID: String,
+        isPersonalizedPrice: Boolean
     ): Result<BillingFlowParams, PurchasesError> {
         return when (purchaseInfo) {
             is GooglePurchasingData.InAppProduct -> {
-                buildOneTimePurchaseParams(purchaseInfo, appUserID)
+                buildOneTimePurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice)
             }
             is GooglePurchasingData.Subscription -> {
-                buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID)
+                buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
             }
         }
     }
 
     private fun buildOneTimePurchaseParams(
         purchaseInfo: GooglePurchasingData.InAppProduct,
-        appUserID: String
+        appUserID: String,
+        isPersonalizedPrice: Boolean
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
             setProductDetails(purchaseInfo.productDetails)
@@ -821,6 +824,7 @@ class BillingWrapper(
             BillingFlowParams.newBuilder()
                 .setProductDetailsParamsList(listOf(productDetailsParamsList))
                 .setObfuscatedAccountId(appUserID.sha256())
+                .setIsOfferPersonalized(isPersonalizedPrice)
                 .build()
         )
     }
@@ -828,7 +832,8 @@ class BillingWrapper(
     private fun buildSubscriptionPurchaseParams(
         purchaseInfo: GooglePurchasingData.Subscription,
         replaceProductInfo: ReplaceProductInfo?,
-        appUserID: String
+        appUserID: String,
+        isPersonalizedPrice: Boolean
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
             setOfferToken(purchaseInfo.token)
@@ -838,6 +843,7 @@ class BillingWrapper(
         return Result.Success(
             BillingFlowParams.newBuilder()
                 .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                .setIsOfferPersonalized(isPersonalizedPrice)
                 .apply {
                     // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
                     // https://issuetracker.google.com/issues/155005449
