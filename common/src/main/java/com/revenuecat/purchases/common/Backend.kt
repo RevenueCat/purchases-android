@@ -350,6 +350,15 @@ class Backend(
         }
     }
 
+    @Suppress("UnusedPrivateMember") // WIP: Remove suppress
+    fun postDiagnostics(
+        diagnosticsList: List<JSONObject>,
+        onSuccessHandler: (JSONObject) -> Unit,
+        onErrorHandler: (PurchasesError, Boolean) -> Unit
+    ) {
+        // WIP: Perform request
+    }
+
     fun clearCaches() {
         httpClient.clearCaches()
     }
