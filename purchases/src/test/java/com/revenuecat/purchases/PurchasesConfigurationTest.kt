@@ -34,7 +34,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.observerMode).isFalse
         assertThat(purchasesConfiguration.service).isNull()
         assertThat(purchasesConfiguration.store).isEqualTo(Store.PLAY_STORE)
-        assertThat(purchasesConfiguration.telemetryEnabled).isTrue
+        assertThat(purchasesConfiguration.diagnosticsEnabled).isTrue
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(DangerousSettings(autoSyncPurchases = true))
     }
 
@@ -65,9 +65,9 @@ class PurchasesConfigurationTest {
     }
 
     @Test
-    fun `PurchasesConfiguration sets telemetryEnabled correctly`() {
-        val purchasesConfiguration = builder.telemetryEnabled(false).build()
-        assertThat(purchasesConfiguration.telemetryEnabled).isFalse
+    fun `PurchasesConfiguration sets diagnosticsEnabled correctly`() {
+        val purchasesConfiguration = builder.diagnosticsEnabled(false).build()
+        assertThat(purchasesConfiguration.diagnosticsEnabled).isFalse
     }
 
     @Test

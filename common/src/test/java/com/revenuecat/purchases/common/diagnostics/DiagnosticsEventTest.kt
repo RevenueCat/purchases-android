@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.telemetry
+package com.revenuecat.purchases.common.diagnostics
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.assertj.core.api.Assertions.assertThat
@@ -8,11 +8,11 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class TelemetryEventTest {
+class DiagnosticsEventTest {
 
     @Test
     fun `toString transforms metrics event to correct JSON`() {
-        val event = TelemetryEvent.Metric(
+        val event = DiagnosticsEvent.Metric(
             name = MetricEventName.ETAG_HIT_RATE,
             tags = listOf("test-1", "test-2"),
             value = 2
@@ -30,10 +30,10 @@ class TelemetryEventTest {
 
     @Test
     fun `toString transforms exception event to correct JSON`() {
-        val event = TelemetryEvent.Exception(
+        val event = DiagnosticsEvent.Exception(
             exceptionClass = "TestClass.kt",
             message = "test message",
-            location = "TelemetryEvent:121",
+            location = "DiagnosticsEvent:121",
             timestamp = "timestamp"
         )
         val eventAsString = event.toString()
@@ -42,7 +42,7 @@ class TelemetryEventTest {
             "\"type\":\"exception\"," +
             "\"exc_class\":\"TestClass.kt\"," +
             "\"message\":\"test message\"," +
-            "\"location\":\"TelemetryEvent:121\"," +
+            "\"location\":\"DiagnosticsEvent:121\"," +
             "\"timestamp\":\"timestamp\"" +
             "}"
         assertThat(eventAsString).isEqualTo(expectedString)

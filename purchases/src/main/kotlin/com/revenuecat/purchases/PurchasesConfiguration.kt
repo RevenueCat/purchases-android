@@ -11,7 +11,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val observerMode: Boolean
     val service: ExecutorService?
     val store: Store
-    val telemetryEnabled: Boolean
+    val diagnosticsEnabled: Boolean
     val dangerousSettings: DangerousSettings
 
     init {
@@ -21,7 +21,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.observerMode = builder.observerMode
         this.service = builder.service
         this.store = builder.store
-        this.telemetryEnabled = builder.telemetryEnabled
+        this.diagnosticsEnabled = builder.diagnosticsEnabled
         this.dangerousSettings = builder.dangerousSettings
     }
 
@@ -34,7 +34,7 @@ open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic @get:JvmSynthetic internal var observerMode: Boolean = false
         @set:JvmSynthetic @get:JvmSynthetic internal var service: ExecutorService? = null
         @set:JvmSynthetic @get:JvmSynthetic internal var store: Store = Store.PLAY_STORE
-        @set:JvmSynthetic @get:JvmSynthetic internal var telemetryEnabled: Boolean = true
+        @set:JvmSynthetic @get:JvmSynthetic internal var diagnosticsEnabled: Boolean = true
         @set:JvmSynthetic @get:JvmSynthetic internal var dangerousSettings: DangerousSettings = DangerousSettings()
 
         fun appUserID(appUserID: String?) = apply {
@@ -53,8 +53,8 @@ open class PurchasesConfiguration(builder: Builder) {
             this.store = store
         }
 
-        fun telemetryEnabled(telemetryEnabled: Boolean) = apply {
-            this.telemetryEnabled = telemetryEnabled
+        fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
+            this.diagnosticsEnabled = diagnosticsEnabled
         }
 
         /**

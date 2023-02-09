@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.telemetry
+package com.revenuecat.purchases.common.diagnostics
 
 enum class MetricEventName {
     ETAG_HIT_RATE,

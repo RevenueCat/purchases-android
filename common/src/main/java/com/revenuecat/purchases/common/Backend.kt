@@ -38,7 +38,7 @@ typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesErr
 class Backend(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
-    @Suppress("UnusedPrivateMember") private val telemetryDispatcher: Dispatcher, // WIP: Remove suppress
+    @Suppress("UnusedPrivateMember") private val diagnosticsDispatcher: Dispatcher, // WIP: Remove suppress
     private val httpClient: HTTPClient
 ) {
 
@@ -352,8 +352,8 @@ class Backend(
     }
 
     @Suppress("UnusedPrivateMember") // WIP: Remove suppress
-    fun postTelemetry(
-        telemetryList: List<JSONObject>,
+    fun postDiagnostics(
+        diagnosticsList: List<JSONObject>,
         onSuccessHandler: (JSONObject) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit
     ) {

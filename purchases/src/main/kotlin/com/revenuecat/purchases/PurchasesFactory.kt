@@ -14,9 +14,9 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.telemetry.TelemetryAnonymizer
-import com.revenuecat.purchases.common.telemetry.TelemetryFileHelper
-import com.revenuecat.purchases.common.telemetry.TelemetryManager
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsAnonymizer
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsManager
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.identity.IdentityManager
@@ -56,13 +56,13 @@ internal class PurchasesFactory(
             val sharedPreferencesForETags = ETagManager.initializeSharedPreferences(context)
             val eTagManager = ETagManager(sharedPreferencesForETags)
 
-            val telemetryDispatcher = Dispatcher(createTelemetryExecutor())
+            val diagnosticsDispatcher = Dispatcher(createDiagnosticsExecutor())
 
             val dispatcher = Dispatcher(service ?: createDefaultExecutor())
             val backend = Backend(
                 apiKey,
                 dispatcher,
-                telemetryDispatcher,
+                diagnosticsDispatcher,
                 HTTPClient(appConfig, eTagManager)
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
@@ -95,10 +95,10 @@ internal class PurchasesFactory(
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
 
-            val telemetryManager = if (telemetryEnabled) {
-                createTelemetryManager(context, backend, telemetryDispatcher)
+            val diagnosticsManager = if (diagnosticsEnabled) {
+                createDiagnosticsManager(context, backend, diagnosticsDispatcher)
             } else {
-                verboseLog("Telemetry disabled.")
+                verboseLog("Diagnostics disabled.")
                 null
             }
 
@@ -113,7 +113,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper,
-                telemetryManager
+                diagnosticsManager
             )
         }
     }
@@ -139,14 +139,14 @@ internal class PurchasesFactory(
         return checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun createTelemetryManager(
+    private fun createDiagnosticsManager(
         context: Context,
         backend: Backend,
         dispatcher: Dispatcher
-    ): TelemetryManager {
-        return TelemetryManager(
-            TelemetryFileHelper(FileHelper(context)),
-            TelemetryAnonymizer(),
+    ): DiagnosticsManager {
+        return DiagnosticsManager(
+            DiagnosticsFileHelper(FileHelper(context)),
+            DiagnosticsAnonymizer(),
             backend,
             dispatcher
         )
@@ -156,8 +156,8 @@ internal class PurchasesFactory(
         return Executors.newSingleThreadScheduledExecutor()
     }
 
-    private fun createTelemetryExecutor(): ExecutorService {
-        return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("telemetry-thread"))
+    private fun createDiagnosticsExecutor(): ExecutorService {
+        return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("diagnostics-thread"))
     }
 
     private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {

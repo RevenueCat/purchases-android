@@ -141,7 +141,7 @@ class PostingTransactionsTests {
                 store = Store.PLAY_STORE
             ),
             customerInfoHelper = customerInfoHelperMock,
-            telemetryManager = mockk(relaxed = true)
+            diagnosticsManager = mockk(relaxed = true)
         )
     }
 
