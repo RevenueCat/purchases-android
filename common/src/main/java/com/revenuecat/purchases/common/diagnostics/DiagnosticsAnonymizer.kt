@@ -6,7 +6,7 @@ class DiagnosticsAnonymizer(
     private val anonymizer: Anonymizer
 ) {
     fun anonymizeEventIfNeeded(diagnosticsEvent: DiagnosticsEvent): DiagnosticsEvent {
-        return when(diagnosticsEvent) {
+        return when (diagnosticsEvent) {
             is DiagnosticsEvent.Log -> anonymizeLog(diagnosticsEvent)
             is DiagnosticsEvent.Exception -> anonymizeException(diagnosticsEvent)
             is DiagnosticsEvent.Metric -> diagnosticsEvent
