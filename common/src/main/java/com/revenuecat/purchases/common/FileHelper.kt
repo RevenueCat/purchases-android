@@ -13,7 +13,8 @@ class FileHelper(
     fun appendToFile(filePath: String, contentToAppend: String) {
         val file = getFileInFilesDir(filePath)
         file.parentFile?.mkdirs()
-        val outputStream = FileOutputStream(file, true)
+        val shouldAppend = true
+        val outputStream = FileOutputStream(file, shouldAppend)
         outputStream.use {
             outputStream.write(contentToAppend.toByteArray())
         }
@@ -41,6 +42,7 @@ class FileHelper(
         val readLines = readFilePerLines(filePath)
         deleteFile(filePath)
         val textToAppend = if (readLines.isEmpty() || numberOfLinesToRemove >= readLines.size) {
+            errorLog("Trying to remove $numberOfLinesToRemove from file with ${readLines.size} lines.")
             ""
         } else {
             readLines.subList(numberOfLinesToRemove, readLines.size).joinToString(separator = "")
