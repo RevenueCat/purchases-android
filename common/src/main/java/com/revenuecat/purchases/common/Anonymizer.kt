@@ -1,0 +1,15 @@
+package com.revenuecat.purchases.common
+
+class Anonymizer {
+    private companion object {
+        const val EMAIL_REGEX = "[a-zA-Z0-9_!#\$%&'*+/=?`{|}~^.]+@[a-zA-Z0-9]+\\.[a-zA-Z]+" // Based on RFC5322
+        const val UUID_REGEX = "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+        const val IP_REGEX = "((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}"
+    }
+
+    private val anonymizeRegex = Regex("$EMAIL_REGEX|$UUID_REGEX|$IP_REGEX")
+
+    fun anonymizeString(textToAnonymize: String): String {
+        return textToAnonymize.replace(anonymizeRegex, "*****")
+    }
+}
