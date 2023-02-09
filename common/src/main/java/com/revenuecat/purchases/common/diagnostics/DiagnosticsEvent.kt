@@ -1,7 +1,10 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Date
 
 sealed class DiagnosticsEvent(val diagnosticType: String) {
     companion object {
@@ -14,7 +17,8 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
     data class Log(
         val name: DiagnosticsLogEventName,
         val properties: Map<String, Any>,
-        val timestamp: String
+        val dateProvider: DateProvider = DefaultDateProvider(),
+        val time: Date = dateProvider.now
     ) : DiagnosticsEvent("log") {
         private companion object {
             const val NAME_KEY = "name"
@@ -31,7 +35,7 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
             put(TYPE_KEY, diagnosticType)
             put(NAME_KEY, name.name.lowercase())
             put(PROPERTIES_KEY, JSONObject(properties))
-            put(TIMESTAMP_KEY, timestamp)
+            put(TIMESTAMP_KEY, time.time)
         }
     }
 
@@ -63,7 +67,8 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
         val exceptionClass: String,
         val message: String,
         val location: String,
-        val timestamp: String
+        val dateProvider: DateProvider = DefaultDateProvider(),
+        val time: Date = dateProvider.now
     ) : DiagnosticsEvent("exception") {
         private companion object {
             const val EXCEPTION_CLASS_KEY = "exc_class"
@@ -82,7 +87,7 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
             put(EXCEPTION_CLASS_KEY, exceptionClass)
             put(MESSAGE_KEY, message)
             put(LOCATION_KEY, location)
-            put(TIMESTAMP_KEY, timestamp)
+            put(TIMESTAMP_KEY, time.time)
         }
     }
 }
