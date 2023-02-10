@@ -2,7 +2,7 @@
 buildscript {
     ext.compileVersion = 31
     ext.kotlinVersion = "1.6.21"
-    ext.purchasesVersion = "5.0.0"
+    ext.purchasesVersion = "6.0.0-alpha.2"
     ext.lifecycleVersion = "2.5.0"
     ext.androidxCoreVersion = "1.8.0"
     repositories {
