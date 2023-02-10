@@ -354,7 +354,6 @@ class Backend(
         }
     }
 
-    @Suppress("UnusedPrivateMember") // WIP: Remove suppress
     fun postDiagnostics(
         diagnosticsList: List<JSONObject>,
         onSuccessHandler: (JSONObject) -> Unit,
