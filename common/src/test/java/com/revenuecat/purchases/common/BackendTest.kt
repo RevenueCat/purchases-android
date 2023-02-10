@@ -21,13 +21,17 @@ import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
+import org.json.JSONArray
 import org.json.JSONObject
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
 import java.lang.Thread.sleep
+import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadLocalRandom
@@ -44,14 +48,33 @@ class BackendTest {
     fun setup() = mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
+    private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
+    private val mockDiagnosticsBaseURL = URL("https://mock-api-diagnostics.revenuecat.com/")
+    private val diagnosticsEndpoint = "/telemetry"
+    private val mockAppConfig: AppConfig = mockk<AppConfig>().apply {
+        every { baseURL } returns mockBaseURL
+        every { diagnosticsURL } returns mockDiagnosticsBaseURL
+    }
     private val dispatcher = SyncDispatcher()
     private var backend: Backend = Backend(
         API_KEY,
+        mockAppConfig,
+        dispatcher,
         dispatcher,
         mockClient
     )
     private var asyncBackend: Backend = Backend(
         API_KEY,
+        mockAppConfig,
+        Dispatcher(
+            ThreadPoolExecutor(
+                1,
+                2,
+                0,
+                TimeUnit.MILLISECONDS,
+                LinkedBlockingQueue()
+            )
+        ),
         Dispatcher(
             ThreadPoolExecutor(
                 1,
@@ -64,6 +87,7 @@ class BackendTest {
         mockClient
     )
     private val appUserID = "jerry"
+    private val defaultTimeout = 200L
 
     private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedCreated: Boolean? = null
@@ -121,7 +145,8 @@ class BackendTest {
         clientException: Exception?,
         resultBody: String?,
         delayed: Boolean = false,
-        shouldMockCustomerInfo: Boolean = true
+        shouldMockCustomerInfo: Boolean = true,
+        baseURL: URL = mockBaseURL
     ): CustomerInfo {
         val info: CustomerInfo = mockk()
 
@@ -134,6 +159,7 @@ class BackendTest {
         }
         val everyMockedCall = every {
             mockClient.performRequest(
+                eq(baseURL),
                 eq(path),
                 (if (body == null) any() else eq(body)),
                 capture(headersSlot)
@@ -142,7 +168,7 @@ class BackendTest {
 
         if (clientException == null) {
             everyMockedCall answers {
-                if (delayed) sleep(200)
+                if (delayed) sleep(20)
                 result
             }
         } else {
@@ -359,6 +385,7 @@ class BackendTest {
 
         verify {
             mockClient.performRequest(
+                mockBaseURL,
                 eq(path),
                 any(),
                 any()
@@ -402,10 +429,11 @@ class BackendTest {
         asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
         }, onError = onReceiveCustomerInfoErrorHandler)
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/" + Uri.encode(appUserID),
                 null,
                 any()
@@ -464,10 +492,11 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any(),
                 any()
@@ -543,10 +572,11 @@ class BackendTest {
 
         // Expect requests:
 
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any(),
                 any()
@@ -554,6 +584,7 @@ class BackendTest {
         }
         verify(exactly = 2) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/$appUserID",
                 null,
                 any()
@@ -578,10 +609,11 @@ class BackendTest {
         asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/$appUserID/offerings",
                 null,
                 any()
@@ -606,10 +638,11 @@ class BackendTest {
         asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = {
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/$appUserID/offerings",
                 null,
                 any()
@@ -617,6 +650,7 @@ class BackendTest {
         }
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/anotherUser/offerings",
                 null,
                 any()
@@ -691,6 +725,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any(),
                 any()
@@ -810,10 +845,11 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any() as Map<String, Any?>,
                 any()
@@ -901,6 +937,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any() as Map<String, Any?>,
                 any()
@@ -959,6 +996,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any() as Map<String, Any?>,
                 any()
@@ -1043,6 +1081,7 @@ class BackendTest {
         )
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/identify",
                 body,
                 any()
@@ -1202,10 +1241,11 @@ class BackendTest {
                 fail("Should have called success")
             }
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/identify",
                 requestBody,
                 any()
@@ -1251,10 +1291,11 @@ class BackendTest {
                 lock.countDown()
             }
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/identify",
                 requestBody,
                 any()
@@ -1300,10 +1341,11 @@ class BackendTest {
                 lock.countDown()
             }
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/subscribers/identify",
                 requestBody,
                 any()
@@ -1366,6 +1408,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
+                mockBaseURL,
                 "/receipts",
                 any(),
                 any()
@@ -1450,6 +1493,225 @@ class BackendTest {
         assertThat(headersSlot.captured["price_string"]).isEqualTo("$25")
         assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
     }
+
+    // region postDiagnostics
+
+    @Test
+    fun `postDiagnostics makes call with correct parameters`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+        backend.postDiagnostics(diagnosticsList, {}, { _, _ -> })
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                baseURL = mockDiagnosticsBaseURL,
+                path = diagnosticsEndpoint,
+                body = mapOf("entries" to JSONArray(diagnosticsList)),
+                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
+            )
+        }
+    }
+
+    @Test
+    fun `postDiagnostics only executes once same request if one in progress`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+        mockResponse(
+            path = diagnosticsEndpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            baseURL = mockDiagnosticsBaseURL
+        )
+        val lock = CountDownLatch(3)
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                baseURL = mockDiagnosticsBaseURL,
+                path = diagnosticsEndpoint,
+                body = mapOf("entries" to JSONArray(diagnosticsList)),
+                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
+            )
+        }
+    }
+
+    @Test
+    fun `postDiagnostics executes same request if done after first one finishes`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+        mockResponse(
+            path = diagnosticsEndpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = null,
+            delayed = true,
+            baseURL = mockDiagnosticsBaseURL
+        )
+        val lock = CountDownLatch(1)
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        val lock2 = CountDownLatch(1)
+        asyncBackend.postDiagnostics(diagnosticsList, { lock2.countDown() }, { _, _ -> fail("expected success") })
+        lock2.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock2.count).isEqualTo(0)
+        verify(exactly = 2) {
+            mockClient.performRequest(
+                baseURL = mockDiagnosticsBaseURL,
+                path = diagnosticsEndpoint,
+                body = mapOf("entries" to JSONArray(diagnosticsList)),
+                requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
+            )
+        }
+    }
+
+    @Test
+    fun `postDiagnostics calls error handler without retry when InsufficientPermissionsError`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+        mockResponse(
+            path = diagnosticsEndpoint,
+            body = null,
+            responseCode = 200,
+            clientException = SecurityException(),
+            resultBody = null,
+            baseURL = mockDiagnosticsBaseURL
+        )
+        var errorCalled = false
+        backend.postDiagnostics(
+            diagnosticsList,
+            { fail("expected error") },
+            { error, shouldRetry ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.InsufficientPermissionsError)
+                assertFalse(shouldRetry)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `postDiagnostics calls error handler with retry when Network error`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+        mockResponse(
+            path = diagnosticsEndpoint,
+            body = null,
+            responseCode = 200,
+            clientException = IOException(),
+            resultBody = null,
+            baseURL = mockDiagnosticsBaseURL
+        )
+        var errorCalled = false
+        backend.postDiagnostics(
+            diagnosticsList,
+            { fail("expected error") },
+            { error, shouldRetry ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+                assertTrue(shouldRetry)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `postDiagnostics calls error handler with retry if status code is 500`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+        mockResponse(
+            path = diagnosticsEndpoint,
+            body = null,
+            responseCode = 500,
+            clientException = null,
+            resultBody = null,
+            baseURL = mockDiagnosticsBaseURL
+        )
+        var errorCalled = false
+        backend.postDiagnostics(
+            diagnosticsList,
+            { fail("expected error") },
+            { error, shouldRetry ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+                assertTrue(shouldRetry)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `postDiagnostics calls error handler without retry if status code is 400`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+        mockResponse(
+            path = diagnosticsEndpoint,
+            body = null,
+            responseCode = 400,
+            clientException = null,
+            resultBody = "{\"code\":7101}", // BackendStoreProblem
+            baseURL = mockDiagnosticsBaseURL
+        )
+        var errorCalled = false
+        backend.postDiagnostics(
+            diagnosticsList,
+            { fail("expected error") },
+            { error, shouldRetry ->
+                errorCalled = true
+                assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+                assertFalse(shouldRetry)
+            }
+        )
+        assertTrue(errorCalled)
+    }
+
+    @Test
+    fun `postDiagnostics calls success handler`() {
+        val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
+        val resultBody = "{\"test-response-key\":1234}"
+        mockResponse(
+            path = diagnosticsEndpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody,
+            baseURL = mockDiagnosticsBaseURL
+        )
+        var successCalled = false
+        backend.postDiagnostics(
+            diagnosticsList,
+            {
+                successCalled = true
+                assertThat(it.toString()).isEqualTo(resultBody)
+            },
+            { _, _ -> fail("expected success") }
+        )
+        assertTrue(successCalled)
+    }
+
+    @Test
+    fun `postDiagnostics call is enqueued with delay`() {
+        mockResponse(
+            path = diagnosticsEndpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = "{}",
+            baseURL = mockDiagnosticsBaseURL
+        )
+        dispatcher.calledWithRandomDelay = null
+        backend.postDiagnostics(
+            listOf(JSONObject("{\"test-key\":\"test-value\"}")),
+            {},
+            { _, _ -> fail("expected success") }
+        )
+
+        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
+        assertThat(calledWithRandomDelay).isNotNull
+        assertThat(calledWithRandomDelay).isTrue
+    }
+
+
+    // endregion
 
     private fun mockStoreProduct(
         price: Long = 25_000_000,
