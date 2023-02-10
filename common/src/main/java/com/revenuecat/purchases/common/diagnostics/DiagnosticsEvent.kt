@@ -18,7 +18,7 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
         val name: DiagnosticsLogEventName,
         val properties: Map<String, Any>,
         val dateProvider: DateProvider = DefaultDateProvider(),
-        val time: Date = dateProvider.now
+        val dateTime: Date = dateProvider.now
     ) : DiagnosticsEvent("log") {
         private companion object {
             const val NAME_KEY = "name"
@@ -35,7 +35,7 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
             put(TYPE_KEY, diagnosticType)
             put(NAME_KEY, name.name.lowercase())
             put(PROPERTIES_KEY, JSONObject(properties))
-            put(TIMESTAMP_KEY, time.time)
+            put(TIMESTAMP_KEY, dateTime.time)
         }
     }
 
@@ -68,7 +68,7 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
         val message: String,
         val location: String,
         val dateProvider: DateProvider = DefaultDateProvider(),
-        val time: Date = dateProvider.now
+        val dateTime: Date = dateProvider.now
     ) : DiagnosticsEvent("exception") {
         private companion object {
             const val EXCEPTION_CLASS_KEY = "exc_class"
@@ -87,7 +87,7 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
             put(EXCEPTION_CLASS_KEY, exceptionClass)
             put(MESSAGE_KEY, message)
             put(LOCATION_KEY, location)
-            put(TIMESTAMP_KEY, time.time)
+            put(TIMESTAMP_KEY, dateTime.time)
         }
     }
 }
