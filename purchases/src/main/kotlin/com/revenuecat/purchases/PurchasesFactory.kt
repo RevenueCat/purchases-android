@@ -21,6 +21,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
 
 internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
@@ -50,9 +51,13 @@ internal class PurchasesFactory(
             val eTagManager = ETagManager(sharedPreferencesForETags)
 
             val dispatcher = Dispatcher(service ?: createDefaultExecutor())
+            val diagnosticsDispatcher = Dispatcher(createDiagnosticsExecutor())
+
             val backend = Backend(
                 apiKey,
+                appConfig,
                 dispatcher,
+                diagnosticsDispatcher,
                 HTTPClient(appConfig, eTagManager)
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
@@ -123,5 +128,19 @@ internal class PurchasesFactory(
 
     private fun createDefaultExecutor(): ExecutorService {
         return Executors.newSingleThreadScheduledExecutor()
+    }
+
+    private fun createDiagnosticsExecutor(): ExecutorService {
+        return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("diagnostics-thread"))
+    }
+
+    private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {
+        override fun newThread(r: Runnable?): Thread {
+            val wrapperRunnable = Runnable {
+                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_LOWEST)
+                r?.run()
+            }
+            return Thread(wrapperRunnable, threadName)
+        }
     }
 }

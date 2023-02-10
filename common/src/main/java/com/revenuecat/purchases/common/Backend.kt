@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -34,10 +35,14 @@ typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> U
 typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, body: JSONObject?) -> Unit
 /** @suppress */
 typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
+/** @suppress */
+typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 
 class Backend(
     private val apiKey: String,
+    private val appConfig: AppConfig,
     private val dispatcher: Dispatcher,
+    private val diagnosticsDispatcher: Dispatcher,
     private val httpClient: HTTPClient
 ) {
 
@@ -55,6 +60,9 @@ class Backend(
     @get:Synchronized @set:Synchronized
     @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
 
+    @get:Synchronized @set:Synchronized
+    @Volatile var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
+
     fun close() {
         this.dispatcher.close()
     }
@@ -68,6 +76,7 @@ class Backend(
         enqueue(object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    appConfig.baseURL,
                     path,
                     body,
                     authenticationHeaders
@@ -86,16 +95,7 @@ class Backend(
                 }
                 onCompleted(error, result.responseCode, result.body)
             }
-        })
-    }
-
-    private fun enqueue(
-        call: Dispatcher.AsyncCall,
-        randomDelay: Boolean = false
-    ) {
-        if (!dispatcher.isClosed()) {
-            dispatcher.enqueue(call, randomDelay)
-        }
+        }, dispatcher)
     }
 
     fun getCustomerInfo(
@@ -120,6 +120,7 @@ class Backend(
 
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    appConfig.baseURL,
                     path,
                     null,
                     authenticationHeaders
@@ -151,7 +152,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            callbacks.addCallback(call, cacheKey, onSuccess to onError, randomDelay = appInBackground)
+            callbacks.addCallback(call, dispatcher, cacheKey, onSuccess to onError, randomDelay = appInBackground)
         }
     }
 
@@ -202,6 +203,7 @@ class Backend(
 
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    appConfig.baseURL,
                     "/receipts",
                     body,
                     authenticationHeaders + extraHeaders
@@ -243,7 +245,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            postReceiptCallbacks.addCallback(call, cacheKey, onSuccess to onError)
+            postReceiptCallbacks.addCallback(call, dispatcher, cacheKey, onSuccess to onError)
         }
     }
 
@@ -257,6 +259,7 @@ class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    appConfig.baseURL,
                     path,
                     null,
                     authenticationHeaders
@@ -288,7 +291,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            offeringsCallbacks.addCallback(call, path, onSuccess to onError, randomDelay = appInBackground)
+            offeringsCallbacks.addCallback(call, dispatcher, path, onSuccess to onError, randomDelay = appInBackground)
         }
     }
 
@@ -309,6 +312,7 @@ class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
+                    appConfig.baseURL,
                     "/subscribers/identify",
                     mapOf(
                         "new_app_user_id" to newAppUserID,
@@ -346,7 +350,7 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            identifyCallbacks.addCallback(call, cacheKey, onSuccessHandler to onErrorHandler)
+            identifyCallbacks.addCallback(call, dispatcher, cacheKey, onSuccessHandler to onErrorHandler)
         }
     }
 
@@ -356,7 +360,59 @@ class Backend(
         onSuccessHandler: (JSONObject) -> Unit,
         onErrorHandler: (PurchasesError, Boolean) -> Unit
     ) {
-        // WIP: Perform request
+        val cacheKey = diagnosticsList.map { it.hashCode().toString() }
+
+        val body = mapOf("entries" to JSONArray(diagnosticsList))
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.dianosticsURL,
+                    "/telemetry",
+                    body,
+                    authenticationHeaders
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    diagnosticsCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error, error.code == PurchasesErrorCode.NetworkError)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    diagnosticsCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccessHandler(result.body)
+                        } catch (e: JSONException) {
+                            onErrorHandler(e.toPurchasesError(), true)
+                        }
+                    } else {
+                        val error = result.toPurchasesError()
+                        val shouldRetry = result.responseCode >= RCHTTPStatusCodes.ERROR ||
+                            error.code == PurchasesErrorCode.NetworkError
+                        onErrorHandler(error, shouldRetry)
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            diagnosticsCallbacks.addCallback(call, diagnosticsDispatcher, cacheKey, onSuccessHandler to onErrorHandler)
+        }
+    }
+
+    private fun enqueue(
+        call: Dispatcher.AsyncCall,
+        dispatcher: Dispatcher,
+        randomDelay: Boolean = false
+    ) {
+        if (!dispatcher.isClosed()) {
+            dispatcher.enqueue(call, randomDelay)
+        }
     }
 
     fun clearCaches() {
@@ -369,13 +425,14 @@ class Backend(
 
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
         call: Dispatcher.AsyncCall,
+        dispatcher: Dispatcher,
         cacheKey: K,
         functions: Pair<S, E>,
         randomDelay: Boolean = false
     ) {
         if (!containsKey(cacheKey)) {
             this[cacheKey] = mutableListOf(functions)
-            enqueue(call, randomDelay)
+            enqueue(call, dispatcher, randomDelay)
         } else {
             debugLog(String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey))
             this[cacheKey]!!.add(functions)

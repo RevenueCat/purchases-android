@@ -91,7 +91,7 @@ class HTTPClientTest {
             expectedResult = HTTPResult(200, "{}")
         )
 
-        client.performRequest(path, null, mapOf("" to ""))
+        client.performRequest(baseURL, path, null, mapOf("" to ""))
 
         val request = server.takeRequest()
         assertThat(request.method).`as`("method request is GET").isEqualTo("GET")
@@ -106,7 +106,7 @@ class HTTPClientTest {
             expectedResult = HTTPResult(223, "{}")
         )
 
-        val result = client.performRequest(path, null, mapOf("" to ""))
+        val result = client.performRequest(baseURL, path, null, mapOf("" to ""))
 
         server.takeRequest()
 
@@ -121,7 +121,7 @@ class HTTPClientTest {
             expectedResult = HTTPResult(223, "{'response': 'OK'}")
         )
 
-        val result = client.performRequest(path, null, mapOf("" to ""))
+        val result = client.performRequest(baseURL, path, null, mapOf("" to ""))
 
         server.takeRequest()
 
@@ -139,7 +139,7 @@ class HTTPClientTest {
         )
 
         try {
-            client.performRequest(path, null, mapOf("" to ""))
+            client.performRequest(baseURL, path, null, mapOf("" to ""))
         } finally {
             server.takeRequest()
         }
@@ -158,7 +158,7 @@ class HTTPClientTest {
         val headers = HashMap<String, String>()
         headers["Authentication"] = "Bearer todd"
 
-        client.performRequest(path, null, headers)
+        client.performRequest(baseURL, path, null, headers)
 
         val request = server.takeRequest()
 
@@ -174,7 +174,7 @@ class HTTPClientTest {
             expectedResult
         )
 
-        client.performRequest(path, null, mapOf("" to ""))
+        client.performRequest(baseURL, path, null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
@@ -208,7 +208,7 @@ class HTTPClientTest {
         )
 
         client = HTTPClient(appConfig, mockETagManager)
-        client.performRequest(path, null, mapOf("" to ""))
+        client.performRequest(baseURL, path, null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
@@ -227,7 +227,7 @@ class HTTPClientTest {
         val body = HashMap<String, String>()
         body["user_id"] = "jerry"
 
-        client.performRequest(path, body, mapOf("" to ""))
+        client.performRequest(baseURL, path, body, mapOf("" to ""))
 
         val request = server.takeRequest()
         assertThat(request.method).`as`("method is POST").isEqualTo("POST")
@@ -246,7 +246,7 @@ class HTTPClientTest {
             expectedResult
         )
 
-        client.performRequest(path, null, mapOf("" to ""))
+        client.performRequest(baseURL, path, null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
@@ -322,7 +322,7 @@ class HTTPClientTest {
             )
         } returns expectedResult
 
-        val result = client.performRequest(path, null, mapOf("" to ""))
+        val result = client.performRequest(baseURL, path, null, mapOf("" to ""))
 
         server.takeRequest()
         server.takeRequest()
