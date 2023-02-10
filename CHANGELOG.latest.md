@@ -1,3 +1,2 @@
-### Bugfixes
-* [BC5] Merge changes from 5.7.0 (#772) via Josh Holtz (@joshdholtz)
-* [BC5]  Add `storeProduct` to `ReceiptInfo`'s equals method (and fix broken tests because of this) (#770) via Josh Holtz (@joshdholtz)
+### Other Changes
+* [CF-1121] Update Magic Weather for BC5 / SDK V6 (#768) via Josh Holtz (@joshdholtz)

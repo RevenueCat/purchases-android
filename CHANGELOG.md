@@ -1,3 +1,7 @@
+## 6.0.0-alpha.4
+### Other Changes
+* [CF-1121] Update Magic Weather for BC5 / SDK V6 (#768) via Josh Holtz (@joshdholtz)
+
 ## 6.0.0-alpha.3
 ### Bugfixes
 * [BC5] Merge changes from 5.7.0 (#772) via Josh Holtz (@joshdholtz)
