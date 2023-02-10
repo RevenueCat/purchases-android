@@ -131,14 +131,16 @@ internal class PurchasesFactory(
     }
 
     private fun createDiagnosticsExecutor(): ExecutorService {
-        return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("diagnostics-thread"))
+        return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-diagnostics-thread"))
     }
 
     private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {
         override fun newThread(r: Runnable?): Thread {
             val wrapperRunnable = Runnable {
-                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_LOWEST)
-                r?.run()
+                r?.let {
+                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_LOWEST)
+                    r.run()
+                }
             }
             return Thread(wrapperRunnable, threadName)
         }
