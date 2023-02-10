@@ -207,6 +207,7 @@ private class PurchasesAPI {
             .observerMode(true)
             .observerMode(false)
             .service(executorService)
+            .diagnosticsEnabled(true)
             .build()
 
         Purchases.configure(build)
