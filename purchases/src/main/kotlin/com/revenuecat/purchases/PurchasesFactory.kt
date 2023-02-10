@@ -27,6 +27,7 @@ internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
+    @Suppress("LongMethod")
     fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
