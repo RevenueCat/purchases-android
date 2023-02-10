@@ -386,11 +386,7 @@ class Backend(
                     diagnosticsCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
-                        try {
-                            onSuccessHandler(result.body)
-                        } catch (e: JSONException) {
-                            onErrorHandler(e.toPurchasesError(), true)
-                        }
+                        onSuccessHandler(result.body)
                     } else {
                         val error = result.toPurchasesError()
                         val shouldRetry = result.responseCode >= RCHTTPStatusCodes.ERROR ||
