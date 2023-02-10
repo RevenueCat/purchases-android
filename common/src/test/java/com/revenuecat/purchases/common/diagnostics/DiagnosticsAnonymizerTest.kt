@@ -38,23 +38,22 @@ class DiagnosticsAnonymizerTest {
 
     @Test
     fun `anonymizeEventIfNeeded anonymizes log properties`() {
+        val originalPropertiesMap = mapOf("key-1" to "value-1")
+        val expectedPropertiesMap = mapOf("key-1" to "anonymized-value-1")
         val eventToAnonymize = DiagnosticsEvent.Log(
             name = DiagnosticsLogEventName.ENDPOINT_HIT,
-            properties = mapOf("key-1" to "value-1", "key-2" to 123, "key-3" to true, "key-4" to "value-4"),
+            properties = originalPropertiesMap,
             dateProvider = testDateProvider
         )
         val expectedEvent = DiagnosticsEvent.Log(
             name = DiagnosticsLogEventName.ENDPOINT_HIT,
-            properties = mapOf("key-1" to "anon-value-1", "key-2" to 123, "key-3" to true, "key-4" to "anon-value-4"),
+            properties = expectedPropertiesMap,
             dateProvider = testDateProvider,
-            time = testDate
+            dateTime = testDate
         )
         every {
-            anonymizer.anonymizeString("value-1")
-        } returns "anon-value-1"
-        every {
-            anonymizer.anonymizeString("value-4")
-        } returns "anon-value-4"
+            anonymizer.anonymizeMap(originalPropertiesMap)
+        } returns expectedPropertiesMap
         val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(eventToAnonymize)
         assertThat(anonymizedEvent).isEqualTo(expectedEvent)
     }
@@ -72,7 +71,7 @@ class DiagnosticsAnonymizerTest {
             message = "Some message without PII",
             location = "TestClass:131",
             dateProvider = testDateProvider,
-            time = testDate
+            dateTime = testDate
         )
         every {
             anonymizer.anonymizeString("Some message with possible PII")
