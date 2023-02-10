@@ -17,6 +17,8 @@ class AnonymizerTest {
         anonymizer = Anonymizer()
     }
 
+    // region anonymizeString
+
     @Test
     fun `anonymizeString removes emails`() {
         val originalString = "Some random text with an sample.123+34@revenuecat.com and test.1@gmail.com email."
@@ -45,4 +47,29 @@ class AnonymizerTest {
         val expectedString = "Some random text with a ***** uuid and a ***** email and a random ***** ip"
         assertThat(anonymizer.anonymizeString(originalString)).isEqualTo(expectedString)
     }
+
+    // endregion
+
+    // region anonymizeMap
+
+    @Test
+    fun `anonymizeMap anonymizes all string fields if needed`() {
+        val originalMap = mapOf(
+            "key-1" to 1234,
+            "key-2" to "string with some.pii@revenuecat.com and 192.168.1.1.",
+            "key-3" to true,
+            "key-4" to "string without pii",
+            "key-5" to "string with other.pii@revenuecat.com"
+        )
+        val expectedMap = mapOf(
+            "key-1" to 1234,
+            "key-2" to "string with ***** and *****.",
+            "key-3" to true,
+            "key-4" to "string without pii",
+            "key-5" to "string with *****"
+        )
+        assertThat(anonymizer.anonymizeMap(originalMap)).isEqualTo(expectedMap)
+    }
+
+    // endregion
 }

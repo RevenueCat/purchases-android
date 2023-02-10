@@ -12,4 +12,11 @@ class Anonymizer {
     fun anonymizeString(textToAnonymize: String): String {
         return textToAnonymize.replace(anonymizeRegex, "*****")
     }
+
+    fun anonymizeMap(mapToAnonymize: Map<String, Any>): Map<String, Any> {
+        return mapToAnonymize.mapValues { (_, value) ->
+            if (value is String) anonymizeString(value)
+            else value
+        }
+    }
 }
