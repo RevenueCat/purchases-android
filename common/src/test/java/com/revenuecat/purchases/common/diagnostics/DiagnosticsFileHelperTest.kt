@@ -43,9 +43,9 @@ class DiagnosticsFileHelperTest {
     }
 
     @Test
-    fun `cleanSentDiagnostics calls are correct`() {
+    fun `deleteOlderDiagnostics calls are correct`() {
         every { fileHelper.removeFirstLinesFromFile(diagnosticsFilePath, 2) } just Runs
-        diagnosticsFileHelper.cleanSentDiagnostics(2)
+        diagnosticsFileHelper.deleteOlderDiagnostics(2)
         verify(exactly = 1) { fileHelper.removeFirstLinesFromFile(diagnosticsFilePath, 2) }
     }
 
