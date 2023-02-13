@@ -16,12 +16,44 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class SubscriptionOptionTest {
     @Test
-    fun `SubscriptionOption can find recurring phase`() {
+    fun `SubscriptionOption can find recurring phase with INFINITE_RECURRING`() {
         val productDetails = mockProductDetails()
 
         val recurringPhase = PricingPhase(
             billingPeriod = "P1M",
             recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+            billingCycleCount = 0,
+            price = Price(
+                formatted = "$9.00",
+                amountMicros = 9000000,
+                currencyCode = "USD",
+            )
+        )
+
+        val subscriptionOption = GoogleSubscriptionOption(
+            id = "subscriptionOptionId",
+            pricingPhases = listOf(recurringPhase),
+            tags = emptyList(),
+            purchasingData = GooglePurchasingData.Subscription(
+                productId = "product_id",
+                productDetails = productDetails,
+                optionId = "subscriptionOptionId",
+                token = "mock-token"
+            )
+        )
+
+        assertThat(subscriptionOption.freePhase).isNull()
+        assertThat(subscriptionOption.introPhase).isNull()
+        assertThat(subscriptionOption.recurringPhase).isEqualTo(recurringPhase)
+    }
+
+    @Test
+    fun `SubscriptionOption can find recurring phase with FINITE_RECURRING`() {
+        val productDetails = mockProductDetails()
+
+        val recurringPhase = PricingPhase(
+            billingPeriod = "P1M",
+            recurrenceMode = RecurrenceMode.FINITE_RECURRING,
             billingCycleCount = 0,
             price = Price(
                 formatted = "$9.00",
