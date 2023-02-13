@@ -14,7 +14,7 @@ fun ProductDetails.toStoreProduct(
 ): GoogleStoreProduct {
     val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
     val defaultOffer = subscriptionOptions.findDefaultOffer()
-    val basePlanPrice = subscriptionOptions.firstOrNull { it.isBasePlan }?.recurringPrice
+    val basePlanPrice = subscriptionOptions.firstOrNull { it.isBasePlan }?.recurringPhase?.price
 
     return GoogleStoreProduct(
         productId,
