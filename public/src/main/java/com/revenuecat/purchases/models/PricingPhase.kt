@@ -14,21 +14,6 @@ data class PricingPhase(
     val billingPeriod: String,
 
     /**
-     * The currency code in ISO 4217 format.
-     */
-    val priceCurrencyCode: String,
-
-    /**
-     * Formatted price for the [PricingPhase], including currency sign.
-     */
-    val formattedPrice: String,
-
-    /**
-     * Price for the payment cycle in micro-units, where 1M micro-units == one unit in the currency
-     */
-    val priceAmountMicros: Long,
-
-    /**
      * [RecurrenceMode] of the [PricingPhase]
      */
     val recurrenceMode: RecurrenceMode,
@@ -37,16 +22,21 @@ data class PricingPhase(
      * Number of cycles for which the pricing phase applies.
      * Null for INFINITE_RECURRING or NON_RECURRING recurrence modes.
      */
-    val billingCycleCount: Int?
+    val billingCycleCount: Int?,
+
+    /**
+     * [Price] of the [PricingPhase]
+     */
+    val price: Price
 ) : Parcelable {
 
     fun toMap(): Map<String, Any?> {
         return mapOf(
             "billingPeriod" to this.billingPeriod,
             "billingCycleCount" to this.billingCycleCount,
-            "formattedPrice" to this.formattedPrice,
-            "priceAmountMicros" to this.priceAmountMicros,
-            "priceCurrencyCode" to this.priceCurrencyCode,
+            "formattedPrice" to this.price.formattedPrice,
+            "priceAmountMicros" to this.price.priceAmountMicros,
+            "priceCurrencyCode" to this.price.currencyCode,
             "recurrenceMode" to this.recurrenceMode.identifier
         )
     }

@@ -19,10 +19,12 @@ interface StoreProduct : Parcelable {
     val type: ProductType
 
     /**
-     * Price information for a non-subscription product. Null for subscriptions.
+     * Price information for a non-subscription product.
+     * Base plan price for a Google subscription.
+     * Term price for an Amazon subscription.
      * For subscriptions, use SubscriptionOption's pricing phases.
      */
-    val oneTimeProductPrice: Price?
+    val price: Price?
 
     /**
      * Title of the product.

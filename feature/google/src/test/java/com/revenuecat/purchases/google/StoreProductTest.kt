@@ -33,11 +33,13 @@ class StoreProductTest {
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
-                priceCurrencyCode = "",
-                formattedPrice = "",
-                priceAmountMicros = 0L,
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
-                billingCycleCount = 0
+                billingCycleCount = 0,
+                price = Price(
+                    formattedPrice = "",
+                    priceAmountMicros = 0L,
+                    currencyCode = "",
+                )
             )),
             tags = emptyList(),
             purchasingData = GooglePurchasingData.Subscription(
@@ -51,11 +53,13 @@ class StoreProductTest {
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
-                priceCurrencyCode = "",
-                formattedPrice = "",
-                priceAmountMicros = 0L,
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
-                billingCycleCount = 0
+                billingCycleCount = 0,
+                price = Price(
+                    formattedPrice = "",
+                    priceAmountMicros = 0L,
+                    currencyCode = "",
+                )
             )),
             tags = emptyList(),
             purchasingData = GooglePurchasingData.Subscription(
@@ -69,7 +73,7 @@ class StoreProductTest {
         val storeProduct1 = GoogleStoreProduct(
             productId = "product_id",
             type = ProductType.SUBS,
-            oneTimeProductPrice = price1,
+            price = price1,
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
@@ -81,7 +85,7 @@ class StoreProductTest {
         val storeProduct2 = GoogleStoreProduct(
             productId = "product_id",
             type = ProductType.SUBS,
-            oneTimeProductPrice = price2,
+            price = price2,
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
@@ -111,11 +115,13 @@ class StoreProductTest {
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
-                priceCurrencyCode = "",
-                formattedPrice = "",
-                priceAmountMicros = 0L,
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
-                billingCycleCount = 0
+                billingCycleCount = 0,
+                price = Price(
+                    formattedPrice = "",
+                    priceAmountMicros = 0L,
+                    currencyCode = "",
+                )
             )),
             tags = emptyList(),
             purchasingData = GooglePurchasingData.Subscription(
@@ -129,11 +135,13 @@ class StoreProductTest {
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = "",
-                priceCurrencyCode = "",
-                formattedPrice = "",
-                priceAmountMicros = 0L,
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
-                billingCycleCount = 0
+                billingCycleCount = 0,
+                price = Price(
+                    formattedPrice = "",
+                    priceAmountMicros = 0L,
+                    currencyCode = "",
+                )
             )),
             tags = emptyList(),
             purchasingData = GooglePurchasingData.Subscription(
@@ -147,7 +155,7 @@ class StoreProductTest {
         val storeProduct1 = GoogleStoreProduct(
             productId = "product_id",
             type = ProductType.SUBS,
-            oneTimeProductPrice = price1,
+            price = price1,
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",
@@ -159,7 +167,7 @@ class StoreProductTest {
         val storeProduct2 = GoogleStoreProduct(
             productId = "product_id",
             type = ProductType.SUBS,
-            oneTimeProductPrice = price2,
+            price = price2,
             title = "TITLE",
             description = "DESCRIPTION",
             subscriptionPeriod = "P1M",

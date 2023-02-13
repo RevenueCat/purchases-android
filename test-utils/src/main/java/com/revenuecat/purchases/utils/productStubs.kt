@@ -19,6 +19,7 @@ private data class StubPurchasingData(
         get() = ProductType.SUBS
 }
 
+// TODO: JOSH
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
@@ -30,7 +31,7 @@ fun stubStoreProduct(
         get() = productId
     override val type: ProductType
         get() = ProductType.SUBS
-    override val oneTimeProductPrice: Price?
+    override val price: Price?
         get() = oneTimeProductPrice
     override val title: String
         get() = ""
@@ -54,6 +55,7 @@ fun stubStoreProduct(
     override fun writeToParcel(dest: Parcel?, flags: Int) {}
 }
 
+// TODO: JOSH
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubINAPPStoreProduct(
     productId: String
@@ -62,7 +64,7 @@ fun stubINAPPStoreProduct(
         get() = productId
     override val type: ProductType
         get() = ProductType.INAPP
-    override val oneTimeProductPrice: Price?
+    override val price: Price?
         get() = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD")
     override val title: String
         get() = ""
@@ -127,9 +129,7 @@ fun stubPricingPhase(
     billingCycleCount: Int = 0
 ): PricingPhase = PricingPhase(
     billingPeriod,
-    priceCurrencyCodeValue,
-    formattedPrice = if (price == 0.0) "Free" else "${'$'}$price",
-    priceAmountMicros = price.times(MICROS_MULTIPLIER).toLong(),
     recurrenceMode.toRecurrenceMode(),
-    billingCycleCount
+    billingCycleCount,
+    Price(if (price == 0.0) "Free" else "${'$'}$price", price.times(MICROS_MULTIPLIER).toLong(), priceCurrencyCodeValue)
 )

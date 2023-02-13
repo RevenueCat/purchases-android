@@ -625,11 +625,13 @@ class BillingWrapperTest {
             override val pricingPhases: List<PricingPhase>
                 get() = listOf(PricingPhase(
                     billingPeriod = "",
-                    priceCurrencyCode = "",
-                    formattedPrice = "",
-                    priceAmountMicros = 0L,
                     recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
-                    billingCycleCount = 0
+                    billingCycleCount = 0,
+                    price = Price(
+                        formattedPrice = "",
+                        priceAmountMicros = 0L,
+                        currencyCode = "",
+                    )
                 ))
             override val tags: List<String>
                 get() = emptyList()
@@ -677,7 +679,7 @@ class BillingWrapperTest {
                 get() = "mock-sku"
             override val type: ProductType
                 get() = ProductType.SUBS
-            override val oneTimeProductPrice: Price?
+            override val price: Price?
                 get() = null
             override val title: String
                 get() = ""

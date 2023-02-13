@@ -4,6 +4,8 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 
 // In-apps don't have base plan nor offers
@@ -13,7 +15,13 @@ fun ProductDetails.toStoreProduct(
     offerDetails: List<ProductDetails.SubscriptionOfferDetails>
 ): GoogleStoreProduct {
     val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
-    val bestOffer = subscriptionOptions.findBestOffer()
+    val defaultOffer = subscriptionOptions.findDefaultOffer()
+
+    val basePlan = subscriptionOptions.firstOrNull { it.isBasePlan }
+    val basePlanPrice = subscriptionOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.lastOrNull()?.price
+
+
+
 
     return GoogleStoreProduct(
         productId,
@@ -26,7 +34,7 @@ fun ProductDetails.toStoreProduct(
             productId,
             this
         ) },
-        bestOffer,
+        defaultOffer,
         this
     )
 }
