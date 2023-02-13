@@ -187,12 +187,14 @@ private class PurchasesAPI {
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
+
         purchases.purchaseSubscriptionOptionWith(
             activity,
             subscriptionOption,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
+
         purchases.purchaseSubscriptionOptionWith(
             activity,
             subscriptionOption,

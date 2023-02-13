@@ -440,7 +440,7 @@ class Purchases internal constructor(
         activity: Activity,
         storeProduct: StoreProduct,
         callback: PurchaseCallback,
-        isPersonalizedPrice: Boolean = false,
+        isPersonalizedPrice: Boolean = false
     ) {
         startPurchase(
             activity,
@@ -527,6 +527,7 @@ class Purchases internal constructor(
      * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
+    @JvmOverloads
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
@@ -557,6 +558,7 @@ class Purchases internal constructor(
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
      */
+    @JvmOverloads
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
