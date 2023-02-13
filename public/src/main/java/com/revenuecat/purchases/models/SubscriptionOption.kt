@@ -32,5 +32,15 @@ interface SubscriptionOption : Parcelable {
     val isBasePlan: Boolean
         get() = pricingPhases.size == 1
 
+    /**
+     * The recurring price of the subscription.
+     * Looks for the last finite or infinite recurring price phase of the SubscriptionOption.
+     */
+    val recurringPrice: Price?
+        get() = pricingPhases.last {
+            it.recurrenceMode == RecurrenceMode.FINITE_RECURRING ||
+                it.recurrenceMode == RecurrenceMode.INFINITE_RECURRING
+        }.price
+
     val purchasingData: PurchasingData
 }
