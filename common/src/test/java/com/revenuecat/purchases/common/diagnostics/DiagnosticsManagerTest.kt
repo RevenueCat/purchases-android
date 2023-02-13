@@ -90,7 +90,7 @@ class DiagnosticsManagerTest {
 
         diagnosticsManager.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.cleanSentDiagnostics(testDiagnosticsEventJSONs.size) }
+        verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEventJSONs.size) }
     }
 
     @Test
@@ -235,7 +235,7 @@ class DiagnosticsManagerTest {
         diagnosticsFileHelper = mockk()
         every { diagnosticsFileHelper.readDiagnosticsFile() } returns testDiagnosticsEventJSONs
         every { diagnosticsFileHelper.deleteDiagnosticsFile() } just Runs
-        every { diagnosticsFileHelper.cleanSentDiagnostics(testDiagnosticsEventJSONs.size) } just Runs
+        every { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEventJSONs.size) } just Runs
     }
 
     private fun mockBackendResponse(
