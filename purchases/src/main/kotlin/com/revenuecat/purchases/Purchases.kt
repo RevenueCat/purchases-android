@@ -1430,13 +1430,11 @@ class Purchases internal constructor(
 
             override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
                 synchronized(this@Purchases) {
-                    state.productChangeCallback?.let { productChangeCallback ->
-                        state = state.copy(productChangeCallback = null)
-                        productChangeCallback.dispatch(purchasesError)
-                    } ?: state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
-                        state = state.copy(purchaseCallbacksByProductId = emptyMap())
-                        purchaseCallbacks.values.forEach { it.dispatch(purchasesError) }
-                    }
+                    getAndClearProductChangeCallback()?.dispatch(purchasesError)
+                        ?: state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
+                            state = state.copy(purchaseCallbacksByProductId = emptyMap())
+                            purchaseCallbacks.values.forEach { it.dispatch(purchasesError) }
+                        }
                 }
             }
         }
@@ -1529,6 +1527,13 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
+        if (purchasingData.productType != ProductType.SUBS) {
+            getAndClearProductChangeCallback()
+            listener.dispatch(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) })
+            return
+        }
+
         log(
             LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
@@ -1558,7 +1563,10 @@ class Purchases internal constructor(
                 offeringIdentifier,
                 listener
             )
-        } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
+        } ?: run {
+            getAndClearProductChangeCallback()
+            listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
+        }
     }
 
     private fun replaceOldPurchaseWithNewProduct(
@@ -1570,10 +1578,9 @@ class Purchases internal constructor(
         listener: PurchaseErrorCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
-            dispatch {
-                listener.onError(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
-                    PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) }, false)
-            }
+            getAndClearProductChangeCallback()
+            listener.dispatch(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) })
             return
         }
 
@@ -1594,9 +1601,8 @@ class Purchases internal constructor(
             },
             onError = { error ->
                 log(LogIntent.GOOGLE_ERROR, error.toString())
-                dispatch {
-                    listener.onError(error, false)
-                }
+                getAndClearProductChangeCallback()
+                listener.dispatch(error)
             })
     }
 
