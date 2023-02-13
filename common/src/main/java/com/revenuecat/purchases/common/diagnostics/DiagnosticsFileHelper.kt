@@ -20,8 +20,8 @@ class DiagnosticsFileHelper(
     }
 
     @Synchronized
-    fun cleanSentDiagnostics(diagnosticsSentCount: Int) {
-        fileHelper.removeFirstLinesFromFile(DIAGNOSTICS_FILE_PATH, diagnosticsSentCount)
+    fun deleteOlderDiagnostics(eventsToDeleteCount: Int) {
+        fileHelper.removeFirstLinesFromFile(DIAGNOSTICS_FILE_PATH, eventsToDeleteCount)
     }
 
     @Synchronized

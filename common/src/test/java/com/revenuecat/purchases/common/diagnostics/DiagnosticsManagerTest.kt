@@ -90,7 +90,7 @@ class DiagnosticsManagerTest {
 
         diagnosticsManager.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.cleanSentDiagnostics(testDiagnosticsEventJSONs.size) }
+        verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEventJSONs.size) }
     }
 
     @Test
@@ -193,6 +193,50 @@ class DiagnosticsManagerTest {
         diagnosticsManager.syncDiagnosticsFileIfNeeded()
     }
 
+    @Test
+    fun `syncDiagnosticsFileIfNeeded removes old events if exceeding limit`() {
+        val eventsOverLimit = 10
+        val eventsToRemove = eventsOverLimit + 1 // Leaves space for tracking event
+        val eventsInFile = (0 until DiagnosticsManager.MAX_NUMBER_EVENTS + eventsOverLimit).map {
+            JSONObject(mapOf("test-key-$it" to "value-$it"))
+        }
+        val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
+        every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
+        every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
+        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(any()) } answers { firstArg() }
+        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
+        mockBackendResponse(eventsAfterRemovingOlder)
+        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) }
+    }
+
+    @Test
+    fun `syncDiagnosticsFileIfNeeded tracks max elements stored reached if syncing more than limit`() {
+        val eventsOverLimit = 10
+        val eventsToRemove = eventsOverLimit + 1 // Leaves space for tracking event
+        val totalNumberOfEventsInFile = DiagnosticsManager.MAX_NUMBER_EVENTS + eventsOverLimit
+        val eventsInFile = (0 until totalNumberOfEventsInFile).map {
+            JSONObject(mapOf("test-key-$it" to "value-$it"))
+        }
+        val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
+        every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
+        every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
+        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(any()) } answers { firstArg() }
+        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
+        mockBackendResponse(eventsAfterRemovingOlder)
+        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
+                (event is DiagnosticsEvent.Log)
+                    && event.name == DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED
+                    && event.properties == mapOf(
+                        "total_number_events_stored" to totalNumberOfEventsInFile,
+                        "events_removed" to eventsToRemove
+                    )
+            })
+        }
+    }
+
     // endregion
 
     // region trackEvent
@@ -235,7 +279,7 @@ class DiagnosticsManagerTest {
         diagnosticsFileHelper = mockk()
         every { diagnosticsFileHelper.readDiagnosticsFile() } returns testDiagnosticsEventJSONs
         every { diagnosticsFileHelper.deleteDiagnosticsFile() } just Runs
-        every { diagnosticsFileHelper.cleanSentDiagnostics(testDiagnosticsEventJSONs.size) } just Runs
+        every { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEventJSONs.size) } just Runs
     }
 
     private fun mockBackendResponse(
