@@ -89,26 +89,26 @@ class DiagnosticsManager(
 
     private fun getEventsToSync(): List<JSONObject> {
         val diagnosticsList = diagnosticsFileHelper.readDiagnosticsFile()
-        return deleteOlderEventsIfNeeded(diagnosticsList)
-    }
-
-    private fun deleteOlderEventsIfNeeded(diagnosticsList: List<JSONObject>): List<JSONObject> {
         val diagnosticsInFileCount = diagnosticsList.size
         if (diagnosticsInFileCount > MAX_NUMBER_EVENTS) {
             val eventsToRemoveCount = diagnosticsInFileCount - MAX_NUMBER_EVENTS + 1
             diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemoveCount)
-            trackEventInCurrentThread(
-                DiagnosticsEvent.Log(
-                    name = DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
-                    properties = mapOf(
-                        "total_number_events_stored" to diagnosticsInFileCount,
-                        "events_removed" to eventsToRemoveCount
-                    )
-                )
-            )
+            trackMaxEventsStoredLimitReached(diagnosticsInFileCount, eventsToRemoveCount)
             return diagnosticsFileHelper.readDiagnosticsFile()
         }
         return diagnosticsList
+    }
+
+    private fun trackMaxEventsStoredLimitReached(totalEventsStored: Int, eventsRemoved: Int) {
+        trackEventInCurrentThread(
+            DiagnosticsEvent.Log(
+                name = DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
+                properties = mapOf(
+                    "total_number_events_stored" to totalEventsStored,
+                    "events_removed" to eventsRemoved
+                )
+            )
+        )
     }
 
     private fun trackEventInCurrentThread(diagnosticsEvent: DiagnosticsEvent) {
