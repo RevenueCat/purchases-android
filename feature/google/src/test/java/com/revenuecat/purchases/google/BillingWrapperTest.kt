@@ -378,7 +378,7 @@ class BillingWrapperTest {
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
         val storeProduct = productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!
-        )
+        )!!
 
         val slot = slot<BillingFlowParams>()
         every {
@@ -432,7 +432,7 @@ class BillingWrapperTest {
         val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
         val storeProduct = productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!,
-        )
+        )!!
 
         every {
             mockClient.launchBillingFlow(eq(mockActivity), any())
@@ -480,7 +480,7 @@ class BillingWrapperTest {
             oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(),
             subscriptionOfferDetails = null
         )
-        val storeProduct = productDetails.toInAppStoreProduct()
+        val storeProduct = productDetails.toInAppStoreProduct()!!
 
         every {
             mockClient.launchBillingFlow(eq(mockActivity), any())
@@ -679,8 +679,8 @@ class BillingWrapperTest {
                 get() = "mock-sku"
             override val type: ProductType
                 get() = ProductType.SUBS
-            override val price: Price?
-                get() = null
+            override val price: Price
+                get() = Price("$0.00", 0, "USD")
             override val title: String
                 get() = ""
             override val description: String
@@ -1119,7 +1119,7 @@ class BillingWrapperTest {
         val productDetails = mockProductDetails(productId = "product_a")
         val storeProduct = productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!
-        )
+        )!!
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         wrapper.makePurchaseAsync(
@@ -1152,7 +1152,7 @@ class BillingWrapperTest {
         val productDetails = mockProductDetails(productId = "product_a")
         val storeProduct = productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!
-        )
+        )!!
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         val subscriptionOption = storeProduct.subscriptionOptions[0]
@@ -2146,7 +2146,7 @@ class BillingWrapperTest {
         val productDetails = createMockProductDetailsNoOffers()
         return productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!
-        )
+        )!!
     }
 
     private fun getMockedPurchaseList(purchaseToken: String): List<Purchase> {

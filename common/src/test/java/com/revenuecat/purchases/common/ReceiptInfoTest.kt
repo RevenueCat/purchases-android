@@ -84,8 +84,8 @@ class ReceiptInfoTest {
             subscriptionOptionId = mockStoreTransaction.subscriptionOptionId
         )
 
-        assertThat(receiptInfo.price).isNull()
-        assertThat(receiptInfo.currency).isNull()
+        assertThat(receiptInfo.price).isEqualTo("4.99")
+        assertThat(receiptInfo.currency).isEqualTo("USD")
         assertThat(receiptInfo.duration).isEqualTo("P1M")
         assertThat(receiptInfo.pricingPhases?.size).isEqualTo(1)
     }

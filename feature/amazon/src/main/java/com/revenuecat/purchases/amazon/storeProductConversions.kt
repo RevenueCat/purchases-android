@@ -37,7 +37,7 @@ data class AmazonStoreProduct(
     override val subscriptionPeriod: String?,
 
     // TODOBC5
-    override val price: com.revenuecat.purchases.models.Price?,
+    override val price: com.revenuecat.purchases.models.Price,
     override val subscriptionOptions: List<SubscriptionOption>,
     override val defaultOption: SubscriptionOption?,
     val iconUrl: String,

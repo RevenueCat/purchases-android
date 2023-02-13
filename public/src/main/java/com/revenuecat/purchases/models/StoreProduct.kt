@@ -24,7 +24,7 @@ interface StoreProduct : Parcelable {
      * Term price for an Amazon subscription.
      * For subscriptions, use SubscriptionOption's pricing phases.
      */
-    val price: Price?
+    val price: Price
 
     /**
      * Title of the product.

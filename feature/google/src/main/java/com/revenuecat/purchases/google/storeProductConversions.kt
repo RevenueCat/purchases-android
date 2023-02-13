@@ -7,19 +7,21 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 
 // In-apps don't have base plan nor offers
-fun ProductDetails.toInAppStoreProduct(): StoreProduct = this.toStoreProduct(emptyList())
+fun ProductDetails.toInAppStoreProduct(): StoreProduct? = this.toStoreProduct(emptyList())
 
 fun ProductDetails.toStoreProduct(
     offerDetails: List<ProductDetails.SubscriptionOfferDetails>
-): GoogleStoreProduct {
+): GoogleStoreProduct? {
     val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
     val defaultOffer = subscriptionOptions.findDefaultOffer()
+
     val basePlanPrice = subscriptionOptions.firstOrNull { it.isBasePlan }?.recurringPhase?.price
+    val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
 
     return GoogleStoreProduct(
         productId,
         productType.toRevenueCatProductType(),
-        createOneTimeProductPrice() ?: basePlanPrice,
+        price,
         title,
         description,
         offerDetails.firstOrNull { it.isBasePlan }?.subscriptionBillingPeriod,
@@ -44,6 +46,8 @@ private fun ProductDetails.createOneTimeProductPrice(): Price? {
     } else null
 }
 
+//
+@SuppressWarnings("NestedBlockDepth")
 fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     val storeProducts = mutableListOf<StoreProduct>()
     forEach { productDetails ->
@@ -60,9 +64,19 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
             val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
 
             productDetails.toStoreProduct(offerDetailsForBasePlan).let {
-                storeProducts.add(it)
+                if (it != null) {
+                    storeProducts.add(it)
+                } else {
+                    // TODOLog
+                }
             }
-        } ?: productDetails.toInAppStoreProduct().let { storeProducts.add(it) }
+        } ?: productDetails.toInAppStoreProduct().let {
+            if (it != null) {
+                storeProducts.add(it)
+            } else {
+                // TODOLog
+            }
+        }
     }
     return storeProducts
 }

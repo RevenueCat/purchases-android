@@ -24,13 +24,13 @@ fun stubStoreProduct(
     productId: String,
     defaultOption: SubscriptionOption? = stubSubscriptionOption("monthly_base_plan", productId, "P1M",),
     subscriptionOptions: List<SubscriptionOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
-    price: Price? = null
+    price: Price = subscriptionOptions.first().recurringPhase!!.price
 ): StoreProduct = object : StoreProduct {
     override val productId: String
         get() = productId
     override val type: ProductType
         get() = ProductType.SUBS
-    override val price: Price?
+    override val price: Price
         get() = price
     override val title: String
         get() = ""
@@ -62,7 +62,7 @@ fun stubINAPPStoreProduct(
         get() = productId
     override val type: ProductType
         get() = ProductType.INAPP
-    override val price: Price?
+    override val price: Price
         get() = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD")
     override val title: String
         get() = ""
