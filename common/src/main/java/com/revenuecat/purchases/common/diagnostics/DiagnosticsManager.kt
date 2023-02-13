@@ -113,7 +113,6 @@ class DiagnosticsManager(
 
     private fun trackEventInCurrentThread(diagnosticsEvent: DiagnosticsEvent) {
         val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(diagnosticsEvent)
-        // WIP: Check that file size is not above certain limit. If it is, delete.
         verboseLog("Tracking diagnostics event: $anonymizedEvent")
         try {
             diagnosticsFileHelper.appendEventToDiagnosticsFile(anonymizedEvent)
