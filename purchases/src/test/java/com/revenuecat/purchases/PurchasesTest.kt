@@ -40,6 +40,7 @@ import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
@@ -451,12 +452,54 @@ class PurchasesTest {
 
     @Test
     fun `isPersonalizedPrice value is passed through to purchase`() {
-        // TODO
+        val storeProduct = stubStoreProduct("abc")
+        val expectedPersonalizedPrice = true
+
+        purchases.purchaseSubscriptionOption(
+            mockActivity,
+            storeProduct.subscriptionOptions[0],
+            object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            },
+            expectedPersonalizedPrice
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions[0].purchasingData,
+                null,
+                null,
+                expectedPersonalizedPrice
+            )
+        }
     }
 
     @Test
-    fun `isPersonazlizedPrice defaults to false`() {
-        // TODO
+    fun `isPersonalizedPrice defaults to false`() {
+        val storeProduct = stubStoreProduct("abc")
+
+        purchases.purchaseSubscriptionOption(
+            mockActivity,
+            storeProduct.subscriptionOptions[0],
+            object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions[0].purchasingData,
+                null,
+                null,
+                false
+            )
+        }
     }
 
     @Test

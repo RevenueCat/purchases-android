@@ -38,7 +38,7 @@ import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "RemoveExplicitTypeArguments", "RedundantLambdaArrow")
 private class PurchasesAPI {
-    @SuppressWarnings("LongParameterList")
+    @SuppressWarnings("LongParameterList", "LongMethod")
     fun check(
         purchases: Purchases,
         activity: Activity,
@@ -78,10 +78,20 @@ private class PurchasesAPI {
         purchases.getProducts(productIds, productsResponseCallback)
 
         // we need these for hybrids... these all fall back on some "best offer" or just purchase the base plan
+        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback, false)
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
+        purchases.purchaseProduct(activity, storeProduct, purchaseCallback, false)
         purchases.purchaseProduct(activity, storeProduct, purchaseCallback)
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
+        purchases.purchasePackage(
+            activity,
+            packageToPurchase,
+            upgradeInfo,
+            purchaseChangeCallback,
+            true
+        )
         purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
+        purchases.purchasePackage(activity, packageToPurchase, purchaseCallback, true)
 
         purchases.purchaseSubscriptionOption(
             activity,
