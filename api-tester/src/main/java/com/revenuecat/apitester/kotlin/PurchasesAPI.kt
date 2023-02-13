@@ -156,6 +156,12 @@ private class PurchasesAPI {
             upgradeInfo,
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
+
+        purchases.purchaseProductWith(
+            activity,
+            storeProduct,
+            upgradeInfo) { _: StoreTransaction?, _: CustomerInfo -> }
+
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
@@ -169,6 +175,12 @@ private class PurchasesAPI {
             upgradeInfo,
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
+
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase,
+            upgradeInfo) { _: StoreTransaction?, _: CustomerInfo -> }
+
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
@@ -186,12 +198,23 @@ private class PurchasesAPI {
             subscriptionOption,
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
+
+        purchases.purchaseSubscriptionOptionWith(
+            activity,
+            subscriptionOption) { _: StoreTransaction, _: CustomerInfo -> }
+
         purchases.purchaseSubscriptionOptionWith(
             activity,
             subscriptionOption,
             upgradeInfo,
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
+
+        purchases.purchaseSubscriptionOptionWith(
+            activity,
+            subscriptionOption,
+            upgradeInfo) { _: StoreTransaction?, _: CustomerInfo -> }
+
         purchases.purchaseSubscriptionOptionWith(
             activity,
             subscriptionOption,
