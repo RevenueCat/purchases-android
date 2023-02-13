@@ -628,8 +628,8 @@ class BillingWrapperTest {
                     recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                     billingCycleCount = 0,
                     price = Price(
-                        formattedPrice = "",
-                        priceAmountMicros = 0L,
+                        formatted = "",
+                        amountMicros = 0L,
                         currencyCode = "",
                     )
                 ))

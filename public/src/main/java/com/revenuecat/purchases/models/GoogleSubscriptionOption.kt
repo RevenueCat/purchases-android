@@ -15,9 +15,10 @@ data class GoogleSubscriptionOption(
 
     override val purchasingData: @RawValue PurchasingData
 ) : SubscriptionOption, Parcelable {
-    val recurringPrice: Price?
-        get() = pricingPhases?.last {
-            it.recurrenceMode == RecurrenceMode.FINITE_RECURRING || it.recurrenceMode == RecurrenceMode.INFINITE_RECURRING
-        }?.price
 
+    val recurringPrice: Price?
+        get() = pricingPhases.last {
+            it.recurrenceMode == RecurrenceMode.FINITE_RECURRING ||
+                it.recurrenceMode == RecurrenceMode.INFINITE_RECURRING
+        }.price
 }

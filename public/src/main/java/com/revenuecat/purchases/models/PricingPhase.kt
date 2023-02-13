@@ -28,16 +28,4 @@ data class PricingPhase(
      * [Price] of the [PricingPhase]
      */
     val price: Price
-) : Parcelable {
-
-    fun toMap(): Map<String, Any?> {
-        return mapOf(
-            "billingPeriod" to this.billingPeriod,
-            "billingCycleCount" to this.billingCycleCount,
-            "formattedPrice" to this.price.formattedPrice,
-            "priceAmountMicros" to this.price.priceAmountMicros,
-            "priceCurrencyCode" to this.price.currencyCode,
-            "recurrenceMode" to this.recurrenceMode.identifier
-        )
-    }
-}
+) : Parcelable

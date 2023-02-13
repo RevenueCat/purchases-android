@@ -24,16 +24,16 @@ private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): Google
 private fun findLowestNonFreeOffer(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
     return offers.mapNotNull { offer ->
         offer.nonFreePricingPhase?.let { pricingPhase ->
-            Pair(offer, pricingPhase.price.priceAmountMicros)
+            Pair(offer, pricingPhase.price.amountMicros)
         }
     }.minByOrNull { it.second }?.first
 }
 
 private val GoogleSubscriptionOption.freePricingPhase: PricingPhase?
-    get() = pricingPhases.firstOrNull()?.takeIf { it.price.priceAmountMicros == 0L }
+    get() = pricingPhases.firstOrNull()?.takeIf { it.price.amountMicros == 0L }
 
 private val GoogleSubscriptionOption.nonFreePricingPhase: PricingPhase?
-    get() = pricingPhases.firstOrNull()?.takeIf { it.price.priceAmountMicros > 0L }
+    get() = pricingPhases.firstOrNull()?.takeIf { it.price.amountMicros > 0L }
 
 private const val DAYS_IN_YEAR = 365
 private const val DAYS_IN_MONTH = 30

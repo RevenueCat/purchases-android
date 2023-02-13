@@ -19,20 +19,19 @@ private data class StubPurchasingData(
         get() = ProductType.SUBS
 }
 
-// TODO: JOSH
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
     defaultOption: SubscriptionOption? = stubSubscriptionOption("monthly_base_plan", productId, "P1M",),
     subscriptionOptions: List<SubscriptionOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
-    oneTimeProductPrice: Price? = null
+    price: Price? = null
 ): StoreProduct = object : StoreProduct {
     override val productId: String
         get() = productId
     override val type: ProductType
         get() = ProductType.SUBS
     override val price: Price?
-        get() = oneTimeProductPrice
+        get() = price
     override val title: String
         get() = ""
     override val description: String
@@ -55,7 +54,6 @@ fun stubStoreProduct(
     override fun writeToParcel(dest: Parcel?, flags: Int) {}
 }
 
-// TODO: JOSH
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubINAPPStoreProduct(
     productId: String

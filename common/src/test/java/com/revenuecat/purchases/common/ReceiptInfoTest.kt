@@ -40,9 +40,9 @@ class ReceiptInfoTest {
             productId = productIdentifier,
             defaultOption = null,
             subscriptionOptions = emptyList(),
-            oneTimeProductPrice = Price(
-                formattedPrice = "$0.99",
-                priceAmountMicros = 990000,
+            price = Price(
+                formatted = "$0.99",
+                amountMicros = 990000,
                 currencyCode = "USD"
             )
         )

@@ -19,13 +19,13 @@ class StoreProductTest {
     fun `Two StoreProducts with the same properties are equal`() {
         val productDetails = mockProductDetails()
         val price1 = Price(
-            formattedPrice = "$1.00",
-            priceAmountMicros = 100,
+            formatted = "$1.00",
+            amountMicros = 100,
             currencyCode = "USD"
         )
         val price2 = Price(
-            formattedPrice = "$1.00",
-            priceAmountMicros = 100,
+            formatted = "$1.00",
+            amountMicros = 100,
             currencyCode = "USD"
         )
 
@@ -36,8 +36,8 @@ class StoreProductTest {
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
-                    formattedPrice = "",
-                    priceAmountMicros = 0L,
+                    formatted = "",
+                    amountMicros = 0L,
                     currencyCode = "",
                 )
             )),
@@ -56,8 +56,8 @@ class StoreProductTest {
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
-                    formattedPrice = "",
-                    priceAmountMicros = 0L,
+                    formatted = "",
+                    amountMicros = 0L,
                     currencyCode = "",
                 )
             )),
@@ -101,13 +101,13 @@ class StoreProductTest {
     fun `Two StoreProducts with the same properties have the same hashcode`() {
         val productDetails = mockProductDetails()
         val price1 = Price(
-            formattedPrice = "$1.00",
-            priceAmountMicros = 100,
+            formatted = "$1.00",
+            amountMicros = 100,
             currencyCode = "USD"
         )
         val price2 = Price(
-            formattedPrice = "$1.00",
-            priceAmountMicros = 100,
+            formatted = "$1.00",
+            amountMicros = 100,
             currencyCode = "USD"
         )
 
@@ -118,8 +118,8 @@ class StoreProductTest {
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
-                    formattedPrice = "",
-                    priceAmountMicros = 0L,
+                    formatted = "",
+                    amountMicros = 0L,
                     currencyCode = "",
                 )
             )),
@@ -138,8 +138,8 @@ class StoreProductTest {
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
-                    formattedPrice = "",
-                    priceAmountMicros = 0L,
+                    formatted = "",
+                    amountMicros = 0L,
                     currencyCode = "",
                 )
             )),

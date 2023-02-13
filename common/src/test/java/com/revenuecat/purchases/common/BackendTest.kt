@@ -308,7 +308,7 @@ class BackendTest {
             )
             assertThat(mappedPricingPhase?.get("billingPeriod")).isEqualTo(pricingPhase.billingPeriod)
             assertThat(mappedPricingPhase?.get("billingCycleCount")).isEqualTo(pricingPhase.billingCycleCount)
-            assertThat(mappedPricingPhase?.get("formattedPrice")).isEqualTo(pricingPhase.price.formattedPrice)
+            assertThat(mappedPricingPhase?.get("formattedPrice")).isEqualTo(pricingPhase.price.formatted)
             assertThat(mappedPricingPhase?.get("priceCurrencyCode")).isEqualTo(pricingPhase.price.currencyCode)
             assertThat(mappedPricingPhase?.get("recurrenceMode")).isEqualTo(pricingPhase.recurrenceMode.identifier)
         }
