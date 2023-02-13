@@ -6,6 +6,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.verboseLog
+import org.json.JSONObject
 import java.io.IOException
 
 /**
@@ -26,6 +27,8 @@ class DiagnosticsManager(
         const val CONSECUTIVE_FAILURES_COUNT_KEY = "consecutive_failures_count"
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val MAX_NUMBER_POST_RETRIES = 3
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val MAX_NUMBER_EVENTS = 1000
 
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
@@ -37,7 +40,7 @@ class DiagnosticsManager(
     fun syncDiagnosticsFileIfNeeded() {
         enqueue {
             try {
-                val diagnosticsList = diagnosticsFileHelper.readDiagnosticsFile()
+                val diagnosticsList = getEventsToSync()
                 val diagnosticsCount = diagnosticsList.size
                 if (diagnosticsCount == 0) {
                     verboseLog("No diagnostics to sync.")
@@ -48,7 +51,7 @@ class DiagnosticsManager(
                     onSuccessHandler = {
                         verboseLog("Synced diagnostics file successfully.")
                         clearConsecutiveNumberOfErrors()
-                        diagnosticsFileHelper.cleanSentDiagnostics(diagnosticsCount)
+                        diagnosticsFileHelper.deleteOlderDiagnostics(diagnosticsCount)
                     },
                     onErrorHandler = { error, shouldRetry ->
                         if (shouldRetry) {
@@ -80,14 +83,42 @@ class DiagnosticsManager(
 
     fun trackEvent(diagnosticsEvent: DiagnosticsEvent) {
         enqueue {
-            val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(diagnosticsEvent)
-            // WIP: Check that file size is not above certain limit. If it is, delete.
-            verboseLog("Tracking diagnostics event: $anonymizedEvent")
-            try {
-                diagnosticsFileHelper.appendEventToDiagnosticsFile(anonymizedEvent)
-            } catch (e: IOException) {
-                verboseLog("Error tracking diagnostics event: $e")
-            }
+            trackEventInCurrentThread(diagnosticsEvent)
+        }
+    }
+
+    private fun getEventsToSync(): List<JSONObject> {
+        val diagnosticsList = diagnosticsFileHelper.readDiagnosticsFile()
+        return deleteOlderEventsIfNeeded(diagnosticsList)
+    }
+
+    private fun deleteOlderEventsIfNeeded(diagnosticsList: List<JSONObject>): List<JSONObject> {
+        val diagnosticsInFileCount = diagnosticsList.size
+        if (diagnosticsInFileCount > MAX_NUMBER_EVENTS) {
+            val eventsToRemoveCount = diagnosticsInFileCount - MAX_NUMBER_EVENTS + 1
+            diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemoveCount)
+            trackEventInCurrentThread(
+                DiagnosticsEvent.Log(
+                    name = DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
+                    properties = mapOf(
+                        "total_number_events_stored" to diagnosticsInFileCount,
+                        "events_removed" to eventsToRemoveCount
+                    )
+                )
+            )
+            return diagnosticsFileHelper.readDiagnosticsFile()
+        }
+        return diagnosticsList
+    }
+
+    private fun trackEventInCurrentThread(diagnosticsEvent: DiagnosticsEvent) {
+        val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(diagnosticsEvent)
+        // WIP: Check that file size is not above certain limit. If it is, delete.
+        verboseLog("Tracking diagnostics event: $anonymizedEvent")
+        try {
+            diagnosticsFileHelper.appendEventToDiagnosticsFile(anonymizedEvent)
+        } catch (e: IOException) {
+            verboseLog("Error tracking diagnostics event: $e")
         }
     }
 
