@@ -22,7 +22,7 @@ class AppConfig(
     val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO, ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET)
     } ?: URL("https://api.revenuecat.com/")
-    val dianosticsURL = URL("https://api-telemetry.revenuecat.com/") // WIP: Update URL
+    val dianosticsURL = URL("https://api-diagnostics.revenuecat.com/")
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
