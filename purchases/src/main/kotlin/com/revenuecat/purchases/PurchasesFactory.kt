@@ -60,7 +60,6 @@ internal class PurchasesFactory(
             val dispatcher = Dispatcher(service ?: createDefaultExecutor())
             val diagnosticsDispatcher = Dispatcher(createDiagnosticsExecutor())
 
-
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
             if (diagnosticsEnabled) {

@@ -7,7 +7,9 @@ import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.ResultOrigin
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
@@ -62,7 +64,8 @@ class AmazonBackendTest {
 
     private var successfulResult = HTTPResult(
         responseCode = 200,
-        payload = successfulRVSResponse()
+        payload = successfulRVSResponse(),
+        origin = ResultOrigin.BACKEND
     )
     private var unsuccessfulResult = HTTPResult(
         responseCode = 401,
@@ -71,7 +74,8 @@ class AmazonBackendTest {
                     "code":7225,"message":
                     "Invalid API Key."
                 }
-            """.trimIndent()
+            """.trimIndent(),
+        origin = ResultOrigin.BACKEND
     )
 
     @Test
@@ -79,7 +83,7 @@ class AmazonBackendTest {
         every {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
-                path = "/receipts/amazon/store_user_id/receipt_id",
+                endpoint = Endpoint.GetAmazonReceipt("store_user_id", "receipt_id"),
                 body = null,
                 requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
             )
@@ -100,7 +104,7 @@ class AmazonBackendTest {
         every {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
-                path = "/receipts/amazon/store_user_id/receipt_id",
+                endpoint = Endpoint.GetAmazonReceipt("store_user_id", "receipt_id"),
                 body = null,
                 requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
             )
@@ -122,7 +126,7 @@ class AmazonBackendTest {
         every {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
-                path = "/receipts/amazon/store_user_id/receipt_id",
+                endpoint = Endpoint.GetAmazonReceipt("store_user_id", "receipt_id"),
                 body = null,
                 requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
             )

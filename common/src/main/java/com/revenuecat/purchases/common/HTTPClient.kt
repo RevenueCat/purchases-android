@@ -9,6 +9,7 @@ import android.os.Build
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -80,7 +81,8 @@ class HTTPClient(
     }
 
     /** Performs a synchronous web request to the RevenueCat API
-     * @param path The resource being requested
+     * @param baseURL The server URL used to perform the request
+     * @param endpoint Endpoint being used for the request
      * @param body The body of the request, for GET must be null
      * @param requestHeaders Map of headers, basic headers are added automatically
      * @return Result containing the HTTP response code and the parsed JSON body
@@ -90,7 +92,7 @@ class HTTPClient(
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
         baseURL: URL,
-        path: String,
+        endpoint: Endpoint,
         body: Map<String, Any?>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean = false
@@ -100,6 +102,7 @@ class HTTPClient(
         val fullURL: URL
         val connection: HttpURLConnection
         val httpRequest: HTTPRequest
+        val path = endpoint.getPath()
         val urlPathWithVersion = "/v1$path"
         var requestSuccessful = false
         val requestStartTime = dateProvider.now.time
@@ -145,12 +148,13 @@ class HTTPClient(
         } finally {
             diagnosticsTracker?.let { tracker ->
                 val responseTime = dateProvider.now.time - requestStartTime
-                tracker.trackEndpointHit(path, responseTime, requestSuccessful, responseCode, callResult?.origin)
+                val origin = callResult?.origin
+                tracker.trackEndpointHit(endpoint, responseTime, requestSuccessful, responseCode, origin)
             }
         }
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-            return performRequest(baseURL, path, body, requestHeaders, refreshETag = true)
+            return performRequest(baseURL, endpoint, body, requestHeaders, refreshETag = true)
         }
         return callResult
     }

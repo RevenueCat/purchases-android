@@ -3,6 +3,8 @@ package com.revenuecat.purchases.common.diagnostics
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.ResultOrigin
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -45,6 +47,8 @@ class DiagnosticsTrackerTest {
             diagnosticsAnonymizer,
             dispatcher
         )
+
+        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(any()) } answers { firstArg() }
     }
 
     @Test
@@ -69,5 +73,45 @@ class DiagnosticsTrackerTest {
         every { diagnosticsAnonymizer.anonymizeEventIfNeeded(testDiagnosticsEvent) } returns testDiagnosticsEvent
         every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } throws IOException()
         diagnosticsTracker.trackEventInCurrentThread(testDiagnosticsEvent)
+    }
+
+    @Test
+    fun `trackEndpointHit tracks correct event when coming from cache`() {
+        val expectedProperties = mapOf(
+            "endpoint_name" to "post_receipt",
+            "response_time_millis" to 1234L,
+            "successful" to true,
+            "response_code" to 200,
+            "etag_hit" to true
+        )
+        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
+        diagnosticsTracker.trackEndpointHit(Endpoint.PostReceipt, 1234, true, 200, ResultOrigin.CACHE)
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
+                event is DiagnosticsEvent.Log &&
+                    event.name == DiagnosticsLogEventName.ENDPOINT_HIT &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackEndpointHit tracks correct event when coming from backend`() {
+        val expectedProperties = mapOf(
+            "endpoint_name" to "get_offerings",
+            "response_time_millis" to 1234L,
+            "successful" to true,
+            "response_code" to 200,
+            "etag_hit" to false
+        )
+        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
+        diagnosticsTracker.trackEndpointHit(Endpoint.GetOfferings("test id"), 1234, true, 200, ResultOrigin.BACKEND)
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
+                event is DiagnosticsEvent.Log &&
+                    event.name == DiagnosticsLogEventName.ENDPOINT_HIT &&
+                    event.properties == expectedProperties
+            })
+        }
     }
 }

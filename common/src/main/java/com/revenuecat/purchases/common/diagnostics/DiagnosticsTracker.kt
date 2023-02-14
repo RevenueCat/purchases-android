@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.ResultOrigin
 import com.revenuecat.purchases.common.verboseLog
 import java.io.IOException
@@ -16,8 +17,8 @@ class DiagnosticsTracker(
 ) {
 
     fun trackEndpointHit(
-        path: String,
-        responseTime: Long?,
+        endpoint: Endpoint,
+        responseTime: Long,
         wasSuccessful: Boolean,
         responseCode: Int,
         resultOrigin: ResultOrigin?
@@ -26,7 +27,7 @@ class DiagnosticsTracker(
             DiagnosticsEvent.Log(
                 name = DiagnosticsLogEventName.ENDPOINT_HIT,
                 properties = mapOf(
-                    "endpoint_path" to path, // WIP: Need to anonymize this better
+                    "endpoint_name" to endpoint.name,
                     "response_time_millis" to responseTime,
                     "successful" to wasSuccessful,
                     "response_code" to responseCode,
