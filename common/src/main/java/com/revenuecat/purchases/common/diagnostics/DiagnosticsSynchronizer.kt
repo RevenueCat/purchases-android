@@ -10,14 +10,15 @@ import org.json.JSONObject
 import java.io.IOException
 
 /**
- * This class is the entry point to perform all diagnostics related operations. All operations will be executed
- * in a single background thread. Multithreading is not currently supported for these operations.
+ * This class is in charge of syncing all previously tracked diagnostics. All operations will be executed
+ * in a single background thread. Which should match the ones used when tracking diagnostics.
+ * Multithreading is not currently supported for these operations.
  *
  * If syncing diagnostics fails multiple times, we will delete any stored diagnostics data and start again.
  */
-class DiagnosticsManager(
+class DiagnosticsSynchronizer(
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
-    private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
+    private val diagnosticsTracker: DiagnosticsTracker,
     private val backend: Backend,
     private val diagnosticsDispatcher: Dispatcher,
     private val sharedPreferences: SharedPreferences
@@ -81,12 +82,6 @@ class DiagnosticsManager(
         }
     }
 
-    fun trackEvent(diagnosticsEvent: DiagnosticsEvent) {
-        enqueue {
-            trackEventInCurrentThread(diagnosticsEvent)
-        }
-    }
-
     private fun getEventsToSync(): List<JSONObject> {
         val diagnosticsList = diagnosticsFileHelper.readDiagnosticsFile()
         val diagnosticsInFileCount = diagnosticsList.size
@@ -100,7 +95,7 @@ class DiagnosticsManager(
     }
 
     private fun trackMaxEventsStoredLimitReached(totalEventsStored: Int, eventsRemoved: Int) {
-        trackEventInCurrentThread(
+        diagnosticsTracker.trackEventInCurrentThread(
             DiagnosticsEvent.Log(
                 name = DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
                 properties = mapOf(
@@ -109,16 +104,6 @@ class DiagnosticsManager(
                 )
             )
         )
-    }
-
-    private fun trackEventInCurrentThread(diagnosticsEvent: DiagnosticsEvent) {
-        val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(diagnosticsEvent)
-        verboseLog("Tracking diagnostics event: $anonymizedEvent")
-        try {
-            diagnosticsFileHelper.appendEventToDiagnosticsFile(anonymizedEvent)
-        } catch (e: IOException) {
-            verboseLog("Error tracking diagnostics event: $e")
-        }
     }
 
     private fun enqueue(command: () -> Unit) {

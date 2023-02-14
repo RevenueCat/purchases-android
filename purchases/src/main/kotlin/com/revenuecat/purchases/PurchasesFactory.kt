@@ -17,7 +17,8 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsAnonymizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
-import com.revenuecat.purchases.common.diagnostics.DiagnosticsManager
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -59,6 +60,17 @@ internal class PurchasesFactory(
             val dispatcher = Dispatcher(service ?: createDefaultExecutor())
             val diagnosticsDispatcher = Dispatcher(createDiagnosticsExecutor())
 
+            var diagnosticsFileHelper: DiagnosticsFileHelper? = null
+            var diagnosticsTracker: DiagnosticsTracker? = null
+            if (diagnosticsEnabled) {
+                diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(context))
+                diagnosticsTracker = DiagnosticsTracker(
+                    diagnosticsFileHelper,
+                    DiagnosticsAnonymizer(Anonymizer()),
+                    diagnosticsDispatcher
+                )
+            }
+
             val backend = Backend(
                 apiKey,
                 appConfig,
@@ -96,12 +108,16 @@ internal class PurchasesFactory(
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
 
-            val diagnosticsManager = createDiagnosticsManagerIfNeeded(
-                context,
-                backend,
-                diagnosticsDispatcher,
-                diagnosticsEnabled
-            )
+            var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
+            if (diagnosticsFileHelper != null && diagnosticsTracker != null) {
+                diagnosticsSynchronizer = DiagnosticsSynchronizer(
+                    diagnosticsFileHelper,
+                    diagnosticsTracker,
+                    backend,
+                    diagnosticsDispatcher,
+                    DiagnosticsSynchronizer.initializeSharedPreferences(context)
+                )
+            }
 
             return Purchases(
                 application,
@@ -114,7 +130,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper,
-                diagnosticsManager
+                diagnosticsSynchronizer
             )
         }
     }
@@ -138,25 +154,6 @@ internal class PurchasesFactory(
 
     private fun Context.hasPermission(permission: String): Boolean {
         return checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun createDiagnosticsManagerIfNeeded(
-        context: Context,
-        backend: Backend,
-        dispatcher: Dispatcher,
-        diagnosticsEnabled: Boolean
-    ): DiagnosticsManager? {
-        return if (diagnosticsEnabled) {
-            DiagnosticsManager(
-                DiagnosticsFileHelper(FileHelper(context)),
-                DiagnosticsAnonymizer(Anonymizer()),
-                backend,
-                dispatcher,
-                DiagnosticsManager.initializeSharedPreferences(context)
-            )
-        } else {
-            null
-        }
     }
 
     private fun createDefaultExecutor(): ExecutorService {
