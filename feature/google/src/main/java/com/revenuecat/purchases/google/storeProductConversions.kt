@@ -2,9 +2,12 @@ package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.strings.PurchaseStrings
 
 // In-apps don't have base plan nor offers
 fun ProductDetails.toInAppStoreProduct(): StoreProduct? = this.toStoreProduct(emptyList())
@@ -15,7 +18,7 @@ fun ProductDetails.toStoreProduct(
     val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
     val defaultOffer = subscriptionOptions.findDefaultOffer()
 
-    val basePlanPrice = subscriptionOptions.firstOrNull { it.isBasePlan }?.recurringPhase?.price
+    val basePlanPrice = subscriptionOptions.firstOrNull { it.isBasePlan }?.fullPricePhase?.price
     val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
 
     return GoogleStoreProduct(
@@ -25,10 +28,7 @@ fun ProductDetails.toStoreProduct(
         title,
         description,
         offerDetails.firstOrNull { it.isBasePlan }?.subscriptionBillingPeriod,
-        offerDetails.map { it.toSubscriptionOption(
-            productId,
-            this
-        ) },
+        subscriptionOptions,
         defaultOffer,
         this
     )
@@ -46,7 +46,6 @@ private fun ProductDetails.createOneTimeProductPrice(): Price? {
     } else null
 }
 
-//
 @SuppressWarnings("NestedBlockDepth")
 fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     val storeProducts = mutableListOf<StoreProduct>()
@@ -64,18 +63,16 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
             val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
 
             productDetails.toStoreProduct(offerDetailsForBasePlan).let {
-                if (it != null) {
-                    storeProducts.add(it)
-                } else {
-                    // TODOLog
-                }
+                it?.let { product -> storeProducts.add(product) } ?: log(
+                    LogIntent.RC_ERROR, PurchaseStrings.INVALID_PRODUCT_NO_PRICE
+                        .format(productDetails.productId)
+                )
             }
         } ?: productDetails.toInAppStoreProduct().let {
-            if (it != null) {
-                storeProducts.add(it)
-            } else {
-                // TODOLog
-            }
+            it?.let { product -> storeProducts.add(product) } ?: log(
+                LogIntent.RC_ERROR, PurchaseStrings.INVALID_PRODUCT_NO_PRICE
+                    .format(productDetails.productId)
+            )
         }
     }
     return storeProducts

@@ -1,10 +1,8 @@
 package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
@@ -44,7 +42,7 @@ class SubscriptionOptionTest {
 
         assertThat(subscriptionOption.freePhase).isNull()
         assertThat(subscriptionOption.introPhase).isNull()
-        assertThat(subscriptionOption.recurringPhase).isEqualTo(recurringPhase)
+        assertThat(subscriptionOption.fullPricePhase).isEqualTo(recurringPhase)
     }
 
     @Test
@@ -76,7 +74,7 @@ class SubscriptionOptionTest {
 
         assertThat(subscriptionOption.freePhase).isNull()
         assertThat(subscriptionOption.introPhase).isNull()
-        assertThat(subscriptionOption.recurringPhase).isEqualTo(recurringPhase)
+        assertThat(subscriptionOption.fullPricePhase).isEqualTo(recurringPhase)
     }
 
     @Test
@@ -119,7 +117,7 @@ class SubscriptionOptionTest {
 
         assertThat(subscriptionOption.freePhase).isEqualTo(freePhase)
         assertThat(subscriptionOption.introPhase).isNull()
-        assertThat(subscriptionOption.recurringPhase).isEqualTo(recurringPhase)
+        assertThat(subscriptionOption.fullPricePhase).isEqualTo(recurringPhase)
     }
 
     @Test
@@ -162,6 +160,6 @@ class SubscriptionOptionTest {
 
         assertThat(subscriptionOption.freePhase).isNull()
         assertThat(subscriptionOption.introPhase).isEqualTo(introPhase)
-        assertThat(subscriptionOption.recurringPhase).isEqualTo(recurringPhase)
+        assertThat(subscriptionOption.fullPricePhase).isEqualTo(recurringPhase)
     }
 }

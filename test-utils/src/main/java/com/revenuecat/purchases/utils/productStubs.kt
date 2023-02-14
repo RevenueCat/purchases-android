@@ -24,7 +24,7 @@ fun stubStoreProduct(
     productId: String,
     defaultOption: SubscriptionOption? = stubSubscriptionOption("monthly_base_plan", productId, "P1M",),
     subscriptionOptions: List<SubscriptionOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
-    price: Price = subscriptionOptions.first().recurringPhase!!.price
+    price: Price = subscriptionOptions.first().fullPricePhase!!.price
 ): StoreProduct = object : StoreProduct {
     override val productId: String
         get() = productId
