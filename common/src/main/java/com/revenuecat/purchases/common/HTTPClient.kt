@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -27,7 +28,9 @@ import java.net.URL
 
 class HTTPClient(
     private val appConfig: AppConfig,
-    private val eTagManager: ETagManager
+    private val eTagManager: ETagManager,
+    private val diagnosticsTracker: DiagnosticsTracker?,
+    private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
 
     private fun buffer(inputStream: InputStream): BufferedReader {
@@ -98,42 +101,53 @@ class HTTPClient(
         val connection: HttpURLConnection
         val httpRequest: HTTPRequest
         val urlPathWithVersion = "/v1$path"
+        var requestSuccessful = false
+        val requestStartTime = dateProvider.now.time
+        var responseCode: Int = -1
+        var callResult: HTTPResult? = null
         try {
-            fullURL = URL(baseURL, urlPathWithVersion)
+            try {
+                fullURL = URL(baseURL, urlPathWithVersion)
 
-            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag)
-            httpRequest = HTTPRequest(fullURL, headers, jsonBody)
+                val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag)
+                httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
-            connection = getConnection(httpRequest)
-        } catch (e: MalformedURLException) {
-            throw RuntimeException(e)
-        }
+                connection = getConnection(httpRequest)
+            } catch (e: MalformedURLException) {
+                throw RuntimeException(e)
+            }
 
-        val inputStream = getInputStream(connection)
+            val inputStream = getInputStream(connection)
 
-        val payload: String?
-        val responseCode: Int
-        try {
-            log(LogIntent.DEBUG, NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
-            responseCode = connection.responseCode
-            payload = inputStream?.let { readFully(it) }
+            val payload: String?
+            try {
+                debugLog(NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
+                responseCode = connection.responseCode
+                payload = inputStream?.let { readFully(it) }
+            } finally {
+                inputStream?.close()
+                connection.disconnect()
+            }
+
+            debugLog(NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
+            if (payload == null) {
+                throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
+            }
+
+            callResult = eTagManager.getHTTPResultFromCacheOrBackend(
+                responseCode,
+                payload,
+                connection,
+                urlPathWithVersion,
+                refreshETag
+            )
+            requestSuccessful = true
         } finally {
-            inputStream?.close()
-            connection.disconnect()
+            diagnosticsTracker?.let { tracker ->
+                val responseTime = dateProvider.now.time - requestStartTime
+                tracker.trackEndpointHit(path, responseTime, requestSuccessful, responseCode, callResult?.origin)
+            }
         }
-
-        log(LogIntent.DEBUG, NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
-        if (payload == null) {
-            throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
-        }
-
-        val callResult: HTTPResult? = eTagManager.getHTTPResultFromCacheOrBackend(
-            responseCode,
-            payload,
-            connection,
-            urlPathWithVersion,
-            refreshETag
-        )
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
             return performRequest(baseURL, path, body, requestHeaders, refreshETag = true)

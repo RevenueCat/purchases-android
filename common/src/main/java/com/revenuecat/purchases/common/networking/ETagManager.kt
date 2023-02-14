@@ -53,7 +53,7 @@ class ETagManager(
         urlPathWithVersion: String,
         refreshETag: Boolean
     ): HTTPResult? {
-        val resultFromBackend = HTTPResult(responseCode, payload)
+        val resultFromBackend = HTTPResult(responseCode, payload, ResultOrigin.BACKEND)
         connection.getETagHeader()?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
                 val storedResult = getStoredResult(urlPathWithVersion)
@@ -100,7 +100,8 @@ class ETagManager(
         result: HTTPResult,
         eTag: String
     ) {
-        val httpResultWithETag = HTTPResultWithETag(eTag, result)
+        val cacheResult = result.copy(origin = ResultOrigin.CACHE)
+        val httpResultWithETag = HTTPResultWithETag(eTag, cacheResult)
         prefs.edit().putString(path, httpResultWithETag.serialize()).apply()
     }
 

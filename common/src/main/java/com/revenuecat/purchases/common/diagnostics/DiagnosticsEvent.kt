@@ -16,7 +16,7 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
 
     data class Log(
         val name: DiagnosticsLogEventName,
-        val properties: Map<String, Any>,
+        val properties: Map<String, Any?>,
         val dateProvider: DateProvider = DefaultDateProvider(),
         val dateTime: Date = dateProvider.now
     ) : DiagnosticsEvent("log") {

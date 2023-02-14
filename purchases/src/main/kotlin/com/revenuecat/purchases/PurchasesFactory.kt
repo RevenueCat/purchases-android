@@ -60,6 +60,7 @@ internal class PurchasesFactory(
             val dispatcher = Dispatcher(service ?: createDefaultExecutor())
             val diagnosticsDispatcher = Dispatcher(createDiagnosticsExecutor())
 
+
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
             if (diagnosticsEnabled) {
@@ -71,12 +72,14 @@ internal class PurchasesFactory(
                 )
             }
 
+            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker)
+
             val backend = Backend(
                 apiKey,
                 appConfig,
                 dispatcher,
                 diagnosticsDispatcher,
-                HTTPClient(appConfig, eTagManager)
+                httpClient
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
