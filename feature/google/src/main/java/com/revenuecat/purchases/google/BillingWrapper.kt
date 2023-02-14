@@ -829,6 +829,7 @@ class BillingWrapper(
         )
     }
 
+    @Suppress("UnusedPrivateMember")
     private fun buildSubscriptionPurchaseParams(
         purchaseInfo: GooglePurchasingData.Subscription,
         replaceProductInfo: ReplaceProductInfo?,
@@ -843,7 +844,7 @@ class BillingWrapper(
         return Result.Success(
             BillingFlowParams.newBuilder()
                 .setProductDetailsParamsList(listOf(productDetailsParamsList))
-                .setIsOfferPersonalized(isPersonalizedPrice)
+                .setIsOfferPersonalized(true)
                 .apply {
                     // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
                     // https://issuetracker.google.com/issues/155005449
