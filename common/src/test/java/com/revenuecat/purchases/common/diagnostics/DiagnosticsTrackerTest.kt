@@ -62,4 +62,12 @@ class DiagnosticsTrackerTest {
         every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } throws IOException()
         diagnosticsTracker.trackEvent(testDiagnosticsEvent)
     }
+
+    @Test
+    fun `trackEventInCurrentThread does not enqueue request`() {
+        dispatcher.close()
+        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(testDiagnosticsEvent) } returns testDiagnosticsEvent
+        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } throws IOException()
+        diagnosticsTracker.trackEventInCurrentThread(testDiagnosticsEvent)
+    }
 }
