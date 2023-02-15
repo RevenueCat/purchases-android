@@ -72,7 +72,7 @@ class StoreProductTest {
 
         val storeProduct1 = GoogleStoreProduct(
             productId = "product_id",
-            basePlanId = null,
+            basePlanId = "does_not_matter_for_this_test",
             type = ProductType.SUBS,
             price = price1,
             title = "TITLE",
@@ -85,7 +85,7 @@ class StoreProductTest {
 
         val storeProduct2 = GoogleStoreProduct(
             productId = "product_id",
-            basePlanId = null,
+            basePlanId = "does_not_matter_for_this_test",
             type = ProductType.SUBS,
             price = price2,
             title = "TITLE",
@@ -156,7 +156,7 @@ class StoreProductTest {
 
         val storeProduct1 = GoogleStoreProduct(
             productId = "product_id",
-            basePlanId = null,
+            basePlanId = "does_not_matter_for_this_test",
             type = ProductType.SUBS,
             price = price1,
             title = "TITLE",
@@ -169,7 +169,7 @@ class StoreProductTest {
 
         val storeProduct2 = GoogleStoreProduct(
             productId = "product_id",
-            basePlanId = null,
+            basePlanId = "does_not_matter_for_this_test",
             type = ProductType.SUBS,
             price = price2,
             title = "TITLE",
