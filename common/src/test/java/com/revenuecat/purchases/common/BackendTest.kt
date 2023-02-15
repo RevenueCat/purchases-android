@@ -49,10 +49,11 @@ class BackendTest {
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
-    private val mockDiagnosticsBaseURL = URL("https://api-telemetry.revenuecat.com/")
+    private val mockDiagnosticsBaseURL = URL("https://mock-api-diagnostics.revenuecat.com/")
+    private val diagnosticsEndpoint = "/telemetry"
     private val mockAppConfig: AppConfig = mockk<AppConfig>().apply {
         every { baseURL } returns mockBaseURL
-        every { dianosticsURL } returns mockDiagnosticsBaseURL
+        every { diagnosticsURL } returns mockDiagnosticsBaseURL
     }
     private val dispatcher = SyncDispatcher()
     private var backend: Backend = Backend(
@@ -1501,7 +1502,7 @@ class BackendTest {
         verify(exactly = 1) {
             mockClient.performRequest(
                 baseURL = mockDiagnosticsBaseURL,
-                path = "/telemetry",
+                path = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
             )
@@ -1512,7 +1513,7 @@ class BackendTest {
     fun `postDiagnostics only executes once same request if one in progress`() {
         val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
-            path = "/telemetry",
+            path = diagnosticsEndpoint,
             body = null,
             responseCode = 200,
             clientException = null,
@@ -1529,7 +1530,7 @@ class BackendTest {
         verify(exactly = 1) {
             mockClient.performRequest(
                 baseURL = mockDiagnosticsBaseURL,
-                path = "/telemetry",
+                path = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
             )
@@ -1540,7 +1541,7 @@ class BackendTest {
     fun `postDiagnostics executes same request if done after first one finishes`() {
         val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
-            path = "/telemetry",
+            path = diagnosticsEndpoint,
             body = null,
             responseCode = 200,
             clientException = null,
@@ -1559,7 +1560,7 @@ class BackendTest {
         verify(exactly = 2) {
             mockClient.performRequest(
                 baseURL = mockDiagnosticsBaseURL,
-                path = "/telemetry",
+                path = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
             )
@@ -1570,7 +1571,7 @@ class BackendTest {
     fun `postDiagnostics calls error handler without retry when InsufficientPermissionsError`() {
         val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
-            path = "/telemetry",
+            path = diagnosticsEndpoint,
             body = null,
             responseCode = 200,
             clientException = SecurityException(),
@@ -1594,7 +1595,7 @@ class BackendTest {
     fun `postDiagnostics calls error handler with retry when Network error`() {
         val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
-            path = "/telemetry",
+            path = diagnosticsEndpoint,
             body = null,
             responseCode = 200,
             clientException = IOException(),
@@ -1618,7 +1619,7 @@ class BackendTest {
     fun `postDiagnostics calls error handler with retry if status code is 500`() {
         val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
-            path = "/telemetry",
+            path = diagnosticsEndpoint,
             body = null,
             responseCode = 500,
             clientException = null,
@@ -1642,7 +1643,7 @@ class BackendTest {
     fun `postDiagnostics calls error handler without retry if status code is 400`() {
         val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         mockResponse(
-            path = "/telemetry",
+            path = diagnosticsEndpoint,
             body = null,
             responseCode = 400,
             clientException = null,
@@ -1667,7 +1668,7 @@ class BackendTest {
         val diagnosticsList = listOf(JSONObject("{\"test-key\":\"test-value\"}"))
         val resultBody = "{\"test-response-key\":1234}"
         mockResponse(
-            path = "/telemetry",
+            path = diagnosticsEndpoint,
             body = null,
             responseCode = 200,
             clientException = null,
