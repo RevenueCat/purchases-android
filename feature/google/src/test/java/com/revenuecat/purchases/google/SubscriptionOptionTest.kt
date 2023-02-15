@@ -46,12 +46,12 @@ class SubscriptionOptionTest {
     }
 
     @Test
-    fun `SubscriptionOption can find recurring phase with FINITE_RECURRING`() {
+    fun `SubscriptionOption can find recurring phase with NON_RECURRING`() {
         val productDetails = mockProductDetails()
 
         val recurringPhase = PricingPhase(
-            billingPeriod = "P1M",
-            recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+            billingPeriod = "P3M",
+            recurrenceMode = RecurrenceMode.NON_RECURRING,
             billingCycleCount = 0,
             price = Price(
                 formatted = "$9.00",

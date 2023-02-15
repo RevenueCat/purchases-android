@@ -34,18 +34,15 @@ interface SubscriptionOption : Parcelable {
 
     /**
      * The full price [PricingPhase] of the subscription.
-     * Looks for the last finite or infinite recurring price phase of the SubscriptionOption.
+     * Looks for the last price phase of the SubscriptionOption.
      */
     val fullPricePhase: PricingPhase?
-        get() = pricingPhases.lastOrNull {
-            it.recurrenceMode == RecurrenceMode.FINITE_RECURRING ||
-                it.recurrenceMode == RecurrenceMode.INFINITE_RECURRING
-        }
+        get() = pricingPhases.lastOrNull()
 
     /**
      * The free trial [PricingPhase] of the subscription.
      * Looks for the first pricing phase of the SubscriptionOption where `amountMicros` is 0.
-     * There can be a `freeTrialPhase` and an `introductoryPhase` i the same [SubscriptionOption].
+     * There can be a `freeTrialPhase` and an `introductoryPhase` in the same [SubscriptionOption].
      */
     val freePhase: PricingPhase?
         get() = pricingPhases.dropLast(1).firstOrNull {
@@ -53,9 +50,9 @@ interface SubscriptionOption : Parcelable {
         }
 
     /**
-     * The free trial [PricingPhase] of the subscription.
+     * The intro trial [PricingPhase] of the subscription.
      * Looks for the first pricing phase of the SubscriptionOption where `amountMicros` is greater than 0.
-     * There can be a `freeTrialPhase` and an `introductoryPhase` i the same [SubscriptionOption].
+     * There can be a `freeTrialPhase` and an `introductoryPhase` in the same [SubscriptionOption].
      */
     val introPhase: PricingPhase?
         get() = pricingPhases.dropLast(1).firstOrNull {

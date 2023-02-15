@@ -62,18 +62,16 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
             val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
             val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
 
-            productDetails.toStoreProduct(offerDetailsForBasePlan).let {
-                it?.let { product -> storeProducts.add(product) } ?: log(
-                    LogIntent.RC_ERROR, PurchaseStrings.INVALID_PRODUCT_NO_PRICE
-                        .format(productDetails.productId)
-                )
-            }
-        } ?: productDetails.toInAppStoreProduct().let {
-            it?.let { product -> storeProducts.add(product) } ?: log(
-                LogIntent.RC_ERROR, PurchaseStrings.INVALID_PRODUCT_NO_PRICE
-                    .format(productDetails.productId)
+            productDetails.toStoreProduct(offerDetailsForBasePlan)?.let {
+                storeProducts.add(it)
+            } ?: log(
+                LogIntent.RC_ERROR, PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId)
             )
-        }
+        } ?: productDetails.toInAppStoreProduct()?.let {
+            storeProducts.add(it)
+        } ?: log(
+            LogIntent.RC_ERROR, PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId)
+        )
     }
     return storeProducts
 }
