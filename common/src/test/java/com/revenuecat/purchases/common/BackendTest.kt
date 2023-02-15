@@ -1687,6 +1687,29 @@ class BackendTest {
         assertTrue(successCalled)
     }
 
+    @Test
+    fun `postDiagnostics call is enqueued with delay`() {
+        mockResponse(
+            path = diagnosticsEndpoint,
+            body = null,
+            responseCode = 200,
+            clientException = null,
+            resultBody = "{}",
+            baseURL = mockDiagnosticsBaseURL
+        )
+        dispatcher.calledWithRandomDelay = null
+        backend.postDiagnostics(
+            listOf(JSONObject("{\"test-key\":\"test-value\"}")),
+            {},
+            { _, _ -> fail("expected success") }
+        )
+
+        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
+        assertThat(calledWithRandomDelay).isNotNull
+        assertThat(calledWithRandomDelay).isTrue
+    }
+
+
     // endregion
 
     private fun mockStoreProduct(
