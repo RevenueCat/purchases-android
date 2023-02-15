@@ -9,7 +9,11 @@ import kotlinx.parcelize.IgnoredOnParcel
  */
 interface StoreProduct : Parcelable {
     /**
-     * The product ID
+     * The unique product ID.
+     * Google INAPP: "<productId>"
+     * Google Sub: "<productId:basePlanID>"
+     * Amazon INAPP: "<sku>"
+     * Amazon Sub: "<termSku>"
      */
     val productId: String
 

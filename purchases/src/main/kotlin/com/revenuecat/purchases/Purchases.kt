@@ -404,6 +404,8 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
+        this.purchaseProduct(activity, storeProduct, upgradeInfo, listener)
+
         startProductChange(
             activity,
             // TODOBC5 Move this logic to StoreProduct
