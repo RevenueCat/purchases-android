@@ -5,6 +5,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
 import org.json.JSONObject
@@ -12,14 +13,14 @@ import org.json.JSONObject
 /**
  * Note: this may return an empty Offerings.
  */
-fun JSONObject.createOfferings(productsById: Map<String, List<StoreProduct>>): Offerings {
+fun JSONObject.createOfferings(productsById: Map<String, List<StoreProduct>>, store: Store): Offerings {
     val jsonOfferings = getJSONArray("offerings")
     val currentOfferingID = getString("current_offering_id")
 
     val offerings = mutableMapOf<String, Offering>()
     for (i in 0 until jsonOfferings.length()) {
         val offeringJson = jsonOfferings.getJSONObject(i)
-        offeringJson.createOffering(productsById)?.let {
+        offeringJson.createOffering(productsById, store)?.let {
             offerings[it.identifier] = it
 
             if (it.availablePackages.isEmpty()) {
@@ -31,14 +32,14 @@ fun JSONObject.createOfferings(productsById: Map<String, List<StoreProduct>>): O
     return Offerings(offerings[currentOfferingID], offerings)
 }
 
-fun JSONObject.createOffering(productsById: Map<String, List<StoreProduct>>): Offering? {
+fun JSONObject.createOffering(productsById: Map<String, List<StoreProduct>>, store: Store): Offering? {
     val offeringIdentifier = getString("identifier")
     val jsonPackages = getJSONArray("packages")
 
     val availablePackages = mutableListOf<Package>()
     for (i in 0 until jsonPackages.length()) {
         val packageJson = jsonPackages.getJSONObject(i)
-        packageJson.createPackage(productsById, offeringIdentifier)?.let {
+        packageJson.createPackage(productsById, offeringIdentifier, store)?.let {
             availablePackages.add(it)
         }
     }
@@ -52,21 +53,24 @@ fun JSONObject.createOffering(productsById: Map<String, List<StoreProduct>>): Of
 
 fun JSONObject.createPackage(
     productsById: Map<String, List<StoreProduct>>,
-    offeringIdentifier: String
+    offeringIdentifier: String,
+    store: Store
 ): Package? {
     val packageIdentifier = getString("identifier")
     val productIdentifier = getString("platform_product_identifier")
-    val planIdentifier = optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
 
-    val matchingProduct = getMatchingProduct(productsById, productIdentifier, planIdentifier)
-
-    return matchingProduct?.let { product ->
-        val packageType = packageIdentifier.toPackageType()
-        return Package(packageIdentifier, packageType, product, offeringIdentifier)
+    val product = if (store == Store.PLAY_STORE) {
+        val planIdentifier = optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
+        getMatchingGoogleProduct(productsById, productIdentifier, planIdentifier)
+    } else {
+        productsById[productIdentifier]?.get(0)
     }
+
+    val packageType = packageIdentifier.toPackageType()
+    return product?.let { Package(packageIdentifier, packageType, it, offeringIdentifier) }
 }
 
-private fun getMatchingProduct(
+private fun getMatchingGoogleProduct(
     productsById: Map<String, List<StoreProduct>>,
     productIdentifier: String,
     planIdentifier: String?
