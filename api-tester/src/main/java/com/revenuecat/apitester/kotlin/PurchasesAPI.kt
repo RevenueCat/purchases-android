@@ -78,20 +78,21 @@ private class PurchasesAPI {
         purchases.getProducts(productIds, productsResponseCallback)
 
         // we need these for hybrids... these all fall back on some "best offer" or just purchase the base plan
-        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback, false)
+        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, true, purchaseChangeCallback)
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
-        purchases.purchaseProduct(activity, storeProduct, purchaseCallback, false)
+        purchases.purchaseProduct(activity, storeProduct, true, purchaseCallback)
         purchases.purchaseProduct(activity, storeProduct, purchaseCallback)
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
         purchases.purchasePackage(
             activity,
             packageToPurchase,
             upgradeInfo,
-            purchaseChangeCallback,
-            true
+            true,
+            purchaseChangeCallback
+
         )
         purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
-        purchases.purchasePackage(activity, packageToPurchase, purchaseCallback, true)
+        purchases.purchasePackage(activity, packageToPurchase, true, purchaseCallback)
 
         purchases.purchaseSubscriptionOption(
             activity,
@@ -104,12 +105,12 @@ private class PurchasesAPI {
             activity,
             subscriptionOption,
             upgradeInfo,
-            purchaseChangeCallback,
-            false
+            true,
+            purchaseChangeCallback
         )
 
         purchases.purchaseSubscriptionOption(activity, subscriptionOption, purchaseCallback)
-        purchases.purchaseSubscriptionOption(activity, subscriptionOption, purchaseCallback, false)
+        purchases.purchaseSubscriptionOption(activity, subscriptionOption, true, purchaseCallback)
 
         purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.logIn("", logInCallback)

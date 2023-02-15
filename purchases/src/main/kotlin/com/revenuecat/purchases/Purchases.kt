@@ -396,18 +396,17 @@ class Purchases internal constructor(
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
-     * @param [listener] The PurchaseCallback that will be called when purchase completes.
      * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
-     * the price you are offering is personalized. Default is false. Ignored for Amazon.
+     * the price you are offering is personalized. Ignored for Amazon.
+     * @param [listener] The PurchaseCallback that will be called when purchase completes.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
-    @JvmOverloads
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback,
-        isPersonalizedPrice: Boolean = false
+        isPersonalizedPrice: Boolean,
+        listener: ProductChangeCallback
     ) {
         startProductChange(
             activity,
@@ -416,6 +415,39 @@ class Purchases internal constructor(
             null,
             upgradeInfo,
             isPersonalizedPrice, // TODOBC5 think about personalized price for products
+            listener
+        )
+    }
+
+    /**
+     * Purchases [storeProduct].
+     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
+     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
+     *
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     */
+    fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeCallback
+    ) {
+        purchaseProduct(
+            activity,
+            storeProduct,
+            upgradeInfo,
+            false,
             listener
         )
     }
@@ -430,17 +462,16 @@ class Purchases internal constructor(
      *
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [callback] The PurchaseCallback that will be called when purchase completes.
      * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
-     * the price you are offering is personalized. Default is false. Ignored for Amazon.
+     * the price you are offering is personalized. Ignored for Amazon.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
+     * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
-    @JvmOverloads
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
-        callback: PurchaseCallback,
-        isPersonalizedPrice: Boolean = false
+        isPersonalizedPrice: Boolean,
+        callback: PurchaseCallback
     ) {
         startPurchase(
             activity,
@@ -453,23 +484,47 @@ class Purchases internal constructor(
     }
 
     /**
+     * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [callback] The PurchaseCallback that will be called when purchase completes.
+     */
+    fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        callback: PurchaseCallback
+    ) {
+        purchaseProduct(
+            activity,
+            storeProduct,
+            false,
+            callback
+        )
+    }
+
+    /**
      * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
      * @param [activity] Current activity
      * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
-     * @param [listener] The PurchaseCallback that will be called when purchase completes.
      * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
-     * the price you are offering is personalized. Default is false. Ignored for Amazon.
+     * the price you are offering is personalized. Ignored for Amazon.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
+     * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
-    @JvmOverloads
     fun purchaseSubscriptionOption(
         activity: Activity,
         subscriptionOption: SubscriptionOption,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback,
-        isPersonalizedPrice: Boolean = false
+        isPersonalizedPrice: Boolean,
+        listener: ProductChangeCallback
     ) {
         startProductChange(
             activity,
@@ -485,23 +540,103 @@ class Purchases internal constructor(
      * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
      * @param [activity] Current activity
      * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
-     * @param [callback] The PurchaseCallback that will be called when purchase completes
-     * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
-     * the price you are offering is personalized. Default is false. Ignored for Amazon.
-     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
-    @JvmOverloads
     fun purchaseSubscriptionOption(
         activity: Activity,
         subscriptionOption: SubscriptionOption,
-        callback: PurchaseCallback,
-        isPersonalizedPrice: Boolean = false
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeCallback
+    ) {
+        purchaseSubscriptionOption(
+            activity,
+            subscriptionOption,
+            upgradeInfo,
+            false,
+            listener
+        )
+    }
+
+    /**
+     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
+     * @param [activity] Current activity
+     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
+     * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
+     * the price you are offering is personalized. Default is false. Ignored for Amazon.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
+     * @param [callback] The PurchaseCallback that will be called when purchase completes
+     */
+    fun purchaseSubscriptionOption(
+        activity: Activity,
+        subscriptionOption: SubscriptionOption,
+        isPersonalizedPrice: Boolean,
+        callback: PurchaseCallback
     ) {
         startPurchase(
             activity,
             subscriptionOption.purchasingData,
             null,
             isPersonalizedPrice,
+            callback
+        )
+    }
+
+    /**
+     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
+     * @param [activity] Current activity
+     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
+     * @param [callback] The PurchaseCallback that will be called when purchase completes
+     */
+    fun purchaseSubscriptionOption(
+        activity: Activity,
+        subscriptionOption: SubscriptionOption,
+        callback: PurchaseCallback
+    ) {
+        purchaseSubscriptionOption(
+            activity,
+            subscriptionOption,
+            false,
+            callback
+        )
+    }
+
+    /**
+     * Purchases a [Package].
+     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
+     * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
+     *
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
+     * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
+     * the price you are offering is personalized. Ignored for Amazon.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
+     * @param [callback] The listener that will be called when purchase completes.
+     */
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        upgradeInfo: UpgradeInfo,
+        isPersonalizedPrice: Boolean,
+        callback: ProductChangeCallback
+    ) {
+        startProductChange(
+            activity,
+            // TODOBC5 Move this logic to StoreProduct
+            packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
+            packageToPurchase.offering,
+            upgradeInfo,
+            isPersonalizedPrice, // TODO BC5 think about personalized price for packages
             callback
         )
     }
@@ -523,26 +658,50 @@ class Purchases internal constructor(
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
-     * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
-     * the price you are offering is personalized. Default is false. Ignored for Amazon.
-     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
-    @JvmOverloads
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         upgradeInfo: UpgradeInfo,
-        callback: ProductChangeCallback,
-        isPersonalizedPrice: Boolean = false
+        callback: ProductChangeCallback
     ) {
-        startProductChange(
+        purchasePackage(
+            activity,
+            packageToPurchase,
+            upgradeInfo,
+            false,
+            callback
+        )
+    }
+
+    /**
+     * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
+     * the price you are offering is personalized. Ignored for Amazon.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        isPersonalizedPrice: Boolean,
+        listener: PurchaseCallback
+    ) {
+        startPurchase(
             activity,
             // TODOBC5 Move this logic to StoreProduct
             packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
-            upgradeInfo,
-            isPersonalizedPrice, // TODO BC5 think about personalized price for packages
-            callback
+            isPersonalizedPrice, // TODOC5 figure out isPersonalizedPrice with package
+            listener
         )
     }
 
@@ -558,19 +717,15 @@ class Purchases internal constructor(
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [listener] The listener that will be called when purchase completes.
      */
-    @JvmOverloads
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
-        listener: PurchaseCallback,
-        isPersonalizedPrice: Boolean = false
+        listener: PurchaseCallback
     ) {
-        startPurchase(
+        purchasePackage(
             activity,
-            // TODOBC5 Move this logic to StoreProduct
-            packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
-            packageToPurchase.offering,
-            isPersonalizedPrice, // TODOC5 figure out isPersonalizedPrice with package
+            packageToPurchase,
+            false,
             listener
         )
     }
