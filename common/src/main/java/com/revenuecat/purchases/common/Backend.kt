@@ -396,7 +396,13 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            diagnosticsCallbacks.addCallback(call, diagnosticsDispatcher, cacheKey, onSuccessHandler to onErrorHandler)
+            diagnosticsCallbacks.addCallback(
+                call,
+                diagnosticsDispatcher,
+                cacheKey,
+                onSuccessHandler to onErrorHandler,
+                randomDelay = true
+            )
         }
     }
 
