@@ -15,13 +15,13 @@ class DiagnosticsAnonymizer(
 
     private fun anonymizeLog(diagnosticsLog: DiagnosticsEvent.Log): DiagnosticsEvent {
         return diagnosticsLog.copy(
-            properties = anonymizer.anonymizeMap(diagnosticsLog.properties)
+            properties = anonymizer.anonymizedMap(diagnosticsLog.properties)
         )
     }
 
     private fun anonymizeException(diagnosticsException: DiagnosticsEvent.Exception): DiagnosticsEvent {
         return diagnosticsException.copy(
-            message = anonymizer.anonymizeString(diagnosticsException.message)
+            message = anonymizer.anonymizedString(diagnosticsException.message)
         )
     }
 }
