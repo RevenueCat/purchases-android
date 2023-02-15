@@ -132,7 +132,7 @@ class DiagnosticsManagerTest {
         mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
         every {
             sharedPreferences.getInt(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
-        } returns DiagnosticsManager.MAX_NUMBER_RETRIES - 1
+        } returns DiagnosticsManager.MAX_NUMBER_POST_RETRIES - 1
 
         diagnosticsManager.syncDiagnosticsFileIfNeeded()
 
@@ -145,7 +145,7 @@ class DiagnosticsManagerTest {
         mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
         every {
             sharedPreferences.getInt(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
-        } returns DiagnosticsManager.MAX_NUMBER_RETRIES - 1
+        } returns DiagnosticsManager.MAX_NUMBER_POST_RETRIES - 1
 
         diagnosticsManager.syncDiagnosticsFileIfNeeded()
 
@@ -184,6 +184,13 @@ class DiagnosticsManagerTest {
         every { diagnosticsFileHelper.readDiagnosticsFile() } throws IOException()
         diagnosticsManager.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY) }
+    }
+
+    @Test
+    fun `syncDiagnosticsFileIfNeeded does not crash if IOException happens when deleting file`() {
+        every { diagnosticsFileHelper.readDiagnosticsFile() } throws IOException()
+        every { diagnosticsFileHelper.deleteDiagnosticsFile() } throws IOException()
+        diagnosticsManager.syncDiagnosticsFileIfNeeded()
     }
 
     // endregion
