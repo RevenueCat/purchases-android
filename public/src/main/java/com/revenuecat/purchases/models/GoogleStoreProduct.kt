@@ -9,7 +9,8 @@ import kotlinx.parcelize.RawValue
 
 @Parcelize
 data class GoogleStoreProduct(
-    override val productId: String,
+    val productId: String,
+    val basePlanId: String?,
     override val type: ProductType,
     override val price: Price,
     override val title: String,
@@ -20,12 +21,18 @@ data class GoogleStoreProduct(
     val productDetails: @RawValue ProductDetails // TODO parcelize?
 ) : StoreProduct, Parcelable {
 
+    override val id: String
+        get() = basePlanId?.let {
+            productId
+//            "${productId}:${basePlanId}"
+        } ?: productId
+
     override val purchasingData: PurchasingData
         get() = if (type == ProductType.SUBS && defaultOption != null) {
             defaultOption.purchasingData
         } else {
             GooglePurchasingData.InAppProduct(
-                productId,
+                id,
                 productDetails
             )
         }

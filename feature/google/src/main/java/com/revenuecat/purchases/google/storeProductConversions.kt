@@ -22,10 +22,9 @@ fun ProductDetails.toStoreProduct(
     val basePlanPrice = basePlan?.fullPricePhase?.price
     val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
 
-    val productId = basePlan?.let { "$productId:${it.id}" } ?: productId
-
     return GoogleStoreProduct(
         productId,
+        basePlan?.id,
         productType.toRevenueCatProductType(),
         price,
         title,

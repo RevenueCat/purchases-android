@@ -21,7 +21,7 @@ sealed class AmazonPurchasingData : PurchasingData {
         val storeProduct: AmazonStoreProduct,
     ) : AmazonPurchasingData() {
         override val productId: String
-            get() = storeProduct.productId
+            get() = storeProduct.id
         override val productType: ProductType
             get() = storeProduct.type
     }
@@ -30,7 +30,7 @@ sealed class AmazonPurchasingData : PurchasingData {
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 data class AmazonStoreProduct(
-    override val productId: String,
+    override val id: String,
     override val type: ProductType,
     override val title: String,
     override val description: String,
@@ -49,7 +49,7 @@ data class AmazonStoreProduct(
         get() = AmazonPurchasingData.Product(this)
 
     override val sku: String
-        get() = productId
+        get() = id
 
     // We use this to not include the originalJSON in the equals
     /*override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)

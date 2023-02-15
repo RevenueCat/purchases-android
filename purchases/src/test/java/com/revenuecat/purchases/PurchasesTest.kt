@@ -32,7 +32,6 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
-import com.revenuecat.purchases.google.isBasePlan
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -1027,7 +1026,7 @@ class PurchasesTest {
         )
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(
-                offerings[stubOfferingIdentifier]!!.monthly!!.product.productId,
+                offerings[stubOfferingIdentifier]!!.monthly!!.product.id,
                 purchaseToken,
                 ProductType.SUBS
             )
@@ -4440,7 +4439,7 @@ class PurchasesTest {
         subscriptionOptionId: String? = this.subscriptionOptionId
     ): ReceiptInfo {
         val receiptInfo = ReceiptInfo(
-            productIDs = listOf(storeProduct.productId),
+            productIDs = listOf(storeProduct.id),
             offeringIdentifier = offeringIdentifier,
             storeProduct = storeProduct,
             subscriptionOptionId = if (storeProduct.type == ProductType.SUBS) subscriptionOptionId else null
@@ -4449,7 +4448,7 @@ class PurchasesTest {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 storeProduct.type,
-                setOf(storeProduct.productId),
+                setOf(storeProduct.id),
                 captureLambda(),
                 any()
             )

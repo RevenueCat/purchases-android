@@ -42,7 +42,7 @@ class PackageCardAdapter(
             val product = currentPackage.product
             binding.currentPackage = currentPackage
             binding.isSubscription = product.type == ProductType.SUBS
-            binding.isActive = activeSubscriptions.contains(product.productId)
+            binding.isActive = activeSubscriptions.contains(product.id)
 
             binding.packageBuyButton.setOnClickListener {
                 listener.onPurchasePackageClicked(

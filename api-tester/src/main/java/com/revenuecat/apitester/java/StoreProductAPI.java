@@ -14,7 +14,7 @@ import java.util.List;
 @SuppressWarnings({"unused"})
 final class StoreProductAPI {
     static void check(final StoreProduct product) {
-        final String productId = product.getProductId();
+        final String productId = product.getId();
         final String sku = product.getSku();
         final ProductType type = product.getType();
         final Price price = product.getPrice();
@@ -42,7 +42,8 @@ final class StoreProductAPI {
         List<GoogleSubscriptionOption> subscriptionOptions = googleStoreProduct.getSubscriptionOptions();
         GoogleSubscriptionOption defaultOption = googleStoreProduct.getDefaultOption();
         GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
-                googleStoreProduct.getProductId(),
+                googleStoreProduct.getId(),
+                null,
                 googleStoreProduct.getType(),
                 googleStoreProduct.getPrice(),
                 googleStoreProduct.getTitle(),

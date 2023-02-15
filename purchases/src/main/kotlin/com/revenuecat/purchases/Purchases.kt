@@ -404,8 +404,6 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        this.purchaseProduct(activity, storeProduct, upgradeInfo, listener)
-
         startProductChange(
             activity,
             // TODOBC5 Move this logic to StoreProduct
@@ -1181,7 +1179,7 @@ class Purchases internal constructor(
         storeProductByID: Map<String, List<StoreProduct>>
     ) = offerings.all.values
         .flatMap { it.availablePackages }
-        .map { it.product.productId }
+        .map { it.product.id }
         .filterNot { storeProductByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
@@ -1247,7 +1245,7 @@ class Purchases internal constructor(
                             }
                         } else {
                             storeProducts.firstOrNull() { product ->
-                                product.productId == purchase.productIds.firstOrNull()
+                                product.id == purchase.productIds.firstOrNull()
                             }
                         }
 
@@ -1343,7 +1341,7 @@ class Purchases internal constructor(
             ProductType.SUBS,
             productIds,
             { subscriptionProducts ->
-                val productsById = subscriptionProducts.groupBy { subProduct -> subProduct.productId }.toMutableMap()
+                val productsById = subscriptionProducts.groupBy { subProduct -> subProduct.id }.toMutableMap()
                 val subscriptionIds = productsById.keys
 
                 val inAppProductIds = productIds - subscriptionIds
@@ -1352,7 +1350,7 @@ class Purchases internal constructor(
                         ProductType.INAPP,
                         inAppProductIds,
                         { inAppProducts ->
-                            productsById.putAll(inAppProducts.map { it.productId to listOf(it) })
+                            productsById.putAll(inAppProducts.map { it.id to listOf(it) })
                             onCompleted(productsById)
                         }, {
                             onError(it)

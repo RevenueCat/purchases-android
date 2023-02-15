@@ -13,7 +13,7 @@ import com.revenuecat.purchases.models.googleProduct
 private class StoreProductAPI {
     fun check(product: StoreProduct) {
         with(product) {
-            val storeProductId: String = productId
+            val storeProductId: String = id
             val sku: String = sku
             val type: ProductType = type
             val price: Price? = price
@@ -41,7 +41,8 @@ private class StoreProductAPI {
         val subscriptionOptions: List<GoogleSubscriptionOption> = googleStoreProduct.subscriptionOptions
         val defaultOption: GoogleSubscriptionOption? = googleStoreProduct.defaultOption
         val constructedGoogleStoreProduct = GoogleStoreProduct(
-            googleStoreProduct.productId,
+            googleStoreProduct.id,
+            null,
             googleStoreProduct.type,
             googleStoreProduct.price,
             googleStoreProduct.title,
