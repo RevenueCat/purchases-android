@@ -42,6 +42,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -4438,8 +4439,10 @@ class PurchasesTest {
         offeringIdentifier: String?,
         subscriptionOptionId: String? = this.subscriptionOptionId
     ): ReceiptInfo {
+        val productId = storeProduct.id.split(":").first()
+
         val receiptInfo = ReceiptInfo(
-            productIDs = listOf(storeProduct.id),
+            productIDs = listOf(productId),
             offeringIdentifier = offeringIdentifier,
             storeProduct = storeProduct,
             subscriptionOptionId = if (storeProduct.type == ProductType.SUBS) subscriptionOptionId else null
@@ -4448,7 +4451,7 @@ class PurchasesTest {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 storeProduct.type,
-                setOf(storeProduct.id),
+                setOf(productId),
                 captureLambda(),
                 any()
             )

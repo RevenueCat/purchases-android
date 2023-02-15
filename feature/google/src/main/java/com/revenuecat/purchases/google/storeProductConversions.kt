@@ -10,7 +10,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 // In-apps don't have base plan nor offers
-fun ProductDetails.toInAppStoreProduct(): StoreProduct? = this.toStoreProduct(emptyList())
+fun ProductDetails.toInAppStoreProduct(): GoogleStoreProduct? = this.toStoreProduct(emptyList())
 
 fun ProductDetails.toStoreProduct(
     offerDetails: List<ProductDetails.SubscriptionOfferDetails>

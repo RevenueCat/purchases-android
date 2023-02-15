@@ -23,8 +23,7 @@ data class GoogleStoreProduct(
 
     override val id: String
         get() = basePlanId?.let {
-            productId
-//            "${productId}:${basePlanId}"
+            "$productId:$basePlanId"
         } ?: productId
 
     override val purchasingData: PurchasingData
@@ -32,7 +31,7 @@ data class GoogleStoreProduct(
             defaultOption.purchasingData
         } else {
             GooglePurchasingData.InAppProduct(
-                id,
+                productId,
                 productDetails
             )
         }
