@@ -45,6 +45,9 @@ class Backend(
     private val diagnosticsDispatcher: Dispatcher,
     private val httpClient: HTTPClient
 ) {
+    private companion object {
+        const val DIAGNOSTICS_ENDPOINT = "/telemetry"
+    }
 
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
@@ -366,7 +369,7 @@ class Backend(
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     appConfig.diagnosticsURL,
-                    "/telemetry",
+                    DIAGNOSTICS_ENDPOINT,
                     body,
                     authenticationHeaders
                 )
