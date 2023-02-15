@@ -397,8 +397,8 @@ class Purchases internal constructor(
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
-     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
-     * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+     * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
+     * the price you are offering is personalized. Default is false. Ignored for Amazon.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
     @JvmOverloads
@@ -431,8 +431,8 @@ class Purchases internal constructor(
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
-     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
-     * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+     * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
+     * the price you are offering is personalized. Default is false. Ignored for Amazon.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
     @JvmOverloads
@@ -459,8 +459,8 @@ class Purchases internal constructor(
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
-     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
-     * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+     * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
+     * the price you are offering is personalized. Default is false. Ignored for Amazon.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
     @JvmOverloads
@@ -486,8 +486,8 @@ class Purchases internal constructor(
      * @param [activity] Current activity
      * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
      * @param [callback] The PurchaseCallback that will be called when purchase completes
-     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
-     * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+     * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
+     * the price you are offering is personalized. Default is false. Ignored for Amazon.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
     @JvmOverloads
@@ -523,8 +523,8 @@ class Purchases internal constructor(
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
-     * @param [isPersonalizedPrice] Set this parameter to true if the [SubscriptionOption] is a Google
-     * developer-determined offer available for purchase in the EU. Default is false. Ignored for Amazon.
+     * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
+     * the price you are offering is personalized. Default is false. Ignored for Amazon.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
     @JvmOverloads
