@@ -8,6 +8,12 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.verboseLog
 import java.io.IOException
 
+/**
+ * This class is the entry point to perform all diagnostics related operations. All operations will be executed
+ * in a background thread.
+ *
+ * If syncing diagnostics fails multiple times, we will delete any stored diagnostics data and start again.
+ */
 class DiagnosticsManager(
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
@@ -19,7 +25,7 @@ class DiagnosticsManager(
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val CONSECUTIVE_FAILURES_COUNT_KEY = "consecutive_failures_count"
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        const val MAX_NUMBER_RETRIES = 3
+        const val MAX_NUMBER_POST_RETRIES = 3
 
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
@@ -45,13 +51,18 @@ class DiagnosticsManager(
                         diagnosticsFileHelper.cleanSentDiagnostics(diagnosticsCount)
                     },
                     onErrorHandler = { error, shouldRetry ->
-                        verboseLog("Error syncing diagnostics file: $error. Should retry: $shouldRetry")
                         if (shouldRetry) {
-                            val currentRetryCount = increaseConsecutiveNumberOfErrors()
-                            if (currentRetryCount >= MAX_NUMBER_RETRIES) {
+                            verboseLog("Error syncing diagnostics file: $error. " +
+                                "Will retry the next time the SDK is initialized")
+                            if (increaseConsecutiveNumberOfErrors() >= MAX_NUMBER_POST_RETRIES) {
+                                verboseLog("Error syncing diagnostics file: $error. " +
+                                    "This was the final attempt ($MAX_NUMBER_POST_RETRIES). " +
+                                    "Deleting diagnostics file without posting.")
                                 resetDiagnosticsStatus()
                             }
                         } else {
+                            verboseLog("Error syncing diagnostics file: $error. " +
+                                "Deleting diagnostics file without retrying.")
                             resetDiagnosticsStatus()
                         }
                     }
