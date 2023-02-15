@@ -50,6 +50,9 @@ class FileHelper(
         appendToFile(filePath, textToAppend)
     }
 
+    /**
+     * This will return true if file does not exist or its contents are empty.
+     */
     fun fileIsEmpty(filePath: String): Boolean {
         val file = getFileInFilesDir(filePath)
         return !file.exists() || file.length() == 0L
