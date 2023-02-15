@@ -365,7 +365,7 @@ class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
-                    appConfig.dianosticsURL,
+                    appConfig.diagnosticsURL,
                     "/telemetry",
                     body,
                     authenticationHeaders
@@ -405,7 +405,9 @@ class Backend(
         dispatcher: Dispatcher,
         randomDelay: Boolean = false
     ) {
-        if (!dispatcher.isClosed()) {
+        if (dispatcher.isClosed()) {
+            errorLog("Enqueuing operation in closed dispatcher.")
+        } else {
             dispatcher.enqueue(call, randomDelay)
         }
     }
