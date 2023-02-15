@@ -32,8 +32,8 @@ internal fun productChangeCompletedListener(
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit
 ) = object : ProductChangeCallback {
-    override fun onCompleted(purchase: StoreTransaction?, customerInfo: CustomerInfo) {
-        onSuccess(purchase, customerInfo)
+    override fun onCompleted(transaction: StoreTransaction?, customerInfo: CustomerInfo) {
+        onSuccess(transaction, customerInfo)
     }
 
     override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -72,11 +72,11 @@ internal fun receiveCustomerInfoCallback(
     onError: (error: PurchasesError) -> Unit?
 ) = object : ReceiveCustomerInfoCallback {
     override fun onReceived(customerInfo: CustomerInfo) {
-        onSuccess?.invoke(customerInfo)
+        onSuccess.invoke(customerInfo)
     }
 
     override fun onError(error: PurchasesError) {
-        onError?.invoke(error)
+        onError.invoke(error)
     }
 }
 
@@ -85,11 +85,11 @@ internal fun logInSuccessListener(
     onError: (error: PurchasesError) -> Unit?
 ) = object : LogInCallback {
     override fun onReceived(customerInfo: CustomerInfo, created: Boolean) {
-        onSuccess?.invoke(customerInfo, created)
+        onSuccess.invoke(customerInfo, created)
     }
 
     override fun onError(error: PurchasesError) {
-        onError?.invoke(error)
+        onError.invoke(error)
     }
 }
 
