@@ -5,16 +5,17 @@ package com.revenuecat.purchases.models
  */
 // TODO if google-only, rename and annotate identifier with @ProductDetails.RecurrenceMode
 // TODO add api testers
+@SuppressWarnings("MagicNumber")
 enum class RecurrenceMode(val identifier: Int?) {
-
-    // Pricing phase does not repeat
-    NON_RECURRING(0),
 
     // Pricing phase repeats infinitely until cancellation
     INFINITE_RECURRING(1),
 
     // Pricing phase repeats for a fixed number of billing periods
     FINITE_RECURRING(2),
+
+    // Pricing phase does not repeat
+    NON_RECURRING(3),
     UNKNOWN(null)
 }
 
