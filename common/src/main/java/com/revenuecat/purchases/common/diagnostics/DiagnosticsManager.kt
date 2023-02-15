@@ -11,7 +11,7 @@ import java.io.IOException
 
 /**
  * This class is the entry point to perform all diagnostics related operations. All operations will be executed
- * in a background thread.
+ * in a single background thread. Multithreading is not currently supported for these operations.
  *
  * If syncing diagnostics fails multiple times, we will delete any stored diagnostics data and start again.
  */
