@@ -52,7 +52,7 @@ class DiagnosticsAnonymizerTest {
             dateTime = testDate
         )
         every {
-            anonymizer.anonymizeMap(originalPropertiesMap)
+            anonymizer.anonymizedMap(originalPropertiesMap)
         } returns expectedPropertiesMap
         val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(eventToAnonymize)
         assertThat(anonymizedEvent).isEqualTo(expectedEvent)
@@ -74,7 +74,7 @@ class DiagnosticsAnonymizerTest {
             dateTime = testDate
         )
         every {
-            anonymizer.anonymizeString("Some message with possible PII")
+            anonymizer.anonymizedString("Some message with possible PII")
         } returns "Some message without PII"
         val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(eventToAnonymize)
         assertThat(anonymizedEvent).isEqualTo(expectedEvent)
