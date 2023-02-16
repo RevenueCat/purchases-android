@@ -20,7 +20,7 @@ class Anonymizer {
     }
 
     private fun anonymizedAny(valueToAnonymize: Any): Any {
-        return when(valueToAnonymize) {
+        return when (valueToAnonymize) {
             is String -> anonymizedString(valueToAnonymize)
             is List<*> -> valueToAnonymize.map { if (it == null) null else anonymizedAny(it) }
             is Map<*, *> -> valueToAnonymize.mapValues { (_, value) ->
