@@ -26,11 +26,13 @@ import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.json.JSONException
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 import java.net.URL
 import java.util.Date
 import java.util.HashMap
@@ -87,10 +89,8 @@ class HTTPClientTest {
         diagnosticsTracker = mockk()
         every { diagnosticsTracker.trackEndpointHit(any(), any(), any(), any(), any()) } just Runs
 
-        dateProvider = object : DateProvider {
-            override val now: Date
-                get() = Date(1676379370) // Tuesday, February 14, 2023 12:56:10 PM GMT
-        }
+        dateProvider = mockk()
+        every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
         client = HTTPClient(appConfig, mockETagManager, diagnosticsTracker, dateProvider)
     }
 
@@ -349,18 +349,81 @@ class HTTPClientTest {
         assertThat(result.responseCode).isEqualTo(expectedResult.responseCode)
     }
 
+    // region trackEndpointHit
+
     @Test
     fun `performRequest tracks endpoint hit diagnostic event if request successful`() {
+        val endpoint = Endpoint.LogIn
+        val responseCode = 200
+        val requestStartTime = 1676379370000L // Tuesday, February 14, 2023 12:56:10:000 PM GMT
+        val requestEndTime = 1676379370123L // Tuesday, February 14, 2023 12:56:10:123 PM GMT
+        val responseTime = requestEndTime - requestStartTime
 
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult(responseCode, "{}", ResultOrigin.BACKEND)
+        )
+
+        every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime),)
+
+        client.performRequest(baseURL, Endpoint.LogIn, null, mapOf("" to ""))
+        server.takeRequest()
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackEndpointHit(endpoint, responseTime, true, responseCode, ResultOrigin.BACKEND)
+        }
     }
 
     @Test
     fun `performRequest tracks endpoint hit diagnostic event if request fails`() {
+        val endpoint = Endpoint.LogIn
+        val responseCode = 400
+        val requestStartTime = 1676379370000L // Tuesday, February 14, 2023 12:56:10:000 PM GMT
+        val requestEndTime = 1676379370123L // Tuesday, February 14, 2023 12:56:10:123 PM GMT
+        val responseTime = requestEndTime - requestStartTime
 
+        enqueue(
+            endpoint,
+            expectedResult = HTTPResult(responseCode, "{}", ResultOrigin.BACKEND)
+        )
+
+        every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime),)
+
+        client.performRequest(baseURL, Endpoint.LogIn, null, mapOf("" to ""))
+        server.takeRequest()
+
+        verify(exactly = 1) {
+            diagnosticsTracker.trackEndpointHit(endpoint, responseTime, false, responseCode, ResultOrigin.BACKEND)
+        }
     }
 
     @Test
     fun `performRequest tracks endpoint hit diagnostic event if request throws Exception`() {
+        val endpoint = Endpoint.LogIn
+        val responseCode = 400
 
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                responseCode,
+                "not uh json",
+                connection = any(),
+                "/v1${endpoint.getPath()}",
+                refreshETag = false
+            )
+        } throws JSONException("bad json")
+        val response = MockResponse().setBody("not uh json").setResponseCode(responseCode)
+        server.enqueue(response)
+
+        try {
+            client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        } catch (e: JSONException) {
+            verify(exactly = 1) {
+                diagnosticsTracker.trackEndpointHit(endpoint, any(), false, responseCode, null)
+            }
+            return
+        }
+        error("Expected exception")
     }
+
+    // endregion
 }

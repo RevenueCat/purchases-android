@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
@@ -144,7 +145,7 @@ class HTTPClient(
                 urlPathWithVersion,
                 refreshETag
             )
-            requestSuccessful = true
+            requestSuccessful = RCHTTPStatusCodes.isSuccessful(responseCode)
         } finally {
             diagnosticsTracker?.let { tracker ->
                 val responseTime = dateProvider.now.time - requestStartTime
