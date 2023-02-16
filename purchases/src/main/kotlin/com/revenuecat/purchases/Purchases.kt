@@ -414,7 +414,7 @@ class Purchases internal constructor(
             storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
             null,
             upgradeInfo,
-            isPersonalizedPrice, // TODOBC5 think about personalized price for products
+            isPersonalizedPrice,
             listener
         )
     }
@@ -636,7 +636,7 @@ class Purchases internal constructor(
             packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo,
-            isPersonalizedPrice, // TODO BC5 think about personalized price for packages
+            isPersonalizedPrice,
             callback
         )
     }
