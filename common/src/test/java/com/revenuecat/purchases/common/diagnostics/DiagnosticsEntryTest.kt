@@ -11,7 +11,7 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class DiagnosticsEventTest {
+class DiagnosticsEntryTest {
 
     private val testDate = Date(1675954145L) // Thursday, February 9, 2023 2:49:05 PM GMT
 
@@ -26,9 +26,9 @@ class DiagnosticsEventTest {
     }
 
     @Test
-    fun `toString transforms log event to correct JSON`() {
-        val event = DiagnosticsEvent.Log(
-            name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
+    fun `toString transforms event to correct JSON`() {
+        val event = DiagnosticsEntry.Event(
+            name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
             properties = mapOf("test-key-1" to "test-value-1", "test-key-2" to 123, "test-key-3" to true),
             dateProvider = testDateProvider
         )
@@ -44,8 +44,8 @@ class DiagnosticsEventTest {
     }
 
     @Test
-    fun `toString transforms metrics event to correct JSON`() {
-        val event = DiagnosticsEvent.Metric(
+    fun `toString transforms metrics to correct JSON`() {
+        val event = DiagnosticsEntry.Metric(
             name = "test_metric_name",
             tags = listOf("test-1", "test-2"),
             value = 2
@@ -57,26 +57,6 @@ class DiagnosticsEventTest {
             "\"name\":\"test_metric_name\"," +
             "\"tags\":[\"test-1\",\"test-2\"]," +
             "\"value\":2" +
-            "}"
-        assertThat(eventAsString).isEqualTo(expectedString)
-    }
-
-    @Test
-    fun `toString transforms exception event to correct JSON`() {
-        val event = DiagnosticsEvent.Exception(
-            exceptionClass = "TestClass.kt",
-            message = "test message",
-            location = "DiagnosticsEvent:121",
-            dateProvider = testDateProvider
-        )
-        val eventAsString = event.toString()
-        val expectedString = "{" +
-            "\"version\":1," +
-            "\"type\":\"exception\"," +
-            "\"exc_class\":\"TestClass.kt\"," +
-            "\"message\":\"test message\"," +
-            "\"location\":\"DiagnosticsEvent:121\"," +
-            "\"timestamp\":1675954145" +
             "}"
         assertThat(eventAsString).isEqualTo(expectedString)
     }

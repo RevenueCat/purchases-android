@@ -37,16 +37,16 @@ class DiagnosticsAnonymizerTest {
     }
 
     @Test
-    fun `anonymizeEventIfNeeded anonymizes log properties`() {
+    fun `anonymizeEntryIfNeeded anonymizes event properties`() {
         val originalPropertiesMap = mapOf("key-1" to "value-1")
         val expectedPropertiesMap = mapOf("key-1" to "anonymized-value-1")
-        val eventToAnonymize = DiagnosticsEvent.Log(
-            name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
+        val eventToAnonymize = DiagnosticsEntry.Event(
+            name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
             properties = originalPropertiesMap,
             dateProvider = testDateProvider
         )
-        val expectedEvent = DiagnosticsEvent.Log(
-            name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
+        val expectedEvent = DiagnosticsEntry.Event(
+            name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
             properties = expectedPropertiesMap,
             dateProvider = testDateProvider,
             dateTime = testDate
@@ -54,40 +54,18 @@ class DiagnosticsAnonymizerTest {
         every {
             anonymizer.anonymizedMap(originalPropertiesMap)
         } returns expectedPropertiesMap
-        val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(eventToAnonymize)
+        val anonymizedEvent = diagnosticsAnonymizer.anonymizeEntryIfNeeded(eventToAnonymize)
         assertThat(anonymizedEvent).isEqualTo(expectedEvent)
     }
 
     @Test
-    fun `anonymizeEventIfNeeded anonymizes exception message`() {
-        val eventToAnonymize = DiagnosticsEvent.Exception(
-            exceptionClass = "TestClass",
-            message = "Some message with possible PII",
-            location = "TestClass:131",
-            dateProvider = testDateProvider
-        )
-        val expectedEvent = DiagnosticsEvent.Exception(
-            exceptionClass = "TestClass",
-            message = "Some message without PII",
-            location = "TestClass:131",
-            dateProvider = testDateProvider,
-            dateTime = testDate
-        )
-        every {
-            anonymizer.anonymizedString("Some message with possible PII")
-        } returns "Some message without PII"
-        val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(eventToAnonymize)
-        assertThat(anonymizedEvent).isEqualTo(expectedEvent)
-    }
-
-    @Test
-    fun `anonymizeEventIfNeeded does not anonymize metric`() {
-        val eventToAnonymize = DiagnosticsEvent.Metric(
+    fun `anonymizeEntryIfNeeded does not anonymize metric`() {
+        val metricToAnonymize = DiagnosticsEntry.Metric(
             name = "metric-name",
             tags = listOf("tag-1", "tag-2"),
             value = 123
         )
-        val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(eventToAnonymize)
-        assertThat(anonymizedEvent).isEqualTo(eventToAnonymize)
+        val anonymizedMetric = diagnosticsAnonymizer.anonymizeEntryIfNeeded(metricToAnonymize)
+        assertThat(anonymizedMetric).isEqualTo(metricToAnonymize)
     }
 }
