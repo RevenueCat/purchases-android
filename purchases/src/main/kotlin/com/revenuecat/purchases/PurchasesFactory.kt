@@ -6,13 +6,18 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.common.Anonymizer
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsAnonymizer
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsManager
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -91,6 +96,13 @@ internal class PurchasesFactory(
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
 
+            val diagnosticsManager = createDiagnosticsManagerIfNeeded(
+                context,
+                backend,
+                diagnosticsDispatcher,
+                diagnosticsEnabled
+            )
+
             return Purchases(
                 application,
                 appUserID,
@@ -101,7 +113,8 @@ internal class PurchasesFactory(
                 identityManager,
                 subscriberAttributesManager,
                 appConfig,
-                customerInfoHelper
+                customerInfoHelper,
+                diagnosticsManager
             )
         }
     }
@@ -125,6 +138,25 @@ internal class PurchasesFactory(
 
     private fun Context.hasPermission(permission: String): Boolean {
         return checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun createDiagnosticsManagerIfNeeded(
+        context: Context,
+        backend: Backend,
+        dispatcher: Dispatcher,
+        diagnosticsEnabled: Boolean
+    ): DiagnosticsManager? {
+        return if (diagnosticsEnabled) {
+            DiagnosticsManager(
+                DiagnosticsFileHelper(FileHelper(context)),
+                DiagnosticsAnonymizer(Anonymizer()),
+                backend,
+                dispatcher,
+                DiagnosticsManager.initializeSharedPreferences(context)
+            )
+        } else {
+            null
+        }
     }
 
     private fun createDefaultExecutor(): ExecutorService {
