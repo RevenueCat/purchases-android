@@ -5,7 +5,6 @@ import com.amazon.device.iap.model.Product
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
-import com.revenuecat.purchases.common.OfferingFactory
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -131,11 +130,4 @@ internal fun String.parsePriceUsingRegex(): BigDecimal? {
         price = price.trim()
         BigDecimal(price)
     }
-}
-
-class AmazonOfferingFactory : OfferingFactory() {
-    override fun Map<String, List<StoreProduct>>.findMatchingProduct(
-        productIdentifier: String,
-        planIdentifier: String?
-    ): StoreProduct? = this[productIdentifier]?.get(0)
 }

@@ -23,18 +23,17 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.OfferingFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.debugLogsEnabled
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.google.createOfferings
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -92,8 +91,7 @@ class Purchases internal constructor(
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
-    private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
-    private val offeringFactory: OfferingFactory
+    private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
 
     /** @suppress */
@@ -1100,7 +1098,7 @@ class Purchases internal constructor(
                         )
                     } else {
                         getStoreProductsById(productIdentifiers, { productsById ->
-                            val offerings = OfferingFactory.createOfferings(productsById)
+                            val offerings = offeringsJSON.createOfferings(productsById, appConfig.store)
 
                             logMissingProducts(offerings, productsById)
 
