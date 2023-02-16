@@ -125,9 +125,12 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult(
-            RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse, ResultOrigin.CACHE
+            RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse, ResultOrigin.BACKEND
         )
-        val resultFromBackendWithETag = HTTPResultWithETag(eTag, resultFromBackend)
+        val resultStored = resultFromBackend.copy(
+            origin = ResultOrigin.CACHE
+        )
+        val resultStoredWithETag = HTTPResultWithETag(eTag, resultStored)
 
         underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
@@ -135,7 +138,7 @@ class ETagManagerTest {
         assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue()
 
         assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(path)
-        assertThat(slotPutSharedPreferencesValue.captured).isEqualTo(resultFromBackendWithETag.serialize())
+        assertThat(slotPutSharedPreferencesValue.captured).isEqualTo(resultStoredWithETag.serialize())
     }
 
     @Test
@@ -253,6 +256,7 @@ class ETagManagerTest {
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_MODIFIED)
         assertThat(result.payload).isEqualTo(responsePayload)
+        assertThat(result.origin).isEqualTo(ResultOrigin.BACKEND)
         assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse()
         assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse()
     }
@@ -274,6 +278,7 @@ class ETagManagerTest {
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(result.payload).isEqualTo(responsePayload)
+        assertThat(result.origin).isEqualTo(ResultOrigin.BACKEND)
 
         assertStoredResponse(path, eTagInResponse, responsePayload)
     }
@@ -295,6 +300,7 @@ class ETagManagerTest {
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(result.payload).isEqualTo(responsePayload)
+        assertThat(result.origin).isEqualTo(ResultOrigin.BACKEND)
 
         assertStoredResponse(path, eTagInResponse, responsePayload)
     }
