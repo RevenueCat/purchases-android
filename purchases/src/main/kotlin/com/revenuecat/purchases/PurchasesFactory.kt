@@ -71,14 +71,12 @@ internal class PurchasesFactory(
                 )
             }
 
-            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker)
-
             val backend = Backend(
                 apiKey,
                 appConfig,
                 dispatcher,
                 diagnosticsDispatcher,
-                httpClient
+                HTTPClient(appConfig, eTagManager, diagnosticsTracker)
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
