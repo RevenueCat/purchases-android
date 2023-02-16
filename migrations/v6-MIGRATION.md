@@ -2,16 +2,16 @@
 
 ### Classes
 
-| New                    |
-|------------------------|
+| New                        |
+|----------------------------|
 | `SubscriptionOption`       |
 | `GoogleSubscriptionOption` |
-| `GoogleStoreProduct`   |
-| `AmazonStoreProduct`   |
-| `Price`                |
-| `PricingPhase`         |
-| `RecurrenceMode`       |
-| `GoogleProrationMode`  |
+| `GoogleStoreProduct`       |
+| `AmazonStoreProduct`       |
+| `Price`                    |
+| `PricingPhase`             |
+| `RecurrenceMode`           |
+| `GoogleProrationMode`      |
 
 | Old Location                            | New Location                                   |
 |-----------------------------------------|------------------------------------------------|
@@ -36,7 +36,7 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 | New                 |
 |---------------------|
 | oneTimeProductPrice |
-| subscriptionOptions     |
+| subscriptionOptions |
 
 | Removed                           |  | 
 |-----------------------------------|--|
@@ -47,8 +47,8 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 
 ### StoreTransaction
 
-| New              |
-|------------------|
+| New                  |
+|----------------------|
 | subscriptionOptionId |
 
 | Deprecated | New        |
@@ -87,16 +87,16 @@ All purchasing functions now have a duplicate version including the `isPersonali
 compliance with EU regulations. See https://developer.android.com/google/play/billing/integrate#personalized-price 
 for more info.
 
-| New                                                                                                                 |
-|---------------------------------------------------------------------------------------------------------------------|
-| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, PurchaseCallback)`                          |
-| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, Boolean, PurchaseCallback)`                 |
-| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, UpgradeInfo, ProductChangeCallback)`        |
+| New                                                                                                                   |
+|-----------------------------------------------------------------------------------------------------------------------|
+| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, PurchaseCallback)`                            |
+| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, Boolean, PurchaseCallback)`                   |
+| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, UpgradeInfo, ProductChangeCallback)`          |
 | `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, UpgradeInfo, Boolean, ProductChangeCallback)` |
-| `purchasePackage(Activity, Package, Boolean, PurchaseCallback)`                                                     |
-| `purchaseProduct(Activity, StoreProduct, Boolean, PurchaseCallback)`                                |
-| `purchasePackage(Activity, Package, Boolean, UpgradeInfo, ProductChangeCallback)`                                   |
-| `purchaseProduct(Activity, StoreProduct, Boolean, UpgradeInfo, ProductChangeCallback)`                              |
+| `purchasePackage(Activity, Package, Boolean, PurchaseCallback)`                                                       |
+| `purchaseProduct(Activity, StoreProduct, Boolean, PurchaseCallback)`                                                  |
+| `purchasePackage(Activity, Package, Boolean, UpgradeInfo, ProductChangeCallback)`                                     |
+| `purchaseProduct(Activity, StoreProduct, Boolean, UpgradeInfo, ProductChangeCallback)`                                |
 
 | Deprecated                                                       | New                                                   |
 |------------------------------------------------------------------|-------------------------------------------------------|

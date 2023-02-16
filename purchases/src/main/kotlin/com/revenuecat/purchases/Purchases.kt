@@ -400,7 +400,6 @@ class Purchases internal constructor(
      * the price you are offering is personalized. Ignored for Amazon.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
-     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */
     fun purchaseProduct(
         activity: Activity,
