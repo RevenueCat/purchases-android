@@ -41,6 +41,7 @@ import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -697,6 +698,22 @@ class BillingWrapper(
     }
 
     override fun isConnected(): Boolean = billingClient?.isReady ?: false
+
+    override val productMatchingMethod: (Map<String, List<StoreProduct>>, String, String?) -> StoreProduct? = matcher@{
+        productsById, productIdentifier, planIdentifier ->
+        if (planIdentifier == null) {
+            // It could be an INAPP or a mis-configured subscription
+            // Try to find INAPP, otherwise null
+            return@matcher productsById[productIdentifier]
+                .takeIf { it?.size == 1 }
+                ?.takeIf { it[0].type == ProductType.INAPP }
+                ?.get(0)
+        }
+        val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
+        storeProducts?.firstOrNull { storeProduct ->
+            storeProduct.subscriptionOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
+        }
+    }
 
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {

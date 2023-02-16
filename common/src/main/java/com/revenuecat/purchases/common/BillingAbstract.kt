@@ -105,6 +105,8 @@ abstract class BillingAbstract {
         onSuccess(productID)
     }
 
+    abstract val productMatchingMethod: ((Map<String, List<StoreProduct>>, String, String?) -> StoreProduct?)
+
     interface PurchasesUpdatedListener {
         fun onPurchasesUpdated(purchases: List<StoreTransaction>)
         fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)

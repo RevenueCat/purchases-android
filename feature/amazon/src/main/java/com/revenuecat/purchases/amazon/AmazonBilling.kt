@@ -79,6 +79,11 @@ internal class AmazonBilling constructor(
 
     var connected = false
 
+    override val productMatchingMethod: ((Map<String, List<StoreProduct>>, String, String?) -> StoreProduct?) = {
+            productsById, productIdentifier: String, _ ->
+        productsById[productIdentifier]?.get(0)
+    }
+
     override fun startConnection() {
         if (checkObserverMode()) return
 

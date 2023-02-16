@@ -1098,7 +1098,10 @@ class Purchases internal constructor(
                         )
                     } else {
                         getStoreProductsById(productIdentifiers, { productsById ->
-                            val offerings = offeringsJSON.createOfferings(productsById, appConfig.store)
+                            val offerings = offeringsJSON.createOfferings(
+                                productsById,
+                                billing.productMatchingMethod
+                            )
 
                             logMissingProducts(offerings, productsById)
 
