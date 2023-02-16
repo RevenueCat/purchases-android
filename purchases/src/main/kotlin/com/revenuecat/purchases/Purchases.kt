@@ -398,6 +398,7 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [isPersonalizedPrice] Set this parameter to true if your app can be distributed to users in the EU and
      * the price you are offering is personalized. Ignored for Amazon.
+     * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      * See https://developer.android.com/google/play/billing/integrate#personalized-price for more info.
      */

@@ -4113,7 +4113,7 @@ class PurchasesTest {
     private fun mockBillingWrapper() {
         with(mockBillingAbstract) {
             every {
-                makePurchaseAsync(any(), any(), any(), any(), any())
+                makePurchaseAsync(any(), any(), any(), any(), any(), any())
             } just Runs
             every {
                 purchasesUpdatedListener = capture(capturedPurchasesUpdatedListener)
