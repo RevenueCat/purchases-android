@@ -34,6 +34,9 @@ class HTTPClient(
     private val diagnosticsTracker: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
+    internal companion object {
+        const val NO_STATUS_CODE = -1
+    }
 
     private fun buffer(inputStream: InputStream): BufferedReader {
         return BufferedReader(InputStreamReader(inputStream))
@@ -176,7 +179,7 @@ class HTTPClient(
                 // since we could not find the response in the cache.
                 callResult?.responseCode ?: RCHTTPStatusCodes.NOT_MODIFIED
             } else {
-                -1
+                NO_STATUS_CODE
             }
             val origin = callResult?.origin
             val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)

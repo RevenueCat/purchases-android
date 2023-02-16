@@ -415,7 +415,7 @@ class HTTPClientTest {
             client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
         } catch (e: JSONException) {
             verify(exactly = 1) {
-                diagnosticsTracker.trackEndpointHit(endpoint, any(), false, -1, null)
+                diagnosticsTracker.trackEndpointHit(endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null)
             }
             return
         }
