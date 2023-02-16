@@ -3,6 +3,7 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.OfferingFactory
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
@@ -74,4 +75,31 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
         )
     }
     return storeProducts
+}
+
+class GoogleOfferingFactory : OfferingFactory() {
+    override fun Map<String, List<StoreProduct>>.findMatchingProduct(
+        productIdentifier: String,
+        planIdentifier: String?
+    ): StoreProduct? {
+        return this.getMatchingGoogleProduct(productIdentifier, planIdentifier)
+    }
+
+    fun Map<String, List<StoreProduct>>.getMatchingGoogleProduct(
+        productIdentifier: String,
+        planIdentifier: String?
+    ): StoreProduct? {
+        if (planIdentifier == null) {
+            // It could be an INAPP or a mis-configured subscription
+            // Try to find INAPP, otherwise null
+            return this[productIdentifier]
+                .takeIf { it?.size == 1 }
+                ?.takeIf { it[0].type == ProductType.INAPP }
+                ?.get(0)
+        }
+        val storeProducts: List<StoreProduct>? = this[productIdentifier]
+        return storeProducts?.firstOrNull { storeProduct ->
+            storeProduct.subscriptionOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
+        }
+    }
 }
