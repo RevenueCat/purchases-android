@@ -37,6 +37,21 @@ class DiagnosticsTracker(
         )
     }
 
+    fun trackMaxEventsStoredLimitReached(totalEventsStored: Int, eventsRemoved: Int, useCurrentThread: Boolean = true) {
+        val event = DiagnosticsEvent.Log(
+            name = DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
+            properties = mapOf(
+                "total_number_events_stored" to totalEventsStored,
+                "events_removed" to eventsRemoved
+            )
+        )
+        if (useCurrentThread) {
+            trackEventInCurrentThread(event)
+        } else {
+            trackEvent(event)
+        }
+    }
+
     fun trackEvent(diagnosticsEvent: DiagnosticsEvent) {
         diagnosticsDispatcher.enqueue(command = {
             trackEventInCurrentThread(diagnosticsEvent)

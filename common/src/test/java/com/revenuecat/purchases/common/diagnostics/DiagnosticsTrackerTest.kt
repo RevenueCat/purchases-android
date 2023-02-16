@@ -114,4 +114,21 @@ class DiagnosticsTrackerTest {
             })
         }
     }
+
+    @Test
+    fun `trackMaxEventsStoredLimitReached tracks correct event`() {
+        val expectedProperties = mapOf(
+            "total_number_events_stored" to 1234,
+            "events_removed" to 234
+        )
+        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
+        diagnosticsTracker.trackMaxEventsStoredLimitReached(totalEventsStored = 1234, eventsRemoved = 234)
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
+                event is DiagnosticsEvent.Log &&
+                    event.name == DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
 }
