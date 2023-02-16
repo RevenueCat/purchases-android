@@ -98,66 +98,90 @@ class HTTPClient(
         requestHeaders: Map<String, String>,
         refreshETag: Boolean = false
     ): HTTPResult {
-        val jsonBody = body?.convert()
-
-        val fullURL: URL
-        val connection: HttpURLConnection
-        val httpRequest: HTTPRequest
-        val path = endpoint.getPath()
-        val urlPathWithVersion = "/v1$path"
-        var requestSuccessful = false
+        var callSuccessful = false
         val requestStartTime = dateProvider.now.time
-        var responseCode: Int = -1
         var callResult: HTTPResult? = null
         try {
-            try {
-                fullURL = URL(baseURL, urlPathWithVersion)
-
-                val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag)
-                httpRequest = HTTPRequest(fullURL, headers, jsonBody)
-
-                connection = getConnection(httpRequest)
-            } catch (e: MalformedURLException) {
-                throw RuntimeException(e)
-            }
-
-            val inputStream = getInputStream(connection)
-
-            val payload: String?
-            try {
-                debugLog(NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
-                responseCode = connection.responseCode
-                payload = inputStream?.let { readFully(it) }
-            } finally {
-                inputStream?.close()
-                connection.disconnect()
-            }
-
-            debugLog(NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
-            if (payload == null) {
-                throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
-            }
-
-            callResult = eTagManager.getHTTPResultFromCacheOrBackend(
-                responseCode,
-                payload,
-                connection,
-                urlPathWithVersion,
-                refreshETag
-            )
-            requestSuccessful = RCHTTPStatusCodes.isSuccessful(responseCode)
+            callResult = performCall(baseURL, endpoint, body, requestHeaders, refreshETag)
+            callSuccessful = true
         } finally {
-            diagnosticsTracker?.let { tracker ->
-                val responseTime = dateProvider.now.time - requestStartTime
-                val origin = callResult?.origin
-                tracker.trackEndpointHit(endpoint, responseTime, requestSuccessful, responseCode, origin)
-            }
+            trackEndpointHitIfNeeded(endpoint, requestStartTime, callSuccessful, callResult)
         }
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
             return performRequest(baseURL, endpoint, body, requestHeaders, refreshETag = true)
         }
         return callResult
+    }
+
+    private fun performCall(
+        baseURL: URL,
+        endpoint: Endpoint,
+        body: Map<String, Any?>?,
+        requestHeaders: Map<String, String>,
+        refreshETag: Boolean
+    ): HTTPResult? {
+        val jsonBody = body?.convert()
+        val path = endpoint.getPath()
+        val urlPathWithVersion = "/v1$path"
+        val connection: HttpURLConnection
+        try {
+            val fullURL = URL(baseURL, urlPathWithVersion)
+
+            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag)
+            val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
+
+            connection = getConnection(httpRequest)
+        } catch (e: MalformedURLException) {
+            throw RuntimeException(e)
+        }
+
+        val inputStream = getInputStream(connection)
+
+        val payload: String?
+        val responseCode: Int
+        try {
+            debugLog(NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
+            responseCode = connection.responseCode
+            payload = inputStream?.let { readFully(it) }
+        } finally {
+            inputStream?.close()
+            connection.disconnect()
+        }
+
+        debugLog(NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
+        if (payload == null) {
+            throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
+        }
+
+        return eTagManager.getHTTPResultFromCacheOrBackend(
+            responseCode,
+            payload,
+            connection,
+            urlPathWithVersion,
+            refreshETag
+        )
+    }
+
+    private fun trackEndpointHitIfNeeded(
+        endpoint: Endpoint,
+        requestStartTime: Long,
+        callSuccessful: Boolean,
+        callResult: HTTPResult?
+    ) {
+        diagnosticsTracker?.let { tracker ->
+            val responseTime = dateProvider.now.time - requestStartTime
+            val responseCode = if (callSuccessful) {
+                // When the result given by ETagManager is null, is because we are asking to refresh the etag
+                // since we could not find the response in the cache.
+                callResult?.responseCode ?: RCHTTPStatusCodes.NOT_MODIFIED
+            } else {
+                -1
+            }
+            val origin = callResult?.origin
+            val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
+            tracker.trackEndpointHit(endpoint, responseTime, requestWasError, responseCode, origin)
+        }
     }
 
     fun clearCaches() {

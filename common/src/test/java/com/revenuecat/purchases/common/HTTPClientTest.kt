@@ -401,7 +401,7 @@ class HTTPClientTest {
 
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
-                responseCode,
+                400,
                 "not uh json",
                 connection = any(),
                 "/v1${endpoint.getPath()}",
@@ -415,7 +415,7 @@ class HTTPClientTest {
             client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
         } catch (e: JSONException) {
             verify(exactly = 1) {
-                diagnosticsTracker.trackEndpointHit(endpoint, any(), false, responseCode, null)
+                diagnosticsTracker.trackEndpointHit(endpoint, any(), false, -1, null)
             }
             return
         }
