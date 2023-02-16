@@ -451,18 +451,18 @@ class PurchasesTest {
     // region purchasing
 
     @Test
-    fun `isPersonalizedPrice value is passed through to purchase`() {
+    fun `isPersonalizedPrice value is passed through to purchaseSubscriptionOption`() {
         val storeProduct = stubStoreProduct("abc")
         val expectedPersonalizedPrice = true
 
         purchases.purchaseSubscriptionOption(
             mockActivity,
             storeProduct.subscriptionOptions[0],
+            expectedPersonalizedPrice,
             object: PurchaseCallback {
                 override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {}
-            },
-            expectedPersonalizedPrice
+            }
         )
 
         verify {
@@ -478,7 +478,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `isPersonalizedPrice defaults to false`() {
+    fun `isPersonalizedPrice defaults to false for purchaseSubscriptionOption`() {
         val storeProduct = stubStoreProduct("abc")
 
         purchases.purchaseSubscriptionOption(
