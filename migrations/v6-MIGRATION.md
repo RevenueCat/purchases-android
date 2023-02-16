@@ -74,19 +74,29 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 
 ### Purchasing APIs
 
-The `purchasePackage()` and `purchaseProduct()` APIs have a new behavior for selecting which offer is used when
-purchasing a `Package` or `StoreProduct`. These functions use the following logic to choose
+The `purchasePackage()` and `purchaseProduct()` APIs have a new behavior for selecting which `SubscriptionOption` 
+is used when purchasing a `Package` or `StoreProduct`. These functions use the following logic to choose
 a [SubscriptionOption] to purchase:
 *   - Filters out offers with "rc-ignore-default-offer" tag
 *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
 *   - Falls back to use base plan
 
-For more control, the `purchaseSubscriptionOption()` API can be used to manually choose which offer to purchase.
+For more control, the `purchaseSubscriptionOption()` API can be used to manually choose which option to purchase.
 
-| New                                                                                                      |
-|----------------------------------------------------------------------------------------------------------|
-| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, PurchaseCallback)`                   |
-| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, UpgradeInfo, ProductChangeCallback)` |
+All purchasing functions now have a duplicate version including the `isPersonalizedPrice` Boolean parameter for 
+compliance with EU regulations. See https://developer.android.com/google/play/billing/integrate#personalized-price 
+for more info.
+
+| New                                                                                                                 |
+|---------------------------------------------------------------------------------------------------------------------|
+| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, PurchaseCallback)`                          |
+| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, Boolean, PurchaseCallback)`                 |
+| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, UpgradeInfo, ProductChangeCallback)`        |
+| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, UpgradeInfo, Boolean, ProductChangeCallback)` |
+| `purchasePackage(Activity, Package, Boolean, PurchaseCallback)`                                                     |
+| `purchaseProduct(Activity, StoreProduct, Boolean, PurchaseCallback)`                                |
+| `purchasePackage(Activity, Package, Boolean, UpgradeInfo, ProductChangeCallback)`                                   |
+| `purchaseProduct(Activity, StoreProduct, Boolean, UpgradeInfo, ProductChangeCallback)`                              |
 
 | Deprecated                                                       | New                                                   |
 |------------------------------------------------------------------|-------------------------------------------------------|
@@ -95,10 +105,16 @@ For more control, the `purchaseSubscriptionOption()` API can be used to manually
 
 ### Kotlin Helpers
 
-| New                                                                                                                                                                |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `purchaseSubscriptionOptionWith(Activity, StoreProduct, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              |
-| `purchaseSubscriptionOptionWith(Activity, StoreProduct, UpgradeInfo, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+| New                                                                                                                                                                             |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `purchaseSubscriptionOptionWith(Activity, StoreProduct, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                       |
+| `purchaseSubscriptionOptionWith(Activity, StoreProduct, SubscriptionOption, Boolean, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              |
+| `purchaseSubscriptionOptionWith(Activity, StoreProduct, UpgradeInfo, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`          |
+| `purchaseSubscriptionOptionWith(Activity, StoreProduct, UpgradeInfo, SubscriptionOption, Boolean, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+| `purchasePackageWith(Activity, Package, UpgradeInfo, Boolean, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                                     |
+| `purchasePackageWith(Activity, Package, Boolean, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                                                  |
+| `purchaseProductWith(Activity, StoreProduct, Boolean, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                                             |
+| `purchaseProductWith(Activity, StoreProduct, UpgradeInfo, Boolean, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                                |
 
 | Deprecated                                                                                         | New                                                                                     |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
