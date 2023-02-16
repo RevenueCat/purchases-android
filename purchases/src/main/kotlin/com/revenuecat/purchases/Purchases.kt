@@ -31,6 +31,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.debugLogsEnabled
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsManager
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
@@ -103,6 +104,7 @@ class Purchases internal constructor(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
+    diagnosticsManager: DiagnosticsManager?,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
@@ -173,6 +175,8 @@ class Purchases internal constructor(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
         }
+
+        diagnosticsManager?.syncDiagnosticsFileIfNeeded()
     }
 
     /** @suppress */
