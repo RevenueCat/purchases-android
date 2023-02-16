@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common
 
 import android.os.Build
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
@@ -34,6 +35,7 @@ class HTTPClient(
     private val diagnosticsTracker: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
         const val NO_STATUS_CODE = -1
     }
