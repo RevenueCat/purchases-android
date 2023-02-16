@@ -87,6 +87,7 @@ class BackendTest {
         mockClient
     )
     private val appUserID = "jerry"
+    private val defaultTimeout = 200L
 
     private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedCreated: Boolean? = null
@@ -167,7 +168,7 @@ class BackendTest {
 
         if (clientException == null) {
             everyMockedCall answers {
-                if (delayed) sleep(200)
+                if (delayed) sleep(20)
                 result
             }
         } else {
@@ -428,7 +429,7 @@ class BackendTest {
         asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
         }, onError = onReceiveCustomerInfoErrorHandler)
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
@@ -491,7 +492,7 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
@@ -571,7 +572,7 @@ class BackendTest {
 
         // Expect requests:
 
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
@@ -608,7 +609,7 @@ class BackendTest {
         asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
@@ -637,7 +638,7 @@ class BackendTest {
         asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = {
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
@@ -844,7 +845,7 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
@@ -1240,7 +1241,7 @@ class BackendTest {
                 fail("Should have called success")
             }
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
@@ -1290,7 +1291,7 @@ class BackendTest {
                 lock.countDown()
             }
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
@@ -1340,7 +1341,7 @@ class BackendTest {
                 lock.countDown()
             }
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
@@ -1525,7 +1526,7 @@ class BackendTest {
         asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
         asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
         asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
@@ -1551,11 +1552,11 @@ class BackendTest {
         )
         val lock = CountDownLatch(1)
         asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         val lock2 = CountDownLatch(1)
         asyncBackend.postDiagnostics(diagnosticsList, { lock2.countDown() }, { _, _ -> fail("expected success") })
-        lock2.await(2000, TimeUnit.MILLISECONDS)
+        lock2.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock2.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
