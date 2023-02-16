@@ -26,16 +26,13 @@ import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.fail
 import org.json.JSONException
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.IOException
 import java.net.URL
 import java.util.Date
-import java.util.HashMap
 import org.robolectric.annotation.Config as AnnotationConfig
 
 @RunWith(AndroidJUnit4::class)
@@ -364,7 +361,7 @@ class HTTPClientTest {
             expectedResult = HTTPResult(responseCode, "{}", ResultOrigin.BACKEND)
         )
 
-        every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime),)
+        every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime))
 
         client.performRequest(baseURL, Endpoint.LogIn, null, mapOf("" to ""))
         server.takeRequest()
@@ -387,7 +384,7 @@ class HTTPClientTest {
             expectedResult = HTTPResult(responseCode, "{}", ResultOrigin.BACKEND)
         )
 
-        every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime),)
+        every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime))
 
         client.performRequest(baseURL, Endpoint.LogIn, null, mapOf("" to ""))
         server.takeRequest()
