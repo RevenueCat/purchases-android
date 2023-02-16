@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.common.Anonymizer
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -148,7 +149,7 @@ internal class PurchasesFactory(
         return if (diagnosticsEnabled) {
             DiagnosticsManager(
                 DiagnosticsFileHelper(FileHelper(context)),
-                DiagnosticsAnonymizer(),
+                DiagnosticsAnonymizer(Anonymizer()),
                 backend,
                 dispatcher,
                 DiagnosticsManager.initializeSharedPreferences(context)
