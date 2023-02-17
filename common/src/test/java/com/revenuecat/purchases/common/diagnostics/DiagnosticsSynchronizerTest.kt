@@ -22,12 +22,7 @@ import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class DiagnosticsManagerTest {
-
-    private val testDiagnosticsEvent = DiagnosticsEvent.Log(
-        name = DiagnosticsLogEventName.ENDPOINT_HIT,
-        properties = emptyMap()
-    )
+class DiagnosticsSynchronizerTest {
 
     private val testDiagnosticsEventJSONs = listOf(
         JSONObject(mapOf("test-key" to "test-value")),
@@ -35,27 +30,27 @@ class DiagnosticsManagerTest {
     )
 
     private lateinit var diagnosticsFileHelper: DiagnosticsFileHelper
-    private lateinit var diagnosticsAnonymizer: DiagnosticsAnonymizer
+    private lateinit var diagnosticsTracker: DiagnosticsTracker
     private lateinit var backend: Backend
     private lateinit var dispatcher: Dispatcher
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var sharedPreferencesEditor: SharedPreferences.Editor
 
-    private lateinit var diagnosticsManager: DiagnosticsManager
+    private lateinit var diagnosticsSynchronizer: DiagnosticsSynchronizer
 
     @Before
     fun setup() {
         diagnosticsFileHelper = mockk()
-        diagnosticsAnonymizer = mockk()
+        diagnosticsTracker = mockk()
         backend = mockk()
         dispatcher = SyncDispatcher()
 
         mockSharedPreferences()
         mockDiagnosticsFileHelper()
 
-        diagnosticsManager = DiagnosticsManager(
+        diagnosticsSynchronizer = DiagnosticsSynchronizer(
             diagnosticsFileHelper,
-            diagnosticsAnonymizer,
+            diagnosticsTracker,
             backend,
             dispatcher,
             sharedPreferences
@@ -68,7 +63,7 @@ class DiagnosticsManagerTest {
     fun `syncDiagnosticsFileIfNeeded does not do anything if diagnostics file is empty`() {
         every { diagnosticsFileHelper.readDiagnosticsFile() } returns emptyList()
 
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
         verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile() }
         verify(exactly = 0) { backend.postDiagnostics(any(), any(), any()) }
@@ -78,7 +73,7 @@ class DiagnosticsManagerTest {
     fun `syncDiagnosticsFileIfNeeded calls backend with correct parameters if file has contents`() {
         mockBackendResponse(testDiagnosticsEventJSONs)
 
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
         verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile() }
         verify(exactly = 1) { backend.postDiagnostics(testDiagnosticsEventJSONs, any(), any()) }
@@ -88,7 +83,7 @@ class DiagnosticsManagerTest {
     fun `syncDiagnosticsFileIfNeeded cleans sent events if backend request successful`() {
         mockBackendResponse(testDiagnosticsEventJSONs, successReturn = JSONObject())
 
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
         verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEventJSONs.size) }
     }
@@ -97,9 +92,9 @@ class DiagnosticsManagerTest {
     fun `syncDiagnosticsFileIfNeeded removes consecutive failures count if request successful`() {
         mockBackendResponse(testDiagnosticsEventJSONs, successReturn = JSONObject())
 
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
@@ -107,13 +102,13 @@ class DiagnosticsManagerTest {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
         mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
 
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
         verify(exactly = 1) {
-            sharedPreferencesEditor.putInt(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY, 1)
+            sharedPreferencesEditor.putInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 1)
         }
         verify(exactly = 0) { diagnosticsFileHelper.deleteDiagnosticsFile() }
-        verify(exactly = 0) { sharedPreferencesEditor.remove(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 0) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
@@ -121,7 +116,7 @@ class DiagnosticsManagerTest {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
         mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
 
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
         verify(exactly = 0) { diagnosticsFileHelper.deleteDiagnosticsFile() }
     }
@@ -131,10 +126,10 @@ class DiagnosticsManagerTest {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
         mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
         every {
-            sharedPreferences.getInt(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
-        } returns DiagnosticsManager.MAX_NUMBER_POST_RETRIES - 1
+            sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+        } returns DiagnosticsSynchronizer.MAX_NUMBER_POST_RETRIES - 1
 
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
         verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile() }
     }
@@ -144,12 +139,12 @@ class DiagnosticsManagerTest {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
         mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
         every {
-            sharedPreferences.getInt(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
-        } returns DiagnosticsManager.MAX_NUMBER_POST_RETRIES - 1
+            sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+        } returns DiagnosticsSynchronizer.MAX_NUMBER_POST_RETRIES - 1
 
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
@@ -157,7 +152,7 @@ class DiagnosticsManagerTest {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), false)
         mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
 
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
         verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile() }
     }
@@ -167,46 +162,46 @@ class DiagnosticsManagerTest {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), false)
         mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
 
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded deletes file if IOException happens`() {
         every { diagnosticsFileHelper.readDiagnosticsFile() } throws IOException()
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile()  }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded removes consecutive failures count if IOException happens`() {
         every { diagnosticsFileHelper.readDiagnosticsFile() } throws IOException()
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
-        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded does not crash if IOException happens when deleting file`() {
         every { diagnosticsFileHelper.readDiagnosticsFile() } throws IOException()
         every { diagnosticsFileHelper.deleteDiagnosticsFile() } throws IOException()
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded removes old events if exceeding limit`() {
         val eventsOverLimit = 10
         val eventsToRemove = eventsOverLimit + 1 // Leaves space for tracking event
-        val eventsInFile = (0 until DiagnosticsManager.MAX_NUMBER_EVENTS + eventsOverLimit).map {
+        val eventsInFile = (0 until DiagnosticsSynchronizer.MAX_NUMBER_EVENTS + eventsOverLimit).map {
             JSONObject(mapOf("test-key-$it" to "value-$it"))
         }
         val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
         every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
+        every { diagnosticsTracker.trackEventInCurrentThread(any()) } just Runs
         every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
-        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(any()) } answers { firstArg() }
         every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
         mockBackendResponse(eventsAfterRemovingOlder)
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) }
     }
 
@@ -214,47 +209,27 @@ class DiagnosticsManagerTest {
     fun `syncDiagnosticsFileIfNeeded tracks max elements stored reached if syncing more than limit`() {
         val eventsOverLimit = 10
         val eventsToRemove = eventsOverLimit + 1 // Leaves space for tracking event
-        val totalNumberOfEventsInFile = DiagnosticsManager.MAX_NUMBER_EVENTS + eventsOverLimit
+        val totalNumberOfEventsInFile = DiagnosticsSynchronizer.MAX_NUMBER_EVENTS + eventsOverLimit
         val eventsInFile = (0 until totalNumberOfEventsInFile).map {
             JSONObject(mapOf("test-key-$it" to "value-$it"))
         }
         val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
         every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
         every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
-        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(any()) } answers { firstArg() }
+        every { diagnosticsTracker.trackEventInCurrentThread(any()) } just Runs
         every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
         mockBackendResponse(eventsAfterRemovingOlder)
-        diagnosticsManager.syncDiagnosticsFileIfNeeded()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
+            diagnosticsTracker.trackEventInCurrentThread(match { event ->
                 (event is DiagnosticsEvent.Log)
                     && event.name == DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED
                     && event.properties == mapOf(
-                        "total_number_events_stored" to totalNumberOfEventsInFile,
-                        "events_removed" to eventsToRemove
-                    )
+                    "total_number_events_stored" to totalNumberOfEventsInFile,
+                    "events_removed" to eventsToRemove
+                )
             })
         }
-    }
-
-    // endregion
-
-    // region trackEvent
-
-    @Test
-    fun `trackEvent performs correct calls`() {
-        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(testDiagnosticsEvent) } just Runs
-        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(testDiagnosticsEvent) } returns testDiagnosticsEvent
-        diagnosticsManager.trackEvent(testDiagnosticsEvent)
-        verify(exactly = 1) { diagnosticsFileHelper.appendEventToDiagnosticsFile(testDiagnosticsEvent) }
-        verify(exactly = 1) { diagnosticsAnonymizer.anonymizeEventIfNeeded(testDiagnosticsEvent) }
-    }
-
-    @Test
-    fun `trackEvent handles IOException`() {
-        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(testDiagnosticsEvent) } returns testDiagnosticsEvent
-        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } throws IOException()
-        diagnosticsManager.trackEvent(testDiagnosticsEvent)
     }
 
     // endregion
@@ -265,13 +240,13 @@ class DiagnosticsManagerTest {
         every { sharedPreferences.edit() } returns sharedPreferencesEditor
         every { sharedPreferencesEditor.apply() } just Runs
         every {
-            sharedPreferencesEditor.remove(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY)
+            sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY)
         } returns sharedPreferencesEditor
         every {
-            sharedPreferencesEditor.putInt(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY, any())
+            sharedPreferencesEditor.putInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, any())
         } returns sharedPreferencesEditor
         every {
-            sharedPreferences.getInt(DiagnosticsManager.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+            sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         } returns 0
     }
 
