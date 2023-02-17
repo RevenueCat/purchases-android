@@ -48,14 +48,21 @@ data class CustomerInfo constructor(
 
     /**
      * @return Set of active subscription productIds
+     *
+     * For Google subscriptions, ids will be subscriptionId:basePlanId
+     * For all other products, ids are simply the productId
      */
     @IgnoredOnParcel
     val activeSubscriptions: Set<String> by lazy {
+        // TODO should we change this to Set<Pair<String, String>>? with pair containing subid and baseplanID?
         activeIdentifiers(allExpirationDatesByProduct)
     }
 
     /**
      * @return Set of purchased productIds, active and inactive
+     *
+     * For Google subscriptions, ids will be subscriptionId:basePlanId
+     * For all other products, ids are simply the productId
      */
     @IgnoredOnParcel
     @Deprecated(
@@ -68,6 +75,9 @@ data class CustomerInfo constructor(
 
     /**
      * @return Set of purchased productIds, active and inactive
+     *
+     * For Google subscriptions, ids will be subscriptionId:basePlanId
+     * For all other products, ids are simply the productId
      */
     @IgnoredOnParcel
     val allPurchasedProductIds: Set<String> by lazy {
@@ -121,6 +131,7 @@ data class CustomerInfo constructor(
      * @return Expiration date for given productId
      */
     fun getExpirationDateForProductId(productId: String): Date? {
+        // TODO should we note that google subs need to use subId:basePlanId?
         return allExpirationDatesByProduct[productId]
     }
 
