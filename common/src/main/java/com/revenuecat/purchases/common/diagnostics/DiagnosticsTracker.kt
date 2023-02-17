@@ -4,6 +4,10 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.verboseLog
 import java.io.IOException
 
+/**
+ * This class is the entry point for all diagnostics tracking. It contains all information for all events
+ * sent and their properties. Use this class if you want to send a a diagnostics entry.
+ */
 class DiagnosticsTracker(
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
