@@ -37,6 +37,7 @@ class HTTPClient(
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
+        // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
     }
 
