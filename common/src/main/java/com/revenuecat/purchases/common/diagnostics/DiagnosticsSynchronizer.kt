@@ -23,10 +23,12 @@ class DiagnosticsSynchronizer(
     private val diagnosticsDispatcher: Dispatcher,
     private val sharedPreferences: SharedPreferences
 ) {
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     companion object {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val CONSECUTIVE_FAILURES_COUNT_KEY = "consecutive_failures_count"
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val MAX_NUMBER_POST_RETRIES = 3
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val MAX_NUMBER_EVENTS = 1000
 
         fun initializeSharedPreferences(context: Context): SharedPreferences =
