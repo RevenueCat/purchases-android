@@ -40,9 +40,9 @@ class ReceiptInfoTest {
             productId = productIdentifier,
             defaultOption = null,
             subscriptionOptions = emptyList(),
-            oneTimeProductPrice = Price(
-                formattedPrice = "$0.99",
-                priceAmountMicros = 990000,
+            price = Price(
+                formatted = "$0.99",
+                amountMicros = 990000,
                 currencyCode = "USD"
             )
         )
@@ -84,8 +84,8 @@ class ReceiptInfoTest {
             subscriptionOptionId = mockStoreTransaction.subscriptionOptionId
         )
 
-        assertThat(receiptInfo.price).isNull()
-        assertThat(receiptInfo.currency).isNull()
+        assertThat(receiptInfo.price).isEqualTo(4.99)
+        assertThat(receiptInfo.currency).isEqualTo("USD")
         assertThat(receiptInfo.duration).isEqualTo("P1M")
         assertThat(receiptInfo.pricingPhases?.size).isEqualTo(1)
     }

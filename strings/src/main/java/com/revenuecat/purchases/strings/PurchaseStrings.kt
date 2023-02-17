@@ -37,4 +37,5 @@ object PurchaseStrings {
     const val INVALID_PRODUCT_TYPE = "Invalid product type passed to %s."
     const val INVALID_PURCHASE_TYPE = "Purchase for a %s purchase must be a %s."
     const val INVALID_STORE_PRODUCT_TYPE = "StoreProduct for a %s purchase must be a %s."
+    const val INVALID_PRODUCT_NO_PRICE = "Error finding a price for %s."
 }

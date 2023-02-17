@@ -16,7 +16,7 @@ private class StoreProductAPI {
             val storeProductId: String = productId
             val sku: String = sku
             val type: ProductType = type
-            val oneTimeProductPrice: Price? = oneTimeProductPrice
+            val price: Price? = price
             val title: String = title
             val description: String = description
             val subscriptionPeriod: String? = subscriptionPeriod
@@ -43,7 +43,7 @@ private class StoreProductAPI {
         val constructedGoogleStoreProduct = GoogleStoreProduct(
             googleStoreProduct.productId,
             googleStoreProduct.type,
-            googleStoreProduct.oneTimeProductPrice,
+            googleStoreProduct.price,
             googleStoreProduct.title,
             googleStoreProduct.description,
             googleStoreProduct.subscriptionPeriod,

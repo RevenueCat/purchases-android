@@ -24,14 +24,14 @@ fun stubStoreProduct(
     productId: String,
     defaultOption: SubscriptionOption? = stubSubscriptionOption("monthly_base_plan", productId, "P1M",),
     subscriptionOptions: List<SubscriptionOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
-    oneTimeProductPrice: Price? = null
+    price: Price = subscriptionOptions.first().fullPricePhase!!.price
 ): StoreProduct = object : StoreProduct {
     override val productId: String
         get() = productId
     override val type: ProductType
         get() = ProductType.SUBS
-    override val oneTimeProductPrice: Price?
-        get() = oneTimeProductPrice
+    override val price: Price
+        get() = price
     override val title: String
         get() = ""
     override val description: String
@@ -62,7 +62,7 @@ fun stubINAPPStoreProduct(
         get() = productId
     override val type: ProductType
         get() = ProductType.INAPP
-    override val oneTimeProductPrice: Price?
+    override val price: Price
         get() = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD")
     override val title: String
         get() = ""
@@ -127,9 +127,7 @@ fun stubPricingPhase(
     billingCycleCount: Int = 0
 ): PricingPhase = PricingPhase(
     billingPeriod,
-    priceCurrencyCodeValue,
-    formattedPrice = if (price == 0.0) "Free" else "${'$'}$price",
-    priceAmountMicros = price.times(MICROS_MULTIPLIER).toLong(),
     recurrenceMode.toRecurrenceMode(),
-    billingCycleCount
+    billingCycleCount,
+    Price(if (price == 0.0) "Free" else "${'$'}$price", price.times(MICROS_MULTIPLIER).toLong(), priceCurrencyCodeValue)
 )

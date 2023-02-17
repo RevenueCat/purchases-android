@@ -17,7 +17,7 @@ final class StoreProductAPI {
         final String productId = product.getProductId();
         final String sku = product.getSku();
         final ProductType type = product.getType();
-        final Price price = product.getOneTimeProductPrice();
+        final Price price = product.getPrice();
         final String title = product.getTitle();
         final String description = product.getDescription();
         final String subscriptionPeriod = product.getSubscriptionPeriod();
@@ -44,7 +44,7 @@ final class StoreProductAPI {
         GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
                 googleStoreProduct.getProductId(),
                 googleStoreProduct.getType(),
-                googleStoreProduct.getOneTimeProductPrice(),
+                googleStoreProduct.getPrice(),
                 googleStoreProduct.getTitle(),
                 googleStoreProduct.getDescription(),
                 googleStoreProduct.getSubscriptionPeriod(),

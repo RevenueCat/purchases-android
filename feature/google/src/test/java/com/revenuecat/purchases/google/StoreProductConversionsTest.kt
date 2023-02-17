@@ -2,6 +2,7 @@ package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
+import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.mockSubscriptionOfferDetails
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
@@ -11,8 +12,25 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class StoreProductConversionsTest {
     @Test
+    fun `list of invalid ProductDetails with no price maps to empty list`() {
+        val productDetail1 = mockProductDetails(
+            productId = "iap_1",
+            type = BillingClient.ProductType.INAPP,
+            oneTimePurchaseOfferDetails = null,
+            subscriptionOfferDetails = null)
+        val productDetails = listOf(productDetail1)
+
+        val storeProducts = productDetails.toStoreProducts()
+        assertThat(storeProducts.size).isEqualTo(0)
+    }
+
+    @Test
     fun `list of INAPP ProductDetails maps to StoreProducts`() {
-        val productDetail1 = mockProductDetails(productId = "iap_1", type = BillingClient.ProductType.INAPP, subscriptionOfferDetails = null)
+        val productDetail1 = mockProductDetails(
+            productId = "iap_1",
+            type = BillingClient.ProductType.INAPP,
+            oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(),
+            subscriptionOfferDetails = null)
         val productDetails = listOf(productDetail1)
 
         val storeProducts = productDetails.toStoreProducts()
@@ -33,6 +51,7 @@ class StoreProductConversionsTest {
         val productDetail1 = mockProductDetails(
             productId = "iap_1",
             type = BillingClient.ProductType.INAPP,
+            oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(),
             subscriptionOfferDetails = null)
         val productDetail2 = mockProductDetails(
             productId = "sub_1",

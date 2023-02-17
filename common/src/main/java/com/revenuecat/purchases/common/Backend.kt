@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
@@ -372,4 +373,15 @@ class Backend(
             this[cacheKey]!!.add(functions)
         }
     }
+}
+
+internal fun PricingPhase.toMap(): Map<String, Any?> {
+    return mapOf(
+        "billingPeriod" to this.billingPeriod,
+        "billingCycleCount" to this.billingCycleCount,
+        "recurrenceMode" to this.recurrenceMode.identifier,
+        "formattedPrice" to this.price.formatted,
+        "priceAmountMicros" to this.price.amountMicros,
+        "priceCurrencyCode" to this.price.currencyCode,
+    )
 }

@@ -4,10 +4,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.revenuecat.purchases.*
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.sample.R
 import com.revenuecat.sample.extensions.buildError
 
@@ -31,8 +34,15 @@ class PaywallFragment : Fragment() {
         linearLayoutManager.orientation = LinearLayoutManager.VERTICAL
         recyclerView.layoutManager = linearLayoutManager
 
-        adapter = PaywallAdapter(null, didChoosePackage = { item: Package ->
-            purchasePackage(item)
+        adapter = PaywallAdapter(null, didChoosePaywallItem = { item: PaywallItem ->
+            when (item) {
+                is PaywallItem.Product -> {
+                    purchaseProduct(item.storeProduct)
+                }
+                is PaywallItem.Option -> {
+                    purchaseOption(item.subscriptionOption)
+                }
+            }
         })
 
         recyclerView.adapter = adapter
@@ -52,15 +62,27 @@ class PaywallFragment : Fragment() {
         }
     }
 
-    private fun purchasePackage(item: Package) {
-        Purchases.sharedInstance.purchasePackageWith(requireActivity(), item,
-                onError = { error, userCancelled ->
-                    if (!userCancelled) {
-                        buildError(context, error.message)
-                    }
-                },
-                onSuccess = { _, _ ->
-                    activity?.finish()
-                })
+    private fun purchaseProduct(item: StoreProduct) {
+        Purchases.sharedInstance.purchaseProductWith(requireActivity(), item,
+            onError = { error, userCancelled ->
+                if (!userCancelled) {
+                    buildError(context, error.message)
+                }
+            },
+            onSuccess = { _, _ ->
+                activity?.finish()
+            })
+    }
+
+    private fun purchaseOption(item: SubscriptionOption) {
+        Purchases.sharedInstance.purchaseSubscriptionOptionWith(requireActivity(), item,
+            onError = { error, userCancelled ->
+                if (!userCancelled) {
+                    buildError(context, error.message)
+                }
+            },
+            onSuccess = { _, _ ->
+                activity?.finish()
+            })
     }
 }

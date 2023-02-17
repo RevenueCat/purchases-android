@@ -11,7 +11,7 @@ import kotlinx.parcelize.RawValue
 data class GoogleStoreProduct(
     override val productId: String,
     override val type: ProductType,
-    override val oneTimeProductPrice: Price?,
+    override val price: Price,
     override val title: String,
     override val description: String,
     override val subscriptionPeriod: String?,

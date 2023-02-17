@@ -32,5 +32,32 @@ interface SubscriptionOption : Parcelable {
     val isBasePlan: Boolean
         get() = pricingPhases.size == 1
 
+    /**
+     * The full price [PricingPhase] of the subscription.
+     * Looks for the last price phase of the SubscriptionOption.
+     */
+    val fullPricePhase: PricingPhase?
+        get() = pricingPhases.lastOrNull()
+
+    /**
+     * The free trial [PricingPhase] of the subscription.
+     * Looks for the first pricing phase of the SubscriptionOption where `amountMicros` is 0.
+     * There can be a `freeTrialPhase` and an `introductoryPhase` in the same [SubscriptionOption].
+     */
+    val freePhase: PricingPhase?
+        get() = pricingPhases.dropLast(1).firstOrNull {
+            it.price.amountMicros == 0L
+        }
+
+    /**
+     * The intro trial [PricingPhase] of the subscription.
+     * Looks for the first pricing phase of the SubscriptionOption where `amountMicros` is greater than 0.
+     * There can be a `freeTrialPhase` and an `introductoryPhase` in the same [SubscriptionOption].
+     */
+    val introPhase: PricingPhase?
+        get() = pricingPhases.dropLast(1).firstOrNull {
+            it.price.amountMicros > 0L
+        }
+
     val purchasingData: PurchasingData
 }
