@@ -99,7 +99,7 @@
                     app:layout_constraintEnd_toStartOf="@+id/package_card_barrier"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/package_type"
-                    bind:detail="@{currentPackage.product.oneTimeProductPrice.formattedPrice}"
+                    bind:detail="@{currentPackage.product.price.formatted}"
                     bind:header="@{`One Time Price:`}"
                     tools:text="$1.99" />
 

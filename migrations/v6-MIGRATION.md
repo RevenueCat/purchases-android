@@ -2,16 +2,16 @@
 
 ### Classes
 
-| New                    |
-|------------------------|
+| New                        |
+|----------------------------|
 | `SubscriptionOption`       |
 | `GoogleSubscriptionOption` |
-| `GoogleStoreProduct`   |
-| `AmazonStoreProduct`   |
-| `Price`                |
-| `PricingPhase`         |
-| `RecurrenceMode`       |
-| `GoogleProrationMode`  |
+| `GoogleStoreProduct`       |
+| `AmazonStoreProduct`       |
+| `Price`                    |
+| `PricingPhase`             |
+| `RecurrenceMode`           |
+| `GoogleProrationMode`      |
 
 | Old Location                            | New Location                                   |
 |-----------------------------------------|------------------------------------------------|
@@ -23,9 +23,9 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 
 | Previous                      | New                                                                           |
 |-------------------------------|-------------------------------------------------------------------------------|
-| price                         | Moved to PricingPhase                                                         |
-| priceAmountMicros             | Moved to PricingPhase                                                         |
-| priceCurrencyCode             | Moved to PricingPhase                                                         |
+| price                         | Moved to `price`                                                              |
+| priceAmountMicros             | Moved to `price`                                                              |
+| priceCurrencyCode             | Moved to `price`                                                              |
 | freeTrialPeriod               | Moved to PricingPhase                                                         |
 | introductoryPrice             | Moved to PricingPhase                                                         |
 | introductoryPriceAmountMicros | Moved to PricingPhase                                                         |
@@ -35,20 +35,33 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 
 | New                 |
 |---------------------|
-| oneTimeProductPrice |
-| subscriptionOptions     |
+| price               |
+| subscriptionOptions |
+| defaultOption       |
 
-| Removed                           |  | 
-|-----------------------------------|--|
-| product.originalPrice             | Accessible in basePlan's unique pricing phase `subscriptionOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.first()?.formattedPrice` |
-| product.originalPriceAmountMicros | Accessible in basePlan's unique pricing phase `subscriptionOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.first()?.priceAmountMicros` |
-| product.iconUrl                  |  | 
-| product.originalJson              |(product as GoogleStoreProduct).productDetails |
+| Removed                           |                                                                                                                                                     | 
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| product.originalPrice             | Accessible in basePlan's unique pricing phase `subscriptionOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.firstOrNull()?.price?.formatted`    |
+| product.originalPriceAmountMicros | Accessible in basePlan's unique pricing phase `subscriptionOptions.firstOrNull{ it.isBasePlan }?.pricingPhases?.firstOrNull()?.price?.amountMicros` |
+| product.iconUrl                   |                                                                                                                                                     | 
+| product.originalJson              | (product as GoogleStoreProduct).productDetails                                                                                                      |
+
+#### Free Trial and Introductory Offers
+
+`StoreProduct` can now have multiple free trials and introductory offers. There is a `defaultOption` property on
+`StoreProduct` that will select the offer with the longest free trial period or the cheapest introductory offer.
+
+If more than that is needed, the free trial and intro offer options can be found like:
+
+```kotlin
+val freeOption = storeProduct.subscriptionOptions?.firstOrNull { it.freePhase != null }
+val trialOption = storeProduct.subscriptionOptions?.firstOrNull { it.introPhase != null }
+```
 
 ### StoreTransaction
 
-| New              |
-|------------------|
+| New                  |
+|----------------------|
 | subscriptionOptionId |
 
 | Deprecated | New        |

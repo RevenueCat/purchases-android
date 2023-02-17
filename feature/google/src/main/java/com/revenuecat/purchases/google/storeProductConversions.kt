@@ -2,31 +2,34 @@ package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.strings.PurchaseStrings
 
 // In-apps don't have base plan nor offers
-fun ProductDetails.toInAppStoreProduct(): StoreProduct = this.toStoreProduct(emptyList())
+fun ProductDetails.toInAppStoreProduct(): StoreProduct? = this.toStoreProduct(emptyList())
 
 fun ProductDetails.toStoreProduct(
     offerDetails: List<ProductDetails.SubscriptionOfferDetails>
-): GoogleStoreProduct {
+): GoogleStoreProduct? {
     val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
-    val bestOffer = subscriptionOptions.findBestOffer()
+    val defaultOffer = subscriptionOptions.findDefaultOffer()
+
+    val basePlanPrice = subscriptionOptions.firstOrNull { it.isBasePlan }?.fullPricePhase?.price
+    val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
 
     return GoogleStoreProduct(
         productId,
         productType.toRevenueCatProductType(),
-        createOneTimeProductPrice(),
+        price,
         title,
         description,
         offerDetails.firstOrNull { it.isBasePlan }?.subscriptionBillingPeriod,
-        offerDetails.map { it.toSubscriptionOption(
-            productId,
-            this
-        ) },
-        bestOffer,
+        subscriptionOptions,
+        defaultOffer,
         this
     )
 }
@@ -43,6 +46,7 @@ private fun ProductDetails.createOneTimeProductPrice(): Price? {
     } else null
 }
 
+@SuppressWarnings("NestedBlockDepth")
 fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     val storeProducts = mutableListOf<StoreProduct>()
     forEach { productDetails ->
@@ -58,10 +62,16 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
             val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
             val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
 
-            productDetails.toStoreProduct(offerDetailsForBasePlan).let {
+            productDetails.toStoreProduct(offerDetailsForBasePlan)?.let {
                 storeProducts.add(it)
-            }
-        } ?: productDetails.toInAppStoreProduct().let { storeProducts.add(it) }
+            } ?: log(
+                LogIntent.RC_ERROR, PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId)
+            )
+        } ?: productDetails.toInAppStoreProduct()?.let {
+            storeProducts.add(it)
+        } ?: log(
+            LogIntent.RC_ERROR, PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId)
+        )
     }
     return storeProducts
 }

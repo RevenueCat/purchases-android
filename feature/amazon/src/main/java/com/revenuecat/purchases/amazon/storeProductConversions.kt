@@ -36,13 +36,9 @@ data class AmazonStoreProduct(
     override val description: String,
     override val subscriptionPeriod: String?,
 
-    // TODOBC5
-    override val oneTimeProductPrice: com.revenuecat.purchases.models.Price?,
+    override val price: com.revenuecat.purchases.models.Price,
     override val subscriptionOptions: List<SubscriptionOption>,
     override val defaultOption: SubscriptionOption?,
-    val price: String,
-    val priceAmountMicros: Long,
-    val priceCurrencyCode: String,
     val iconUrl: String,
     val originalJson: JSONObject,
     val amazonProduct: Product,
@@ -68,18 +64,17 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
     val (currencyCode, priceAmountMicros) = price.extractPrice(marketplace)
 
+    val priceInfo = com.revenuecat.purchases.models.Price(price, priceAmountMicros, currencyCode)
+
     return AmazonStoreProduct(
         sku,
         productType.toRevenueCatProductType(),
         title,
         description,
         subscriptionPeriod = null,
-        null,
+        priceInfo,
         emptyList(),
         defaultOption = null,
-        price,
-        priceAmountMicros = priceAmountMicros,
-        priceCurrencyCode = currencyCode,
         iconUrl = smallIconUrl,
         originalJson = toJSON(),
         amazonProduct = this

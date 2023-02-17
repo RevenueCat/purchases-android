@@ -4239,7 +4239,7 @@ class PurchasesTest {
         val storeProducts = productIdsSuccessfullyFetched.map { productId ->
             if (type == ProductType.SUBS) stubStoreProduct(productId, stubSubscriptionOption("p1m", "P1M"))
             else createMockOneTimeProductDetails(productId).toInAppStoreProduct()
-        }
+        }.mapNotNull { it }
 
         every {
             mockBillingAbstract.queryProductDetailsAsync(
@@ -4458,12 +4458,12 @@ class PurchasesTest {
 
             val storeProduct = productDetails.toStoreProduct(
                 productDetails.subscriptionOfferDetails!!
-            )
+            )!!
 
             return mockQueryingProductDetails(storeProduct, offeringIdentifier, subscriptionOptionId)
         } else {
             val productDetails = createMockOneTimeProductDetails(productId, 2.00)
-            val storeProduct = productDetails.toInAppStoreProduct()
+            val storeProduct = productDetails.toInAppStoreProduct()!!
 
             return mockQueryingProductDetails(storeProduct, offeringIdentifier, null)
         }
