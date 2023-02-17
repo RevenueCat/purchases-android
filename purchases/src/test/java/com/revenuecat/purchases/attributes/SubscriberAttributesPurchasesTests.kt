@@ -149,7 +149,7 @@ class SubscriberAttributesPurchasesTests {
                 store = Store.PLAY_STORE
             ),
             customerInfoHelper = customerInfoHelperMock,
-            diagnosticsManager = null
+            diagnosticsSynchronizer = null
         )
     }
 
