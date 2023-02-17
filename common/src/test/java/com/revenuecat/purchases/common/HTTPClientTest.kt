@@ -83,7 +83,7 @@ class HTTPClientTest {
             store = Store.PLAY_STORE
         )
         diagnosticsTracker = mockk()
-        every { diagnosticsTracker.trackEndpointHit(any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any()) } just Runs
 
         dateProvider = mockk()
         every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
@@ -345,10 +345,10 @@ class HTTPClientTest {
         assertThat(result.responseCode).isEqualTo(expectedResult.responseCode)
     }
 
-    // region trackEndpointHit
+    // region trackHttpRequestPerformed
 
     @Test
-    fun `performRequest tracks endpoint hit diagnostic event if request successful`() {
+    fun `performRequest tracks http request performed diagnostic event if request successful`() {
         val endpoint = Endpoint.LogIn
         val responseCode = 200
         val requestStartTime = 1676379370000L // Tuesday, February 14, 2023 12:56:10:000 PM GMT
@@ -366,12 +366,12 @@ class HTTPClientTest {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackEndpointHit(endpoint, responseTime, true, responseCode, HTTPResult.Origin.BACKEND)
+            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, true, responseCode, HTTPResult.Origin.BACKEND)
         }
     }
 
     @Test
-    fun `performRequest tracks endpoint hit diagnostic event if request fails`() {
+    fun `performRequest tracks http request performed diagnostic event if request fails`() {
         val endpoint = Endpoint.LogIn
         val responseCode = 400
         val requestStartTime = 1676379370000L // Tuesday, February 14, 2023 12:56:10:000 PM GMT
@@ -389,12 +389,12 @@ class HTTPClientTest {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackEndpointHit(endpoint, responseTime, false, responseCode, HTTPResult.Origin.BACKEND)
+            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, false, responseCode, HTTPResult.Origin.BACKEND)
         }
     }
 
     @Test
-    fun `performRequest tracks endpoint hit diagnostic event if request throws Exception`() {
+    fun `performRequest tracks http request performed diagnostic event if request throws Exception`() {
         val endpoint = Endpoint.LogIn
         val responseCode = 400
 
@@ -414,7 +414,7 @@ class HTTPClientTest {
             client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
         } catch (e: JSONException) {
             verify(exactly = 1) {
-                diagnosticsTracker.trackEndpointHit(endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null)
+                diagnosticsTracker.trackHttpRequestPerformed(endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null)
             }
             return
         }

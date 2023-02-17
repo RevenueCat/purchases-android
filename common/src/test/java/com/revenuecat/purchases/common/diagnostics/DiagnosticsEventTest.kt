@@ -28,7 +28,7 @@ class DiagnosticsEventTest {
     @Test
     fun `toString transforms log event to correct JSON`() {
         val event = DiagnosticsEvent.Log(
-            name = DiagnosticsLogEventName.ENDPOINT_HIT,
+            name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
             properties = mapOf("test-key-1" to "test-value-1", "test-key-2" to 123, "test-key-3" to true),
             dateProvider = testDateProvider
         )

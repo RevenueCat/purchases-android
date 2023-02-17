@@ -16,7 +16,7 @@ class DiagnosticsTracker(
     private val diagnosticsDispatcher: Dispatcher
 ) {
 
-    fun trackEndpointHit(
+    fun trackHttpRequestPerformed(
         endpoint: Endpoint,
         responseTime: Long,
         wasSuccessful: Boolean,
@@ -25,7 +25,7 @@ class DiagnosticsTracker(
     ) {
         trackEvent(
             DiagnosticsEvent.Log(
-                name = DiagnosticsLogEventName.ENDPOINT_HIT,
+                name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
                 properties = mapOf(
                     "endpoint_name" to endpoint.name,
                     "response_time_millis" to responseTime,

@@ -111,7 +111,7 @@ class HTTPClient(
             callResult = performCall(baseURL, endpoint, body, requestHeaders, refreshETag)
             callSuccessful = true
         } finally {
-            trackEndpointHitIfNeeded(endpoint, requestStartTime, callSuccessful, callResult)
+            trackHttpRequestPerformedIfNeeded(endpoint, requestStartTime, callSuccessful, callResult)
         }
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
@@ -169,7 +169,7 @@ class HTTPClient(
         )
     }
 
-    private fun trackEndpointHitIfNeeded(
+    private fun trackHttpRequestPerformedIfNeeded(
         endpoint: Endpoint,
         requestStartTime: Long,
         callSuccessful: Boolean,
@@ -186,7 +186,7 @@ class HTTPClient(
             }
             val origin = callResult?.origin
             val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
-            tracker.trackEndpointHit(endpoint, responseTime, requestWasError, responseCode, origin)
+            tracker.trackHttpRequestPerformed(endpoint, responseTime, requestWasError, responseCode, origin)
         }
     }
 

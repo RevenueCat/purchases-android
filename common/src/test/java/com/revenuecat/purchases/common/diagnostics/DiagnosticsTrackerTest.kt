@@ -21,12 +21,12 @@ import java.io.IOException
 class DiagnosticsTrackerTest {
 
     private val testDiagnosticsEvent = DiagnosticsEvent.Log(
-        name = DiagnosticsLogEventName.ENDPOINT_HIT,
+        name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
         properties = mapOf("test-key-1" to "test-value-1")
     )
 
     private val testAnonymizedEvent = DiagnosticsEvent.Log(
-        name = DiagnosticsLogEventName.ENDPOINT_HIT,
+        name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
         properties = mapOf("test-key-1" to "test-anonymized-value-1")
     )
 
@@ -76,7 +76,7 @@ class DiagnosticsTrackerTest {
     }
 
     @Test
-    fun `trackEndpointHit tracks correct event when coming from cache`() {
+    fun `trackHttpRequestPerformed tracks correct event when coming from cache`() {
         val expectedProperties = mapOf(
             "endpoint_name" to "post_receipt",
             "response_time_millis" to 1234L,
@@ -85,18 +85,18 @@ class DiagnosticsTrackerTest {
             "etag_hit" to true
         )
         every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackEndpointHit(Endpoint.PostReceipt, 1234, true, 200, HTTPResult.Origin.CACHE)
+        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.PostReceipt, 1234, true, 200, HTTPResult.Origin.CACHE)
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
                 event is DiagnosticsEvent.Log &&
-                    event.name == DiagnosticsLogEventName.ENDPOINT_HIT &&
+                    event.name == DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED &&
                     event.properties == expectedProperties
             })
         }
     }
 
     @Test
-    fun `trackEndpointHit tracks correct event when coming from backend`() {
+    fun `trackHttpRequestPerformed tracks correct event when coming from backend`() {
         val expectedProperties = mapOf(
             "endpoint_name" to "get_offerings",
             "response_time_millis" to 1234L,
@@ -105,11 +105,11 @@ class DiagnosticsTrackerTest {
             "etag_hit" to false
         )
         every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackEndpointHit(Endpoint.GetOfferings("test id"), 1234, true, 200, HTTPResult.Origin.BACKEND)
+        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.GetOfferings("test id"), 1234, true, 200, HTTPResult.Origin.BACKEND)
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
                 event is DiagnosticsEvent.Log &&
-                    event.name == DiagnosticsLogEventName.ENDPOINT_HIT &&
+                    event.name == DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED &&
                     event.properties == expectedProperties
             })
         }
