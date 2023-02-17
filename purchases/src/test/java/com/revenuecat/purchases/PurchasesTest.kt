@@ -29,7 +29,7 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
-import com.revenuecat.purchases.common.diagnostics.DiagnosticsManager
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toGoogleProductType
@@ -99,7 +99,7 @@ class PurchasesTest {
     private val mockIdentityManager = mockk<IdentityManager>()
     private val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     private val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
-    private val mockDiagnosticsManager = mockk<DiagnosticsManager>()
+    private val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
 
     private var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -157,7 +157,7 @@ class PurchasesTest {
             mockIdentityManager.configure(any())
         } just Runs
         every {
-            mockDiagnosticsManager.syncDiagnosticsFileIfNeeded()
+            mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         } just Runs
 
         anonymousSetup(false)
@@ -212,7 +212,7 @@ class PurchasesTest {
 
     @Test
     fun `diagnostics is synced if needed on constructor`() {
-        verify(exactly = 1) { mockDiagnosticsManager.syncDiagnosticsFileIfNeeded() }
+        verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
     }
 
     @Test
@@ -4146,7 +4146,7 @@ class PurchasesTest {
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
             customerInfoHelper = mockCustomerInfoHelper,
-            diagnosticsManager = mockDiagnosticsManager
+            diagnosticsSynchronizer = mockDiagnosticsSynchronizer
         )
         Purchases.sharedInstance = purchases
         purchases.state = purchases.state.copy(appInBackground = false)
