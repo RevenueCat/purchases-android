@@ -7,23 +7,27 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.google.BillingWrapper
 
 @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
 object BillingFactory {
 
+    @Suppress("LongParameterList")
     fun createBilling(
         store: Store,
         application: Application,
         backend: Backend,
         cache: DeviceCache,
-        observerMode: Boolean
+        observerMode: Boolean,
+        diagnosticsTracker: DiagnosticsTracker?
     ) = when (store) {
         Store.PLAY_STORE -> BillingWrapper(
             BillingWrapper.ClientFactory(application),
             Handler(application.mainLooper),
-            cache
+            cache,
+            diagnosticsTracker
         )
         Store.AMAZON -> {
             try {

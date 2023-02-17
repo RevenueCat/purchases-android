@@ -15,16 +15,21 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.stubSkuDetails
+import io.mockk.MockK
 import io.mockk.Runs
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import org.junit.Before
+import java.util.Date
 
 open class BillingWrapperTestBase {
     internal var onConnectedCalled: Boolean = false
@@ -34,6 +39,8 @@ open class BillingWrapperTestBase {
     internal var billingClientStateListener: BillingClientStateListener? = null
     internal var handler: Handler = mockk()
     internal var mockDeviceCache: DeviceCache = mockk()
+    internal var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
+    internal var mockDateProvider: DateProvider = mockk()
 
     internal var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
 
@@ -57,7 +64,14 @@ open class BillingWrapperTestBase {
 
     @Before
     fun setup() {
+        clearAllMocks()
+        storeProducts = null
+        purchasesUpdatedListener = null
+        billingClientStateListener = null
+
         mockRunnables()
+        mockDiagnosticsTracker()
+        every { mockDateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
 
         val listenerSlot = slot<PurchasesUpdatedListener>()
         every {
@@ -93,7 +107,7 @@ open class BillingWrapperTestBase {
 
         mockDetailsList = listOf(stubSkuDetails())
 
-        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache)
+        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache, mockDiagnosticsTracker, mockDateProvider)
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         onConnectedCalled = false
         wrapper.stateListener = object : BillingAbstract.StateListener {
@@ -146,5 +160,17 @@ open class BillingWrapperTestBase {
             delayedSlot.captured.run()
             true
         }
+    }
+
+    private fun mockDiagnosticsTracker() {
+        every {
+            mockDiagnosticsTracker.trackGoogleQuerySkuDetailsRequest(any(), any(), any(), any())
+        } just Runs
+        every {
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any())
+        } just Runs
+        every {
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any())
+        } just Runs
     }
 }

@@ -20,6 +20,7 @@ import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
+import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetailsParams
 import com.android.billingclient.api.SkuDetailsResponseListener
@@ -28,10 +29,13 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.listOfSkus
@@ -55,10 +59,13 @@ import kotlin.math.min
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
+@Suppress("LargeClass")
 class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
-    private val deviceCache: DeviceCache
+    private val deviceCache: DeviceCache,
+    private val diagnosticsTracker: DiagnosticsTracker?,
+    private val dateProvider: DateProvider = DefaultDateProvider()
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
     @get:Synchronized
@@ -391,10 +398,10 @@ class BillingWrapper(
         withConnectedClient {
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
 
-            this.queryPurchasesAsync(SkuType.SUBS) querySubPurchasesAsync@{ activeSubsResult, activeSubsPurchases ->
-                if (!activeSubsResult.isSuccessful()) {
-                    val purchasesError = activeSubsResult.responseCode.billingResponseToPurchasesError(
-                        RestoreStrings.QUERYING_SUBS_ERROR.format(activeSubsResult.toHumanReadableDescription())
+            queryPurchasesAsyncWithTracking(SkuType.SUBS) querySubPurchasesAsync@{ subsResult, activeSubsPurchases ->
+                if (!subsResult.isSuccessful()) {
+                    val purchasesError = subsResult.responseCode.billingResponseToPurchasesError(
+                        RestoreStrings.QUERYING_SUBS_ERROR.format(subsResult.toHumanReadableDescription())
                     )
                     onError(purchasesError)
                     return@querySubPurchasesAsync
@@ -402,7 +409,7 @@ class BillingWrapper(
 
                 val mapOfActiveSubscriptions = activeSubsPurchases.toMapOfGooglePurchaseWrapper(SkuType.SUBS)
 
-                this.queryPurchasesAsync(SkuType.INAPP) queryInAppsPurchasesAsync@{
+                queryPurchasesAsyncWithTracking(SkuType.INAPP) queryInAppsPurchasesAsync@{
                         unconsumedInAppsResult, unconsumedInAppsPurchases ->
                     if (!unconsumedInAppsResult.isSuccessful()) {
                         val purchasesError = unconsumedInAppsResult.responseCode.billingResponseToPurchasesError(
@@ -470,15 +477,16 @@ class BillingWrapper(
     @Suppress("ReturnCount")
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
         billingClient?.let { client ->
-            client.queryPurchasesAsync(SkuType.SUBS) querySubPurchasesAsync@{ querySubsResult, subsPurchasesList ->
-                val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
+            client.queryPurchasesAsyncWithTracking(SkuType.SUBS) querySubPurchasesAsync@{
+                    subsResult, subsPurchasesList ->
+                val subsResponseOK = subsResult.responseCode == BillingClient.BillingResponseCode.OK
                 val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
                 if (subsResponseOK && subFound) {
                     listener(ProductType.SUBS)
                     return@querySubPurchasesAsync
                 }
 
-                client.queryPurchasesAsync(SkuType.INAPP) queryInAppPurchasesAsync@{
+                client.queryPurchasesAsyncWithTracking(SkuType.INAPP) queryInAppPurchasesAsync@{
                         queryInAppsResult, inAppPurchasesList ->
                     val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
                     val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
@@ -673,6 +681,7 @@ class BillingWrapper(
         listener: SkuDetailsResponseListener
     ) {
         var hasResponded = false
+        val requestStartTime = dateProvider.now.time
         querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
             synchronized(this@BillingWrapper) {
                 if (hasResponded) {
@@ -684,6 +693,7 @@ class BillingWrapper(
                 }
                 hasResponded = true
             }
+            trackGoogleQuerySkuDetailsRequestIfNeeded(params.skuType, billingResult, requestStartTime)
             listener.onSkuDetailsResponse(billingResult, skuDetailsList)
         }
     }
@@ -693,6 +703,7 @@ class BillingWrapper(
         listener: PurchaseHistoryResponseListener
     ) {
         var hasResponded = false
+        val requestStartTime = dateProvider.now.time
         queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistory ->
             synchronized(this@BillingWrapper) {
                 if (hasResponded) {
@@ -704,7 +715,53 @@ class BillingWrapper(
                 }
                 hasResponded = true
             }
+            trackGoogleQueryPurchaseHistoryRequestIfNeeded(billingResult, requestStartTime)
             listener.onPurchaseHistoryResponse(billingResult, purchaseHistory)
         }
+    }
+
+    private fun BillingClient.queryPurchasesAsyncWithTracking(
+        @BillingClient.SkuType skuType: String,
+        listener: PurchasesResponseListener
+    ) {
+        val requestStartTime = dateProvider.now.time
+        queryPurchasesAsync(skuType) { billingResult, purchases ->
+            trackGoogleQueryPurchasesRequestIfNeeded(skuType, billingResult, requestStartTime)
+            listener.onQueryPurchasesResponse(billingResult, purchases)
+        }
+    }
+
+    private fun trackGoogleQuerySkuDetailsRequestIfNeeded(
+        @BillingClient.SkuType skuType: String,
+        billingResult: BillingResult,
+        requestStartTime: Long
+    ) {
+        diagnosticsTracker?.trackGoogleQuerySkuDetailsRequest(
+            skuType,
+            billingResult.responseCode,
+            billingResult.debugMessage,
+            responseTimeMillis = dateProvider.now.time - requestStartTime
+        )
+    }
+
+    private fun trackGoogleQueryPurchasesRequestIfNeeded(
+        @BillingClient.SkuType skuType: String,
+        billingResult: BillingResult,
+        requestStartTime: Long
+    ) {
+        diagnosticsTracker?.trackGoogleQueryPurchasesRequest(
+            skuType,
+            billingResult.responseCode,
+            billingResult.debugMessage,
+            responseTimeMillis = dateProvider.now.time - requestStartTime
+        )
+    }
+
+    private fun trackGoogleQueryPurchaseHistoryRequestIfNeeded(billingResult: BillingResult, requestStartTime: Long) {
+        diagnosticsTracker?.trackGoogleQueryPurchaseHistoryRequest(
+            billingResult.responseCode,
+            billingResult.debugMessage,
+            responseTimeMillis = dateProvider.now.time - requestStartTime
+        )
     }
 }

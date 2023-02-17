@@ -132,4 +132,74 @@ class DiagnosticsTrackerTest {
             })
         }
     }
+
+    @Test
+    fun `trackGoogleQuerySkuDetailsRequest tracks correct event`() {
+        val expectedProperties = mapOf(
+            "sku_type_queried" to "subs",
+            "billing_response_code" to 12,
+            "billing_debug_message" to "test-debug-message",
+            "response_time_millis" to 1234L
+        )
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        diagnosticsTracker.trackGoogleQuerySkuDetailsRequest(
+            skuType = "subs",
+            billingResponseCode = 12,
+            billingDebugMessage = "test-debug-message",
+            responseTimeMillis = 1234
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+                event is DiagnosticsEntry.Event &&
+                    event.name == DiagnosticsEventName.GOOGLE_QUERY_SKU_DETAILS_REQUEST &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackGoogleQueryPurchasesRequest tracks correct event`() {
+        val expectedProperties = mapOf(
+            "sku_type_queried" to "subs",
+            "billing_response_code" to 12,
+            "billing_debug_message" to "test-debug-message",
+            "response_time_millis" to 1234L
+        )
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        diagnosticsTracker.trackGoogleQueryPurchasesRequest(
+            skuType = "subs",
+            billingResponseCode = 12,
+            billingDebugMessage = "test-debug-message",
+            responseTimeMillis = 1234
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+                event is DiagnosticsEntry.Event &&
+                    event.name == DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackGoogleQueryPurchaseHistoryRequest tracks correct event`() {
+        val expectedProperties = mapOf(
+            "billing_response_code" to 12,
+            "billing_debug_message" to "test-debug-message",
+            "response_time_millis" to 1234L
+        )
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        diagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
+            billingResponseCode = 12,
+            billingDebugMessage = "test-debug-message",
+            responseTimeMillis = 1234
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+                event is DiagnosticsEntry.Event &&
+                    event.name == DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
 }

@@ -38,6 +38,61 @@ class DiagnosticsTracker(
         )
     }
 
+    fun trackGoogleQuerySkuDetailsRequest(
+        skuType: String,
+        billingResponseCode: Int,
+        billingDebugMessage: String,
+        responseTimeMillis: Long
+    ) {
+        trackEvent(
+            DiagnosticsEntry.Event(
+                name = DiagnosticsEventName.GOOGLE_QUERY_SKU_DETAILS_REQUEST,
+                properties = mapOf(
+                    "sku_type_queried" to skuType,
+                    "billing_response_code" to billingResponseCode,
+                    "billing_debug_message" to billingDebugMessage,
+                    "response_time_millis" to responseTimeMillis
+                )
+            )
+        )
+    }
+
+    fun trackGoogleQueryPurchasesRequest(
+        skuType: String,
+        billingResponseCode: Int,
+        billingDebugMessage: String,
+        responseTimeMillis: Long
+    ) {
+        trackEvent(
+            DiagnosticsEntry.Event(
+                name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST,
+                properties = mapOf(
+                    "sku_type_queried" to skuType,
+                    "billing_response_code" to billingResponseCode,
+                    "billing_debug_message" to billingDebugMessage,
+                    "response_time_millis" to responseTimeMillis
+                )
+            )
+        )
+    }
+
+    fun trackGoogleQueryPurchaseHistoryRequest(
+        billingResponseCode: Int,
+        billingDebugMessage: String,
+        responseTimeMillis: Long
+    ) {
+        trackEvent(
+            DiagnosticsEntry.Event(
+                name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
+                properties = mapOf(
+                    "billing_response_code" to billingResponseCode,
+                    "billing_debug_message" to billingDebugMessage,
+                    "response_time_millis" to responseTimeMillis
+                )
+            )
+        )
+    }
+
     fun trackMaxEventsStoredLimitReached(totalEventsStored: Int, eventsRemoved: Int, useCurrentThread: Boolean = true) {
         val event = DiagnosticsEntry.Event(
             name = DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
