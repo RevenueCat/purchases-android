@@ -7,6 +7,7 @@ import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.googleProduct
 
 @Suppress("unused", "UNUSED_VARIABLE")
@@ -19,7 +20,7 @@ private class StoreProductAPI {
             val price: Price? = price
             val title: String = title
             val description: String = description
-            val subscriptionPeriod: String? = subscriptionPeriod
+            val period: Period? = period
             val subscriptionOptions: List<SubscriptionOption> = subscriptionOptions
             val defaultOption: SubscriptionOption? = defaultOption
             val underlyingProduct: GoogleStoreProduct? = googleProduct
@@ -46,7 +47,7 @@ private class StoreProductAPI {
             googleStoreProduct.price,
             googleStoreProduct.title,
             googleStoreProduct.description,
-            googleStoreProduct.subscriptionPeriod,
+            googleStoreProduct.period,
             googleStoreProduct.subscriptionOptions,
             googleStoreProduct.defaultOption,
             googleStoreProduct.productDetails

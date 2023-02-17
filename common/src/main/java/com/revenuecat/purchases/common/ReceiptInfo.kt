@@ -13,7 +13,7 @@ class ReceiptInfo(
     val currency: String? = storeProduct?.price?.currencyCode
 ) {
 
-    val duration: String? = storeProduct?.subscriptionPeriod?.takeUnless { it.isEmpty() }
+    val duration: String? = storeProduct?.period?.iso8601?.takeUnless { it.isEmpty() }
     val pricingPhases: List<PricingPhase>? =
         storeProduct?.subscriptionOptions?.firstOrNull { it.id == subscriptionOptionId }?.pricingPhases
 

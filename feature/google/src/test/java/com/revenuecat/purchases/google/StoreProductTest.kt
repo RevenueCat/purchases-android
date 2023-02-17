@@ -8,6 +8,7 @@ import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
+import com.revenuecat.purchases.models.toSubscriptionPeriod
 import com.revenuecat.purchases.utils.mockProductDetails
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.junit.Test
@@ -32,7 +33,7 @@ class StoreProductTest {
         val subscriptionOption1 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
-                billingPeriod = "",
+                billingPeriod = "P1M".toSubscriptionPeriod(),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
@@ -52,7 +53,7 @@ class StoreProductTest {
         val subscriptionOption2 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
-                billingPeriod = "",
+                billingPeriod = "P1M".toSubscriptionPeriod(),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
@@ -76,7 +77,7 @@ class StoreProductTest {
             price = price1,
             title = "TITLE",
             description = "DESCRIPTION",
-            subscriptionPeriod = "P1M",
+            period = "P1M".toSubscriptionPeriod(),
             subscriptionOptions = listOf(subscriptionOption1),
             defaultOption = null,
             productDetails = productDetails
@@ -88,7 +89,7 @@ class StoreProductTest {
             price = price2,
             title = "TITLE",
             description = "DESCRIPTION",
-            subscriptionPeriod = "P1M",
+            period = "P1M".toSubscriptionPeriod(),
             subscriptionOptions = listOf(subscriptionOption2),
             defaultOption = null,
             productDetails = productDetails
@@ -114,7 +115,7 @@ class StoreProductTest {
         val subscriptionOption1 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
-                billingPeriod = "",
+                billingPeriod = "P1M".toSubscriptionPeriod(),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
@@ -134,7 +135,7 @@ class StoreProductTest {
         val subscriptionOption2 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
-                billingPeriod = "",
+                billingPeriod = "P1M".toSubscriptionPeriod(),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
@@ -158,7 +159,7 @@ class StoreProductTest {
             price = price1,
             title = "TITLE",
             description = "DESCRIPTION",
-            subscriptionPeriod = "P1M",
+            period = "P1M".toSubscriptionPeriod(),
             subscriptionOptions = listOf(subscriptionOption1),
             defaultOption = null,
             productDetails = productDetails
@@ -170,7 +171,7 @@ class StoreProductTest {
             price = price2,
             title = "TITLE",
             description = "DESCRIPTION",
-            subscriptionPeriod = "P1M",
+            period = "P1M".toSubscriptionPeriod(),
             subscriptionOptions = listOf(subscriptionOption2),
             defaultOption = null,
             productDetails = productDetails

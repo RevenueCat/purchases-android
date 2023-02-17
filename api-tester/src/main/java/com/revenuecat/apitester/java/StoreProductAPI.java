@@ -8,6 +8,7 @@ import com.revenuecat.purchases.models.GoogleStoreProductKt;
 import com.revenuecat.purchases.models.Price;
 import com.revenuecat.purchases.models.SubscriptionOption;
 import com.revenuecat.purchases.models.StoreProduct;
+import com.revenuecat.purchases.models.Period;
 
 import java.util.List;
 
@@ -20,7 +21,7 @@ final class StoreProductAPI {
         final Price price = product.getPrice();
         final String title = product.getTitle();
         final String description = product.getDescription();
-        final String subscriptionPeriod = product.getSubscriptionPeriod();
+        final Period period = product.getPeriod();
         List<SubscriptionOption> subscriptionOptions = product.getSubscriptionOptions();
         SubscriptionOption defaultOption = product.getDefaultOption();
 
@@ -47,7 +48,7 @@ final class StoreProductAPI {
                 googleStoreProduct.getPrice(),
                 googleStoreProduct.getTitle(),
                 googleStoreProduct.getDescription(),
-                googleStoreProduct.getSubscriptionPeriod(),
+                googleStoreProduct.getPeriod(),
                 googleStoreProduct.getSubscriptionOptions(),
                 googleStoreProduct.getDefaultOption(),
                 googleStoreProduct.getProductDetails()

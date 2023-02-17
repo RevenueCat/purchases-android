@@ -16,7 +16,7 @@ fun List<GoogleSubscriptionOption>.findDefaultOffer(): GoogleSubscriptionOption?
 private fun findLongestFreeTrial(offers: List<GoogleSubscriptionOption>): GoogleSubscriptionOption? {
     return offers.mapNotNull { offer ->
         offer.freePricingPhase?.let { pricingPhase ->
-            Pair(offer, parseBillPeriodToDays(pricingPhase.billingPeriod))
+            Pair(offer, parseBillPeriodToDays(pricingPhase.billingPeriod.iso8601))
         }
     }.maxByOrNull { it.second }?.first
 }

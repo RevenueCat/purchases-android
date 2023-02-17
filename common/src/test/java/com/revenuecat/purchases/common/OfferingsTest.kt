@@ -10,6 +10,7 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.toSubscriptionPeriod
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubSubscriptionOption
@@ -406,9 +407,11 @@ class OfferingsTest {
         duration: String = monthlyDuration,
         basePlanId: String = monthlyBasePlan,
     ): StoreProduct {
+        val period = duration.toSubscriptionPeriod()
+
         val basePlanPricingPhase = stubPricingPhase(
             price = 1.99,
-            billingPeriod = duration,
+            billingPeriod = period,
             recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING
         )
         val basePlanSubscriptionOption =
@@ -417,12 +420,12 @@ class OfferingsTest {
         val offerPricingPhases = listOf(
             stubPricingPhase(
                 price = 0.0,
-                billingPeriod = duration,
+                billingPeriod = period,
                 recurrenceMode = ProductDetails.RecurrenceMode.NON_RECURRING
             ),
             basePlanPricingPhase
         )
-        val offerSubscriptionOption = stubSubscriptionOption(basePlanId, productId, duration, offerPricingPhases)
+        val offerSubscriptionOption = stubSubscriptionOption(basePlanId, productId, period, offerPricingPhases)
         return stubStoreProduct(
             productId,
             basePlanSubscriptionOption,

@@ -592,7 +592,7 @@ class BackendTest {
         )
 
         val originalSubscriptionOption = storeProduct.subscriptionOptions[0]
-        val originalDuration = originalSubscriptionOption.pricingPhases[0].billingPeriod
+        val originalDuration = originalSubscriptionOption.pricingPhases[0].billingPeriod.iso8601
         val subscriptionOption = stubSubscriptionOption(originalSubscriptionOption.id, originalDuration + "a")
         val storeProduct2 = stubStoreProduct(
             storeProduct.productId,
