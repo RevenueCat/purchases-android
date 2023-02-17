@@ -9,7 +9,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
-import com.revenuecat.purchases.common.networking.ResultOrigin
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -55,7 +54,7 @@ class DispatcherTest {
 
     @Test
     fun executesInExecutor() {
-        val result = HTTPResult(200, "{}", ResultOrigin.BACKEND)
+        val result = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
 
         every {
             mockExecutorService.isShutdown
@@ -95,7 +94,7 @@ class DispatcherTest {
 
     @Test
     fun asyncCallHandlesSuccess() {
-        val result = HTTPResult(200, "{}", ResultOrigin.BACKEND)
+        val result = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return result

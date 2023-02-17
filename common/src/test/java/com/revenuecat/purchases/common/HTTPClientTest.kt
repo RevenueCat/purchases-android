@@ -15,7 +15,6 @@ import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.networking.ResultOrigin
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -95,7 +94,7 @@ class HTTPClientTest {
     fun canPerformASimpleGet() {
         enqueue(
             Endpoint.LogIn,
-            expectedResult = HTTPResult(200, "{}", ResultOrigin.BACKEND)
+            expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
         )
 
         client.performRequest(baseURL, Endpoint.LogIn, null, mapOf("" to ""))
@@ -110,7 +109,7 @@ class HTTPClientTest {
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
-            expectedResult = HTTPResult(223, "{}", ResultOrigin.BACKEND)
+            expectedResult = HTTPResult(223, "{}", HTTPResult.Origin.BACKEND)
         )
 
         val result = client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
@@ -125,7 +124,7 @@ class HTTPClientTest {
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
-            expectedResult = HTTPResult(223, "{'response': 'OK'}", ResultOrigin.BACKEND)
+            expectedResult = HTTPResult(223, "{'response': 'OK'}", HTTPResult.Origin.BACKEND)
         )
 
         val result = client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
@@ -142,7 +141,7 @@ class HTTPClientTest {
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
-            expectedResult = HTTPResult(200, "not uh jason", ResultOrigin.BACKEND)
+            expectedResult = HTTPResult(200, "not uh jason", HTTPResult.Origin.BACKEND)
         )
 
         try {
@@ -155,7 +154,7 @@ class HTTPClientTest {
     // Headers
     @Test
     fun addsHeadersToRequest() {
-        val expectedResult = HTTPResult(200, "{}", ResultOrigin.BACKEND)
+        val expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
@@ -174,7 +173,7 @@ class HTTPClientTest {
 
     @Test
     fun addsDefaultHeadersToRequest() {
-        val expectedResult = HTTPResult(200, "{}", ResultOrigin.BACKEND)
+        val expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
@@ -207,7 +206,7 @@ class HTTPClientTest {
             store = Store.PLAY_STORE
         )
 
-        val expectedResult = HTTPResult(200, "{}", ResultOrigin.BACKEND)
+        val expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
@@ -224,7 +223,7 @@ class HTTPClientTest {
 
     @Test
     fun addsPostBody() {
-        val expectedResult = HTTPResult(200, "{}", ResultOrigin.BACKEND)
+        val expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
@@ -246,7 +245,7 @@ class HTTPClientTest {
     fun `given observer mode is enabled, observer mode header is sent`() {
         appConfig.finishTransactions = false
 
-        val expectedResult = HTTPResult(200, "{}", ResultOrigin.BACKEND)
+        val expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
@@ -298,7 +297,7 @@ class HTTPClientTest {
                 .setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED)
 
         val expectedResult = HTTPResult(
-            RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse, ResultOrigin.BACKEND
+            RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse, HTTPResult.Origin.BACKEND
         )
         val secondResponse =
             MockResponse()
@@ -358,7 +357,7 @@ class HTTPClientTest {
 
         enqueue(
             endpoint,
-            expectedResult = HTTPResult(responseCode, "{}", ResultOrigin.BACKEND)
+            expectedResult = HTTPResult(responseCode, "{}", HTTPResult.Origin.BACKEND)
         )
 
         every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime))
@@ -367,7 +366,7 @@ class HTTPClientTest {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackEndpointHit(endpoint, responseTime, true, responseCode, ResultOrigin.BACKEND)
+            diagnosticsTracker.trackEndpointHit(endpoint, responseTime, true, responseCode, HTTPResult.Origin.BACKEND)
         }
     }
 
@@ -381,7 +380,7 @@ class HTTPClientTest {
 
         enqueue(
             endpoint,
-            expectedResult = HTTPResult(responseCode, "{}", ResultOrigin.BACKEND)
+            expectedResult = HTTPResult(responseCode, "{}", HTTPResult.Origin.BACKEND)
         )
 
         every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime))
@@ -390,7 +389,7 @@ class HTTPClientTest {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackEndpointHit(endpoint, responseTime, false, responseCode, ResultOrigin.BACKEND)
+            diagnosticsTracker.trackEndpointHit(endpoint, responseTime, false, responseCode, HTTPResult.Origin.BACKEND)
         }
     }
 

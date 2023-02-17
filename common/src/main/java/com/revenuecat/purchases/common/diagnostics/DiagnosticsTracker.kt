@@ -2,7 +2,7 @@ package com.revenuecat.purchases.common.diagnostics
 
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
-import com.revenuecat.purchases.common.networking.ResultOrigin
+import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
 import java.io.IOException
 
@@ -21,7 +21,7 @@ class DiagnosticsTracker(
         responseTime: Long,
         wasSuccessful: Boolean,
         responseCode: Int,
-        resultOrigin: ResultOrigin?
+        resultOrigin: HTTPResult.Origin?
     ) {
         trackEvent(
             DiagnosticsEvent.Log(
@@ -31,7 +31,7 @@ class DiagnosticsTracker(
                     "response_time_millis" to responseTime,
                     "successful" to wasSuccessful,
                     "response_code" to responseCode,
-                    "etag_hit" to (resultOrigin == ResultOrigin.CACHE)
+                    "etag_hit" to (resultOrigin == HTTPResult.Origin.CACHE)
                 )
             )
         )

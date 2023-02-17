@@ -12,7 +12,7 @@ class HTTPResultTest {
 
     @Test
     fun `result is serialized correctly`() {
-        val result = HTTPResult(200, "{\"test-key\":\"test-value\"}", ResultOrigin.BACKEND)
+        val result = HTTPResult(200, "{\"test-key\":\"test-value\"}", HTTPResult.Origin.BACKEND)
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
@@ -22,7 +22,7 @@ class HTTPResultTest {
 
     @Test
     fun `result is deserialized correctly`() {
-        val expectedResult = HTTPResult(200, "{\"test-key\":\"test-value\"}", ResultOrigin.BACKEND)
+        val expectedResult = HTTPResult(200, "{\"test-key\":\"test-value\"}", HTTPResult.Origin.BACKEND)
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
@@ -32,7 +32,7 @@ class HTTPResultTest {
 
     @Test
     fun `result is defaults to CACHE origin if not part of serialized string`() {
-        val expectedResult = HTTPResult(200, "{\"test-key\":\"test-value\"}", ResultOrigin.CACHE)
+        val expectedResult = HTTPResult(200, "{\"test-key\":\"test-value\"}", HTTPResult.Origin.CACHE)
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"}")

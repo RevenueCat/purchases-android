@@ -12,7 +12,6 @@ import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
-import com.revenuecat.purchases.common.networking.ResultOrigin
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
@@ -400,7 +399,7 @@ class SubscriberAttributesPosterTests {
 
         if (clientException == null) {
             everyMockedCall answers {
-                HTTPResult(responseCode, expectedResultBody ?: "{}", ResultOrigin.BACKEND)
+                HTTPResult(responseCode, expectedResultBody ?: "{}", HTTPResult.Origin.BACKEND)
             }
         } else {
             everyMockedCall throws clientException
@@ -420,7 +419,7 @@ class SubscriberAttributesPosterTests {
                 mapOf("Authorization" to "Bearer $API_KEY")
             )
         } answers {
-            HTTPResult(responseCode, responseBody, ResultOrigin.BACKEND).also {
+            HTTPResult(responseCode, responseBody, HTTPResult.Origin.BACKEND).also {
                 every {
                     it.body.buildCustomerInfo()
                 } returns mockk()

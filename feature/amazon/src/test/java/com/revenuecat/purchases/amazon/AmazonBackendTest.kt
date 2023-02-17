@@ -9,7 +9,6 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
-import com.revenuecat.purchases.common.networking.ResultOrigin
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
@@ -65,7 +64,7 @@ class AmazonBackendTest {
     private var successfulResult = HTTPResult(
         responseCode = 200,
         payload = successfulRVSResponse(),
-        origin = ResultOrigin.BACKEND
+        origin = HTTPResult.Origin.BACKEND
     )
     private var unsuccessfulResult = HTTPResult(
         responseCode = 401,
@@ -75,7 +74,7 @@ class AmazonBackendTest {
                     "Invalid API Key."
                 }
             """.trimIndent(),
-        origin = ResultOrigin.BACKEND
+        origin = HTTPResult.Origin.BACKEND
     )
 
     @Test

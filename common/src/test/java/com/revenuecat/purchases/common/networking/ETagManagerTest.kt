@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.networking
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.utils.Responses
-import com.revenuecat.purchases.utils.filterNotNullValues
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -16,7 +15,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.net.HttpURLConnection
-import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -111,7 +109,7 @@ class ETagManagerTest {
         val path = "/v1/subscribers/appUserID"
         val eTag = "eTag"
 
-        val resultFromBackend = HTTPResult(RCHTTPStatusCodes.NOT_MODIFIED, "", ResultOrigin.BACKEND)
+        val resultFromBackend = HTTPResult(RCHTTPStatusCodes.NOT_MODIFIED, "", HTTPResult.Origin.BACKEND)
 
         underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
@@ -125,10 +123,10 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult(
-            RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse, ResultOrigin.BACKEND
+            RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse, HTTPResult.Origin.BACKEND
         )
         val resultStored = resultFromBackend.copy(
-            origin = ResultOrigin.CACHE
+            origin = HTTPResult.Origin.CACHE
         )
         val resultStoredWithETag = HTTPResultWithETag(eTag, resultStored)
 
@@ -146,7 +144,7 @@ class ETagManagerTest {
         val path = "/v1/subscribers/appUserID"
         val eTag = "eTag"
 
-        val resultFromBackend = HTTPResult(500, "{}", ResultOrigin.BACKEND)
+        val resultFromBackend = HTTPResult(500, "{}", HTTPResult.Origin.BACKEND)
 
         underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
@@ -256,7 +254,7 @@ class ETagManagerTest {
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_MODIFIED)
         assertThat(result.payload).isEqualTo(responsePayload)
-        assertThat(result.origin).isEqualTo(ResultOrigin.BACKEND)
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
         assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse()
         assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse()
     }
@@ -278,7 +276,7 @@ class ETagManagerTest {
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(result.payload).isEqualTo(responsePayload)
-        assertThat(result.origin).isEqualTo(ResultOrigin.BACKEND)
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
 
         assertStoredResponse(path, eTagInResponse, responsePayload)
     }
@@ -300,7 +298,7 @@ class ETagManagerTest {
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(result.payload).isEqualTo(responsePayload)
-        assertThat(result.origin).isEqualTo(ResultOrigin.BACKEND)
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
 
         assertStoredResponse(path, eTagInResponse, responsePayload)
     }
@@ -316,7 +314,7 @@ class ETagManagerTest {
         path: String
     ): HTTPResultWithETag? {
         val cachedResult = expectedETag?.let {
-            HTTPResultWithETag(expectedETag, HTTPResult(RCHTTPStatusCodes.SUCCESS, "{}", ResultOrigin.CACHE))
+            HTTPResultWithETag(expectedETag, HTTPResult(RCHTTPStatusCodes.SUCCESS, "{}", HTTPResult.Origin.CACHE))
         }
         every {
             mockedPrefs.getString(path, null)

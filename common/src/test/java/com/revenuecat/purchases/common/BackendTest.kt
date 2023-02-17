@@ -11,7 +11,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
-import com.revenuecat.purchases.common.networking.ResultOrigin
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
@@ -151,7 +150,7 @@ class BackendTest {
     ): CustomerInfo {
         val info: CustomerInfo = mockk()
 
-        val result = HTTPResult(responseCode, resultBody ?: "{}", ResultOrigin.BACKEND)
+        val result = HTTPResult(responseCode, resultBody ?: "{}", HTTPResult.Origin.BACKEND)
 
         if (shouldMockCustomerInfo) {
             every {

@@ -4,7 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
-import com.revenuecat.purchases.common.networking.ResultOrigin
+import com.revenuecat.purchases.common.networking.HTTPResult
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -85,7 +85,7 @@ class DiagnosticsTrackerTest {
             "etag_hit" to true
         )
         every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackEndpointHit(Endpoint.PostReceipt, 1234, true, 200, ResultOrigin.CACHE)
+        diagnosticsTracker.trackEndpointHit(Endpoint.PostReceipt, 1234, true, 200, HTTPResult.Origin.CACHE)
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
                 event is DiagnosticsEvent.Log &&
@@ -105,7 +105,7 @@ class DiagnosticsTrackerTest {
             "etag_hit" to false
         )
         every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackEndpointHit(Endpoint.GetOfferings("test id"), 1234, true, 200, ResultOrigin.BACKEND)
+        diagnosticsTracker.trackEndpointHit(Endpoint.GetOfferings("test id"), 1234, true, 200, HTTPResult.Origin.BACKEND)
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
                 event is DiagnosticsEvent.Log &&
