@@ -36,7 +36,7 @@ class DiagnosticsEventTest {
         val expectedString = "{" +
             "\"version\":1," +
             "\"type\":\"log\"," +
-            "\"name\":\"endpoint_hit\"," +
+            "\"name\":\"http_request_performed\"," +
             "\"properties\":{\"test-key-1\":\"test-value-1\",\"test-key-2\":123,\"test-key-3\":true}," +
             "\"timestamp\":1675954145" +
             "}"
