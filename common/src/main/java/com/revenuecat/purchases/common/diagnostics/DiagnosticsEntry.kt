@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.diagnostics
 
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
-import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
 
