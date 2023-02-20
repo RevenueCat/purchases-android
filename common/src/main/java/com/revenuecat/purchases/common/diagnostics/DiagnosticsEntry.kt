@@ -41,7 +41,7 @@ sealed class DiagnosticsEntry(val diagnosticType: String) {
 
     data class Metric(
         val name: String,
-        val tags: List<String>,
+        val tags: Map<String, String>,
         val value: Int
     ) : DiagnosticsEntry("metric") {
         private companion object {
@@ -58,7 +58,7 @@ sealed class DiagnosticsEntry(val diagnosticType: String) {
             put(VERSION_KEY, VERSION)
             put(TYPE_KEY, diagnosticType)
             put(NAME_KEY, name.lowercase())
-            put(TAGS_KEY, JSONArray(tags))
+            put(TAGS_KEY, JSONObject(tags))
             put(VALUE_KEY, value)
         }
     }

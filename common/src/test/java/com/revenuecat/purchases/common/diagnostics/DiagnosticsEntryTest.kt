@@ -47,7 +47,7 @@ class DiagnosticsEntryTest {
     fun `toString transforms metrics to correct JSON`() {
         val event = DiagnosticsEntry.Metric(
             name = "test_metric_name",
-            tags = listOf("test-1", "test-2"),
+            tags = mapOf("test-key-1" to "test-value-1", "test-key-2" to "test-value-2"),
             value = 2
         )
         val eventAsString = event.toString()
@@ -55,7 +55,7 @@ class DiagnosticsEntryTest {
             "\"version\":1," +
             "\"type\":\"metric\"," +
             "\"name\":\"test_metric_name\"," +
-            "\"tags\":[\"test-1\",\"test-2\"]," +
+            "\"tags\":{\"test-key-1\":\"test-value-1\",\"test-key-2\":\"test-value-2\"}," +
             "\"value\":2" +
             "}"
         assertThat(eventAsString).isEqualTo(expectedString)

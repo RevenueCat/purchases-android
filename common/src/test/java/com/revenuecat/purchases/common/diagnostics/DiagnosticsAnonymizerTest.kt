@@ -62,7 +62,7 @@ class DiagnosticsAnonymizerTest {
     fun `anonymizeEntryIfNeeded does not anonymize metric`() {
         val metricToAnonymize = DiagnosticsEntry.Metric(
             name = "metric-name",
-            tags = listOf("tag-1", "tag-2"),
+            tags = emptyMap(),
             value = 123
         )
         val anonymizedMetric = diagnosticsAnonymizer.anonymizeEntryIfNeeded(metricToAnonymize)
