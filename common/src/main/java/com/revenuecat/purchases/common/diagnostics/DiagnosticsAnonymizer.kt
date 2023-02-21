@@ -8,7 +8,7 @@ class DiagnosticsAnonymizer(
     fun anonymizeEntryIfNeeded(diagnosticsEntry: DiagnosticsEntry): DiagnosticsEntry {
         return when (diagnosticsEntry) {
             is DiagnosticsEntry.Event -> anonymizeEvent(diagnosticsEntry)
-            is DiagnosticsEntry.Metric -> diagnosticsEntry
+            is DiagnosticsEntry.Counter -> diagnosticsEntry
         }
     }
 

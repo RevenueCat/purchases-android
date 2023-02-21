@@ -38,11 +38,11 @@ sealed class DiagnosticsEntry(val diagnosticType: String) {
         }
     }
 
-    data class Metric(
+    data class Counter(
         val name: String,
         val tags: Map<String, String>,
         val value: Int
-    ) : DiagnosticsEntry("metric") {
+    ) : DiagnosticsEntry("counter") {
         private companion object {
             const val NAME_KEY = "name"
             const val TAGS_KEY = "tags"

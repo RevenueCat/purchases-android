@@ -59,13 +59,13 @@ class DiagnosticsAnonymizerTest {
     }
 
     @Test
-    fun `anonymizeEntryIfNeeded does not anonymize metric`() {
-        val metricToAnonymize = DiagnosticsEntry.Metric(
+    fun `anonymizeEntryIfNeeded does not anonymize counter`() {
+        val counterToAnonymize = DiagnosticsEntry.Counter(
             name = "metric-name",
             tags = emptyMap(),
             value = 123
         )
-        val anonymizedMetric = diagnosticsAnonymizer.anonymizeEntryIfNeeded(metricToAnonymize)
-        assertThat(anonymizedMetric).isEqualTo(metricToAnonymize)
+        val anonymizedMetric = diagnosticsAnonymizer.anonymizeEntryIfNeeded(counterToAnonymize)
+        assertThat(anonymizedMetric).isEqualTo(counterToAnonymize)
     }
 }

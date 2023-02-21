@@ -44,8 +44,8 @@ class DiagnosticsEntryTest {
     }
 
     @Test
-    fun `toString transforms metrics to correct JSON`() {
-        val event = DiagnosticsEntry.Metric(
+    fun `toString transforms counter to correct JSON`() {
+        val event = DiagnosticsEntry.Counter(
             name = "test_metric_name",
             tags = mapOf("test-key-1" to "test-value-1", "test-key-2" to "test-value-2"),
             value = 2
@@ -53,7 +53,7 @@ class DiagnosticsEntryTest {
         val eventAsString = event.toString()
         val expectedString = "{" +
             "\"version\":1," +
-            "\"type\":\"metric\"," +
+            "\"type\":\"counter\"," +
             "\"name\":\"test_metric_name\"," +
             "\"tags\":{\"test-key-1\":\"test-value-1\",\"test-key-2\":\"test-value-2\"}," +
             "\"value\":2" +
