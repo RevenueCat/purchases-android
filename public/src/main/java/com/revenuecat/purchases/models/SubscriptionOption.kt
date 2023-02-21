@@ -33,6 +33,12 @@ interface SubscriptionOption : Parcelable {
         get() = pricingPhases.size == 1
 
     /**
+     * The subscription period of the `fullPricePhase`
+     */
+    val period: Period?
+        get() = fullPricePhase?.billingPeriod
+
+    /**
      * The full price [PricingPhase] of the subscription.
      * Looks for the last price phase of the SubscriptionOption.
      */
