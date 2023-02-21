@@ -9,7 +9,7 @@ import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesConfiguration
+import com.revenuecat.purchases.interfaces.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
@@ -78,21 +78,10 @@ private class PurchasesAPI {
         purchases.getProducts(productIds, productsResponseCallback)
 
         // we need these for hybrids... these all fall back on some "best offer" or just purchase the base plan
-        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, true, purchaseChangeCallback)
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
-        purchases.purchaseProduct(activity, storeProduct, true, purchaseCallback)
         purchases.purchaseProduct(activity, storeProduct, purchaseCallback)
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
-        purchases.purchasePackage(
-            activity,
-            packageToPurchase,
-            upgradeInfo,
-            true,
-            purchaseChangeCallback
-
-        )
         purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
-        purchases.purchasePackage(activity, packageToPurchase, true, purchaseCallback)
 
         purchases.purchaseSubscriptionOption(
             activity,
@@ -100,17 +89,7 @@ private class PurchasesAPI {
             upgradeInfo,
             purchaseChangeCallback
         )
-
-        purchases.purchaseSubscriptionOption(
-            activity,
-            subscriptionOption,
-            upgradeInfo,
-            true,
-            purchaseChangeCallback
-        )
-
         purchases.purchaseSubscriptionOption(activity, subscriptionOption, purchaseCallback)
-        purchases.purchaseSubscriptionOption(activity, subscriptionOption, true, purchaseCallback)
 
         purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.logIn("", logInCallback)
@@ -159,29 +138,11 @@ private class PurchasesAPI {
         purchases.purchaseProductWith(
             activity,
             storeProduct,
-            true,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseProductWith(
-            activity,
-            storeProduct,
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseProductWith(
-            activity,
-            storeProduct,
-            true,
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
         purchases.purchaseProductWith(
             activity,
             storeProduct
-        ) { _: StoreTransaction, _: CustomerInfo -> }
-        purchases.purchaseProductWith(
-            activity,
-            storeProduct,
-            true
         ) { _: StoreTransaction, _: CustomerInfo -> }
         // endregion
 
@@ -197,21 +158,6 @@ private class PurchasesAPI {
             activity,
             storeProduct,
             upgradeInfo,
-            true,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
-        purchases.purchaseProductWith(
-            activity,
-            storeProduct,
-            upgradeInfo,
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
-        purchases.purchaseProductWith(
-            activity,
-            storeProduct,
-            upgradeInfo,
-            true,
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
         purchases.purchaseProductWith(
@@ -219,13 +165,8 @@ private class PurchasesAPI {
             storeProduct,
             upgradeInfo
         ) { _: StoreTransaction?, _: CustomerInfo -> }
-        purchases.purchaseProductWith(
-            activity,
-            storeProduct,
-            upgradeInfo,
-            true
-        ) { _: StoreTransaction?, _: CustomerInfo -> }
         // endregion
+
         // purchasePackageWith product change listenerConversions
         purchases.purchasePackageWith(
             activity,
@@ -238,21 +179,6 @@ private class PurchasesAPI {
             activity,
             packageToPurchase,
             upgradeInfo,
-            true,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
-        purchases.purchasePackageWith(
-            activity,
-            packageToPurchase,
-            upgradeInfo,
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
-        purchases.purchasePackageWith(
-            activity,
-            packageToPurchase,
-            upgradeInfo,
-            true,
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
         purchases.purchasePackageWith(
@@ -260,13 +186,8 @@ private class PurchasesAPI {
             packageToPurchase,
             upgradeInfo
         ) { _: StoreTransaction?, _: CustomerInfo -> }
-        purchases.purchasePackageWith(
-            activity,
-            packageToPurchase,
-            upgradeInfo,
-            true
-        ) { _: StoreTransaction?, _: CustomerInfo -> }
         // endregion
+
         // purchasePackageWith listenerConversions
         purchases.purchasePackageWith(
             activity,
@@ -277,31 +198,14 @@ private class PurchasesAPI {
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
-            true,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchasePackageWith(
-            activity,
-            packageToPurchase,
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchasePackageWith(
-            activity,
-            packageToPurchase,
-            true,
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
         purchases.purchasePackageWith(
             activity,
             packageToPurchase
         ) { _: StoreTransaction, _: CustomerInfo -> }
-        purchases.purchasePackageWith(
-            activity,
-            packageToPurchase,
-            true
-        ) { _: StoreTransaction, _: CustomerInfo -> }
         // endregion
+
         // region purchaseSubscriptionOption listenerConversions
         purchases.purchaseSubscriptionOptionWith(
             activity,
@@ -312,31 +216,14 @@ private class PurchasesAPI {
         purchases.purchaseSubscriptionOptionWith(
             activity,
             subscriptionOption,
-            true,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            true,
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
         purchases.purchaseSubscriptionOptionWith(
             activity,
             subscriptionOption
         ) { _: StoreTransaction, _: CustomerInfo -> }
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            true
-        ) { _: StoreTransaction, _: CustomerInfo -> }
         // endregion
+
         // region purchaseSubscriptionOption productChange listenerConversions
         purchases.purchaseSubscriptionOptionWith(
             activity,
@@ -349,21 +236,6 @@ private class PurchasesAPI {
             activity,
             subscriptionOption,
             upgradeInfo,
-            true,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            upgradeInfo,
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            upgradeInfo,
-            true,
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
         purchases.purchaseSubscriptionOptionWith(
@@ -371,13 +243,8 @@ private class PurchasesAPI {
             subscriptionOption,
             upgradeInfo
         ) { _: StoreTransaction?, _: CustomerInfo -> }
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            upgradeInfo,
-            true
-        ) { _: StoreTransaction?, _: CustomerInfo -> }
         // endregion
+
         purchases.restorePurchasesWith(
             onError = { _: PurchasesError -> },
             onSuccess = { _: CustomerInfo -> }
