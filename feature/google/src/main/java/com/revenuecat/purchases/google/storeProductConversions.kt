@@ -28,7 +28,7 @@ fun ProductDetails.toStoreProduct(
         price,
         title,
         description,
-        basePlan?.period,
+        basePlan?.billingPeriod,
         subscriptionOptions,
         defaultOffer,
         this

@@ -33,9 +33,9 @@ interface SubscriptionOption : Parcelable {
         get() = pricingPhases.size == 1
 
     /**
-     * The subscription period of the `fullPricePhase`
+     * The subscription period of `fullPricePhase` (after free and intro trials trials).
      */
-    val period: Period?
+    val billingPeriod: Period?
         get() = fullPricePhase?.billingPeriod
 
     /**
