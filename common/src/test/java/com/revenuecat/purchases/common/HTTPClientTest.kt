@@ -32,6 +32,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
 import java.util.Date
+import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
 
 @RunWith(AndroidJUnit4::class)
@@ -353,7 +354,7 @@ class HTTPClientTest {
         val responseCode = 200
         val requestStartTime = 1676379370000L // Tuesday, February 14, 2023 12:56:10:000 PM GMT
         val requestEndTime = 1676379370123L // Tuesday, February 14, 2023 12:56:10:123 PM GMT
-        val responseTime = requestEndTime - requestStartTime
+        val responseTime = (requestEndTime - requestStartTime).milliseconds
 
         enqueue(
             endpoint,
@@ -376,7 +377,7 @@ class HTTPClientTest {
         val responseCode = 400
         val requestStartTime = 1676379370000L // Tuesday, February 14, 2023 12:56:10:000 PM GMT
         val requestEndTime = 1676379370123L // Tuesday, February 14, 2023 12:56:10:123 PM GMT
-        val responseTime = requestEndTime - requestStartTime
+        val responseTime = (requestEndTime - requestStartTime).milliseconds
 
         enqueue(
             endpoint,

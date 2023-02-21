@@ -5,6 +5,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
 import java.io.IOException
+import kotlin.time.Duration
 
 /**
  * This class is the entry point for all diagnostics tracking. It contains all information for all events
@@ -18,7 +19,7 @@ class DiagnosticsTracker(
 
     fun trackHttpRequestPerformed(
         endpoint: Endpoint,
-        responseTime: Long,
+        responseTime: Duration,
         wasSuccessful: Boolean,
         responseCode: Int,
         resultOrigin: HTTPResult.Origin?
@@ -28,7 +29,7 @@ class DiagnosticsTracker(
                 name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
                 properties = mapOf(
                     "endpoint_name" to endpoint.name,
-                    "response_time_millis" to responseTime,
+                    "response_time_millis" to responseTime.inWholeMilliseconds,
                     "successful" to wasSuccessful,
                     "response_code" to responseCode,
                     "etag_hit" to (resultOrigin == HTTPResult.Origin.CACHE)

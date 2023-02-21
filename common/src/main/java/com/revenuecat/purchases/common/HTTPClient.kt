@@ -28,6 +28,8 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+import java.util.Date
+import kotlin.time.Duration
 
 class HTTPClient(
     private val appConfig: AppConfig,
@@ -105,7 +107,7 @@ class HTTPClient(
         refreshETag: Boolean = false
     ): HTTPResult {
         var callSuccessful = false
-        val requestStartTime = dateProvider.now.time
+        val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         try {
             callResult = performCall(baseURL, endpoint, body, requestHeaders, refreshETag)
@@ -171,12 +173,12 @@ class HTTPClient(
 
     private fun trackHttpRequestPerformedIfNeeded(
         endpoint: Endpoint,
-        requestStartTime: Long,
+        requestStartTime: Date,
         callSuccessful: Boolean,
         callResult: HTTPResult?
     ) {
         diagnosticsTracker?.let { tracker ->
-            val responseTime = dateProvider.now.time - requestStartTime
+            val responseTime = Duration.between(requestStartTime, dateProvider.now)
             val responseCode = if (callSuccessful) {
                 // When the result given by ETagManager is null, is because we are asking to refresh the etag
                 // since we could not find the response in the cache.

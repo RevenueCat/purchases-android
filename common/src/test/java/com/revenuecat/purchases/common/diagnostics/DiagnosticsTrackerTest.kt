@@ -15,6 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -85,7 +86,7 @@ class DiagnosticsTrackerTest {
             "etag_hit" to true
         )
         every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.PostReceipt, 1234, true, 200, HTTPResult.Origin.CACHE)
+        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.PostReceipt, 1234L.milliseconds, true, 200, HTTPResult.Origin.CACHE)
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
                 event is DiagnosticsEvent.Log &&
@@ -105,7 +106,7 @@ class DiagnosticsTrackerTest {
             "etag_hit" to false
         )
         every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.GetOfferings("test id"), 1234, true, 200, HTTPResult.Origin.BACKEND)
+        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.GetOfferings("test id"), 1234L.milliseconds, true, 200, HTTPResult.Origin.BACKEND)
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
                 event is DiagnosticsEvent.Log &&
