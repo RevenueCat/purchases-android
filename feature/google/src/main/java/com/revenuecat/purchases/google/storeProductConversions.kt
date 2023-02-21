@@ -53,13 +53,13 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
         val basePlans = productDetails.subscriptionOfferDetails?.filter { it.isBasePlan } ?: emptyList()
 
         val offerDetailsBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
-            it.subscriptionBillingPeriod
+            it.basePlanId
         } ?: emptyMap()
 
         // Maps basePlans to StoreProducts, if any
         // Otherwise, maps productDetail to StoreProduct
         basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
-            val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
+            val basePlanBillingPeriod = basePlan.basePlanId
             val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
 
             productDetails.toStoreProduct(offerDetailsForBasePlan)?.let {
