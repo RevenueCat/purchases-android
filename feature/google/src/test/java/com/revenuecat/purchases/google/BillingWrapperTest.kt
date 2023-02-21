@@ -2113,6 +2113,10 @@ class BillingWrapperTest {
             mockBuilder.setProductDetailsParamsList(any())
         } returns mockBuilder
 
+        every {
+            mockBuilder.setIsOfferPersonalized(any())
+        } returns mockBuilder
+
         val params = mockk<BillingFlowParams>(relaxed = true)
         every {
             mockBuilder.build()
