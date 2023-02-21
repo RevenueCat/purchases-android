@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.diagnostics
 
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
 
@@ -59,6 +60,30 @@ sealed class DiagnosticsEntry(val diagnosticType: String) {
             put(NAME_KEY, name.lowercase())
             put(TAGS_KEY, JSONObject(tags))
             put(VALUE_KEY, value)
+        }
+    }
+
+    data class Histogram(
+        val name: String,
+        val tags: Map<String, String>,
+        val values: List<Double>
+    ) : DiagnosticsEntry("histogram") {
+        private companion object {
+            const val NAME_KEY = "name"
+            const val TAGS_KEY = "tags"
+            const val VALUES_KEY = "values"
+        }
+
+        override fun toString(): String {
+            return toJSONObject().toString()
+        }
+
+        private fun toJSONObject() = JSONObject().apply {
+            put(VERSION_KEY, VERSION)
+            put(TYPE_KEY, diagnosticType)
+            put(NAME_KEY, name.lowercase())
+            put(TAGS_KEY, JSONObject(tags))
+            put(VALUES_KEY, JSONArray(values))
         }
     }
 }

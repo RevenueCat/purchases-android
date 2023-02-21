@@ -60,4 +60,22 @@ class DiagnosticsEntryTest {
             "}"
         assertThat(eventAsString).isEqualTo(expectedString)
     }
+
+    @Test
+    fun `toString transforms histogram to correct JSON`() {
+        val event = DiagnosticsEntry.Histogram(
+            name = "test_histogram_name",
+            tags = mapOf("test-key-1" to "test-value-1", "test-key-2" to "test-value-2"),
+            values = listOf(2.1, 3.4)
+        )
+        val eventAsString = event.toString()
+        val expectedString = "{" +
+            "\"version\":1," +
+            "\"type\":\"histogram\"," +
+            "\"name\":\"test_histogram_name\"," +
+            "\"tags\":{\"test-key-1\":\"test-value-1\",\"test-key-2\":\"test-value-2\"}," +
+            "\"values\":[2.1,3.4]" +
+            "}"
+        assertThat(eventAsString).isEqualTo(expectedString)
+    }
 }

@@ -9,6 +9,7 @@ class DiagnosticsAnonymizer(
         return when (diagnosticsEntry) {
             is DiagnosticsEntry.Event -> anonymizeEvent(diagnosticsEntry)
             is DiagnosticsEntry.Counter -> diagnosticsEntry
+            is DiagnosticsEntry.Histogram -> diagnosticsEntry
         }
     }
 

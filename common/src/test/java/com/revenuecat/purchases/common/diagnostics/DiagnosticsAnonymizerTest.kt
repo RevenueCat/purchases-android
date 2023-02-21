@@ -65,7 +65,18 @@ class DiagnosticsAnonymizerTest {
             tags = emptyMap(),
             value = 123
         )
-        val anonymizedMetric = diagnosticsAnonymizer.anonymizeEntryIfNeeded(counterToAnonymize)
-        assertThat(anonymizedMetric).isEqualTo(counterToAnonymize)
+        val anonymizedCounter = diagnosticsAnonymizer.anonymizeEntryIfNeeded(counterToAnonymize)
+        assertThat(anonymizedCounter).isEqualTo(counterToAnonymize)
+    }
+
+    @Test
+    fun `anonymizeEntryIfNeeded does not anonymize histogram`() {
+        val histogramToAnonymize = DiagnosticsEntry.Histogram(
+            name = "metric-name",
+            tags = emptyMap(),
+            values = listOf(1.1)
+        )
+        val anonymizedHistogram = diagnosticsAnonymizer.anonymizeEntryIfNeeded(histogramToAnonymize)
+        assertThat(anonymizedHistogram).isEqualTo(histogramToAnonymize)
     }
 }
