@@ -66,10 +66,17 @@ class FileHelperTest {
     }
 
     @Test
-    fun `removeFirstLinesFromFile leaves content after first lines`() {
-        createTestFileWithContents("first line\nsecond line\nthird line\nfourth line")
+    fun `removeFirstLinesFromFile leaves multiple lines after first lines`() {
+        createTestFileWithContents("first line\nsecond line\nthird line\nfourth line\nfifth line\n")
         fileHelper.removeFirstLinesFromFile(testFilePath, 3)
-        verifyFileExistsWithContents("fourth line")
+        verifyFileExistsWithContents("fourth line\nfifth line\n")
+    }
+
+    @Test
+    fun `removeFirstLinesFromFile leaves content after first lines`() {
+        createTestFileWithContents("first line\nsecond line\nthird line\nfourth line\n")
+        fileHelper.removeFirstLinesFromFile(testFilePath, 3)
+        verifyFileExistsWithContents("fourth line\n")
     }
 
     @Test
