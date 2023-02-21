@@ -40,7 +40,7 @@ private const val DAYS_IN_DAY = 1
 private const val DAYS_IN_WEEK = 7
 private const val DAYS_IN_MONTH = 30
 private const val DAYS_IN_YEAR = 365
-private const val DAYS_IN_UNIT = mapOf(
+private val DAYS_IN_UNIT = mapOf(
     Period.Unit.DAY to DAYS_IN_DAY,
     Period.Unit.WEEK to DAYS_IN_WEEK,
     Period.Unit.MONTH to DAYS_IN_MONTH,
