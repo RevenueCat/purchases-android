@@ -54,5 +54,8 @@ final class StoreProductAPI {
                 googleStoreProduct.getDefaultOption(),
                 googleStoreProduct.getProductDetails()
         );
+
+        String productId = constructedGoogleStoreProduct.getProductId();
+        String basePlanId = constructedGoogleStoreProduct.getBasePlanId();
     }
 }

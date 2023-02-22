@@ -53,5 +53,8 @@ private class StoreProductAPI {
             googleStoreProduct.defaultOption,
             googleStoreProduct.productDetails
         )
+
+        val productId = constructedGoogleStoreProduct.productId;
+        val basePlanId = constructedGoogleStoreProduct.basePlanId
     }
 }
