@@ -43,7 +43,7 @@ class BillingFactoryAmazonTest {
             mockBackend,
             mockCache,
             observerMode = false,
-            diagnosticsTracker = null
+            diagnosticsTrackerIfEnabled = null
         )
     }
 }

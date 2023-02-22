@@ -21,13 +21,13 @@ object BillingFactory {
         backend: Backend,
         cache: DeviceCache,
         observerMode: Boolean,
-        diagnosticsTracker: DiagnosticsTracker?
+        diagnosticsTrackerIfEnabled: DiagnosticsTracker?
     ) = when (store) {
         Store.PLAY_STORE -> BillingWrapper(
             BillingWrapper.ClientFactory(application),
             Handler(application.mainLooper),
             cache,
-            diagnosticsTracker
+            diagnosticsTrackerIfEnabled
         )
         Store.AMAZON -> {
             try {

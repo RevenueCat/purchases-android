@@ -63,7 +63,7 @@ class BillingWrapper(
     private val mainHandler: Handler,
     private val deviceCache: DeviceCache,
     @Suppress("unused")
-    private val diagnosticsTracker: DiagnosticsTracker?
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
     @get:Synchronized

@@ -67,7 +67,7 @@ class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
     private val deviceCache: DeviceCache,
-    private val diagnosticsTracker: DiagnosticsTracker?,
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider()
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
@@ -739,7 +739,7 @@ class BillingWrapper(
         billingResult: BillingResult,
         requestStartTime: Date
     ) {
-        diagnosticsTracker?.trackGoogleQuerySkuDetailsRequest(
+        diagnosticsTrackerIfEnabled?.trackGoogleQuerySkuDetailsRequest(
             skuType,
             billingResult.responseCode,
             billingResult.debugMessage,
@@ -752,7 +752,7 @@ class BillingWrapper(
         billingResult: BillingResult,
         requestStartTime: Date
     ) {
-        diagnosticsTracker?.trackGoogleQueryPurchasesRequest(
+        diagnosticsTrackerIfEnabled?.trackGoogleQueryPurchasesRequest(
             skuType,
             billingResult.responseCode,
             billingResult.debugMessage,
@@ -761,7 +761,7 @@ class BillingWrapper(
     }
 
     private fun trackGoogleQueryPurchaseHistoryRequestIfNeeded(billingResult: BillingResult, requestStartTime: Date) {
-        diagnosticsTracker?.trackGoogleQueryPurchaseHistoryRequest(
+        diagnosticsTrackerIfEnabled?.trackGoogleQueryPurchaseHistoryRequest(
             billingResult.responseCode,
             billingResult.debugMessage,
             responseTime = Duration.between(requestStartTime, dateProvider.now)

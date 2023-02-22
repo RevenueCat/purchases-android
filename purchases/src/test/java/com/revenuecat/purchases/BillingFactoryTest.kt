@@ -41,7 +41,7 @@ class BillingFactoryTest {
             mockBackend,
             mockCache,
             observerMode = false,
-            diagnosticsTracker = null
+            diagnosticsTrackerIfEnabled = null
         )
     }
 }
