@@ -15,7 +15,6 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONException
-import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,7 +42,7 @@ class DispatcherTest {
 
 
     @Before
-    fun `setup`() {
+    fun setup() {
         currentThreadExecutorService = CurrentThreadExecutorService()
         dispatcher = Dispatcher(currentThreadExecutorService)
     }
@@ -55,7 +54,7 @@ class DispatcherTest {
 
     @Test
     fun executesInExecutor() {
-        val result = HTTPResult(200, "{}")
+        val result = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
 
         every {
             mockExecutorService.isShutdown
@@ -90,12 +89,12 @@ class DispatcherTest {
 
         call.run()
 
-        assertThat(this.errorCalled!!).isTrue()
+        assertThat(this.errorCalled!!).isTrue
     }
 
     @Test
     fun asyncCallHandlesSuccess() {
-        val result = HTTPResult(200, "{}")
+        val result = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return result

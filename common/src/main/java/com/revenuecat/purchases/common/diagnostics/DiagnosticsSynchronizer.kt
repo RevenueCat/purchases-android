@@ -88,22 +88,10 @@ class DiagnosticsSynchronizer(
         if (diagnosticsInFileCount > MAX_NUMBER_EVENTS) {
             val eventsToRemoveCount = diagnosticsInFileCount - MAX_NUMBER_EVENTS + 1
             diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemoveCount)
-            trackMaxEventsStoredLimitReached(diagnosticsInFileCount, eventsToRemoveCount)
+            diagnosticsTracker.trackMaxEventsStoredLimitReached(diagnosticsInFileCount, eventsToRemoveCount)
             return diagnosticsFileHelper.readDiagnosticsFile()
         }
         return diagnosticsList
-    }
-
-    private fun trackMaxEventsStoredLimitReached(totalEventsStored: Int, eventsRemoved: Int) {
-        diagnosticsTracker.trackEventInCurrentThread(
-            DiagnosticsEvent.Log(
-                name = DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
-                properties = mapOf(
-                    "total_number_events_stored" to totalEventsStored,
-                    "events_removed" to eventsRemoved
-                )
-            )
-        )
     }
 
     private fun enqueue(command: () -> Unit) {

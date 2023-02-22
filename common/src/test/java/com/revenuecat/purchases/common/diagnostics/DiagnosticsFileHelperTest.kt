@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config
 class DiagnosticsFileHelperTest {
 
     private val testDiagnosticsEvent = DiagnosticsEvent.Log(
-        name = DiagnosticsLogEventName.ENDPOINT_HIT,
+        name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
         properties = emptyMap()
     )
     private val diagnosticsFilePath = DiagnosticsFileHelper.DIAGNOSTICS_FILE_PATH

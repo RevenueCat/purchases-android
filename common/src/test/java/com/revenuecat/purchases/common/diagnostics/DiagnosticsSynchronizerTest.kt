@@ -199,7 +199,7 @@ class DiagnosticsSynchronizerTest {
         every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
         every { diagnosticsTracker.trackEventInCurrentThread(any()) } just Runs
         every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
-        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsTracker.trackMaxEventsStoredLimitReached(any(), any()) } just Runs
         mockBackendResponse(eventsAfterRemovingOlder)
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) }
@@ -216,19 +216,17 @@ class DiagnosticsSynchronizerTest {
         val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
         every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
         every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
-        every { diagnosticsTracker.trackEventInCurrentThread(any()) } just Runs
-        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
+        every {
+            diagnosticsTracker.trackMaxEventsStoredLimitReached(totalNumberOfEventsInFile, eventsToRemove)
+        } just Runs
         mockBackendResponse(eventsAfterRemovingOlder)
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) {
-            diagnosticsTracker.trackEventInCurrentThread(match { event ->
-                (event is DiagnosticsEvent.Log)
-                    && event.name == DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED
-                    && event.properties == mapOf(
-                    "total_number_events_stored" to totalNumberOfEventsInFile,
-                    "events_removed" to eventsToRemove
-                )
-            })
+            diagnosticsTracker.trackMaxEventsStoredLimitReached(
+                totalNumberOfEventsInFile,
+                eventsToRemove,
+                useCurrentThread = true
+            )
         }
     }
 
