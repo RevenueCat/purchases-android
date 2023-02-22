@@ -19,6 +19,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.concurrent.CountDownLatch
+import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("TooManyFunctions")
 @RunWith(AndroidJUnit4::class)
@@ -122,7 +123,7 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "test-debug-message",
-                responseTimeMillis = 123
+                responseTime = 123.milliseconds
             )
         }
     }
@@ -151,7 +152,7 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
                 billingDebugMessage = "test-debug-message",
-                responseTimeMillis = 123
+                responseTime = 123.milliseconds
             )
         }
     }
@@ -181,7 +182,7 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
                 BillingClient.SkuType.SUBS,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "test-debug-message",
-                responseTimeMillis = 123
+                responseTime = 123.milliseconds
             )
         }
     }
@@ -211,7 +212,7 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
                 BillingClient.SkuType.SUBS,
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR,
                 billingDebugMessage = "test-debug-message",
-                responseTimeMillis = 123
+                responseTime = 123.milliseconds
             )
         }
     }
@@ -248,13 +249,13 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
                 BillingClient.SkuType.SUBS,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "test-debug-message",
-                responseTimeMillis = 123
+                responseTime = 123.milliseconds
             )
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
                 BillingClient.SkuType.INAPP,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "test-debug-message",
-                responseTimeMillis = 400
+                responseTime = 400.milliseconds
             )
         }
     }
@@ -284,7 +285,7 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
                 BillingClient.SkuType.SUBS,
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 billingDebugMessage = "test-debug-message",
-                responseTimeMillis = 123
+                responseTime = 123.milliseconds
             )
         }
     }
@@ -318,13 +319,13 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
                 BillingClient.SkuType.SUBS,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "",
-                responseTimeMillis = 123
+                responseTime = 123.milliseconds
             )
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
                 BillingClient.SkuType.INAPP,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "",
-                responseTimeMillis = 400
+                responseTime = 400.milliseconds
             )
         }
     }
@@ -347,7 +348,7 @@ class BillingWrapperBC4Test : BillingWrapperTestBase() {
                 BillingClient.SkuType.SUBS,
                 BillingClient.BillingResponseCode.OK,
                 billingDebugMessage = "",
-                responseTimeMillis = 123
+                responseTime = 123.milliseconds
             )
         }
     }

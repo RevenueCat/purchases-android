@@ -34,6 +34,7 @@ import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
+import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
@@ -53,8 +54,10 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.min
+import kotlin.time.Duration
 
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
@@ -255,7 +258,7 @@ class BillingWrapper(
     }
 
     fun queryPurchaseHistoryAsync(
-        @BillingClient.SkuType skuType: String,
+        @SkuType skuType: String,
         onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit
     ) {
@@ -681,7 +684,7 @@ class BillingWrapper(
         listener: SkuDetailsResponseListener
     ) {
         var hasResponded = false
-        val requestStartTime = dateProvider.now.time
+        val requestStartTime = dateProvider.now
         querySkuDetailsAsync(params) { billingResult, skuDetailsList ->
             synchronized(this@BillingWrapper) {
                 if (hasResponded) {
@@ -703,7 +706,7 @@ class BillingWrapper(
         listener: PurchaseHistoryResponseListener
     ) {
         var hasResponded = false
-        val requestStartTime = dateProvider.now.time
+        val requestStartTime = dateProvider.now
         queryPurchaseHistoryAsync(skuType) { billingResult, purchaseHistory ->
             synchronized(this@BillingWrapper) {
                 if (hasResponded) {
@@ -721,10 +724,10 @@ class BillingWrapper(
     }
 
     private fun BillingClient.queryPurchasesAsyncWithTracking(
-        @BillingClient.SkuType skuType: String,
+        @SkuType skuType: String,
         listener: PurchasesResponseListener
     ) {
-        val requestStartTime = dateProvider.now.time
+        val requestStartTime = dateProvider.now
         queryPurchasesAsync(skuType) { billingResult, purchases ->
             trackGoogleQueryPurchasesRequestIfNeeded(skuType, billingResult, requestStartTime)
             listener.onQueryPurchasesResponse(billingResult, purchases)
@@ -732,36 +735,36 @@ class BillingWrapper(
     }
 
     private fun trackGoogleQuerySkuDetailsRequestIfNeeded(
-        @BillingClient.SkuType skuType: String,
+        @SkuType skuType: String,
         billingResult: BillingResult,
-        requestStartTime: Long
+        requestStartTime: Date
     ) {
         diagnosticsTracker?.trackGoogleQuerySkuDetailsRequest(
             skuType,
             billingResult.responseCode,
             billingResult.debugMessage,
-            responseTimeMillis = dateProvider.now.time - requestStartTime
+            responseTime = Duration.between(requestStartTime, dateProvider.now)
         )
     }
 
     private fun trackGoogleQueryPurchasesRequestIfNeeded(
-        @BillingClient.SkuType skuType: String,
+        @SkuType skuType: String,
         billingResult: BillingResult,
-        requestStartTime: Long
+        requestStartTime: Date
     ) {
         diagnosticsTracker?.trackGoogleQueryPurchasesRequest(
             skuType,
             billingResult.responseCode,
             billingResult.debugMessage,
-            responseTimeMillis = dateProvider.now.time - requestStartTime
+            responseTime = Duration.between(requestStartTime, dateProvider.now)
         )
     }
 
-    private fun trackGoogleQueryPurchaseHistoryRequestIfNeeded(billingResult: BillingResult, requestStartTime: Long) {
+    private fun trackGoogleQueryPurchaseHistoryRequestIfNeeded(billingResult: BillingResult, requestStartTime: Date) {
         diagnosticsTracker?.trackGoogleQueryPurchaseHistoryRequest(
             billingResult.responseCode,
             billingResult.debugMessage,
-            responseTimeMillis = dateProvider.now.time - requestStartTime
+            responseTime = Duration.between(requestStartTime, dateProvider.now)
         )
     }
 }

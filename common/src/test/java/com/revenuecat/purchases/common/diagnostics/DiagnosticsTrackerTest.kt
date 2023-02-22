@@ -146,7 +146,7 @@ class DiagnosticsTrackerTest {
             skuType = "subs",
             billingResponseCode = 12,
             billingDebugMessage = "test-debug-message",
-            responseTimeMillis = 1234
+            responseTime = 1234L.milliseconds
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
@@ -170,7 +170,7 @@ class DiagnosticsTrackerTest {
             skuType = "subs",
             billingResponseCode = 12,
             billingDebugMessage = "test-debug-message",
-            responseTimeMillis = 1234
+            responseTime = 1234L.milliseconds
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
@@ -192,7 +192,7 @@ class DiagnosticsTrackerTest {
         diagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
             billingResponseCode = 12,
             billingDebugMessage = "test-debug-message",
-            responseTimeMillis = 1234
+            responseTime = 1234L.milliseconds
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->

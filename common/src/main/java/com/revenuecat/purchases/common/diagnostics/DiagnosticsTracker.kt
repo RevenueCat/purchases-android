@@ -45,7 +45,7 @@ class DiagnosticsTracker(
         skuType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
-        responseTimeMillis: Long
+        responseTime: Duration
     ) {
         trackEvent(
             DiagnosticsEntry.Event(
@@ -54,7 +54,7 @@ class DiagnosticsTracker(
                     "sku_type_queried" to skuType,
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
-                    RESPONSE_TIME_MILLIS_KEY to responseTimeMillis
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds
                 )
             )
         )
@@ -64,7 +64,7 @@ class DiagnosticsTracker(
         skuType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
-        responseTimeMillis: Long
+        responseTime: Duration
     ) {
         trackEvent(
             DiagnosticsEntry.Event(
@@ -73,7 +73,7 @@ class DiagnosticsTracker(
                     "sku_type_queried" to skuType,
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
-                    RESPONSE_TIME_MILLIS_KEY to responseTimeMillis
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds
                 )
             )
         )
@@ -82,7 +82,7 @@ class DiagnosticsTracker(
     fun trackGoogleQueryPurchaseHistoryRequest(
         billingResponseCode: Int,
         billingDebugMessage: String,
-        responseTimeMillis: Long
+        responseTime: Duration
     ) {
         trackEvent(
             DiagnosticsEntry.Event(
@@ -90,7 +90,7 @@ class DiagnosticsTracker(
                 properties = mapOf(
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
-                    RESPONSE_TIME_MILLIS_KEY to responseTimeMillis
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds
                 )
             )
         )
