@@ -25,8 +25,8 @@ class DiagnosticsTracker(
         resultOrigin: HTTPResult.Origin?
     ) {
         trackEvent(
-            DiagnosticsEvent.Log(
-                name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
+            DiagnosticsEntry.Event(
+                name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
                 properties = mapOf(
                     "endpoint_name" to endpoint.name,
                     "response_time_millis" to responseTime.inWholeMilliseconds,
@@ -39,8 +39,8 @@ class DiagnosticsTracker(
     }
 
     fun trackMaxEventsStoredLimitReached(totalEventsStored: Int, eventsRemoved: Int, useCurrentThread: Boolean = true) {
-        val event = DiagnosticsEvent.Log(
-            name = DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
+        val event = DiagnosticsEntry.Event(
+            name = DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
             properties = mapOf(
                 "total_number_events_stored" to totalEventsStored,
                 "events_removed" to eventsRemoved
@@ -53,17 +53,17 @@ class DiagnosticsTracker(
         }
     }
 
-    fun trackEvent(diagnosticsEvent: DiagnosticsEvent) {
+    fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
         diagnosticsDispatcher.enqueue(command = {
-            trackEventInCurrentThread(diagnosticsEvent)
+            trackEventInCurrentThread(diagnosticsEntry)
         })
     }
 
-    internal fun trackEventInCurrentThread(diagnosticsEvent: DiagnosticsEvent) {
-        val anonymizedEvent = diagnosticsAnonymizer.anonymizeEventIfNeeded(diagnosticsEvent)
+    internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
+        val anonymizedEvent = diagnosticsAnonymizer.anonymizeEntryIfNeeded(diagnosticsEntry)
         verboseLog("Tracking diagnostics event: $anonymizedEvent")
         try {
-            diagnosticsFileHelper.appendEventToDiagnosticsFile(anonymizedEvent)
+            diagnosticsFileHelper.appendEntryToDiagnosticsFile(anonymizedEvent)
         } catch (e: IOException) {
             verboseLog("Error tracking diagnostics event: $e")
         }

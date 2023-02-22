@@ -18,8 +18,8 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class DiagnosticsFileHelperTest {
 
-    private val testDiagnosticsEvent = DiagnosticsEvent.Log(
-        name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
+    private val testDiagnosticsEntry = DiagnosticsEntry.Event(
+        name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
         properties = emptyMap()
     )
     private val diagnosticsFilePath = DiagnosticsFileHelper.DIAGNOSTICS_FILE_PATH
@@ -35,10 +35,10 @@ class DiagnosticsFileHelperTest {
     }
 
     @Test
-    fun `appendEventToDiagnosticsFile calls are correct`() {
-        val contentToAppend = "$testDiagnosticsEvent\n"
+    fun `appendEntryToDiagnosticsFile calls are correct`() {
+        val contentToAppend = "$testDiagnosticsEntry\n"
         every { fileHelper.appendToFile(diagnosticsFilePath, contentToAppend) } just Runs
-        diagnosticsFileHelper.appendEventToDiagnosticsFile(testDiagnosticsEvent)
+        diagnosticsFileHelper.appendEntryToDiagnosticsFile(testDiagnosticsEntry)
         verify(exactly = 1) { fileHelper.appendToFile(diagnosticsFilePath, contentToAppend) }
     }
 
