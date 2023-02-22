@@ -700,7 +700,7 @@ class Purchases internal constructor(
             // TODOBC5 Move this logic to StoreProduct
             packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
-            isPersonalizedPrice, // TODOC5 figure out isPersonalizedPrice with package
+            isPersonalizedPrice,
             listener
         )
     }
