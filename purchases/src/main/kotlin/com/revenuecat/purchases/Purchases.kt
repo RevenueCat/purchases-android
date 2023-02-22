@@ -1174,7 +1174,6 @@ class Purchases internal constructor(
         }
     }
 
-    // TODO: Probably need to add tests for this now
     private fun logMissingProducts(
         offerings: Offerings,
         storeProductByID: Map<String, List<StoreProduct>>
