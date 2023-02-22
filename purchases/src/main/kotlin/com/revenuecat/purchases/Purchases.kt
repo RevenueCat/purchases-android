@@ -1087,8 +1087,8 @@ class Purchases internal constructor(
             appInBackground,
             { offeringsJSON ->
                 try {
-                    val productIdentifiers = extractProductIdentifiers(offeringsJSON)
-                    if (productIdentifiers.isEmpty()) {
+                    val allRequestedProductIdentifiers = extractProductIdentifiers(offeringsJSON)
+                    if (allRequestedProductIdentifiers.isEmpty()) {
                         handleErrorFetchingOfferings(
                             PurchasesError(
                                 PurchasesErrorCode.ConfigurationError,
@@ -1097,11 +1097,10 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getStoreProductsById(productIdentifiers, { productsById ->
+                        getStoreProductsById(allRequestedProductIdentifiers, { productsById ->
+                            logMissingProducts(allRequestedProductIdentifiers, productsById)
+
                             val offerings = offeringsJSON.createOfferings(productsById)
-
-                            logMissingProducts(offerings, productsById)
-
                             if (offerings.all.isEmpty()) {
                                 handleErrorFetchingOfferings(
                                     PurchasesError(
@@ -1175,11 +1174,9 @@ class Purchases internal constructor(
     }
 
     private fun logMissingProducts(
-        offerings: Offerings,
+        allProductIdsInOfferings: Set<String>,
         storeProductByID: Map<String, List<StoreProduct>>
-    ) = offerings.all.values
-        .flatMap { it.availablePackages }
-        .map { it.product.id }
+    ) = allProductIdsInOfferings
         .filterNot { storeProductByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
