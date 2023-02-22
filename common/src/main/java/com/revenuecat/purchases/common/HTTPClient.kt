@@ -6,10 +6,14 @@
 package com.revenuecat.purchases.common
 
 import android.os.Build
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
@@ -24,11 +28,20 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+import java.util.Date
+import kotlin.time.Duration
 
 class HTTPClient(
     private val appConfig: AppConfig,
-    private val eTagManager: ETagManager
+    private val eTagManager: ETagManager,
+    private val diagnosticsTracker: DiagnosticsTracker?,
+    private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal companion object {
+        // This will be used when we could not reach the server due to connectivity or any other issues.
+        const val NO_STATUS_CODE = -1
+    }
 
     private fun buffer(inputStream: InputStream): BufferedReader {
         return BufferedReader(InputStreamReader(inputStream))
@@ -77,7 +90,8 @@ class HTTPClient(
     }
 
     /** Performs a synchronous web request to the RevenueCat API
-     * @param path The resource being requested
+     * @param baseURL The server URL used to perform the request
+     * @param endpoint Endpoint being used for the request
      * @param body The body of the request, for GET must be null
      * @param requestHeaders Map of headers, basic headers are added automatically
      * @return Result containing the HTTP response code and the parsed JSON body
@@ -87,22 +101,43 @@ class HTTPClient(
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
         baseURL: URL,
-        path: String,
+        endpoint: Endpoint,
         body: Map<String, Any?>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean = false
     ): HTTPResult {
-        val jsonBody = body?.convert()
-
-        val fullURL: URL
-        val connection: HttpURLConnection
-        val httpRequest: HTTPRequest
-        val urlPathWithVersion = "/v1$path"
+        var callSuccessful = false
+        val requestStartTime = dateProvider.now
+        var callResult: HTTPResult? = null
         try {
-            fullURL = URL(baseURL, urlPathWithVersion)
+            callResult = performCall(baseURL, endpoint, body, requestHeaders, refreshETag)
+            callSuccessful = true
+        } finally {
+            trackHttpRequestPerformedIfNeeded(endpoint, requestStartTime, callSuccessful, callResult)
+        }
+        if (callResult == null) {
+            log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
+            return performRequest(baseURL, endpoint, body, requestHeaders, refreshETag = true)
+        }
+        return callResult
+    }
+
+    private fun performCall(
+        baseURL: URL,
+        endpoint: Endpoint,
+        body: Map<String, Any?>?,
+        requestHeaders: Map<String, String>,
+        refreshETag: Boolean
+    ): HTTPResult? {
+        val jsonBody = body?.convert()
+        val path = endpoint.getPath()
+        val urlPathWithVersion = "/v1$path"
+        val connection: HttpURLConnection
+        try {
+            val fullURL = URL(baseURL, urlPathWithVersion)
 
             val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag)
-            httpRequest = HTTPRequest(fullURL, headers, jsonBody)
+            val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
             connection = getConnection(httpRequest)
         } catch (e: MalformedURLException) {
@@ -114,7 +149,7 @@ class HTTPClient(
         val payload: String?
         val responseCode: Int
         try {
-            log(LogIntent.DEBUG, NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
+            debugLog(NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path))
             responseCode = connection.responseCode
             payload = inputStream?.let { readFully(it) }
         } finally {
@@ -122,23 +157,39 @@ class HTTPClient(
             connection.disconnect()
         }
 
-        log(LogIntent.DEBUG, NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
+        debugLog(NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode))
         if (payload == null) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
 
-        val callResult: HTTPResult? = eTagManager.getHTTPResultFromCacheOrBackend(
+        return eTagManager.getHTTPResultFromCacheOrBackend(
             responseCode,
             payload,
             connection,
             urlPathWithVersion,
             refreshETag
         )
-        if (callResult == null) {
-            log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-            return performRequest(baseURL, path, body, requestHeaders, refreshETag = true)
+    }
+
+    private fun trackHttpRequestPerformedIfNeeded(
+        endpoint: Endpoint,
+        requestStartTime: Date,
+        callSuccessful: Boolean,
+        callResult: HTTPResult?
+    ) {
+        diagnosticsTracker?.let { tracker ->
+            val responseTime = Duration.between(requestStartTime, dateProvider.now)
+            val responseCode = if (callSuccessful) {
+                // When the result given by ETagManager is null, is because we are asking to refresh the etag
+                // since we could not find the response in the cache.
+                callResult?.responseCode ?: RCHTTPStatusCodes.NOT_MODIFIED
+            } else {
+                NO_STATUS_CODE
+            }
+            val origin = callResult?.origin
+            val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
+            tracker.trackHttpRequestPerformed(endpoint, responseTime, requestWasError, responseCode, origin)
         }
-        return callResult
     }
 
     fun clearCaches() {

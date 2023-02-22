@@ -5,10 +5,10 @@
 
 package com.revenuecat.purchases.common
 
-import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -45,10 +45,6 @@ class Backend(
     private val diagnosticsDispatcher: Dispatcher,
     private val httpClient: HTTPClient
 ) {
-    private companion object {
-        const val DIAGNOSTICS_ENDPOINT = "/telemetry"
-    }
-
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
     @get:Synchronized @set:Synchronized
@@ -71,7 +67,7 @@ class Backend(
     }
 
     fun performRequest(
-        path: String,
+        endpoint: Endpoint,
         body: Map<String, Any?>?,
         onError: (PurchasesError) -> Unit,
         onCompleted: (PurchasesError?, Int, JSONObject) -> Unit
@@ -80,7 +76,7 @@ class Backend(
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     appConfig.baseURL,
-                    path,
+                    endpoint,
                     body,
                     authenticationHeaders
                 )
@@ -107,7 +103,8 @@ class Backend(
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        val path = "/subscribers/" + encode(appUserID)
+        val endpoint = Endpoint.GetCustomerInfo(appUserID)
+        val path = endpoint.getPath()
         val cacheKey = synchronized(this@Backend) {
             // If there is any enqueued `postReceiptData` we don't want this new
             // `getCustomerInfo` to share the same cache key.
@@ -124,7 +121,7 @@ class Backend(
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     appConfig.baseURL,
-                    path,
+                    endpoint,
                     null,
                     authenticationHeaders
                 )
@@ -207,7 +204,7 @@ class Backend(
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     appConfig.baseURL,
-                    "/receipts",
+                    Endpoint.PostReceipt,
                     body,
                     authenticationHeaders + extraHeaders
                 )
@@ -258,12 +255,13 @@ class Backend(
         onSuccess: (JSONObject) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        val path = "/subscribers/" + encode(appUserID) + "/offerings"
+        val endpoint = Endpoint.GetOfferings(appUserID)
+        val path = endpoint.getPath()
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     appConfig.baseURL,
-                    path,
+                    endpoint,
                     null,
                     authenticationHeaders
                 )
@@ -298,10 +296,6 @@ class Backend(
         }
     }
 
-    private fun encode(string: String): String {
-        return Uri.encode(string)
-    }
-
     fun logIn(
         appUserID: String,
         newAppUserID: String,
@@ -316,7 +310,7 @@ class Backend(
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     appConfig.baseURL,
-                    "/subscribers/identify",
+                    Endpoint.LogIn,
                     mapOf(
                         "new_app_user_id" to newAppUserID,
                         "app_user_id" to appUserID
@@ -369,7 +363,7 @@ class Backend(
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     appConfig.diagnosticsURL,
-                    DIAGNOSTICS_ENDPOINT,
+                    Endpoint.PostDiagnostics,
                     body,
                     authenticationHeaders
                 )
