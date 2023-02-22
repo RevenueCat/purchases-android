@@ -9,6 +9,7 @@ import androidx.core.view.get
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.amazon.AmazonConfiguration
@@ -74,10 +75,15 @@ class ConfigureFragment : Fragment() {
 
         if (proxyUrl.isNotEmpty()) Purchases.proxyURL = URL(proxyUrl)
 
+        Purchases.logLevel = LogLevel.VERBOSE
+
         val configurationBuilder =
             if (useAmazonStore) AmazonConfiguration.Builder(application, apiKey)
             else PurchasesConfiguration.Builder(application, apiKey)
-        val configuration = configurationBuilder.build()
+
+        val configuration = configurationBuilder
+            .diagnosticsEnabled(true)
+            .build()
         Purchases.configure(configuration)
 
         // set attributes to store additional, structured information for a user in RevenueCat.

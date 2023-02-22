@@ -24,7 +24,7 @@ import java.io.IOException
 @Config(manifest = Config.NONE)
 class DiagnosticsSynchronizerTest {
 
-    private val testDiagnosticsEventJSONs = listOf(
+    private val testDiagnosticsEntryJSONs = listOf(
         JSONObject(mapOf("test-key" to "test-value")),
         JSONObject(mapOf("test-key-2" to "test-value-2"))
     )
@@ -71,26 +71,26 @@ class DiagnosticsSynchronizerTest {
 
     @Test
     fun `syncDiagnosticsFileIfNeeded calls backend with correct parameters if file has contents`() {
-        mockBackendResponse(testDiagnosticsEventJSONs)
+        mockBackendResponse(testDiagnosticsEntryJSONs)
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
         verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile() }
-        verify(exactly = 1) { backend.postDiagnostics(testDiagnosticsEventJSONs, any(), any()) }
+        verify(exactly = 1) { backend.postDiagnostics(testDiagnosticsEntryJSONs, any(), any()) }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded cleans sent events if backend request successful`() {
-        mockBackendResponse(testDiagnosticsEventJSONs, successReturn = JSONObject())
+        mockBackendResponse(testDiagnosticsEntryJSONs, successReturn = JSONObject())
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEventJSONs.size) }
+        verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEntryJSONs.size) }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded removes consecutive failures count if request successful`() {
-        mockBackendResponse(testDiagnosticsEventJSONs, successReturn = JSONObject())
+        mockBackendResponse(testDiagnosticsEntryJSONs, successReturn = JSONObject())
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
@@ -100,7 +100,7 @@ class DiagnosticsSynchronizerTest {
     @Test
     fun `syncDiagnosticsFileIfNeeded increases consecutive errors count if backend request unsuccessful`() {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
-        mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
+        mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
@@ -114,7 +114,7 @@ class DiagnosticsSynchronizerTest {
     @Test
     fun `syncDiagnosticsFileIfNeeded does not delete file if backend request unsuccessful once`() {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
-        mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
+        mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
@@ -124,7 +124,7 @@ class DiagnosticsSynchronizerTest {
     @Test
     fun `syncDiagnosticsFileIfNeeded deletes file if backend request unsuccessful and last retry`() {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
-        mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
+        mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
         every {
             sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         } returns DiagnosticsSynchronizer.MAX_NUMBER_POST_RETRIES - 1
@@ -137,7 +137,7 @@ class DiagnosticsSynchronizerTest {
     @Test
     fun `syncDiagnosticsFileIfNeeded removes consecutive failures count if request unsuccessful and last retry`() {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
-        mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
+        mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
         every {
             sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         } returns DiagnosticsSynchronizer.MAX_NUMBER_POST_RETRIES - 1
@@ -150,7 +150,7 @@ class DiagnosticsSynchronizerTest {
     @Test
     fun `syncDiagnosticsFileIfNeeded removes file if should not retry`() {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), false)
-        mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
+        mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
@@ -160,7 +160,7 @@ class DiagnosticsSynchronizerTest {
     @Test
     fun `syncDiagnosticsFileIfNeeded removes consecutive failures count if should not retry`() {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), false)
-        mockBackendResponse(testDiagnosticsEventJSONs, errorReturn = errorCallbackResponse)
+        mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
@@ -250,20 +250,20 @@ class DiagnosticsSynchronizerTest {
 
     private fun mockDiagnosticsFileHelper() {
         diagnosticsFileHelper = mockk()
-        every { diagnosticsFileHelper.readDiagnosticsFile() } returns testDiagnosticsEventJSONs
+        every { diagnosticsFileHelper.readDiagnosticsFile() } returns testDiagnosticsEntryJSONs
         every { diagnosticsFileHelper.deleteDiagnosticsFile() } just Runs
-        every { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEventJSONs.size) } just Runs
+        every { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEntryJSONs.size) } just Runs
     }
 
     private fun mockBackendResponse(
-        diagnosticsEvents: List<JSONObject>,
+        diagnosticsEntries: List<JSONObject>,
         successReturn: JSONObject? = null,
         errorReturn: Pair<PurchasesError, Boolean>? = null
     ) {
         val successCallbackSlot = slot<(JSONObject) -> Unit>()
         val errorCallbackSlot = slot<(PurchasesError, Boolean) -> Unit>()
         every { backend.postDiagnostics(
-            diagnosticsEvents,
+            diagnosticsEntries,
             capture(successCallbackSlot),
             capture(errorCallbackSlot)
         ) } answers {

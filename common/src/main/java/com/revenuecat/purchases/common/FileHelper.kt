@@ -45,7 +45,7 @@ class FileHelper(
             errorLog("Trying to remove $numberOfLinesToRemove from file with ${readLines.size} lines.")
             ""
         } else {
-            readLines.subList(numberOfLinesToRemove, readLines.size).joinToString(separator = "")
+            readLines.subList(numberOfLinesToRemove, readLines.size).joinToString(separator = "\n", postfix = "\n")
         }
         appendToFile(filePath, textToAppend)
     }
