@@ -1005,7 +1005,7 @@ class BackendTest {
     @Test
     fun `offerings call is enqueued with delay if on background`() {
         mockResponse(Endpoint.GetOfferings(appUserID), null, 200, null, noOfferingsResponse)
-        dispatcher.calledWithRandomDelay = null
+        dispatcher.calledDelay = null
         backend.getOfferings(
             appUserID,
             appInBackground = true,
@@ -1013,20 +1013,20 @@ class BackendTest {
             onError = onReceiveOfferingsErrorHandler
         )
 
-        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
-        assertThat(calledWithRandomDelay).isNotNull
-        assertThat(calledWithRandomDelay).isTrue
+        val calledDelay = dispatcher.calledDelay
+        assertThat(calledDelay).isNotNull
+        assertThat(calledDelay).isEqualTo(Delay.DEFAULT)
     }
 
     @Test
     fun `customer info call is enqueued with delay if on background`() {
-        dispatcher.calledWithRandomDelay = null
+        dispatcher.calledDelay = null
 
         getCustomerInfo(200, clientException = null, resultBody = null, appInBackground = true)
 
-        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
-        assertThat(calledWithRandomDelay).isNotNull
-        assertThat(calledWithRandomDelay).isTrue
+        val calledDelay = dispatcher.calledDelay
+        assertThat(calledDelay).isNotNull
+        assertThat(calledDelay).isEqualTo(Delay.DEFAULT)
     }
 
     @Test
@@ -1671,16 +1671,16 @@ class BackendTest {
             resultBody = "{}",
             baseURL = mockDiagnosticsBaseURL
         )
-        dispatcher.calledWithRandomDelay = null
+        dispatcher.calledDelay = null
         backend.postDiagnostics(
             listOf(JSONObject("{\"test-key\":\"test-value\"}")),
             {},
             { _, _ -> fail("expected success") }
         )
 
-        val calledWithRandomDelay: Boolean? = dispatcher.calledWithRandomDelay
-        assertThat(calledWithRandomDelay).isNotNull
-        assertThat(calledWithRandomDelay).isTrue
+        val calledDelay = dispatcher.calledDelay
+        assertThat(calledDelay).isNotNull
+        assertThat(calledDelay).isEqualTo(Delay.LONG)
     }
 
 

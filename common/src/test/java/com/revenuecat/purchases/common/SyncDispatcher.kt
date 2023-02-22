@@ -1,15 +1,16 @@
 package com.revenuecat.purchases.common
 
 import io.mockk.mockk
+import java.util.concurrent.Delayed
 import java.util.concurrent.RejectedExecutionException
 
 internal class SyncDispatcher : Dispatcher(mockk()) {
 
     private var closed = false
-    var calledWithRandomDelay: Boolean? = null
+    var calledDelay: Delay? = null
 
-    override fun enqueue(command: Runnable, useRandomDelay: Boolean) {
-        calledWithRandomDelay = useRandomDelay
+    override fun enqueue(command: Runnable, delay: Delay) {
+        calledDelay = delay
         if (closed) {
             throw RejectedExecutionException()
         }

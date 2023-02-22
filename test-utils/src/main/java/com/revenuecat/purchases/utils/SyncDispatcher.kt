@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.utils
 
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import io.mockk.mockk
 import java.util.concurrent.RejectedExecutionException
@@ -8,7 +9,7 @@ class SyncDispatcher : Dispatcher(mockk()) {
 
     private var closed = false
 
-    override fun enqueue(command: Runnable, useRandomDelay: Boolean) {
+    override fun enqueue(command: Runnable, delay: Delay) {
         if (closed) {
             throw RejectedExecutionException()
         }
