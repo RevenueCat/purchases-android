@@ -53,6 +53,12 @@ open class PurchasesConfiguration(builder: Builder) {
             this.store = store
         }
 
+        /**
+         * Enabling diagnostics will send some performance and debugging information from the SDK to our servers.
+         * Examples of this information include response times, cache hits or error codes.
+         * This information will be anonymized so it can't be traced back to the end-user.
+         * The default value is false.
+         */
         fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
             this.diagnosticsEnabled = diagnosticsEnabled
         }
