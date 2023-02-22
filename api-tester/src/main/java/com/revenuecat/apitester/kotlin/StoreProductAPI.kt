@@ -54,7 +54,7 @@ private class StoreProductAPI {
             googleStoreProduct.productDetails
         )
 
-        val productId = constructedGoogleStoreProduct.productId;
+        val productId = constructedGoogleStoreProduct.productId
         val basePlanId = constructedGoogleStoreProduct.basePlanId
     }
 }

@@ -1343,7 +1343,7 @@ class Purchases internal constructor(
             productIds,
             { subscriptionProducts ->
                 val productsById = subscriptionProducts
-                    .groupBy { subProduct -> subProduct.purchasingData.productId } // TODO: Maybe add parent plan to StoreProduct?
+                    .groupBy { subProduct -> subProduct.purchasingData.productId }
                     .toMutableMap()
                 val subscriptionIds = productsById.keys
 
