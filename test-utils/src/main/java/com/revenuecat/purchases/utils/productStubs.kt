@@ -30,7 +30,7 @@ fun stubStoreProduct(
     subscriptionOptions: List<SubscriptionOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
     price: Price = subscriptionOptions.first().fullPricePhase!!.price
 ): StoreProduct = object : StoreProduct {
-    override val productId: String
+    override val id: String
         get() = productId
     override val type: ProductType
         get() = ProductType.SUBS
@@ -62,7 +62,7 @@ fun stubStoreProduct(
 fun stubINAPPStoreProduct(
     productId: String
 ): StoreProduct = object : StoreProduct {
-    override val productId: String
+    override val id: String
         get() = productId
     override val type: ProductType
         get() = ProductType.INAPP

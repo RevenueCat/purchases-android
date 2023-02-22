@@ -1060,7 +1060,7 @@ class PurchasesTest {
         )
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(
-                offerings[stubOfferingIdentifier]!!.monthly!!.product.productId,
+                offerings[stubOfferingIdentifier]!!.monthly!!.product.id,
                 purchaseToken,
                 ProductType.SUBS
             )
@@ -4452,19 +4452,19 @@ class PurchasesTest {
         offeringIdentifier: String?,
         subscriptionOptionId: String? = this.subscriptionOptionId
     ): ReceiptInfo {
-        if (type == ProductType.SUBS) {
+        return if (type == ProductType.SUBS) {
             val productDetails = createMockProductDetailsFreeTrial(productId, 2.00)
 
             val storeProduct = productDetails.toStoreProduct(
                 productDetails.subscriptionOfferDetails!!
             )!!
 
-            return mockQueryingProductDetails(storeProduct, offeringIdentifier, subscriptionOptionId)
+            mockQueryingProductDetails(storeProduct, offeringIdentifier, subscriptionOptionId)
         } else {
             val productDetails = createMockOneTimeProductDetails(productId, 2.00)
             val storeProduct = productDetails.toInAppStoreProduct()!!
 
-            return mockQueryingProductDetails(storeProduct, offeringIdentifier, null)
+            mockQueryingProductDetails(storeProduct, offeringIdentifier, null)
         }
     }
 
@@ -4473,8 +4473,10 @@ class PurchasesTest {
         offeringIdentifier: String?,
         subscriptionOptionId: String? = this.subscriptionOptionId
     ): ReceiptInfo {
+        val productId = storeProduct.purchasingData.productId
+
         val receiptInfo = ReceiptInfo(
-            productIDs = listOf(storeProduct.productId),
+            productIDs = listOf(productId),
             offeringIdentifier = offeringIdentifier,
             storeProduct = storeProduct,
             subscriptionOptionId = if (storeProduct.type == ProductType.SUBS) subscriptionOptionId else null
@@ -4483,7 +4485,7 @@ class PurchasesTest {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 storeProduct.type,
-                setOf(storeProduct.productId),
+                setOf(productId),
                 captureLambda(),
                 any()
             )

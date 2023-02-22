@@ -24,6 +24,7 @@ fun ProductDetails.toStoreProduct(
 
     return GoogleStoreProduct(
         productId,
+        basePlan?.id,
         productType.toRevenueCatProductType(),
         price,
         title,

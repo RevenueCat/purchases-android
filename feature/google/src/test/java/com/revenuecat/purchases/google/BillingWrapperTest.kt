@@ -677,7 +677,7 @@ class BillingWrapperTest {
         }
 
         val storeProduct = object : StoreProduct {
-            override val productId: String
+            override val id: String
                 get() = "mock-sku"
             override val type: ProductType
                 get() = ProductType.SUBS
@@ -696,7 +696,7 @@ class BillingWrapperTest {
             override val purchasingData: PurchasingData
                 get() = purchasingInfo
             override val sku: String
-                get() = productId
+                get() = id
 
             override fun describeContents(): Int = 0
 
