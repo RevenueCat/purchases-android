@@ -11,7 +11,7 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class DiagnosticsEventTest {
+class DiagnosticsEntryTest {
 
     private val testDate = Date(1675954145L) // Thursday, February 9, 2023 2:49:05 PM GMT
 
@@ -26,16 +26,16 @@ class DiagnosticsEventTest {
     }
 
     @Test
-    fun `toString transforms log event to correct JSON`() {
-        val event = DiagnosticsEvent.Log(
-            name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
+    fun `toString transforms event to correct JSON`() {
+        val event = DiagnosticsEntry.Event(
+            name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
             properties = mapOf("test-key-1" to "test-value-1", "test-key-2" to 123, "test-key-3" to true),
             dateProvider = testDateProvider
         )
         val eventAsString = event.toString()
         val expectedString = "{" +
             "\"version\":1," +
-            "\"type\":\"log\"," +
+            "\"type\":\"event\"," +
             "\"name\":\"http_request_performed\"," +
             "\"properties\":{\"test-key-1\":\"test-value-1\",\"test-key-2\":123,\"test-key-3\":true}," +
             "\"timestamp\":1675954145" +
@@ -44,39 +44,37 @@ class DiagnosticsEventTest {
     }
 
     @Test
-    fun `toString transforms metrics event to correct JSON`() {
-        val event = DiagnosticsEvent.Metric(
+    fun `toString transforms counter to correct JSON`() {
+        val event = DiagnosticsEntry.Counter(
             name = "test_metric_name",
-            tags = listOf("test-1", "test-2"),
+            tags = mapOf("test-key-1" to "test-value-1", "test-key-2" to "test-value-2"),
             value = 2
         )
         val eventAsString = event.toString()
         val expectedString = "{" +
             "\"version\":1," +
-            "\"type\":\"metric\"," +
+            "\"type\":\"counter\"," +
             "\"name\":\"test_metric_name\"," +
-            "\"tags\":[\"test-1\",\"test-2\"]," +
+            "\"tags\":{\"test-key-1\":\"test-value-1\",\"test-key-2\":\"test-value-2\"}," +
             "\"value\":2" +
             "}"
         assertThat(eventAsString).isEqualTo(expectedString)
     }
 
     @Test
-    fun `toString transforms exception event to correct JSON`() {
-        val event = DiagnosticsEvent.Exception(
-            exceptionClass = "TestClass.kt",
-            message = "test message",
-            location = "DiagnosticsEvent:121",
-            dateProvider = testDateProvider
+    fun `toString transforms histogram to correct JSON`() {
+        val event = DiagnosticsEntry.Histogram(
+            name = "test_histogram_name",
+            tags = mapOf("test-key-1" to "test-value-1", "test-key-2" to "test-value-2"),
+            values = listOf(2.1, 3.4)
         )
         val eventAsString = event.toString()
         val expectedString = "{" +
             "\"version\":1," +
-            "\"type\":\"exception\"," +
-            "\"exc_class\":\"TestClass.kt\"," +
-            "\"message\":\"test message\"," +
-            "\"location\":\"DiagnosticsEvent:121\"," +
-            "\"timestamp\":1675954145" +
+            "\"type\":\"histogram\"," +
+            "\"name\":\"test_histogram_name\"," +
+            "\"tags\":{\"test-key-1\":\"test-value-1\",\"test-key-2\":\"test-value-2\"}," +
+            "\"values\":[2.1,3.4]" +
             "}"
         assertThat(eventAsString).isEqualTo(expectedString)
     }
