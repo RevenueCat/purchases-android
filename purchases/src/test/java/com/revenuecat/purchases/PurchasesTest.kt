@@ -32,6 +32,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
+import com.revenuecat.purchases.google.isBasePlan
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toInAppStoreProduct
