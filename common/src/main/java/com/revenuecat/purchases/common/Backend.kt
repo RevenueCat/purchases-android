@@ -152,7 +152,8 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            callbacks.addCallback(call, dispatcher, cacheKey, onSuccess to onError, randomDelay = appInBackground)
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            callbacks.addCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
         }
     }
 
@@ -292,7 +293,8 @@ class Backend(
             }
         }
         synchronized(this@Backend) {
-            offeringsCallbacks.addCallback(call, dispatcher, path, onSuccess to onError, randomDelay = appInBackground)
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            offeringsCallbacks.addCallback(call, dispatcher, path, onSuccess to onError, delay)
         }
     }
 
@@ -398,7 +400,7 @@ class Backend(
                 diagnosticsDispatcher,
                 cacheKey,
                 onSuccessHandler to onErrorHandler,
-                randomDelay = true
+                Delay.LONG
             )
         }
     }
@@ -406,12 +408,12 @@ class Backend(
     private fun enqueue(
         call: Dispatcher.AsyncCall,
         dispatcher: Dispatcher,
-        randomDelay: Boolean = false
+        delay: Delay = Delay.NONE
     ) {
         if (dispatcher.isClosed()) {
             errorLog("Enqueuing operation in closed dispatcher.")
         } else {
-            dispatcher.enqueue(call, randomDelay)
+            dispatcher.enqueue(call, delay)
         }
     }
 
@@ -428,11 +430,11 @@ class Backend(
         dispatcher: Dispatcher,
         cacheKey: K,
         functions: Pair<S, E>,
-        randomDelay: Boolean = false
+        delay: Delay = Delay.NONE
     ) {
         if (!containsKey(cacheKey)) {
             this[cacheKey] = mutableListOf(functions)
-            enqueue(call, dispatcher, randomDelay)
+            enqueue(call, dispatcher, delay)
         } else {
             debugLog(String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey))
             this[cacheKey]!!.add(functions)
