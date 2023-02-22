@@ -25,6 +25,14 @@ data class Period(
      */
     val iso8601: String
 ) : Parcelable {
+
+    companion object Factory {
+        fun create(iso8601: String): Period {
+            val pair = iso8601.toPeriod()
+            return Period(pair.first, pair.second, iso8601)
+        }
+    }
+
     @SuppressWarnings("MagicNumber")
     enum class Unit {
         DAY,
@@ -36,7 +44,7 @@ data class Period(
 }
 
 // Would use Duration.parse but only available API 26 and up
-fun String.toPeriod(): Period {
+private fun String.toPeriod(): Pair<Int, Period.Unit> {
     // Takes from https://stackoverflow.com/a/32045167
     val regex = "^P(?!\$)(\\d+(?:\\.\\d+)?Y)?(\\d+(?:\\.\\d+)?M)?(\\d+(?:\\.\\d+)?W)?(\\d+(?:\\.\\d+)?D)?\$"
         .toRegex()
@@ -55,17 +63,17 @@ fun String.toPeriod(): Period {
         val dayInt = toInt(day)
 
         return if (yearInt > 0) {
-            Period(yearInt, Period.Unit.YEAR, this)
+            Pair(yearInt, Period.Unit.YEAR)
         } else if (monthInt > 0) {
-            Period(monthInt, Period.Unit.MONTH, this)
+            Pair(monthInt, Period.Unit.MONTH)
         } else if (weekInt > 0) {
-            Period(weekInt, Period.Unit.WEEK, this)
+            Pair(weekInt, Period.Unit.WEEK)
         } else if (dayInt > 0) {
-            Period(dayInt, Period.Unit.DAY, this)
+            Pair(dayInt, Period.Unit.DAY)
         } else {
-            Period(0, Period.Unit.UNKNOWN, this)
+            Pair(0, Period.Unit.UNKNOWN)
         }
     }
 
-    return Period(0, Period.Unit.UNKNOWN, this)
+    return Pair(0, Period.Unit.UNKNOWN)
 }
