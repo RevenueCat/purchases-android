@@ -7,7 +7,7 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
-import com.revenuecat.purchases.models.toSubscriptionPeriod
+import com.revenuecat.purchases.models.toPeriod
 import com.revenuecat.purchases.utils.mockProductDetails
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.junit.Test
@@ -20,7 +20,7 @@ class SubscriptionOptionTest {
         val productDetails = mockProductDetails()
 
         val recurringPhase = PricingPhase(
-            billingPeriod = "P1M".toSubscriptionPeriod(),
+            billingPeriod = "P1M".toPeriod(),
             recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
             billingCycleCount = 0,
             price = Price(
@@ -54,7 +54,7 @@ class SubscriptionOptionTest {
         val productDetails = mockProductDetails()
 
         val recurringPhase = PricingPhase(
-            billingPeriod = "P3M".toSubscriptionPeriod(),
+            billingPeriod = "P3M".toPeriod(),
             recurrenceMode = RecurrenceMode.NON_RECURRING,
             billingCycleCount = 0,
             price = Price(
@@ -86,7 +86,7 @@ class SubscriptionOptionTest {
         val productDetails = mockProductDetails()
 
         val freePhase = PricingPhase(
-            billingPeriod = "P1M".toSubscriptionPeriod(),
+            billingPeriod = "P1M".toPeriod(),
             recurrenceMode = RecurrenceMode.NON_RECURRING,
             billingCycleCount = 1,
             price = Price(
@@ -97,7 +97,7 @@ class SubscriptionOptionTest {
         )
 
         val recurringPhase = PricingPhase(
-            billingPeriod = "P1M".toSubscriptionPeriod(),
+            billingPeriod = "P1M".toPeriod(),
             recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
             billingCycleCount = 0,
             price = Price(
@@ -129,7 +129,7 @@ class SubscriptionOptionTest {
         val productDetails = mockProductDetails()
 
         val introPhase = PricingPhase(
-            billingPeriod = "P1M".toSubscriptionPeriod(),
+            billingPeriod = "P1M".toPeriod(),
             recurrenceMode = RecurrenceMode.NON_RECURRING,
             billingCycleCount = 1,
             price = Price(
@@ -140,7 +140,7 @@ class SubscriptionOptionTest {
         )
 
         val recurringPhase = PricingPhase(
-            billingPeriod = "P1M".toSubscriptionPeriod(),
+            billingPeriod = "P1M".toPeriod(),
             recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
             billingCycleCount = 0,
             price = Price(

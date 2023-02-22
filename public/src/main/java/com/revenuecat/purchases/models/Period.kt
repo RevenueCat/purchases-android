@@ -4,7 +4,7 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
 /**
- * Represents subscription or pricing phase billing period
+ * Represents subscription or [PricingPhase] billing period
  */
 @Parcelize
 data class Period(
@@ -26,17 +26,17 @@ data class Period(
     val iso8601: String
 ) : Parcelable {
     @SuppressWarnings("MagicNumber")
-    enum class Unit(val identifier: Int) {
-        DAY(0),
-        WEEK(1),
-        MONTH(2),
-        YEAR(3),
-        UNKNOWN(4)
+    enum class Unit {
+        DAY,
+        WEEK,
+        MONTH,
+        YEAR,
+        UNKNOWN
     }
 }
 
 // Would use Duration.parse but only available API 26 and up
-fun String.toSubscriptionPeriod(): Period {
+fun String.toPeriod(): Period {
     // Takes from https://stackoverflow.com/a/32045167
     val regex = "^P(?!\$)(\\d+(?:\\.\\d+)?Y)?(\\d+(?:\\.\\d+)?M)?(\\d+(?:\\.\\d+)?W)?(\\d+(?:\\.\\d+)?D)?\$"
         .toRegex()

@@ -41,7 +41,7 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.toSubscriptionPeriod
+import com.revenuecat.purchases.models.toPeriod
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockProductDetails
@@ -626,7 +626,7 @@ class BillingWrapperTest {
                 get() = "subscriptionOption"
             override val pricingPhases: List<PricingPhase>
                 get() = listOf(PricingPhase(
-                    billingPeriod = "P1M".toSubscriptionPeriod(),
+                    billingPeriod = "P1M".toPeriod(),
                     recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                     billingCycleCount = 0,
                     price = Price(
