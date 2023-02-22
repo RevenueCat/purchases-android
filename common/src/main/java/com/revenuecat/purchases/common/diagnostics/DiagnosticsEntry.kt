@@ -6,7 +6,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
 
-sealed class DiagnosticsEvent(val diagnosticType: String) {
+sealed class DiagnosticsEntry(val diagnosticType: String) {
     companion object {
         private const val VERSION_KEY = "version"
         private const val TYPE_KEY = "type"
@@ -14,12 +14,12 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
         private const val VERSION = 1
     }
 
-    data class Log(
-        val name: DiagnosticsLogEventName,
+    data class Event(
+        val name: DiagnosticsEventName,
         val properties: Map<String, Any>,
         val dateProvider: DateProvider = DefaultDateProvider(),
         val dateTime: Date = dateProvider.now
-    ) : DiagnosticsEvent("log") {
+    ) : DiagnosticsEntry("event") {
         private companion object {
             const val NAME_KEY = "name"
             const val PROPERTIES_KEY = "properties"
@@ -39,11 +39,11 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
         }
     }
 
-    data class Metric(
+    data class Counter(
         val name: String,
-        val tags: List<String>,
+        val tags: Map<String, String>,
         val value: Int
-    ) : DiagnosticsEvent("metric") {
+    ) : DiagnosticsEntry("counter") {
         private companion object {
             const val NAME_KEY = "name"
             const val TAGS_KEY = "tags"
@@ -58,23 +58,20 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
             put(VERSION_KEY, VERSION)
             put(TYPE_KEY, diagnosticType)
             put(NAME_KEY, name.lowercase())
-            put(TAGS_KEY, JSONArray(tags))
+            put(TAGS_KEY, JSONObject(tags))
             put(VALUE_KEY, value)
         }
     }
 
-    data class Exception(
-        val exceptionClass: String,
-        val message: String,
-        val location: String,
-        val dateProvider: DateProvider = DefaultDateProvider(),
-        val dateTime: Date = dateProvider.now
-    ) : DiagnosticsEvent("exception") {
+    data class Histogram(
+        val name: String,
+        val tags: Map<String, String>,
+        val values: List<Double>
+    ) : DiagnosticsEntry("histogram") {
         private companion object {
-            const val EXCEPTION_CLASS_KEY = "exc_class"
-            const val MESSAGE_KEY = "message"
-            const val LOCATION_KEY = "location"
-            const val TIMESTAMP_KEY = "timestamp"
+            const val NAME_KEY = "name"
+            const val TAGS_KEY = "tags"
+            const val VALUES_KEY = "values"
         }
 
         override fun toString(): String {
@@ -84,10 +81,9 @@ sealed class DiagnosticsEvent(val diagnosticType: String) {
         private fun toJSONObject() = JSONObject().apply {
             put(VERSION_KEY, VERSION)
             put(TYPE_KEY, diagnosticType)
-            put(EXCEPTION_CLASS_KEY, exceptionClass)
-            put(MESSAGE_KEY, message)
-            put(LOCATION_KEY, location)
-            put(TIMESTAMP_KEY, dateTime.time)
+            put(NAME_KEY, name.lowercase())
+            put(TAGS_KEY, JSONObject(tags))
+            put(VALUES_KEY, JSONArray(values))
         }
     }
 }

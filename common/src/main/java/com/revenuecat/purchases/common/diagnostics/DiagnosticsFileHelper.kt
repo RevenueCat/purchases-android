@@ -11,12 +11,12 @@ class DiagnosticsFileHelper(
     private val fileHelper: FileHelper
 ) {
     companion object {
-        const val DIAGNOSTICS_FILE_PATH = "RevenueCat/diagnostics/diagnostic_events.jsonl"
+        const val DIAGNOSTICS_FILE_PATH = "RevenueCat/diagnostics/diagnostic_entries.jsonl"
     }
 
     @Synchronized
-    fun appendEventToDiagnosticsFile(diagnosticsEvent: DiagnosticsEvent) {
-        fileHelper.appendToFile(DIAGNOSTICS_FILE_PATH, diagnosticsEvent.toString() + "\n")
+    fun appendEntryToDiagnosticsFile(diagnosticsEntry: DiagnosticsEntry) {
+        fileHelper.appendToFile(DIAGNOSTICS_FILE_PATH, diagnosticsEntry.toString() + "\n")
     }
 
     @Synchronized

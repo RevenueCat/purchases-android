@@ -21,13 +21,13 @@ import kotlin.time.Duration.Companion.milliseconds
 @Config(manifest = Config.NONE)
 class DiagnosticsTrackerTest {
 
-    private val testDiagnosticsEvent = DiagnosticsEvent.Log(
-        name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
+    private val testDiagnosticsEntry = DiagnosticsEntry.Event(
+        name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
         properties = mapOf("test-key-1" to "test-value-1")
     )
 
-    private val testAnonymizedEvent = DiagnosticsEvent.Log(
-        name = DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED,
+    private val testAnonymizedEvent = DiagnosticsEntry.Event(
+        name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
         properties = mapOf("test-key-1" to "test-anonymized-value-1")
     )
 
@@ -49,31 +49,31 @@ class DiagnosticsTrackerTest {
             dispatcher
         )
 
-        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(any()) } answers { firstArg() }
+        every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(any()) } answers { firstArg() }
     }
 
     @Test
     fun `trackEvent performs correct calls`() {
-        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(testAnonymizedEvent) } just Runs
-        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(testDiagnosticsEvent) } returns testAnonymizedEvent
-        diagnosticsTracker.trackEvent(testDiagnosticsEvent)
-        verify(exactly = 1) { diagnosticsFileHelper.appendEventToDiagnosticsFile(testAnonymizedEvent) }
-        verify(exactly = 1) { diagnosticsAnonymizer.anonymizeEventIfNeeded(testDiagnosticsEvent) }
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(testAnonymizedEvent) } just Runs
+        every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) } returns testAnonymizedEvent
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        verify(exactly = 1) { diagnosticsFileHelper.appendEntryToDiagnosticsFile(testAnonymizedEvent) }
+        verify(exactly = 1) { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) }
     }
 
     @Test
     fun `trackEvent handles IOException`() {
-        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(testDiagnosticsEvent) } returns testDiagnosticsEvent
-        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } throws IOException()
-        diagnosticsTracker.trackEvent(testDiagnosticsEvent)
+        every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) } returns testDiagnosticsEntry
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } throws IOException()
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
     }
 
     @Test
     fun `trackEventInCurrentThread does not enqueue request`() {
         dispatcher.close()
-        every { diagnosticsAnonymizer.anonymizeEventIfNeeded(testDiagnosticsEvent) } returns testDiagnosticsEvent
-        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } throws IOException()
-        diagnosticsTracker.trackEventInCurrentThread(testDiagnosticsEvent)
+        every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) } returns testDiagnosticsEntry
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } throws IOException()
+        diagnosticsTracker.trackEventInCurrentThread(testDiagnosticsEntry)
     }
 
     @Test
@@ -85,12 +85,12 @@ class DiagnosticsTrackerTest {
             "response_code" to 200,
             "etag_hit" to true
         )
-        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(Endpoint.PostReceipt, 1234L.milliseconds, true, 200, HTTPResult.Origin.CACHE)
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
-                event is DiagnosticsEvent.Log &&
-                    event.name == DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED &&
+            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+                event is DiagnosticsEntry.Event &&
+                    event.name == DiagnosticsEventName.HTTP_REQUEST_PERFORMED &&
                     event.properties == expectedProperties
             })
         }
@@ -105,12 +105,12 @@ class DiagnosticsTrackerTest {
             "response_code" to 200,
             "etag_hit" to false
         )
-        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(Endpoint.GetOfferings("test id"), 1234L.milliseconds, true, 200, HTTPResult.Origin.BACKEND)
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
-                event is DiagnosticsEvent.Log &&
-                    event.name == DiagnosticsLogEventName.HTTP_REQUEST_PERFORMED &&
+            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+                event is DiagnosticsEntry.Event &&
+                    event.name == DiagnosticsEventName.HTTP_REQUEST_PERFORMED &&
                     event.properties == expectedProperties
             })
         }
@@ -122,12 +122,12 @@ class DiagnosticsTrackerTest {
             "total_number_events_stored" to 1234,
             "events_removed" to 234
         )
-        every { diagnosticsFileHelper.appendEventToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
         diagnosticsTracker.trackMaxEventsStoredLimitReached(totalEventsStored = 1234, eventsRemoved = 234)
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEventToDiagnosticsFile(match { event ->
-                event is DiagnosticsEvent.Log &&
-                    event.name == DiagnosticsLogEventName.MAX_EVENTS_STORED_LIMIT_REACHED &&
+            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+                event is DiagnosticsEntry.Event &&
+                    event.name == DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED &&
                     event.properties == expectedProperties
             })
         }
