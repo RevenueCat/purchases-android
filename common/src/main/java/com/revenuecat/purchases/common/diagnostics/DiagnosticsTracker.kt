@@ -16,6 +16,9 @@ class DiagnosticsTracker(
     private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
     private val diagnosticsDispatcher: Dispatcher
 ) {
+    private companion object {
+        const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
+    }
 
     fun trackHttpRequestPerformed(
         endpoint: Endpoint,
@@ -29,7 +32,7 @@ class DiagnosticsTracker(
                 name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
                 properties = mapOf(
                     "endpoint_name" to endpoint.name,
-                    "response_time_millis" to responseTime.inWholeMilliseconds,
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                     "successful" to wasSuccessful,
                     "response_code" to responseCode,
                     "etag_hit" to (resultOrigin == HTTPResult.Origin.CACHE)
@@ -51,7 +54,7 @@ class DiagnosticsTracker(
                     "sku_type_queried" to skuType,
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
-                    "response_time_millis" to responseTimeMillis
+                    RESPONSE_TIME_MILLIS_KEY to responseTimeMillis
                 )
             )
         )
@@ -70,7 +73,7 @@ class DiagnosticsTracker(
                     "sku_type_queried" to skuType,
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
-                    "response_time_millis" to responseTimeMillis
+                    RESPONSE_TIME_MILLIS_KEY to responseTimeMillis
                 )
             )
         )
@@ -87,7 +90,7 @@ class DiagnosticsTracker(
                 properties = mapOf(
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
-                    "response_time_millis" to responseTimeMillis
+                    RESPONSE_TIME_MILLIS_KEY to responseTimeMillis
                 )
             )
         )
