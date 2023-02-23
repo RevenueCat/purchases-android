@@ -32,6 +32,11 @@ interface StoreProduct : Parcelable {
 
     /**
      * Title of the product.
+     *
+     * If you are using Google subscriptions with multiple base plans, this title
+     * will be the same for every subscription duration (monthly, yearly, etc) as
+     * base plans don't have their own titles. Google suggests using the duration
+     * as a way to title base plans.
      */
     val title: String
 
