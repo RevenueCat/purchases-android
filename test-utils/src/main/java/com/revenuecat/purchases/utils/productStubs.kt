@@ -10,6 +10,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.toRecurrenceMode
 
 @SuppressWarnings("MatchingDeclarationName")
@@ -42,8 +43,8 @@ fun stubStoreProduct(
         get() = ""
     override val period: Period?
         get() = subscriptionOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.get(0)?.billingPeriod
-    override val subscriptionOptions: List<SubscriptionOption>
-        get() = subscriptionOptions
+    override val subscriptionOptions: SubscriptionOptions?
+        get() = SubscriptionOptions(subscriptionOptions)
     override val defaultOption: SubscriptionOption?
         get() = defaultOption
     override val purchasingData: PurchasingData
@@ -74,8 +75,8 @@ fun stubINAPPStoreProduct(
         get() = ""
     override val period: Period?
         get() = null
-    override val subscriptionOptions: List<SubscriptionOption>
-        get() = listOf(defaultOption)
+    override val subscriptionOptions: SubscriptionOptions?
+        get() = SubscriptionOptions(listOf(defaultOption))
     override val defaultOption: SubscriptionOption
         get() = stubSubscriptionOption(productId, productId)
     override val purchasingData: PurchasingData

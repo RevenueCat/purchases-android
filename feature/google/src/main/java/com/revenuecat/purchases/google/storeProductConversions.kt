@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 // In-apps don't have base plan nor offers
@@ -30,7 +31,7 @@ fun ProductDetails.toStoreProduct(
         title,
         description,
         basePlan?.billingPeriod,
-        subscriptionOptions,
+        SubscriptionOptions(subscriptionOptions),
         defaultOffer,
         this
     )

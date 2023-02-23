@@ -95,9 +95,9 @@ class PackageCardAdapter(
 
         private fun bindSubscriptionOptions(product: StoreProduct) {
             binding.packageSubscriptionOptionGroup.removeAllViews()
-            val numberOfSubscriptionOptions = product.subscriptionOptions.size
+            val numberOfSubscriptionOptions = product.subscriptionOptions?.all?.size
             val defaultOption = product.defaultOption
-            product.subscriptionOptions.forEach { subscriptionOption ->
+            product.subscriptionOptions?.all?.forEach { subscriptionOption ->
                 val radioButton = RadioButton(binding.root.context).apply {
                     text = subscriptionOption.toButtonString(subscriptionOption == defaultOption)
                     tag = subscriptionOption

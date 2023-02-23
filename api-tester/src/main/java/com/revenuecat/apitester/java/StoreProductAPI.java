@@ -9,6 +9,7 @@ import com.revenuecat.purchases.models.Price;
 import com.revenuecat.purchases.models.SubscriptionOption;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.Period;
+import com.revenuecat.purchases.models.SubscriptionOptions;
 
 import java.util.List;
 
@@ -22,7 +23,7 @@ final class StoreProductAPI {
         final String title = product.getTitle();
         final String description = product.getDescription();
         final Period period = product.getPeriod();
-        List<SubscriptionOption> subscriptionOptions = product.getSubscriptionOptions();
+        SubscriptionOptions subscriptionOptions = product.getSubscriptionOptions();
         SubscriptionOption defaultOption = product.getDefaultOption();
 
         // TODOBC5 can we find an easier way to do this in java?
@@ -40,7 +41,7 @@ final class StoreProductAPI {
     static void checkGoogleStoreProduct(GoogleStoreProduct googleStoreProduct) {
         check(googleStoreProduct);
         ProductDetails productDetails = googleStoreProduct.getProductDetails();
-        List<GoogleSubscriptionOption> subscriptionOptions = googleStoreProduct.getSubscriptionOptions();
+        SubscriptionOptions subscriptionOptions = googleStoreProduct.getSubscriptionOptions();
         GoogleSubscriptionOption defaultOption = googleStoreProduct.getDefaultOption();
         GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
                 googleStoreProduct.getId(),
