@@ -9,6 +9,7 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.toRecurrenceMode
 
 @SuppressWarnings("MatchingDeclarationName")
@@ -22,11 +23,14 @@ private data class StubPurchasingData(
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
-    defaultOption: SubscriptionOption? = stubSubscriptionOption("monthly_base_plan", productId, "P1M",),
+    defaultOption: SubscriptionOption? = stubSubscriptionOption(
+        "monthly_base_plan", productId,
+        Period(1, Period.Unit.MONTH, "P1M"),
+    ),
     subscriptionOptions: List<SubscriptionOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
     price: Price = subscriptionOptions.first().fullPricePhase!!.price
 ): StoreProduct = object : StoreProduct {
-    override val productId: String
+    override val id: String
         get() = productId
     override val type: ProductType
         get() = ProductType.SUBS
@@ -36,7 +40,7 @@ fun stubStoreProduct(
         get() = ""
     override val description: String
         get() = ""
-    override val subscriptionPeriod: String?
+    override val period: Period?
         get() = subscriptionOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.get(0)?.billingPeriod
     override val subscriptionOptions: List<SubscriptionOption>
         get() = subscriptionOptions
@@ -58,7 +62,7 @@ fun stubStoreProduct(
 fun stubINAPPStoreProduct(
     productId: String
 ): StoreProduct = object : StoreProduct {
-    override val productId: String
+    override val id: String
         get() = productId
     override val type: ProductType
         get() = ProductType.INAPP
@@ -68,7 +72,7 @@ fun stubINAPPStoreProduct(
         get() = ""
     override val description: String
         get() = ""
-    override val subscriptionPeriod: String?
+    override val period: Period?
         get() = null
     override val subscriptionOptions: List<SubscriptionOption>
         get() = listOf(defaultOption)
@@ -90,7 +94,7 @@ fun stubINAPPStoreProduct(
 fun stubSubscriptionOption(
     id: String,
     productId: String,
-    duration: String = "P1M",
+    duration: Period = Period(1, Period.Unit.MONTH, "P1M"),
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration))
 ): SubscriptionOption = object : SubscriptionOption {
     override val id: String
@@ -109,7 +113,7 @@ fun stubSubscriptionOption(
 }
 
 fun stubFreeTrialPricingPhase(
-    billingPeriod: String = "P1M",
+    billingPeriod: Period = Period(1, Period.Unit.MONTH, "P1M"),
     priceCurrencyCodeValue: String = "USD",
 ) = stubPricingPhase(
     billingPeriod = billingPeriod,
@@ -120,7 +124,7 @@ fun stubFreeTrialPricingPhase(
 )
 
 fun stubPricingPhase(
-    billingPeriod: String = "P1M",
+    billingPeriod: Period = Period(1, Period.Unit.MONTH, "P1M"),
     priceCurrencyCodeValue: String = "USD",
     price: Double = 4.99,
     recurrenceMode: Int = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
