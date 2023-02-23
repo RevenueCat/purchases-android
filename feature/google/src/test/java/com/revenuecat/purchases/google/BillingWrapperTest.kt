@@ -40,6 +40,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockProductDetails
@@ -624,7 +625,7 @@ class BillingWrapperTest {
                 get() = "subscriptionOption"
             override val pricingPhases: List<PricingPhase>
                 get() = listOf(PricingPhase(
-                    billingPeriod = "",
+                    billingPeriod = Period.create("P1M"),
                     recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                     billingCycleCount = 0,
                     price = Price(
@@ -675,7 +676,7 @@ class BillingWrapperTest {
         }
 
         val storeProduct = object : StoreProduct {
-            override val productId: String
+            override val id: String
                 get() = "mock-sku"
             override val type: ProductType
                 get() = ProductType.SUBS
@@ -685,7 +686,7 @@ class BillingWrapperTest {
                 get() = ""
             override val description: String
                 get() = ""
-            override val subscriptionPeriod: String?
+            override val period: Period?
                 get() = null
             override val subscriptionOptions: List<SubscriptionOption>
                 get() = listOf(defaultOption)
@@ -694,7 +695,7 @@ class BillingWrapperTest {
             override val purchasingData: PurchasingData
                 get() = purchasingInfo
             override val sku: String
-                get() = productId
+                get() = id
 
             override fun describeContents(): Int = 0
 
