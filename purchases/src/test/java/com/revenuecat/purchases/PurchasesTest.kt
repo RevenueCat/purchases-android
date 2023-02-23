@@ -39,6 +39,7 @@ import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -474,6 +475,30 @@ class PurchasesTest {
                 expectedPersonalizedPrice
             )
         }
+
+        // purchaseSubscriptionOption with upgradeInfo
+        val oldPurchase = mockPurchaseFound()
+        purchases.purchaseSubscriptionOption(
+            mockActivity,
+            storeProduct.subscriptionOptions[0],
+            UpgradeInfo(oldPurchase.productIds[0]),
+            expectedPersonalizedPrice,
+            object: ProductChangeCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions[0].purchasingData,
+                null,
+                null,
+                expectedPersonalizedPrice
+            )
+        }
     }
 
     @Test
@@ -495,6 +520,232 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.subscriptionOptions[0].purchasingData,
                 null,
+                null,
+                false
+            )
+        }
+
+        // purchaseSubscriptionOption with upgradeInfo
+        val oldPurchase = mockPurchaseFound()
+        val upgradeInfo = UpgradeInfo(oldPurchase.productIds[0])
+        purchases.purchaseSubscriptionOption(
+            mockActivity,
+            storeProduct.subscriptionOptions[0],
+            upgradeInfo,
+            object: ProductChangeCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions[0].purchasingData,
+                any(),
+                null,
+                false
+            )
+        }
+    }
+
+    @Test
+    fun `isPersonalizedPrice value is passed through to purchasePackage`() {
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val packageToPurchase = offerings[stubOfferingIdentifier]!!.monthly!!
+        val expectedPersonalizedPrice = true
+
+        purchases.purchasePackage(
+            mockActivity,
+            packageToPurchase,
+            expectedPersonalizedPrice,
+            object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                packageToPurchase.product.purchasingData,
+                null,
+                null,
+                expectedPersonalizedPrice
+            )
+        }
+
+        // purchasePackage with upgradeInfo
+        val oldPurchase = mockPurchaseFound()
+        purchases.purchasePackage(
+            mockActivity,
+            packageToPurchase,
+            UpgradeInfo(oldPurchase.productIds[0]),
+            expectedPersonalizedPrice,
+            object: ProductChangeCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                packageToPurchase.product.purchasingData,
+                any(),
+                null,
+                expectedPersonalizedPrice
+            )
+        }
+    }
+
+    @Test
+    fun `isPersonalizedPrice defaults to false for purchasePackage`() {
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val packageToPurchase = offerings[stubOfferingIdentifier]!!.monthly!!
+
+        purchases.purchasePackage(
+            mockActivity,
+            packageToPurchase,
+            object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                packageToPurchase.product.purchasingData,
+                null,
+                null,
+                false
+            )
+        }
+
+        // purchasePackage with upgradeInfo
+        val oldPurchase = mockPurchaseFound()
+        val upgradeInfo = UpgradeInfo(oldPurchase.productIds[0])
+        purchases.purchasePackage(
+            mockActivity,
+            packageToPurchase,
+            upgradeInfo,
+            object: ProductChangeCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                packageToPurchase.product.purchasingData,
+                any(),
+                null,
+                false
+            )
+        }
+    }
+
+    @Test
+    fun `isPersonalizedPrice value is passed through to purchaseProduct`() {
+        val storeProduct = stubStoreProduct("abc")
+        val expectedPersonalizedPrice = true
+
+        purchases.purchaseProduct(
+            mockActivity,
+            storeProduct,
+            expectedPersonalizedPrice,
+            object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.purchasingData,
+                null,
+                null,
+                expectedPersonalizedPrice
+            )
+        }
+
+        // purchaseProduct with upgradeInfo
+        val oldPurchase = mockPurchaseFound()
+        purchases.purchaseProduct(
+            mockActivity,
+            storeProduct,
+            UpgradeInfo(oldPurchase.productIds[0]),
+            expectedPersonalizedPrice,
+            object: ProductChangeCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.purchasingData,
+                any(),
+                null,
+                expectedPersonalizedPrice
+            )
+        }
+    }
+
+    @Test
+    fun `isPersonalizedPrice defaults to false for purchaseProduct`() {
+        val storeProduct = stubStoreProduct("abc")
+
+        purchases.purchaseProduct(
+            mockActivity,
+            storeProduct,
+            object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.purchasingData,
+                null,
+                null,
+                false
+            )
+        }
+
+        // purchaseProduct with upgradeInfo
+        val oldPurchase = mockPurchaseFound()
+        val upgradeInfo = UpgradeInfo(oldPurchase.productIds[0])
+        purchases.purchaseProduct(
+            mockActivity,
+            storeProduct,
+            upgradeInfo,
+            object: ProductChangeCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.purchasingData,
+                any(),
                 null,
                 false
             )
