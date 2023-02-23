@@ -377,7 +377,7 @@ class Backend(
 
 internal fun PricingPhase.toMap(): Map<String, Any?> {
     return mapOf(
-        "billingPeriod" to this.billingPeriod.iso8601,
+        "billingPeriod" to this.billingPeriod,
         "billingCycleCount" to this.billingCycleCount,
         "recurrenceMode" to this.recurrenceMode.identifier,
         "formattedPrice" to this.price.formatted,
