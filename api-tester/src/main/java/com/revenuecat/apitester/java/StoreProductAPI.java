@@ -8,19 +8,20 @@ import com.revenuecat.purchases.models.GoogleStoreProductKt;
 import com.revenuecat.purchases.models.Price;
 import com.revenuecat.purchases.models.SubscriptionOption;
 import com.revenuecat.purchases.models.StoreProduct;
+import com.revenuecat.purchases.models.Period;
 
 import java.util.List;
 
 @SuppressWarnings({"unused"})
 final class StoreProductAPI {
     static void check(final StoreProduct product) {
-        final String productId = product.getProductId();
+        final String productId = product.getId();
         final String sku = product.getSku();
         final ProductType type = product.getType();
         final Price price = product.getPrice();
         final String title = product.getTitle();
         final String description = product.getDescription();
-        final String subscriptionPeriod = product.getSubscriptionPeriod();
+        final Period period = product.getPeriod();
         List<SubscriptionOption> subscriptionOptions = product.getSubscriptionOptions();
         SubscriptionOption defaultOption = product.getDefaultOption();
 
@@ -42,15 +43,19 @@ final class StoreProductAPI {
         List<GoogleSubscriptionOption> subscriptionOptions = googleStoreProduct.getSubscriptionOptions();
         GoogleSubscriptionOption defaultOption = googleStoreProduct.getDefaultOption();
         GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
-                googleStoreProduct.getProductId(),
+                googleStoreProduct.getId(),
+                null,
                 googleStoreProduct.getType(),
                 googleStoreProduct.getPrice(),
                 googleStoreProduct.getTitle(),
                 googleStoreProduct.getDescription(),
-                googleStoreProduct.getSubscriptionPeriod(),
+                googleStoreProduct.getPeriod(),
                 googleStoreProduct.getSubscriptionOptions(),
                 googleStoreProduct.getDefaultOption(),
                 googleStoreProduct.getProductDetails()
         );
+
+        String productId = constructedGoogleStoreProduct.getProductId();
+        String basePlanId = constructedGoogleStoreProduct.getBasePlanId();
     }
 }

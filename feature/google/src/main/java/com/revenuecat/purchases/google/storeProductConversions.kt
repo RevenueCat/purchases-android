@@ -18,16 +18,18 @@ fun ProductDetails.toStoreProduct(
     val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
     val defaultOffer = subscriptionOptions.findDefaultOffer()
 
-    val basePlanPrice = subscriptionOptions.firstOrNull { it.isBasePlan }?.fullPricePhase?.price
+    val basePlan = subscriptionOptions.firstOrNull { it.isBasePlan }
+    val basePlanPrice = basePlan?.fullPricePhase?.price
     val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
 
     return GoogleStoreProduct(
         productId,
+        basePlan?.id,
         productType.toRevenueCatProductType(),
         price,
         title,
         description,
-        offerDetails.firstOrNull { it.isBasePlan }?.subscriptionBillingPeriod,
+        basePlan?.billingPeriod,
         subscriptionOptions,
         defaultOffer,
         this
@@ -52,15 +54,14 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     forEach { productDetails ->
         val basePlans = productDetails.subscriptionOfferDetails?.filter { it.isBasePlan } ?: emptyList()
 
-        val offerDetailsBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
-            it.subscriptionBillingPeriod
+        val offerDetailsByBasePlanId = productDetails.subscriptionOfferDetails?.groupBy {
+            it.basePlanId
         } ?: emptyMap()
 
         // Maps basePlans to StoreProducts, if any
         // Otherwise, maps productDetail to StoreProduct
         basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
-            val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
-            val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
+            val offerDetailsForBasePlan = offerDetailsByBasePlanId[basePlan.basePlanId] ?: emptyList()
 
             productDetails.toStoreProduct(offerDetailsForBasePlan)?.let {
                 storeProducts.add(it)

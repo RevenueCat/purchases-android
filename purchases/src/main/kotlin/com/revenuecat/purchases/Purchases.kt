@@ -1087,8 +1087,8 @@ class Purchases internal constructor(
             appInBackground,
             { offeringsJSON ->
                 try {
-                    val productIdentifiers = extractProductIdentifiers(offeringsJSON)
-                    if (productIdentifiers.isEmpty()) {
+                    val allRequestedProductIdentifiers = extractProductIdentifiers(offeringsJSON)
+                    if (allRequestedProductIdentifiers.isEmpty()) {
                         handleErrorFetchingOfferings(
                             PurchasesError(
                                 PurchasesErrorCode.ConfigurationError,
@@ -1097,11 +1097,10 @@ class Purchases internal constructor(
                             completion
                         )
                     } else {
-                        getStoreProductsById(productIdentifiers, { productsById ->
+                        getStoreProductsById(allRequestedProductIdentifiers, { productsById ->
+                            logMissingProducts(allRequestedProductIdentifiers, productsById)
+
                             val offerings = offeringsJSON.createOfferings(productsById)
-
-                            logMissingProducts(offerings, productsById)
-
                             if (offerings.all.isEmpty()) {
                                 handleErrorFetchingOfferings(
                                     PurchasesError(
@@ -1175,11 +1174,9 @@ class Purchases internal constructor(
     }
 
     private fun logMissingProducts(
-        offerings: Offerings,
+        allProductIdsInOfferings: Set<String>,
         storeProductByID: Map<String, List<StoreProduct>>
-    ) = offerings.all.values
-        .flatMap { it.availablePackages }
-        .map { it.product.productId }
+    ) = allProductIdsInOfferings
         .filterNot { storeProductByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
@@ -1245,7 +1242,7 @@ class Purchases internal constructor(
                             }
                         } else {
                             storeProducts.firstOrNull() { product ->
-                                product.productId == purchase.productIds.firstOrNull()
+                                product.id == purchase.productIds.firstOrNull()
                             }
                         }
 
@@ -1341,7 +1338,9 @@ class Purchases internal constructor(
             ProductType.SUBS,
             productIds,
             { subscriptionProducts ->
-                val productsById = subscriptionProducts.groupBy { subProduct -> subProduct.productId }.toMutableMap()
+                val productsById = subscriptionProducts
+                    .groupBy { subProduct -> subProduct.purchasingData.productId }
+                    .toMutableMap()
                 val subscriptionIds = productsById.keys
 
                 val inAppProductIds = productIds - subscriptionIds
@@ -1350,7 +1349,7 @@ class Purchases internal constructor(
                         ProductType.INAPP,
                         inAppProductIds,
                         { inAppProducts ->
-                            productsById.putAll(inAppProducts.map { it.productId to listOf(it) })
+                            productsById.putAll(inAppProducts.map { it.purchasingData.productId to listOf(it) })
                             onCompleted(productsById)
                         }, {
                             onError(it)
