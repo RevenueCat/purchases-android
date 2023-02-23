@@ -54,12 +54,18 @@ commands:
       - run:
           name: Installing SDKMAN
           command: |
+            # Continue executing even if SDKMAN fails to download/install. This is due to issues in CI machines
+            # due to rate limits
+            set +e
             curl -s "https://get.sdkman.io?rcupdate=false" | bash
             echo -e '\nsource "/home/circleci/.sdkman/bin/sdkman-init.sh"' >> $BASH_ENV
             source $BASH_ENV
       - run:
           name: Setup Java environment
           command: |
+            # Continue executing even if SDKMAN fails to download/install. This is due to issues in CI machines
+            # due to rate limits
+            set +e
             sdk env install
 
   android-dependencies:
