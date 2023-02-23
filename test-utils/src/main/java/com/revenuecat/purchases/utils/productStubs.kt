@@ -43,7 +43,7 @@ fun stubStoreProduct(
         get() = ""
     override val period: Period?
         get() = subscriptionOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.get(0)?.billingPeriod
-    override val subscriptionOptions: SubscriptionOptions?
+    override val subscriptionOptions: SubscriptionOptions
         get() = SubscriptionOptions(subscriptionOptions)
     override val defaultOption: SubscriptionOption?
         get() = defaultOption
@@ -75,7 +75,7 @@ fun stubINAPPStoreProduct(
         get() = ""
     override val period: Period?
         get() = null
-    override val subscriptionOptions: SubscriptionOptions?
+    override val subscriptionOptions: SubscriptionOptions
         get() = SubscriptionOptions(listOf(defaultOption))
     override val defaultOption: SubscriptionOption
         get() = stubSubscriptionOption(productId, productId)

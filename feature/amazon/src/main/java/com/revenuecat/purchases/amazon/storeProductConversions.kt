@@ -39,7 +39,7 @@ data class AmazonStoreProduct(
     override val period: Period?,
 
     override val price: com.revenuecat.purchases.models.Price,
-    override val subscriptionOptions: SubscriptionOptions?,
+    override val subscriptionOptions: SubscriptionOptions,
     override val defaultOption: SubscriptionOption?,
     val iconUrl: String,
     val originalJson: JSONObject,
@@ -75,7 +75,7 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         description,
         period = null,
         priceInfo,
-        null,
+        SubscriptionOptions(emptyList()),
         defaultOption = null,
         iconUrl = smallIconUrl,
         originalJson = toJSON(),
