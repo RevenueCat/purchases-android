@@ -4,7 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
-import com.revenuecat.purchases.models.toSubscriptionPeriod
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.utils.mockPricingPhase
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.mockSubscriptionOfferDetails
@@ -292,13 +292,14 @@ class PeriodOfferTest(private val period: String, private val days: Int) {
                 arrayOf("P4D", 4),
                 arrayOf("P2W", 14),
                 arrayOf("P5X", 0),
+                arrayOf("cat", 0)
             )
         }
     }
 
     @Test
     fun `period to number of days is correct`() {
-        val actualDays = billingPeriodToDays(period.toSubscriptionPeriod())
+        val actualDays = billingPeriodToDays(Period.create(period))
         assertThat(actualDays).isEqualTo(days)
     }
 }

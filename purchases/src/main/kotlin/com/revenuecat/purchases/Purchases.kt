@@ -1351,7 +1351,7 @@ class Purchases internal constructor(
                         ProductType.INAPP,
                         inAppProductIds,
                         { inAppProducts ->
-                            productsById.putAll(inAppProducts.map { it.id to listOf(it) })
+                            productsById.putAll(inAppProducts.map { it.purchasingData.productId to listOf(it) })
                             onCompleted(productsById)
                         }, {
                             onError(it)

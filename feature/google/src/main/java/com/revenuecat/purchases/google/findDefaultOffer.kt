@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.google
 
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PricingPhase
@@ -47,6 +48,7 @@ private val DAYS_IN_UNIT = mapOf(
     Period.Unit.YEAR to DAYS_IN_YEAR,
 )
 
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal fun billingPeriodToDays(period: Period): Int {
     val days = DAYS_IN_UNIT[period.unit] ?: 0
     return period.value * days

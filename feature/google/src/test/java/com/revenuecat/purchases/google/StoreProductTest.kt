@@ -5,11 +5,11 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.SubscriptionOptions
-import com.revenuecat.purchases.models.toSubscriptionPeriod
 import com.revenuecat.purchases.utils.mockProductDetails
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.junit.Test
@@ -34,7 +34,7 @@ class StoreProductTest {
         val subscriptionOption1 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
-                billingPeriod = "P1M".toSubscriptionPeriod(),
+                billingPeriod = Period.create("P1M"),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
@@ -54,7 +54,7 @@ class StoreProductTest {
         val subscriptionOption2 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
-                billingPeriod = "P1M".toSubscriptionPeriod(),
+                billingPeriod = Period.create("P1M"),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
@@ -79,7 +79,7 @@ class StoreProductTest {
             price = price1,
             title = "TITLE",
             description = "DESCRIPTION",
-            period = "P1M".toSubscriptionPeriod(),
+            period = Period.create("P1M"),
             subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption1)),
             defaultOption = null,
             productDetails = productDetails
@@ -92,7 +92,7 @@ class StoreProductTest {
             price = price2,
             title = "TITLE",
             description = "DESCRIPTION",
-            period = "P1M".toSubscriptionPeriod(),
+            period = Period.create("P1M"),
             subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption2)),
             defaultOption = null,
             productDetails = productDetails
@@ -118,7 +118,7 @@ class StoreProductTest {
         val subscriptionOption1 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
-                billingPeriod = "P1M".toSubscriptionPeriod(),
+                billingPeriod = Period.create("P1M"),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
@@ -138,7 +138,7 @@ class StoreProductTest {
         val subscriptionOption2 = GoogleSubscriptionOption(
             id = "subscriptionOptionId",
             pricingPhases = listOf(PricingPhase(
-                billingPeriod = "P1M".toSubscriptionPeriod(),
+                billingPeriod = Period.create("P1M"),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
                 billingCycleCount = 0,
                 price = Price(
@@ -163,7 +163,7 @@ class StoreProductTest {
             price = price1,
             title = "TITLE",
             description = "DESCRIPTION",
-            period = "P1M".toSubscriptionPeriod(),
+            period = Period.create("P1M"),
             subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption1)),
             defaultOption = null,
             productDetails = productDetails
@@ -176,7 +176,7 @@ class StoreProductTest {
             price = price2,
             title = "TITLE",
             description = "DESCRIPTION",
-            period = "P1M".toSubscriptionPeriod(),
+            period = Period.create("P1M"),
             subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption2)),
             defaultOption = null,
             productDetails = productDetails
