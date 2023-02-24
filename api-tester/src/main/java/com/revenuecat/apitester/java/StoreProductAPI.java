@@ -11,8 +11,6 @@ import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.Period;
 import com.revenuecat.purchases.models.SubscriptionOptions;
 
-import java.util.List;
-
 @SuppressWarnings({"unused"})
 final class StoreProductAPI {
     static void check(final StoreProduct product) {
