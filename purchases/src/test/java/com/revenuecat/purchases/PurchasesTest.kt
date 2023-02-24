@@ -32,7 +32,6 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
-import com.revenuecat.purchases.google.isBasePlan
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -463,7 +462,7 @@ class PurchasesTest {
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!.subscriptionOptions[0],
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
                 fail("should be successful")
             }, onSuccess = { _, _ ->
@@ -488,7 +487,7 @@ class PurchasesTest {
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!.subscriptionOptions[0],
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
                 fail("should be success")
             }, onSuccess = { purchase, _ ->
@@ -522,7 +521,7 @@ class PurchasesTest {
         purchases.purchaseProductWith(
             mockActivity,
             receiptInfo.storeProduct!!,
-            UpgradeInfo(oldSubId),
+            ProductChangeInfo(oldSubId),
             onError = { _, _ ->
             }, onSuccess = { _, _ ->
 
@@ -632,7 +631,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0])
+            ProductChangeInfo(oldPurchase.productIds[0])
         ) { _, _ -> }
 
         verify {
@@ -885,7 +884,7 @@ class PurchasesTest {
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!.subscriptionOptions[0],
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { purchaseError, userCancelled ->
                 receivedError = purchaseError
                 receivedUserCancelled = userCancelled
@@ -912,7 +911,7 @@ class PurchasesTest {
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!.subscriptionOptions[0],
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { _, _ -> },
             onSuccess = { _, _ ->
                 fail("should be error")
@@ -922,7 +921,7 @@ class PurchasesTest {
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!.subscriptionOptions[0],
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { error, _ ->
                 receivedError = error
             },
@@ -946,7 +945,7 @@ class PurchasesTest {
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!.subscriptionOptions[0],
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -1052,7 +1051,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
                 fail("should be successful")
             }, onSuccess = { _, _ ->
@@ -1081,7 +1080,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
                 fail("should be success")
             }, onSuccess = { purchase, _ ->
@@ -1114,7 +1113,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -1139,7 +1138,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -1170,7 +1169,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -1226,7 +1225,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
@@ -1272,7 +1271,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0])
+            ProductChangeInfo(oldPurchase.productIds[0])
         ) { _, _ -> }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())

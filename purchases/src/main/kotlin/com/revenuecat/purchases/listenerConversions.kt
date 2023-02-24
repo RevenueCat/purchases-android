@@ -132,7 +132,8 @@ fun Purchases.purchaseProductWith(
  * default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
- * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
+ * @param [productChangeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and
+ * the optional prorationMode.
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
@@ -140,11 +141,11 @@ fun Purchases.purchaseProductWith(
 fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
-    upgradeInfo: UpgradeInfo,
+    productChangeInfo: ProductChangeInfo,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 ) {
-    purchaseProduct(activity, storeProduct, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
+    purchaseProduct(activity, storeProduct, productChangeInfo, productChangeCompletedListener(onSuccess, onError))
 }
 
 /**
@@ -171,7 +172,8 @@ fun Purchases.purchaseSubscriptionOptionWith(
  * Purchase a subscription [StoreProduct]'s [SubscriptionOption], upgrading from an old product.
  * @param [activity] Current activity
  * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
- * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
+ * @param [productChangeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and
+ * the optional prorationMode.
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
@@ -180,14 +182,14 @@ fun Purchases.purchaseSubscriptionOptionWith(
 fun Purchases.purchaseSubscriptionOptionWith(
     activity: Activity,
     subscriptionOption: SubscriptionOption,
-    upgradeInfo: UpgradeInfo,
+    productChangeInfo: ProductChangeInfo,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 ) {
     purchaseSubscriptionOption(
         activity,
         subscriptionOption,
-        upgradeInfo,
+        productChangeInfo,
         productChangeCompletedListener(onSuccess, onError)
     )
 }
@@ -197,7 +199,8 @@ fun Purchases.purchaseSubscriptionOptionWith(
  * default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
- * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
+ * @param [productChangeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and
+ * the optional prorationMode.
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
@@ -205,11 +208,11 @@ fun Purchases.purchaseSubscriptionOptionWith(
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
-    upgradeInfo: UpgradeInfo,
+    productChangeInfo: ProductChangeInfo,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 ) {
-    purchasePackage(activity, packageToPurchase, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
+    purchasePackage(activity, packageToPurchase, productChangeInfo, productChangeCompletedListener(onSuccess, onError))
 }
 
 /**

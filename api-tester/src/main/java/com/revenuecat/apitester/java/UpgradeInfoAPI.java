@@ -1,22 +1,22 @@
 package com.revenuecat.apitester.java;
 
-import com.revenuecat.purchases.UpgradeInfo;
+import com.revenuecat.purchases.ProductChangeInfo;
 import com.revenuecat.purchases.models.GoogleProrationMode;
 
 @SuppressWarnings({"unused"})
 final class UpgradeInfoAPI {
-    static void check(final UpgradeInfo upgradeInfo) {
-        final String oldProductId = upgradeInfo.getOldProductId();
-        GoogleProrationMode prorationMode = upgradeInfo.getGoogleProrationMode();
+    static void check(final ProductChangeInfo productChangeInfo) {
+        final String oldProductId = productChangeInfo.getOldProductId();
+        GoogleProrationMode prorationMode = productChangeInfo.getGoogleProrationMode();
 
-        UpgradeInfo constructedUpgradeInfo = new UpgradeInfo(
-                upgradeInfo.getOldProductId(),
-                upgradeInfo.getGoogleProrationMode()
+        ProductChangeInfo constructedProductChangeInfo = new ProductChangeInfo(
+                productChangeInfo.getOldProductId(),
+                productChangeInfo.getGoogleProrationMode()
         );
 
-        UpgradeInfo constructedUpgradeInfoNullProrationMode = new UpgradeInfo(upgradeInfo.getOldProductId());
+        ProductChangeInfo constructedProductChangeInfoNullProrationMode = new ProductChangeInfo(productChangeInfo.getOldProductId());
 
-        UpgradeInfo constructedUpgradeInfoProductIdOnly = new UpgradeInfo(upgradeInfo.getOldProductId());
-        UpgradeInfo constructedUpgradeInfoProductIdAndOldSkuOnly = new UpgradeInfo(upgradeInfo.getOldProductId());
+        ProductChangeInfo constructedProductChangeInfoProductIdOnly = new ProductChangeInfo(productChangeInfo.getOldProductId());
+        ProductChangeInfo constructedProductChangeInfoProductIdAndOldSkuOnly = new ProductChangeInfo(productChangeInfo.getOldProductId());
     }
 }

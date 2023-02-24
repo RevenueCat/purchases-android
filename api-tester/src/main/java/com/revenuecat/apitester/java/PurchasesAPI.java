@@ -15,7 +15,7 @@ import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
-import com.revenuecat.purchases.UpgradeInfo;
+import com.revenuecat.purchases.ProductChangeInfo;
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ProductChangeCallback;
@@ -44,7 +44,7 @@ final class PurchasesAPI {
                       final StoreProduct storeProduct,
                       final Package packageToPurchase,
                       final SubscriptionOption subscriptionOption,
-                      final UpgradeInfo upgradeInfo) {
+                      final ProductChangeInfo productChangeInfo) {
         final ArrayList<String> productIds = new ArrayList<>();
 
         final ReceiveOfferingsCallback receiveOfferingsListener = new ReceiveOfferingsCallback() {
@@ -75,11 +75,11 @@ final class PurchasesAPI {
         purchases.syncPurchases();
         purchases.getOfferings(receiveOfferingsListener);
         purchases.getProducts(productIds, productResponseListener);
-        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeListener);
+        purchases.purchaseProduct(activity, storeProduct, productChangeInfo, purchaseChangeListener);
         purchases.purchaseProduct(activity, storeProduct, makePurchaseListener);
-        purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeListener);
+        purchases.purchasePackage(activity, packageToPurchase, productChangeInfo, purchaseChangeListener);
         purchases.purchasePackage(activity, packageToPurchase, makePurchaseListener);
-        purchases.purchaseSubscriptionOption(activity, subscriptionOption, upgradeInfo, purchaseChangeListener);
+        purchases.purchaseSubscriptionOption(activity, subscriptionOption, productChangeInfo, purchaseChangeListener);
         purchases.purchaseSubscriptionOption(activity, subscriptionOption, makePurchaseListener);
         purchases.restorePurchases(receiveCustomerInfoListener);
 

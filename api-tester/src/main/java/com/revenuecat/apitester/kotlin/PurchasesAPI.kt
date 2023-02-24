@@ -11,7 +11,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.UpgradeInfo
+import com.revenuecat.purchases.ProductChangeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getNonSubscriptionSkusWith
 import com.revenuecat.purchases.getOfferingsWith
@@ -45,7 +45,7 @@ private class PurchasesAPI {
         storeProduct: StoreProduct,
         packageToPurchase: Package,
         subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo
+        productChangeInfo: ProductChangeInfo
     ) {
         val productIds = ArrayList<String>()
         val receiveOfferingsCallback = object : ReceiveOfferingsCallback {
@@ -78,15 +78,15 @@ private class PurchasesAPI {
         purchases.getProducts(productIds, productsResponseCallback)
 
         // we need these for hybrids... these all fall back on some "best offer" or just purchase the base plan
-        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
+        purchases.purchaseProduct(activity, storeProduct, productChangeInfo, purchaseChangeCallback)
         purchases.purchaseProduct(activity, storeProduct, purchaseCallback)
-        purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
+        purchases.purchasePackage(activity, packageToPurchase, productChangeInfo, purchaseChangeCallback)
         purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
 
         purchases.purchaseSubscriptionOption(
             activity,
             subscriptionOption,
-            upgradeInfo,
+            productChangeInfo,
             purchaseChangeCallback
         )
         purchases.purchaseSubscriptionOption(activity, subscriptionOption, purchaseCallback)
@@ -121,7 +121,7 @@ private class PurchasesAPI {
         packageToPurchase: Package,
         storeProduct: StoreProduct,
         subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo
+        productChangeInfo: ProductChangeInfo
     ) {
         purchases.getOfferingsWith(
             onError = { _: PurchasesError -> },
@@ -136,14 +136,14 @@ private class PurchasesAPI {
         purchases.purchaseProductWith(
             activity,
             storeProduct,
-            upgradeInfo,
+            productChangeInfo,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
-            upgradeInfo,
+            productChangeInfo,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
@@ -162,7 +162,7 @@ private class PurchasesAPI {
         purchases.purchaseSubscriptionOptionWith(
             activity,
             subscriptionOption,
-            upgradeInfo,
+            productChangeInfo,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )

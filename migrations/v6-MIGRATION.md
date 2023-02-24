@@ -2,16 +2,17 @@
 
 ### Classes
 
-| New                        |
-|----------------------------|
-| `SubscriptionOption`       |
-| `GoogleSubscriptionOption` |
-| `GoogleStoreProduct`       |
-| `AmazonStoreProduct`       |
-| `Price`                    |
-| `PricingPhase`             |
-| `RecurrenceMode`           |
-| `GoogleProrationMode`      |
+| Previous      | New                        |
+|---------------|----------------------------|
+|               | `SubscriptionOption`       |
+|               | `GoogleSubscriptionOption` |
+|               | `GoogleStoreProduct`       |
+|               | `AmazonStoreProduct`       |
+|               | `Price`                    |
+|               | `PricingPhase`             |
+|               | `RecurrenceMode`           |
+|               | `GoogleProrationMode`      |
+| `UpgradeInfo` | `ProductChangeInfo`        |
 
 | Old Location                            | New Location                                   |
 |-----------------------------------------|------------------------------------------------|
@@ -68,7 +69,7 @@ val trialOption = storeProduct.subscriptionOptions?.firstOrNull { it.introPhase 
 |------------|------------|
 | skus       | productIds |
 
-### UpgradeInfo updates
+### ProductChangeInfo updates
 
 
 | Removed       | New                 |
@@ -99,7 +100,7 @@ For more control, the `purchaseSubscriptionOption()` API can be used to manually
 | New                                                                                                      |
 |----------------------------------------------------------------------------------------------------------|
 | `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, PurchaseCallback)`                   |
-| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, UpgradeInfo, ProductChangeCallback)` |
+| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, ProductChangeInfo, ProductChangeCallback)` |
 
 | Deprecated                                                       | New                                                   |
 |------------------------------------------------------------------|-------------------------------------------------------|
@@ -111,7 +112,7 @@ For more control, the `purchaseSubscriptionOption()` API can be used to manually
 | New                                                                                                                                                                |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `purchaseSubscriptionOptionWith(Activity, StoreProduct, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              |
-| `purchaseSubscriptionOptionWith(Activity, StoreProduct, UpgradeInfo, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+| `purchaseSubscriptionOptionWith(Activity, StoreProduct, ProductChangeInfo, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 
 | Deprecated                                                                                         | New                                                                                     |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|

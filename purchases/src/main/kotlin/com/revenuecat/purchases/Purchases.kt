@@ -383,25 +383,25 @@ class Purchases internal constructor(
     /**
      * Purchases [storeProduct].
      * If [storeProduct] represents a subscription, upgrades from the subscription specified by
-     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
+     * [productChangeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
      *   - Filters out offers with "rc-ignore-default-offer" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
-     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
+     * If [storeProduct] represents a non-subscription, [productChangeInfo] will be ignored.
      *
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * @param [productChangeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
-        upgradeInfo: UpgradeInfo,
+        productChangeInfo: ProductChangeInfo,
         listener: ProductChangeCallback
     ) {
         startProductChange(
@@ -409,7 +409,7 @@ class Purchases internal constructor(
             // TODOBC5 Move this logic to StoreProduct
             storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
             null,
-            upgradeInfo,
+            productChangeInfo,
             listener
         )
     }
@@ -444,21 +444,21 @@ class Purchases internal constructor(
      * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
      * @param [activity] Current activity
      * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * @param [productChangeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
     fun purchaseSubscriptionOption(
         activity: Activity,
         subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo,
+        productChangeInfo: ProductChangeInfo,
         listener: ProductChangeCallback
     ) {
         startProductChange(
             activity,
             subscriptionOption.purchasingData,
             null,
-            upgradeInfo,
+            productChangeInfo,
             listener
         )
     }
@@ -479,26 +479,26 @@ class Purchases internal constructor(
 
     /**
      * Purchases a [Package].
-     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
-     * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
+     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified
+     * by [productChangeInfo]'s [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
      *
      * The default [SubscriptionOption] logic:
      *   - Filters out offers with "rc-ignore-default-offer" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
-     * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
+     * If [packageToPurchase] represents a non-subscription, [productChangeInfo] will be ignored.
      *
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * @param [productChangeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
      */
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
-        upgradeInfo: UpgradeInfo,
+        productChangeInfo: ProductChangeInfo,
         callback: ProductChangeCallback
     ) {
         startProductChange(
@@ -506,7 +506,7 @@ class Purchases internal constructor(
             // TODOBC5 Move this logic to StoreProduct
             packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
-            upgradeInfo,
+            productChangeInfo,
             callback
         )
     }
@@ -1524,7 +1524,7 @@ class Purchases internal constructor(
         activity: Activity,
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
-        upgradeInfo: UpgradeInfo,
+        productChangeInfo: ProductChangeInfo,
         listener: ProductChangeCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
@@ -1540,7 +1540,7 @@ class Purchases internal constructor(
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } UpgradeInfo: $upgradeInfo"
+                } UpgradeInfo: $productChangeInfo"
 
             )
         )
@@ -1557,7 +1557,7 @@ class Purchases internal constructor(
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
-                upgradeInfo,
+                productChangeInfo,
                 activity,
                 appUserID,
                 offeringIdentifier,
@@ -1571,7 +1571,7 @@ class Purchases internal constructor(
 
     private fun replaceOldPurchaseWithNewProduct(
         purchasingData: PurchasingData,
-        upgradeInfo: UpgradeInfo,
+        productChangeInfo: ProductChangeInfo,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
@@ -1587,15 +1587,15 @@ class Purchases internal constructor(
         billing.findPurchaseInPurchaseHistory(
             appUserID,
             ProductType.SUBS,
-            upgradeInfo.oldProductId,
+            productChangeInfo.oldProductId,
             onCompletion = { purchaseRecord ->
-                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldProductId))
+                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(productChangeInfo.oldProductId))
 
                 billing.makePurchaseAsync(
                     activity,
                     appUserID,
                     purchasingData,
-                    ReplaceProductInfo(purchaseRecord, upgradeInfo.googleProrationMode.playBillingClientMode),
+                    ReplaceProductInfo(purchaseRecord, productChangeInfo.googleProrationMode.playBillingClientMode),
                     presentedOfferingIdentifier
                 )
             },

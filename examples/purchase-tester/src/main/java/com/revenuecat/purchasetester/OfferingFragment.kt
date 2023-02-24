@@ -17,7 +17,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.UpgradeInfo
+import com.revenuecat.purchases.ProductChangeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
@@ -140,14 +140,14 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun promptForUpgradeInfo(callback: (UpgradeInfo?) -> Unit) {
+    private fun promptForUpgradeInfo(callback: (ProductChangeInfo?) -> Unit) {
         showOldSubIdPicker { subId ->
             subId?.let {
                 showProrationModePicker { prorationMode, error ->
                     if (error == null) {
                         prorationMode?.let {
-                            callback(UpgradeInfo(subId, prorationMode))
-                        } ?: callback(UpgradeInfo(subId))
+                            callback(ProductChangeInfo(subId, prorationMode))
+                        } ?: callback(ProductChangeInfo(subId))
                     } else {
                         callback(null)
                     }
@@ -158,19 +158,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun startPurchaseProduct(
         currentProduct: StoreProduct,
-        upgradeInfo: UpgradeInfo?
+        productChangeInfo: ProductChangeInfo?
     ) {
         when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchaseProductWith(
+            productChangeInfo == null -> Purchases.sharedInstance.purchaseProductWith(
                 requireActivity(),
                 currentProduct,
                 purchaseErrorCallback,
                 successfulPurchaseCallback
             )
-            upgradeInfo != null -> Purchases.sharedInstance.purchaseProductWith(
+            productChangeInfo != null -> Purchases.sharedInstance.purchaseProductWith(
                 requireActivity(),
                 currentProduct,
-                upgradeInfo,
+                productChangeInfo,
                 purchaseErrorCallback,
                 successfulUpgradeCallback
             )
@@ -179,19 +179,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun startPurchaseSubscriptionOption(
         subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo?
+        productChangeInfo: ProductChangeInfo?
     ) {
         when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+            productChangeInfo == null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                 requireActivity(),
                 subscriptionOption,
                 purchaseErrorCallback,
                 successfulPurchaseCallback
             )
-            upgradeInfo != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
+            productChangeInfo != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
                 requireActivity(),
                 subscriptionOption,
-                upgradeInfo,
+                productChangeInfo,
                 purchaseErrorCallback,
                 successfulUpgradeCallback
             )
@@ -211,19 +211,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun startPurchasePackage(
         currentPackage: Package,
-        upgradeInfo: UpgradeInfo?
+        productChangeInfo: ProductChangeInfo?
     ) {
         when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchasePackageWith(
+            productChangeInfo == null -> Purchases.sharedInstance.purchasePackageWith(
                 requireActivity(),
                 currentPackage,
                 purchaseErrorCallback,
                 successfulPurchaseCallback
             )
-            upgradeInfo != null -> Purchases.sharedInstance.purchasePackageWith(
+            productChangeInfo != null -> Purchases.sharedInstance.purchasePackageWith(
                 requireActivity(),
                 currentPackage,
-                upgradeInfo,
+                productChangeInfo,
                 purchaseErrorCallback,
                 successfulUpgradeCallback
             )
