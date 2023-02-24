@@ -572,7 +572,7 @@ class PurchasesTest {
                 eq(appUserId),
                 packageToPurchase.product.purchasingData,
                 null,
-                null,
+                stubOfferingIdentifier,
                 expectedPersonalizedPrice
             )
         }
@@ -596,7 +596,7 @@ class PurchasesTest {
                 eq(appUserId),
                 packageToPurchase.product.purchasingData,
                 any(),
-                null,
+                stubOfferingIdentifier,
                 expectedPersonalizedPrice
             )
         }
@@ -622,7 +622,7 @@ class PurchasesTest {
                 eq(appUserId),
                 packageToPurchase.product.purchasingData,
                 null,
-                null,
+                stubOfferingIdentifier,
                 false
             )
         }
@@ -646,7 +646,7 @@ class PurchasesTest {
                 eq(appUserId),
                 packageToPurchase.product.purchasingData,
                 any(),
-                null,
+                stubOfferingIdentifier,
                 false
             )
         }
