@@ -9,9 +9,9 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 data class PricingPhase(
     /**
-     * Billing period for which the [PricingPhase] applies, in ISO 8601 format (i.e. one month -> P1M)
+     * Billing period for which the [PricingPhase] applies.
      */
-    val billingPeriod: String,
+    val billingPeriod: Period,
 
     /**
      * [RecurrenceMode] of the [PricingPhase]

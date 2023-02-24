@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.ProductDetails.RecurrenceMode
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -301,17 +302,18 @@ class BackendTest {
         assertThat(requestBodySlot.captured.keys).contains("pricing_phases")
         assertThat(requestBodySlot.captured["pricing_phases"]).isEqualTo(mappedExpectedPricingPhases)
 
-        expectedPricingPhases?.forEachIndexed { index, pricingPhase ->
-            val mappedPricingPhase = mappedExpectedPricingPhases?.get(index)
-            assertThat(mappedPricingPhase).isNotNull.withFailMessage(
-                "there should be a mapped version for every pricingPhase"
+        assertThat(mappedExpectedPricingPhases).isEqualTo(
+            listOf(
+                mapOf(
+                    "billingPeriod" to "P1M",
+                    "recurrenceMode" to RecurrenceMode.INFINITE_RECURRING,
+                    "billingCycleCount" to 0,
+                    "formattedPrice" to "\$4.99",
+                    "priceAmountMicros" to 4990000L,
+                    "priceCurrencyCode" to "USD"
+                )
             )
-            assertThat(mappedPricingPhase?.get("billingPeriod")).isEqualTo(pricingPhase.billingPeriod)
-            assertThat(mappedPricingPhase?.get("billingCycleCount")).isEqualTo(pricingPhase.billingCycleCount)
-            assertThat(mappedPricingPhase?.get("formattedPrice")).isEqualTo(pricingPhase.price.formatted)
-            assertThat(mappedPricingPhase?.get("priceCurrencyCode")).isEqualTo(pricingPhase.price.currencyCode)
-            assertThat(mappedPricingPhase?.get("recurrenceMode")).isEqualTo(pricingPhase.recurrenceMode.identifier)
-        }
+        );
     }
 
     @Test
@@ -592,10 +594,10 @@ class BackendTest {
         )
 
         val originalSubscriptionOption = storeProduct.subscriptionOptions[0]
-        val originalDuration = originalSubscriptionOption.pricingPhases[0].billingPeriod
+        val originalDuration = originalSubscriptionOption.pricingPhases[0].billingPeriod.iso8601
         val subscriptionOption = stubSubscriptionOption(originalSubscriptionOption.id, originalDuration + "a")
         val storeProduct2 = stubStoreProduct(
-            storeProduct.productId,
+            storeProduct.id,
             subscriptionOption
         )
 
