@@ -34,7 +34,6 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.google.createOfferings
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -91,9 +90,9 @@ class Purchases internal constructor(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
+    private val offeringFactory: OfferingFactory,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
-    private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
-    private val offeringFactory: OfferingFactory
+    private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
 
     /** @suppress */
@@ -1102,7 +1101,7 @@ class Purchases internal constructor(
                         getStoreProductsById(allRequestedProductIdentifiers, { productsById ->
                             logMissingProducts(allRequestedProductIdentifiers, productsById)
 
-                            val offerings = OfferingFactory.createOfferings(productsById)
+                            val offerings = offeringFactory.createOfferings(offeringsJSON, productsById)
                             if (offerings.all.isEmpty()) {
                                 handleErrorFetchingOfferings(
                                     PurchasesError(

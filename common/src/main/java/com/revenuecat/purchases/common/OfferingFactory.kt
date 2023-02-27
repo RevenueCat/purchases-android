@@ -9,12 +9,18 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import org.json.JSONObject
 
 abstract class OfferingFactory {
+
+    abstract fun Map<String, List<StoreProduct>>.findMatchingProduct(
+        productIdentifier: String,
+        planIdentifier: String?
+    ): StoreProduct?
+
     /**
      * Note: this may return an empty Offerings.
      */
-    fun JSONObject.createOfferings(productsById: Map<String, List<StoreProduct>>): Offerings {
-        val jsonOfferings = getJSONArray("offerings")
-        val currentOfferingID = getString("current_offering_id")
+    fun createOfferings(offeringsJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offerings {
+        val jsonOfferings = offeringsJson.getJSONArray("offerings")
+        val currentOfferingID = offeringsJson.getString("current_offering_id")
 
         val offerings = mutableMapOf<String, Offering>()
         for (i in 0 until jsonOfferings.length()) {
@@ -30,11 +36,6 @@ abstract class OfferingFactory {
 
         return Offerings(offerings[currentOfferingID], offerings)
     }
-
-    abstract fun Map<String, List<StoreProduct>>.findMatchingProduct(
-        productIdentifier: String,
-        planIdentifier: String?
-    ): StoreProduct?
 
     private fun JSONObject.createOffering(productsById: Map<String, List<StoreProduct>>): Offering? {
         val offeringIdentifier = getString("identifier")
