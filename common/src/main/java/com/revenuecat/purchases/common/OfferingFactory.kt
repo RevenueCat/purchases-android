@@ -25,7 +25,7 @@ abstract class OfferingFactory {
         val offerings = mutableMapOf<String, Offering>()
         for (i in 0 until jsonOfferings.length()) {
             val offeringJson = jsonOfferings.getJSONObject(i)
-            offeringJson.createOffering(productsById)?.let {
+            createOffering(offeringJson, productsById)?.let {
                 offerings[it.identifier] = it
 
                 if (it.availablePackages.isEmpty()) {
@@ -37,33 +37,34 @@ abstract class OfferingFactory {
         return Offerings(offerings[currentOfferingID], offerings)
     }
 
-    private fun JSONObject.createOffering(productsById: Map<String, List<StoreProduct>>): Offering? {
-        val offeringIdentifier = getString("identifier")
-        val jsonPackages = getJSONArray("packages")
+    private fun createOffering(offeringJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offering? {
+        val offeringIdentifier = offeringJson.getString("identifier")
+        val jsonPackages = offeringJson.getJSONArray("packages")
 
         val availablePackages = mutableListOf<Package>()
         for (i in 0 until jsonPackages.length()) {
             val packageJson = jsonPackages.getJSONObject(i)
-            packageJson.createPackage(productsById, offeringIdentifier)?.let {
+            createPackage(packageJson, productsById, offeringIdentifier)?.let {
                 availablePackages.add(it)
             }
         }
 
         return if (availablePackages.isNotEmpty()) {
-            Offering(offeringIdentifier, getString("description"), availablePackages)
+            Offering(offeringIdentifier, offeringJson.getString("description"), availablePackages)
         } else {
             null
         }
     }
 
-    private fun JSONObject.createPackage(
+    private fun createPackage(
+        packageJson: JSONObject,
         productsById: Map<String, List<StoreProduct>>,
         offeringIdentifier: String
     ): Package? {
-        val packageIdentifier = getString("identifier")
-        val productIdentifier = getString("platform_product_identifier")
+        val packageIdentifier = packageJson.getString("identifier")
+        val productIdentifier = packageJson.getString("platform_product_identifier")
 
-        val planIdentifier = optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
+        val planIdentifier = packageJson.optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
         val product = productsById.findMatchingProduct(productIdentifier, planIdentifier)
 
         val packageType = packageIdentifier.toPackageType()
