@@ -5,19 +5,20 @@ import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
 
 class GoogleOfferingParser : OfferingParser() {
-    override fun Map<String, List<StoreProduct>>.findMatchingProduct(
+    override fun findMatchingProduct(
+        productsById: Map<String, List<StoreProduct>>,
         productIdentifier: String,
         planIdentifier: String?
     ): StoreProduct? {
+        val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
         if (planIdentifier == null) {
             // It could be an INAPP or a mis-configured subscription
             // Try to find INAPP, otherwise null
-            return this[productIdentifier]
+            return storeProducts
                 .takeIf { it?.size == 1 }
                 ?.takeIf { it[0].type == ProductType.INAPP }
                 ?.firstOrNull()
         }
-        val storeProducts: List<StoreProduct>? = this[productIdentifier]
         return storeProducts?.firstOrNull { storeProduct ->
             storeProduct.subscriptionOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
         }

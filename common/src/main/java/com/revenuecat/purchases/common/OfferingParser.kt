@@ -10,7 +10,8 @@ import org.json.JSONObject
 
 abstract class OfferingParser {
 
-    abstract fun Map<String, List<StoreProduct>>.findMatchingProduct(
+    abstract fun findMatchingProduct(
+        productsById: Map<String, List<StoreProduct>>,
         productIdentifier: String,
         planIdentifier: String?
     ): StoreProduct?
@@ -65,7 +66,7 @@ abstract class OfferingParser {
         val productIdentifier = packageJson.getString("platform_product_identifier")
 
         val planIdentifier = packageJson.optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
-        val product = productsById.findMatchingProduct(productIdentifier, planIdentifier)
+        val product = findMatchingProduct(productsById, productIdentifier, planIdentifier)
 
         val packageType = packageIdentifier.toPackageType()
         return product?.let { Package(packageIdentifier, packageType, it, offeringIdentifier) }

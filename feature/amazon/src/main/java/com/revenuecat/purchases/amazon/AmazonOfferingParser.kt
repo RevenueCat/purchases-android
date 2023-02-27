@@ -4,8 +4,9 @@ import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
 
 class AmazonOfferingParser : OfferingParser() {
-    override fun Map<String, List<StoreProduct>>.findMatchingProduct(
+    override fun findMatchingProduct(
+        productsById: Map<String, List<StoreProduct>>,
         productIdentifier: String,
         planIdentifier: String?
-    ): StoreProduct? = this[productIdentifier]?.firstOrNull()
+    ): StoreProduct? = productsById[productIdentifier]?.firstOrNull()
 }
