@@ -21,7 +21,7 @@ class DefaultSignatureVerifier(publicKey: String = DEFAULT_PUBLIC_KEY) : Signatu
         return try {
             verifier.verify(signatureToVerify, messageToVerify)
             true
-        } catch (e: GeneralSecurityException) {
+        } catch (_: GeneralSecurityException) {
             false
         }
     }
