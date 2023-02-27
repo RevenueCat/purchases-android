@@ -150,7 +150,7 @@ class BackendTest {
     ): CustomerInfo {
         val info: CustomerInfo = mockk()
 
-        val result = HTTPResult(responseCode, resultBody ?: "{}", HTTPResult.Origin.BACKEND)
+        val result = HTTPResult.createResult(responseCode, resultBody ?: "{}")
 
         if (shouldMockCustomerInfo) {
             every {

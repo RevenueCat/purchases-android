@@ -6,12 +6,9 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONObject
-import java.net.HttpURLConnection
 
 private const val SERIALIZATION_NAME_ETAG = "eTag"
 private const val SERIALIZATION_NAME_HTTPRESULT = "httpResult"
-
-internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
 
 data class HTTPResultWithETag(
     val eTag: String,
@@ -42,19 +39,21 @@ class ETagManager(
         path: String,
         refreshETag: Boolean = false
     ): Map<String, String> {
-        val eTagHeader = ETAG_HEADER_NAME to if (refreshETag) "" else getETag(path)
+        val eTagHeader = HTTPRequest.ETAG_HEADER_NAME to if (refreshETag) "" else getETag(path)
         return mapOf(eTagHeader)
     }
 
+    @Suppress("LongParameterList")
     internal fun getHTTPResultFromCacheOrBackend(
         responseCode: Int,
         payload: String,
-        connection: HttpURLConnection,
+        eTagHeader: String?,
         urlPathWithVersion: String,
-        refreshETag: Boolean
+        refreshETag: Boolean,
+        verificationStatus: HTTPResult.VerificationStatus
     ): HTTPResult? {
-        val resultFromBackend = HTTPResult(responseCode, payload, HTTPResult.Origin.BACKEND)
-        connection.getETagHeader()?.let { eTagInResponse ->
+        val resultFromBackend = HTTPResult(responseCode, payload, HTTPResult.Origin.BACKEND, verificationStatus)
+        eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
                 val storedResult = getStoredResult(urlPathWithVersion)
                 return storedResult
@@ -124,5 +123,3 @@ class ETagManager(
             )
     }
 }
-
-internal fun HttpURLConnection.getETagHeader(): String? = this.getHeaderField(ETAG_HEADER_NAME)

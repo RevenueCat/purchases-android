@@ -13,6 +13,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val store: Store
     val diagnosticsEnabled: Boolean
     val dangerousSettings: DangerousSettings
+    val verificationMode: EntitlementVerificationMode
 
     init {
         this.context = builder.context
@@ -22,6 +23,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.service = builder.service
         this.store = builder.store
         this.diagnosticsEnabled = builder.diagnosticsEnabled
+        this.verificationMode = builder.verificationMode
         this.dangerousSettings = builder.dangerousSettings
     }
 
@@ -35,6 +37,8 @@ open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic @get:JvmSynthetic internal var service: ExecutorService? = null
         @set:JvmSynthetic @get:JvmSynthetic internal var store: Store = Store.PLAY_STORE
         @set:JvmSynthetic @get:JvmSynthetic internal var diagnosticsEnabled: Boolean = false
+        @set:JvmSynthetic @get:JvmSynthetic internal var verificationMode: EntitlementVerificationMode =
+            EntitlementVerificationMode.default
         @set:JvmSynthetic @get:JvmSynthetic internal var dangerousSettings: DangerousSettings = DangerousSettings()
 
         fun appUserID(appUserID: String?) = apply {
@@ -61,6 +65,15 @@ open class PurchasesConfiguration(builder: Builder) {
          */
         fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
             this.diagnosticsEnabled = diagnosticsEnabled
+        }
+
+        // WIP: Make method public once we are ready to support entitlements.
+        /**
+         * Defines how strict [EntitlementInfo] verification ought to be.
+         * Default is [EntitlementVerificationMode.DISABLED].
+         */
+        internal fun entitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) = apply {
+            this.verificationMode = entitlementVerificationMode
         }
 
         /**
