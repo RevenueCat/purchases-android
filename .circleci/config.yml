@@ -54,21 +54,18 @@ commands:
       - run:
           name: Installing SDKMAN
           command: |
-            echo "Running tests without SDKMAN"
-#            if curl -s "https://get.sdkman.io?rcupdate=false" | bash; then
-#              echo -e '\nsource "/home/circleci/.sdkman/bin/sdkman-init.sh"' >> $BASH_ENV
-#              source $BASH_ENV
-#            else
-#              echo "Error installing SDKMAN, continuing with default Java" >&2
-#            fi
+            if curl -s "https://get.sdkman.io?rcupdate=false" | bash; then
+              echo -e '\nsource "/home/circleci/.sdkman/bin/sdkman-init.sh"' >> $BASH_ENV
+              source $BASH_ENV
+            else
+              echo "Error installing SDKMAN, continuing with default Java" >&2
+            fi
       - run:
           name: Setup Java environment
           command: |
-            echo "Running tests without SDKMAN"
-#
-#            if ! sdk env install; then
-#              echo "Error installing Java SDK through SDKMAN, continuing with default Java" >&2
-#            fi
+            if ! sdk env install; then
+              echo "Error installing Java SDK through SDKMAN, continuing with default Java" >&2
+            fi
 
   android-dependencies:
     steps:
