@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.verification.DefaultSignatureVerifier
 import com.revenuecat.purchases.common.verification.SigningManager
+import com.revenuecat.purchases.common.verification.shouldVerify
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster

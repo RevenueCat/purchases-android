@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SigningManager
+import com.revenuecat.purchases.common.verification.shouldVerify
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException

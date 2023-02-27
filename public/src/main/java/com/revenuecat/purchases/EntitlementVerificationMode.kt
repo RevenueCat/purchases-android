@@ -34,10 +34,4 @@ enum class EntitlementVerificationMode {
         val default: EntitlementVerificationMode
             get() = DISABLED
     }
-
-    val shouldVerify: Boolean
-        get() = when (this) {
-            DISABLED -> false
-            INFORMATIONAL, ENFORCED -> true
-        }
 }
