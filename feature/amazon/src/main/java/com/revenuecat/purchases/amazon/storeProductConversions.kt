@@ -138,5 +138,5 @@ class AmazonOfferingFactory : OfferingFactory() {
     override fun Map<String, List<StoreProduct>>.findMatchingProduct(
         productIdentifier: String,
         planIdentifier: String?
-    ): StoreProduct? = this[productIdentifier]?.get(0)
+    ): StoreProduct? = this[productIdentifier]?.firstOrNull()
 }

@@ -86,7 +86,7 @@ class GoogleOfferingFactory : OfferingFactory() {
         return this.getMatchingGoogleProduct(productIdentifier, planIdentifier)
     }
 
-    fun Map<String, List<StoreProduct>>.getMatchingGoogleProduct(
+    private fun Map<String, List<StoreProduct>>.getMatchingGoogleProduct(
         productIdentifier: String,
         planIdentifier: String?
     ): StoreProduct? {
@@ -96,7 +96,7 @@ class GoogleOfferingFactory : OfferingFactory() {
             return this[productIdentifier]
                 .takeIf { it?.size == 1 }
                 ?.takeIf { it[0].type == ProductType.INAPP }
-                ?.get(0)
+                ?.firstOrNull()
         }
         val storeProducts: List<StoreProduct>? = this[productIdentifier]
         return storeProducts?.firstOrNull { storeProduct ->
