@@ -3,7 +3,7 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.OfferingFactory
+import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
@@ -78,15 +78,8 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     return storeProducts
 }
 
-class GoogleOfferingFactory : OfferingFactory() {
+class GoogleOfferingParser : OfferingParser() {
     override fun Map<String, List<StoreProduct>>.findMatchingProduct(
-        productIdentifier: String,
-        planIdentifier: String?
-    ): StoreProduct? {
-        return this.getMatchingGoogleProduct(productIdentifier, planIdentifier)
-    }
-
-    private fun Map<String, List<StoreProduct>>.getMatchingGoogleProduct(
         productIdentifier: String,
         planIdentifier: String?
     ): StoreProduct? {

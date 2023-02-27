@@ -8,7 +8,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
 import org.json.JSONObject
 
-abstract class OfferingFactory {
+abstract class OfferingParser {
 
     abstract fun Map<String, List<StoreProduct>>.findMatchingProduct(
         productIdentifier: String,

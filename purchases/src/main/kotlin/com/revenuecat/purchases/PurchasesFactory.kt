@@ -11,12 +11,9 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
-import com.revenuecat.purchases.common.OfferingFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.ETagManager
-import com.revenuecat.purchases.google.GoogleOfferingFactory
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
@@ -88,16 +85,8 @@ internal class PurchasesFactory(
             )
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
-            val offeringFactory =
-                if (store == Store.PLAY_STORE) GoogleOfferingFactory() else {
-                    try {
-                        Class.forName("com.revenuecat.purchases.amazon.AmazonOfferingFactory")
-                            .getConstructor().newInstance() as OfferingFactory
-                    } catch (e: ClassNotFoundException) {
-                        errorLog("Make sure purchases-amazon is added as dependency", e)
-                        throw e
-                    }
-                }
+            val offeringParser = OfferingParserFactory.createOfferingParser(store)
+
             return Purchases(
                 application,
                 appUserID,
@@ -109,7 +98,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper,
-                offeringFactory
+                offeringParser
             )
         }
     }
