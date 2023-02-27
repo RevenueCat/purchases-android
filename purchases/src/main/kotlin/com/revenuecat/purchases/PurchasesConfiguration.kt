@@ -67,12 +67,11 @@ open class PurchasesConfiguration(builder: Builder) {
             this.diagnosticsEnabled = diagnosticsEnabled
         }
 
-        // WIP: Make method public once we are ready to support entitlements.
         /**
          * Defines how strict [EntitlementInfo] verification ought to be.
          * Default is [EntitlementVerificationMode.DISABLED].
          */
-        internal fun entitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) = apply {
+        fun entitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) = apply {
             this.verificationMode = entitlementVerificationMode
         }
 
