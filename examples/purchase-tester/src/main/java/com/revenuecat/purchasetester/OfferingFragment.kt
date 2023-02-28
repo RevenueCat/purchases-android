@@ -15,17 +15,16 @@ import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.Purchase
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.purchasePackageWith
-import com.revenuecat.purchases.purchaseProductWith
-import com.revenuecat.purchases.purchaseSubscriptionOptionWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
@@ -46,13 +45,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             }
         }
 
-    private val successfulPurchaseCallback: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit =
-        { storeTransaction, _ ->
-            toggleLoadingIndicator(false)
-            handleSuccessfulPurchase(storeTransaction.orderId)
-        }
-
-    private val successfulUpgradeCallback: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit =
+    private val successfulPurchaseCallback: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit =
         { storeTransaction, _ ->
             toggleLoadingIndicator(false)
             handleSuccessfulPurchase(storeTransaction?.orderId)
@@ -91,17 +84,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         currentPackage: Package,
         isUpgrade: Boolean
     ) {
-        toggleLoadingIndicator(true)
-
-        if (isUpgrade) {
-            promptForUpgradeInfo { upgradeInfo ->
-                upgradeInfo?.let {
-                    startPurchasePackage(currentPackage, upgradeInfo)
+        // TODO BC5 replace with listener conversion version
+        val purchasePackageBuilder =
+            Purchase.Builder(currentPackage, requireActivity(), object : ProductChangeCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
+                    successfulPurchaseCallback.invoke(storeTransaction, customerInfo)
                 }
-            }
-        } else {
-            startPurchasePackage(currentPackage, null)
-        }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    purchaseErrorCallback.invoke(error, userCancelled)
+                }
+            })
+
+        startPurchase(isUpgrade, purchasePackageBuilder)
     }
 
     override fun onPurchaseProductClicked(
@@ -109,17 +104,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         currentProduct: StoreProduct,
         isUpgrade: Boolean
     ) {
-        toggleLoadingIndicator(true)
-
-        if (isUpgrade) {
-            promptForUpgradeInfo { upgradeInfo ->
-                upgradeInfo?.let {
-                    startPurchaseProduct(currentProduct, upgradeInfo)
+        // TODO BC5 replace with listener conversion version
+        val purchaseProductBuilder =
+            Purchase.Builder(currentProduct, requireActivity(), object : ProductChangeCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
+                    successfulPurchaseCallback.invoke(storeTransaction, customerInfo)
                 }
-            }
-        } else {
-            startPurchaseProduct(currentProduct, null)
-        }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    purchaseErrorCallback.invoke(error, userCancelled)
+                }
+            })
+
+        startPurchase(isUpgrade, purchaseProductBuilder)
     }
 
     override fun onPurchaseSubscriptionOptionClicked(
@@ -127,16 +124,36 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean
     ) {
-        toggleLoadingIndicator(true)
+        // TODO BC5 replace with listener conversion version
+        val purchaseOptionBuilder =
+            Purchase.Builder(subscriptionOption, requireActivity(), object : ProductChangeCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
+                    successfulPurchaseCallback.invoke(storeTransaction, customerInfo)
+                }
 
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    purchaseErrorCallback.invoke(error, userCancelled)
+                }
+            })
+
+        startPurchase(isUpgrade, purchaseOptionBuilder)
+    }
+
+    private fun startPurchase(
+        isUpgrade: Boolean,
+        purchaseProductBuilder: Purchase.Builder
+    ) {
+        toggleLoadingIndicator(true)
         if (isUpgrade) {
             promptForUpgradeInfo { upgradeInfo ->
                 upgradeInfo?.let {
-                    startPurchaseSubscriptionOption(subscriptionOption, upgradeInfo)
+                    purchaseProductBuilder.oldProductId(upgradeInfo.oldProductId)
+                        .googleProrationMode(upgradeInfo.googleProrationMode)
                 }
+                Purchases.sharedInstance.purchase(purchaseProductBuilder.build())
             }
         } else {
-            startPurchaseSubscriptionOption(subscriptionOption, null)
+            Purchases.sharedInstance.purchase(purchaseProductBuilder.build())
         }
     }
 
@@ -156,48 +173,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun startPurchaseProduct(
-        currentProduct: StoreProduct,
-        upgradeInfo: UpgradeInfo?
-    ) {
-        when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchaseProductWith(
-                requireActivity(),
-                currentProduct,
-                purchaseErrorCallback,
-                successfulPurchaseCallback
-            )
-            upgradeInfo != null -> Purchases.sharedInstance.purchaseProductWith(
-                requireActivity(),
-                currentProduct,
-                upgradeInfo,
-                purchaseErrorCallback,
-                successfulUpgradeCallback
-            )
-        }
-    }
-
-    private fun startPurchaseSubscriptionOption(
-        subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo?
-    ) {
-        when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                requireActivity(),
-                subscriptionOption,
-                purchaseErrorCallback,
-                successfulPurchaseCallback
-            )
-            upgradeInfo != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                requireActivity(),
-                subscriptionOption,
-                upgradeInfo,
-                purchaseErrorCallback,
-                successfulUpgradeCallback
-            )
-        }
-    }
-
     private fun handleSuccessfulPurchase(orderId: String?) {
         context?.let {
             Toast.makeText(
@@ -206,27 +181,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 Toast.LENGTH_SHORT
             ).show()
             findNavController().navigateUp()
-        }
-    }
-
-    private fun startPurchasePackage(
-        currentPackage: Package,
-        upgradeInfo: UpgradeInfo?
-    ) {
-        when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchasePackageWith(
-                requireActivity(),
-                currentPackage,
-                purchaseErrorCallback,
-                successfulPurchaseCallback
-            )
-            upgradeInfo != null -> Purchases.sharedInstance.purchasePackageWith(
-                requireActivity(),
-                currentPackage,
-                upgradeInfo,
-                purchaseErrorCallback,
-                successfulUpgradeCallback
-            )
         }
     }
 
