@@ -49,6 +49,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -367,11 +368,13 @@ class Purchases internal constructor(
                     override fun onReceived(inappStoreProducts: List<StoreProduct>) {
                         callback.onReceived(subStoreProducts + inappStoreProducts)
                     }
+
                     override fun onError(error: PurchasesError) {
                         callback.onError(error)
                     }
                 })
             }
+
             override fun onError(error: PurchasesError) {
                 callback.onError(error)
             }
@@ -406,40 +409,41 @@ class Purchases internal constructor(
     }
 
     // TODO BC5 deprecate all these purchase functions
-//    /**
-//     * Purchases [storeProduct].
-//     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
-//     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
-//     *
-//     * The default [SubscriptionOption] logic:
-//     *   - Filters out offers with "rc-ignore-default-offer" tag
-//     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
-//     *   - Falls back to use base plan
-//     *
-//     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
-//     *
-//     * @param [activity] Current activity
-//     * @param [storeProduct] The StoreProduct of the product you wish to purchase
-//     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-//     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
-//     Amazon purchases.
-//     * @param [listener] The PurchaseCallback that will be called when purchase completes.
-//     */
-//    fun purchaseProduct(
-//        activity: Activity,
-//        storeProduct: StoreProduct,
-//        upgradeInfo: UpgradeInfo,
-//        listener: ProductChangeCallback
-//    ) {
-//        startProductChange(
-//            activity,
-//            // TODOBC5 Move this logic to StoreProduct
-//            storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
-//            null,
-//            upgradeInfo,
-//            listener
-//        )
-//    }
+    /**
+     * Purchases [storeProduct].
+     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
+     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
+     *
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
+     Amazon purchases.
+     * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     */
+    // TODO BC5 update deprecation messages
+    @Deprecated(
+        "Use purchase() and Purchase.Builder instead",
+        ReplaceWith("purchase()")
+    )
+    fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeCallback
+    ) {
+        val purchaseProductBuilder =
+            Purchase.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldProductId)
+                .googleProrationMode(upgradeInfo.googleProrationMode)
+        purchase(purchaseProductBuilder.build(), listener)
+    }
 //
 //    /**
 //     * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
@@ -467,29 +471,30 @@ class Purchases internal constructor(
 //        )
 //    }
 //
-//    /**
-//     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
-//     * @param [activity] Current activity
-//     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
-//     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-//     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
-//     Amazon purchases.
-//     * @param [listener] The PurchaseCallback that will be called when purchase completes.
-//     */
-//    fun purchaseSubscriptionOption(
-//        activity: Activity,
-//        subscriptionOption: SubscriptionOption,
-//        upgradeInfo: UpgradeInfo,
-//        listener: ProductChangeCallback
-//    ) {
-//        startProductChange(
-//            activity,
-//            subscriptionOption.purchasingData,
-//            null,
-//            upgradeInfo,
-//            listener
-//        )
-//    }
+    /**
+     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
+     * @param [activity] Current activity
+     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
+     Amazon purchases.
+     * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     */
+    @Deprecated(
+        "Use purchase() and Purchase.Builder instead",
+        ReplaceWith("purchase()")
+    )
+    fun purchaseSubscriptionOption(
+        activity: Activity,
+        subscriptionOption: SubscriptionOption,
+        upgradeInfo: UpgradeInfo,
+        listener: ProductChangeCallback
+    ) {
+        val purchaseOptionBuilder =
+            Purchase.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldProductId)
+                .googleProrationMode(upgradeInfo.googleProrationMode)
+        purchase(purchaseOptionBuilder.build(), listener)
+    }
 //
 //    /**
 //     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
@@ -505,40 +510,40 @@ class Purchases internal constructor(
 //        startPurchase(activity, subscriptionOption.purchasingData, null, callback)
 //    }
 //
-//    /**
-//     * Purchases a [Package].
-//     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
-//     * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
-//     *
-//     * The default [SubscriptionOption] logic:
-//     *   - Filters out offers with "rc-ignore-default-offer" tag
-//     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
-//     *   - Falls back to use base plan
-//     *
-//     * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
-//     *
-//     * @param [activity] Current activity
-//     * @param [packageToPurchase] The Package you wish to purchase
-//     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-//     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
-//     Amazon purchases.
-//     * @param [callback] The listener that will be called when purchase completes.
-//     */
-//    fun purchasePackage(
-//        activity: Activity,
-//        packageToPurchase: Package,
-//        upgradeInfo: UpgradeInfo,
-//        callback: ProductChangeCallback
-//    ) {
-//        startProductChange(
-//            activity,
-//            // TODOBC5 Move this logic to StoreProduct
-//            packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
-//            packageToPurchase.offering,
-//            upgradeInfo,
-//            callback
-//        )
-//    }
+    /**
+     * Purchases a [Package].
+     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
+     * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
+     *
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
+    Amazon purchases.
+     * @param [callback] The listener that will be called when purchase completes.
+     */
+    @Deprecated(
+        "Use purchase() and Purchase.Builder instead",
+        ReplaceWith("purchase()")
+    )
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        upgradeInfo: UpgradeInfo,
+        callback: ProductChangeCallback
+    ) {
+        val purchasePackageBuilder =
+            Purchase.Builder(packageToPurchase, activity).oldProductId(upgradeInfo.oldProductId)
+                .googleProrationMode(upgradeInfo.googleProrationMode)
+        purchase(purchasePackageBuilder.build(), callback)
+    }
 //
 //    /**
 //     * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
@@ -1553,8 +1558,10 @@ class Purchases internal constructor(
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
             getAndClearProductChangeCallback()
-            listener.dispatch(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
-                PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) })
+            listener.dispatch(PurchasesError(
+                PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE
+            ).also { errorLog(it) })
             return
         }
 
@@ -1603,8 +1610,10 @@ class Purchases internal constructor(
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
             getAndClearProductChangeCallback()
-            listener.dispatch(PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError,
-                PurchaseStrings.UPGRADING_INVALID_TYPE).also { errorLog(it) })
+            listener.dispatch(PurchasesError(
+                PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE
+            ).also { errorLog(it) })
             return
         }
 
@@ -1790,7 +1799,9 @@ class Purchases internal constructor(
         @Deprecated(message = "Use logLevel instead")
         var debugLogsEnabled
             get() = logLevel.debugLogsEnabled
-            set(value) { logLevel = LogLevel.debugLogsEnabled(value) }
+            set(value) {
+                logLevel = LogLevel.debugLogsEnabled(value)
+            }
 
         /**
          * Configure log level. Useful for debugging issues with the lovely team @RevenueCat
@@ -1799,7 +1810,9 @@ class Purchases internal constructor(
         @JvmStatic
         var logLevel: LogLevel
             get() = Config.logLevel
-            set(value) { Config.logLevel = value }
+            set(value) {
+                Config.logLevel = value
+            }
 
         /**
          * Set a custom log handler for redirecting logs to your own logging system.

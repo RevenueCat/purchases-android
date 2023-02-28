@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
-import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
