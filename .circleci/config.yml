@@ -401,11 +401,7 @@ workflows:
             - hold
           <<: *release-branches
       - deploy: *release-tags
-      - deploy-snapshot:
-          filters:
-            branches:
-              only:
-                - main
+      - deploy-snapshot: *only-main-branch
       - docs-deploy: *release-tags
       - publish-purchase-tester-latest-dependencies-release:
           requires:
@@ -418,8 +414,7 @@ workflows:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
-      - prepare-next-version:
-          <<: *only-main-branch
+      - prepare-next-version: *only-main-branch
 
   weekly-run-workflow:
     when:
