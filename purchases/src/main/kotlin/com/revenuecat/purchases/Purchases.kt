@@ -40,6 +40,7 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -408,7 +409,6 @@ class Purchases internal constructor(
         }
     }
 
-    // TODO BC5 deprecate all these purchase functions
     /**
      * Purchases [storeProduct].
      * If [storeProduct] represents a subscription, upgrades from the subscription specified by
@@ -424,8 +424,7 @@ class Purchases internal constructor(
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
-     Amazon purchases.
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
     // TODO BC5 update deprecation messages
@@ -444,40 +443,38 @@ class Purchases internal constructor(
                 .googleProrationMode(upgradeInfo.googleProrationMode)
         purchase(purchaseProductBuilder.build(), listener)
     }
-//
-//    /**
-//     * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
-//     *
-//     * The default [SubscriptionOption] logic:
-//     *   - Filters out offers with "rc-ignore-default-offer" tag
-//     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
-//     *   - Falls back to use base plan
-//     *
-//     * @param [activity] Current activity
-//     * @param [storeProduct] The StoreProduct of the product you wish to purchase
-//     * @param [callback] The PurchaseCallback that will be called when purchase completes.
-//     */
-//    fun purchaseProduct(
-//        activity: Activity,
-//        storeProduct: StoreProduct,
-//        callback: PurchaseCallback
-//    ) {
-//        startPurchase(
-//            activity,
-//            // TODOBC5 Move this logic to StoreProduct
-//            storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
-//            null,
-//            callback
-//        )
-//    }
-//
+
+    /**
+     * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [callback] The PurchaseCallback that will be called when purchase completes.
+     */
+    @Deprecated(
+        "Use purchase() and Purchase.Builder instead",
+        ReplaceWith("purchase()")
+    )
+    fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        callback: PurchaseCallback
+    ) {
+        val purchase = Purchase.Builder(storeProduct, activity).build()
+        purchaseNonUpgradeWithDeprecatedCallback(purchase, callback)
+    }
+
     /**
      * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
      * @param [activity] Current activity
      * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
-     Amazon purchases.
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
     @Deprecated(
@@ -495,21 +492,27 @@ class Purchases internal constructor(
                 .googleProrationMode(upgradeInfo.googleProrationMode)
         purchase(purchaseOptionBuilder.build(), listener)
     }
-//
-//    /**
-//     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
-//     * @param [activity] Current activity
-//     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
-//     * @param [callback] The PurchaseCallback that will be called when purchase completes
-//     */
-//    fun purchaseSubscriptionOption(
-//        activity: Activity,
-//        subscriptionOption: SubscriptionOption,
-//        callback: PurchaseCallback
-//    ) {
-//        startPurchase(activity, subscriptionOption.purchasingData, null, callback)
-//    }
-//
+
+    /**
+     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
+     * @param [activity] Current activity
+     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
+     * @param [callback] The PurchaseCallback that will be called when purchase completes
+     */
+    @Deprecated(
+        "Use purchase() and Purchase.Builder instead",
+        ReplaceWith("purchase()")
+    )
+
+    fun purchaseSubscriptionOption(
+        activity: Activity,
+        subscriptionOption: SubscriptionOption,
+        callback: PurchaseCallback
+    ) {
+        val purchase = Purchase.Builder(subscriptionOption, activity).build()
+        purchaseNonUpgradeWithDeprecatedCallback(purchase, callback)
+    }
+
     /**
      * Purchases a [Package].
      * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
@@ -525,8 +528,7 @@ class Purchases internal constructor(
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
      * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
-    Amazon purchases.
+     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
      */
     @Deprecated(
@@ -544,28 +546,31 @@ class Purchases internal constructor(
                 .googleProrationMode(upgradeInfo.googleProrationMode)
         purchase(purchasePackageBuilder.build(), callback)
     }
-//
-//    /**
-//     * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
-//     *
-//     * The default [SubscriptionOption] logic:
-//     *   - Filters out offers with "rc-ignore-default-offer" tag
-//     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
-//     *   - Falls back to use base plan
-//     *
-//     * @param [activity] Current activity
-//     * @param [packageToPurchase] The Package you wish to purchase
-//     * @param [listener] The listener that will be called when purchase completes.
-//     */
-//    fun purchasePackage(
-//        activity: Activity,
-//        packageToPurchase: Package,
-//        listener: PurchaseCallback
-//    ) {
-//        val purchase = Purchase.Builder(packageToPurchase).build()
-//        // TODO BC5 figure out how to call with existing listener
-//        purchase(activity, purchase, listener)
-//    }
+
+    /**
+     * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    @Deprecated(
+        "Use purchase() and Purchase.Builder instead",
+        ReplaceWith("purchase()")
+    )
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        listener: PurchaseCallback
+    ) {
+        val purchase = Purchase.Builder(packageToPurchase, activity).build()
+        purchaseNonUpgradeWithDeprecatedCallback(purchase, listener)
+    }
 
     /**
      * Restores purchases made with the current Play Store account for the current user.
@@ -1400,6 +1405,32 @@ class Purchases internal constructor(
         } else {
             action()
         }
+    }
+
+    internal fun purchaseNonUpgradeWithDeprecatedCallback(
+        purchaseConfig: Purchase,
+        listener: PurchaseCallback
+    ) {
+        purchase(
+            purchaseConfig,
+            object : ProductChangeCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
+                    storeTransaction?.let {
+                        listener.onCompleted(it, customerInfo)
+                    } ?: run {
+                        val nullTransactionError = PurchasesError(
+                            PurchasesErrorCode.StoreProblemError,
+                            PurchaseStrings.NULL_TRANSACTION_ON_PURCHASE_ERROR
+                        )
+                        listener.onError(nullTransactionError, false)
+                    }
+                }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    listener.onError(error, userCancelled)
+                }
+            }
+        )
     }
 
     private fun getPurchaseCallback(productId: String): ProductChangeCallback? {

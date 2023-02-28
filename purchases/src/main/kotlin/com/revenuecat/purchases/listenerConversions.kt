@@ -119,22 +119,26 @@ fun Purchases.purchaseWith(
     purchase(purchaseConfig, productChangeCompletedListener(onSuccess, onError))
 }
 
-// TODO BC5 deprecate all non builder purchase functions
-// /**
-// * Purchase product. If purchasing a subscription, it will choose the default [SubscriptionOption].
-// * @param [activity] Current activity
-// * @param [storeProduct] The storeProduct of the product you wish to purchase
-// * @param [onSuccess] Will be called after the purchase has completed
-// * @param [onError] Will be called if there was an error with the purchase
-// */
-// fun Purchases.purchaseProductWith(
-//    activity: Activity,
-//    storeProduct: StoreProduct,
-//    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-//    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
-// ) {
-//    purchaseProduct(activity, storeProduct, purchaseCompletedCallback(onSuccess, onError))
-// }
+ /**
+ * Purchase product. If purchasing a subscription, it will choose the default [SubscriptionOption].
+ * @param [activity] Current activity
+ * @param [storeProduct] The storeProduct of the product you wish to purchase
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called if there was an error with the purchase
+ */
+ @Deprecated(
+     "Use purchase() and Purchase.Builder instead",
+     ReplaceWith("purchase()")
+ )
+ fun Purchases.purchaseProductWith(
+    activity: Activity,
+    storeProduct: StoreProduct,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
+    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
+ ) {
+     val purchase = Purchase.Builder(storeProduct, activity).build()
+     purchaseNonUpgradeWithDeprecatedCallback(purchase, purchaseCompletedCallback(onSuccess, onError))
+ }
 
 /**
  * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
@@ -162,26 +166,27 @@ fun Purchases.purchaseProductWith(
     purchaseWith(purchaseProductBuilder.build(), onError, onSuccess)
 }
 
-// /**
-// * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
-// * @param [activity] Current activity
-// * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
-// * @param [onSuccess] Will be called after the purchase has completed
-// * @param [onError] Will be called if there was an error with the purchase
-// */
-// fun Purchases.purchaseSubscriptionOptionWith(
-//    activity: Activity,
-//    subscriptionOption: SubscriptionOption,
-//    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-//    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
-// ) {
-//    purchaseSubscriptionOption(
-//        activity,
-//        subscriptionOption,
-//        purchaseCompletedCallback(onSuccess, onError)
-//    )
-// }
-//
+ /**
+ * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
+ * @param [activity] Current activity
+ * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called if there was an error with the purchase
+ */
+ @Deprecated(
+     "Use purchase() and Purchase.Builder instead",
+     ReplaceWith("purchase()")
+ )
+ fun Purchases.purchaseSubscriptionOptionWith(
+    activity: Activity,
+    subscriptionOption: SubscriptionOption,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
+    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
+ ) {
+     val purchase = Purchase.Builder(subscriptionOption, activity).build()
+     purchaseNonUpgradeWithDeprecatedCallback(purchase, purchaseCompletedCallback(onSuccess, onError))
+ }
+
 /**
  * Purchase a subscription [StoreProduct]'s [SubscriptionOption], upgrading from an old product.
  * @param [activity] Current activity
@@ -234,21 +239,26 @@ fun Purchases.purchasePackageWith(
     purchaseWith(purchasePackageBuilder.build(), onError, onSuccess)
 }
 
-// /**
-// * Make a purchase. If purchasing a subscription, it will choose the default [SubscriptionOption].
-// * @param [activity] Current activity
-// * @param [packageToPurchase] The Package you wish to purchase
-// * @param [onSuccess] Will be called after the purchase has completed
-// * @param [onError] Will be called if there was an error with the purchase
-// */
-// fun Purchases.purchasePackageWith(
-//    activity: Activity,
-//    packageToPurchase: Package,
-//    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-//    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
-// ) {
-//    purchasePackage(activity, packageToPurchase, purchaseCompletedCallback(onSuccess, onError))
-// }
+ /**
+ * Make a purchase. If purchasing a subscription, it will choose the default [SubscriptionOption].
+ * @param [activity] Current activity
+ * @param [packageToPurchase] The Package you wish to purchase
+ * @param [onSuccess] Will be called after the purchase has completed
+ * @param [onError] Will be called if there was an error with the purchase
+ */
+ @Deprecated(
+     "Use purchaseWith and Purchase.Builder instead",
+     ReplaceWith("purchaseWith()")
+ )
+ fun Purchases.purchasePackageWith(
+    activity: Activity,
+    packageToPurchase: Package,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
+    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
+ ) {
+     val purchase = Purchase.Builder(packageToPurchase, activity).build()
+     purchaseNonUpgradeWithDeprecatedCallback(purchase, purchaseCompletedCallback(onSuccess, onError))
+ }
 
 /**
  * Restores purchases made with the current Play Store account for the current user.

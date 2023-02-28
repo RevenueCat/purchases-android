@@ -6,6 +6,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 
+// TODO BC5 naming
 open class Purchase(builder: Builder) {
 
     val isPersonalizedPrice: Boolean
