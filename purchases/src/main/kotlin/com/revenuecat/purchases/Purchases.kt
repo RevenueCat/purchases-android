@@ -40,14 +40,12 @@ import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
-import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.PurchasingData
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -381,161 +379,185 @@ class Purchases internal constructor(
     }
 
     /**
-     * Purchases [storeProduct].
-     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
-     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
-     *
-     * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-default-offer" tag
-     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
-     *   - Falls back to use base plan
-     *
-     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
-     *
-     * @param [activity] Current activity
-     * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
-     * @param [listener] The PurchaseCallback that will be called when purchase completes.
+     * TODO BC5 javadocs
      */
-    fun purchaseProduct(
-        activity: Activity,
-        storeProduct: StoreProduct,
-        upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
-    ) {
-        startProductChange(
-            activity,
-            // TODOBC5 Move this logic to StoreProduct
-            storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
-            null,
-            upgradeInfo,
-            listener
-        )
+    fun purchase(purchaseConfig: Purchase) {
+        with(purchaseConfig) {
+            oldProductId?.let { oldProductIdentifier ->
+                startProductChange(
+                    activity,
+                    purchasingData,
+                    null,
+                    UpgradeInfo(oldProductIdentifier, googleProrationMode),
+                    listener
+                )
+            } ?: run {
+                startPurchase(
+                    activity,
+                    purchasingData,
+                    null,
+                    listener
+                )
+            }
+        }
     }
 
-    /**
-     * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
-     *
-     * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-default-offer" tag
-     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
-     *   - Falls back to use base plan
-     *
-     * @param [activity] Current activity
-     * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [callback] The PurchaseCallback that will be called when purchase completes.
-     */
-    fun purchaseProduct(
-        activity: Activity,
-        storeProduct: StoreProduct,
-        callback: PurchaseCallback
-    ) {
-        startPurchase(
-            activity,
-            // TODOBC5 Move this logic to StoreProduct
-            storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
-            null,
-            callback
-        )
-    }
-
-    /**
-     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
-     * @param [activity] Current activity
-     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
-     * @param [listener] The PurchaseCallback that will be called when purchase completes.
-     */
-    fun purchaseSubscriptionOption(
-        activity: Activity,
-        subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
-    ) {
-        startProductChange(
-            activity,
-            subscriptionOption.purchasingData,
-            null,
-            upgradeInfo,
-            listener
-        )
-    }
-
-    /**
-     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
-     * @param [activity] Current activity
-     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
-     * @param [callback] The PurchaseCallback that will be called when purchase completes
-     */
-    fun purchaseSubscriptionOption(
-        activity: Activity,
-        subscriptionOption: SubscriptionOption,
-        callback: PurchaseCallback
-    ) {
-        startPurchase(activity, subscriptionOption.purchasingData, null, callback)
-    }
-
-    /**
-     * Purchases a [Package].
-     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
-     * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
-     *
-     * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-default-offer" tag
-     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
-     *   - Falls back to use base plan
-     *
-     * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
-     *
-     * @param [activity] Current activity
-     * @param [packageToPurchase] The Package you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
-     * @param [callback] The listener that will be called when purchase completes.
-     */
-    fun purchasePackage(
-        activity: Activity,
-        packageToPurchase: Package,
-        upgradeInfo: UpgradeInfo,
-        callback: ProductChangeCallback
-    ) {
-        startProductChange(
-            activity,
-            // TODOBC5 Move this logic to StoreProduct
-            packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
-            packageToPurchase.offering,
-            upgradeInfo,
-            callback
-        )
-    }
-
-    /**
-     * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
-     *
-     * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-default-offer" tag
-     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
-     *   - Falls back to use base plan
-     *
-     * @param [activity] Current activity
-     * @param [packageToPurchase] The Package you wish to purchase
-     * @param [listener] The listener that will be called when purchase completes.
-     */
-    fun purchasePackage(
-        activity: Activity,
-        packageToPurchase: Package,
-        listener: PurchaseCallback
-    ) {
-        startPurchase(
-            activity,
-            // TODOBC5 Move this logic to StoreProduct
-            packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
-            packageToPurchase.offering,
-            listener
-        )
-    }
+    // TODO BC5 deprecate all these purchase functions
+//    /**
+//     * Purchases [storeProduct].
+//     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
+//     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
+//     *
+//     * The default [SubscriptionOption] logic:
+//     *   - Filters out offers with "rc-ignore-default-offer" tag
+//     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+//     *   - Falls back to use base plan
+//     *
+//     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
+//     *
+//     * @param [activity] Current activity
+//     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+//     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+//     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
+//     Amazon purchases.
+//     * @param [listener] The PurchaseCallback that will be called when purchase completes.
+//     */
+//    fun purchaseProduct(
+//        activity: Activity,
+//        storeProduct: StoreProduct,
+//        upgradeInfo: UpgradeInfo,
+//        listener: ProductChangeCallback
+//    ) {
+//        startProductChange(
+//            activity,
+//            // TODOBC5 Move this logic to StoreProduct
+//            storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
+//            null,
+//            upgradeInfo,
+//            listener
+//        )
+//    }
+//
+//    /**
+//     * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+//     *
+//     * The default [SubscriptionOption] logic:
+//     *   - Filters out offers with "rc-ignore-default-offer" tag
+//     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+//     *   - Falls back to use base plan
+//     *
+//     * @param [activity] Current activity
+//     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+//     * @param [callback] The PurchaseCallback that will be called when purchase completes.
+//     */
+//    fun purchaseProduct(
+//        activity: Activity,
+//        storeProduct: StoreProduct,
+//        callback: PurchaseCallback
+//    ) {
+//        startPurchase(
+//            activity,
+//            // TODOBC5 Move this logic to StoreProduct
+//            storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData,
+//            null,
+//            callback
+//        )
+//    }
+//
+//    /**
+//     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
+//     * @param [activity] Current activity
+//     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
+//     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+//     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
+//     Amazon purchases.
+//     * @param [listener] The PurchaseCallback that will be called when purchase completes.
+//     */
+//    fun purchaseSubscriptionOption(
+//        activity: Activity,
+//        subscriptionOption: SubscriptionOption,
+//        upgradeInfo: UpgradeInfo,
+//        listener: ProductChangeCallback
+//    ) {
+//        startProductChange(
+//            activity,
+//            subscriptionOption.purchasingData,
+//            null,
+//            upgradeInfo,
+//            listener
+//        )
+//    }
+//
+//    /**
+//     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
+//     * @param [activity] Current activity
+//     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
+//     * @param [callback] The PurchaseCallback that will be called when purchase completes
+//     */
+//    fun purchaseSubscriptionOption(
+//        activity: Activity,
+//        subscriptionOption: SubscriptionOption,
+//        callback: PurchaseCallback
+//    ) {
+//        startPurchase(activity, subscriptionOption.purchasingData, null, callback)
+//    }
+//
+//    /**
+//     * Purchases a [Package].
+//     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
+//     * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
+//     *
+//     * The default [SubscriptionOption] logic:
+//     *   - Filters out offers with "rc-ignore-default-offer" tag
+//     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+//     *   - Falls back to use base plan
+//     *
+//     * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
+//     *
+//     * @param [activity] Current activity
+//     * @param [packageToPurchase] The Package you wish to purchase
+//     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+//     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for
+//     Amazon purchases.
+//     * @param [callback] The listener that will be called when purchase completes.
+//     */
+//    fun purchasePackage(
+//        activity: Activity,
+//        packageToPurchase: Package,
+//        upgradeInfo: UpgradeInfo,
+//        callback: ProductChangeCallback
+//    ) {
+//        startProductChange(
+//            activity,
+//            // TODOBC5 Move this logic to StoreProduct
+//            packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
+//            packageToPurchase.offering,
+//            upgradeInfo,
+//            callback
+//        )
+//    }
+//
+//    /**
+//     * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+//     *
+//     * The default [SubscriptionOption] logic:
+//     *   - Filters out offers with "rc-ignore-default-offer" tag
+//     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+//     *   - Falls back to use base plan
+//     *
+//     * @param [activity] Current activity
+//     * @param [packageToPurchase] The Package you wish to purchase
+//     * @param [listener] The listener that will be called when purchase completes.
+//     */
+//    fun purchasePackage(
+//        activity: Activity,
+//        packageToPurchase: Package,
+//        listener: PurchaseCallback
+//    ) {
+//        val purchase = Purchase.Builder(packageToPurchase).build()
+//        // TODO BC5 figure out how to call with existing listener
+//        purchase(activity, purchase, listener)
+//    }
 
     /**
      * Restores purchases made with the current Play Store account for the current user.
@@ -1372,7 +1394,7 @@ class Purchases internal constructor(
         }
     }
 
-    private fun getPurchaseCallback(productId: String): PurchaseCallback? {
+    private fun getPurchaseCallback(productId: String): ProductChangeCallback? {
         return state.purchaseCallbacksByProductId[productId].also {
             state = state.copy(
                 purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId }
@@ -1483,7 +1505,7 @@ class Purchases internal constructor(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingIdentifier: String?,
-        listener: PurchaseCallback
+        listener: ProductChangeCallback
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
