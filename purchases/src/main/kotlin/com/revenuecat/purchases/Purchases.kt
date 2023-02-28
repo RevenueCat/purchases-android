@@ -39,12 +39,14 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.NewPurchaseCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.interfaces.toNewPurchaseCallback
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
@@ -387,7 +389,7 @@ class Purchases internal constructor(
      */
     fun purchase(
         purchaseConfig: Purchase,
-        listener: ProductChangeCallback
+        listener: NewPurchaseCallback
     ) {
         with(purchaseConfig) {
             oldProductId?.let { oldProductIdentifier ->
@@ -1413,23 +1415,7 @@ class Purchases internal constructor(
     ) {
         purchase(
             purchaseConfig,
-            object : ProductChangeCallback {
-                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
-                    storeTransaction?.let {
-                        listener.onCompleted(it, customerInfo)
-                    } ?: run {
-                        val nullTransactionError = PurchasesError(
-                            PurchasesErrorCode.StoreProblemError,
-                            PurchaseStrings.NULL_TRANSACTION_ON_PURCHASE_ERROR
-                        )
-                        listener.onError(nullTransactionError, false)
-                    }
-                }
-
-                override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                    listener.onError(error, userCancelled)
-                }
-            }
+            listener.toNewPurchaseCallback()
         )
     }
 
@@ -1544,7 +1530,7 @@ class Purchases internal constructor(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingIdentifier: String?,
-        listener: ProductChangeCallback
+        listener: NewPurchaseCallback
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
@@ -1585,7 +1571,7 @@ class Purchases internal constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
+        listener: NewPurchaseCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
             getAndClearProductChangeCallback()
