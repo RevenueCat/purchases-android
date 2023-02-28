@@ -172,8 +172,9 @@ jobs:
 
   prepare-next-version:
     executor:
-      name: new-android/android-machine
+      name: new-android/android-docker
       resource-class: large
+      tag: 2023.02.1
     steps:
       - checkout
       - install-sdkman
@@ -187,8 +188,9 @@ jobs:
 
   deploy-snapshot:
     executor:
-      name: new-android/android-machine
+      name: new-android/android-docker
       resource-class: large
+      tag: 2023.02.1
     steps:
       - checkout
       - install-sdkman
