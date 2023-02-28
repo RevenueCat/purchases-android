@@ -28,8 +28,6 @@ fun ProductDetails.toStoreProduct(
     val basePlanPrice = basePlan?.fullPricePhase?.price
     val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
 
-    val defaultOffer = subscriptionOptions?.findDefaultOffer()
-
     return GoogleStoreProduct(
         productId,
         basePlan?.id,
@@ -39,7 +37,7 @@ fun ProductDetails.toStoreProduct(
         description,
         basePlan?.billingPeriod,
         subscriptionOptions,
-        defaultOffer,
+        subscriptionOptions?.defaultOffer,
         this
     )
 }

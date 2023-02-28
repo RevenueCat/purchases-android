@@ -29,25 +29,32 @@ class SubscriptionOptions(
         get() = this.firstOrNull { it.introPhase != null }
 
     /**
+     * The default [SubscriptionOption]:
+     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     */
+    val defaultOffer: SubscriptionOption?
+        get() {
+            val basePlan = this.firstOrNull { it.isBasePlan } ?: return null
+
+            val validOffers = this
+                .filter { !it.isBasePlan }
+                .filter { !it.tags.contains("rc-ignore-default-offer") }
+
+            return findLongestFreeTrial(validOffers) ?: findLowestNonFreeOffer(validOffers) ?: basePlan
+        }
+
+    /**
      * Finds all [SubscriptionOption]s with a specific tag.
      */
     fun withTag(tag: String): List<SubscriptionOption> {
         return this.filter { it.tags.contains(tag) }
     }
 
-    fun findDefaultOffer(): SubscriptionOption? {
-        val basePlan = this.firstOrNull { it.isBasePlan } ?: return null
-
-        val validOffers = this
-            .filter { !it.isBasePlan }
-            .filter { !it.tags.contains("rc-ignore-default-offer") }
-
-        return findLongestFreeTrial(validOffers) ?: findLowestNonFreeOffer(validOffers) ?: basePlan
-    }
-
     private fun findLongestFreeTrial(offers: List<SubscriptionOption>): SubscriptionOption? {
         return offers.mapNotNull { offer ->
-            offer.freePricingPhase?.let { pricingPhase ->
+            offer.freePhase?.let { pricingPhase ->
                 Pair(offer, billingPeriodToDays(pricingPhase.billingPeriod))
             }
         }.maxByOrNull { it.second }?.first
@@ -55,17 +62,11 @@ class SubscriptionOptions(
 
     private fun findLowestNonFreeOffer(offers: List<SubscriptionOption>): SubscriptionOption? {
         return offers.mapNotNull { offer ->
-            offer.nonFreePricingPhase?.let { pricingPhase ->
+            offer.introPhase?.let { pricingPhase ->
                 Pair(offer, pricingPhase.price.amountMicros)
             }
         }.minByOrNull { it.second }?.first
     }
-
-    private val SubscriptionOption.freePricingPhase: PricingPhase?
-        get() = pricingPhases.firstOrNull()?.takeIf { it.price.amountMicros == 0L }
-
-    private val SubscriptionOption.nonFreePricingPhase: PricingPhase?
-        get() = pricingPhases.firstOrNull()?.takeIf { it.price.amountMicros > 0L }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun billingPeriodToDays(period: Period): Int {
