@@ -10,19 +10,19 @@ class SubscriptionOptions(
     ) : List<SubscriptionOption> by subscriptionOptions, Parcelable {
 
     /**
-     * Finds the base plan [SubscriptionOption].
+     * The base plan [SubscriptionOption].
      */
     val basePlan: SubscriptionOption?
         get() = this.firstOrNull { it.isBasePlan }
 
     /**
-     * Finds the first [SubscriptionOption] with a free trial [PricingPhase].
+     * The first [SubscriptionOption] with a free trial [PricingPhase].
      */
     val freeTrial: SubscriptionOption?
         get() = this.firstOrNull { it.freePhase != null }
 
     /**
-     * Finds the first [SubscriptionOption] with an intro trial [PricingPhase].
+     * The first [SubscriptionOption] with an intro trial [PricingPhase].
      * There can be a free trial [PricingPhase] and intro trial [PricingPhase] in the same [SubscriptionOption].
      */
     val introTrial: SubscriptionOption?
@@ -47,6 +47,7 @@ class SubscriptionOptions(
 
     /**
      * Finds all [SubscriptionOption]s with a specific tag.
+     * Note: All offers inherit base plan tags.
      */
     fun withTag(tag: String): List<SubscriptionOption> {
         return this.filter { it.tags.contains(tag) }
