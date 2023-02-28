@@ -39,6 +39,13 @@ class SigningManagerTest {
         assertThat(decodedNonce.size).isEqualTo(12)
     }
 
+    @Test
+    fun `createRandomNonce returns different nonce on each call`() {
+        val nonce1 = signingManager.createRandomNonce()
+        val nonce2 = signingManager.createRandomNonce()
+        assertThat(nonce1).isNotEqualTo(nonce2)
+    }
+
     // endregion
 
     // region verifyResponse
