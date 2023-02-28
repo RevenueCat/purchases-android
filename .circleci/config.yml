@@ -28,6 +28,9 @@ aliases:
       name: android/android-docker
       resource-class: large
       tag: 2023.02.1
+    environment:
+      JVM_OPTS: -Xmx6g
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
 
 version: 2.1
 orbs:
