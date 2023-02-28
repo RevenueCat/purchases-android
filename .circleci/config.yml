@@ -8,7 +8,7 @@ aliases:
           - /^.*-amazon*/
       branches:
         ignore: /.*/
-  
+
   release-branches: &release-branches
     filters:
       tags:
@@ -26,6 +26,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@0.2.1
+  new-android: circleci/android@2.2.0
   android-wordpress-orb: wordpress-mobile/android@1.0.15
   gcp-cli: circleci/gcp-cli@2.1.0
   revenuecat: revenuecat/sdks-common-config@2.0.0
@@ -170,7 +171,9 @@ jobs:
       - android/save-build-cache
 
   prepare-next-version:
-    executor: android-executor
+    executor:
+      name: new-android/android-machine
+      resource-class: large
     steps:
       - checkout
       - install-sdkman
@@ -183,24 +186,27 @@ jobs:
           command: bundle exec fastlane prepare_next_version
 
   deploy-snapshot:
-    executor: android-executor
+    executor:
+      name: new-android/android-machine
+      resource-class: large
     steps:
       - checkout
       - install-sdkman
-      - restore_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-      - run: bundle check || bundle install --path vendor/bundle
-      - save_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-          paths:
-            - vendor/bundle
-      - android-wordpress-orb/restore-gradle-cache
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - new-android/restore-gradle-cache:
+          cache-prefix: v1a
+      - new-android/restore-build-cache:
+          cache-prefix: v1a
       - prepare-signing-key
       - run:
           name: Deployment
           command: |
             bundle exec fastlane android deploy_snapshot
-      - android-wordpress-orb/save-gradle-cache
+      - new-android/save-gradle-cache:
+          cache-prefix: v1a
+      - new-android/save-build-cache:
+          cache-prefix: v1a
 
   assemble-sample-app:
     executor: android-executor
@@ -420,7 +426,7 @@ workflows:
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump
-  
+
   manual-trigger-bump:
     when:
       equal: [ bump, << pipeline.parameters.action >> ]
