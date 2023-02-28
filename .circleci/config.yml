@@ -182,9 +182,9 @@ jobs:
           cache-version: v1
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
-      - run:
-          name: Prepare next version
-          command: bundle exec fastlane prepare_next_version
+#      - run:
+#          name: Prepare next version
+#          command: bundle exec fastlane prepare_next_version
 
   deploy-snapshot:
     executor:
@@ -201,10 +201,10 @@ jobs:
       - new-android/restore-build-cache:
           cache-prefix: v1a
       - prepare-signing-key
-      - run:
-          name: Deployment
-          command: |
-            bundle exec fastlane android deploy_snapshot
+#      - run:
+#          name: Deployment
+#          command: |
+#            bundle exec fastlane android deploy_snapshot
       - new-android/save-gradle-cache:
           cache-prefix: v1a
       - new-android/save-build-cache:
@@ -401,11 +401,7 @@ workflows:
             - hold
           <<: *release-branches
       - deploy: *release-tags
-      - deploy-snapshot:
-          filters:
-            branches:
-              only:
-                - main
+      - deploy-snapshot
       - docs-deploy: *release-tags
       - publish-purchase-tester-latest-dependencies-release:
           requires:
@@ -418,8 +414,7 @@ workflows:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
-      - prepare-next-version:
-          <<: *only-main-branch
+      - prepare-next-version
 
   weekly-run-workflow:
     when:
