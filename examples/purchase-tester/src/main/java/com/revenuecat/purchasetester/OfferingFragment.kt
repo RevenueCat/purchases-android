@@ -20,11 +20,11 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
-import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
@@ -83,61 +83,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         cardView: View,
         currentPackage: Package,
         isUpgrade: Boolean
-    ) {
-        // TODO BC5 replace with listener conversion version
-        val purchasePackageBuilder =
-            Purchase.Builder(currentPackage, requireActivity(), object : ProductChangeCallback {
-                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
-                    successfulPurchaseCallback.invoke(storeTransaction, customerInfo)
-                }
-
-                override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                    purchaseErrorCallback.invoke(error, userCancelled)
-                }
-            })
-
-        startPurchase(isUpgrade, purchasePackageBuilder)
-    }
+    ) = startPurchase(isUpgrade, Purchase.Builder(currentPackage, requireActivity()))
 
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
         isUpgrade: Boolean
-    ) {
-        // TODO BC5 replace with listener conversion version
-        val purchaseProductBuilder =
-            Purchase.Builder(currentProduct, requireActivity(), object : ProductChangeCallback {
-                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
-                    successfulPurchaseCallback.invoke(storeTransaction, customerInfo)
-                }
-
-                override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                    purchaseErrorCallback.invoke(error, userCancelled)
-                }
-            })
-
-        startPurchase(isUpgrade, purchaseProductBuilder)
-    }
+    ) = startPurchase(isUpgrade, Purchase.Builder(currentProduct, requireActivity()))
 
     override fun onPurchaseSubscriptionOptionClicked(
         cardView: View,
         subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean
-    ) {
-        // TODO BC5 replace with listener conversion version
-        val purchaseOptionBuilder =
-            Purchase.Builder(subscriptionOption, requireActivity(), object : ProductChangeCallback {
-                override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {
-                    successfulPurchaseCallback.invoke(storeTransaction, customerInfo)
-                }
-
-                override fun onError(error: PurchasesError, userCancelled: Boolean) {
-                    purchaseErrorCallback.invoke(error, userCancelled)
-                }
-            })
-
-        startPurchase(isUpgrade, purchaseOptionBuilder)
-    }
+    ) = startPurchase(isUpgrade, Purchase.Builder(subscriptionOption, requireActivity()))
 
     private fun startPurchase(
         isUpgrade: Boolean,
@@ -150,10 +108,18 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     purchaseProductBuilder.oldProductId(upgradeInfo.oldProductId)
                         .googleProrationMode(upgradeInfo.googleProrationMode)
                 }
-                Purchases.sharedInstance.purchase(purchaseProductBuilder.build())
+                Purchases.sharedInstance.purchaseWith(
+                    purchaseProductBuilder.build(),
+                    purchaseErrorCallback,
+                    successfulPurchaseCallback
+                )
             }
         } else {
-            Purchases.sharedInstance.purchase(purchaseProductBuilder.build())
+            Purchases.sharedInstance.purchaseWith(
+                purchaseProductBuilder.build(),
+                purchaseErrorCallback,
+                successfulPurchaseCallback
+            )
         }
     }
 

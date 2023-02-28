@@ -14,7 +14,6 @@ open class Purchase(builder: Builder) {
     val googleProrationMode: GoogleProrationMode
     internal val purchasingData: PurchasingData
     internal val activity: Activity
-    internal val listener: ProductChangeCallback
 
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
@@ -22,34 +21,30 @@ open class Purchase(builder: Builder) {
         this.googleProrationMode = builder.googleProrationMode
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
-        this.listener = builder.listener
     }
 
     open class Builder private constructor(
         @get:JvmSynthetic internal val purchasingData: PurchasingData,
         @get:JvmSynthetic internal val activity: Activity,
-        @get:JvmSynthetic internal val listener: ProductChangeCallback
     ) {
         // TODO jvmsynthetic?
         // TODO see if there's a way to clean up the purchasingData logic
-        constructor(packageToPurchase: Package, activity: Activity, listener: ProductChangeCallback) :
+        constructor(packageToPurchase: Package, activity: Activity) :
             this(
                 packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
-                activity,
-                listener
+                activity
             )
 
         constructor(
             storeProduct: StoreProduct,
-            activity: Activity,
-            listener: ProductChangeCallback
-        ) : this(storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData, activity, listener)
+            activity: Activity
+        ) : this(storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData, activity)
 
-        constructor(subscriptionOption: SubscriptionOption, activity: Activity, listener: ProductChangeCallback) : this(
-            subscriptionOption.purchasingData,
-            activity,
-            listener
-        )
+        constructor(subscriptionOption: SubscriptionOption, activity: Activity) :
+            this(
+                subscriptionOption.purchasingData,
+                activity
+            )
 
         @set:JvmSynthetic
         @get:JvmSynthetic

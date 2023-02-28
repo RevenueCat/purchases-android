@@ -109,6 +109,14 @@ fun Purchases.getOfferingsWith(
     getOfferings(receiveOfferingsCallback(onSuccess, onError))
 }
 
+fun Purchases.purchaseWith(
+    purchaseConfig: Purchase,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
+    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
+) {
+    purchase(purchaseConfig, productChangeCompletedListener(onSuccess, onError))
+}
+
 // TODO BC5 deprecate all non builder purchase functions
 // /**
 // * Purchase product. If purchasing a subscription, it will choose the default [SubscriptionOption].

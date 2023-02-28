@@ -381,7 +381,10 @@ class Purchases internal constructor(
     /**
      * TODO BC5 javadocs
      */
-    fun purchase(purchaseConfig: Purchase) {
+    fun purchase(
+        purchaseConfig: Purchase,
+        listener: ProductChangeCallback
+    ) {
         with(purchaseConfig) {
             oldProductId?.let { oldProductIdentifier ->
                 startProductChange(
