@@ -87,7 +87,8 @@ internal class PurchasesFactory(
                 application,
                 backend,
                 cache,
-                observerMode
+                observerMode,
+                diagnosticsTracker
             )
             val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 

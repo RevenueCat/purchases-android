@@ -34,7 +34,7 @@ import kotlin.time.Duration
 class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
-    private val diagnosticsTracker: DiagnosticsTracker?,
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -177,7 +177,7 @@ class HTTPClient(
         callSuccessful: Boolean,
         callResult: HTTPResult?
     ) {
-        diagnosticsTracker?.let { tracker ->
+        diagnosticsTrackerIfEnabled?.let { tracker ->
             val responseTime = Duration.between(requestStartTime, dateProvider.now)
             val responseCode = if (callSuccessful) {
                 // When the result given by ETagManager is null, is because we are asking to refresh the etag
