@@ -5,7 +5,7 @@ import androidx.annotation.VisibleForTesting
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-class SubscriptionOptions(
+class SubscriptionOptions internal constructor(
     private val subscriptionOptions: List<SubscriptionOption>
     ) : List<SubscriptionOption> by subscriptionOptions, Parcelable {
 
