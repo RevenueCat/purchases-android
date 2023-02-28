@@ -12,6 +12,7 @@ import com.revenuecat.purchases.utils.mockProductDetails
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
 @RunWith(AndroidJUnit4::class)
 class SubscriptionOptionsTest {
@@ -103,5 +104,32 @@ class SubscriptionOptionsTest {
     fun `Can find tags`() {
         val options = subscriptionOptions.withTag(discountTag)
         assertThat(options.size).isEqualTo(2)
+    }
+}
+
+@RunWith(Parameterized::class)
+class PeriodOfferTest(private val period: String, private val days: Int) {
+
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters
+        fun data() : Collection<Array<Any>> {
+            return listOf(
+                arrayOf("P1Y", 365),
+                arrayOf("P2Y", 730),
+                arrayOf("P3M", 90),
+                arrayOf("P4D", 4),
+                arrayOf("P2W", 14),
+                arrayOf("P5X", 0),
+                arrayOf("cat", 0)
+            )
+        }
+    }
+
+    @Test
+    fun `period to number of days is correct`() {
+        val subscriptionOptions = SubscriptionOptions(emptyList())
+        val actualDays = subscriptionOptions.billingPeriodToDays(Period.create(period))
+        assertThat(actualDays).isEqualTo(days)
     }
 }

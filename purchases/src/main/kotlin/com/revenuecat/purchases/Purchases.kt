@@ -1238,7 +1238,7 @@ class Purchases internal constructor(
                         // TODO BC5 confirm multi line purchases
                         val purchasedStoreProduct = if (purchase.type == ProductType.SUBS) {
                             storeProducts.firstOrNull { product ->
-                                product.subscriptionOptions.let { subscriptionOptions ->
+                                product.subscriptionOptions?.let { subscriptionOptions ->
                                     subscriptionOptions.any { it.id == purchase.subscriptionOptionId }
                                 } ?: false
                             }

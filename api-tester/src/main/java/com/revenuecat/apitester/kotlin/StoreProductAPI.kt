@@ -2,7 +2,6 @@ package com.revenuecat.apitester.kotlin
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -41,7 +40,7 @@ private class StoreProductAPI {
         check(googleStoreProduct)
         val productDetails: ProductDetails = googleStoreProduct.productDetails
         val subscriptionOptions: SubscriptionOptions? = googleStoreProduct.subscriptionOptions
-        val defaultOption: GoogleSubscriptionOption? = googleStoreProduct.defaultOption
+        val defaultOption: SubscriptionOption? = googleStoreProduct.defaultOption
         val constructedGoogleStoreProduct = GoogleStoreProduct(
             googleStoreProduct.id,
             null,

@@ -40,7 +40,7 @@ final class StoreProductAPI {
         check(googleStoreProduct);
         ProductDetails productDetails = googleStoreProduct.getProductDetails();
         SubscriptionOptions subscriptionOptions = googleStoreProduct.getSubscriptionOptions();
-        GoogleSubscriptionOption defaultOption = googleStoreProduct.getDefaultOption();
+        SubscriptionOption defaultOption = googleStoreProduct.getDefaultOption();
         GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
                 googleStoreProduct.getId(),
                 null,

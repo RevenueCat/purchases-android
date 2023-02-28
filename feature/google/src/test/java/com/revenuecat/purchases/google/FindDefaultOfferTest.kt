@@ -277,29 +277,3 @@ class FindBestOfferTest {
         )
     }
 }
-
-@RunWith(Parameterized::class)
-class PeriodOfferTest(private val period: String, private val days: Int) {
-
-    companion object {
-        @JvmStatic
-        @Parameterized.Parameters
-        fun data() : Collection<Array<Any>> {
-            return listOf(
-                arrayOf("P1Y", 365),
-                arrayOf("P2Y", 730),
-                arrayOf("P3M", 90),
-                arrayOf("P4D", 4),
-                arrayOf("P2W", 14),
-                arrayOf("P5X", 0),
-                arrayOf("cat", 0)
-            )
-        }
-    }
-
-    @Test
-    fun `period to number of days is correct`() {
-        val actualDays = billingPeriodToDays(Period.create(period))
-        assertThat(actualDays).isEqualTo(days)
-    }
-}

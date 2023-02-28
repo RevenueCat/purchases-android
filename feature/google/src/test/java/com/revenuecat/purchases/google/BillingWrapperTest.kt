@@ -330,7 +330,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions[0].purchasingData,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
             mockReplaceSkuInfo(),
             "offering_a"
         )
@@ -401,7 +401,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions[0].purchasingData,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
             upgradeInfo,
             null
         )
@@ -446,7 +446,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions[0].purchasingData,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
             upgradeInfo,
             null
         )
@@ -515,7 +515,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions[0].purchasingData,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
             null,
             null
         )
@@ -537,7 +537,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions[0].purchasingData,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
             mockReplaceSkuInfo(),
             null
         )
@@ -562,7 +562,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions[0].purchasingData,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
             mockReplaceSkuInfo(),
             null
         )
@@ -593,7 +593,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions[0].purchasingData,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
             mockReplaceSkuInfo(),
             null
         )
@@ -712,7 +712,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions[0].purchasingData,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
             mockReplaceSkuInfo(),
             null
         )
@@ -1127,7 +1127,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions[0].purchasingData,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
             null,
             "offering_a"
         )
@@ -1157,7 +1157,7 @@ class BillingWrapperTest {
         )!!
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-        val subscriptionOption = storeProduct.subscriptionOptions[0]
+        val subscriptionOption = storeProduct.subscriptionOptions!!.first()
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,

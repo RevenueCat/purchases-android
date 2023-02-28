@@ -16,12 +16,19 @@ fun ProductDetails.toInAppStoreProduct(): StoreProduct? = this.toStoreProduct(em
 fun ProductDetails.toStoreProduct(
     offerDetails: List<ProductDetails.SubscriptionOfferDetails>
 ): GoogleStoreProduct? {
-    val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
-    val defaultOffer = subscriptionOptions.findDefaultOffer()
+    val subscriptionOptions = if (productType.toRevenueCatProductType() == ProductType.SUBS) {
+        SubscriptionOptions(
+            offerDetails.map { it.toSubscriptionOption(productId, this) }
+        )
+    } else {
+        null
+    }
 
-    val basePlan = subscriptionOptions.firstOrNull { it.isBasePlan }
+    val basePlan = subscriptionOptions?.basePlan
     val basePlanPrice = basePlan?.fullPricePhase?.price
     val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
+
+    val defaultOffer = subscriptionOptions?.findDefaultOffer()
 
     return GoogleStoreProduct(
         productId,
@@ -31,7 +38,7 @@ fun ProductDetails.toStoreProduct(
         title,
         description,
         basePlan?.billingPeriod,
-        SubscriptionOptions(subscriptionOptions),
+        subscriptionOptions,
         defaultOffer,
         this
     )
