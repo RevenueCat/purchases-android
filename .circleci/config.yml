@@ -8,7 +8,7 @@ aliases:
           - /^.*-amazon*/
       branches:
         ignore: /.*/
-  
+
   release-branches: &release-branches
     filters:
       tags:
@@ -23,10 +23,18 @@ aliases:
       branches:
         only: main
 
+  android-executor: &android-executor
+    executor:
+      name: android/android-docker
+      resource-class: large
+      tag: 2023.02.1
+    environment:
+      JVM_OPTS: -Xmx6g
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
+
 version: 2.1
 orbs:
-  android: circleci/android@0.2.1
-  android-wordpress-orb: wordpress-mobile/android@1.0.15
+  android: circleci/android@2.2.0
   gcp-cli: circleci/gcp-cli@2.1.0
   revenuecat: revenuecat/sdks-common-config@2.0.0
   codecov: codecov/codecov@3.2.4
@@ -36,16 +44,6 @@ parameters:
     type: enum
     enum: [default, bump]
     default: default
-
-executors:
-  android-executor:
-    docker:
-      - image: circleci/android:api-28
-    resource_class: large
-    working_directory: ~/purchases-android
-    environment:
-      JVM_OPTS: -Xmx6g
-      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
 
 commands:
   install-sdkman:
@@ -64,11 +62,11 @@ commands:
 
   android-dependencies:
     steps:
-      - android-wordpress-orb/restore-gradle-cache
+      - android/restore-gradle-cache
       - run:
           name: Download Dependencies
           command: ./gradlew androidDependencies
-      - android-wordpress-orb/save-gradle-cache
+      - android/save-gradle-cache
 
   prepare-signing-key:
     steps:
@@ -92,7 +90,7 @@ commands:
 jobs:
 
   test:
-    executor: android-executor
+    <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
@@ -126,16 +124,16 @@ jobs:
           path: build/test-results
 
   docs-deploy:
-    executor: android-executor
+    <<: *android-executor
     steps:
       - checkout
       - install-sdkman
-      - android-wordpress-orb/restore-gradle-cache
+      - android/restore-gradle-cache
       - android/restore-build-cache
       - run:
           name: Dokka
           command: ./gradlew dokkaHtmlMultiModule
-      - android-wordpress-orb/save-gradle-cache
+      - android/save-gradle-cache
       - android/save-build-cache
       - run:
           name: Install awscli
@@ -151,7 +149,7 @@ jobs:
           command: aws cloudfront create-invalidation --distribution-id EPTW7F3CB566V --paths "/*"
 
   deploy:
-    executor: android-executor
+    <<: *android-executor
     steps:
       - checkout
       - install-sdkman
@@ -160,17 +158,17 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - prepare-signing-key
-      - android-wordpress-orb/restore-gradle-cache
+      - android/restore-gradle-cache
       - android/restore-build-cache
       - run:
           name: Deployment
           command: |
             bundle exec fastlane android deploy
-      - android-wordpress-orb/save-gradle-cache
+      - android/save-gradle-cache
       - android/save-build-cache
 
   prepare-next-version:
-    executor: android-executor
+    <<: *android-executor
     steps:
       - checkout
       - install-sdkman
@@ -183,32 +181,33 @@ jobs:
           command: bundle exec fastlane prepare_next_version
 
   deploy-snapshot:
-    executor: android-executor
+    <<: *android-executor
     steps:
       - checkout
       - install-sdkman
-      - restore_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-      - run: bundle check || bundle install --path vendor/bundle
-      - save_cache:
-          key: 1-gems-{{ checksum "Gemfile.lock" }}
-          paths:
-            - vendor/bundle
-      - android-wordpress-orb/restore-gradle-cache
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore-gradle-cache:
+          cache-prefix: v1a
+      - android/restore-build-cache:
+          cache-prefix: v1a
       - prepare-signing-key
       - run:
           name: Deployment
           command: |
             bundle exec fastlane android deploy_snapshot
-      - android-wordpress-orb/save-gradle-cache
+      - android/save-gradle-cache:
+          cache-prefix: v1a
+      - android/save-build-cache:
+          cache-prefix: v1a
 
   assemble-sample-app:
-    executor: android-executor
+    <<: *android-executor
     steps:
       - checkout
       - install-sdkman
       - android/accept-licenses
-      - android-wordpress-orb/restore-gradle-cache
+      - android/restore-gradle-cache
       - android/restore-build-cache
       - run:
           name: Prepare Keystore
@@ -225,18 +224,18 @@ jobs:
           path: examples/purchase-tester/build/outputs/apk/latestDependencies/release/purchase-tester-latestDependencies-release.apk
       - store_artifacts:
           path: examples/purchase-tester/build/outputs/apk/latestDependencies/debug/purchase-tester-latestDependencies-debug.apk
-      - android-wordpress-orb/save-gradle-cache
+      - android/save-gradle-cache
       - android/save-build-cache
 
   publish-purchase-tester-latest-dependencies-release:
-    executor: android-executor
+    <<: *android-executor
     steps:
       - checkout
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept-licenses
-      - android-wordpress-orb/restore-gradle-cache
+      - android/restore-gradle-cache
       - android/restore-build-cache
       - run:
           name: Prepare Keystore
@@ -248,7 +247,7 @@ jobs:
             bundle exec fastlane android build_purchase_tester_bundle
       - store_artifacts:
           path: examples/purchase-tester/build/outputs/bundle/latestDependenciesRelease/purchase-tester-latestDependencies-release.aab
-      - android-wordpress-orb/save-gradle-cache
+      - android/save-gradle-cache
       - android/save-build-cache
       - run:
             name: Publish aab
@@ -256,7 +255,7 @@ jobs:
               bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/latestDependenciesRelease/purchase-tester-latestDependencies-release.aab'
 
   integration-tests-build:
-    executor: android-executor
+    <<: *android-executor
     steps:
       - checkout
       - install-sdkman
@@ -393,11 +392,7 @@ workflows:
             - hold
           <<: *release-branches
       - deploy: *release-tags
-      - deploy-snapshot:
-          filters:
-            branches:
-              only:
-                - main
+      - deploy-snapshot: *only-main-branch
       - docs-deploy: *release-tags
       - publish-purchase-tester-latest-dependencies-release:
           requires:
@@ -410,8 +405,7 @@ workflows:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
-      - prepare-next-version:
-          <<: *only-main-branch
+      - prepare-next-version: *only-main-branch
 
   weekly-run-workflow:
     when:
@@ -420,7 +414,7 @@ workflows:
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump
-  
+
   manual-trigger-bump:
     when:
       equal: [ bump, << pipeline.parameters.action >> ]
