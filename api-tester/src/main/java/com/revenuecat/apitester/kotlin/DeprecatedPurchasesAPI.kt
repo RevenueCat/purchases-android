@@ -18,6 +18,7 @@ import com.revenuecat.purchases.purchaseSubscriptionOptionWith
 
 @Suppress("unused")
 private class DeprecatedPurchasesAPI {
+    @SuppressWarnings("LongParameterList", "LongMethod", "EmptyFunctionBlock")
     fun check(
         purchases: Purchases,
         activity: Activity,

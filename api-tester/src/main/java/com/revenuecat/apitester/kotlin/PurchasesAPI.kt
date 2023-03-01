@@ -83,13 +83,13 @@ private class PurchasesAPI {
         purchases.onAppForegrounded()
     }
 
+    @SuppressWarnings("LongParameterList", "EmptyFunctionBlock")
     fun checkPurchasing(
         purchases: Purchases,
         activity: Activity,
         storeProduct: StoreProduct,
         packageToPurchase: Package,
-        subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo
+        subscriptionOption: SubscriptionOption
     ) {
         val purchaseCallback = object : NewPurchaseCallback {
             override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
@@ -100,19 +100,19 @@ private class PurchasesAPI {
         val prorationMode = GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION
         val isPersonalizedPrice = true
 
-        val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(packageToPurchase, activity);
+        val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(packageToPurchase, activity)
         purchasePackageBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
             .isPersonalizedPrice(isPersonalizedPrice)
         val purchasePackageParams: PurchaseParams = purchasePackageBuilder.build()
         purchases.purchase(purchasePackageParams, purchaseCallback)
 
-        val purchaseProductBuilder: PurchaseParams.Builder = PurchaseParams.Builder(storeProduct, activity);
+        val purchaseProductBuilder: PurchaseParams.Builder = PurchaseParams.Builder(storeProduct, activity)
         purchaseProductBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
             .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseProductParams: PurchaseParams = purchaseProductBuilder.build()
         purchases.purchase(purchaseProductParams, purchaseCallback)
 
-        val purchaseOptionBuilder: PurchaseParams.Builder = PurchaseParams.Builder(subscriptionOption, activity);
+        val purchaseOptionBuilder: PurchaseParams.Builder = PurchaseParams.Builder(subscriptionOption, activity)
         purchaseOptionBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
             .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseOptionsParams: PurchaseParams = purchaseOptionBuilder.build()

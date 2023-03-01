@@ -12,8 +12,8 @@ open class PurchaseParams(builder: Builder) {
     val isPersonalizedPrice: Boolean
     val oldProductId: String?
     val googleProrationMode: GoogleProrationMode
-    internal val purchasingData: PurchasingData
-    internal val activity: Activity
+    @get:JvmSynthetic internal val purchasingData: PurchasingData
+    @get:JvmSynthetic internal val activity: Activity
 
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
@@ -27,8 +27,6 @@ open class PurchaseParams(builder: Builder) {
         @get:JvmSynthetic internal val purchasingData: PurchasingData,
         @get:JvmSynthetic internal val activity: Activity,
     ) {
-        // TODO jvmsynthetic?
-        // TODO see if there's a way to clean up the purchasingData logic
         constructor(packageToPurchase: Package, activity: Activity) :
             this(
                 packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
