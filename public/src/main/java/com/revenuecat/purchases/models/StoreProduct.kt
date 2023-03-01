@@ -53,9 +53,9 @@ interface StoreProduct : Parcelable {
     val period: Period?
 
     /**
-     * List of SubscriptionOptions. Empty list for INAPP products.
+     * Contains all [SubscriptionOption]s. Null for Amazon or for INAPP products.
      */
-    val subscriptionOptions: List<SubscriptionOption>
+    val subscriptionOptions: SubscriptionOptions?
 
     /**
      * The default [SubscriptionOption] that will be used when purchasing and not specifying a different option.
