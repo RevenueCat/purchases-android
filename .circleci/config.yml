@@ -140,7 +140,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/purchases-android/docs/5.7.1 s3://purchases-docs/android/5.7.1 --delete
+          command: aws s3 sync ~/purchases-android/docs/5.8.0-SNAPSHOT s3://purchases-docs/android/5.8.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/purchases-android/docs/index.html s3://purchases-docs/android/index.html
