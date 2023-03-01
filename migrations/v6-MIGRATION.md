@@ -4,14 +4,17 @@
 
 | New                        |
 |----------------------------|
-| `SubscriptionOption`       |
-| `GoogleSubscriptionOption` |
-| `GoogleStoreProduct`       |
 | `AmazonStoreProduct`       |
+| `GoogleProrationMode`      |
+| `GoogleStoreProduct`       |
+| `GoogleSubscriptionOption` |
+| `Period`                   |
+| `Period.Unit`              |
 | `Price`                    |
 | `PricingPhase`             |
 | `RecurrenceMode`           |
-| `GoogleProrationMode`      |
+| `SubscriptionOption`       |
+| `SubscriptionOptions`      |
 
 | Old Location                            | New Location                                   |
 |-----------------------------------------|------------------------------------------------|
@@ -57,6 +60,24 @@ If more than that is needed, the free trial and intro offer options can be found
 val freeOption = storeProduct.subscriptionOptions?.firstOrNull { it.freePhase != null }
 val trialOption = storeProduct.subscriptionOptions?.firstOrNull { it.introPhase != null }
 ```
+
+### Period and Period.Unit
+
+Durations were previously string properties of ISO 8601 durations (ex: "P4D", "P1M", "P1Y").
+All durations are now stored in a `Period` object with the following properties:
+
+| Property | Type        |
+|----------|-------------|
+| value    | Int         |
+| unit     | Period.Unit |
+| iso8601  | String      | 
+
+The `Period.Unit` enum can be one of the following:
+- DAY
+- WEEK
+- MONTH
+- YEAR
+- UNKNOWN
 
 ### StoreTransaction
 
