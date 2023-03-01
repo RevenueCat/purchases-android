@@ -71,8 +71,8 @@ interface StoreProduct : Parcelable {
      */
     @IgnoredOnParcel
     @Deprecated(
-        "Replaced with productId",
-        ReplaceWith("productId")
+        "Replaced with id",
+        ReplaceWith("id")
     )
     val sku: String
 }
