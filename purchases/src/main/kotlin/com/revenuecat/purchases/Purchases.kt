@@ -48,6 +48,7 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.interfaces.toNewPurchaseCallback
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -392,12 +393,13 @@ class Purchases internal constructor(
         listener: NewPurchaseCallback
     ) {
         with(purchaseParams) {
-            oldProductId?.let { oldProductIdentifier ->
+            oldProductId?.let { productId ->
                 startProductChange(
                     activity,
                     purchasingData,
                     null,
-                    UpgradeInfo(oldProductIdentifier, googleProrationMode),
+                    productId,
+                    googleProrationMode,
                     listener
                 )
             } ?: run {
@@ -414,7 +416,7 @@ class Purchases internal constructor(
     /**
      * Purchases [storeProduct].
      * If [storeProduct] represents a subscription, upgrades from the subscription specified by
-     * [upgradeInfo.oldProductId] and chooses [storeProduct]'s default [SubscriptionOption].
+     * [upgradeInfo.oldSku] and chooses [storeProduct]'s default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
      *   - Filters out offers with "rc-ignore-default-offer" tag
@@ -425,7 +427,7 @@ class Purchases internal constructor(
      *
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
@@ -440,9 +442,14 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
+        upgradeInfo.prorationMode?.let { googleProrationMode ->
+            // TODO how to best migrate old proration mode to new?
+//            val rcProrationMode = GoogleProrationMode(googleProrationMode)
+        }
+
         val purchaseProductBuilder =
-            PurchaseParams.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldProductId)
-                .googleProrationMode(upgradeInfo.googleProrationMode)
+            PurchaseParams.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldSku)
+                .googleProrationMode(GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION)
         purchase(purchaseProductBuilder.build(), listener as NewPurchaseCallback)
     }
 
@@ -490,8 +497,9 @@ class Purchases internal constructor(
         listener: ProductChangeCallback
     ) {
         val purchaseOptionBuilder =
-            PurchaseParams.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldProductId)
-                .googleProrationMode(upgradeInfo.googleProrationMode)
+            PurchaseParams.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldSku)
+                // TODO fix proration
+                .googleProrationMode(GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION)
         purchase(purchaseOptionBuilder.build(), listener as NewPurchaseCallback)
     }
 
@@ -544,8 +552,9 @@ class Purchases internal constructor(
         callback: ProductChangeCallback
     ) {
         val purchasePackageBuilder =
-            PurchaseParams.Builder(packageToPurchase, activity).oldProductId(upgradeInfo.oldProductId)
-                .googleProrationMode(upgradeInfo.googleProrationMode)
+            PurchaseParams.Builder(packageToPurchase, activity).oldProductId(upgradeInfo.oldSku)
+                // TODO fix proration
+                .googleProrationMode(GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION)
         purchase(purchasePackageBuilder.build(), callback as NewPurchaseCallback)
     }
 
@@ -1572,7 +1581,8 @@ class Purchases internal constructor(
         activity: Activity,
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
-        upgradeInfo: UpgradeInfo,
+        oldProductId: String,
+        googleProrationMode: GoogleProrationMode,
         listener: NewPurchaseCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
@@ -1590,7 +1600,7 @@ class Purchases internal constructor(
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } UpgradeInfo: $upgradeInfo"
+                } oldProductId: $oldProductId googleProrationMode ${googleProrationMode.name}"
 
             )
         )
@@ -1607,7 +1617,8 @@ class Purchases internal constructor(
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
-                upgradeInfo,
+                oldProductId,
+                googleProrationMode,
                 activity,
                 appUserID,
                 offeringIdentifier,
@@ -1621,7 +1632,8 @@ class Purchases internal constructor(
 
     private fun replaceOldPurchaseWithNewProduct(
         purchasingData: PurchasingData,
-        upgradeInfo: UpgradeInfo,
+        oldProductId: String,
+        googleProrationMode: GoogleProrationMode,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
@@ -1639,15 +1651,15 @@ class Purchases internal constructor(
         billing.findPurchaseInPurchaseHistory(
             appUserID,
             ProductType.SUBS,
-            upgradeInfo.oldProductId,
+            oldProductId,
             onCompletion = { purchaseRecord ->
-                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(upgradeInfo.oldProductId))
+                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(oldProductId))
 
                 billing.makePurchaseAsync(
                     activity,
                     appUserID,
                     purchasingData,
-                    ReplaceProductInfo(purchaseRecord, upgradeInfo.googleProrationMode.playBillingClientMode),
+                    ReplaceProductInfo(purchaseRecord, googleProrationMode.playBillingClientMode),
                     presentedOfferingIdentifier
                 )
             },
