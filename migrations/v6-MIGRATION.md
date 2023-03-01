@@ -26,6 +26,7 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 
 | Previous                      | New                                                                           |
 |-------------------------------|-------------------------------------------------------------------------------|
+| sku                           | id                                                                            |
 | price                         | Moved to `price`                                                              |
 | priceAmountMicros             | Moved to `price`                                                              |
 | priceCurrencyCode             | Moved to `price`                                                              |
@@ -54,11 +55,15 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 `StoreProduct` can now have multiple free trials and introductory offers. There is a `defaultOption` property on
 `StoreProduct` that will select the offer with the longest free trial period or the cheapest introductory offer.
 
-If more than that is needed, the free trial and intro offer options can be found like:
+If more than that is needed, the free trial, intro offer, and other [SubscriptionOption]s can
+be found on through `subscriptionOptions`:
 
 ```kotlin
-val freeOption = storeProduct.subscriptionOptions?.firstOrNull { it.freePhase != null }
-val trialOption = storeProduct.subscriptionOptions?.firstOrNull { it.introPhase != null }
+val basePlan = storeProduct.subscriptionOptions?.basePlan
+val defaultOffer = storeProduct.subscriptionOptions?.defaultOffer
+val freeOffer = storeProduct.subscriptionOptions?.freeTrial
+val trialOffer = storeProduct.subscriptionOptions?.introTrial
+val offersForLapsedCustomers = storeProduct.subscriptionOptions?.withTag("lapsed-customers")
 ```
 
 ### Period and Period.Unit
@@ -66,11 +71,11 @@ val trialOption = storeProduct.subscriptionOptions?.firstOrNull { it.introPhase 
 Durations were previously string properties of ISO 8601 durations (ex: "P4D", "P1M", "P1Y").
 All durations are now stored in a `Period` object with the following properties:
 
-| Property | Type        |
-|----------|-------------|
-| value    | Int         |
-| unit     | Period.Unit |
-| iso8601  | String      | 
+| New     |
+|---------|
+| value   |
+| unit    |
+| iso8601 | 
 
 The `Period.Unit` enum can be one of the following:
 - DAY
