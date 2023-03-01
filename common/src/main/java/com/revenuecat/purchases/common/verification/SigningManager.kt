@@ -63,6 +63,7 @@ class SigningManager(
         return if (verificationResult) {
             HTTPResult.VerificationStatus.SUCCESS
         } else {
+            errorLog(NetworkStrings.VERIFICATION_ERROR)
             HTTPResult.VerificationStatus.ERROR
         }
     }

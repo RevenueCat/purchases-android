@@ -15,4 +15,5 @@ object NetworkStrings {
         " but none provided."
     const val VERIFICATION_MISSING_BODY_OR_ETAG = "Verification: Request to '%s' requires a body or etag" +
         " but none provided."
+    const val VERIFICATION_ERROR = "Verification: Request to '%s' failed verification."
 }
