@@ -18,8 +18,6 @@ import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getSubscriptionSkusWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
-import com.revenuecat.purchases.interfaces.ProductChangeCallback
-import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -56,14 +54,6 @@ private class PurchasesAPI {
             override fun onReceived(storeProducts: List<StoreProduct>) {}
             override fun onError(error: PurchasesError) {}
         }
-        val purchaseChangeCallback = object : ProductChangeCallback {
-            override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
-            override fun onError(error: PurchasesError, userCancelled: Boolean) {}
-        }
-        val purchaseCallback = object : PurchaseCallback {
-            override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
-            override fun onError(error: PurchasesError, userCancelled: Boolean) {}
-        }
         val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {}
             override fun onError(error: PurchasesError) {}
@@ -76,20 +66,6 @@ private class PurchasesAPI {
         purchases.getOfferings(receiveOfferingsCallback)
 
         purchases.getProducts(productIds, productsResponseCallback)
-
-        // we need these for hybrids... these all fall back on some "best offer" or just purchase the base plan
-        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
-        purchases.purchaseProduct(activity, storeProduct, purchaseCallback)
-        purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
-        purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
-
-        purchases.purchaseSubscriptionOption(
-            activity,
-            subscriptionOption,
-            upgradeInfo,
-            purchaseChangeCallback
-        )
-        purchases.purchaseSubscriptionOption(activity, subscriptionOption, purchaseCallback)
 
         purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.logIn("", logInCallback)
@@ -127,45 +103,6 @@ private class PurchasesAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: Offerings -> }
         )
-        purchases.purchaseProductWith(
-            activity,
-            storeProduct,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseProductWith(
-            activity,
-            storeProduct,
-            upgradeInfo,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
-        purchases.purchasePackageWith(
-            activity,
-            packageToPurchase,
-            upgradeInfo,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
-        purchases.purchasePackageWith(
-            activity,
-            packageToPurchase,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            upgradeInfo,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
         purchases.restorePurchasesWith(
             onError = { _: PurchasesError -> },
             onSuccess = { _: CustomerInfo -> }
@@ -187,16 +124,6 @@ private class PurchasesAPI {
             fetchPolicy = CacheFetchPolicy.CACHED_OR_FETCHED,
             onError = { _: PurchasesError -> },
             onSuccess = { _: CustomerInfo -> }
-        )
-        purchases.getSubscriptionSkusWith(
-            ArrayList<String>(),
-            onError = { _: PurchasesError -> },
-            onReceiveSkus = { _: List<StoreProduct> -> }
-        )
-        purchases.getNonSubscriptionSkusWith(
-            ArrayList<String>(),
-            onError = { _: PurchasesError -> },
-            onReceiveSkus = { _: List<StoreProduct> -> }
         )
     }
 
@@ -242,9 +169,6 @@ private class PurchasesAPI {
 
         Purchases.canMakePayments(context, features) { _: Boolean -> }
         Purchases.canMakePayments(context) { _: Boolean -> }
-
-        Purchases.debugLogsEnabled = false
-        val debugLogs: Boolean = Purchases.debugLogsEnabled
 
         Purchases.logLevel = LogLevel.INFO
         val logLevel: LogLevel = Purchases.logLevel

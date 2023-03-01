@@ -55,14 +55,7 @@ final class PurchasesAPI {
             @Override public void onReceived(@NonNull List<StoreProduct> storeProducts) { }
             @Override public void onError(@NonNull PurchasesError error) {}
         };
-        final ProductChangeCallback purchaseChangeListener = new ProductChangeCallback() {
-            @Override public void onCompleted(@Nullable StoreTransaction storeTransaction, @NonNull CustomerInfo customerInfo) { }
-            @Override public void onError(@NonNull PurchasesError error, boolean userCancelled) {}
-        };
-        final PurchaseCallback makePurchaseListener = new PurchaseCallback() {
-            @Override public void onCompleted(@NonNull StoreTransaction storeTransaction, @NonNull CustomerInfo customerInfo) { }
-            @Override public void onError(@NonNull PurchasesError error, boolean userCancelled) {}
-        };
+
         final ReceiveCustomerInfoCallback receiveCustomerInfoListener = new ReceiveCustomerInfoCallback() {
             @Override public void onReceived(@NonNull CustomerInfo customerInfo) {}
             @Override public void onError(@NonNull PurchasesError error) {}
@@ -75,12 +68,6 @@ final class PurchasesAPI {
         purchases.syncPurchases();
         purchases.getOfferings(receiveOfferingsListener);
         purchases.getProducts(productIds, productResponseListener);
-        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeListener);
-        purchases.purchaseProduct(activity, storeProduct, makePurchaseListener);
-        purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeListener);
-        purchases.purchasePackage(activity, packageToPurchase, makePurchaseListener);
-        purchases.purchaseSubscriptionOption(activity, subscriptionOption, upgradeInfo, purchaseChangeListener);
-        purchases.purchaseSubscriptionOption(activity, subscriptionOption, makePurchaseListener);
         purchases.restorePurchases(receiveCustomerInfoListener);
 
         purchases.logIn("", logInCallback);
@@ -144,7 +131,6 @@ final class PurchasesAPI {
         Purchases.canMakePayments(context, features, (Boolean result) -> {});
         Purchases.canMakePayments(context, (Boolean result) -> {});
 
-        Purchases.setDebugLogsEnabled(false);
         final boolean debugLogs = Purchases.getDebugLogsEnabled();
 
         Purchases.setLogLevel(LogLevel.DEBUG);
