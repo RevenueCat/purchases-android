@@ -7,7 +7,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 
 // TODO BC5 naming
-open class Purchase(builder: Builder) {
+open class PurchaseParams(builder: Builder) {
 
     val isPersonalizedPrice: Boolean
     val oldProductId: String?
@@ -70,8 +70,8 @@ open class Purchase(builder: Builder) {
             this.googleProrationMode = googleProrationMode
         }
 
-        open fun build(): Purchase {
-            return Purchase(this)
+        open fun build(): PurchaseParams {
+            return PurchaseParams(this)
         }
     }
 }

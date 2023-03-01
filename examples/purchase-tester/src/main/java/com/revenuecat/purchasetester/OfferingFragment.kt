@@ -15,7 +15,7 @@ import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.Purchase
+import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
@@ -83,23 +83,23 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         cardView: View,
         currentPackage: Package,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, Purchase.Builder(currentPackage, requireActivity()))
+    ) = startPurchase(isUpgrade, PurchaseParams.Builder(currentPackage, requireActivity()))
 
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, Purchase.Builder(currentProduct, requireActivity()))
+    ) = startPurchase(isUpgrade, PurchaseParams.Builder(currentProduct, requireActivity()))
 
     override fun onPurchaseSubscriptionOptionClicked(
         cardView: View,
         subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, Purchase.Builder(subscriptionOption, requireActivity()))
+    ) = startPurchase(isUpgrade, PurchaseParams.Builder(subscriptionOption, requireActivity()))
 
     private fun startPurchase(
         isUpgrade: Boolean,
-        purchaseProductBuilder: Purchase.Builder
+        purchaseProductBuilder: PurchaseParams.Builder
     ) {
         toggleLoadingIndicator(true)
         if (isUpgrade) {

@@ -388,10 +388,10 @@ class Purchases internal constructor(
      * TODO BC5 javadocs
      */
     fun purchase(
-        purchaseConfig: Purchase,
+        purchaseParams: PurchaseParams,
         listener: NewPurchaseCallback
     ) {
-        with(purchaseConfig) {
+        with(purchaseParams) {
             oldProductId?.let { oldProductIdentifier ->
                 startProductChange(
                     activity,
@@ -431,7 +431,7 @@ class Purchases internal constructor(
      */
     // TODO BC5 update deprecation messages
     @Deprecated(
-        "Use purchase() and Purchase.Builder instead",
+        "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()")
     )
     fun purchaseProduct(
@@ -441,7 +441,7 @@ class Purchases internal constructor(
         listener: ProductChangeCallback
     ) {
         val purchaseProductBuilder =
-            Purchase.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldProductId)
+            PurchaseParams.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldProductId)
                 .googleProrationMode(upgradeInfo.googleProrationMode)
         purchase(purchaseProductBuilder.build(), listener as NewPurchaseCallback)
     }
@@ -459,7 +459,7 @@ class Purchases internal constructor(
      * @param [callback] The PurchaseCallback that will be called when purchase completes.
      */
     @Deprecated(
-        "Use purchase() and Purchase.Builder instead",
+        "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()")
     )
     fun purchaseProduct(
@@ -467,7 +467,7 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        val purchase = Purchase.Builder(storeProduct, activity).build()
+        val purchase = PurchaseParams.Builder(storeProduct, activity).build()
         purchaseNonUpgradeWithDeprecatedCallback(purchase, callback)
     }
 
@@ -480,7 +480,7 @@ class Purchases internal constructor(
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
     @Deprecated(
-        "Use purchase() and Purchase.Builder instead",
+        "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()")
     )
     fun purchaseSubscriptionOption(
@@ -490,7 +490,7 @@ class Purchases internal constructor(
         listener: ProductChangeCallback
     ) {
         val purchaseOptionBuilder =
-            Purchase.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldProductId)
+            PurchaseParams.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldProductId)
                 .googleProrationMode(upgradeInfo.googleProrationMode)
         purchase(purchaseOptionBuilder.build(), listener as NewPurchaseCallback)
     }
@@ -502,7 +502,7 @@ class Purchases internal constructor(
      * @param [callback] The PurchaseCallback that will be called when purchase completes
      */
     @Deprecated(
-        "Use purchase() and Purchase.Builder instead",
+        "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()")
     )
 
@@ -511,7 +511,7 @@ class Purchases internal constructor(
         subscriptionOption: SubscriptionOption,
         callback: PurchaseCallback
     ) {
-        val purchase = Purchase.Builder(subscriptionOption, activity).build()
+        val purchase = PurchaseParams.Builder(subscriptionOption, activity).build()
         purchaseNonUpgradeWithDeprecatedCallback(purchase, callback)
     }
 
@@ -534,7 +534,7 @@ class Purchases internal constructor(
      * @param [callback] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        "Use purchase() and Purchase.Builder instead",
+        "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()")
     )
     fun purchasePackage(
@@ -544,7 +544,7 @@ class Purchases internal constructor(
         callback: ProductChangeCallback
     ) {
         val purchasePackageBuilder =
-            Purchase.Builder(packageToPurchase, activity).oldProductId(upgradeInfo.oldProductId)
+            PurchaseParams.Builder(packageToPurchase, activity).oldProductId(upgradeInfo.oldProductId)
                 .googleProrationMode(upgradeInfo.googleProrationMode)
         purchase(purchasePackageBuilder.build(), callback as NewPurchaseCallback)
     }
@@ -562,7 +562,7 @@ class Purchases internal constructor(
      * @param [listener] The listener that will be called when purchase completes.
      */
     @Deprecated(
-        "Use purchase() and Purchase.Builder instead",
+        "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()")
     )
     fun purchasePackage(
@@ -570,7 +570,7 @@ class Purchases internal constructor(
         packageToPurchase: Package,
         listener: PurchaseCallback
     ) {
-        val purchase = Purchase.Builder(packageToPurchase, activity).build()
+        val purchase = PurchaseParams.Builder(packageToPurchase, activity).build()
         purchaseNonUpgradeWithDeprecatedCallback(purchase, listener)
     }
 
@@ -1412,11 +1412,11 @@ class Purchases internal constructor(
     }
 
     internal fun purchaseNonUpgradeWithDeprecatedCallback(
-        purchaseConfig: Purchase,
+        purchaseParams: PurchaseParams,
         listener: PurchaseCallback
     ) {
         purchase(
-            purchaseConfig,
+            purchaseParams,
             listener.toNewPurchaseCallback()
         )
     }
