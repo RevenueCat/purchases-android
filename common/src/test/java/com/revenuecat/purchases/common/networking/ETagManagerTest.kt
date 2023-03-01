@@ -153,6 +153,45 @@ class ETagManagerTest {
     }
 
     @Test
+    fun `If verification failed, don't store response in cache`() {
+        val path = "/v1/subscribers/appUserID"
+        val eTag = "eTag"
+
+        val resultFromBackend = HTTPResult.createResult(
+            verificationStatus = HTTPResult.VerificationStatus.ERROR,
+            payload = Responses.validEmptyPurchaserResponse
+        )
+
+        underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
+
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+    }
+
+    @Test
+    fun `If verification successful, store response in cache`() {
+        val path = "/v1/subscribers/appUserID"
+        val eTag = "eTag"
+
+        val resultFromBackend = HTTPResult.createResult(
+            verificationStatus = HTTPResult.VerificationStatus.SUCCESS,
+            payload = Responses.validEmptyPurchaserResponse
+        )
+        val resultStored = resultFromBackend.copy(
+            origin = HTTPResult.Origin.CACHE
+        )
+        val resultStoredWithETag = HTTPResultWithETag(eTag, resultStored)
+
+        underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
+
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue
+
+        assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(path)
+        assertThat(slotPutSharedPreferencesValue.captured).isEqualTo(resultStoredWithETag.serialize())
+    }
+
+    @Test
     fun `Clearing caches removes all shared preferences`() {
         underTest.clearCaches()
 

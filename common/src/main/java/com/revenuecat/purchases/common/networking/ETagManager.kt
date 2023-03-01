@@ -82,8 +82,7 @@ class ETagManager(
         resultFromBackend: HTTPResult,
         eTagInResponse: String
     ) {
-        val responseCode = resultFromBackend.responseCode
-        if (responseCode != RCHTTPStatusCodes.NOT_MODIFIED && responseCode < RCHTTPStatusCodes.ERROR) {
+        if (shouldStoreBackendResult(resultFromBackend)) {
             storeResult(path, resultFromBackend, eTagInResponse)
         }
     }
@@ -113,6 +112,13 @@ class ETagManager(
 
     private fun getETag(path: String): String {
         return getStoredResultSavedInSharedPreferences(path)?.eTag.orEmpty()
+    }
+
+    private fun shouldStoreBackendResult(resultFromBackend: HTTPResult): Boolean {
+        val responseCode = resultFromBackend.responseCode
+        return responseCode != RCHTTPStatusCodes.NOT_MODIFIED &&
+            responseCode < RCHTTPStatusCodes.ERROR &&
+            resultFromBackend.verificationStatus != HTTPResult.VerificationStatus.ERROR
     }
 
     companion object {
