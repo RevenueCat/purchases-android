@@ -443,7 +443,7 @@ class Purchases internal constructor(
         val purchaseProductBuilder =
             Purchase.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldProductId)
                 .googleProrationMode(upgradeInfo.googleProrationMode)
-        purchase(purchaseProductBuilder.build(), listener)
+        purchase(purchaseProductBuilder.build(), listener as NewPurchaseCallback)
     }
 
     /**
@@ -492,7 +492,7 @@ class Purchases internal constructor(
         val purchaseOptionBuilder =
             Purchase.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldProductId)
                 .googleProrationMode(upgradeInfo.googleProrationMode)
-        purchase(purchaseOptionBuilder.build(), listener)
+        purchase(purchaseOptionBuilder.build(), listener as NewPurchaseCallback)
     }
 
     /**
@@ -546,7 +546,7 @@ class Purchases internal constructor(
         val purchasePackageBuilder =
             Purchase.Builder(packageToPurchase, activity).oldProductId(upgradeInfo.oldProductId)
                 .googleProrationMode(upgradeInfo.googleProrationMode)
-        purchase(purchasePackageBuilder.build(), callback)
+        purchase(purchasePackageBuilder.build(), callback as NewPurchaseCallback)
     }
 
     /**
@@ -1421,7 +1421,7 @@ class Purchases internal constructor(
         )
     }
 
-    private fun getPurchaseCallback(productId: String): ProductChangeCallback? {
+    private fun getPurchaseCallback(productId: String): NewPurchaseCallback? {
         return state.purchaseCallbacksByProductId[productId].also {
             state = state.copy(
                 purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId }
@@ -1429,7 +1429,7 @@ class Purchases internal constructor(
         }
     }
 
-    private fun getAndClearProductChangeCallback(): ProductChangeCallback? {
+    private fun getAndClearProductChangeCallback(): NewPurchaseCallback? {
         return state.productChangeCallback.also {
             state = state.copy(productChangeCallback = null)
         }
@@ -1440,7 +1440,7 @@ class Purchases internal constructor(
             override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
                 val productChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
-                val productChangeListener: ProductChangeCallback?
+                val productChangeListener: NewPurchaseCallback?
 
                 synchronized(this@Purchases) {
                     productChangeInProgress = state.productChangeCallback != null
@@ -1504,7 +1504,7 @@ class Purchases internal constructor(
     }
 
     private fun getProductChangeCompletedCallbacks(
-        productChangeListener: ProductChangeCallback?
+        productChangeListener: NewPurchaseCallback?
     ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
             productChangeListener?.let { productChangeCallback ->
