@@ -10,6 +10,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -38,7 +39,7 @@ data class AmazonStoreProduct(
     override val period: Period?,
 
     override val price: com.revenuecat.purchases.models.Price,
-    override val subscriptionOptions: List<SubscriptionOption>,
+    override val subscriptionOptions: SubscriptionOptions?,
     override val defaultOption: SubscriptionOption?,
     val iconUrl: String,
     val originalJson: JSONObject,
@@ -74,7 +75,7 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         description,
         period = null,
         priceInfo,
-        emptyList(),
+        null,
         defaultOption = null,
         iconUrl = smallIconUrl,
         originalJson = toJSON(),
