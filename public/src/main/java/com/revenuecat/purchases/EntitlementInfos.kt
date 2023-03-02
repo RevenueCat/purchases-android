@@ -14,9 +14,6 @@ class EntitlementInfos constructor(
     val verification: VerificationResult
 ) : Parcelable {
 
-    @Deprecated("EntitlementInfos constructor is not meant to be used externally")
-    constructor(all: Map<String, EntitlementInfo>) : this(all, verification = VerificationResult.NOT_VERIFIED)
-
     /**
      * Dictionary of active [EntitlementInfo] objects keyed by entitlement identifier.
      */
