@@ -24,6 +24,8 @@ class IdentityManager(
     val currentAppUserID: String
         get() = deviceCache.getCachedAppUserID() ?: ""
 
+    private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
+
     @Synchronized
     fun configure(appUserID: String?) {
         if (appUserID?.isBlank() == true) {
@@ -116,8 +118,7 @@ class IdentityManager(
     }
 
     private fun isUserIDAnonymous(appUserID: String): Boolean {
-        return "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
-            .matches(appUserID)
+        return anonymousIdRegex.matches(appUserID)
     }
 
     private fun generateRandomID(): String {

@@ -70,10 +70,9 @@ class SubscriberAttributesCache(
     @Synchronized
     fun clearSubscriberAttributesIfSyncedForSubscriber(appUserID: AppUserID) {
         val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes(appUserID)
-        if (unsyncedSubscriberAttributes.isNotEmpty()) {
-            return
+        if (unsyncedSubscriberAttributes.isEmpty()) {
+            clearAllSubscriberAttributesFromUser(appUserID)
         }
-        clearAllSubscriberAttributesFromUser(appUserID)
     }
 
     @Synchronized
