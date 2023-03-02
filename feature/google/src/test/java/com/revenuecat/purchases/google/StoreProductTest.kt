@@ -9,6 +9,7 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.utils.mockProductDetails
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.junit.Test
@@ -79,7 +80,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             period = Period.create("P1M"),
-            subscriptionOptions = listOf(subscriptionOption1),
+            subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption1)),
             defaultOption = null,
             productDetails = productDetails
         )
@@ -92,7 +93,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             period = Period.create("P1M"),
-            subscriptionOptions = listOf(subscriptionOption2),
+            subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption2)),
             defaultOption = null,
             productDetails = productDetails
         )
@@ -163,7 +164,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             period = Period.create("P1M"),
-            subscriptionOptions = listOf(subscriptionOption1),
+            subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption1)),
             defaultOption = null,
             productDetails = productDetails
         )
@@ -176,7 +177,7 @@ class StoreProductTest {
             title = "TITLE",
             description = "DESCRIPTION",
             period = Period.create("P1M"),
-            subscriptionOptions = listOf(subscriptionOption2),
+            subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption2)),
             defaultOption = null,
             productDetails = productDetails
         )

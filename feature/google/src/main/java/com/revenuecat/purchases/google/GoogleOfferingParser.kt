@@ -20,7 +20,7 @@ class GoogleOfferingParser : OfferingParser() {
                 ?.firstOrNull()
         }
         return storeProducts?.firstOrNull { storeProduct ->
-            storeProduct.subscriptionOptions.firstOrNull { it.isBasePlan }?.id == planIdentifier
+            storeProduct.subscriptionOptions?.firstOrNull { it.isBasePlan }?.id == planIdentifier
         }
     }
 }
