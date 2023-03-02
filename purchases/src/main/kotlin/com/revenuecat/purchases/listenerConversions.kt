@@ -164,8 +164,9 @@ fun Purchases.purchaseProductWith(
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 ) {
-    val purchaseProductBuilder = PurchaseParams.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldProductId)
-        .googleProrationMode(upgradeInfo.googleProrationMode)
+    val purchaseProductBuilder = PurchaseParams.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldSku)
+    // TODO BC5 figure out proration mode
+//        .googleProrationMode(upgradeInfo.prorationMode)
     purchaseWith(purchaseProductBuilder.build(), onError, onSuccess)
 }
 
@@ -215,8 +216,9 @@ fun Purchases.purchaseSubscriptionOptionWith(
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 ) {
     val purchaseOptionBuilder =
-        PurchaseParams.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldProductId)
-            .googleProrationMode(upgradeInfo.googleProrationMode)
+        PurchaseParams.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldSku)
+    // TODO BC5 figure out proration mode
+//            .googleProrationMode(upgradeInfo.googleProrationMode)
     purchaseWith(purchaseOptionBuilder.build(), onError, onSuccess)
 }
 
@@ -243,8 +245,9 @@ fun Purchases.purchasePackageWith(
 ) {
     val purchasePackageBuilder =
         PurchaseParams.Builder(packageToPurchase, activity)
-            .oldProductId(upgradeInfo.oldProductId)
-            .googleProrationMode(upgradeInfo.googleProrationMode)
+            .oldProductId(upgradeInfo.oldSku)
+    // TODO BC5 figure out proration mode
+//            .googleProrationMode(upgradeInfo.googleProrationMode)
     purchaseWith(purchasePackageBuilder.build(), onError, onSuccess)
 }
 
