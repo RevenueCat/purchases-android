@@ -12,7 +12,6 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
@@ -28,6 +27,7 @@ import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.restorePurchasesWith
 import java.net.URL
 import java.util.concurrent.ExecutorService
@@ -122,11 +122,7 @@ private class PurchasesAPI {
     @Suppress("RedundantLambdaArrow", "LongMethod", "LongParameterList")
     fun checkListenerConversions(
         purchases: Purchases,
-        activity: Activity,
-        packageToPurchase: Package,
-        storeProduct: StoreProduct,
-        subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo
+        purchaseParams: PurchaseParams
     ) {
         purchases.getOfferingsWith(
             onError = { _: PurchasesError -> },
@@ -153,6 +149,11 @@ private class PurchasesAPI {
             fetchPolicy = CacheFetchPolicy.CACHED_OR_FETCHED,
             onError = { _: PurchasesError -> },
             onSuccess = { _: CustomerInfo -> }
+        )
+        purchases.purchaseWith(
+            purchaseParams,
+            onError = { _: PurchasesError, _: Boolean -> },
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
     }
 

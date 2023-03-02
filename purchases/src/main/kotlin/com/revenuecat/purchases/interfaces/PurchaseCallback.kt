@@ -19,7 +19,7 @@ interface PurchaseCallback : PurchaseErrorCallback {
 interface NewPurchaseCallback : PurchaseErrorCallback {
     /**
      * Will be called after the purchase has completed
-     * @param storeTransaction StoreTransaction object for the purchased product.
+     * @param storeTransaction StoreTransaction object for the purchased product. Null for deferred purchases.
      * @param customerInfo Updated [CustomerInfo].
      */
     fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo)
