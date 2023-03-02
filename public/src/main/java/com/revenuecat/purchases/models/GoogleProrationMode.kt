@@ -8,7 +8,6 @@ import com.android.billingclient.api.BillingFlowParams
  *
  * See https://developer.android.com/google/play/billing/subscriptions#proration for examples
  */
-// TODO BC5 make sealed?
 enum class GoogleProrationMode(@BillingFlowParams.ProrationMode val playBillingClientMode: Int) {
     /**
      * Old subscription is cancelled, and new subscription takes effect immediately.

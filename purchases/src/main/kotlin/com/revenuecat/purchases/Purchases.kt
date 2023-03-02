@@ -386,11 +386,21 @@ class Purchases internal constructor(
     }
 
     /**
-     * TODO BC5 javadocs
+     * Initiate a purchase with the given [PurchaseParams].
+     * Initialized with an [Activity] either a [Package], [StoreProduct], or [SubscriptionOption].
+     *
+     * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [defaultOption] will be purchased.
+     * [defaultOption] is selected via the following logic:
+     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     *   @params [purchaseParams] The parameters configuring the purchase. See [PurchaseParams.Builder] for options.
+     *   @params [callback] The PurchaseCallback that will be called when purchase completes.
      */
     fun purchase(
         purchaseParams: PurchaseParams,
-        listener: NewPurchaseCallback
+        callback: NewPurchaseCallback
     ) {
         with(purchaseParams) {
             oldProductId?.let { productId ->
@@ -400,14 +410,14 @@ class Purchases internal constructor(
                     null,
                     productId,
                     googleProrationMode,
-                    listener
+                    callback
                 )
             } ?: run {
                 startPurchase(
                     activity,
                     purchasingData,
                     null,
-                    listener
+                    callback
                 )
             }
         }
@@ -431,7 +441,6 @@ class Purchases internal constructor(
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
-    // TODO BC5 update deprecation messages
     @Deprecated(
         "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()")
