@@ -73,7 +73,8 @@ class ParcelableTests {
             unsubscribeDetectedAt = null,
             billingIssueDetectedAt = null,
             ownershipType = OwnershipType.UNKNOWN,
-            jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+            jsonObject = JSONObject(Responses.validFullPurchaserResponse),
+            verification = VerificationResult.NOT_VERIFIED
         )
     }
 }
