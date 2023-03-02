@@ -6,9 +6,11 @@ import com.revenuecat.purchases.PeriodType;
 import com.revenuecat.purchases.Store;
 import com.revenuecat.purchases.VerificationResult;
 
+import org.json.JSONObject;
+
 import java.util.Date;
 
-@SuppressWarnings({"unused"})
+@SuppressWarnings({"unused", "deprecation"})
 final class EntitlementInfoAPI {
     static void check(final EntitlementInfo entitlementInfo) {
         final String identifier = entitlementInfo.getIdentifier();
@@ -25,6 +27,31 @@ final class EntitlementInfoAPI {
         final Date billingIssueDetectedAt = entitlementInfo.getBillingIssueDetectedAt();
         final OwnershipType ownershipType = entitlementInfo.getOwnershipType();
         final VerificationResult verification = entitlementInfo.getVerification();
+    }
+
+    static void checkConstructor(
+            String identifier,
+            boolean active,
+            boolean willRenew,
+            PeriodType periodType,
+            Date latestPurchaseDate,
+            Date originalPurchaseDate,
+            Date expirationDate,
+            Store store,
+            String productIdentifier,
+            boolean sandbox,
+            Date unsubscribeDetectedAt,
+            Date billingIssueDetectedAt,
+            OwnershipType ownershipType,
+            JSONObject jsonObject,
+            VerificationResult verification
+    ) {
+        final EntitlementInfo entitlementInfo = new EntitlementInfo(identifier, active, willRenew, periodType,
+                latestPurchaseDate, originalPurchaseDate, expirationDate, store, productIdentifier, sandbox,
+                unsubscribeDetectedAt, billingIssueDetectedAt, ownershipType, jsonObject, verification);
+        final EntitlementInfo entitlementInfo2 = new EntitlementInfo(identifier, active, willRenew, periodType,
+                latestPurchaseDate, originalPurchaseDate, expirationDate, store, productIdentifier, sandbox,
+                unsubscribeDetectedAt, billingIssueDetectedAt, ownershipType, jsonObject);
     }
 
     static void store(final Store store) {

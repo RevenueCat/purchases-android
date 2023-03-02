@@ -14,6 +14,11 @@ class EntitlementInfos constructor(
     val verification: VerificationResult
 ) : Parcelable {
 
+    @Deprecated("Use full constructor instead")
+    constructor(
+        all: Map<String, EntitlementInfo>
+    ) : this(all, VerificationResult.NOT_VERIFIED)
+
     /**
      * Dictionary of active [EntitlementInfo] objects keyed by entitlement identifier.
      */
