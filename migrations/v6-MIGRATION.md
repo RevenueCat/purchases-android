@@ -20,7 +20,15 @@
 |-----------------------------------------|------------------------------------------------|
 | com.revenuecat.purchases.BillingFeature | com.revenuecat.purchases.models.BillingFeature |
 
-### StoreProduct
+
+| Deprecated              | Replace with                                                                           |
+|-------------------------|----------------------------------------------------------------------------------------|
+| `UpgradeInfo`           | `PurchaseParams.Builder.oldProductId` and `PurchaseParams.Builder.googleProrationMode` |
+| `ProductChangeCallback` | `NewPurchaseCallback`                                                                  |
+| `PurchaseCallback`      | `NewPurchaseCallback`                                                                  |
+
+
+### StoreProduct changes
 
 StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonStoreProduct` implement.
 
@@ -55,8 +63,8 @@ StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonS
 `StoreProduct` can now have multiple free trials and introductory offers. There is a `defaultOption` property on
 `StoreProduct` that will select the offer with the longest free trial period or the cheapest introductory offer.
 
-If more than that is needed, the free trial, intro offer, and other [SubscriptionOption]s can
-be found on through `subscriptionOptions`:
+If more control is needed, the free trial, intro offer, and other [SubscriptionOption]s can
+be found through `subscriptionOptions`:
 
 ```kotlin
 val basePlan = storeProduct.subscriptionOptions?.basePlan
@@ -66,7 +74,7 @@ val trialOffer = storeProduct.subscriptionOptions?.introTrial
 val offersForLapsedCustomers = storeProduct.subscriptionOptions?.withTag("lapsed-customers")
 ```
 
-### Period and Period.Unit
+### Period and Period.Unit changes
 
 Durations were previously string properties of ISO 8601 durations (ex: "P4D", "P1M", "P1Y").
 All durations are now stored in a `Period` object with the following properties:
@@ -84,7 +92,7 @@ The `Period.Unit` enum can be one of the following:
 - YEAR
 - UNKNOWN
 
-### StoreTransaction
+### StoreTransaction changes
 
 | New                  |
 |----------------------|
@@ -94,16 +102,8 @@ The `Period.Unit` enum can be one of the following:
 |------------|------------|
 | skus       | productIds |
 
-### UpgradeInfo updates
 
-
-| Removed       | New                 |
-|---------------|---------------------|
-| oldSku        | oldProductId        |
-| prorationMode | googleProrationMode |
-
-
-### CustomerInfo updates
+### CustomerInfo changes
 
 | Deprecated              | New                           |
 |-------------------------|-------------------------------|
@@ -111,38 +111,62 @@ The `Period.Unit` enum can be one of the following:
 | getExpirationDateForSku | getExpirationDateForProductId |
 | getPurchaseDateForSku   | getPurchaseDateForProductId   |
 
-### Purchasing APIs
+### Purchasing API changes
 
-The `purchasePackage()` and `purchaseProduct()` APIs have a new behavior for selecting which offer is used when
-purchasing a `Package` or `StoreProduct`. These functions use the following logic to choose
-a [SubscriptionOption] to purchase:
+Purchases are now configured using `PurchaseParams.Builder()`. The builder is constructed with either a `Package`,
+`Product`, or `SubscriptionOption` and an `Activity`. The builder then has methods for setting the product change
+parameters (`oldProductId` and `googleProrationMode`), as well as the `isPersonalizedPrice` option.
+
+To initiate a purchase, simply pass the built `PurchaseParams` and your `PurchaseCallback` to the `purchase()` method.
+
+#### Applying offers on a purchase
+In v5, a purchase of a `Package` or `StoreProduct` represented a single purchaseable entity, and free trials or intro
+prices would automatically be applied if the user was eligible.
+
+Now, in v6, a `Package` or `StoreProduct` could contain multiple offers along with a base plan. 
+When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the following logic to choose which 
+[SubscriptionOption] to purchase:
 *   - Filters out offers with "rc-ignore-default-offer" tag
 *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
 *   - Falls back to use base plan
 
-For more control, the `purchaseSubscriptionOption()` API can be used to manually choose which offer to purchase.
+For more control, create your `PurchaseParams.Builder` with the desired `SubscriptionOption`.
 
-| New                                                                                                      |
-|----------------------------------------------------------------------------------------------------------|
-| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, PurchaseCallback)`                   |
-| `purchaseSubscriptionOption(Activity, StoreProduct, SubscriptionOption, UpgradeInfo, ProductChangeCallback)` |
+| New                                            |
+|------------------------------------------------|
+| `purchase(PurchaseParams, NewPurchaseCallback` |
 
-| Deprecated                                                       | New                                                   |
-|------------------------------------------------------------------|-------------------------------------------------------|
-| `getSubscriptionSkus(List<String>, GetStoreProductsCallback)`    | `getProducts(List<String>, GetStoreProductsCallback)` |
-| `getNonSubscriptionSkus(List<String>, GetStoreProductsCallback)` | `getProducts(List<String>, GetStoreProductsCallback)` |
+Replaces all of the following: 
 
-### Kotlin Helpers
+| Deprecated                                                                    |
+|-------------------------------------------------------------------------------|
+| `purchaseProduct(Activity, StoreProduct, PurchaseCallback)`                   |
+| `purchaseProduct(Activity, StoreProduct, UpgradeInfo, ProductChangeCallback)` |
+| `purchasePackage(Activity, Package, PurchaseCallback)`                        |
+| `purchasePackage(Activity, Package, UpgradeInfo, ProductChangeCallback)`      |
 
-| New                                                                                                                                                                |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `purchaseSubscriptionOptionWith(Activity, StoreProduct, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`              |
-| `purchaseSubscriptionOptionWith(Activity, StoreProduct, UpgradeInfo, SubscriptionOption, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+#### Kotlin Helpers
+
+| New                                                                                                         |
+|-------------------------------------------------------------------------------------------------------------|
+| `purchaseWith(PurchaseParams, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
+
+Replaces all of the following:
+
+| Deprecated                                                                                                                               |
+|------------------------------------------------------------------------------------------------------------------------------------------|
+| `purchaseProductWith(Activity, StoreProduct, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`               |
+| `purchaseProductWith(Activity, StoreProduct, UpgradeInfo, (PurchasesError, Boolean) -> Unit, (StoreTransaction?, CustomerInfo) -> Unit)` |
+| `purchasePackageWith(Activity, Package, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                    |
+| `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError, Boolean) -> Unit, (StoreTransaction?, CustomerInfo) -> Unit)`      |
+
+### Purchases API deprecations
 
 | Deprecated                                                                                         | New                                                                                     |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
 | `getSubscriptionSkusWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)`    | `getProductsWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` |
 | `getNonSubscriptionSkusWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` | `getProductsWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` |
+
 
 ### Removed APIs
 
