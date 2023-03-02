@@ -4,6 +4,7 @@ import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.OwnershipType;
 import com.revenuecat.purchases.PeriodType;
 import com.revenuecat.purchases.Store;
+import com.revenuecat.purchases.VerificationResult;
 
 import java.util.Date;
 
@@ -23,6 +24,7 @@ final class EntitlementInfoAPI {
         final Date unsubscribeDetectedAt = entitlementInfo.getUnsubscribeDetectedAt();
         final Date billingIssueDetectedAt = entitlementInfo.getBillingIssueDetectedAt();
         final OwnershipType ownershipType = entitlementInfo.getOwnershipType();
+        final VerificationResult verification = entitlementInfo.getVerification();
     }
 
     static void store(final Store store) {

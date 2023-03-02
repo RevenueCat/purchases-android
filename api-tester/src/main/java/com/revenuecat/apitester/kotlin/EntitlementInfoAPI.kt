@@ -4,6 +4,7 @@ import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VerificationResult
 import java.util.Date
 
 @Suppress("unused", "UNUSED_VARIABLE")
@@ -23,6 +24,7 @@ private class EntitlementInfoAPI {
             val unsubscribeDetectedAt: Date? = unsubscribeDetectedAt
             val billingIssueDetectedAt: Date? = billingIssueDetectedAt
             val ownershipType: OwnershipType = ownershipType
+            val verification: VerificationResult = verification
         }
     }
 
