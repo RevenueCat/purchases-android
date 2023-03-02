@@ -1,5 +1,5 @@
 ### New Features
-* Add diagnostics API (#811) via Toni Rico (@tonidero)
+* Diagnostics (#811) via Toni Rico (@tonidero)
 ### Dependency Updates
 * Bump fastlane from 2.212.0 to 2.212.1 (#821) via dependabot[bot] (@dependabot[bot])
 * Bump fastlane from 2.211.0 to 2.212.0 (#808) via dependabot[bot] (@dependabot[bot])
