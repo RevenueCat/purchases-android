@@ -49,7 +49,8 @@ data class EntitlementInfo constructor(
     @Deprecated(
         "Use rawData instead",
         replaceWith = ReplaceWith("rawData")
-    ) val jsonObject: JSONObject
+    ) val jsonObject: JSONObject,
+    val verification: VerificationResult
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     @IgnoredOnParcel

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.networking
 
+import com.revenuecat.purchases.VerificationResult
 import org.json.JSONObject
 
 private const val SERIALIZATION_NAME_RESPONSE_CODE = "responseCode"
@@ -11,7 +12,7 @@ data class HTTPResult(
     val responseCode: Int,
     val payload: String,
     val origin: Origin,
-    val verificationStatus: VerificationStatus
+    val verificationResult: VerificationResult
 ) {
     companion object {
         const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
@@ -27,21 +28,17 @@ data class HTTPResult(
             } else {
                 Origin.CACHE
             }
-            val verificationStatus: VerificationStatus = if (jsonObject.has(SERIALIZATION_NAME_VERIFICATION_STATUS)) {
-                VerificationStatus.valueOf(jsonObject.getString(SERIALIZATION_NAME_VERIFICATION_STATUS))
+            val verificationResult: VerificationResult = if (jsonObject.has(SERIALIZATION_NAME_VERIFICATION_STATUS)) {
+                VerificationResult.valueOf(jsonObject.getString(SERIALIZATION_NAME_VERIFICATION_STATUS))
             } else {
-                VerificationStatus.NOT_VERIFIED
+                VerificationResult.NOT_VERIFIED
             }
-            return HTTPResult(responseCode, payload, origin, verificationStatus)
+            return HTTPResult(responseCode, payload, origin, verificationResult)
         }
     }
 
     enum class Origin {
         BACKEND, CACHE
-    }
-
-    enum class VerificationStatus {
-        NOT_VERIFIED, SUCCESS, ERROR
     }
 
     val body: JSONObject = payload.takeIf { it.isNotBlank() }?.let { JSONObject(it) } ?: JSONObject()
@@ -51,7 +48,7 @@ data class HTTPResult(
             put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
             put(SERIALIZATION_NAME_PAYLOAD, payload)
             put(SERIALIZATION_NAME_ORIGIN, origin.name)
-            put(SERIALIZATION_NAME_VERIFICATION_STATUS, verificationStatus.name)
+            put(SERIALIZATION_NAME_VERIFICATION_STATUS, verificationResult.name)
         }
         return jsonObject.toString()
     }

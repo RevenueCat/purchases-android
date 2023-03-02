@@ -5,6 +5,7 @@ import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
 import org.json.JSONObject
@@ -13,7 +14,8 @@ import java.util.Date
 internal fun JSONObject.buildEntitlementInfos(
     subscriptions: JSONObject,
     nonSubscriptionsLatestPurchases: JSONObject,
-    requestDate: Date?
+    requestDate: Date?,
+    verificationResult: VerificationResult
 ): EntitlementInfos {
     val all = mutableMapOf<String, EntitlementInfo>()
     keys().forEach { entitlementId ->
@@ -35,7 +37,7 @@ internal fun JSONObject.buildEntitlementInfos(
                 }
             }
     }
-    return EntitlementInfos(all)
+    return EntitlementInfos(all, verificationResult)
 }
 
 internal fun JSONObject.getStore(name: String) = when (getString(name)) {

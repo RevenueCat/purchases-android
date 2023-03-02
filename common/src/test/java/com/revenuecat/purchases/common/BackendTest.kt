@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.models.StoreProduct
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
@@ -45,7 +47,7 @@ private const val API_KEY = "TEST_API_KEY"
 class BackendTest {
 
     @Before
-    fun setup() = mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
+    fun setup() = mockkObject(CustomerInfoFactory)
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
@@ -154,7 +156,7 @@ class BackendTest {
 
         if (shouldMockCustomerInfo) {
             every {
-                result.body.buildCustomerInfo()
+                CustomerInfoFactory.buildCustomerInfo(result)
             } returns info
         }
         val everyMockedCall = every {
@@ -479,10 +481,13 @@ class BackendTest {
 
     @Test
     fun `gets updated subscriber after post`() {
-        val initialInfo = JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo()
-        val updatedInfo = JSONObject(Responses.validEmptyPurchaserResponse).buildCustomerInfo()
+        val verificationResult = VerificationResult.NOT_VERIFIED
+        val initialInfo = createCustomerInfo(Responses.validFullPurchaserResponse)
+        val updatedInfo = createCustomerInfo(Responses.validEmptyPurchaserResponse)
 
-        assertThat(initialInfo).isEqualTo(initialInfo.rawData.buildCustomerInfo())
+        assertThat(initialInfo).isEqualTo(
+            CustomerInfoFactory.buildCustomerInfo(initialInfo.rawData, verificationResult)
+        )
 
         mockResponse(
             Endpoint.GetCustomerInfo(appUserID),
@@ -1079,7 +1084,7 @@ class BackendTest {
             delayed = false,
             shouldMockCustomerInfo = false
         )
-        val expectedCustomerInfo = JSONObject(resultBody).buildCustomerInfo()
+        val expectedCustomerInfo = createCustomerInfo(resultBody)
 
         backend.logIn(
             appUserID,

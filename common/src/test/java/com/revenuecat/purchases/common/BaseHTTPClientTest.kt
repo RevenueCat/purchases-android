@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -78,7 +79,7 @@ abstract class BaseHTTPClientTest {
     protected fun enqueue(
         endpoint: Endpoint,
         expectedResult: HTTPResult,
-        verificationStatus: HTTPResult.VerificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+        verificationResult: VerificationResult = VerificationResult.NOT_VERIFIED
     ) {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
@@ -87,7 +88,7 @@ abstract class BaseHTTPClientTest {
                 eTagHeader = any(),
                 "/v1${endpoint.getPath()}",
                 refreshETag = false,
-                verificationStatus = verificationStatus
+                verificationResult = verificationResult
             )
         } returns expectedResult
         val response = MockResponse().setBody(expectedResult.payload).setResponseCode(expectedResult.responseCode)

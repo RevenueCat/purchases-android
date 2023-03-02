@@ -4,18 +4,20 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
@@ -100,7 +102,7 @@ class SubscriberAttributesPosterTests {
 
     @Before
     fun setup() {
-        mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
+        mockkObject(CustomerInfoFactory)
         receivedError = null
         receivedSyncedSuccessfully = null
         receivedAttributeErrors = null
@@ -421,7 +423,7 @@ class SubscriberAttributesPosterTests {
         } answers {
             createResult(responseCode, responseBody).also {
                 every {
-                    it.body.buildCustomerInfo()
+                    CustomerInfoFactory.buildCustomerInfo(it)
                 } returns mockk()
             }
         }
@@ -430,5 +432,5 @@ class SubscriberAttributesPosterTests {
     private fun createResult(
         responseCode: Int,
         responseBody: String
-    ) = HTTPResult(responseCode, responseBody, HTTPResult.Origin.BACKEND, HTTPResult.VerificationStatus.NOT_VERIFIED)
+    ) = HTTPResult(responseCode, responseBody, HTTPResult.Origin.BACKEND, VerificationResult.NOT_VERIFIED)
 }

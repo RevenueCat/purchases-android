@@ -8,6 +8,7 @@ package com.revenuecat.purchases.common
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -172,13 +173,13 @@ class HTTPClient(
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
 
-        val verificationStatus = if (shouldSignResponse && nonce != null) {
+        val verificationResult = if (shouldSignResponse && nonce != null) {
             verifyResponse(path, responseCode, connection, payload, nonce)
         } else {
-            HTTPResult.VerificationStatus.NOT_VERIFIED
+            VerificationResult.NOT_VERIFIED
         }
 
-        if (verificationStatus == HTTPResult.VerificationStatus.ERROR &&
+        if (verificationResult == VerificationResult.ERROR &&
             signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced) {
             throw SignatureVerificationException(path)
         }
@@ -189,7 +190,7 @@ class HTTPClient(
             getETagHeader(connection),
             urlPathWithVersion,
             refreshETag,
-            verificationStatus
+            verificationResult
         )
     }
 
@@ -291,7 +292,7 @@ class HTTPClient(
         connection: URLConnection,
         payload: String?,
         nonce: String
-    ): HTTPResult.VerificationStatus {
+    ): VerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
             responseCode = responseCode,

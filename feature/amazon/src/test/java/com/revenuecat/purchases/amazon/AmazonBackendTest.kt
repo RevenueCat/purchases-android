@@ -3,6 +3,7 @@ package com.revenuecat.purchases.amazon
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -65,7 +66,7 @@ class AmazonBackendTest {
         responseCode = 200,
         payload = successfulRVSResponse(),
         origin = HTTPResult.Origin.BACKEND,
-        verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+        verificationResult = VerificationResult.NOT_VERIFIED
     )
     private var unsuccessfulResult = HTTPResult(
         responseCode = 401,
@@ -76,7 +77,7 @@ class AmazonBackendTest {
                 }
             """.trimIndent(),
         origin = HTTPResult.Origin.BACKEND,
-        verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+        verificationResult = VerificationResult.NOT_VERIFIED
     )
 
     @Test

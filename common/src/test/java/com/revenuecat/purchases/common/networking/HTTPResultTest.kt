@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.networking
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.VerificationResult
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -16,7 +17,7 @@ class HTTPResultTest {
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
-            HTTPResult.VerificationStatus.SUCCESS
+            VerificationResult.SUCCESS
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
@@ -32,7 +33,7 @@ class HTTPResultTest {
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
-            HTTPResult.VerificationStatus.ERROR
+            VerificationResult.ERROR
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
@@ -48,7 +49,7 @@ class HTTPResultTest {
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.CACHE,
-            HTTPResult.VerificationStatus.NOT_VERIFIED
+            VerificationResult.NOT_VERIFIED
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +

@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
@@ -223,7 +224,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
-            verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_VERIFIED
         )
 
         assertStoredResponse(path, eTagInResponse, responsePayload)
@@ -244,7 +245,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
-            verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_VERIFIED
         )
 
         assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
@@ -267,7 +268,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
-            verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_VERIFIED
         )
 
         assertThat(result).isNull()
@@ -291,7 +292,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = true,
-            verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_VERIFIED
         )
 
         assertThat(result).isNotNull
@@ -314,7 +315,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
-            verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_VERIFIED
         )
 
         assertThat(result).isNotNull
@@ -337,7 +338,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = true,
-            verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_VERIFIED
         )
 
         assertThat(result).isNotNull
@@ -356,10 +357,10 @@ class ETagManagerTest {
             eTagHeader = "etag",
             urlPathWithVersion = "/v1/subscribers/appUserID",
             refreshETag = false,
-            verificationStatus = HTTPResult.VerificationStatus.SUCCESS
+            verificationResult = VerificationResult.SUCCESS
         )
 
-        assertThat(result?.verificationStatus).isEqualTo(HTTPResult.VerificationStatus.SUCCESS)
+        assertThat(result?.verificationResult).isEqualTo(VerificationResult.SUCCESS)
     }
 
     private fun mockCachedHTTPResult(

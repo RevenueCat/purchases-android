@@ -20,7 +20,7 @@ class EntitlementInfosTests {
 
     private var response = JSONObject()
 
-    fun stubResponse(
+    private fun stubResponse(
         entitlements: JSONObject = JSONObject(),
         nonSubscriptions: JSONObject = JSONObject(),
         subscriptions: JSONObject = JSONObject()
@@ -85,7 +85,7 @@ class EntitlementInfosTests {
             }
         )
 
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         assertThat(subscriberInfo.entitlements.all).hasSize(2)
 
         verifySubscriberInfo()
@@ -134,7 +134,7 @@ class EntitlementInfosTests {
             }
         )
 
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         assertThat(subscriberInfo.entitlements["pro_cat"]).isNotNull
         assertThat(subscriberInfo.entitlements.active["pro_cat"]).isNotNull
     }
@@ -196,9 +196,9 @@ class EntitlementInfosTests {
     @Test
     fun `empty subscriber info`() {
         stubResponse()
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
 
-        assertThat(subscriberInfo.firstSeen).isNotNull()
+        assertThat(subscriberInfo.firstSeen).isNotNull
         assertThat(subscriberInfo.originalAppUserId).isEqualTo("cesarsandbox1")
         assertThat(subscriberInfo.entitlements.all).isEmpty()
     }
@@ -970,21 +970,19 @@ class EntitlementInfosTests {
     @Test
     fun `Given two same entitlementInfos, their hashcodes are the same`() {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val x = jsonObject.buildCustomerInfo().entitlements
-        val y = jsonObject.buildCustomerInfo().entitlements
-        assertThat(x.hashCode() == y.hashCode())
+        val x = createCustomerInfo(jsonObject).entitlements
+        val y = createCustomerInfo(jsonObject).entitlements
+        assertThat(x.hashCode()).isEqualTo(y.hashCode())
     }
 
     @Test
     fun `Given two same entitlementInfo, their hashcodes are the same`() {
-        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-
-        val all = jsonObject.buildCustomerInfo().entitlements.all
+        val all = createCustomerInfo(Responses.validFullPurchaserResponse).entitlements.all
 
         val x = all.values.toTypedArray()[0]
         val y = all.values.toTypedArray()[0]
 
-        assertThat(x.hashCode() == y.hashCode())
+        assertThat(x.hashCode()).isEqualTo(y.hashCode())
     }
 
     @Test
@@ -1149,7 +1147,7 @@ class EntitlementInfosTests {
 
 
     private fun verifySubscriberInfo() {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
 
         assertThat(subscriberInfo).isNotNull
         assertThat(subscriberInfo.firstSeen).isEqualTo(Iso8601Utils.parse("2019-07-26T23:29:50Z"))
@@ -1160,7 +1158,7 @@ class EntitlementInfosTests {
         matcher: Boolean = true,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.identifier).isEqualTo(entitlement)
@@ -1175,7 +1173,7 @@ class EntitlementInfosTests {
         billingIssueDetectedAt: Date? = null,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.willRenew).isEqualTo(willRenew)
@@ -1187,7 +1185,7 @@ class EntitlementInfosTests {
         matcher: PeriodType = PeriodType.NORMAL,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.periodType).isEqualTo(matcher)
@@ -1197,7 +1195,7 @@ class EntitlementInfosTests {
         matcher: Store = Store.APP_STORE,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.store).isEqualTo(matcher)
@@ -1207,7 +1205,7 @@ class EntitlementInfosTests {
         matcher: OwnershipType = OwnershipType.PURCHASED,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.ownershipType).isEqualTo(matcher)
@@ -1217,7 +1215,7 @@ class EntitlementInfosTests {
         matcher: Boolean = false,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.isSandbox).isEqualTo(matcher)
@@ -1230,7 +1228,7 @@ class EntitlementInfosTests {
         expirationDate: Date? = Iso8601Utils.parse("2200-07-26T23:50:40Z"),
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.latestPurchaseDate).isEqualTo(latestPurchaseDate)

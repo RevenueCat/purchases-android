@@ -10,8 +10,12 @@ import kotlinx.parcelize.Parcelize
  */
 @Parcelize
 class EntitlementInfos constructor(
-    val all: Map<String, EntitlementInfo>
+    val all: Map<String, EntitlementInfo>,
+    val verification: VerificationResult
 ) : Parcelable {
+
+    @Deprecated("EntitlementInfos constructor is not meant to be used externally")
+    constructor(all: Map<String, EntitlementInfo>) : this(all, verification = VerificationResult.NOT_VERIFIED)
 
     /**
      * Dictionary of active [EntitlementInfo] objects keyed by entitlement identifier.
