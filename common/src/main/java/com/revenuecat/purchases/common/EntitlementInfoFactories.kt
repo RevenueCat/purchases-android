@@ -26,13 +26,15 @@ internal fun JSONObject.buildEntitlementInfos(
                     all[entitlementId] = entitlement.buildEntitlementInfo(
                         entitlementId,
                         subscriptions.getJSONObject(productIdentifier),
-                        requestDate
+                        requestDate,
+                        verificationResult
                     )
                 } else if (nonSubscriptionsLatestPurchases.has(productIdentifier)) {
                     all[entitlementId] = entitlement.buildEntitlementInfo(
                         entitlementId,
                         nonSubscriptionsLatestPurchases.getJSONObject(productIdentifier),
-                        requestDate
+                        requestDate,
+                        verificationResult
                     )
                 }
             }
@@ -66,7 +68,8 @@ internal fun JSONObject.optOwnershipType(name: String) = when (optString(name)) 
 internal fun JSONObject.buildEntitlementInfo(
     identifier: String,
     productData: JSONObject,
-    requestDate: Date?
+    requestDate: Date?,
+    verificationResult: VerificationResult
 ): EntitlementInfo {
     val expirationDate = optDate("expires_date")
     val unsubscribeDetectedAt = productData.optDate("unsubscribe_detected_at")
@@ -89,7 +92,8 @@ internal fun JSONObject.buildEntitlementInfo(
         unsubscribeDetectedAt = unsubscribeDetectedAt,
         billingIssueDetectedAt = billingIssueDetectedAt,
         ownershipType = productData.optOwnershipType("ownership_type"),
-        jsonObject = this
+        jsonObject = this,
+        verification = verificationResult
     )
 }
 
