@@ -55,6 +55,7 @@
     <ID>TooManyFunctions:DeviceCache.kt$DeviceCache</ID>
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
+    <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
     <ID>UnusedPrivateMember:SampleWeatherData.kt$SampleWeatherData.Companion$environment: Environment</ID>
     <ID>VarCouldBeVal:Purchases.kt$Purchases.Companion.&lt;no name provided>$var featureSupportedResultOk = features.all { billingClient.isFeatureSupported(it.playBillingClientName).isSuccessful() }</ID>

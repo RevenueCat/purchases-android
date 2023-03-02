@@ -24,6 +24,8 @@ class IdentityManager(
     val currentAppUserID: String
         get() = deviceCache.getCachedAppUserID() ?: ""
 
+    private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
+
     @Synchronized
     fun configure(appUserID: String?) {
         if (appUserID?.isBlank() == true) {
@@ -71,6 +73,7 @@ class IdentityManager(
 
                         deviceCache.cacheAppUserID(newAppUserID)
                         deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
+                        copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
                     }
                     onSuccess(customerInfo, created)
                 },
@@ -102,12 +105,20 @@ class IdentityManager(
 
     @Synchronized
     fun currentUserIsAnonymous(): Boolean {
-        val currentAppUserIDLooksAnonymous =
-            "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
-                .matches(deviceCache.getCachedAppUserID() ?: "")
+        val currentAppUserIDLooksAnonymous = isUserIDAnonymous(deviceCache.getCachedAppUserID() ?: "")
         val isLegacyAnonymousAppUserID =
             deviceCache.getCachedAppUserID() == deviceCache.getLegacyCachedAppUserID()
         return currentAppUserIDLooksAnonymous || isLegacyAnonymousAppUserID
+    }
+
+    private fun copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserId: String, newAppUserId: String) {
+        if (isUserIDAnonymous(oldAppUserId)) {
+            subscriberAttributesManager.copyUnsyncedSubscriberAttributes(oldAppUserId, newAppUserId)
+        }
+    }
+
+    private fun isUserIDAnonymous(appUserID: String): Boolean {
+        return anonymousIdRegex.matches(appUserID)
     }
 
     private fun generateRandomID(): String {

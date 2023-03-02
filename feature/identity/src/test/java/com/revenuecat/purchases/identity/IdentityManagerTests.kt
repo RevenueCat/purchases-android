@@ -13,7 +13,6 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -175,6 +174,7 @@ class IdentityManagerTests {
         var receivedCreated: Boolean? = null
         mockCachedAnonymousUser()
         mockSubscriberAttributesManagerSynchronize(newAppUserID)
+        mockSubscriberAttributesManagerCopyAttributes(stubAnonymousID, newAppUserID)
 
         identityManager.logIn(newAppUserID, { customerInfo, created ->
             receivedCustomerInfo = customerInfo
@@ -203,8 +203,9 @@ class IdentityManagerTests {
         }
         every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
         mockSubscriberAttributesManagerSynchronize(newAppUserID)
+        mockSubscriberAttributesManagerCopyAttributes(oldAppUserID, newAppUserID)
 
-        identityManager.logIn(newAppUserID, { _, _ -> }, { _ -> })
+        identityManager.logIn(newAppUserID, { _, _ -> }, { })
 
         verify(exactly = 1) { mockDeviceCache.clearCachesForAppUserID(oldAppUserID) }
         verify(exactly = 1) {
@@ -228,11 +229,55 @@ class IdentityManagerTests {
         }
         every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
         mockSubscriberAttributesManagerSynchronize(newAppUserID)
+        mockSubscriberAttributesManagerCopyAttributes(oldAppUserID, newAppUserID)
 
-        identityManager.logIn(newAppUserID, { _, _ -> }, { _ -> })
+        identityManager.logIn(newAppUserID, { _, _ -> }, { })
 
         verify(exactly = 1) { mockDeviceCache.cacheAppUserID(newAppUserID) }
         verify(exactly = 1) { mockDeviceCache.cacheCustomerInfo(newAppUserID, mockCustomerInfo) }
+    }
+
+    @Test
+    fun `login copies unsynced attributes from old user to new one if old is anonymous on successful completion`() {
+        val randomCreated: Boolean = Random.nextBoolean()
+        val mockCustomerInfo: CustomerInfo = mockk()
+        mockCachedAnonymousUser()
+        val oldAppUserID = stubAnonymousID
+        val newAppUserID = "new"
+        every {
+            mockBackend.logIn(oldAppUserID, newAppUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockCustomerInfo, randomCreated)
+        }
+        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+        mockSubscriberAttributesManagerCopyAttributes(oldAppUserID, newAppUserID)
+
+        identityManager.logIn(newAppUserID, { _, _ -> }, { })
+
+        verify(exactly = 1) {
+            mockSubscriberAttributesManager.copyUnsyncedSubscriberAttributes(stubAnonymousID, newAppUserID)
+        }
+    }
+
+    @Test
+    fun `login does not copy unsynced attributes from old user to new one if old is not anonymous`() {
+        val randomCreated: Boolean = Random.nextBoolean()
+        val mockCustomerInfo: CustomerInfo = mockk()
+        val identifiedUserID = "Waldo"
+        mockIdentifiedUser(identifiedUserID)
+        val newAppUserID = "new"
+        every {
+            mockBackend.logIn(identifiedUserID, newAppUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockCustomerInfo, randomCreated)
+        }
+        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+
+        identityManager.logIn(newAppUserID, { _, _ -> }, { })
+
+        verify(exactly = 0) { mockSubscriberAttributesManager.copyUnsyncedSubscriberAttributes(any(), any()) }
     }
 
     @Test
@@ -333,7 +378,7 @@ class IdentityManagerTests {
     fun `when configuring with an anonymous user, subscriber attributes are cleaned up`() {
         mockCleanCaches()
         identityManager.configure(null)
-        assertThat(cachedAppUserIDSlot.captured).isNotNull()
+        assertThat(cachedAppUserIDSlot.captured).isNotNull
         verify {
             mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(cachedAppUserIDSlot.captured)
         }
@@ -352,7 +397,7 @@ class IdentityManagerTests {
     fun `when configuring with an anonymous user, cache is cleaned up`() {
         mockCleanCaches()
         identityManager.configure(null)
-        assertThat(cachedAppUserIDSlot.captured).isNotNull()
+        assertThat(cachedAppUserIDSlot.captured).isNotNull
         verify {
             mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(cachedAppUserIDSlot.captured)
         }
@@ -372,6 +417,8 @@ class IdentityManagerTests {
         verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData() }
     }
 
+    // region helper functions
+
     private fun mockIdentifiedUser(identifiedUserID: String) {
         every { mockDeviceCache.getCachedAppUserID() } returns identifiedUserID
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
@@ -380,22 +427,23 @@ class IdentityManagerTests {
         every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(identifiedUserID) } just Runs
     }
 
+    @Suppress("SameParameterValue")
     private fun assertCorrectlyIdentified(expectedAppUserID: String) {
-        assertThat(cachedAppUserIDSlot.isCaptured).isTrue()
+        assertThat(cachedAppUserIDSlot.isCaptured).isTrue
         assertThat(cachedAppUserIDSlot.captured).isEqualTo(expectedAppUserID)
-        assertThat(identityManager.currentUserIsAnonymous()).isFalse()
+        assertThat(identityManager.currentUserIsAnonymous()).isFalse
     }
 
     private fun assertCorrectlyIdentifiedWithAnonymous(oldID: String? = null) {
-        assertThat(cachedAppUserIDSlot.isCaptured).isTrue()
+        assertThat(cachedAppUserIDSlot.isCaptured).isTrue
         if (oldID == null) {
             assertThat(
                 "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex().matches(cachedAppUserIDSlot.captured)
-            ).isTrue()
+            ).isTrue
         } else {
             assertThat(cachedAppUserIDSlot.captured).isEqualTo(oldID)
         }
-        assertThat(identityManager.currentUserIsAnonymous()).isTrue()
+        assertThat(identityManager.currentUserIsAnonymous()).isTrue
     }
 
     private fun mockCachedAnonymousUser() {
@@ -419,4 +467,15 @@ class IdentityManagerTests {
             lambda<() -> Unit>().captured.invoke()
         }
     }
+
+    private fun mockSubscriberAttributesManagerCopyAttributes(
+        oldAppUserId: String,
+        newAppUserId: String
+    ) {
+        every {
+            mockSubscriberAttributesManager.copyUnsyncedSubscriberAttributes(oldAppUserId, newAppUserId)
+        } just Runs
+    }
+
+    // endregion
 }
