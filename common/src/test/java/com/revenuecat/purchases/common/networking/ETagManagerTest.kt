@@ -350,7 +350,7 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `getHTTPResultFromCacheOrBackend should use verification status parameter when coming from backend`() {
+    fun `getHTTPResultFromCacheOrBackend should use verification result parameter when coming from backend`() {
         val result = underTest.getHTTPResultFromCacheOrBackend(
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = "",

@@ -43,7 +43,7 @@ class DeviceCacheTest {
     private val validCachedCustomerInfo by lazy {
         JSONObject(Responses.validFullPurchaserResponse).apply {
             put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
-            put("verification_status", VerificationResult.SUCCESS)
+            put("verification_result", VerificationResult.SUCCESS)
         }.toString()
     }
 
@@ -114,7 +114,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a valid deprecated purchaser info, the JSON is parsed correctly`() {
+    fun `given a valid purchaser info without verification result, the JSON is parsed correctly`() {
         val deprecatedValidCachedCustomerInfo by lazy {
             JSONObject(Responses.validFullPurchaserResponse).apply {
                 put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
@@ -134,6 +134,20 @@ class DeviceCacheTest {
     }
 
     @Test
+    fun `given a valid cached purchaser info, the created customer info does not have schema version information`() {
+        mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
+        val info = cache.getCachedCustomerInfo(appUserID)
+        assertThat(info?.rawData?.has("schema_version")).isFalse
+    }
+
+    @Test
+    fun `given a valid purchaser info, the created customer info does not have verification result information`() {
+        mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
+        val info = cache.getCachedCustomerInfo(appUserID)
+        assertThat(info?.rawData?.has("verification_result")).isFalse
+    }
+
+    @Test
     fun `given a purchaser info, the information is cached`() {
         val info = createCustomerInfo(Responses.validFullPurchaserResponse)
 
@@ -147,7 +161,7 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a purchaser info, the information is cached with a verification status`() {
+    fun `given a purchaser info, the information is cached with a verification result`() {
         every {
             mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), any())
         } returns mockEditor
@@ -162,8 +176,8 @@ class DeviceCacheTest {
         cache.cacheCustomerInfo(appUserID, info)
 
         val cachedJSON = JSONObject(infoJSONSlot.captured)
-        assertThat(cachedJSON.has("verification_status")).isTrue
-        assertThat(cachedJSON.getString("verification_status")).isEqualTo(VerificationResult.SUCCESS.name)
+        assertThat(cachedJSON.has("verification_result")).isTrue
+        assertThat(cachedJSON.getString("verification_result")).isEqualTo(VerificationResult.SUCCESS.name)
     }
 
     @Test

@@ -34,7 +34,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
             endpoint = endpoint,
-            expectedResult = HTTPResult.createResult(verificationStatus = VerificationResult.SUCCESS),
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.SUCCESS),
             verificationResult = VerificationResult.SUCCESS
         )
 
@@ -58,7 +58,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.PostDiagnostics
         every { mockSigningManager.shouldVerifyEndpoint(endpoint) } returns false
         val expectedResult = HTTPResult.createResult(
-            verificationStatus = VerificationResult.NOT_VERIFIED,
+            verificationResult = VerificationResult.NOT_VERIFIED,
             payload = "{\"test-key\":\"test-value\"}"
         )
 
@@ -87,7 +87,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
     fun `performRequest on informationalClient verifies response with correct parameters when there is success`() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         val expectedResult = HTTPResult.createResult(
-            verificationStatus = VerificationResult.SUCCESS,
+            verificationResult = VerificationResult.SUCCESS,
             payload = "{\"test-key\":\"test-value\"}"
         )
         val responseCode = expectedResult.responseCode
@@ -142,7 +142,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
             endpoint = endpoint,
-            expectedResult = HTTPResult.createResult(verificationStatus = VerificationResult.ERROR),
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.ERROR),
             verificationResult = VerificationResult.ERROR
         )
 
@@ -167,7 +167,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
             endpoint = endpoint,
-            expectedResult = HTTPResult.createResult(verificationStatus = VerificationResult.ERROR),
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.ERROR),
             verificationResult = VerificationResult.ERROR
         )
 
@@ -190,7 +190,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
             endpoint = endpoint,
-            expectedResult = HTTPResult.createResult(verificationStatus = VerificationResult.SUCCESS),
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.SUCCESS),
             verificationResult = VerificationResult.SUCCESS
         )
 

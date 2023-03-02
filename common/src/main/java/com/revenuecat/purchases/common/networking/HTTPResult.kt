@@ -6,7 +6,7 @@ import org.json.JSONObject
 private const val SERIALIZATION_NAME_RESPONSE_CODE = "responseCode"
 private const val SERIALIZATION_NAME_PAYLOAD = "payload"
 private const val SERIALIZATION_NAME_ORIGIN = "origin"
-private const val SERIALIZATION_NAME_VERIFICATION_STATUS = "verificationStatus"
+private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
 
 data class HTTPResult(
     val responseCode: Int,
@@ -28,8 +28,8 @@ data class HTTPResult(
             } else {
                 Origin.CACHE
             }
-            val verificationResult: VerificationResult = if (jsonObject.has(SERIALIZATION_NAME_VERIFICATION_STATUS)) {
-                VerificationResult.valueOf(jsonObject.getString(SERIALIZATION_NAME_VERIFICATION_STATUS))
+            val verificationResult: VerificationResult = if (jsonObject.has(SERIALIZATION_NAME_VERIFICATION_RESULT)) {
+                VerificationResult.valueOf(jsonObject.getString(SERIALIZATION_NAME_VERIFICATION_RESULT))
             } else {
                 VerificationResult.NOT_VERIFIED
             }
@@ -48,7 +48,7 @@ data class HTTPResult(
             put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
             put(SERIALIZATION_NAME_PAYLOAD, payload)
             put(SERIALIZATION_NAME_ORIGIN, origin.name)
-            put(SERIALIZATION_NAME_VERIFICATION_STATUS, verificationResult.name)
+            put(SERIALIZATION_NAME_VERIFICATION_RESULT, verificationResult.name)
         }
         return jsonObject.toString()
     }

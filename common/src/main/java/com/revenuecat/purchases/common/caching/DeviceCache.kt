@@ -34,7 +34,7 @@ open class DeviceCache(
 ) {
     companion object {
         private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
-        private const val CUSTOMER_INFO_VERIFICATION_STATUS_KEY = "verification_status"
+        private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
     }
 
     val legacyAppUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
@@ -103,9 +103,11 @@ open class DeviceCache(
                 try {
                     val cachedJSONObject = JSONObject(json)
                     val schemaVersion = cachedJSONObject.optInt(CUSTOMER_INFO_SCHEMA_VERSION_KEY)
-                    val verificationResultString = if (cachedJSONObject.has(CUSTOMER_INFO_VERIFICATION_STATUS_KEY)) {
-                        cachedJSONObject.getString(CUSTOMER_INFO_VERIFICATION_STATUS_KEY)
+                    val verificationResultString = if (cachedJSONObject.has(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)) {
+                        cachedJSONObject.getString(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
                     } else VerificationResult.NOT_VERIFIED.name
+                    cachedJSONObject.remove(CUSTOMER_INFO_SCHEMA_VERSION_KEY)
+                    cachedJSONObject.remove(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
                     val verificationResult = VerificationResult.valueOf(verificationResultString)
                     return if (schemaVersion == PURCHASER_INFO_SCHEMA_VERSION) {
                         CustomerInfoFactory.buildCustomerInfo(cachedJSONObject, verificationResult)
@@ -122,7 +124,7 @@ open class DeviceCache(
     fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
         val jsonObject = info.rawData.also {
             it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, PURCHASER_INFO_SCHEMA_VERSION)
-            it.put(CUSTOMER_INFO_VERIFICATION_STATUS_KEY, info.entitlements.verification.name)
+            it.put(CUSTOMER_INFO_VERIFICATION_RESULT_KEY, info.entitlements.verification.name)
         }
         preferences.edit()
             .putString(

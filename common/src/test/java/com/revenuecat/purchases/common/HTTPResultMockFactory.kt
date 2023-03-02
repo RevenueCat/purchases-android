@@ -8,5 +8,5 @@ fun HTTPResult.Companion.createResult(
     responseCode: Int = RCHTTPStatusCodes.SUCCESS,
     payload: String = "{}",
     origin: HTTPResult.Origin = HTTPResult.Origin.BACKEND,
-    verificationStatus: VerificationResult = VerificationResult.NOT_VERIFIED
-) = HTTPResult(responseCode, payload, origin, verificationStatus)
+    verificationResult: VerificationResult = VerificationResult.NOT_VERIFIED
+) = HTTPResult(responseCode, payload, origin, verificationResult)

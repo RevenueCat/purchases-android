@@ -82,68 +82,68 @@ class SigningManagerTest {
 
     @Test
     fun `verifyResponse returns NOT_VERIFIED if verification mode disabled`() {
-        val verificationStatus = callVerifyResponse(disabledSigningManager)
-        assertThat(verificationStatus).isEqualTo(VerificationResult.NOT_VERIFIED)
+        val verificationResult = callVerifyResponse(disabledSigningManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.NOT_VERIFIED)
     }
 
     @Test
     fun `verifyResponse returns error if signature is null`() {
-        val verificationStatus = callVerifyResponse(informationalSigningManager, signature = null)
-        assertThat(verificationStatus).isEqualTo(VerificationResult.ERROR)
+        val verificationResult = callVerifyResponse(informationalSigningManager, signature = null)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns error if request time is null`() {
-        val verificationStatus = callVerifyResponse(informationalSigningManager, requestTime = null)
-        assertThat(verificationStatus).isEqualTo(VerificationResult.ERROR)
+        val verificationResult = callVerifyResponse(informationalSigningManager, requestTime = null)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns error if both body and etag are null`() {
-        val verificationStatus = callVerifyResponse(informationalSigningManager, body = null, eTag = null)
-        assertThat(verificationStatus).isEqualTo(VerificationResult.ERROR)
+        val verificationResult = callVerifyResponse(informationalSigningManager, body = null, eTag = null)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns error if status code success and body is empty`() {
-        val verificationStatus = callVerifyResponse(informationalSigningManager, body = null)
-        assertThat(verificationStatus).isEqualTo(VerificationResult.ERROR)
+        val verificationResult = callVerifyResponse(informationalSigningManager, body = null)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns error if status code not modified and etag is empty`() {
-        val verificationStatus = callVerifyResponse(
+        val verificationResult = callVerifyResponse(
             informationalSigningManager,
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             eTag = null
         )
-        assertThat(verificationStatus).isEqualTo(VerificationResult.ERROR)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns success if verifier returns success for not modified `() {
         every { verifier.verify(any(), any()) } returns true
-        val verificationStatus = callVerifyResponse(
+        val verificationResult = callVerifyResponse(
             informationalSigningManager,
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             body = null,
             eTag = "test-etag"
         )
-        assertThat(verificationStatus).isEqualTo(VerificationResult.SUCCESS)
+        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
     }
 
     @Test
     fun `verifyResponse returns success if verifier returns success for given parameters`() {
         every { verifier.verify(any(), any()) } returns true
-        val verificationStatus = callVerifyResponse(informationalSigningManager)
-        assertThat(verificationStatus).isEqualTo(VerificationResult.SUCCESS)
+        val verificationResult = callVerifyResponse(informationalSigningManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
     }
 
     @Test
     fun `verifyResponse returns error if verifier returns success for given parameters`() {
         every { verifier.verify(any(), any()) } returns false
-        val verificationStatus = callVerifyResponse(informationalSigningManager)
-        assertThat(verificationStatus).isEqualTo(VerificationResult.ERROR)
+        val verificationResult = callVerifyResponse(informationalSigningManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
@@ -174,8 +174,8 @@ class SigningManagerTest {
     @Test
     fun `verifyResponse returns success for enforced mode if verifier returns success for given parameters`() {
         every { verifier.verify(any(), any()) } returns true
-        val verificationStatus = callVerifyResponse(enforcedSigningManager)
-        assertThat(verificationStatus).isEqualTo(VerificationResult.SUCCESS)
+        val verificationResult = callVerifyResponse(enforcedSigningManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
     }
 
     // endregion
