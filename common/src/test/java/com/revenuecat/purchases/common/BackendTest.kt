@@ -18,13 +18,14 @@ import com.revenuecat.purchases.utils.getNullableString
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
 import org.json.JSONArray
 import org.json.JSONObject
+import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -48,6 +49,9 @@ class BackendTest {
 
     @Before
     fun setup() = mockkObject(CustomerInfoFactory)
+
+    @After
+    fun tearDown() = unmockkObject(CustomerInfoFactory)
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")

@@ -18,11 +18,12 @@ import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkObject
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -108,6 +109,11 @@ class SubscriberAttributesPosterTests {
         receivedAttributeErrors = null
         receivedCustomerInfo = null
         receivedOnSuccess = false
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(CustomerInfoFactory)
     }
 
     // region posting attributes
