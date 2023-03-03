@@ -136,6 +136,9 @@ jobs:
       - android/save-gradle-cache
       - android/save-build-cache
       - run:
+          name: Install pip
+          command: sudo apt update && sudo apt install python3-pip
+      - run:
           name: Install awscli
           command: sudo pip install awscli
       - run:
