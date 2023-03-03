@@ -39,7 +39,7 @@ class HTTPResultTest {
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
-            "\"verificationResult\":\"ERROR\"}")
+            "\"verificationResult\":\"FAILED\"}")
         assertThat(result).isEqualTo(expectedResult)
     }
 
