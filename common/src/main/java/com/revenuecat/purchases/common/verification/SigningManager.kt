@@ -2,16 +2,22 @@ package com.revenuecat.purchases.common.verification
 
 import android.util.Base64
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.strings.NetworkStrings
 import java.security.SecureRandom
 
 class SigningManager(
-    private val signatureVerifier: SignatureVerifier
+    val signatureVerificationMode: SignatureVerificationMode
 ) {
     private companion object {
         const val NONCE_BYTES_SIZE = 12
         const val SALT_BYTES_SIZE = 16
+    }
+
+    fun shouldVerifyEndpoint(endpoint: Endpoint): Boolean {
+        return endpoint.supportsSignatureValidation && signatureVerificationMode.shouldVerify
     }
 
     fun createRandomNonce(): String {
@@ -22,26 +28,28 @@ class SigningManager(
 
     @Suppress("LongParameterList", "ReturnCount")
     fun verifyResponse(
-        requestPath: String,
+        urlPath: String,
+        responseCode: Int,
         signature: String?,
         nonce: String,
         body: String?,
         requestTime: String?,
         eTag: String?
     ): HTTPResult.VerificationStatus {
+        val signatureVerifier = signatureVerificationMode.verifier ?: return HTTPResult.VerificationStatus.NOT_VERIFIED
+
         if (signature == null) {
-            errorLog(NetworkStrings.VERIFICATION_MISSING_SIGNATURE.format(requestPath))
+            errorLog(NetworkStrings.VERIFICATION_MISSING_SIGNATURE.format(urlPath))
             return HTTPResult.VerificationStatus.ERROR
         }
         if (requestTime == null) {
-            errorLog(NetworkStrings.VERIFICATION_MISSING_REQUEST_TIME.format(requestPath))
+            errorLog(NetworkStrings.VERIFICATION_MISSING_REQUEST_TIME.format(urlPath))
             return HTTPResult.VerificationStatus.ERROR
         }
 
-        // No body means NOT_MODIFIED response. We verify the etag instead.
-        val signatureMessage = body ?: eTag
+        val signatureMessage = getSignatureMessage(responseCode, body, eTag)
         if (signatureMessage == null) {
-            errorLog(NetworkStrings.VERIFICATION_MISSING_BODY_OR_ETAG.format(requestPath))
+            errorLog(NetworkStrings.VERIFICATION_MISSING_BODY_OR_ETAG.format(urlPath))
             return HTTPResult.VerificationStatus.ERROR
         }
 
@@ -51,10 +59,16 @@ class SigningManager(
         val signatureToVerify = decodedSignature.copyOfRange(SALT_BYTES_SIZE, decodedSignature.size)
         val messageToVerify = saltBytes + decodedNonce + requestTime.toByteArray() + signatureMessage.toByteArray()
         val verificationResult = signatureVerifier.verify(signatureToVerify, messageToVerify)
+
         return if (verificationResult) {
             HTTPResult.VerificationStatus.SUCCESS
         } else {
+            errorLog(NetworkStrings.VERIFICATION_ERROR)
             HTTPResult.VerificationStatus.ERROR
         }
+    }
+
+    private fun getSignatureMessage(responseCode: Int, body: String?, eTag: String?): String? {
+        return if (responseCode == RCHTTPStatusCodes.NOT_MODIFIED) eTag else body
     }
 }

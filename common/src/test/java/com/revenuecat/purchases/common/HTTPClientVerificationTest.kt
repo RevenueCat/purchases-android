@@ -4,7 +4,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
+import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import io.mockk.every
 import io.mockk.mockk
@@ -20,23 +22,13 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
-    private lateinit var signingManager: SigningManager
-
-    private lateinit var informationalVerificationClient: HTTPClient
-    private lateinit var enforcedVerificationClient: HTTPClient
-
     @Before
     fun setupClient() {
-        signingManager = mockk()
-        every { signingManager.createRandomNonce() } returns "test-nonce"
-        informationalVerificationClient = createClient(
-            signingManagerIfEnabled = signingManager,
-            verificationMode = EntitlementVerificationMode.INFORMATIONAL
-        )
-        enforcedVerificationClient = createClient(
-            signingManagerIfEnabled = signingManager,
-            verificationMode = EntitlementVerificationMode.ENFORCED
-        )
+        mockSigningManager = mockk()
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Informational>()
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns true
+        every { mockSigningManager.createRandomNonce() } returns "test-nonce"
+        client = createClient()
     }
 
     @Test
@@ -49,10 +41,10 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            signingManager.verifyResponse(any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
         } returns HTTPResult.VerificationStatus.SUCCESS
 
-        informationalVerificationClient.performRequest(
+        client.performRequest(
             baseURL,
             endpoint,
             body = null,
@@ -64,20 +56,51 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `performRequest does not verify response on unsupported endpoints`() {
+        val endpoint = Endpoint.PostDiagnostics
+        every { mockSigningManager.shouldVerifyEndpoint(endpoint) } returns false
+        val expectedResult = HTTPResult.createResult(
+            verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED,
+            payload = "{\"test-key\":\"test-value\"}"
+        )
+
+        enqueue(
+            endpoint = endpoint,
+            expectedResult = expectedResult,
+            verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+        )
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            requestHeaders = emptyMap()
+        )
+
+        server.takeRequest()
+
+        assertThat(result.verificationStatus).isEqualTo(HTTPResult.VerificationStatus.NOT_VERIFIED)
+        verify(exactly = 0) {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
     fun `performRequest on informationalClient verifies response with correct parameters when there is success`() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         val expectedResult = HTTPResult.createResult(
             verificationStatus = HTTPResult.VerificationStatus.SUCCESS,
             payload = "{\"test-key\":\"test-value\"}"
         )
+        val responseCode = expectedResult.responseCode
 
         every {
-            signingManager.verifyResponse(any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
         } returns HTTPResult.VerificationStatus.SUCCESS
 
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
-                expectedResult.responseCode,
+                responseCode,
                 expectedResult.payload,
                 eTagHeader = any(),
                 "/v1${endpoint.getPath()}",
@@ -87,13 +110,13 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         } returns expectedResult
         val response = MockResponse()
             .setBody(expectedResult.payload)
-            .setResponseCode(expectedResult.responseCode)
+            .setResponseCode(responseCode)
             .setHeader(HTTPResult.SIGNATURE_HEADER_NAME, "test-signature")
             .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, 1234567890L)
             .setHeader(HTTPResult.ETAG_HEADER_NAME, "test-etag")
         server.enqueue(response)
 
-        val result = informationalVerificationClient.performRequest(
+        val result = client.performRequest(
             baseURL,
             endpoint,
             body = null,
@@ -104,8 +127,9 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(result.verificationStatus).isEqualTo(HTTPResult.VerificationStatus.SUCCESS)
         verify(exactly = 1) {
-            signingManager.verifyResponse(
+            mockSigningManager.verifyResponse(
                 endpoint.getPath(),
+                responseCode,
                 "test-signature",
                 "test-nonce",
                 "{\"test-key\":\"test-value\"}",
@@ -125,10 +149,10 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            signingManager.verifyResponse(any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
         } returns HTTPResult.VerificationStatus.ERROR
 
-        val result = informationalVerificationClient.performRequest(
+        val result = client.performRequest(
             baseURL,
             endpoint,
             body = null,
@@ -141,6 +165,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     @Test(expected = SignatureVerificationException::class)
     fun `performRequest on enforced client throws verification error`() {
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
             endpoint = endpoint,
@@ -149,10 +174,10 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            signingManager.verifyResponse(any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
         } returns HTTPResult.VerificationStatus.ERROR
 
-        enforcedVerificationClient.performRequest(
+        client.performRequest(
             baseURL,
             endpoint,
             body = null,
@@ -162,6 +187,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         server.takeRequest()
     }
 
+    @Test
     fun `performRequest on enforced client does not throw if verification success`() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
@@ -171,10 +197,10 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            signingManager.verifyResponse(any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
         } returns HTTPResult.VerificationStatus.SUCCESS
 
-        val result = enforcedVerificationClient.performRequest(
+        val result = client.performRequest(
             baseURL,
             endpoint,
             body = null,
