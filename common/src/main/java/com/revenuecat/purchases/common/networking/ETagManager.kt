@@ -119,7 +119,7 @@ class ETagManager(
         val responseCode = resultFromBackend.responseCode
         return responseCode != RCHTTPStatusCodes.NOT_MODIFIED &&
             responseCode < RCHTTPStatusCodes.ERROR &&
-            resultFromBackend.verificationStatus != HTTPResult.VerificationStatus.ERROR
+            resultFromBackend.verificationResult != VerificationResult.ERROR
     }
 
     companion object {

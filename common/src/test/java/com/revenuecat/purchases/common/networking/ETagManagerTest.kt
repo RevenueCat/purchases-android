@@ -159,7 +159,7 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult.createResult(
-            verificationStatus = HTTPResult.VerificationStatus.ERROR,
+            verificationResult = VerificationResult.ERROR,
             payload = Responses.validEmptyPurchaserResponse
         )
 
@@ -175,7 +175,7 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult.createResult(
-            verificationStatus = HTTPResult.VerificationStatus.SUCCESS,
+            verificationResult = VerificationResult.SUCCESS,
             payload = Responses.validEmptyPurchaserResponse
         )
         val resultStored = resultFromBackend.copy(

@@ -149,8 +149,8 @@ class SigningManagerTest {
     @Test
     fun `verifyResponse with real data verifies correctly`() {
         val signingManager = SigningManager(SignatureVerificationMode.Informational(DefaultSignatureVerifier()))
-        val verificationStatus = callVerifyResponse(signingManager)
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.SUCCESS)
+        val verificationResult = callVerifyResponse(signingManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
     }
 
     @Suppress("MaxLineLength")
@@ -159,16 +159,16 @@ class SigningManagerTest {
         val signingManager = SigningManager(SignatureVerificationMode.Informational(DefaultSignatureVerifier()))
         assertThat(
             callVerifyResponse(signingManager, requestTime = "1677005916011") // Wrong request time
-        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        ).isEqualTo(VerificationResult.ERROR)
         assertThat(
             callVerifyResponse(signingManager, signature = "2bm3QppRywK5ULyCRLS5JJy9sq+84IkMk0Ue4LsywEp87t0tDObpzPlu30l4Desq9X65UFuosqwCLMizruDHbKvPqQLce1hrIuZpgic+cQ8=") // Wrong signature
-        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        ).isEqualTo(VerificationResult.ERROR)
         assertThat(
             callVerifyResponse(signingManager, nonce = "MTIzNDU2Nzg5MGFj") // Wrong nonce
-        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        ).isEqualTo(VerificationResult.ERROR)
         assertThat(
             callVerifyResponse(signingManager, body = "{\"request_date\":\"2023-02-21T18:58:37Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n") // Wrong body
-        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        ).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
