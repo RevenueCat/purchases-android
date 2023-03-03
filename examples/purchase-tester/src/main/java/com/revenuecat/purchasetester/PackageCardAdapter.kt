@@ -42,7 +42,7 @@ class PackageCardAdapter(
             val product = currentPackage.product
             binding.currentPackage = currentPackage
             binding.isSubscription = product.type == ProductType.SUBS
-            binding.isActive = activeSubscriptions.contains(product.productId)
+            binding.isActive = activeSubscriptions.contains(product.id)
 
             binding.packageBuyButton.setOnClickListener {
                 listener.onPurchasePackageClicked(
@@ -95,9 +95,9 @@ class PackageCardAdapter(
 
         private fun bindSubscriptionOptions(product: StoreProduct) {
             binding.packageSubscriptionOptionGroup.removeAllViews()
-            val numberOfSubscriptionOptions = product.subscriptionOptions.size
+            val numberOfSubscriptionOptions = product.subscriptionOptions?.size ?: 0
             val defaultOption = product.defaultOption
-            product.subscriptionOptions.forEach { subscriptionOption ->
+            product.subscriptionOptions?.forEach { subscriptionOption ->
                 val radioButton = RadioButton(binding.root.context).apply {
                     text = subscriptionOption.toButtonString(subscriptionOption == defaultOption)
                     tag = subscriptionOption

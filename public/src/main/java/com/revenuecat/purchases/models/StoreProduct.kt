@@ -9,9 +9,13 @@ import kotlinx.parcelize.IgnoredOnParcel
  */
 interface StoreProduct : Parcelable {
     /**
-     * The product ID
+     * The product ID.
+     * Google INAPP: "<productId>"
+     * Google Sub: "<productId:basePlanID>"
+     * Amazon INAPP: "<sku>"
+     * Amazon Sub: "<termSku>"
      */
-    val productId: String
+    val id: String
 
     /**
      * Type of product. One of [ProductType].
@@ -28,6 +32,11 @@ interface StoreProduct : Parcelable {
 
     /**
      * Title of the product.
+     *
+     * If you are using Google subscriptions with multiple base plans, this title
+     * will be the same for every subscription duration (monthly, yearly, etc) as
+     * base plans don't have their own titles. Google suggests using the duration
+     * as a way to title base plans.
      */
     val title: String
 
@@ -37,18 +46,16 @@ interface StoreProduct : Parcelable {
     val description: String
 
     /**
-     * Subscription period, specified in ISO 8601 format. For example, P1W equates to one week,
-     * P1M equates to one month, P3M equates to three months, P6M equates to six months,
-     * and P1Y equates to one year.
+     * Subscription period.
      *
      * Note: Returned only for Google subscriptions. Null for Amazon or for INAPP products.
      */
-    val subscriptionPeriod: String?
+    val period: Period?
 
     /**
-     * List of SubscriptionOptions. Empty list for INAPP products.
+     * Contains all [SubscriptionOption]s. Null for Amazon or for INAPP products.
      */
-    val subscriptionOptions: List<SubscriptionOption>
+    val subscriptionOptions: SubscriptionOptions?
 
     /**
      * The default [SubscriptionOption] that will be used when purchasing and not specifying a different option.
@@ -64,8 +71,8 @@ interface StoreProduct : Parcelable {
      */
     @IgnoredOnParcel
     @Deprecated(
-        "Replaced with productId",
-        ReplaceWith("productId")
+        "Replaced with id",
+        ReplaceWith("id")
     )
     val sku: String
 }

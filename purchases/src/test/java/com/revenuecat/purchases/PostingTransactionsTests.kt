@@ -177,7 +177,7 @@ class PostingTransactionsTests {
             onError = { _, _ -> }
         )
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.duration).isEqualTo(mockStoreProduct.subscriptionPeriod)
+        assertThat(postedReceiptInfoSlot.captured.duration).isEqualTo(mockStoreProduct.period?.iso8601)
     }
 
     @Test

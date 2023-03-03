@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.PurchaseStrings
 
 // In-apps don't have base plan nor offers
@@ -15,21 +16,28 @@ fun ProductDetails.toInAppStoreProduct(): StoreProduct? = this.toStoreProduct(em
 fun ProductDetails.toStoreProduct(
     offerDetails: List<ProductDetails.SubscriptionOfferDetails>
 ): GoogleStoreProduct? {
-    val subscriptionOptions = offerDetails.map { it.toSubscriptionOption(productId, this) }
-    val defaultOffer = subscriptionOptions.findDefaultOffer()
+    val subscriptionOptions = if (productType.toRevenueCatProductType() == ProductType.SUBS) {
+        SubscriptionOptions(
+            offerDetails.map { it.toSubscriptionOption(productId, this) }
+        )
+    } else {
+        null
+    }
 
-    val basePlanPrice = subscriptionOptions.firstOrNull { it.isBasePlan }?.fullPricePhase?.price
+    val basePlan = subscriptionOptions?.basePlan
+    val basePlanPrice = basePlan?.fullPricePhase?.price
     val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
 
     return GoogleStoreProduct(
         productId,
+        basePlan?.id,
         productType.toRevenueCatProductType(),
         price,
         title,
         description,
-        offerDetails.firstOrNull { it.isBasePlan }?.subscriptionBillingPeriod,
+        basePlan?.billingPeriod,
         subscriptionOptions,
-        defaultOffer,
+        subscriptionOptions?.defaultOffer,
         this
     )
 }
@@ -52,15 +60,14 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     forEach { productDetails ->
         val basePlans = productDetails.subscriptionOfferDetails?.filter { it.isBasePlan } ?: emptyList()
 
-        val offerDetailsBySubPeriod = productDetails.subscriptionOfferDetails?.groupBy {
-            it.subscriptionBillingPeriod
+        val offerDetailsByBasePlanId = productDetails.subscriptionOfferDetails?.groupBy {
+            it.basePlanId
         } ?: emptyMap()
 
         // Maps basePlans to StoreProducts, if any
         // Otherwise, maps productDetail to StoreProduct
         basePlans.takeUnless { it.isEmpty() }?.forEach { basePlan ->
-            val basePlanBillingPeriod = basePlan.subscriptionBillingPeriod
-            val offerDetailsForBasePlan = offerDetailsBySubPeriod[basePlanBillingPeriod] ?: emptyList()
+            val offerDetailsForBasePlan = offerDetailsByBasePlanId[basePlan.basePlanId] ?: emptyList()
 
             productDetails.toStoreProduct(offerDetailsForBasePlan)?.let {
                 storeProducts.add(it)
