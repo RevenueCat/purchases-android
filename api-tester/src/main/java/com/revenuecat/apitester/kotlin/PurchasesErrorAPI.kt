@@ -38,7 +38,8 @@ private class PurchasesErrorAPI {
             PurchasesErrorCode.ConfigurationError,
             PurchasesErrorCode.UnsupportedError,
             PurchasesErrorCode.EmptySubscriberAttributesError,
-            PurchasesErrorCode.CustomerInfoError
+            PurchasesErrorCode.CustomerInfoError,
+            PurchasesErrorCode.SignatureVerificationError
             -> {}
         }.exhaustive
     }

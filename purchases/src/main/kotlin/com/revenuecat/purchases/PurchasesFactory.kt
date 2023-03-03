@@ -20,6 +20,9 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.verification.DefaultSignatureVerifier
+import com.revenuecat.purchases.common.verification.SigningManager
+import com.revenuecat.purchases.common.verification.shouldVerify
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
@@ -71,12 +74,18 @@ internal class PurchasesFactory(
                 )
             }
 
+            val signingManager = if (verificationMode.shouldVerify) {
+                SigningManager(DefaultSignatureVerifier())
+            } else {
+                null
+            }
+
             val backend = Backend(
                 apiKey,
                 appConfig,
                 dispatcher,
                 diagnosticsDispatcher,
-                HTTPClient(appConfig, eTagManager, diagnosticsTracker)
+                HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager, verificationMode)
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 

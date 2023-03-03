@@ -28,4 +28,17 @@ sealed class Endpoint(val pathTemplate: String, val name: String) {
         ) : Endpoint("/receipts/amazon/%s/%s", "get_amazon_receipt") {
         override fun getPath() = pathTemplate.format(Uri.encode(userId), receiptId)
     }
+
+    val supportsSignatureValidation: Boolean
+        get() = when (this) {
+            is GetCustomerInfo,
+            LogIn,
+            PostReceipt ->
+                true
+            is GetAmazonReceipt,
+            is GetOfferings,
+            is PostAttributes,
+            PostDiagnostics ->
+                false
+        }
 }
