@@ -10,6 +10,7 @@ dependencies {
     implementation project(":strings")
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.core:core-ktx:$androidxCoreVersion"
+    implementation "com.google.crypto.tink:tink-android:$tinkVersion"
     latestDependenciesImplementation "com.android.billingclient:billing:$billing4Version"
     unityIAPCompileOnly "com.android.billingclient:billing:$billing4Version"
     testImplementation project(":test-utils")
