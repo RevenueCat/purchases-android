@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -33,6 +34,8 @@ class HTTPClientTest: BaseHTTPClientTest() {
 
     @Before
     fun setupClient() {
+        mockSigningManager = mockk()
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
         client = createClient()
     }
 
