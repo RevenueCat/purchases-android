@@ -9,7 +9,7 @@ private class VerificationResultAPI {
         when (verificationResult) {
             VerificationResult.NOT_REQUESTED,
             VerificationResult.SUCCESS,
-            VerificationResult.ERROR
+            VerificationResult.FAILED
             -> {}
         }.exhaustive
     }

@@ -159,7 +159,7 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult.createResult(
-            verificationResult = VerificationResult.ERROR,
+            verificationResult = VerificationResult.FAILED,
             payload = Responses.validEmptyPurchaserResponse
         )
 

@@ -179,7 +179,7 @@ class HTTPClient(
             VerificationResult.NOT_REQUESTED
         }
 
-        if (verificationResult == VerificationResult.ERROR &&
+        if (verificationResult == VerificationResult.FAILED &&
             signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced) {
             throw SignatureVerificationException(path)
         }

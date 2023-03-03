@@ -8,7 +8,7 @@ final class VerificationResultAPI {
         switch (verificationResult) {
             case NOT_REQUESTED:
             case SUCCESS:
-            case ERROR:
+            case FAILED:
         }
     }
 }

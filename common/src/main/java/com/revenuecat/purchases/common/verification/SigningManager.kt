@@ -40,17 +40,17 @@ class SigningManager(
 
         if (signature == null) {
             errorLog(NetworkStrings.VERIFICATION_MISSING_SIGNATURE.format(urlPath))
-            return VerificationResult.ERROR
+            return VerificationResult.FAILED
         }
         if (requestTime == null) {
             errorLog(NetworkStrings.VERIFICATION_MISSING_REQUEST_TIME.format(urlPath))
-            return VerificationResult.ERROR
+            return VerificationResult.FAILED
         }
 
         val signatureMessage = getSignatureMessage(responseCode, body, eTag)
         if (signatureMessage == null) {
             errorLog(NetworkStrings.VERIFICATION_MISSING_BODY_OR_ETAG.format(urlPath))
-            return VerificationResult.ERROR
+            return VerificationResult.FAILED
         }
 
         val decodedNonce = Base64.decode(nonce, Base64.DEFAULT)
@@ -64,7 +64,7 @@ class SigningManager(
             VerificationResult.SUCCESS
         } else {
             errorLog(NetworkStrings.VERIFICATION_ERROR)
-            VerificationResult.ERROR
+            VerificationResult.FAILED
         }
     }
 

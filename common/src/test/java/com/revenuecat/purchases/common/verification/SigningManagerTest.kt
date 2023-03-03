@@ -89,25 +89,25 @@ class SigningManagerTest {
     @Test
     fun `verifyResponse returns error if signature is null`() {
         val verificationResult = callVerifyResponse(informationalSigningManager, signature = null)
-        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
+        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test
     fun `verifyResponse returns error if request time is null`() {
         val verificationResult = callVerifyResponse(informationalSigningManager, requestTime = null)
-        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
+        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test
     fun `verifyResponse returns error if both body and etag are null`() {
         val verificationResult = callVerifyResponse(informationalSigningManager, body = null, eTag = null)
-        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
+        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test
     fun `verifyResponse returns error if status code success and body is empty`() {
         val verificationResult = callVerifyResponse(informationalSigningManager, body = null)
-        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
+        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test
@@ -117,7 +117,7 @@ class SigningManagerTest {
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             eTag = null
         )
-        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
+        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test
@@ -143,7 +143,7 @@ class SigningManagerTest {
     fun `verifyResponse returns error if verifier returns success for given parameters`() {
         every { verifier.verify(any(), any()) } returns false
         val verificationResult = callVerifyResponse(informationalSigningManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
+        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test
@@ -159,16 +159,16 @@ class SigningManagerTest {
         val signingManager = SigningManager(SignatureVerificationMode.Informational(DefaultSignatureVerifier()))
         assertThat(
             callVerifyResponse(signingManager, requestTime = "1677005916011") // Wrong request time
-        ).isEqualTo(VerificationResult.ERROR)
+        ).isEqualTo(VerificationResult.FAILED)
         assertThat(
             callVerifyResponse(signingManager, signature = "2bm3QppRywK5ULyCRLS5JJy9sq+84IkMk0Ue4LsywEp87t0tDObpzPlu30l4Desq9X65UFuosqwCLMizruDHbKvPqQLce1hrIuZpgic+cQ8=") // Wrong signature
-        ).isEqualTo(VerificationResult.ERROR)
+        ).isEqualTo(VerificationResult.FAILED)
         assertThat(
             callVerifyResponse(signingManager, nonce = "MTIzNDU2Nzg5MGFj") // Wrong nonce
-        ).isEqualTo(VerificationResult.ERROR)
+        ).isEqualTo(VerificationResult.FAILED)
         assertThat(
             callVerifyResponse(signingManager, body = "{\"request_date\":\"2023-02-21T18:58:37Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n") // Wrong body
-        ).isEqualTo(VerificationResult.ERROR)
+        ).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test

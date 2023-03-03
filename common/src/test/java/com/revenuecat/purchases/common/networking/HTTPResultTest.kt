@@ -33,7 +33,7 @@ class HTTPResultTest {
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
-            VerificationResult.ERROR
+            VerificationResult.FAILED
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +

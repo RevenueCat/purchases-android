@@ -28,5 +28,5 @@ enum class VerificationResult {
     /**
      * Entitlement verification failed, possibly due to a MiTM attack.
      */
-    ERROR
+    FAILED
 }
