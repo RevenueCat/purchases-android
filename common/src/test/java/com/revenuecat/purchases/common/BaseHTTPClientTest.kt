@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
-import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
@@ -22,6 +21,8 @@ abstract class BaseHTTPClientTest {
 
     protected lateinit var server: MockWebServer
     protected lateinit var baseURL: URL
+
+    protected lateinit var mockSigningManager: SigningManager
 
     @Before
     fun setup() {
@@ -49,14 +50,12 @@ abstract class BaseHTTPClientTest {
         diagnosticsTracker: DiagnosticsTracker? = null,
         dateProvider: DateProvider = DefaultDateProvider(),
         eTagManager: ETagManager = mockETagManager,
-        signingManagerIfEnabled: SigningManager? = null,
-        verificationMode: EntitlementVerificationMode = EntitlementVerificationMode.DISABLED,
+        signingManager: SigningManager? = null
     ) = HTTPClient(
         appConfig,
         eTagManager,
         diagnosticsTracker,
-        signingManagerIfEnabled,
-        verificationMode,
+        signingManager ?: mockSigningManager,
         dateProvider
     )
 

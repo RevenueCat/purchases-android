@@ -7,7 +7,6 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
-import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
@@ -16,8 +15,8 @@ import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
+import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
-import com.revenuecat.purchases.common.verification.shouldVerify
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
@@ -40,8 +39,7 @@ class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-    private val signingManagerIfEnabled: SigningManager?,
-    private val entitlementVerificationMode: EntitlementVerificationMode,
+    private val signingManager: SigningManager,
     private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -141,12 +139,12 @@ class HTTPClient(
         val path = endpoint.getPath()
         val urlPathWithVersion = "/v1$path"
         val connection: HttpURLConnection
-        val shouldSignResponse = shouldSignResponse(endpoint)
+        val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val nonce: String?
         try {
             val fullURL = URL(baseURL, urlPathWithVersion)
 
-            nonce = if (shouldSignResponse) signingManagerIfEnabled?.createRandomNonce() else null
+            nonce = if (shouldSignResponse) signingManager.createRandomNonce() else null
             val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, nonce)
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
@@ -175,13 +173,13 @@ class HTTPClient(
         }
 
         val verificationStatus = if (shouldSignResponse && nonce != null) {
-            verifyResponse(path, connection, payload, nonce)
+            verifyResponse(path, responseCode, connection, payload, nonce)
         } else {
             HTTPResult.VerificationStatus.NOT_VERIFIED
         }
 
         if (verificationStatus == HTTPResult.VerificationStatus.ERROR &&
-            entitlementVerificationMode == EntitlementVerificationMode.ENFORCED) {
+            signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced) {
             throw SignatureVerificationException(path)
         }
 
@@ -287,24 +285,22 @@ class HTTPClient(
         else -> "android"
     }
 
-    private fun shouldSignResponse(endpoint: Endpoint): Boolean {
-        return endpoint.supportsSignatureValidation && entitlementVerificationMode.shouldVerify
-    }
-
     private fun verifyResponse(
         urlPath: String,
+        responseCode: Int,
         connection: URLConnection,
         payload: String?,
         nonce: String
     ): HTTPResult.VerificationStatus {
-        return signingManagerIfEnabled?.verifyResponse(
-            requestPath = urlPath,
+        return signingManager.verifyResponse(
+            urlPath = urlPath,
+            responseCode = responseCode,
             signature = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
             body = payload,
             requestTime = connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME),
             eTag = getETagHeader(connection),
-        ) ?: HTTPResult.VerificationStatus.NOT_VERIFIED
+        )
     }
 
     private fun getETagHeader(connection: URLConnection) = connection.getHeaderField(HTTPResult.ETAG_HEADER_NAME)
