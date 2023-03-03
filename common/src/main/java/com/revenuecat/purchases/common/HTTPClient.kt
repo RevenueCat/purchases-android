@@ -173,7 +173,10 @@ class HTTPClient(
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
 
-        val verificationResult = if (shouldSignResponse && nonce != null) {
+        val verificationResult = if (shouldSignResponse &&
+            nonce != null &&
+            RCHTTPStatusCodes.isSuccessful(responseCode)
+        ) {
             verifyResponse(path, responseCode, connection, payload, nonce)
         } else {
             VerificationResult.NOT_VERIFIED
