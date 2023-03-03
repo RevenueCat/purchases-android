@@ -5,6 +5,7 @@ import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
 import org.json.JSONObject
@@ -13,7 +14,8 @@ import java.util.Date
 internal fun JSONObject.buildEntitlementInfos(
     subscriptions: JSONObject,
     nonSubscriptionsLatestPurchases: JSONObject,
-    requestDate: Date?
+    requestDate: Date?,
+    verificationResult: VerificationResult
 ): EntitlementInfos {
     val all = mutableMapOf<String, EntitlementInfo>()
     keys().forEach { entitlementId ->
@@ -24,18 +26,20 @@ internal fun JSONObject.buildEntitlementInfos(
                     all[entitlementId] = entitlement.buildEntitlementInfo(
                         entitlementId,
                         subscriptions.getJSONObject(productIdentifier),
-                        requestDate
+                        requestDate,
+                        verificationResult
                     )
                 } else if (nonSubscriptionsLatestPurchases.has(productIdentifier)) {
                     all[entitlementId] = entitlement.buildEntitlementInfo(
                         entitlementId,
                         nonSubscriptionsLatestPurchases.getJSONObject(productIdentifier),
-                        requestDate
+                        requestDate,
+                        verificationResult
                     )
                 }
             }
     }
-    return EntitlementInfos(all)
+    return EntitlementInfos(all, verificationResult)
 }
 
 internal fun JSONObject.getStore(name: String) = when (getString(name)) {
@@ -64,7 +68,8 @@ internal fun JSONObject.optOwnershipType(name: String) = when (optString(name)) 
 internal fun JSONObject.buildEntitlementInfo(
     identifier: String,
     productData: JSONObject,
-    requestDate: Date?
+    requestDate: Date?,
+    verificationResult: VerificationResult
 ): EntitlementInfo {
     val expirationDate = optDate("expires_date")
     val unsubscribeDetectedAt = productData.optDate("unsubscribe_detected_at")
@@ -87,7 +92,8 @@ internal fun JSONObject.buildEntitlementInfo(
         unsubscribeDetectedAt = unsubscribeDetectedAt,
         billingIssueDetectedAt = billingIssueDetectedAt,
         ownershipType = productData.optOwnershipType("ownership_type"),
-        jsonObject = this
+        jsonObject = this,
+        verification = verificationResult
     )
 }
 

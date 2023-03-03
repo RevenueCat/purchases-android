@@ -8,10 +8,11 @@ package com.revenuecat.purchases.common.caching
 import android.content.SharedPreferences
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.StoreTransaction
@@ -31,6 +32,11 @@ open class DeviceCache(
     private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(),
     private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
+    companion object {
+        private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
+        private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
+    }
+
     val legacyAppUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
     val appUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
@@ -96,9 +102,15 @@ open class DeviceCache(
             ?.let { json ->
                 try {
                     val cachedJSONObject = JSONObject(json)
-                    val schemaVersion = cachedJSONObject.optInt("schema_version")
+                    val schemaVersion = cachedJSONObject.optInt(CUSTOMER_INFO_SCHEMA_VERSION_KEY)
+                    val verificationResultString = if (cachedJSONObject.has(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)) {
+                        cachedJSONObject.getString(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
+                    } else VerificationResult.NOT_VERIFIED.name
+                    cachedJSONObject.remove(CUSTOMER_INFO_SCHEMA_VERSION_KEY)
+                    cachedJSONObject.remove(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
+                    val verificationResult = VerificationResult.valueOf(verificationResultString)
                     return if (schemaVersion == PURCHASER_INFO_SCHEMA_VERSION) {
-                        cachedJSONObject.buildCustomerInfo()
+                        CustomerInfoFactory.buildCustomerInfo(cachedJSONObject, verificationResult)
                     } else {
                         null
                     }
@@ -110,8 +122,9 @@ open class DeviceCache(
 
     @Synchronized
     fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
-        val jsonObject = info.jsonObject.also {
-            it.put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
+        val jsonObject = info.rawData.also {
+            it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, PURCHASER_INFO_SCHEMA_VERSION)
+            it.put(CUSTOMER_INFO_VERIFICATION_RESULT_KEY, info.entitlements.verification.name)
         }
         preferences.edit()
             .putString(

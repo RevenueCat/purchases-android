@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -50,9 +51,9 @@ class ETagManager(
         eTagHeader: String?,
         urlPathWithVersion: String,
         refreshETag: Boolean,
-        verificationStatus: HTTPResult.VerificationStatus
+        verificationResult: VerificationResult
     ): HTTPResult? {
-        val resultFromBackend = HTTPResult(responseCode, payload, HTTPResult.Origin.BACKEND, verificationStatus)
+        val resultFromBackend = HTTPResult(responseCode, payload, HTTPResult.Origin.BACKEND, verificationResult)
         eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
                 val storedResult = getStoredResult(urlPathWithVersion)
@@ -118,7 +119,7 @@ class ETagManager(
         val responseCode = resultFromBackend.responseCode
         return responseCode != RCHTTPStatusCodes.NOT_MODIFIED &&
             responseCode < RCHTTPStatusCodes.ERROR &&
-            resultFromBackend.verificationStatus != HTTPResult.VerificationStatus.ERROR
+            resultFromBackend.verificationResult != VerificationResult.ERROR
     }
 
     companion object {

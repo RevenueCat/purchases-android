@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.networking
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.VerificationResult
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -16,13 +17,13 @@ class HTTPResultTest {
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
-            HTTPResult.VerificationStatus.SUCCESS
+            VerificationResult.SUCCESS
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
-            "\"verificationStatus\":\"SUCCESS\"}"
+            "\"verificationResult\":\"SUCCESS\"}"
         )
     }
 
@@ -32,23 +33,23 @@ class HTTPResultTest {
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
-            HTTPResult.VerificationStatus.ERROR
+            VerificationResult.ERROR
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
-            "\"verificationStatus\":\"ERROR\"}")
+            "\"verificationResult\":\"ERROR\"}")
         assertThat(result).isEqualTo(expectedResult)
     }
 
     @Test
-    fun `result defaults to CACHE origin and NOT_VERIFIED verification status if not part of serialized string`() {
+    fun `result defaults to CACHE origin and NOT_VERIFIED verification result if not part of serialized string`() {
         val expectedResult = HTTPResult(
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.CACHE,
-            HTTPResult.VerificationStatus.NOT_VERIFIED
+            VerificationResult.NOT_VERIFIED
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +

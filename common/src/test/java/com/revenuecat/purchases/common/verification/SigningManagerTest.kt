@@ -2,8 +2,8 @@ package com.revenuecat.purchases.common.verification
 
 import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
-import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import io.mockk.every
 import io.mockk.mockk
@@ -82,75 +82,75 @@ class SigningManagerTest {
 
     @Test
     fun `verifyResponse returns NOT_VERIFIED if verification mode disabled`() {
-        val verificationStatus = callVerifyResponse(disabledSigningManager)
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.NOT_VERIFIED)
+        val verificationResult = callVerifyResponse(disabledSigningManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.NOT_VERIFIED)
     }
 
     @Test
     fun `verifyResponse returns error if signature is null`() {
-        val verificationStatus = callVerifyResponse(informationalSigningManager, signature = null)
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        val verificationResult = callVerifyResponse(informationalSigningManager, signature = null)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns error if request time is null`() {
-        val verificationStatus = callVerifyResponse(informationalSigningManager, requestTime = null)
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        val verificationResult = callVerifyResponse(informationalSigningManager, requestTime = null)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns error if both body and etag are null`() {
-        val verificationStatus = callVerifyResponse(informationalSigningManager, body = null, eTag = null)
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        val verificationResult = callVerifyResponse(informationalSigningManager, body = null, eTag = null)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns error if status code success and body is empty`() {
-        val verificationStatus = callVerifyResponse(informationalSigningManager, body = null)
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        val verificationResult = callVerifyResponse(informationalSigningManager, body = null)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns error if status code not modified and etag is empty`() {
-        val verificationStatus = callVerifyResponse(
+        val verificationResult = callVerifyResponse(
             informationalSigningManager,
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             eTag = null
         )
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns success if verifier returns success for not modified `() {
         every { verifier.verify(any(), any()) } returns true
-        val verificationStatus = callVerifyResponse(
+        val verificationResult = callVerifyResponse(
             informationalSigningManager,
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             body = null,
             eTag = "test-etag"
         )
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.SUCCESS)
+        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
     }
 
     @Test
     fun `verifyResponse returns success if verifier returns success for given parameters`() {
         every { verifier.verify(any(), any()) } returns true
-        val verificationStatus = callVerifyResponse(informationalSigningManager)
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.SUCCESS)
+        val verificationResult = callVerifyResponse(informationalSigningManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
     }
 
     @Test
     fun `verifyResponse returns error if verifier returns success for given parameters`() {
         every { verifier.verify(any(), any()) } returns false
-        val verificationStatus = callVerifyResponse(informationalSigningManager)
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        val verificationResult = callVerifyResponse(informationalSigningManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse with real data verifies correctly`() {
         val signingManager = SigningManager(SignatureVerificationMode.Informational(DefaultSignatureVerifier()))
-        val verificationStatus = callVerifyResponse(signingManager)
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.SUCCESS)
+        val verificationResult = callVerifyResponse(signingManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
     }
 
     @Suppress("MaxLineLength")
@@ -159,23 +159,23 @@ class SigningManagerTest {
         val signingManager = SigningManager(SignatureVerificationMode.Informational(DefaultSignatureVerifier()))
         assertThat(
             callVerifyResponse(signingManager, requestTime = "1677005916011") // Wrong request time
-        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        ).isEqualTo(VerificationResult.ERROR)
         assertThat(
             callVerifyResponse(signingManager, signature = "2bm3QppRywK5ULyCRLS5JJy9sq+84IkMk0Ue4LsywEp87t0tDObpzPlu30l4Desq9X65UFuosqwCLMizruDHbKvPqQLce1hrIuZpgic+cQ8=") // Wrong signature
-        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        ).isEqualTo(VerificationResult.ERROR)
         assertThat(
             callVerifyResponse(signingManager, nonce = "MTIzNDU2Nzg5MGFj") // Wrong nonce
-        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        ).isEqualTo(VerificationResult.ERROR)
         assertThat(
             callVerifyResponse(signingManager, body = "{\"request_date\":\"2023-02-21T18:58:37Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n") // Wrong body
-        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        ).isEqualTo(VerificationResult.ERROR)
     }
 
     @Test
     fun `verifyResponse returns success for enforced mode if verifier returns success for given parameters`() {
         every { verifier.verify(any(), any()) } returns true
-        val verificationStatus = callVerifyResponse(enforcedSigningManager)
-        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.SUCCESS)
+        val verificationResult = callVerifyResponse(enforcedSigningManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
     }
 
     // endregion
