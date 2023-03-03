@@ -460,7 +460,7 @@ class PurchasesTest {
 
         var callCount = 0
 
-        val productChangeParams = getSubscriptionOptionPurchaseParams(
+        val productChangeParams = getPurchaseParams(
             receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
             oldPurchase.productIds.first()
         )
@@ -524,7 +524,7 @@ class PurchasesTest {
         }
 
         val upgradePurchaseParams =
-            getSubscriptionOptionPurchaseParams(receiptInfo.storeProduct!!.defaultOption!!, oldSubId)
+            getPurchaseParams(receiptInfo.storeProduct!!.defaultOption!!, oldSubId)
         purchases.purchaseWith(
             upgradePurchaseParams,
             onError = { _, _ ->
@@ -550,7 +550,7 @@ class PurchasesTest {
     @Test
     fun canMakePurchase() {
         val storeProduct = stubStoreProduct("abc")
-        val purchaseOptionParams = getSubscriptionOptionPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        val purchaseOptionParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
         purchases.purchaseWith(
             purchaseOptionParams
         ) { _, _ -> }
@@ -569,7 +569,7 @@ class PurchasesTest {
     @Test
     fun canMakePurchaseWithoutProvidingOption() {
         val storeProduct = stubStoreProduct("productId")
-        val purchaseProductParams = getSubscriptionOptionPurchaseParams(storeProduct)
+        val purchaseProductParams = getPurchaseParams(storeProduct)
         purchases.purchaseWith(
             purchaseProductParams
         ) { _, _ -> }
@@ -587,8 +587,9 @@ class PurchasesTest {
 
     @Test
     fun canMakePurchaseOfAPackage() {
-        val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
-        val purchasePackageParams = getSubscriptionOptionPurchaseParams(offerings[stubOfferingIdentifier]!!.monthly!!)
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val packageToPurchase = offerings[stubOfferingIdentifier]!!.monthly!!
+        val purchasePackageParams = getPurchaseParams(packageToPurchase)
         purchases.purchaseWith(
             purchasePackageParams
         ) { _, _ -> }
@@ -597,7 +598,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct.subscriptionOptions!!.first().purchasingData,
+                packageToPurchase.product.defaultOption!!.purchasingData,
                 null,
                 stubOfferingIdentifier
             )
@@ -608,8 +609,10 @@ class PurchasesTest {
     fun canMakePurchaseUpgradeOfAPackage() {
         val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
         val oldPurchase = mockPurchaseFound()
-        val purchasePackageUpgradeParams =
-            getSubscriptionOptionPurchaseParams(offerings[stubOfferingIdentifier]!!.monthly!!, oldPurchase.productIds[0])
+        val purchasePackageUpgradeParams = getPurchaseParams(
+            offerings[stubOfferingIdentifier]!!.monthly!!,
+            oldPurchase.productIds[0]
+        )
 
         purchases.purchaseWith(
             purchasePackageUpgradeParams
@@ -619,7 +622,7 @@ class PurchasesTest {
             mockBillingAbstract.makePurchaseAsync(
                 eq(mockActivity),
                 eq(appUserId),
-                storeProduct.subscriptionOptions!!.first().purchasingData,
+                storeProduct.defaultOption!!.purchasingData,
                 ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
                 stubOfferingIdentifier
             )
@@ -736,7 +739,7 @@ class PurchasesTest {
     fun passesUpErrors() {
         var errorCalled = false
         val storeProduct = stubStoreProduct("productId")
-        val purchaseParams = getSubscriptionOptionPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
         purchases.purchaseWith(
             purchaseParams,
             onError = { error, _ ->
@@ -754,7 +757,7 @@ class PurchasesTest {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         val storeProduct = stubStoreProduct("productId")
-        val purchaseParams = getSubscriptionOptionPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
         purchases.purchaseWith(
             purchaseParams,
             onError = { _, _ -> fail("Should be success") }) { _, _ ->
@@ -781,7 +784,7 @@ class PurchasesTest {
         mockQueryingProductDetails(productId, ProductType.SUBS, null)
 
         val storeProduct = stubStoreProduct(productId)
-        val purchaseParams = getSubscriptionOptionPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
         var callCount = 0
         purchases.purchaseWith(
             purchaseParams,
@@ -807,7 +810,7 @@ class PurchasesTest {
         var callCount = 0
         mockQueryingProductDetails(productId1, ProductType.SUBS, null)
         val storeProduct = stubStoreProduct(productId)
-        val purchaseParams = getSubscriptionOptionPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
         purchases.purchaseWith(
             purchaseParams,
             onSuccess = { _, _ ->
@@ -824,7 +827,7 @@ class PurchasesTest {
     @Test
     fun `when multiple make purchase callbacks, a failure doesn't throw ConcurrentModificationException`() {
         val storeProduct = stubStoreProduct("productId")
-        val purchaseParams = getSubscriptionOptionPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
         purchases.purchaseWith(
             purchaseParams
         ) { _, _ -> }
@@ -859,7 +862,7 @@ class PurchasesTest {
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
 
-        val purchaseUpgradeParams = getSubscriptionOptionPurchaseParams(
+        val purchaseUpgradeParams = getPurchaseParams(
             receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
             oldPurchase.productIds[0]
         )
@@ -889,7 +892,7 @@ class PurchasesTest {
         val oldPurchase = mockPurchaseFound(error)
 
         var receivedError: PurchasesError? = null
-        val purchaseParams = getSubscriptionOptionPurchaseParams(
+        val purchaseParams = getPurchaseParams(
             receiptInfo.storeProduct!!.subscriptionOptions!!.first(), oldPurchase.productIds[0]
         )
         purchases.purchaseWith(
@@ -922,7 +925,7 @@ class PurchasesTest {
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
 
-        val purchaseParams = getSubscriptionOptionPurchaseParams(
+        val purchaseParams = getPurchaseParams(
             receiptInfo.storeProduct!!.subscriptionOptions!!.first(), oldPurchase.productIds[0]
         )
         purchases.purchaseWith(
@@ -960,7 +963,7 @@ class PurchasesTest {
         )
 
         mockQueryingProductDetails(storeProduct, null)
-        val purchaseProductParams = getSubscriptionOptionPurchaseParams(storeProduct)
+        val purchaseProductParams = getPurchaseParams(storeProduct)
 
         purchases.purchaseWith(
             purchaseProductParams,
@@ -997,7 +1000,8 @@ class PurchasesTest {
         val (_, offerings) = stubOfferings(storeProduct)
 
         mockQueryingProductDetails(storeProduct, null)
-        val purchasePackageParams = getSubscriptionOptionPurchaseParams(offerings[stubOfferingIdentifier]!!.monthly!!)
+        val packageToPurchase = offerings[stubOfferingIdentifier]!!.monthly!!
+        val purchasePackageParams = getPurchaseParams(packageToPurchase)
         purchases.purchaseWith(
             purchasePackageParams,
             onError = { _, _ -> },
@@ -1028,7 +1032,7 @@ class PurchasesTest {
 
         var callCount = 0
 
-        val purchasePackageUpgradeParams = getSubscriptionOptionPurchaseParams(
+        val purchasePackageUpgradeParams = getPurchaseParams(
             offerings[stubOfferingIdentifier]!!.monthly!!,
             oldPurchase.productIds[0])
         purchases.purchaseWith(
@@ -1091,7 +1095,7 @@ class PurchasesTest {
 
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
-        val purchasePackageUpgradeParams = getSubscriptionOptionPurchaseParams(
+        val purchasePackageUpgradeParams = getPurchaseParams(
             offerings[stubOfferingIdentifier]!!.monthly!!,
             oldPurchase.productIds[0]
         )
@@ -1119,7 +1123,7 @@ class PurchasesTest {
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
         val purchasePackageUpgradeParams =
-            getSubscriptionOptionPurchaseParams(
+            getPurchaseParams(
                 offerings[stubOfferingIdentifier]!!.monthly!!,
                 oldPurchase.productIds[0])
         purchases.purchaseWith(
@@ -1152,7 +1156,7 @@ class PurchasesTest {
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
 
-        val purchasePackageUpgradeParams = getSubscriptionOptionPurchaseParams(
+        val purchasePackageUpgradeParams = getPurchaseParams(
             offerings[stubOfferingIdentifier]!!.monthly!!,
             oldPurchase.productIds[0]
         )
@@ -1211,7 +1215,7 @@ class PurchasesTest {
         var receivedError: PurchasesError? = null
         var receivedUserCancelled: Boolean? = null
 
-        val purchasePackageUpgradeParams = getSubscriptionOptionPurchaseParams(
+        val purchasePackageUpgradeParams = getPurchaseParams(
             offerings[stubOfferingIdentifier]!!.monthly!!,
             oldPurchase.productIds[0]
         )
@@ -4089,7 +4093,7 @@ class PurchasesTest {
         } just Runs
     }
 
-    private fun getSubscriptionOptionPurchaseParams(
+    private fun getPurchaseParams(
         purchaseable: Any,
         oldProductId: String? = null
     ): PurchaseParams {

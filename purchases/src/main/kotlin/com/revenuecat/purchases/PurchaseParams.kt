@@ -15,6 +15,8 @@ open class PurchaseParams(builder: Builder) {
     internal val purchasingData: PurchasingData
     @get:JvmSynthetic
     internal val activity: Activity
+    @get:JvmSynthetic
+    internal val presentedOfferingIdentifier: String?
 
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
@@ -22,6 +24,7 @@ open class PurchaseParams(builder: Builder) {
         this.googleProrationMode = builder.googleProrationMode
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
+        this.presentedOfferingIdentifier = builder.presentedOfferingIdentifier
     }
 
     /**
@@ -37,23 +40,20 @@ open class PurchaseParams(builder: Builder) {
     open class Builder private constructor(
         @get:JvmSynthetic internal val purchasingData: PurchasingData,
         @get:JvmSynthetic internal val activity: Activity,
+        @get:JvmSynthetic internal val presentedOfferingIdentifier: String? = null
     ) {
         constructor(packageToPurchase: Package, activity: Activity) :
             this(
                 packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
-                activity
+                activity,
+                packageToPurchase.offering
             )
 
-        constructor(
-            storeProduct: StoreProduct,
-            activity: Activity
-        ) : this(storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData, activity)
+        constructor(storeProduct: StoreProduct, activity: Activity) :
+            this(storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData, activity)
 
         constructor(subscriptionOption: SubscriptionOption, activity: Activity) :
-            this(
-                subscriptionOption.purchasingData,
-                activity
-            )
+            this(subscriptionOption.purchasingData, activity)
 
         @set:JvmSynthetic
         @get:JvmSynthetic

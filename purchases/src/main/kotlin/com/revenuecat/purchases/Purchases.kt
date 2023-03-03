@@ -407,7 +407,7 @@ class Purchases internal constructor(
                 startProductChange(
                     activity,
                     purchasingData,
-                    null,
+                    presentedOfferingIdentifier,
                     productId,
                     googleProrationMode,
                     callback
@@ -416,7 +416,7 @@ class Purchases internal constructor(
                 startPurchase(
                     activity,
                     purchasingData,
-                    null,
+                    presentedOfferingIdentifier,
                     callback
                 )
             }
