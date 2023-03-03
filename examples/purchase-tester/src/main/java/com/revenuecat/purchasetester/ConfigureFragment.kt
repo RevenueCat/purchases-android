@@ -1,14 +1,15 @@
 package com.revenuecat.purchasetester
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.get
+import android.widget.ArrayAdapter
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
@@ -36,6 +37,11 @@ class ConfigureFragment : Fragment() {
         dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
         binding = FragmentConfigureBinding.inflate(inflater)
 
+        binding.verificationOptionsInput.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            EntitlementVerificationMode.values()
+        )
         setupSupportedStoresRadioButtons()
 
         lifecycleScope.launch {
@@ -69,6 +75,8 @@ class ConfigureFragment : Fragment() {
     private suspend fun configureSDK() {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
+        val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
+        val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
 
         val application = (requireActivity().application as MainApplication)
@@ -83,6 +91,7 @@ class ConfigureFragment : Fragment() {
 
         val configuration = configurationBuilder
             .diagnosticsEnabled(true)
+            .entitlementVerificationMode(entitlementVerificationMode)
             .build()
         Purchases.configure(configuration)
 
