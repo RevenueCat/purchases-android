@@ -21,12 +21,12 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceSkuInfo
-import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
@@ -139,7 +139,6 @@ class PurchasesTest {
 
     @Before
     fun setup() {
-        mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
         mockkStatic("com.revenuecat.purchases.common.OfferingFactoriesKt")
         mockkStatic(ProcessLifecycleOwner::class)
 
@@ -815,7 +814,10 @@ class PurchasesTest {
             }
         }
 
-        val mockInfo = JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo()
+        val mockInfo = CustomerInfoFactory.buildCustomerInfo(
+            JSONObject(Responses.validFullPurchaserResponse),
+            VerificationResult.NOT_VERIFIED
+        )
         every {
             mockBackend.postReceiptData(
                 purchaseToken = any(),

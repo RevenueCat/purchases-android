@@ -9,14 +9,15 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.identity.IdentityManager
@@ -71,7 +72,10 @@ class SubscriberAttributesPurchasesTests {
     )
 
     internal data class PostReceiptCompletionContainer(
-        val info: CustomerInfo = JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo(),
+        val info: CustomerInfo = CustomerInfoFactory.buildCustomerInfo(
+            JSONObject(Responses.validFullPurchaserResponse),
+            VerificationResult.NOT_VERIFIED
+        ),
         val body: JSONObject = JSONObject(Responses.validFullPurchaserResponse)
     )
 

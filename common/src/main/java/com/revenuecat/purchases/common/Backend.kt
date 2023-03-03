@@ -133,7 +133,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     try {
                         if (result.isSuccessful()) {
-                            onSuccess(result.body.buildCustomerInfo())
+                            onSuccess(CustomerInfoFactory.buildCustomerInfo(result))
                         } else {
                             onError(result.toPurchasesError().also { errorLog(it) })
                         }
@@ -217,7 +217,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     try {
                         if (result.isSuccessful()) {
-                            onSuccess(result.body.buildCustomerInfo(), result.body)
+                            onSuccess(CustomerInfoFactory.buildCustomerInfo(result), result.body)
                         } else {
                             val purchasesError = result.toPurchasesError().also { errorLog(it) }
                             onError(
@@ -336,7 +336,7 @@ class Backend(
                     }?.forEach { (onSuccessHandler, onErrorHandler) ->
                         val created = result.responseCode == RCHTTPStatusCodes.CREATED
                         if (result.body.length() > 0) {
-                            val customerInfo = result.body.buildCustomerInfo()
+                            val customerInfo = CustomerInfoFactory.buildCustomerInfo(result)
                             onSuccessHandler(customerInfo, created)
                         } else {
                             onErrorHandler(PurchasesError(PurchasesErrorCode.UnknownError)

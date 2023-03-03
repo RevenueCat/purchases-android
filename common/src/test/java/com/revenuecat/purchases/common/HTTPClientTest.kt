@@ -7,11 +7,11 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -244,7 +244,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
                 eTagHeader = any(),
                 urlPathWithVersion,
                 refreshETag = false,
-                verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+                verificationResult = VerificationResult.NOT_VERIFIED
             )
         } returns null
 
@@ -255,7 +255,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
                 eTagHeader = any(),
                 urlPathWithVersion,
                 refreshETag = true,
-                verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+                verificationResult = VerificationResult.NOT_VERIFIED
             )
         } returns expectedResult
 
@@ -279,7 +279,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
             endpoint = endpoint,
-            expectedResult = HTTPResult.createResult(verificationStatus = HTTPResult.VerificationStatus.SUCCESS)
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.SUCCESS)
         )
 
         client.performRequest(
@@ -371,7 +371,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
                 eTagHeader = any(),
                 "/v1${endpoint.getPath()}",
                 refreshETag = false,
-                verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
+                verificationResult = VerificationResult.NOT_VERIFIED
             )
         } throws JSONException("bad json")
         val response = MockResponse().setBody("not uh json").setResponseCode(responseCode)
