@@ -105,8 +105,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (isUpgrade) {
             promptForUpgradeInfo { upgradeInfo ->
                 upgradeInfo?.let {
-                    purchaseProductBuilder.oldProductId(upgradeInfo.oldProductId)
-                        .googleProrationMode(upgradeInfo.googleProrationMode)
+                    purchaseProductBuilder.oldProductId(upgradeInfo.oldSku)
+                    // TODO BC5 figure out proration mode
+//                        .googleProrationMode(upgradeInfo.prorationMode)
                 }
                 Purchases.sharedInstance.purchaseWith(
                     purchaseProductBuilder.build(),
@@ -129,7 +130,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 showProrationModePicker { prorationMode, error ->
                     if (error == null) {
                         prorationMode?.let {
-                            callback(UpgradeInfo(subId, prorationMode))
+//                            callback(UpgradeInfo(subId, prorationMode))
+                            // TODO BC5 figure out proration mode
+                            callback(UpgradeInfo(subId))
                         } ?: callback(UpgradeInfo(subId))
                     } else {
                         callback(null)
