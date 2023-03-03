@@ -36,7 +36,7 @@ class SigningManager(
         requestTime: String?,
         eTag: String?
     ): HTTPResult.VerificationStatus {
-        val signatureVerifier = getVerifier() ?: return HTTPResult.VerificationStatus.NOT_VERIFIED
+        val signatureVerifier = signatureVerificationMode.verifier ?: return HTTPResult.VerificationStatus.NOT_VERIFIED
 
         if (signature == null) {
             errorLog(NetworkStrings.VERIFICATION_MISSING_SIGNATURE.format(urlPath))
@@ -65,14 +65,6 @@ class SigningManager(
         } else {
             errorLog(NetworkStrings.VERIFICATION_ERROR)
             HTTPResult.VerificationStatus.ERROR
-        }
-    }
-
-    private fun getVerifier(): SignatureVerifier? {
-        return when (signatureVerificationMode) {
-            is SignatureVerificationMode.Disabled -> null
-            is SignatureVerificationMode.Informational -> signatureVerificationMode.signatureVerifier
-            is SignatureVerificationMode.Enforced -> signatureVerificationMode.signatureVerifier
         }
     }
 

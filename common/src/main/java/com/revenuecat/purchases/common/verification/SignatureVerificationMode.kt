@@ -29,4 +29,11 @@ sealed class SignatureVerificationMode {
             is Enforced ->
                 true
         }
+
+    val verifier: SignatureVerifier?
+        get() = when (this) {
+            is SignatureVerificationMode.Disabled -> null
+            is SignatureVerificationMode.Informational -> signatureVerifier
+            is SignatureVerificationMode.Enforced -> signatureVerifier
+        }
 }
