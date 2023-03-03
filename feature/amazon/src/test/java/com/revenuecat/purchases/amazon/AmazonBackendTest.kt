@@ -64,7 +64,8 @@ class AmazonBackendTest {
     private var successfulResult = HTTPResult(
         responseCode = 200,
         payload = successfulRVSResponse(),
-        origin = HTTPResult.Origin.BACKEND
+        origin = HTTPResult.Origin.BACKEND,
+        verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
     )
     private var unsuccessfulResult = HTTPResult(
         responseCode = 401,
@@ -74,7 +75,8 @@ class AmazonBackendTest {
                     "Invalid API Key."
                 }
             """.trimIndent(),
-        origin = HTTPResult.Origin.BACKEND
+        origin = HTTPResult.Origin.BACKEND,
+        verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
     )
 
     @Test
