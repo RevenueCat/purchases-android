@@ -63,12 +63,12 @@ class SigningManager(
         return if (verificationResult) {
             VerificationResult.SUCCESS
         } else {
-            errorLog(NetworkStrings.VERIFICATION_ERROR)
+            errorLog(NetworkStrings.VERIFICATION_ERROR.format(urlPath))
             VerificationResult.FAILED
         }
     }
 
     private fun getSignatureMessage(responseCode: Int, body: String?, eTag: String?): String? {
-        return if (responseCode == RCHTTPStatusCodes.NOT_MODIFIED) eTag else body
+        return if (responseCode == RCHTTPStatusCodes.NOT_MODIFIED) eTag else body?.let { "$it\n" }
     }
 }
