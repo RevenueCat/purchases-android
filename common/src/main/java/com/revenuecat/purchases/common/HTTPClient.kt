@@ -176,7 +176,7 @@ class HTTPClient(
         val verificationResult = if (shouldSignResponse && nonce != null) {
             verifyResponse(path, responseCode, connection, payload, nonce)
         } else {
-            VerificationResult.NOT_VERIFIED
+            VerificationResult.NOT_REQUESTED
         }
 
         if (verificationResult == VerificationResult.ERROR &&

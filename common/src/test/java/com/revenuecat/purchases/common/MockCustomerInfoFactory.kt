@@ -6,14 +6,14 @@ import org.json.JSONObject
 
 fun createCustomerInfo(
     response: String,
-    verificationResult: VerificationResult = VerificationResult.NOT_VERIFIED
+    verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED
 ): CustomerInfo {
     return createCustomerInfo(JSONObject(response), verificationResult)
 }
 
 fun createCustomerInfo(
     jsonObject: JSONObject,
-    verificationResult: VerificationResult = VerificationResult.NOT_VERIFIED
+    verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED
 ): CustomerInfo {
     return CustomerInfoFactory.buildCustomerInfo(jsonObject, verificationResult)
 }

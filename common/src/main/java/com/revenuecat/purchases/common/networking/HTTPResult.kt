@@ -31,7 +31,7 @@ data class HTTPResult(
             val verificationResult: VerificationResult = if (jsonObject.has(SERIALIZATION_NAME_VERIFICATION_RESULT)) {
                 VerificationResult.valueOf(jsonObject.getString(SERIALIZATION_NAME_VERIFICATION_RESULT))
             } else {
-                VerificationResult.NOT_VERIFIED
+                VerificationResult.NOT_REQUESTED
             }
             return HTTPResult(responseCode, payload, origin, verificationResult)
         }

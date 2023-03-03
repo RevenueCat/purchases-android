@@ -79,7 +79,7 @@ abstract class BaseHTTPClientTest {
     protected fun enqueue(
         endpoint: Endpoint,
         expectedResult: HTTPResult,
-        verificationResult: VerificationResult = VerificationResult.NOT_VERIFIED
+        verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED
     ) {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(

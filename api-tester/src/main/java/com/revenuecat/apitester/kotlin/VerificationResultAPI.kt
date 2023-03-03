@@ -7,7 +7,7 @@ private class VerificationResultAPI {
 
     fun check(verificationResult: VerificationResult) {
         when (verificationResult) {
-            VerificationResult.NOT_VERIFIED,
+            VerificationResult.NOT_REQUESTED,
             VerificationResult.SUCCESS,
             VerificationResult.ERROR
             -> {}

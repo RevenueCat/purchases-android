@@ -44,12 +44,12 @@ class HTTPResultTest {
     }
 
     @Test
-    fun `result defaults to CACHE origin and NOT_VERIFIED verification result if not part of serialized string`() {
+    fun `result defaults to CACHE origin and NOT_REQUESTED verification result if not part of serialized string`() {
         val expectedResult = HTTPResult(
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.CACHE,
-            VerificationResult.NOT_VERIFIED
+            VerificationResult.NOT_REQUESTED
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +

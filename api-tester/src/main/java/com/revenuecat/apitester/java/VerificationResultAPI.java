@@ -6,7 +6,7 @@ import com.revenuecat.purchases.VerificationResult;
 final class VerificationResultAPI {
     static void check(final VerificationResult verificationResult) {
         switch (verificationResult) {
-            case NOT_VERIFIED:
+            case NOT_REQUESTED:
             case SUCCESS:
             case ERROR:
         }

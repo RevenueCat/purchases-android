@@ -81,9 +81,9 @@ class SigningManagerTest {
     // region verifyResponse
 
     @Test
-    fun `verifyResponse returns NOT_VERIFIED if verification mode disabled`() {
+    fun `verifyResponse returns NOT_REQUESTED if verification mode disabled`() {
         val verificationResult = callVerifyResponse(disabledSigningManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.NOT_VERIFIED)
+        assertThat(verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
     }
 
     @Test

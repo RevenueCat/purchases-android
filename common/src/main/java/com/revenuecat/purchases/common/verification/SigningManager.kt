@@ -36,7 +36,7 @@ class SigningManager(
         requestTime: String?,
         eTag: String?
     ): VerificationResult {
-        val signatureVerifier = signatureVerificationMode.verifier ?: return VerificationResult.NOT_VERIFIED
+        val signatureVerifier = signatureVerificationMode.verifier ?: return VerificationResult.NOT_REQUESTED
 
         if (signature == null) {
             errorLog(NetworkStrings.VERIFICATION_MISSING_SIGNATURE.format(urlPath))

@@ -244,7 +244,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
                 eTagHeader = any(),
                 urlPathWithVersion,
                 refreshETag = false,
-                verificationResult = VerificationResult.NOT_VERIFIED
+                verificationResult = VerificationResult.NOT_REQUESTED
             )
         } returns null
 
@@ -255,7 +255,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
                 eTagHeader = any(),
                 urlPathWithVersion,
                 refreshETag = true,
-                verificationResult = VerificationResult.NOT_VERIFIED
+                verificationResult = VerificationResult.NOT_REQUESTED
             )
         } returns expectedResult
 
@@ -371,7 +371,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
                 eTagHeader = any(),
                 "/v1${endpoint.getPath()}",
                 refreshETag = false,
-                verificationResult = VerificationResult.NOT_VERIFIED
+                verificationResult = VerificationResult.NOT_REQUESTED
             )
         } throws JSONException("bad json")
         val response = MockResponse().setBody("not uh json").setResponseCode(responseCode)
