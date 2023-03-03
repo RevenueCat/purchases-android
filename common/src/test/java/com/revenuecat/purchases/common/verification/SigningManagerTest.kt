@@ -14,11 +14,6 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class SigningManagerTest {
-    private companion object {
-        const val TEST_SIGNATURE = "Jmax3TdnBIe0/zFeHT5KJrFNoGxWtQAOuYTjnEXDHa0z3/npDG9nRB4vrUkt/ZxVh7SU+P++O3LnObxeuz3tFAILs75bxIqXwp6LqdV7Tgo="
-        const val TEST_NONCE = "NYwvC+KDXzUq9pfg"
-    }
-
     private lateinit var verifier: SignatureVerifier
 
     private lateinit var signingManager: SigningManager
@@ -89,16 +84,41 @@ class SigningManagerTest {
         assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.ERROR)
     }
 
+    @Test
+    fun `verifyResponse with real data verifies correctly`() {
+        signingManager = SigningManager(DefaultSignatureVerifier())
+        val verificationStatus = callVerifyResponse()
+        assertThat(verificationStatus).isEqualTo(HTTPResult.VerificationStatus.SUCCESS)
+    }
+
+    @Suppress("MaxLineLength")
+    @Test
+    fun `verifyResponse with slightly different data does not verify correctly`() {
+        signingManager = SigningManager(DefaultSignatureVerifier())
+        assertThat(
+            callVerifyResponse(requestTime = "1677005916011") // Wrong request time
+        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        assertThat(
+            callVerifyResponse(signature = "2bm3QppRywK5ULyCRLS5JJy9sq+84IkMk0Ue4LsywEp87t0tDObpzPlu30l4Desq9X65UFuosqwCLMizruDHbKvPqQLce1hrIuZpgic+cQ8=") // Wrong signature
+        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        assertThat(
+            callVerifyResponse(nonce = "MTIzNDU2Nzg5MGFj") // Wrong nonce
+        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+        assertThat(
+            callVerifyResponse(body = "{\"request_date\":\"2023-02-21T18:58:37Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n") // Wrong body
+        ).isEqualTo(HTTPResult.VerificationStatus.ERROR)
+    }
+
     // endregion
 
     // region Helpers
 
     private fun callVerifyResponse(
         requestPath: String = "test-url-path",
-        signature: String? = TEST_SIGNATURE,
-        nonce: String = TEST_NONCE,
-        body: String? = "{\"test-key\":\"test-value\"}",
-        requestTime: String? = "1234567890",
+        signature: String? = "2bm3QppRywK5ULyCRLS5JJy9sq+84IkMk0Ue4LsywEp87t0tDObpzPlu30l4Desq9X65UFuosqwCLMizruDHbKvPqQLce0hrIuZpgic+cQ8=",
+        nonce: String = "MTIzNDU2Nzg5MGFi",
+        body: String? = "{\"request_date\":\"2023-02-21T18:58:36Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n",
+        requestTime: String? = "1677005916012",
         eTag: String? = "test-etag"
     ) = signingManager.verifyResponse(requestPath, signature, nonce, body, requestTime, eTag)
 
