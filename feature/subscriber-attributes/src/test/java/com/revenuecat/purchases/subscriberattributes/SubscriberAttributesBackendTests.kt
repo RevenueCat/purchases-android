@@ -399,7 +399,7 @@ class SubscriberAttributesPosterTests {
 
         if (clientException == null) {
             everyMockedCall answers {
-                HTTPResult(responseCode, expectedResultBody ?: "{}", HTTPResult.Origin.BACKEND)
+                createResult(responseCode, expectedResultBody ?: "{}")
             }
         } else {
             everyMockedCall throws clientException
@@ -419,11 +419,16 @@ class SubscriberAttributesPosterTests {
                 mapOf("Authorization" to "Bearer $API_KEY")
             )
         } answers {
-            HTTPResult(responseCode, responseBody, HTTPResult.Origin.BACKEND).also {
+            createResult(responseCode, responseBody).also {
                 every {
                     it.body.buildCustomerInfo()
                 } returns mockk()
             }
         }
     }
+
+    private fun createResult(
+        responseCode: Int,
+        responseBody: String
+    ) = HTTPResult(responseCode, responseBody, HTTPResult.Origin.BACKEND, HTTPResult.VerificationStatus.NOT_VERIFIED)
 }

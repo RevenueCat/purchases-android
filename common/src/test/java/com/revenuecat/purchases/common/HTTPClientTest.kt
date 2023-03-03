@@ -5,13 +5,9 @@
 
 package com.revenuecat.purchases.common
 
-import android.content.Context
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
-import com.revenuecat.purchases.common.networking.ETAG_HEADER_NAME
-import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
@@ -20,82 +16,31 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.net.URL
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
 
 @RunWith(AndroidJUnit4::class)
 @AnnotationConfig(manifest = AnnotationConfig.NONE)
-class HTTPClientTest {
-
-    private lateinit var diagnosticsTracker: DiagnosticsTracker
-    private lateinit var dateProvider: DateProvider
-
-    private lateinit var server: MockWebServer
-    private lateinit var baseURL: URL
+class HTTPClientTest: BaseHTTPClientTest() {
 
     @Before
-    fun setup() {
-        server = MockWebServer()
-        baseURL = server.url("/v1").toUrl()
-    }
-
-    @After
-    fun teardown() {
-        server.shutdown()
-    }
-
-    private lateinit var appConfig: AppConfig
-
-    private val mockedETags = emptyMap<String, String>()
-    private val mockETagManager = mockk<ETagManager>().also {
-        val pathSlot = slot<String>()
-        every {
-            it.getETagHeader(capture(pathSlot), any())
-        } answers {
-            val capturedPath = pathSlot.captured
-            mapOf(ETAG_HEADER_NAME to (mockedETags[capturedPath] ?: ""))
-        }
-    }
-    private val expectedPlatformInfo = PlatformInfo("flutter", "2.1.0")
-    private lateinit var client: HTTPClient
-
-    @Before
-    fun setupBefore() {
-        val context = mockk<Context>(relaxed = true).apply {
-            every { packageName } answers { "mock-package-name" }
-        }
-        appConfig = AppConfig(
-            context = context,
-            observerMode = false,
-            platformInfo = expectedPlatformInfo,
-            proxyURL = baseURL,
-            store = Store.PLAY_STORE
-        )
-        diagnosticsTracker = mockk()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any()) } just Runs
-
-        dateProvider = mockk()
-        every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
-        client = HTTPClient(appConfig, mockETagManager, diagnosticsTracker, dateProvider)
+    fun setupClient() {
+        client = createClient()
     }
 
     @Test
     fun canPerformASimpleGet() {
         enqueue(
             Endpoint.LogIn,
-            expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
+            expectedResult = HTTPResult.createResult()
         )
 
         client.performRequest(baseURL, Endpoint.LogIn, null, mapOf("" to ""))
@@ -110,7 +55,7 @@ class HTTPClientTest {
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
-            expectedResult = HTTPResult(223, "{}", HTTPResult.Origin.BACKEND)
+            expectedResult = HTTPResult.createResult(responseCode = 223)
         )
 
         val result = client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
@@ -125,7 +70,7 @@ class HTTPClientTest {
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
-            expectedResult = HTTPResult(223, "{'response': 'OK'}", HTTPResult.Origin.BACKEND)
+            expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}")
         )
 
         val result = client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
@@ -142,7 +87,7 @@ class HTTPClientTest {
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
-            expectedResult = HTTPResult(200, "not uh jason", HTTPResult.Origin.BACKEND)
+            expectedResult = HTTPResult.createResult(payload = "not uh jason")
         )
 
         try {
@@ -155,7 +100,7 @@ class HTTPClientTest {
     // Headers
     @Test
     fun addsHeadersToRequest() {
-        val expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
+        val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
@@ -174,7 +119,7 @@ class HTTPClientTest {
 
     @Test
     fun addsDefaultHeadersToRequest() {
-        val expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
+        val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
@@ -191,30 +136,24 @@ class HTTPClientTest {
         assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo(expectedPlatformInfo.flavor)
         assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo(expectedPlatformInfo.version)
         assertThat(request.getHeader("X-Version")).isEqualTo(Config.frameworkVersion)
-        assertThat(request.getHeader("X-Client-Locale")).isEqualTo(appConfig.languageTag)
-        assertThat(request.getHeader("X-Client-Version")).isEqualTo(appConfig.versionName)
+        assertThat(request.getHeader("X-Client-Locale")).isEqualTo("en-US")
+        assertThat(request.getHeader("X-Client-Version")).isEqualTo("")
         assertThat(request.getHeader("X-Client-Bundle-ID")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
     }
 
     @Test
     fun `Given there is no flavor version, flavor version header is not set`() {
-        appConfig = AppConfig(
-            context = mockk(relaxed = true),
-            observerMode = false,
-            platformInfo = PlatformInfo("native", null),
-            proxyURL = baseURL,
-            store = Store.PLAY_STORE
-        )
+        val appConfig = createAppConfig(platformInfo = PlatformInfo("native", null))
 
-        val expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
+        val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
             expectedResult
         )
 
-        client = HTTPClient(appConfig, mockETagManager, diagnosticsTracker, dateProvider)
+        client = createClient(appConfig)
         client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
 
         val request = server.takeRequest()
@@ -224,7 +163,7 @@ class HTTPClientTest {
 
     @Test
     fun addsPostBody() {
-        val expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
+        val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
@@ -244,9 +183,12 @@ class HTTPClientTest {
 
     @Test
     fun `given observer mode is enabled, observer mode header is sent`() {
+        val appConfig = createAppConfig()
         appConfig.finishTransactions = false
 
-        val expectedResult = HTTPResult(200, "{}", HTTPResult.Origin.BACKEND)
+        client = createClient(appConfig = appConfig)
+
+        val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(
             endpoint,
@@ -258,23 +200,6 @@ class HTTPClientTest {
         val request = server.takeRequest()
 
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("true")
-    }
-
-    private fun enqueue(
-        endpoint: Endpoint,
-        expectedResult: HTTPResult
-    ) {
-        every {
-            mockETagManager.getHTTPResultFromCacheOrBackend(
-                expectedResult.responseCode,
-                expectedResult.payload,
-                connection = any(),
-                "/v1${endpoint.getPath()}",
-                refreshETag = false
-            )
-        } returns expectedResult
-        val response = MockResponse().setBody(expectedResult.payload).setResponseCode(expectedResult.responseCode)
-        server.enqueue(response)
     }
 
     @Test
@@ -294,15 +219,13 @@ class HTTPClientTest {
     fun `if there's an error getting ETag, retry call refreshing ETags`() {
         val response =
             MockResponse()
-                .setHeader(ETAG_HEADER_NAME, "anetag")
+                .setHeader(HTTPResult.ETAG_HEADER_NAME, "anetag")
                 .setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED)
 
-        val expectedResult = HTTPResult(
-            RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse, HTTPResult.Origin.BACKEND
-        )
+        val expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse)
         val secondResponse =
             MockResponse()
-                .setHeader(ETAG_HEADER_NAME, "anotheretag")
+                .setHeader(HTTPResult.ETAG_HEADER_NAME, "anotheretag")
                 .setResponseCode(expectedResult.responseCode)
                 .setBody(expectedResult.payload)
 
@@ -315,9 +238,10 @@ class HTTPClientTest {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 RCHTTPStatusCodes.NOT_MODIFIED,
                 payload = "",
-                connection = any(),
+                eTagHeader = any(),
                 urlPathWithVersion,
-                refreshETag = false
+                refreshETag = false,
+                verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
             )
         } returns null
 
@@ -325,9 +249,10 @@ class HTTPClientTest {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
                 payload = expectedResult.payload,
-                connection = any(),
+                eTagHeader = any(),
                 urlPathWithVersion,
-                refreshETag = true
+                refreshETag = true,
+                verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
             )
         } returns expectedResult
 
@@ -346,10 +271,35 @@ class HTTPClientTest {
         assertThat(result.responseCode).isEqualTo(expectedResult.responseCode)
     }
 
+    @Test
+    fun `performRequest does not add nonce header to request if verification mode disabled`() {
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        enqueue(
+            endpoint = endpoint,
+            expectedResult = HTTPResult.createResult(verificationStatus = HTTPResult.VerificationStatus.SUCCESS)
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            requestHeaders = emptyMap()
+        )
+
+        val recordedRequest = server.takeRequest()
+        assertThat(recordedRequest.getHeader("X-Nonce")).isNull()
+    }
+
     // region trackHttpRequestPerformed
 
     @Test
     fun `performRequest tracks http request performed diagnostic event if request successful`() {
+        val dateProvider = mockk<DateProvider>()
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any()) } just Runs
+
+        client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
+
         val endpoint = Endpoint.LogIn
         val responseCode = 200
         val requestStartTime = 1676379370000L // Tuesday, February 14, 2023 12:56:10:000 PM GMT
@@ -358,7 +308,7 @@ class HTTPClientTest {
 
         enqueue(
             endpoint,
-            expectedResult = HTTPResult(responseCode, "{}", HTTPResult.Origin.BACKEND)
+            expectedResult = HTTPResult.createResult()
         )
 
         every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime))
@@ -373,6 +323,12 @@ class HTTPClientTest {
 
     @Test
     fun `performRequest tracks http request performed diagnostic event if request fails`() {
+        val dateProvider = mockk<DateProvider>()
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any()) } just Runs
+
+        client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
+
         val endpoint = Endpoint.LogIn
         val responseCode = 400
         val requestStartTime = 1676379370000L // Tuesday, February 14, 2023 12:56:10:000 PM GMT
@@ -381,7 +337,7 @@ class HTTPClientTest {
 
         enqueue(
             endpoint,
-            expectedResult = HTTPResult(responseCode, "{}", HTTPResult.Origin.BACKEND)
+            expectedResult = HTTPResult.createResult(responseCode = responseCode)
         )
 
         every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime))
@@ -396,6 +352,12 @@ class HTTPClientTest {
 
     @Test
     fun `performRequest tracks http request performed diagnostic event if request throws Exception`() {
+        val dateProvider = mockk<DateProvider>()
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any()) } just Runs
+        every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
+        client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
+
         val endpoint = Endpoint.LogIn
         val responseCode = 400
 
@@ -403,9 +365,10 @@ class HTTPClientTest {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 400,
                 "not uh json",
-                connection = any(),
+                eTagHeader = any(),
                 "/v1${endpoint.getPath()}",
-                refreshETag = false
+                refreshETag = false,
+                verificationStatus = HTTPResult.VerificationStatus.NOT_VERIFIED
             )
         } throws JSONException("bad json")
         val response = MockResponse().setBody("not uh json").setResponseCode(responseCode)

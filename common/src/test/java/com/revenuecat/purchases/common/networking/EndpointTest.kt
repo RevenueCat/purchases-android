@@ -58,4 +58,29 @@ class EndpointTest {
         val expectedPath = "/receipts/amazon/test%20user-id/test-receipt-id"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
+
+    @Test
+    fun `supportsSignatureValidation returns true for expected values`() {
+        val expectedSupportsValidationEndpoints = listOf(
+            Endpoint.GetCustomerInfo("test-user-id"),
+            Endpoint.LogIn,
+            Endpoint.PostReceipt
+        )
+        for (endpoint in expectedSupportsValidationEndpoints) {
+            assertThat(endpoint.supportsSignatureValidation).isTrue
+        }
+    }
+
+    @Test
+    fun `supportsSignatureValidation returns false for expected values`() {
+        val expectedNotSupportsValidationEndpoints = listOf(
+            Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
+            Endpoint.GetOfferings("test-user-id"),
+            Endpoint.PostAttributes("test-user-id"),
+            Endpoint.PostDiagnostics
+        )
+        for (endpoint in expectedNotSupportsValidationEndpoints) {
+            assertThat(endpoint.supportsSignatureValidation).isFalse
+        }
+    }
 }

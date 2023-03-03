@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
@@ -14,6 +15,9 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.verification.SignatureVerificationException
+import com.revenuecat.purchases.common.verification.SigningManager
+import com.revenuecat.purchases.common.verification.shouldVerify
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
@@ -28,6 +32,7 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+import java.net.URLConnection
 import java.util.Date
 import kotlin.time.Duration
 
@@ -35,6 +40,8 @@ class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val signingManagerIfEnabled: SigningManager?,
+    private val entitlementVerificationMode: EntitlementVerificationMode,
     private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -122,6 +129,7 @@ class HTTPClient(
         return callResult
     }
 
+    @Suppress("ThrowsCount")
     private fun performCall(
         baseURL: URL,
         endpoint: Endpoint,
@@ -133,10 +141,14 @@ class HTTPClient(
         val path = endpoint.getPath()
         val urlPathWithVersion = "/v1$path"
         val connection: HttpURLConnection
+        val shouldSignResponse = shouldSignResponse(endpoint)
+        val nonce: String?
         try {
             val fullURL = URL(baseURL, urlPathWithVersion)
 
-            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag)
+            nonce = if (shouldSignResponse) signingManagerIfEnabled?.createRandomNonce() else null
+            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, nonce)
+
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
             connection = getConnection(httpRequest)
@@ -162,12 +174,24 @@ class HTTPClient(
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
 
+        val verificationStatus = if (shouldSignResponse && nonce != null) {
+            verifyResponse(path, connection, payload, nonce)
+        } else {
+            HTTPResult.VerificationStatus.NOT_VERIFIED
+        }
+
+        if (verificationStatus == HTTPResult.VerificationStatus.ERROR &&
+            entitlementVerificationMode == EntitlementVerificationMode.ENFORCED) {
+            throw SignatureVerificationException(path)
+        }
+
         return eTagManager.getHTTPResultFromCacheOrBackend(
             responseCode,
             payload,
-            connection,
+            getETagHeader(connection),
             urlPathWithVersion,
-            refreshETag
+            refreshETag,
+            verificationStatus
         )
     }
 
@@ -199,7 +223,8 @@ class HTTPClient(
     private fun getHeaders(
         authenticationHeaders: Map<String, String>,
         urlPath: String,
-        refreshETag: Boolean
+        refreshETag: Boolean,
+        nonce: String?
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
@@ -211,7 +236,8 @@ class HTTPClient(
             "X-Client-Locale" to appConfig.languageTag,
             "X-Client-Version" to appConfig.versionName,
             "X-Client-Bundle-ID" to appConfig.packageName,
-            "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true"
+            "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true",
+            "X-Nonce" to nonce
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeader(urlPath, refreshETag))
@@ -260,4 +286,26 @@ class HTTPClient(
         Store.AMAZON -> "amazon"
         else -> "android"
     }
+
+    private fun shouldSignResponse(endpoint: Endpoint): Boolean {
+        return endpoint.supportsSignatureValidation && entitlementVerificationMode.shouldVerify
+    }
+
+    private fun verifyResponse(
+        urlPath: String,
+        connection: URLConnection,
+        payload: String?,
+        nonce: String
+    ): HTTPResult.VerificationStatus {
+        return signingManagerIfEnabled?.verifyResponse(
+            requestPath = urlPath,
+            signature = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
+            nonce = nonce,
+            body = payload,
+            requestTime = connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME),
+            eTag = getETagHeader(connection),
+        ) ?: HTTPResult.VerificationStatus.NOT_VERIFIED
+    }
+
+    private fun getETagHeader(connection: URLConnection) = connection.getHeaderField(HTTPResult.ETAG_HEADER_NAME)
 }

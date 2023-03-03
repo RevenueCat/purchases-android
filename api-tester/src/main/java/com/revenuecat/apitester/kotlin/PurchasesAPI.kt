@@ -5,6 +5,7 @@ import android.content.Context
 import com.revenuecat.purchases.BillingFeature
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
@@ -208,6 +209,7 @@ private class PurchasesAPI {
             .observerMode(false)
             .service(executorService)
             .diagnosticsEnabled(true)
+            .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .build()
 
         Purchases.configure(build)

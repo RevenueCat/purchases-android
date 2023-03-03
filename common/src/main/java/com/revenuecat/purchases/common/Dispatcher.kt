@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import org.json.JSONException
 import java.io.IOException
 import java.util.concurrent.ExecutorService
@@ -42,6 +43,8 @@ open class Dispatcher(
                 onError(e.toPurchasesError().also { errorLog(it) })
             } catch (e: SecurityException) {
                 // This can happen if a user disables the INTERNET permission.
+                onError(e.toPurchasesError().also { errorLog(it) })
+            } catch (e: SignatureVerificationException) {
                 onError(e.toPurchasesError().also { errorLog(it) })
             }
         }
