@@ -134,7 +134,7 @@ class IdentityManager(
     private fun shouldInvalidateCustomerInfoAndETagCache(customerInfo: CustomerInfo?): Boolean {
         return customerInfo != null &&
             customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
-            signatureVerificationMode is SignatureVerificationMode.Informational
+            signatureVerificationMode != SignatureVerificationMode.Disabled
     }
 
     private fun isUserIDAnonymous(appUserID: String): Boolean {

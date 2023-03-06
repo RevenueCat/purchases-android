@@ -421,12 +421,30 @@ class IdentityManagerTests {
     }
 
     @Test
-    fun `we invalidate customer info and etag caches if verification is enabled and cached customer info is not requested`() {
+    fun `we invalidate customer info and etag caches if verification is informational and cached customer info is not requested`() {
         val userId = "test-app-user-id"
         setupCustomerInfoCacheInvalidationTest(
             userId,
             VerificationResult.NOT_REQUESTED,
             SignatureVerificationMode.Informational(mockk()),
+            true
+        )
+        identityManager.configure(userId)
+        verify(exactly = 1) {
+            mockDeviceCache.clearCustomerInfoCache(userId)
+        }
+        verify(exactly = 1) {
+            mockETagManager.clearCaches()
+        }
+    }
+
+    @Test
+    fun `we invalidate customer info and etag caches if verification is enforced and cached customer info is not requested`() {
+        val userId = "test-app-user-id"
+        setupCustomerInfoCacheInvalidationTest(
+            userId,
+            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationMode.Enforced(mockk()),
             true
         )
         identityManager.configure(userId)
