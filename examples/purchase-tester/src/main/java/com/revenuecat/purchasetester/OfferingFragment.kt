@@ -15,6 +15,7 @@ import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
@@ -23,9 +24,7 @@ import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.purchasePackageWith
-import com.revenuecat.purchases.purchaseProductWith
-import com.revenuecat.purchases.purchaseSubscriptionOptionWith
+import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
@@ -46,13 +45,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             }
         }
 
-    private val successfulPurchaseCallback: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit =
-        { storeTransaction, _ ->
-            toggleLoadingIndicator(false)
-            handleSuccessfulPurchase(storeTransaction.orderId)
-        }
-
-    private val successfulUpgradeCallback: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit =
+    private val successfulPurchaseCallback: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit =
         { storeTransaction, _ ->
             toggleLoadingIndicator(false)
             handleSuccessfulPurchase(storeTransaction?.orderId)
@@ -90,53 +83,44 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         cardView: View,
         currentPackage: Package,
         isUpgrade: Boolean
-    ) {
-        toggleLoadingIndicator(true)
-
-        if (isUpgrade) {
-            promptForUpgradeInfo { upgradeInfo ->
-                upgradeInfo?.let {
-                    startPurchasePackage(currentPackage, upgradeInfo)
-                }
-            }
-        } else {
-            startPurchasePackage(currentPackage, null)
-        }
-    }
+    ) = startPurchase(isUpgrade, PurchaseParams.Builder(currentPackage, requireActivity()))
 
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
         isUpgrade: Boolean
-    ) {
-        toggleLoadingIndicator(true)
-
-        if (isUpgrade) {
-            promptForUpgradeInfo { upgradeInfo ->
-                upgradeInfo?.let {
-                    startPurchaseProduct(currentProduct, upgradeInfo)
-                }
-            }
-        } else {
-            startPurchaseProduct(currentProduct, null)
-        }
-    }
+    ) = startPurchase(isUpgrade, PurchaseParams.Builder(currentProduct, requireActivity()))
 
     override fun onPurchaseSubscriptionOptionClicked(
         cardView: View,
         subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean
+    ) = startPurchase(isUpgrade, PurchaseParams.Builder(subscriptionOption, requireActivity()))
+
+    private fun startPurchase(
+        isUpgrade: Boolean,
+        purchaseProductBuilder: PurchaseParams.Builder
     ) {
         toggleLoadingIndicator(true)
-
         if (isUpgrade) {
             promptForUpgradeInfo { upgradeInfo ->
                 upgradeInfo?.let {
-                    startPurchaseSubscriptionOption(subscriptionOption, upgradeInfo)
+                    purchaseProductBuilder.oldProductId(upgradeInfo.oldSku)
+                    // TODO BC5 figure out proration mode
+//                        .googleProrationMode(upgradeInfo.prorationMode)
                 }
+                Purchases.sharedInstance.purchaseWith(
+                    purchaseProductBuilder.build(),
+                    purchaseErrorCallback,
+                    successfulPurchaseCallback
+                )
             }
         } else {
-            startPurchaseSubscriptionOption(subscriptionOption, null)
+            Purchases.sharedInstance.purchaseWith(
+                purchaseProductBuilder.build(),
+                purchaseErrorCallback,
+                successfulPurchaseCallback
+            )
         }
     }
 
@@ -146,55 +130,15 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 showProrationModePicker { prorationMode, error ->
                     if (error == null) {
                         prorationMode?.let {
-                            callback(UpgradeInfo(subId, prorationMode))
+//                            callback(UpgradeInfo(subId, prorationMode))
+                            // TODO BC5 figure out proration mode
+                            callback(UpgradeInfo(subId))
                         } ?: callback(UpgradeInfo(subId))
                     } else {
                         callback(null)
                     }
                 }
             } ?: callback(null)
-        }
-    }
-
-    private fun startPurchaseProduct(
-        currentProduct: StoreProduct,
-        upgradeInfo: UpgradeInfo?
-    ) {
-        when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchaseProductWith(
-                requireActivity(),
-                currentProduct,
-                purchaseErrorCallback,
-                successfulPurchaseCallback
-            )
-            upgradeInfo != null -> Purchases.sharedInstance.purchaseProductWith(
-                requireActivity(),
-                currentProduct,
-                upgradeInfo,
-                purchaseErrorCallback,
-                successfulUpgradeCallback
-            )
-        }
-    }
-
-    private fun startPurchaseSubscriptionOption(
-        subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo?
-    ) {
-        when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                requireActivity(),
-                subscriptionOption,
-                purchaseErrorCallback,
-                successfulPurchaseCallback
-            )
-            upgradeInfo != null -> Purchases.sharedInstance.purchaseSubscriptionOptionWith(
-                requireActivity(),
-                subscriptionOption,
-                upgradeInfo,
-                purchaseErrorCallback,
-                successfulUpgradeCallback
-            )
         }
     }
 
@@ -206,27 +150,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 Toast.LENGTH_SHORT
             ).show()
             findNavController().navigateUp()
-        }
-    }
-
-    private fun startPurchasePackage(
-        currentPackage: Package,
-        upgradeInfo: UpgradeInfo?
-    ) {
-        when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchasePackageWith(
-                requireActivity(),
-                currentPackage,
-                purchaseErrorCallback,
-                successfulPurchaseCallback
-            )
-            upgradeInfo != null -> Purchases.sharedInstance.purchasePackageWith(
-                requireActivity(),
-                currentPackage,
-                upgradeInfo,
-                purchaseErrorCallback,
-                successfulUpgradeCallback
-            )
         }
     }
 
