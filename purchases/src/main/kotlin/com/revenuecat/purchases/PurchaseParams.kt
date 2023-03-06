@@ -74,7 +74,7 @@ open class PurchaseParams(builder: Builder) {
          * for more info.
          *
          * Default is false.
-         *  Ignored for Amazon Appstore purchases.
+         * Ignored for Amazon Appstore purchases.
          */
         fun isPersonalizedPrice(isPersonalizedPrice: Boolean) = apply {
             this.isPersonalizedPrice = isPersonalizedPrice
