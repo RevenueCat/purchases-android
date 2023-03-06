@@ -364,10 +364,10 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `getHTTPResultFromCacheOrBackend should use most restrictive verification result when coming from cache`() {
+    fun `getHTTPResultFromCacheOrBackend should use result from latest request even if cached is different`() {
         val httpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.CACHE,
-            verificationResult = VerificationResult.FAILED
+            verificationResult = VerificationResult.SUCCESS
         )
         mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", httpResult)
         val result = underTest.getHTTPResultFromCacheOrBackend(
@@ -376,7 +376,7 @@ class ETagManagerTest {
             eTagHeader = "etag",
             urlPathWithVersion = "/v1/subscribers/appUserID",
             refreshETag = false,
-            verificationResult = VerificationResult.SUCCESS
+            verificationResult = VerificationResult.FAILED
         )
 
         assertThat(result?.verificationResult).isEqualTo(VerificationResult.FAILED)
