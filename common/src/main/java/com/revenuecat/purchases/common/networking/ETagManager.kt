@@ -92,7 +92,7 @@ class ETagManager(
     }
 
     @Synchronized
-    internal fun clearCaches() {
+    fun clearCaches() {
         prefs.edit().clear().apply()
     }
 
