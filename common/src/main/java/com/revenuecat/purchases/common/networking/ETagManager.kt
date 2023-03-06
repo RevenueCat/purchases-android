@@ -56,7 +56,10 @@ class ETagManager(
         val resultFromBackend = HTTPResult(responseCode, payload, HTTPResult.Origin.BACKEND, verificationResult)
         eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
+                // This assumes we won't store verification failures in the cache and we will clear the cache when
+                // enabling verification.
                 val storedResult = getStoredResult(urlPathWithVersion)
+                    ?.copy(verificationResult = verificationResult)
                 return storedResult
                     ?: if (refreshETag) {
                         log(LogIntent.WARNING, NetworkStrings.ETAG_CALL_ALREADY_RETRIED.format(resultFromBackend))
