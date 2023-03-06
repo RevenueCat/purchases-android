@@ -78,7 +78,7 @@ private class PurchasesAPI {
         purchases.getOfferings(receiveOfferingsCallback)
 
         purchases.getProducts(productIds, productsResponseCallback)
-        purchases.getProducts(productIds, setOf(ProductType.SUBS), productsResponseCallback)
+        purchases.getProducts(productIds, ProductType.SUBS, productsResponseCallback)
 
         // we need these for hybrids... these all fall back on some "best offer" or just purchase the base plan
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
@@ -137,7 +137,7 @@ private class PurchasesAPI {
         )
         purchases.getProductsWith(
             listOf(""),
-            setOf(ProductType.SUBS),
+            ProductType.SUBS,
             onError = { _: PurchasesError -> },
             onGetStoreProducts = { _: List<StoreProduct> -> }
         )

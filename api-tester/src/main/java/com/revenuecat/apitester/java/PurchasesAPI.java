@@ -78,7 +78,7 @@ final class PurchasesAPI {
         purchases.syncPurchases();
         purchases.getOfferings(receiveOfferingsListener);
         purchases.getProducts(productIds, productResponseListener);
-        purchases.getProducts(productIds, new HashSet(Arrays.asList(ProductType.SUBS)), productResponseListener);
+        purchases.getProducts(productIds, ProductType.SUBS, productResponseListener);
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeListener);
         purchases.purchaseProduct(activity, storeProduct, makePurchaseListener);
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeListener);

@@ -355,7 +355,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Gets the StoreProduct(s) for the given list of product ids.
+     * Gets the StoreProduct(s) for the given list of product ids for all product types.
      * @param [productIds] List of productIds
      * @param [callback] Response callback
      */
@@ -363,20 +363,22 @@ class Purchases internal constructor(
         productIds: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getProducts(productIds, setOf(ProductType.SUBS, ProductType.INAPP), callback)
+        getProducts(productIds, null, callback)
     }
 
     /**
      * Gets the StoreProduct(s) for the given list of product ids.
      * @param [productIds] List of productIds
-     * @param [types] List of product types
+     * @param [type] A product type to filter by
      * @param [callback] Response callback
      */
     fun getProducts(
         productIds: List<String>,
-        types: Set<ProductType>,
+        type: ProductType? = null,
         callback: GetStoreProductsCallback
     ) {
+        val types = type?.let { setOf(type) } ?: setOf(ProductType.SUBS, ProductType.INAPP)
+
         getProducts(productIds.toSet(), types, object : GetStoreProductsCallback {
             override fun onReceived(inappStoreProducts: List<StoreProduct>) {
                 callback.onReceived(inappStoreProducts)

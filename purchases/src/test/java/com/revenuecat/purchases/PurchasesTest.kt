@@ -409,7 +409,7 @@ class PurchasesTest {
 
         purchases.getProducts(
             productIds,
-            setOf(ProductType.SUBS),
+            ProductType.SUBS,
             object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
                     receivedProducts = storeProducts
@@ -436,7 +436,7 @@ class PurchasesTest {
 
         purchases.getProducts(
             productIds,
-            setOf(ProductType.INAPP),
+            ProductType.INAPP,
             object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
                     receivedProducts = storeProducts

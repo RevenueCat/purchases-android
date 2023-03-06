@@ -326,18 +326,18 @@ fun Purchases.getProductsWith(
 /**
  * Gets the StoreProduct for the given list of subscription and non-subscription productIds.
  * @param [productIds] List of productIds
- * @param [types] List of product types
+ * @param [type] A product type to filter by
  * @param [onError] Will be called if there was an error with the purchase
  * @param [onGetStoreProducts] Will be called after fetching StoreProducts
  */
 @Suppress("unused")
 fun Purchases.getProductsWith(
     productIds: List<String>,
-    types: Set<ProductType>,
+    type: ProductType?,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onGetStoreProducts: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getProducts(productIds, types, getStoreProductsCallback(onGetStoreProducts, onError))
+    getProducts(productIds, type, getStoreProductsCallback(onGetStoreProducts, onError))
 }
 
 // region Deprecated
@@ -357,7 +357,7 @@ fun Purchases.getSubscriptionSkusWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getProducts(skus, setOf(ProductType.SUBS), getStoreProductsCallback(onReceiveSkus, onError))
+    getProducts(skus, ProductType.SUBS, getStoreProductsCallback(onReceiveSkus, onError))
 }
 
 /**
@@ -375,7 +375,7 @@ fun Purchases.getNonSubscriptionSkusWith(
     onError: (error: PurchasesError) -> Unit,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getProducts(skus, setOf(ProductType.INAPP), getStoreProductsCallback(onReceiveSkus, onError))
+    getProducts(skus, ProductType.INAPP, getStoreProductsCallback(onReceiveSkus, onError))
 }
 
 // endregion
