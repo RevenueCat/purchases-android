@@ -10,6 +10,6 @@ object IdentityStrings {
     const val SETTING_NEW_ANON_ID = "Setting new anonymous App User ID - %s"
     const val LOG_OUT_CALLED_ON_ANONYMOUS_USER = "Called logOut but the current user is anonymous"
     const val LOG_OUT_SUCCESSFUL = "Logged out successfully"
-    const val INVALIDATING_CACHED_CUSTOMER_INFO = "Detected cached unverified CustomerInfo but verification is enabled." +
-        " Invalidating cache."
+    const val INVALIDATING_CACHED_CUSTOMER_INFO = "Detected cached unverified CustomerInfo but verification " +
+        "is enabled. Invalidating cache."
 }
