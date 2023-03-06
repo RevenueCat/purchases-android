@@ -400,13 +400,16 @@ class PurchasesTest {
 
     @Test
     fun getsSubscriptionProducts() {
-        val productIds = listOf("onemonth_freetrial")
+        val subProductIds = listOf("onemonth_freetrial")
+        val inappProductIds = listOf("normal_purchase")
+        val productIds = subProductIds + inappProductIds
 
-        val subStoreProducts = mockStoreProduct(productIds, productIds, ProductType.SUBS)
-        val inappStoreProducts = mockStoreProduct(productIds, listOf(), ProductType.INAPP)
-        val storeProducts = subStoreProducts + inappStoreProducts
+        val subStoreProducts = mockStoreProduct(productIds, subProductIds, ProductType.SUBS)
+        val inappStoreProductsFilteredOut = mockStoreProduct(productIds, inappProductIds, ProductType.INAPP)
 
-        purchases.getProducts(productIds,
+        purchases.getProducts(
+            productIds,
+            setOf(ProductType.SUBS),
             object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
                     receivedProducts = storeProducts
@@ -415,21 +418,25 @@ class PurchasesTest {
                 override fun onError(error: PurchasesError) {
                     fail("shouldn't be error")
                 }
-            })
+            }
+        )
 
-        assertThat(receivedProducts).isEqualTo(storeProducts)
-        assertThat(receivedProducts?.size).isEqualTo(productIds.size)
+        assertThat(receivedProducts).isEqualTo(subStoreProducts)
+        assertThat(receivedProducts?.size).isEqualTo(subStoreProducts.size)
     }
 
     @Test
     fun getsNonSubscriptionProducts() {
-        val productIds = listOf("normal_purchase")
+        val subProductIds = listOf("onemonth_freetrial")
+        val inappProductIds = listOf("normal_purchase")
+        val productIds = subProductIds + inappProductIds
 
-        val subStoreProducts = mockStoreProduct(productIds, listOf(), ProductType.SUBS)
-        val inappStoreProducts = mockStoreProduct(productIds, productIds, ProductType.INAPP)
-        val storeProducts = subStoreProducts + inappStoreProducts
+        val subStoreProductsFilteredOut = mockStoreProduct(productIds, subProductIds, ProductType.SUBS)
+        val inappStoreProducts = mockStoreProduct(productIds, inappProductIds, ProductType.INAPP)
 
-        purchases.getProducts(productIds,
+        purchases.getProducts(
+            productIds,
+            setOf(ProductType.INAPP),
             object : GetStoreProductsCallback {
                 override fun onReceived(storeProducts: List<StoreProduct>) {
                     receivedProducts = storeProducts
@@ -438,10 +445,11 @@ class PurchasesTest {
                 override fun onError(error: PurchasesError) {
                     fail("shouldn't be error")
                 }
-            })
+            }
+        )
 
-        assertThat(receivedProducts).isEqualTo(storeProducts)
-        assertThat(receivedProducts?.size).isEqualTo(productIds.size)
+        assertThat(receivedProducts).isEqualTo(inappStoreProducts)
+        assertThat(receivedProducts?.size).isEqualTo(inappStoreProducts.size)
     }
 
     // endregion

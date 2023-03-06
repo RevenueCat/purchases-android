@@ -131,13 +131,13 @@ private class PurchasesAPI {
             onSuccess = { _: Offerings -> }
         )
         purchases.getProductsWith(
-            emptyList(),
+            listOf(""),
             onError = { _: PurchasesError -> },
             onGetStoreProducts = { _: List<StoreProduct> -> }
         )
         purchases.getProductsWith(
-            emptyList(),
-            emptySet(),
+            listOf(""),
+            setOf(ProductType.SUBS),
             onError = { _: PurchasesError -> },
             onGetStoreProducts = { _: List<StoreProduct> -> }
         )
