@@ -8,6 +8,7 @@ import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
@@ -15,6 +16,7 @@ import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getNonSubscriptionSkusWith
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.getProductsWith
 import com.revenuecat.purchases.getSubscriptionSkusWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
@@ -76,6 +78,7 @@ private class PurchasesAPI {
         purchases.getOfferings(receiveOfferingsCallback)
 
         purchases.getProducts(productIds, productsResponseCallback)
+        purchases.getProducts(productIds, setOf(ProductType.SUBS), productsResponseCallback)
 
         // we need these for hybrids... these all fall back on some "best offer" or just purchase the base plan
         purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
@@ -126,6 +129,17 @@ private class PurchasesAPI {
         purchases.getOfferingsWith(
             onError = { _: PurchasesError -> },
             onSuccess = { _: Offerings -> }
+        )
+        purchases.getProductsWith(
+            emptyList(),
+            onError = { _: PurchasesError -> },
+            onGetStoreProducts = { _: List<StoreProduct> -> }
+        )
+        purchases.getProductsWith(
+            emptyList(),
+            emptySet(),
+            onError = { _: PurchasesError -> },
+            onGetStoreProducts = { _: List<StoreProduct> -> }
         )
         purchases.purchaseProductWith(
             activity,

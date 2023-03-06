@@ -363,16 +363,23 @@ class Purchases internal constructor(
         productIds: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getProducts(productIds.toSet(), ProductType.SUBS, object : GetStoreProductsCallback {
-            override fun onReceived(subStoreProducts: List<StoreProduct>) {
-                getProducts(productIds.toSet(), ProductType.INAPP, object : GetStoreProductsCallback {
-                    override fun onReceived(inappStoreProducts: List<StoreProduct>) {
-                        callback.onReceived(subStoreProducts + inappStoreProducts)
-                    }
-                    override fun onError(error: PurchasesError) {
-                        callback.onError(error)
-                    }
-                })
+        getProducts(productIds, setOf(ProductType.SUBS, ProductType.INAPP), callback)
+    }
+
+    /**
+     * Gets the StoreProduct(s) for the given list of product ids.
+     * @param [productIds] List of productIds
+     * @param [types] List of product types
+     * @param [callback] Response callback
+     */
+    fun getProducts(
+        productIds: List<String>,
+        types: Set<ProductType>,
+        callback: GetStoreProductsCallback
+    ) {
+        getProducts(productIds.toSet(), types, object : GetStoreProductsCallback {
+            override fun onReceived(inappStoreProducts: List<StoreProduct>) {
+                callback.onReceived(inappStoreProducts)
             }
             override fun onError(error: PurchasesError) {
                 callback.onError(error)
@@ -1188,21 +1195,48 @@ class Purchases internal constructor(
 
     private fun getProducts(
         productIds: Set<String>,
-        productType: ProductType,
+        productTypes: Set<ProductType>,
         callback: GetStoreProductsCallback
     ) {
-        billing.queryProductDetailsAsync(
-            productType,
-            productIds,
-            { storeProducts ->
-                dispatch {
-                    callback.onReceived(storeProducts)
-                }
-            }, {
-                dispatch {
-                    callback.onError(it)
-                }
-            })
+       getProducts(
+           productIds,
+           productTypes,
+           emptyList(),
+           callback
+       )
+    }
+
+    private fun getProducts(
+        productIds: Set<String>,
+        productTypes: Set<ProductType>,
+        collectedStoreProducts: List<StoreProduct>,
+        callback: GetStoreProductsCallback
+    ) {
+        val productTypesLeft = productTypes.toMutableSet()
+        val type = productTypesLeft.firstOrNull()?.also { productTypesLeft.remove(it) }
+
+        type?.let {
+            billing.queryProductDetailsAsync(
+                it,
+                productIds,
+                { storeProducts ->
+                    dispatch {
+
+                        getProducts(
+                            productIds,
+                            productTypesLeft,
+                            collectedStoreProducts + storeProducts,
+                            callback
+                        )
+                    }
+                }, {
+                    dispatch {
+                        callback.onError(it)
+                    }
+                })
+        } ?: run {
+            callback.onReceived(collectedStoreProducts)
+        }
     }
 
     private fun updateAllCaches(
@@ -1726,7 +1760,7 @@ class Purchases internal constructor(
         productIds: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getProducts(productIds.toSet(), ProductType.SUBS, callback)
+        getProducts(productIds.toSet(), setOf(ProductType.SUBS), callback)
     }
 
     /**
@@ -1742,7 +1776,7 @@ class Purchases internal constructor(
         productIds: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getProducts(productIds.toSet(), ProductType.INAPP, callback)
+        getProducts(productIds.toSet(), setOf(ProductType.INAPP), callback)
     }
 
     // endregion
