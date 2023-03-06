@@ -7,7 +7,9 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -126,6 +128,7 @@ class IdentityManager(
     private fun invalidateCustomerInfoAndETagCacheIfNeeded(appUserID: String) {
         val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
         if (shouldInvalidateCustomerInfoAndETagCache(cachedCustomerInfo)) {
+            log(LogIntent.USER, IdentityStrings.INVALIDATING_CACHED_CUSTOMER_INFO)
             deviceCache.clearCustomerInfoCache(appUserID)
             eTagManager.clearCaches()
         }
