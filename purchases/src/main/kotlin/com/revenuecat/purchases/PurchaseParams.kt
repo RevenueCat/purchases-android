@@ -6,7 +6,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 
-open class PurchaseParams(builder: Builder) {
+data class PurchaseParams(val builder: Builder) {
 
     val isPersonalizedPrice: Boolean
     val oldProductId: String?
