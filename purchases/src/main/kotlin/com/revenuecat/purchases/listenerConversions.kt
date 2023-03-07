@@ -40,19 +40,6 @@ internal fun productChangeCompletedListener(
     }
 }
 
-internal fun purchaseCompletedCallback(
-    onSuccess: (transaction: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
-    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit
-) = object : PurchaseCallback {
-    override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
-        onSuccess(storeTransaction, customerInfo)
-    }
-
-    override fun onError(error: PurchasesError, userCancelled: Boolean) {
-        onError(error, userCancelled)
-    }
-}
-
 internal fun getStoreProductsCallback(
     onReceived: (storeProducts: List<StoreProduct>) -> Unit,
     onError: (error: PurchasesError) -> Unit
