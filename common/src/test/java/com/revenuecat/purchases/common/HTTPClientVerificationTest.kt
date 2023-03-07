@@ -161,7 +161,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         assertThat(result.verificationResult).isEqualTo(VerificationResult.FAILED)
     }
 
-    @Test(expected = SignatureVerificationException::class)
+    @Test
     fun `performRequest on enforced client throws verification error`() {
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
@@ -175,14 +175,22 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
             mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
         } returns VerificationResult.FAILED
 
-        client.performRequest(
-            baseURL,
-            endpoint,
-            body = null,
-            requestHeaders = emptyMap()
-        )
+        var thrownCorrectException = false
+        try {
+            client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                requestHeaders = emptyMap()
+            )
+        } catch (_: SignatureVerificationException) {
+            thrownCorrectException = true
+        }
 
-        server.takeRequest()
+        assertThat(thrownCorrectException).isTrue
+        verify(exactly = 0) {
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any())
+        }
     }
 
     @Test
