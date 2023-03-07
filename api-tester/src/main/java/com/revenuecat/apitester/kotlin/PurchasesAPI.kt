@@ -155,6 +155,8 @@ private class PurchasesAPI {
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
+        purchases.purchaseWith(
+            purchaseParams) { _: StoreTransaction?, _: CustomerInfo -> }
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {

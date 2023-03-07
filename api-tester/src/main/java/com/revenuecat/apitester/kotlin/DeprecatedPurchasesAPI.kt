@@ -48,11 +48,19 @@ private class DeprecatedPurchasesAPI {
         )
         purchases.purchaseProductWith(
             activity,
+            storeProduct) { _: StoreTransaction, _: CustomerInfo -> }
+        purchases.purchaseProductWith(
+            activity,
             storeProduct,
             upgradeInfo,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
+        purchases.purchaseProductWith(
+            activity,
+            storeProduct,
+            upgradeInfo) { _: StoreTransaction?, _: CustomerInfo -> }
+
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
@@ -60,12 +68,21 @@ private class DeprecatedPurchasesAPI {
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase,
+            upgradeInfo) { _: StoreTransaction?, _: CustomerInfo -> }
+
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
+
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase) { _: StoreTransaction, _: CustomerInfo -> }
 
         purchases.allowSharingPlayStoreAccount = true
         purchases.getSubscriptionSkusWith(
