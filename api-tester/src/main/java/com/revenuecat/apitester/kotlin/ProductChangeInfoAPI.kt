@@ -1,22 +1,22 @@
 package com.revenuecat.apitester.kotlin
 
 import com.android.billingclient.api.BillingFlowParams.ProrationMode
-import com.revenuecat.purchases.UpgradeInfo
+import com.revenuecat.purchases.ProductChangeInfo
 
 @Suppress("unused", "UNUSED_VARIABLE", "RemoveExplicitTypeArguments")
-private class UpgradeInfoAPI {
-    fun check(upgradeInfo: UpgradeInfo) {
-        with(upgradeInfo) {
+private class ProductChangeInfoAPI {
+    fun check(productChangeInfo: ProductChangeInfo) {
+        with(productChangeInfo) {
             val oldProductId: String = oldSku
             @ProrationMode val prorationMode: Int? = prorationMode
 
-            val constructedUpgradeInfo =
-                UpgradeInfo(
+            val constructedProductChangeInfo =
+                ProductChangeInfo(
                     oldSku,
                     prorationMode
                 )
 
-            val constructedUpgradeInfoSkuOnly = UpgradeInfo(oldSku)
+            val constructedProductChangeInfoSkuOnly = ProductChangeInfo(oldSku)
         }
     }
 }

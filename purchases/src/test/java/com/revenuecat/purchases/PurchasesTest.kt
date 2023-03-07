@@ -492,7 +492,7 @@ class PurchasesTest {
         purchases.purchaseSubscriptionOptionWith(
             mockActivity,
             receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
                 fail("should be success")
             }, onSuccess = { purchase, _ ->
@@ -1066,7 +1066,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0]),
+            ProductChangeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
                 fail("should be success")
             }, onSuccess = { purchase, _ ->
@@ -1267,7 +1267,7 @@ class PurchasesTest {
         purchases.purchasePackageWith(
             mockActivity,
             offerings[stubOfferingIdentifier]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0])
+            ProductChangeInfo(oldPurchase.productIds[0])
         ) { _, _ -> }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())

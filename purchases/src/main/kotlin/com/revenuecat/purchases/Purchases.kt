@@ -426,18 +426,18 @@ class Purchases internal constructor(
     /**
      * Purchases [storeProduct].
      * If [storeProduct] represents a subscription, upgrades from the subscription specified by
-     * [upgradeInfo.oldSku] and chooses [storeProduct]'s default [SubscriptionOption].
+     * [productChangeInfo.oldSku] and chooses [storeProduct]'s default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
      *   - Filters out offers with "rc-ignore-default-offer" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
-     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
+     * If [storeProduct] represents a non-subscription, [productChangeInfo] will be ignored.
      *
      * @param [activity] Current activity
      * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
+     * @param [productChangeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
@@ -448,16 +448,16 @@ class Purchases internal constructor(
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
-        upgradeInfo: UpgradeInfo,
+        productChangeInfo: ProductChangeInfo,
         listener: ProductChangeCallback
     ) {
-        upgradeInfo.prorationMode?.let { googleProrationMode ->
+        productChangeInfo.prorationMode?.let { googleProrationMode ->
             // TODO how to best migrate old proration mode to new?
 //            val rcProrationMode = GoogleProrationMode(googleProrationMode)
         }
 
         val purchaseProductBuilder =
-            PurchaseParams.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldSku)
+            PurchaseParams.Builder(storeProduct, activity).oldProductId(productChangeInfo.oldSku)
                 .googleProrationMode(GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION)
         purchase(purchaseProductBuilder.build(), listener as NewPurchaseCallback)
     }
@@ -491,7 +491,7 @@ class Purchases internal constructor(
      * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
      * @param [activity] Current activity
      * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * @param [productChangeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [listener] The PurchaseCallback that will be called when purchase completes.
      */
@@ -502,11 +502,11 @@ class Purchases internal constructor(
     fun purchaseSubscriptionOption(
         activity: Activity,
         subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo,
+        productChangeInfo: ProductChangeInfo,
         listener: ProductChangeCallback
     ) {
         val purchaseOptionBuilder =
-            PurchaseParams.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldSku)
+            PurchaseParams.Builder(subscriptionOption, activity).oldProductId(productChangeInfo.oldSku)
                 // TODO fix proration
                 .googleProrationMode(GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION)
         purchase(purchaseOptionBuilder.build(), listener as NewPurchaseCallback)
@@ -534,7 +534,7 @@ class Purchases internal constructor(
 
     /**
      * Purchases a [Package].
-     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
+     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [productChangeInfo]'s
      * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
      *
      * The default [SubscriptionOption] logic:
@@ -542,11 +542,11 @@ class Purchases internal constructor(
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
-     * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
+     * If [packageToPurchase] represents a non-subscription, [productChangeInfo] will be ignored.
      *
      * @param [activity] Current activity
      * @param [packageToPurchase] The Package you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
+     * @param [productChangeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
      * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
      * @param [callback] The listener that will be called when purchase completes.
      */
@@ -557,11 +557,11 @@ class Purchases internal constructor(
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
-        upgradeInfo: UpgradeInfo,
+        productChangeInfo: ProductChangeInfo,
         callback: ProductChangeCallback
     ) {
         val purchasePackageBuilder =
-            PurchaseParams.Builder(packageToPurchase, activity).oldProductId(upgradeInfo.oldSku)
+            PurchaseParams.Builder(packageToPurchase, activity).oldProductId(productChangeInfo.oldSku)
                 // TODO fix proration
                 .googleProrationMode(GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION)
         purchase(purchasePackageBuilder.build(), callback as NewPurchaseCallback)
