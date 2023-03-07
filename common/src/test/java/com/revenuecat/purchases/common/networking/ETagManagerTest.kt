@@ -411,11 +411,11 @@ class ETagManagerTest {
     @Test
     fun `getHTTPResultFromCacheOrBackend should use requestDate from header even if cached is different`() {
         val expectedDate = Date(1234567890)
-        val httpResult = HTTPResult.createResult(
+        val cachedHttpResult = HTTPResult.createResult(
             origin = HTTPResult.Origin.CACHE,
             requestDate = Date(1000)
         )
-        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", httpResult)
+        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", cachedHttpResult)
         val result = underTest.getHTTPResultFromCacheOrBackend(
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = "",
