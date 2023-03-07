@@ -313,11 +313,8 @@ class HTTPClient(
         return connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME)?.takeIf { it.isNotBlank() }
     }
     private fun getRequestDateHeader(connection: URLConnection): Date? {
-        val requestTimeMillis = getRequestTimeHeader(connection)?.toLong()
-        return if (requestTimeMillis == null) {
-            null
-        } else {
-            Date(requestTimeMillis)
+        return getRequestTimeHeader(connection)?.toLong()?.let {
+            Date(it)
         }
     }
 }
