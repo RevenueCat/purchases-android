@@ -367,7 +367,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Gets the StoreProduct(s) for the given list of product ids.
+     * Gets the StoreProduct(s) for the given list of product ids of type [type]
      * @param [productIds] List of productIds
      * @param [type] A product type to filter by
      * @param [callback] Response callback
@@ -379,9 +379,9 @@ class Purchases internal constructor(
     ) {
         val types = type?.let { setOf(type) } ?: setOf(ProductType.SUBS, ProductType.INAPP)
 
-        getProducts(productIds.toSet(), types, object : GetStoreProductsCallback {
-            override fun onReceived(inappStoreProducts: List<StoreProduct>) {
-                callback.onReceived(inappStoreProducts)
+        getProductsOfTypes(productIds.toSet(), types, object : GetStoreProductsCallback {
+            override fun onReceived(storeProducts: List<StoreProduct>) {
+                callback.onReceived(storeProducts)
             }
             override fun onError(error: PurchasesError) {
                 callback.onError(error)
@@ -1195,27 +1195,20 @@ class Purchases internal constructor(
             )
         }
 
-    private fun getProducts(
+    private fun getProductsOfTypes(
         productIds: Set<String>,
-        productTypes: Set<ProductType>,
+        types: Set<ProductType>,
         callback: GetStoreProductsCallback
-    ) {
-       getProducts(
-           productIds,
-           productTypes,
-           emptyList(),
-           callback
-       )
-    }
+    ) = getProductsOfTypes(productIds, types, emptyList(), callback)
 
-    private fun getProducts(
+    private fun getProductsOfTypes(
         productIds: Set<String>,
-        productTypes: Set<ProductType>,
+        types: Set<ProductType>,
         collectedStoreProducts: List<StoreProduct>,
         callback: GetStoreProductsCallback
     ) {
-        val productTypesLeft = productTypes.toMutableSet()
-        val type = productTypesLeft.firstOrNull()?.also { productTypesLeft.remove(it) }
+        val typesRemaining = types.filter { it != ProductType.UNKNOWN }.toMutableSet()
+        val type = typesRemaining.firstOrNull()?.also { typesRemaining.remove(it) }
 
         type?.let {
             billing.queryProductDetailsAsync(
@@ -1223,10 +1216,9 @@ class Purchases internal constructor(
                 productIds,
                 { storeProducts ->
                     dispatch {
-
-                        getProducts(
+                        getProductsOfTypes(
                             productIds,
-                            productTypesLeft,
+                            typesRemaining,
                             collectedStoreProducts + storeProducts,
                             callback
                         )
@@ -1762,7 +1754,7 @@ class Purchases internal constructor(
         productIds: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getProducts(productIds.toSet(), setOf(ProductType.SUBS), callback)
+        getProductsOfTypes(productIds.toSet(), setOf(ProductType.SUBS), callback)
     }
 
     /**
@@ -1778,7 +1770,7 @@ class Purchases internal constructor(
         productIds: List<String>,
         callback: GetStoreProductsCallback
     ) {
-        getProducts(productIds.toSet(), setOf(ProductType.INAPP), callback)
+        getProductsOfTypes(productIds.toSet(), setOf(ProductType.INAPP), callback)
     }
 
     // endregion
