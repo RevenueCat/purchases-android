@@ -44,7 +44,8 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
                 put("lifetime_cat", JSONObject().apply {
@@ -72,7 +73,7 @@ class EntitlementInfosTests {
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -103,6 +104,7 @@ class EntitlementInfosTests {
         verifySandbox(entitlement = "lifetime_cat")
         verifyProduct(
             identifier = "lifetime",
+            planIdentifier = null,
             latestPurchaseDate = Iso8601Utils.parse("2019-07-26T23:45:40Z"),
             originalPurchaseDate = Iso8601Utils.parse("2019-07-26T23:45:40Z"),
             expirationDate = null,
@@ -116,12 +118,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "1999-07-26T23:30:41Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2000-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -145,12 +148,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "1999-07-26T23:30:41Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -172,12 +176,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2000-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "1999-07-26T23:30:41Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2000-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -209,12 +214,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -265,7 +271,7 @@ class EntitlementInfosTests {
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -286,6 +292,7 @@ class EntitlementInfosTests {
         verifySandbox()
         verifyProduct(
             identifier = "lifetime",
+            planIdentifier = null,
             latestPurchaseDate = Iso8601Utils.parse("2019-07-26T23:45:40Z"),
             originalPurchaseDate = Iso8601Utils.parse("2019-07-26T23:45:40Z"),
             expirationDate = null
@@ -298,12 +305,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -331,12 +339,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at","2019-07-27T23:30:41Z")
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -364,12 +373,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -397,12 +407,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", "2019-07-27T22:30:41Z")
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -435,12 +446,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", true)
@@ -500,6 +512,7 @@ class EntitlementInfosTests {
         verifySandbox()
         verifyProduct(
             identifier = "lifetime",
+            planIdentifier = null,
             latestPurchaseDate = Iso8601Utils.parse("2019-07-26T23:45:40Z"),
             originalPurchaseDate = Iso8601Utils.parse("2019-07-26T23:45:40Z"),
             expirationDate = null)
@@ -511,12 +524,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -535,12 +549,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -559,12 +574,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -583,12 +599,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -607,12 +624,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -631,12 +649,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -841,12 +860,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -865,12 +885,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -889,12 +910,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -913,12 +935,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -1020,12 +1043,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -1045,12 +1069,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -1070,12 +1095,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -1098,12 +1124,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -1126,12 +1153,13 @@ class EntitlementInfosTests {
             entitlements = JSONObject().apply {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
             subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
+                put("pro", JSONObject().apply {
                     put("billing_issues_detected_at", JSONObject.NULL)
                     put("expires_date", "2200-07-26T23:50:40Z")
                     put("is_sandbox", false)
@@ -1224,7 +1252,8 @@ class EntitlementInfosTests {
     }
 
     private fun verifyProduct(
-        identifier: String = "monthly_freetrial",
+        identifier: String = "pro",
+        planIdentifier: String? = "monthly",
         latestPurchaseDate: Date = Iso8601Utils.parse("2019-07-26T23:45:40Z"),
         originalPurchaseDate: Date = Iso8601Utils.parse("2019-07-26T23:30:41Z"),
         expirationDate: Date? = Iso8601Utils.parse("2200-07-26T23:50:40Z"),
@@ -1237,5 +1266,6 @@ class EntitlementInfosTests {
         assertThat(proCat.originalPurchaseDate).isEqualTo(originalPurchaseDate)
         assertThat(proCat.expirationDate).isEqualTo(expirationDate)
         assertThat(proCat.productIdentifier).isEqualTo(identifier)
+        assertThat(proCat.productPlanIdentifier).isEqualTo(planIdentifier)
     }
 }

@@ -23,6 +23,7 @@ import java.util.Date
  * @property store The store where this entitlement was unlocked from. Either: APP_STORE,
  * MAC_APP_STORE, PLAY_STORE, STRIPE, PROMOTIONAL or UNKNOWN_STORE.
  * @property productIdentifier The product identifier that unlocked this entitlement.
+ * @property productPlanIdentifier The product plan identifier that unlocked this entitlement.
  * @property isSandbox False if this entitlement is unlocked via a production purchase.
  * @property unsubscribeDetectedAt The date an unsubscribe was detected. Can be `null`.
  * Note: Entitlement may still be active even if user has unsubscribed. Check the `isActive` property.
@@ -42,6 +43,7 @@ data class EntitlementInfo constructor(
     val expirationDate: Date?,
     val store: Store,
     val productIdentifier: String,
+    val productPlanIdentifier: String?,
     val isSandbox: Boolean,
     val unsubscribeDetectedAt: Date?,
     val billingIssueDetectedAt: Date?,
@@ -65,6 +67,7 @@ data class EntitlementInfo constructor(
             "expirationDate=$expirationDate, " +
             "store=$store, " +
             "productIdentifier='$productIdentifier', " +
+            "productPlanIdentifier='$productIdentifier', " +
             "isSandbox=$isSandbox, " +
             "unsubscribeDetectedAt=$unsubscribeDetectedAt, " +
             "billingIssueDetectedAt=$billingIssueDetectedAt, " +
@@ -87,6 +90,7 @@ data class EntitlementInfo constructor(
         if (expirationDate != other.expirationDate) return false
         if (store != other.store) return false
         if (productIdentifier != other.productIdentifier) return false
+        if (productPlanIdentifier != other.productPlanIdentifier) return false
         if (isSandbox != other.isSandbox) return false
         if (unsubscribeDetectedAt != other.unsubscribeDetectedAt) return false
         if (billingIssueDetectedAt != other.billingIssueDetectedAt) return false
@@ -105,6 +109,7 @@ data class EntitlementInfo constructor(
         result = 31 * result + (expirationDate?.hashCode() ?: 0)
         result = 31 * result + store.hashCode()
         result = 31 * result + productIdentifier.hashCode()
+        result = 31 * result + productPlanIdentifier.hashCode()
         result = 31 * result + isSandbox.hashCode()
         result = 31 * result + (unsubscribeDetectedAt?.hashCode() ?: 0)
         result = 31 * result + (billingIssueDetectedAt?.hashCode() ?: 0)
