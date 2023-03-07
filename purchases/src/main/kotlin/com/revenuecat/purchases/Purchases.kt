@@ -16,6 +16,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -48,7 +49,6 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.interfaces.toNewPurchaseCallback
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -409,7 +409,7 @@ class Purchases internal constructor(
                     purchasingData,
                     presentedOfferingIdentifier,
                     productId,
-                    googleProrationMode,
+                    googleProrationMode.playBillingClientMode,
                     callback
                 )
             } ?: run {
@@ -451,15 +451,14 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        upgradeInfo.prorationMode?.let { googleProrationMode ->
-            // TODO how to best migrate old proration mode to new?
-//            val rcProrationMode = GoogleProrationMode(googleProrationMode)
-        }
-
-        val purchaseProductBuilder =
-            PurchaseParams.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldSku)
-                .googleProrationMode(GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION)
-        purchase(purchaseProductBuilder.build(), listener as NewPurchaseCallback)
+        startProductChange(
+            activity,
+            storeProduct.purchasingData,
+            null,
+            upgradeInfo.oldSku,
+            upgradeInfo.prorationMode,
+            listener as NewPurchaseCallback
+        )
     }
 
     /**
@@ -483,8 +482,12 @@ class Purchases internal constructor(
         storeProduct: StoreProduct,
         callback: PurchaseCallback
     ) {
-        val purchase = PurchaseParams.Builder(storeProduct, activity).build()
-        purchaseNonUpgradeWithDeprecatedCallback(purchase, callback)
+        startPurchase(
+            activity,
+            storeProduct.purchasingData,
+            null,
+            callback.toNewPurchaseCallback()
+        )
     }
 
     /**
@@ -515,11 +518,14 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         callback: ProductChangeCallback
     ) {
-        val purchasePackageBuilder =
-            PurchaseParams.Builder(packageToPurchase, activity).oldProductId(upgradeInfo.oldSku)
-                // TODO fix proration
-                .googleProrationMode(GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION)
-        purchase(purchasePackageBuilder.build(), callback as NewPurchaseCallback)
+        startProductChange(
+            activity,
+            packageToPurchase.product.purchasingData,
+            packageToPurchase.offering,
+            upgradeInfo.oldSku,
+            upgradeInfo.prorationMode,
+            callback as NewPurchaseCallback
+        )
     }
 
     /**
@@ -543,8 +549,12 @@ class Purchases internal constructor(
         packageToPurchase: Package,
         listener: PurchaseCallback
     ) {
-        val purchase = PurchaseParams.Builder(packageToPurchase, activity).build()
-        purchaseNonUpgradeWithDeprecatedCallback(purchase, listener)
+        startPurchase(
+            activity,
+            packageToPurchase.product.purchasingData,
+            packageToPurchase.offering,
+            listener.toNewPurchaseCallback()
+        )
     }
 
     /**
@@ -1546,7 +1556,7 @@ class Purchases internal constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode,
+        @BillingFlowParams.ProrationMode googleProrationMode: Int?,
         listener: NewPurchaseCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
@@ -1564,7 +1574,7 @@ class Purchases internal constructor(
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } oldProductId: $oldProductId googleProrationMode ${googleProrationMode.name}"
+                } oldProductId: $oldProductId googleProrationMode $googleProrationMode"
 
             )
         )
@@ -1597,7 +1607,7 @@ class Purchases internal constructor(
     private fun replaceOldPurchaseWithNewProduct(
         purchasingData: PurchasingData,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode,
+        @BillingFlowParams.ProrationMode googleProrationMode: Int?,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
@@ -1623,7 +1633,7 @@ class Purchases internal constructor(
                     activity,
                     appUserID,
                     purchasingData,
-                    ReplaceProductInfo(purchaseRecord, googleProrationMode.playBillingClientMode),
+                    ReplaceProductInfo(purchaseRecord, googleProrationMode),
                     presentedOfferingIdentifier
                 )
             },
