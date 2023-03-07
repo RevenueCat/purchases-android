@@ -363,12 +363,32 @@ class ETagManagerTest {
         assertThat(result?.verificationResult).isEqualTo(VerificationResult.SUCCESS)
     }
 
+    @Test
+    fun `getHTTPResultFromCacheOrBackend should use result from latest request even if cached is different`() {
+        val httpResult = HTTPResult.createResult(
+            origin = HTTPResult.Origin.CACHE,
+            verificationResult = VerificationResult.SUCCESS
+        )
+        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", httpResult)
+        val result = underTest.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
+            payload = "",
+            eTagHeader = "etag",
+            urlPathWithVersion = "/v1/subscribers/appUserID",
+            refreshETag = false,
+            verificationResult = VerificationResult.FAILED
+        )
+
+        assertThat(result?.verificationResult).isEqualTo(VerificationResult.FAILED)
+    }
+
     private fun mockCachedHTTPResult(
         expectedETag: String?,
-        path: String
+        path: String,
+        httpResult: HTTPResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE)
     ): HTTPResultWithETag? {
         val cachedResult = expectedETag?.let {
-            HTTPResultWithETag(expectedETag, HTTPResult.createResult(origin = HTTPResult.Origin.CACHE))
+            HTTPResultWithETag(expectedETag, httpResult)
         }
         every {
             mockedPrefs.getString(path, null)
