@@ -18,7 +18,6 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -409,6 +408,7 @@ class Purchases internal constructor(
                     presentedOfferingIdentifier,
                     productId,
                     googleProrationMode.playBillingClientMode,
+                    null,
                     callback
                 )
             } ?: run {
@@ -1402,36 +1402,51 @@ class Purchases internal constructor(
     }
 
     private fun getAndClearProductChangeCallback(): ProductChangeCallback? {
-        return state.productChangeCallback.also {
-            state = state.copy(productChangeCallback = null)
+        return state.deprecatedProductChangeCallback.also {
+            state = state.copy(deprecatedProductChangeCallback = null)
         }
     }
 
     private fun getPurchasesUpdatedListener(): BillingAbstract.PurchasesUpdatedListener {
         return object : BillingAbstract.PurchasesUpdatedListener {
             override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
-                val productChangeInProgress: Boolean
+                val isDeprecatedProductChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
-                val productChangeListener: ProductChangeCallback?
+                val deprecatedProductChangeListener: ProductChangeCallback?
 
                 synchronized(this@Purchases) {
-                    productChangeInProgress = state.productChangeCallback != null
-                    if (productChangeInProgress) {
-                        productChangeListener = getAndClearProductChangeCallback()
-                        callbackPair = getProductChangeCompletedCallbacks(productChangeListener)
+                    isDeprecatedProductChangeInProgress = state.deprecatedProductChangeCallback != null
+                    if (isDeprecatedProductChangeInProgress) {
+                        deprecatedProductChangeListener = getAndClearProductChangeCallback()
+                        callbackPair = getProductChangeCompletedCallbacks(deprecatedProductChangeListener)
                     } else {
-                        productChangeListener = null
+                        deprecatedProductChangeListener = null
                         callbackPair = getPurchaseCompletedCallbacks()
                     }
                 }
 
-                if (productChangeInProgress && purchases.isEmpty()) {
-                    // Can happen if the product change is ProrationMode.DEFERRED
-                    invalidateCustomerInfoCache()
-                    getCustomerInfoWith { customerInfo ->
-                        productChangeListener?.let { callback ->
-                            dispatch {
-                                callback.onCompleted(null, customerInfo)
+                if (purchases.isEmpty()) {
+                    if (isDeprecatedProductChangeInProgress) {
+                        // Can happen if the product change is ProrationMode.DEFERRED
+                        invalidateCustomerInfoCache()
+                        getCustomerInfoWith { customerInfo ->
+                            deprecatedProductChangeListener?.let { callback ->
+                                dispatch {
+                                    callback.onCompleted(null, customerInfo)
+                                }
+                            }
+                        }
+                    } else {
+                        // the non-deprecated purchase(PurchaseParams, PurchaseCallback) flow doesn't allow for
+                        // DEFERRED, so this is an unexpected state. return an error
+                        val nullTransactionError = PurchasesError(
+                            PurchasesErrorCode.StoreProblemError,
+                            PurchaseStrings.NULL_TRANSACTION_ON_PURCHASE_ERROR
+                        )
+                        synchronized(this@Purchases) {
+                            state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
+                                state = state.copy(purchaseCallbacksByProductId = emptyMap())
+                                purchaseCallbacks.values.forEach { it.dispatch(nullTransactionError) }
                             }
                         }
                     }
@@ -1546,12 +1561,14 @@ class Purchases internal constructor(
         offeringIdentifier: String?,
         oldProductId: String,
         @BillingFlowParams.ProrationMode googleProrationMode: Int?,
-        listener: ProductChangeCallback
+        deprecatedProductChangeCallback: ProductChangeCallback? = null,
+        purchaseCallback: PurchaseCallback? = null
     ) {
-        // TODO BC5 can i make this function handle either type of callback?
+        // todo error instead of return
+        val callbackToUse = purchaseCallback ?: deprecatedProductChangeCallback ?: return
         if (purchasingData.productType != ProductType.SUBS) {
-            getAndClearProductChangeCallback()
-            listener.dispatch(PurchasesError(
+            getAndClearProductChangeCallback() // TODO also clear purchase callback?
+            callbackToUse.dispatch(PurchasesError(
                 PurchasesErrorCode.PurchaseNotAllowedError,
                 PurchaseStrings.UPGRADING_INVALID_TYPE
             ).also { errorLog(it) })
@@ -1573,9 +1590,17 @@ class Purchases internal constructor(
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
-            if (state.productChangeCallback == null) {
-                state = state.copy(productChangeCallback = listener)
+            if (callbackToUse is ProductChangeCallback && state.deprecatedProductChangeCallback == null) {
+                state = state.copy(deprecatedProductChangeCallback = deprecatedProductChangeCallback)
                 userPurchasing = identityManager.currentAppUserID
+            } else if (callbackToUse is PurchaseCallback) {
+                if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
+                    val mapOfProductIdToListener = mapOf(purchasingData.productId to callbackToUse)
+                    state = state.copy(
+                        purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
+                    )
+                    userPurchasing = identityManager.currentAppUserID
+                }
             }
         }
         userPurchasing?.let { appUserID ->
@@ -1586,11 +1611,13 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 offeringIdentifier,
-                listener
+                callbackToUse
             )
         } ?: run {
             getAndClearProductChangeCallback()
-            listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
+            callbackToUse.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
+                errorLog(it)
+            })
         }
     }
 
@@ -1604,7 +1631,7 @@ class Purchases internal constructor(
         listener: PurchaseErrorCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
-            getAndClearProductChangeCallback()
+            getAndClearProductChangeCallback() // TODO also clear normal callback?
             listener.dispatch(PurchasesError(
                 PurchasesErrorCode.PurchaseNotAllowedError,
                 PurchaseStrings.UPGRADING_INVALID_TYPE
