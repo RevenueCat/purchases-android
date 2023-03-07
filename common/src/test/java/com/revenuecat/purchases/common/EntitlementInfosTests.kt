@@ -139,9 +139,9 @@ class EntitlementInfosTests {
             }
         )
 
-        val subscriberInfo = createCustomerInfo(response, VerificationResult.ERROR)
-        assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.ERROR)
-        assertThat(subscriberInfo.entitlements["pro_cat"]?.verification).isEqualTo(VerificationResult.ERROR)
+        val subscriberInfo = createCustomerInfo(response, VerificationResult.FAILED)
+        assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.FAILED)
+        assertThat(subscriberInfo.entitlements["pro_cat"]?.verification).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test

@@ -123,7 +123,7 @@ class DeviceCacheTest {
         mockString(cache.customerInfoCacheKey(appUserID), deprecatedValidCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
-        assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.NOT_VERIFIED)
+        assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.NOT_REQUESTED)
     }
 
     @Test

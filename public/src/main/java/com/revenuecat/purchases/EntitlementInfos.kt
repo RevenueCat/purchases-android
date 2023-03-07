@@ -17,7 +17,7 @@ class EntitlementInfos constructor(
     @Deprecated("Use full constructor instead")
     constructor(
         all: Map<String, EntitlementInfo>
-    ) : this(all, VerificationResult.NOT_VERIFIED)
+    ) : this(all, VerificationResult.NOT_REQUESTED)
 
     /**
      * Dictionary of active [EntitlementInfo] objects keyed by entitlement identifier.
